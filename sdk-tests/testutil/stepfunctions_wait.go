@@ -139,5 +139,79 @@ func (r *TestRunner) runSFNWaitTests(tc *sfnTestContext) []TestResult {
 		return nil
 	}))
 
+	// WorkflowVariables_CJKNameLengthInCharacters: "the maximum length of
+	// a variable name is 80" characters — a 30-character CJK name is 90
+	// bytes but well inside the ceiling, so it must assign and read back.
+	results = append(results, r.RunTest("stepfunctions", "WorkflowVariables_CJKNameLengthInCharacters", func() error {
+		cjkName := "この日本語の変数名はちょうど三十文字になるようにしていますよ"
+		def := fmt.Sprintf(`{"QueryLanguage":"JSONata","StartAt":"A","States":{`+
+			`"A":{"Type":"Pass","Assign":{%q:123},"Next":"B"},`+
+			`"B":{"Type":"Pass","Output":"{%% $%s %%}","End":true}}}`, cjkName, cjkName)
+		arn, cleanup, cerr := tc.createRoleBackedSM("CJKVar", def)
+		if cerr != nil {
+			return fmt.Errorf("create: %v", cerr)
+		}
+		defer cleanup()
+
+		startResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
+			StateMachineArn: aws.String(arn),
+			Input:           aws.String(`{}`),
+		})
+		if err != nil {
+			return fmt.Errorf("start: %v", err)
+		}
+		status, execErr, err := awaitExecution(*startResp.ExecutionArn, 0)
+		if err != nil {
+			return err
+		}
+		if status != types.ExecutionStatusSucceeded {
+			return fmt.Errorf("status = %s, error = %q, want SUCCEEDED — the CJK name is within the 80-character limit", status, execErr)
+		}
+		out, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{ExecutionArn: startResp.ExecutionArn})
+		if err != nil {
+			return fmt.Errorf("describe: %v", err)
+		}
+		if aws.ToString(out.Output) != "123" {
+			return fmt.Errorf("output = %s, want the assigned value 123", aws.ToString(out.Output))
+		}
+		return nil
+	}))
+
+	// WorkflowVariables_LeadingUnderscoreRejected: "The first character of
+	// a variable name must be a Unicode ID_Start character" — the
+	// underscore is an ID_Continue connector, never an ID_Start, so a
+	// leading-underscore name fails the run.
+	results = append(results, r.RunTest("stepfunctions", "WorkflowVariables_LeadingUnderscoreRejected", func() error {
+		def := `{"QueryLanguage":"JSONata","StartAt":"A","States":{` +
+			`"A":{"Type":"Pass","Assign":{"_hidden":123},"Next":"B"},` +
+			`"B":{"Type":"Pass","End":true}}}`
+		arn, cleanup, cerr := tc.createRoleBackedSM("UnderscoreVar", def)
+		if cerr != nil {
+			return fmt.Errorf("create: %v", cerr)
+		}
+		defer cleanup()
+
+		startResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
+			StateMachineArn: aws.String(arn),
+			Input:           aws.String(`{}`),
+		})
+		if err != nil {
+			return fmt.Errorf("start: %v", err)
+		}
+		status, execErr, err := awaitExecution(*startResp.ExecutionArn, 0)
+		if err != nil {
+			return err
+		}
+		if status != types.ExecutionStatusFailed {
+			return fmt.Errorf("status = %s, want FAILED — a leading underscore is not an ID_Start character", status)
+		}
+		// A JSONata state's Assign application failure carries the
+		// query-evaluation error identity; the cause names the rule.
+		if execErr != "States.QueryEvaluationError" {
+			return fmt.Errorf("execution error = %q, want States.QueryEvaluationError", execErr)
+		}
+		return nil
+	}))
+
 	return results
 }

@@ -221,13 +221,41 @@ func TestResolveTemplate_Walker(t *testing.T) {
 		}
 	})
 
-	t.Run("undefined path returns nil not error", func(t *testing.T) {
+	t.Run("undefined path fails the expression", func(t *testing.T) {
+		// JSON cannot represent an undefined value, so an expression
+		// that returns no result fails the state as a query-evaluation
+		// error instead of degrading to JSON null.
 		result, err := ResolveTemplate(context.Background(), "{% $states.input.nonexistent.bad.path %}", nil, vars)
+		if err == nil {
+			t.Fatalf("expected error for undefined path, got result %v", result)
+		}
+		if err != errUndefinedResult {
+			t.Fatalf("expected errUndefinedResult, got %v", err)
+		}
+	})
+
+	t.Run("input JSON null flows as null", func(t *testing.T) {
+		// A null IN the input data is a representable value and passes
+		// through as null, distinct from an undefined path: navigating
+		// to it yields null and $exists reports it as defined.
+		vars := map[string]interface{}{
+			"states": map[string]interface{}{
+				"input": map[string]interface{}{"n": nil},
+			},
+		}
+		result, err := EvaluateJSONata(context.Background(), "$states.input.n", nil, vars)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if result != nil {
-			t.Fatalf("expected nil for undefined path, got %v", result)
+			t.Fatalf("expected nil (JSON null), got %v", result)
+		}
+		exists, err := EvaluateJSONata(context.Background(), "$exists($states.input.n)", nil, vars)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if exists != true {
+			t.Fatalf("expected $exists of a null field to be true, got %v", exists)
 		}
 	})
 
@@ -258,73 +286,6 @@ func TestResolveTemplate_Walker(t *testing.T) {
 			t.Fatalf("expected empty array, got %v", arr)
 		}
 	})
-}
-
-func TestEvaluateExpressionValue(t *testing.T) {
-	vars := map[string]interface{}{"states": map[string]interface{}{"input": map[string]interface{}{"x": 5.0}}}
-
-	t.Run("expression string evaluates", func(t *testing.T) {
-		result, err := EvaluateExpressionValue(context.Background(), "{% $states.input.x + 1 %}", nil, vars)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
-		if result != 6.0 {
-			t.Fatalf("expected 6, got %v", result)
-		}
-	})
-
-	t.Run("non-expression string passes through", func(t *testing.T) {
-		result, err := EvaluateExpressionValue(context.Background(), "hello", nil, vars)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
-		if result != "hello" {
-			t.Fatalf("expected 'hello', got %v", result)
-		}
-	})
-
-	t.Run("non-string passes through", func(t *testing.T) {
-		result, err := EvaluateExpressionValue(context.Background(), 42.0, nil, vars)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
-		if result != 42.0 {
-			t.Fatalf("expected 42, got %v", result)
-		}
-	})
-
-	t.Run("nil passes through", func(t *testing.T) {
-		result, err := EvaluateExpressionValue(context.Background(), nil, nil, vars)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
-		if result != nil {
-			t.Fatalf("expected nil, got %v", result)
-		}
-	})
-}
-
-func TestIsJSONataExpressionValue(t *testing.T) {
-	tests := []struct {
-		input    interface{}
-		expected bool
-	}{
-		{"{% $x %}", true},
-		{"{% null %}", true},
-		{"not expression", false},
-		{"", false},
-		{42, false},
-		{nil, false},
-		{true, false},
-	}
-
-	for _, tt := range tests {
-		t.Run("", func(t *testing.T) {
-			if IsJSONataExpressionValue(tt.input) != tt.expected {
-				t.Fatalf("IsJSONataExpressionValue(%v) = %v, want %v", tt.input, !tt.expected, tt.expected)
-			}
-		})
-	}
 }
 
 func TestVariableScope_Basic(t *testing.T) {
@@ -520,8 +481,9 @@ func TestValidateVariableName(t *testing.T) {
 		wantErr bool
 	}{
 		{"simple", "myVar", false},
-		{"underscore start", "_private", false},
-		{"dollar start", "$dollar", false},
+		{"underscore start", "_private", true},
+		{"underscore continue", "my_var", false},
+		{"dollar start", "$dollar", true},
 		{"with digits", "var123", false},
 		{"single letter", "x", false},
 		{"empty", "", true},
@@ -532,8 +494,15 @@ func TestValidateVariableName(t *testing.T) {
 		{"contains hyphen", "my-var", true},
 		{"starts with uppercase", "MyVar", false},
 		{"unicode letter start", "変数", false},
+		{"roman numeral start", "ⅠⅫ", false},
+		{"combining mark continues", "cafe\u0301", false},
+		{"middle dot continues", "my\u00b7var", false},
 		{"too long", strings.Repeat("a", 81), true},
 		{"max length", strings.Repeat("a", 80), false},
+		// The length limit counts characters, not bytes: a 30-character
+		// CJK name is 90 bytes but well inside the 80-character ceiling.
+		{"cjk within limit", strings.Repeat("変", 30), false},
+		{"cjk over limit", strings.Repeat("変", 81), true},
 	}
 
 	for _, tt := range tests {

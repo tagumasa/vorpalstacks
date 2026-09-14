@@ -2,27 +2,26 @@ package sfn
 
 import (
 	"context"
-	"crypto/md5"
 	"crypto/rand"
-	"crypto/sha1"
-	"crypto/sha256"
-	"crypto/sha512"
-	"encoding/hex"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
+	mrand "math/rand"
 	"reflect"
 	"strings"
+	"time"
 
 	gnata "github.com/recolabs/gnata"
-)
 
-const uuidSize = 16
+	sfnstore "vorpalstacks/internal/store/aws/sfn"
+)
 
 // awsCustomFuncs registers AWS-specific custom functions for JSONata evaluation.
 // These provide additional functionality beyond the standard JSONata library:
-// $partition, $range, $hash, $random, $uuid, and $parse.
+// $partition, $range, $hash, $random, $uuid, and $parse. The eval override
+// shadows the stdlib binding (customs bind after RegisterAll) because AWS
+// removes the function: "$eval is not available—use $parse instead".
 var awsCustomFuncs = map[string]gnata.CustomFunc{
 	"partition": awsPartitionFunc,
 	"range":     awsRangeFunc,
@@ -30,6 +29,13 @@ var awsCustomFuncs = map[string]gnata.CustomFunc{
 	"random":    awsRandomFunc,
 	"uuid":      awsUUIDFunc,
 	"parse":     awsParseFunc,
+	"eval":      awsEvalDisabledFunc,
+}
+
+// awsEvalDisabledFunc replaces the JSONata stdlib $eval for AWS JSONata
+// states.
+func awsEvalDisabledFunc(args []interface{}, focus interface{}) (interface{}, error) {
+	return nil, errors.New("$eval is not available—use $parse instead")
 }
 
 // awsCustomEnv is the pre-built JSONata custom environment containing AWS custom functions.
@@ -49,25 +55,136 @@ func UnwrapExpression(s string) string {
 	return strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(s, "%}"), "{%"))
 }
 
+// jsonataEvalTimeout bounds a single JSONata expression evaluation: "A
+// JSONata expression that takes longer than 1 second to evaluate will fail
+// with an Expression evaluation timeout error." It is a variable so tests
+// can shrink the budget; production always runs at the documented second.
+var jsonataEvalTimeout = time.Second
+
 // EvaluateJSONata compiles and evaluates a JSONata expression against the given data.
 func EvaluateJSONata(ctx context.Context, expression string, data interface{}, vars map[string]interface{}) (interface{}, error) {
 	expr, err := gnata.Compile(expression)
 	if err != nil {
 		return nil, fmt.Errorf("compile: %w", err)
 	}
-	return evaluateCompiled(ctx, expr, data, vars)
+	evalCtx, cancel := context.WithTimeout(ctx, jsonataEvalTimeout)
+	defer cancel()
+	result, err := evaluateCompiled(evalCtx, expr, data, vars)
+	if evalCtx.Err() != nil && ctx.Err() == nil {
+		// The one-second expression budget expired; an outer
+		// cancellation (a task or machine timeout) keeps its own
+		// error class.
+		return nil, errors.New("Expression evaluation timeout")
+	}
+	return result, err
+}
+
+// errUndefinedResult marks a JSONata expression that evaluated to undefined.
+// JSON cannot represent an undefined value, so the state fails; every call
+// site wraps this message as States.QueryEvaluationError via
+// newQueryEvalError.
+var errUndefinedResult = errors.New("the expression returned an undefined result")
+
+// jsonNullSentinel is gnata's JSON null value. The evaluator distinguishes
+// it from Go nil (JSONata undefined), but the platform decodes state JSON
+// with encoding/json, which maps null to Go nil — so nested nils are
+// converted to the sentinel before evaluation to keep input nulls distinct
+// from undefined paths.
+var jsonNullSentinel = func() interface{} {
+	v, err := gnata.DecodeJSON([]byte("null"))
+	if err != nil {
+		panic("gnata: decoding the null literal failed: " + err.Error())
+	}
+	return v
+}()
+
+// nullsToSentinels rebuilds v with every nested Go nil replaced by the JSON
+// null sentinel. Containers are copied only when a conversion happened;
+// otherwise the original value is returned unchanged.
+func nullsToSentinels(v interface{}) (interface{}, bool) {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(val))
+		changed := false
+		for k, mv := range val {
+			if mv == nil {
+				out[k] = jsonNullSentinel
+				changed = true
+				continue
+			}
+			cv, c := nullsToSentinels(mv)
+			out[k] = cv
+			changed = changed || c
+		}
+		if !changed {
+			return val, false
+		}
+		return out, true
+	case []interface{}:
+		out := make([]interface{}, len(val))
+		changed := false
+		for i, ev := range val {
+			if ev == nil {
+				out[i] = jsonNullSentinel
+				changed = true
+				continue
+			}
+			cv, c := nullsToSentinels(ev)
+			out[i] = cv
+			changed = changed || c
+		}
+		if !changed {
+			return val, false
+		}
+		return out, true
+	}
+	return v, false
 }
 
 func evaluateCompiled(ctx context.Context, expr *gnata.Expression, data interface{}, vars map[string]interface{}) (interface{}, error) {
-	result, err := expr.EvalWithEnvAndVars(ctx, data, awsCustomEnv, vars)
+	evalData, _ := nullsToSentinels(data)
+	evalVars := vars
+	if vars != nil {
+		evalVars = make(map[string]interface{}, len(vars))
+		for k, v := range vars {
+			cv, _ := nullsToSentinels(v)
+			evalVars[k] = cv
+		}
+	}
+	result, err := expr.EvalWithEnvAndVars(ctx, evalData, awsCustomEnv, evalVars)
 	if err != nil {
 		return nil, err
 	}
+	// JSONata undefined arrives as Go nil, distinct from the JSON null
+	// sentinel (which NormalizeValue maps to nil only below): JSON cannot
+	// represent an undefined value, so it fails the state.
+	if result == nil {
+		return nil, errUndefinedResult
+	}
 	normalized := gnata.NormalizeValue(result)
 	if normalized != nil && reflect.TypeOf(normalized).Kind() == reflect.Func {
-		return nil, nil
+		// A function reference has no JSON representation either.
+		return nil, errUndefinedResult
 	}
 	return normalized, nil
+}
+
+// queryEvalSecondsValue validates a JSONata-evaluated seconds field
+// (TimeoutSeconds, HeartbeatSeconds): the field accepts an integer within
+// 1..MaxWaitSeconds, and any other type or range fails the state as a
+// query-evaluation error.
+func queryEvalSecondsValue(field string, result interface{}) (int32, error) {
+	f, ok := toFloat64(result)
+	if !ok {
+		return 0, fmt.Errorf("%s requires a numeric value, got %v", field, result)
+	}
+	if f != math.Trunc(f) {
+		return 0, fmt.Errorf("%s requires an integer value, got %v", field, result)
+	}
+	if f < 1 || f > sfnstore.MaxWaitSeconds {
+		return 0, fmt.Errorf("%s value %v is outside the acceptable range 1-%d", field, result, sfnstore.MaxWaitSeconds)
+	}
+	return int32(f), nil
 }
 
 // ResolveTemplate recursively resolves JSONata inline expressions within strings,
@@ -121,100 +238,39 @@ func BuildStatesVar(input, result, errorOutput, contextObj interface{}) map[stri
 	return map[string]interface{}{"states": states}
 }
 
-// IsJSONataExpressionValue reports whether a value is a JSONata inline expression string.
-func IsJSONataExpressionValue(v interface{}) bool {
-	s, ok := v.(string)
-	return ok && IsExpression(s)
-}
-
-// EvaluateExpressionValue evaluates a value; if it is a JSONata expression string,
-// it is compiled and evaluated against the given data.
-func EvaluateExpressionValue(ctx context.Context, v interface{}, data interface{}, vars map[string]interface{}) (interface{}, error) {
-	s, ok := v.(string)
-	if !ok {
-		return v, nil
-	}
-	if IsExpression(s) {
-		return EvaluateJSONata(ctx, UnwrapExpression(s), data, vars)
-	}
-	return s, nil
-}
-
-// NormalizeResult normalises a JSONata result value using the gnata normaliser.
-func NormalizeResult(v interface{}) interface{} {
-	return gnata.NormalizeValue(v)
-}
-
+// The AWS context functions with a States intrinsic twin delegate to the
+// single intrinsic implementation (applyIntrinsic); the wrappers only
+// adapt the gnata function-registry signature.
 func awsUUIDFunc(args []interface{}, focus interface{}) (interface{}, error) {
-	uuid := make([]byte, uuidSize)
-	if _, err := rand.Read(uuid); err != nil {
-		return nil, err
-	}
-	uuid[6] = (uuid[6] & 0x0f) | 0x40
-	uuid[8] = (uuid[8] & 0x3f) | 0x80
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
-		uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:16]), nil
+	return applyIntrinsic("UUID", nil)
 }
 
 func awsPartitionFunc(args []interface{}, focus interface{}) (interface{}, error) {
-	if len(args) < 2 {
-		return nil, fmt.Errorf("$partition requires 2 arguments")
-	}
-	arr, ok := args[0].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("$partition first argument must be an array")
-	}
-	var chunkSize float64
-	switch v := args[1].(type) {
-	case float64:
-		chunkSize = v
-	case int:
-		chunkSize = float64(v)
-	default:
-		return nil, fmt.Errorf("$partition second argument must be a number")
-	}
-	if chunkSize < 1 {
-		return nil, fmt.Errorf("$partition chunk size must be >= 1")
-	}
-	cs := int(chunkSize)
-	var result []interface{}
-	for i := 0; i < len(arr); i += cs {
-		end := i + cs
-		if end > len(arr) {
-			end = len(arr)
-		}
-		chunk := make([]interface{}, end-i)
-		copy(chunk, arr[i:end])
-		result = append(result, chunk)
-	}
-	return result, nil
+	return applyIntrinsic("ArrayPartition", args)
 }
 
 func awsRangeFunc(args []interface{}, focus interface{}) (interface{}, error) {
 	if len(args) < 2 {
 		return nil, fmt.Errorf("$range requires at least 2 arguments")
 	}
-	toFloat := func(v interface{}) (float64, error) {
-		switch n := v.(type) {
-		case float64:
-			return n, nil
-		case int:
-			return float64(n), nil
-		default:
+	toRangeFloat := func(v interface{}) (float64, error) {
+		f, ok := toFloat64(v)
+		if !ok {
 			return 0, fmt.Errorf("expected number, got %T", v)
 		}
+		return f, nil
 	}
-	start, err := toFloat(args[0])
+	start, err := toRangeFloat(args[0])
 	if err != nil {
 		return nil, err
 	}
-	end, err := toFloat(args[1])
+	end, err := toRangeFloat(args[1])
 	if err != nil {
 		return nil, err
 	}
 	delta := 1.0
 	if len(args) >= 3 {
-		delta, err = toFloat(args[2])
+		delta, err = toRangeFloat(args[2])
 		if err != nil {
 			return nil, err
 		}
@@ -222,49 +278,34 @@ func awsRangeFunc(args []interface{}, focus interface{}) (interface{}, error) {
 	if delta == 0 {
 		return nil, fmt.Errorf("$range delta must not be zero")
 	}
+	// $range is the JSONata equivalent of States.ArrayRange: elements run
+	// from start until the end value is reached or exceeded (inclusive),
+	// bounded by the documented element limit.
 	var result []interface{}
-	for v := start; (delta > 0 && v < end) || (delta < 0 && v > end); v += delta {
+	for v := start; (delta > 0 && v <= end) || (delta < 0 && v >= end); v += delta {
 		result = append(result, v)
+		if len(result) > sfnstore.MaxArrayRangeElements {
+			return nil, fmt.Errorf("$range result exceeds %d elements", sfnstore.MaxArrayRangeElements)
+		}
 	}
 	return result, nil
 }
 
 func awsHashFunc(args []interface{}, focus interface{}) (interface{}, error) {
-	if len(args) < 2 {
-		return nil, fmt.Errorf("$hash requires 2 arguments")
-	}
-	s, ok := args[0].(string)
-	if !ok {
-		return nil, fmt.Errorf("$hash first argument must be a string")
-	}
-	alg, ok := args[1].(string)
-	if !ok {
-		return nil, fmt.Errorf("$hash second argument must be a string")
-	}
-	var hash []byte
-	switch strings.ToUpper(alg) {
-	case "MD5":
-		h := md5.Sum([]byte(s))
-		hash = h[:]
-	case "SHA-1", "SHA1":
-		h := sha1.Sum([]byte(s))
-		hash = h[:]
-	case "SHA-256", "SHA256":
-		h := sha256.Sum256([]byte(s))
-		hash = h[:]
-	case "SHA-384", "SHA384":
-		h := sha512.Sum384([]byte(s))
-		hash = h[:]
-	case "SHA-512", "SHA512":
-		h := sha512.Sum512([]byte(s))
-		hash = h[:]
-	default:
-		return nil, fmt.Errorf("$hash unsupported algorithm: %s", alg)
-	}
-	return hex.EncodeToString(hash), nil
+	return applyIntrinsic("Hash", args)
 }
 
 func awsRandomFunc(args []interface{}, focus interface{}) (interface{}, error) {
+	// "The function takes an optional integer argument representing the
+	// seed value of the random function. If you use this function with
+	// the same seed value, it returns an identical number."
+	if len(args) >= 1 {
+		seed, ok := toFloat64(args[0])
+		if !ok {
+			return nil, fmt.Errorf("$random seed must be a number, got %T", args[0])
+		}
+		return mrand.New(mrand.NewSource(int64(seed))).Float64(), nil
+	}
 	n, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
 		return nil, err
@@ -273,16 +314,5 @@ func awsRandomFunc(args []interface{}, focus interface{}) (interface{}, error) {
 }
 
 func awsParseFunc(args []interface{}, focus interface{}) (interface{}, error) {
-	if len(args) < 1 {
-		return nil, fmt.Errorf("$parse requires 1 argument")
-	}
-	s, ok := args[0].(string)
-	if !ok {
-		return nil, fmt.Errorf("$parse argument must be a string")
-	}
-	var result interface{}
-	if err := json.Unmarshal([]byte(s), &result); err != nil {
-		return nil, fmt.Errorf("$parse invalid JSON: %w", err)
-	}
-	return result, nil
+	return applyIntrinsic("StringToJson", args)
 }

@@ -39,6 +39,23 @@ var validRedrivableStatuses = map[string]bool{
 	"ABORTED":   true,
 }
 
+// mapRunReclaimStatuses are the statuses a Map Run's (or a crashed
+// parent's recovery) re-dispatch may reclaim a child workflow execution
+// from: the unsuccessful terminal statuses (shared with direct redrive),
+// PENDING_REDRIVE (the parked state of a child waiting for a Map Run
+// concurrency slot — such a child is started only by its parent Map Run's
+// redrive, never on its own), and RUNNING — a child the boot sweep's
+// single-ownership rule hands to the parent's re-dispatch, because a
+// crashed parent resumes and reclaims its still-running children rather
+// than duplicating them.
+var mapRunReclaimStatuses = map[string]bool{
+	"FAILED":          true,
+	"TIMED_OUT":       true,
+	"ABORTED":         true,
+	"PENDING_REDRIVE": true,
+	"RUNNING":         true,
+}
+
 var validTerminalStatuses = map[string]bool{
 	"SUCCEEDED": true,
 	"FAILED":    true,
@@ -89,8 +106,10 @@ func validateResourceName(name string) error {
 	if name == "" {
 		return NewInvalidName("name is required")
 	}
-	if len(name) > sfnstore.MaxResourceNameLength {
-		return NewInvalidName(fmt.Sprintf("name must be 1-80 characters, got %d", len(name)))
+	// Lengths count Unicode characters, matching the file's ARN
+	// convention and the Name shape's @length trait.
+	if utf8.RuneCountInString(name) > sfnstore.MaxResourceNameLength {
+		return NewInvalidName(fmt.Sprintf("name must be 1-80 characters, got %d", utf8.RuneCountInString(name)))
 	}
 	if err := validateNameCharacters(name); err != nil {
 		return err
@@ -102,8 +121,8 @@ func validateResourceName(name string) error {
 // StartSyncExecution name against the same Name shape and
 // forbidden-character contract.
 func validateExecutionName(name string) error {
-	if len(name) > sfnstore.MaxResourceNameLength {
-		return NewInvalidName(fmt.Sprintf("name must be 1-80 characters, got %d", len(name)))
+	if utf8.RuneCountInString(name) > sfnstore.MaxResourceNameLength {
+		return NewInvalidName(fmt.Sprintf("name must be 1-80 characters, got %d", utf8.RuneCountInString(name)))
 	}
 	return validateNameCharacters(name)
 }
@@ -237,18 +256,19 @@ func validateDefinitionJSON(definition string) error {
 	return nil
 }
 
-// waitTimestampPattern pins the AWS Wait-state timestamp profile: the
-// RFC3339 profile of ISO 8601 with an uppercase T separating date and
-// time, an uppercase Z when no numeric offset is present, and fractional
-// seconds of zero, three, six, or nine digits (per the ISO 8601 profile
-// Step Functions follows).
-var waitTimestampPattern = regexp.MustCompile(
-	`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3}|\.\d{6}|\.\d{9})?(Z|[+-]\d{2}:\d{2})$`)
+// aslTimestampPattern pins the AWS timestamp profile: the RFC3339 profile
+// of ISO 8601 with an uppercase T separating date and time, an uppercase
+// Z when no numeric offset is present, and RFC3339 fractional seconds
+// (time-secfrac is one or more digits — the Choice state page restricts
+// only the T and the Z, not the fraction length). The Wait state's
+// Timestamp field and the Choice timestamp comparators share the profile.
+var aslTimestampPattern = regexp.MustCompile(
+	`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$`)
 
-// parseWaitTimestamp parses a Wait-state timestamp literal under the
-// strict AWS profile, reporting false when the value does not conform.
-func parseWaitTimestamp(value string) (time.Time, bool) {
-	if !waitTimestampPattern.MatchString(value) {
+// parseASLTimestamp parses an ASL timestamp literal under the strict AWS
+// profile, reporting false when the value does not conform.
+func parseASLTimestamp(value string) (time.Time, bool) {
+	if !aslTimestampPattern.MatchString(value) {
 		return time.Time{}, false
 	}
 	t, err := time.Parse(time.RFC3339, value)
@@ -348,10 +368,16 @@ func isValidExecutionStatus(status string) bool {
 	return false
 }
 
-// redriveStatusFor checks whether an execution status is redrivable per the
-// AWS SFN specification.
+// isRedrivableStatus checks whether an execution status is redrivable per
+// the AWS SFN specification.
 func isRedrivableStatus(status string) bool {
 	return validRedrivableStatuses[status]
+}
+
+// isMapRunReclaimStatus checks whether a Map Run may reclaim a child
+// workflow execution currently in the given status.
+func isMapRunReclaimStatus(status string) bool {
+	return mapRunReclaimStatuses[status]
 }
 
 // isTerminalStatus checks whether a status is terminal (no further

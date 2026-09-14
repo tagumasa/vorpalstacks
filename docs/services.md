@@ -36,7 +36,7 @@
 | Scheduler | Full | No SageMaker, CodeBuild, CodePipeline, or Inspector targets |
 | Secrets Manager | Full | No managed external rotation execution |
 | SESv2 | Broad | No deliverability testing, dedicated IP address management, import/export jobs, multi-region endpoints, tenant management, custom verification email templates, reputation management, or account pricing plans |
-| SFN (Step Functions) | Full | |
+| SFN (Step Functions) | Full | No integrations with unimplemented services (batch, ECS, Glue, and the rest of the AWS SDK namespace) |
 | SNS | Broad | No SMS, email/email-json, or mobile push (application protocol) delivery |
 | SQS | Broad | No SSE-KMS message encryption, FIFO advanced-attribute enforcement (DeduplicationScope, FifoThroughputLimit, RedriveAllowPolicy), or per-account request-rate quotas |
 | SSM | Selective | Parameter Store only |
@@ -75,7 +75,7 @@
 | EventBridge | Lambda, SQS, SNS, Step Functions, CloudWatch Logs | Event-driven invocation |
 | Scheduler | Lambda, SQS, SNS | Scheduled invocation |
 | SNS | Lambda, SQS | Pub/Sub fanout |
-| Step Functions | Lambda, SQS, SNS | Workflow orchestration |
+| Step Functions | Lambda, SQS, SNS, EventBridge, DynamoDB, Step Functions | Workflow orchestration |
 | API Gateway | Lambda, SQS, SNS | HTTP-to-service proxy |
 | Lambda | CloudWatch Logs | Automatic log streaming |
 | Lambda | SQS | Event source mapping (polling) |
@@ -116,6 +116,7 @@ Platform behaviour detail and restrictions, including where AWS leaves behaviour
 - **S3 — lifecycle enforcement**: Transition and NoncurrentVersionTransition are executed by the lifecycle sweep. A Days window counts from the object's LastModified for current versions and from the successor version's creation for noncurrent versions, and rounds up to the next midnight UTC — enforcement and the x-amz-expiration projection share the one calculation; a Date entry applies to every matching object once the date has passed. Entries replay in rule order under the supported-transitions waterfall, so a move the waterfall forbids is skipped rather than regressing a class. The default 128 KiB transition minimum applies unless the rule's filter carries an explicit size bound; objects with a Pending or Failed replication status are not transitioned; NewerNoncurrentVersions gates both noncurrent actions on an exceeded newer-noncurrent count and requires a rule filter. Get and Head responses carry x-amz-expiration (expiry-date at HTTP-date, URL-encoded rule-id) when an enabled expiration rule projects onto the current version, and expiration and transition actions are prevented on objects whose replication has not succeeded. The `x-amz-transition-default-minimum-object-size` header is not implemented: it selects a pre-September-2024 AWS compatibility behaviour for configuration bases that predate the current default, and this platform has none.
 - **S3 — Select**: excluded; AWS no longer offers S3 Select to new customers, and the platform does not reimplement it — `POST /{bucket}/{key}?select` is refused with 501 NotImplemented. The operation remains in the AWS API surface for existing AWS customers, so workloads that require it are not supported here.
 - **RDS Data — enablement**: queries run on the vmysql engine; the service requires `RDS_MYSQL_ENABLED=true` or `ALL_SERVICES_ENABLED=true`.
+- **SFN — task integration surface**: the optimised and AWS SDK integration forms run for the services the platform carries — Lambda (invoke), SQS (sendMessage), SNS (publish), EventBridge (putEvents), DynamoDB (getItem, putItem, updateItem, deleteItem), and the Step Functions self-integration (startExecution across the plain, .sync, .sync:2 and waitForTaskToken patterns, with the callback pattern available wherever AWS documents it). Definition validation enforces the per-service pattern and action combinations AWS documents; resource forms naming services the platform does not carry (batch, ECS, Glue, and the rest of the AWS SDK namespace) remain valid definitions and fail at run time with a cause naming the unavailable integration, the same way a task referencing any other nonexistent resource fails.
 - **Scheduler — templated targets**: platform-implemented targets are Lambda, SQS, SNS, Kinesis, Step Functions, and EventBridge; ECS and Firehose targets are accepted by rule templates but delivery fails until those services exist on the platform; SageMaker, CodeBuild, CodePipeline, and Inspector targets are permanently out of scope (those services are not implemented on this platform).
 - **Secrets Manager — ListTagsForResource and managed rotation members**: the operation does not exist in the 2017-10-17 model, so AWS SDKs never generate a client method for it; the platform operation serves raw-HTTP/console consumers. Managed external rotation members are configuration storage and echo only — the partner integration itself is external.
 - **SQS — SSE-KMS and request throttling**: SSE-KMS attributes are accepted but messages are stored unencrypted; per-account request-rate quotas are not enforced, and the RequestThrottled error shape exists for wire-contract completeness only.

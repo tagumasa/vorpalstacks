@@ -564,11 +564,29 @@ func (a *Authorizer) fetchEffectiveRolePolicies(ctx context.Context, sessionPrin
 		return nil, roleName
 	}
 
+	documents := fetchRolePolicyDocuments(a.iamStore, roleName)
+
+	a.policyCache.Store(cacheKey, &cachedPolicies{
+		policies: documents,
+		cachedAt: time.Now(),
+	})
+	a.enforceCacheSize()
+
+	logs.Info("Found policies for role", logs.Int("count", len(documents)), logs.String("role", roleName))
+	return documents, roleName
+}
+
+// fetchRolePolicyDocuments collects a role's identity-based policy
+// documents (inline + attached managed policies) from the IAM store. An
+// unresolvable document is skipped rather than fatal; the evaluator's
+// default-deny makes an empty collection allow nothing, so callers fail
+// closed on roles with no policies.
+func fetchRolePolicyDocuments(iamStore iam.IAMStoreInterface, roleName string) []*policy.Document {
 	var documents []*policy.Document
 
-	inlineNames, _ := a.iamStore.InlinePolicies().List("role", roleName)
+	inlineNames, _ := iamStore.InlinePolicies().List("role", roleName)
 	for _, name := range inlineNames {
-		inline, err := a.iamStore.InlinePolicies().Get("role", roleName, name)
+		inline, err := iamStore.InlinePolicies().Get("role", roleName, name)
 		if err != nil || inline == nil {
 			continue
 		}
@@ -579,9 +597,9 @@ func (a *Authorizer) fetchEffectiveRolePolicies(ctx context.Context, sessionPrin
 		documents = append(documents, doc)
 	}
 
-	attachedARNs, _ := a.iamStore.AttachedPolicies().ListAttachedPolicies("role", roleName)
+	attachedARNs, _ := iamStore.AttachedPolicies().ListAttachedPolicies("role", roleName)
 	for _, arn := range attachedARNs {
-		version, err := a.iamStore.Policies().GetDefaultVersion(arn)
+		version, err := iamStore.Policies().GetDefaultVersion(arn)
 		if err != nil || version == nil {
 			continue
 		}
@@ -592,14 +610,7 @@ func (a *Authorizer) fetchEffectiveRolePolicies(ctx context.Context, sessionPrin
 		documents = append(documents, doc)
 	}
 
-	a.policyCache.Store(cacheKey, &cachedPolicies{
-		policies: documents,
-		cachedAt: time.Now(),
-	})
-	a.enforceCacheSize()
-
-	logs.Info("Found policies for role", logs.Int("count", len(documents)), logs.String("role", roleName))
-	return documents, roleName
+	return documents
 }
 
 // buildSessionEvaluationContext constructs an EvaluationContext for an STS

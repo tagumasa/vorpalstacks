@@ -32,19 +32,20 @@ type StepFunctionStoreInterface interface {
 	FailActivityTask(taskToken string, errorMsg string, cause string) error
 	HeartbeatActivityTask(taskToken string) error
 	WaitForTaskResult(ctx context.Context, taskToken string, timeout time.Duration, heartbeatTimeout time.Duration) (*ActivityTaskResult, error)
-	RegisterExecution(executionArn string, cancel context.CancelFunc)
+	RegisterExecution(executionArn string, cancel context.CancelFunc) ExecutionHandle
 	CancelExecution(executionArn string) bool
-	UnregisterExecution(executionArn string)
+	UnregisterExecution(executionArn string, handle ExecutionHandle)
+	WaitExecutionInactive(executionArn string, timeout time.Duration) bool
 	CancelAllExecutions()
 	PublishStateMachineVersion(ctx context.Context, smArn string, description string) (*StateMachineVersion, error)
 	GetStateMachineVersion(ctx context.Context, arn string) (*StateMachineVersion, error)
 	DeleteStateMachineVersion(ctx context.Context, arn string) error
-	ListStateMachineVersions(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineVersionListResult, error)
+	ListAllStateMachineVersions(smArn string) ([]*StateMachineVersion, error)
 	CreateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error
 	GetStateMachineAlias(ctx context.Context, arn string) (*StateMachineAlias, error)
 	UpdateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error
 	DeleteStateMachineAlias(ctx context.Context, arn string) error
-	ListStateMachineAliases(ctx context.Context, smArn string, limit int32, nextToken string) (*StateMachineAliasListResult, error)
+	ListAllStateMachineAliases(smArn string) ([]*StateMachineAlias, error)
 	CreateMapRun(ctx context.Context, mr *MapRun) error
 	UpdateMapRun(ctx context.Context, mr *MapRun) error
 	GetMapRun(ctx context.Context, mapRunArn string) (*MapRun, error)

@@ -48,7 +48,13 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 	_, mapRoleARN, mapRoleCleanup := tc.createRoleForSM("MapRole")
 	defer mapRoleCleanup()
 
-	mapDef := `{"Comment":"map test","StartAt":"Map","States":{"Map":{"Type":"Map","Iterator":{"StartAt":"Pass","States":{"Pass":{"Type":"Pass","End":true}}},"End":true}}}`
+	// Map Runs exist only for Distributed-mode Map states ("When you run a
+	// Map state in Distributed mode, Step Functions creates a Map Run
+	// resource"); an Iterator-only inline map exposes none on the Map Run
+	// API surface, so the definition carries the explicit processor config
+	// ("You must provide this field [ExecutionType] if you specified
+	// DISTRIBUTED for the Mode sub-field").
+	mapDef := `{"Comment":"map test","StartAt":"Map","States":{"Map":{"Type":"Map","ItemProcessor":{"ProcessorConfig":{"Mode":"DISTRIBUTED","ExecutionType":"STANDARD"},"StartAt":"Pass","States":{"Pass":{"Type":"Pass","End":true}}},"End":true}}}`
 	var mapSMARN string
 	mapResp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(mapSMName),
@@ -197,11 +203,69 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 		for _, evt := range histResp.Events {
 			if string(evt.Type) == "ExecutionRedriven" {
 				hasRedrivenEvent = true
+				// The details travel under the model member
+				// executionRedrivenEventDetails; a misspelt key is dropped
+				// by the SDK and leaves the details nil.
+				if evt.ExecutionRedrivenEventDetails == nil {
+					return fmt.Errorf("ExecutionRedrived event carries no executionRedrivenEventDetails — the wire member name must match the model")
+				}
+				if *evt.ExecutionRedrivenEventDetails.RedriveCount < 1 {
+					return fmt.Errorf("ExecutionRedriven redriveCount = %d, want >= 1", *evt.ExecutionRedrivenEventDetails.RedriveCount)
+				}
 				break
 			}
 		}
 		if !hasRedrivenEvent {
 			return fmt.Errorf("ExecutionRedrived event not found in history")
+		}
+		return nil
+	}))
+
+	// SyncChild_TimeoutSurfacesAsTaskFailed: "If a nested state machine
+	// throws a States.Timeout, the parent will receive a States.TaskFailed
+	// error" — a .sync child whose task times out is caught by the parent's
+	// States.TaskFailed Catch, not by the raw timeout name.
+	results = append(results, r.RunTest("stepfunctions", "SyncChild_TimeoutSurfacesAsTaskFailed", func() error {
+		activity, err := tc.client.CreateActivity(tc.ctx, &sfn.CreateActivityInput{
+			Name: aws.String(fmt.Sprintf("SyncTimeout-%d", time.Now().UnixNano())),
+		})
+		if err != nil {
+			return fmt.Errorf("create activity: %v", err)
+		}
+		activityARN := aws.ToString(activity.ActivityArn)
+		defer tc.client.DeleteActivity(tc.ctx, &sfn.DeleteActivityInput{ActivityArn: aws.String(activityARN)})
+
+		childDef := fmt.Sprintf(`{"StartAt":"W","States":{"W":{"Type":"Task","Resource":%q,"TimeoutSeconds":2,"End":true}}}`, activityARN)
+		childARN, childCleanup, err := tc.createRoleBackedSM("SyncTimeoutChild", childDef)
+		if err != nil {
+			return fmt.Errorf("create child SM: %v", err)
+		}
+		defer childCleanup()
+
+		parentDef := fmt.Sprintf(`{"StartAt":"Sync","States":{`+
+			`"Sync":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution.sync","Parameters":{"StateMachineArn":%q},`+
+			`"Catch":[{"ErrorEquals":["States.TaskFailed"],"Next":"Caught","ResultPath":"$.err"}],"Next":"Uncaught"},`+
+			`"Caught":{"Type":"Pass","Result":"caught","End":true},`+
+			`"Uncaught":{"Type":"Fail","Error":"ParentDidNotCatch","Cause":"the child error reached the parent uncaptured"}}}`, childARN)
+		parentARN, parentCleanup, err := tc.createRoleBackedSM("SyncTimeoutParent", parentDef)
+		if err != nil {
+			return fmt.Errorf("create parent SM: %v", err)
+		}
+		defer parentCleanup()
+
+		execArn, err := tc.startExecution(parentARN, "", `{}`)
+		if err != nil {
+			return fmt.Errorf("start: %v", err)
+		}
+		desc, err := tc.awaitTerminal(execArn, 200*time.Millisecond, 60)
+		if err != nil {
+			return fmt.Errorf("parent did not terminate: %v", err)
+		}
+		if desc.Status != sfntypes.ExecutionStatusSucceeded {
+			return fmt.Errorf("parent status = %s (error %q), want SUCCEEDED via the States.TaskFailed Catch", desc.Status, aws.ToString(desc.Error))
+		}
+		if aws.ToString(desc.Output) != `"caught"` {
+			return fmt.Errorf("parent output = %s, want the Caught state's result", aws.ToString(desc.Output))
 		}
 		return nil
 	}))

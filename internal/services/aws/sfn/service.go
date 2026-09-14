@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
@@ -16,31 +17,49 @@ import (
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 
-// ExecutorInterface defines the interface for executing state machines.
-type ExecutorInterface interface {
-	ExecuteStateMachine(ctx context.Context, execution *sfnstore.Execution) error
-}
-
 // StepFunctionService provides AWS Step Functions operations.
 type StepFunctionService struct {
-	executor       ExecutorInterface
-	accountID      string
-	storageManager *storage.RegionStorageManager
-	bus            eventbus.ServiceBus
-	stores         sync.Map
-	asyncWg        sync.WaitGroup
+	accountID            string
+	storageManager       *storage.RegionStorageManager
+	bus                  eventbus.ServiceBus
+	stores               sync.Map
+	asyncWg              sync.WaitGroup
+	roleProvider         iam.RolePolicyProvider
+	taskCredentialsAuthz TaskCredentialsAuthoriser
 }
 
 // NewStepFunctionService creates a new Step Functions service instance.
 // Optional cross-service dependencies should be injected via setter methods
 // before registering handlers.
 func NewStepFunctionService(storageMgr *storage.RegionStorageManager, accountID string) *StepFunctionService {
-	s := &StepFunctionService{
+	return &StepFunctionService{
 		accountID:      accountID,
 		storageManager: storageMgr,
 	}
-	s.executor = NewExecutor(nil, nil)
-	return s
+}
+
+// SetRoleProvider injects the IAM role policy provider so the state
+// machine Cores can validate role ARNs on both planes without a request
+// context. A nil provider (not injected) leaves role validation skipped.
+func (s *StepFunctionService) SetRoleProvider(rp iam.RolePolicyProvider) {
+	s.roleProvider = rp
+}
+
+// SetTaskCredentialsAuthoriser injects the seam the executors use to run
+// the Task Credentials assume-role authorisation at dispatch. A nil
+// authoriser (not injected) leaves task invocations on the machine-role
+// behaviour.
+func (s *StepFunctionService) SetTaskCredentialsAuthoriser(a TaskCredentialsAuthoriser) {
+	s.taskCredentialsAuthz = a
+}
+
+// iamValidator builds the IAM validator the Cores use. A nil result (no
+// role provider injected) leaves role validation skipped.
+func (s *StepFunctionService) iamValidator() *iam.IAMValidator {
+	if s.roleProvider == nil {
+		return nil
+	}
+	return iam.NewIAMValidator(s.roleProvider, s.accountID)
 }
 
 // SetEventBus injects the event bus and subscribes to cross-service start
@@ -65,7 +84,9 @@ func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt
 			logs.String("region", region),
 			logs.String("stateMachineArn", evt.StateMachineArn),
 			logs.Err(err))
-		return eventbus.HandlerResult{}
+		// The same propagation contract as the core-error path below: a
+		// store-acquisition fault is a failed delivery, never a success.
+		return eventbus.HandlerResult{Error: err}
 	}
 
 	// The bus start path runs the same validation, ARN resolution and

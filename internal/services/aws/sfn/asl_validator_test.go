@@ -1,6 +1,7 @@
 package sfn
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -186,6 +187,31 @@ func TestASLValidatorDocumentedCodes(t *testing.T) {
 			severity:   "ERROR", code: "SCHEMA_VALIDATION_FAILED",
 		},
 		{
+			// "Express Workflows only support Request Response
+			// integrations" — the .sync suffix names a pattern beyond
+			// Request Response and is rejected at validation.
+			name:       "express machine with sync pattern resource",
+			definition: `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution.sync","Parameters":{"StateMachineArn":"arn:aws:states:us-east-1:000000000000:stateMachine:x"},"End":true}}}`,
+			severity:   "ERROR", code: "SCHEMA_VALIDATION_FAILED",
+			wantLoc: "/States/T/Resource",
+		},
+		{
+			// A state-level Input member is not part of the documented
+			// common field set — the census rejects it on both dialects.
+			name:       "state-level input member",
+			definition: `{"StartAt":"A","States":{"A":{"Type":"Pass","Input":{"y":2},"End":true}}}`,
+			severity:   "ERROR", code: "SCHEMA_VALIDATION_FAILED",
+			wantLoc: "/States/A/Input",
+		},
+		{
+			// A payload-template ".$" key carries a path string; any other
+			// JSON type is an invalid template.
+			name:       "payload template non-string path key",
+			definition: `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:lambda:us-east-1:000000000000:function:f","Parameters":{"num.$":5},"End":true}}}`,
+			severity:   "ERROR", code: "SCHEMA_VALIDATION_FAILED",
+			wantLoc: "/States/T/Parameters/num.$",
+		},
+		{
 			name:        "valid minimal definition produces no errors",
 			definition:  `{"StartAt":"A","States":{"A":{"Type":"Pass","Result":{"x":1},"End":true}}}`,
 			notWantCode: "SCHEMA_VALIDATION_FAILED",
@@ -230,6 +256,59 @@ func TestASLValidatorDistributedModeAllowedForStandard(t *testing.T) {
 	}
 }
 
+// TestASLValidatorPatternAllowedForStandard pins the counterpart of the
+// Express integration-pattern gate: a STANDARD machine accepts the
+// .sync pattern the gate rejects on Express workflows.
+func TestASLValidatorPatternAllowedForStandard(t *testing.T) {
+	def := `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:states:::states:startExecution.sync","Parameters":{"StateMachineArn":"arn:aws:states:us-east-1:000000000000:stateMachine:x"},"End":true}}}`
+	if diags := validateASLStructure(def, "STANDARD"); hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("standard machine rejected a .sync resource: %+v", diags)
+	}
+}
+
+// TestASLValidatorCatcherDialectSeparation pins the Catch member
+// separation: a JSONata Catcher folds its error through Assign/Output and
+// must not carry the JSONPath ResultPath, while a JSONPath Catcher must
+// not carry the JSONata Assign/Output.
+func TestASLValidatorCatcherDialectSeparation(t *testing.T) {
+	jsonataResultPath := `{"QueryLanguage":"JSONata","StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:lambda:us-east-1:000000000000:function:f","Catch":[{"ErrorEquals":["States.ALL"],"ResultPath":"$.err","Next":"A"}],"Next":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(jsonataResultPath, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("JSONata Catcher with ResultPath accepted: %+v", diags)
+	}
+
+	jsonPathOutput := `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:lambda:us-east-1:000000000000:function:f","Catch":[{"ErrorEquals":["States.ALL"],"Output":{"x":1},"Next":"A"}],"Next":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(jsonPathOutput, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("JSONPath Catcher with Output accepted: %+v", diags)
+	}
+
+	jsonPathValid := `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:lambda:us-east-1:000000000000:function:f","Catch":[{"ErrorEquals":["States.ALL"],"ResultPath":"$.err","Next":"A"}],"Next":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(jsonPathValid, "STANDARD"); hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("JSONPath Catcher with ResultPath rejected: %+v", diags)
+	}
+}
+
+// TestASLValidatorJSONataNestedChoiceRules pins that nested Choice rules
+// (inside And/Or/Not combinators) receive the same JSONata validation as
+// top-level ones: an improperly delimited Condition and an inaccessible
+// $states.result reference are both caught at creation no matter the
+// nesting depth.
+func TestASLValidatorJSONataNestedChoiceRules(t *testing.T) {
+	badDelimiter := `{"QueryLanguage":"JSONata","StartAt":"C","States":{"C":{"Type":"Choice","Choices":[{"And":[{"Condition":"{% $x > 1 %}"},{"Condition":"broken {% $y"}],"Default":"A"}],"Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(badDelimiter, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("nested rule with an improperly delimited Condition accepted: %+v", diags)
+	}
+
+	inaccessibleResult := `{"QueryLanguage":"JSONata","StartAt":"C","States":{"C":{"Type":"Choice","Choices":[{"Not":{"Condition":"{% $states.result > 1 %}"}}],"Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(inaccessibleResult, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("nested rule referencing $states.result in a Choice accepted: %+v", diags)
+	}
+
+	valid := `{"QueryLanguage":"JSONata","StartAt":"C","States":{"C":{"Type":"Choice","Choices":[{"And":[{"Condition":"{% $x > 1 %}"},{"Condition":"{% $y < 2 %}"}],"Next":"A"}],"Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(valid, "STANDARD"); hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("well-formed nested rules rejected: %+v", diags)
+	}
+}
+
 // TestASLValidatorWarnings pins the documented warning codes: NO_PATH for
 // path-looking values under field names without the Path suffix, NO_DOLLAR
 // for intrinsic-looking values, PASS_RESULT_IS_STATIC for a path-looking
@@ -253,6 +332,59 @@ func TestASLValidatorWarnings(t *testing.T) {
 	diags = validateASLStructure(passDef, "STANDARD")
 	if !hasCode(diags, "WARNING", "PASS_RESULT_IS_STATIC") {
 		t.Fatalf("PASS_RESULT_IS_STATIC warning missing: %+v", diags)
+	}
+}
+
+// TestPayloadTemplateCensusCoversItemReaderAndResultWriter pins that the
+// creation-time ".$"-key census reaches the Distributed Map's nested
+// payload templates: a non-string value under ItemReader.Parameters or
+// ResultWriter.Parameters is rejected at creation, not deferred to the
+// run-time States.ParameterPathFailure path.
+func TestPayloadTemplateCensusCoversItemReaderAndResultWriter(t *testing.T) {
+	readerBad := `{"StartAt":"M","States":{"M":{"Type":"Map","ItemProcessor":{"StartAt":"S","States":{"S":{"Type":"Succeed"}}},"ItemReader":{"Resource":"arn:aws:states:::s3:getObject","Parameters":{"Bucket.$":5}},"End":true}}}`
+	if diags := validateASLStructure(readerBad, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("ItemReader.Parameters non-string path value accepted: %+v", diags)
+	}
+
+	writerBad := `{"StartAt":"M","States":{"M":{"Type":"Map","ItemProcessor":{"StartAt":"S","States":{"S":{"Type":"Succeed"}}},"ResultWriter":{"Resource":"arn:aws:states:::s3:putObject","Parameters":{"Prefix.$":7}},"End":true}}}`
+	if diags := validateASLStructure(writerBad, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("ResultWriter.Parameters non-string path value accepted: %+v", diags)
+	}
+
+	readerGood := `{"StartAt":"M","States":{"M":{"Type":"Map","ItemProcessor":{"StartAt":"S","States":{"S":{"Type":"Succeed"}}},"ItemReader":{"Resource":"arn:aws:states:::s3:getObject","Parameters":{"Bucket.$":"$.bucket"}},"End":true}}}`
+	if diags := validateASLStructure(readerGood, "STANDARD"); hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("well-formed ItemReader.Parameters path string rejected: %+v", diags)
+	}
+}
+
+// TestSingleDiagnosisPerLocation pins the one-diagnosis-per-defect rule: a
+// path-looking Pass Result carries PASS_RESULT_IS_STATIC alone (the scan
+// walk does not stack NO_PATH at the same location), and a Fail state's
+// Output member is reported once by the unknown-field census (not again by
+// a Fail-specific member list).
+func TestSingleDiagnosisPerLocation(t *testing.T) {
+	passDef := `{"StartAt":"P","States":{"P":{"Type":"Pass","Result":"$.static","End":true}}}`
+	diags := validateASLStructure(passDef, "STANDARD")
+	passResultDiags := 0
+	for _, d := range diags {
+		if d.Location == "/States/P/Result" {
+			passResultDiags++
+		}
+	}
+	if passResultDiags != 1 {
+		t.Fatalf("Pass Result produced %d diagnostics at /States/P/Result, want exactly the PASS_RESULT_IS_STATIC one: %+v", passResultDiags, diags)
+	}
+
+	failDef := `{"StartAt":"F","States":{"F":{"Type":"Fail","Error":"E","Cause":"c","Output":"{}"}}}`
+	diags = validateASLStructure(failDef, "STANDARD")
+	failOutputDiags := 0
+	for _, d := range diags {
+		if d.Location == "/States/F/Output" {
+			failOutputDiags++
+		}
+	}
+	if failOutputDiags != 1 {
+		t.Fatalf("Fail Output produced %d diagnostics at /States/F/Output, want exactly the unknown-field rejection: %+v", failOutputDiags, diags)
 	}
 }
 
@@ -424,5 +556,146 @@ func TestASLValidatorUnknownStateFields(t *testing.T) {
 	legalTask := `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke","TimeoutSecondsPath":"$.t","HeartbeatSecondsPath":"$.h","End":true}}}`
 	if diags := validateASLStructure(legalTask, "STANDARD"); len(codesOf(diags, "ERROR")) != 0 {
 		t.Fatalf("Task timeout reference paths must stay legal: %+v", diags)
+	}
+}
+
+// TestASLValidatorCatchEdgeSatisfiesTerminalReachability pins that the
+// terminal-reachability walk traverses Catch edges: a Catcher's Next is an
+// ordinary transition, so a workflow whose terminal state is reachable
+// only through a catch target is legal, while a genuinely terminal-less
+// workflow is still rejected.
+func TestASLValidatorCatchEdgeSatisfiesTerminalReachability(t *testing.T) {
+	catchTerminal := `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:lambda:us-east-1:000000000000:function:f","Next":"T","Catch":[{"ErrorEquals":["States.ALL"],"Next":"Handle"}]},"Handle":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(catchTerminal, "STANDARD"); hasCode(diags, "ERROR", "MISSING_END_STATE") {
+		t.Fatalf("catch-terminal workflow rejected as terminal-less: %+v", diags)
+	}
+
+	terminalLess := `{"StartAt":"A","States":{"A":{"Type":"Pass","Next":"A"}}}`
+	if diags := validateASLStructure(terminalLess, "STANDARD"); !hasCode(diags, "ERROR", "MISSING_END_STATE") {
+		t.Fatalf("a workflow with no terminal state at all must stay rejected: %+v", diags)
+	}
+}
+
+// TestASLValidatorChoiceRuleMixesRejected pins the three Choice-rule
+// validation gaps: a combinator combined with a comparator, a non-object
+// And/Or entry, and a JSONata rule combining a combinator with the
+// JSONPath-only Variable field are all schema failures at creation.
+func TestASLValidatorChoiceRuleMixesRejected(t *testing.T) {
+	mix := `{"StartAt":"C","States":{"C":{"Type":"Choice","Choices":[{"And":[{"Variable":"$.a","IsString":true}],"StringEquals":"x","Next":"A"}],"Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(mix, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("combinator+comparator rule accepted: %+v", diags)
+	}
+
+	nonObjectEntry := `{"StartAt":"C","States":{"C":{"Type":"Choice","Choices":[{"And":["foo"],"Next":"A"}],"Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(nonObjectEntry, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("non-object And entry accepted: %+v", diags)
+	}
+
+	jsonataVariableCombinator := `{"QueryLanguage":"JSONata","StartAt":"C","States":{"C":{"Type":"Choice","Choices":[{"And":[{"Condition":"{% $x > 1 %}"}],"Variable":"$.a","Next":"A"}],"Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(jsonataVariableCombinator, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("JSONata combinator with the JSONPath-only Variable accepted: %+v", diags)
+	}
+}
+
+// TestASLValidatorJSONataChoiceRejectsOutputPath pins the dialect rule on
+// Choice: OutputPath is a JSONPath-only member ("it is invalid to use
+// path-based fields when using JSONata"), so a JSONata Choice carrying it
+// fails at creation instead of being silently inert, while the JSONPath
+// form keeps it.
+func TestASLValidatorJSONataChoiceRejectsOutputPath(t *testing.T) {
+	jsonata := `{"QueryLanguage":"JSONata","StartAt":"C","States":{"C":{"Type":"Choice","Choices":[{"Condition":"{% $x > 1 %}","Next":"A"}],"OutputPath":"$.o","Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(jsonata, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("JSONata Choice with OutputPath accepted: %+v", diags)
+	}
+
+	jsonPath := `{"StartAt":"C","States":{"C":{"Type":"Choice","Choices":[{"Variable":"$.x","NumericEquals":1,"Next":"A"}],"OutputPath":"$.o","Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(jsonPath, "STANDARD"); hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("JSONPath Choice with OutputPath rejected: %+v", diags)
+	}
+}
+
+// TestASLValidatorStateLevelConditionRejected pins that a state-level
+// Condition on Choice is unknown on both dialects — Condition is
+// documented only inside Choice rules — so the census rejects it instead
+// of admitting an inert member (JSONata) or citing a nonexistent
+// JSONata-only contract (JSONPath).
+func TestASLValidatorStateLevelConditionRejected(t *testing.T) {
+	jsonata := `{"QueryLanguage":"JSONata","StartAt":"C","States":{"C":{"Type":"Choice","Condition":"{% $x > 1 %}","Choices":[{"Condition":"{% $y > 2 %}","Next":"A"}],"Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(jsonata, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("JSONata state-level Condition accepted: %+v", diags)
+	}
+
+	jsonPath := `{"StartAt":"C","States":{"C":{"Type":"Choice","Condition":"$.x","Choices":[{"Variable":"$.x","NumericEquals":1,"Next":"A"}],"Default":"A"},"A":{"Type":"Succeed"}}}`
+	if diags := validateASLStructure(jsonPath, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+		t.Fatalf("JSONPath state-level Condition accepted: %+v", diags)
+	}
+}
+
+// TestASLValidatorNotEqualsOperatorsRejected pins the comparator
+// vocabulary: the documented supported-operator list (specification and
+// Choice page agree) has no NotEquals variants, so a rule using one is a
+// schema failure at creation instead of a rule that silently never
+// matches.
+func TestASLValidatorNotEqualsOperatorsRejected(t *testing.T) {
+	for _, operator := range []string{"StringNotEquals", "StringNotEqualsPath", "NumericNotEquals", "NumericNotEqualsPath"} {
+		def := fmt.Sprintf(`{"StartAt":"C","States":{"C":{"Type":"Choice","Choices":[`+
+			`{"Variable":"$.x","%s":%s,"Next":"A"}],"Default":"A"},"A":{"Type":"Succeed"}}}`,
+			operator, map[bool]string{true: `"a"`, false: `"$.a"`}[strings.HasSuffix(operator, "Path")])
+		if diags := validateASLStructure(def, "STANDARD"); !hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED") {
+			t.Fatalf("%s accepted: %+v", operator, diags)
+		}
+	}
+}
+
+// TestASLValidatorChoiceComparatorValues pins the value typing of the
+// Choice comparators at definition validation: a literal whose JSON type
+// contradicts its operator, or a timestamp literal outside the RFC3339
+// profile with the uppercase-T and uppercase-Z restrictions, is a schema
+// failure at creation instead of a rule that silently never matches at
+// run time. The documented well-typed forms — including fractional
+// seconds and a numeric offset — stay legal, and the typing applies
+// inside combinators through the recursive rule walk.
+func TestASLValidatorChoiceComparatorValues(t *testing.T) {
+	cases := []struct {
+		name    string
+		rule    string
+		wantRej bool
+	}{
+		{name: "string operator with number", rule: `{"Variable":"$.v","StringEquals":123,"Next":"A"}`, wantRej: true},
+		{name: "string operator with boolean", rule: `{"Variable":"$.v","StringGreaterThan":true,"Next":"A"}`, wantRej: true},
+		{name: "StringMatches with number", rule: `{"Variable":"$.v","StringMatches":5,"Next":"A"}`, wantRej: true},
+		{name: "numeric operator with string", rule: `{"Variable":"$.v","NumericEquals":"1","Next":"A"}`, wantRej: true},
+		{name: "boolean operator with string", rule: `{"Variable":"$.v","BooleanEquals":"yes","Next":"A"}`, wantRej: true},
+		{name: "IsPresent with string", rule: `{"Variable":"$.v","IsPresent":"true","Next":"A"}`, wantRej: true},
+		{name: "timestamp operator with number", rule: `{"Variable":"$.v","TimestampEquals":123,"Next":"A"}`, wantRej: true},
+		{name: "timestamp literal not a timestamp", rule: `{"Variable":"$.v","TimestampEquals":"not-a-timestamp","Next":"A"}`, wantRej: true},
+		{name: "timestamp literal lowercase T", rule: `{"Variable":"$.v","TimestampEquals":"2001-01-01t12:00:00Z","Next":"A"}`, wantRej: true},
+		{name: "timestamp literal lowercase Z", rule: `{"Variable":"$.v","TimestampEquals":"2001-01-01T12:00:00z","Next":"A"}`, wantRej: true},
+		{name: "timestamp literal missing offset", rule: `{"Variable":"$.v","TimestampEquals":"2001-01-01T12:00:00","Next":"A"}`, wantRej: true},
+		{name: "path operator with number", rule: `{"Variable":"$.v","StringEqualsPath":7,"Next":"A"}`, wantRej: true},
+		{name: "Variable not a string", rule: `{"Variable":9,"StringEquals":"x","Next":"A"}`, wantRej: true},
+		{name: "mistyped literal inside Not", rule: `{"Not":{"Variable":"$.v","TimestampEquals":"bad"},"Next":"A"}`, wantRej: true},
+		{name: "documented string example", rule: `{"Variable":"$.foo","StringEquals":"MyString","Next":"A"}`},
+		{name: "documented numeric example", rule: `{"Variable":"$.foo","NumericEquals":1,"Next":"A"}`},
+		{name: "documented boolean example", rule: `{"Variable":"$.possiblyNull","IsNull":true,"Next":"A"}`},
+		{name: "timestamp with uppercase Z", rule: `{"Variable":"$.foo","TimestampEquals":"2001-01-01T12:00:00Z","Next":"A"}`},
+		{name: "timestamp with fractional seconds", rule: `{"Variable":"$.foo","TimestampEquals":"2001-01-01T12:00:00.500Z","Next":"A"}`},
+		{name: "timestamp with numeric offset", rule: `{"Variable":"$.foo","TimestampEquals":"2001-01-01T12:00:00+09:00","Next":"A"}`},
+		{name: "documented path example", rule: `{"Variable":"$.foo","StringEqualsPath":"$.bar","Next":"A"}`},
+		{name: "variable reference path form", rule: `{"Variable":"$limit","StringEquals":"x","Next":"A"}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			def := `{"StartAt":"C","States":{"C":{"Type":"Choice","Choices":[` + tc.rule + `],"Default":"A"},"A":{"Type":"Succeed"}}}`
+			diags := validateASLStructure(def, "STANDARD")
+			rejected := hasCode(diags, "ERROR", "SCHEMA_VALIDATION_FAILED")
+			if tc.wantRej && !rejected {
+				t.Fatalf("rule accepted: %s — diagnostics %+v", tc.rule, diags)
+			}
+			if !tc.wantRej && rejected {
+				t.Fatalf("legal rule rejected: %s — diagnostics %+v", tc.rule, diags)
+			}
+		})
 	}
 }

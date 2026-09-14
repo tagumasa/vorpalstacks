@@ -18,10 +18,7 @@ func (s *StepFunctionService) DescribeMapRun(ctx context.Context, reqCtx *reques
 
 // ListMapRuns lists map runs, optionally filtered by execution ARN.
 func (s *StepFunctionService) ListMapRuns(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit, err := parsePageLimit(req)
-	if err != nil {
-		return nil, err
-	}
+	limit := parsePageLimit(req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {

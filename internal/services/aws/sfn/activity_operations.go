@@ -112,10 +112,7 @@ func (s *StepFunctionService) DescribeActivity(ctx context.Context, reqCtx *requ
 
 // ListActivities returns a list of activities.
 func (s *StepFunctionService) ListActivities(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit, err := parsePageLimit(req)
-	if err != nil {
-		return nil, err
-	}
+	limit := parsePageLimit(req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {

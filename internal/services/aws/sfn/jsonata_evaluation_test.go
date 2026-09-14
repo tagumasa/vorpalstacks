@@ -2,17 +2,8 @@ package sfn
 
 import (
 	"context"
-	"crypto/md5"
-	"crypto/rand"
-	"crypto/sha1"
-	"crypto/sha256"
-	"crypto/sha512"
-	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math"
-	"math/big"
 	"strings"
 	"testing"
 
@@ -104,139 +95,7 @@ func TestGnataVariableBindingWithStateInput(t *testing.T) {
 }
 
 func TestGnataCustomFunctionRegistration(t *testing.T) {
-	customFuncs := map[string]gnata.CustomFunc{
-		"uuid": func(args []any, focus any) (any, error) {
-			uuid := make([]byte, 16)
-			if _, err := rand.Read(uuid); err != nil {
-				return nil, err
-			}
-			uuid[6] = (uuid[6] & 0x0f) | 0x40
-			uuid[8] = (uuid[8] & 0x3f) | 0x80
-			return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
-				uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:16]), nil
-		},
-		"partition": func(args []any, focus any) (any, error) {
-			if len(args) < 2 {
-				return nil, fmt.Errorf("$partition requires 2 arguments")
-			}
-			arr, ok := args[0].([]any)
-			if !ok {
-				return nil, fmt.Errorf("$partition first argument must be an array")
-			}
-			var chunkSize float64
-			switch v := args[1].(type) {
-			case float64:
-				chunkSize = v
-			case int:
-				chunkSize = float64(v)
-			default:
-				return nil, fmt.Errorf("$partition second argument must be a number")
-			}
-			if chunkSize < 1 {
-				return nil, fmt.Errorf("$partition chunk size must be >= 1")
-			}
-			cs := int(chunkSize)
-			var result []any
-			for i := 0; i < len(arr); i += cs {
-				end := i + cs
-				if end > len(arr) {
-					end = len(arr)
-				}
-				chunk := make([]any, end-i)
-				copy(chunk, arr[i:end])
-				result = append(result, chunk)
-			}
-			return result, nil
-		},
-		"range": func(args []any, focus any) (any, error) {
-			if len(args) < 2 {
-				return nil, fmt.Errorf("$range requires at least 2 arguments")
-			}
-			toFloat := func(v any) (float64, error) {
-				switch n := v.(type) {
-				case float64:
-					return n, nil
-				case int:
-					return float64(n), nil
-				default:
-					return 0, fmt.Errorf("expected number, got %T", v)
-				}
-			}
-			start, err := toFloat(args[0])
-			if err != nil {
-				return nil, err
-			}
-			end, err := toFloat(args[1])
-			if err != nil {
-				return nil, err
-			}
-			delta := 1.0
-			if len(args) >= 3 {
-				delta, err = toFloat(args[2])
-				if err != nil {
-					return nil, err
-				}
-			}
-			if delta == 0 {
-				return nil, fmt.Errorf("$range delta must not be zero")
-			}
-			var result []any
-			for v := start; (delta > 0 && v < end) || (delta < 0 && v > end); v += delta {
-				result = append(result, v)
-			}
-			return result, nil
-		},
-		"hash": func(args []any, focus any) (any, error) {
-			if len(args) < 2 {
-				return nil, fmt.Errorf("$hash requires 2 arguments")
-			}
-			s, ok := args[0].(string)
-			if !ok {
-				return nil, fmt.Errorf("$hash first argument must be a string")
-			}
-			alg, ok := args[1].(string)
-			if !ok {
-				return nil, fmt.Errorf("$hash second argument must be a string")
-			}
-			var hash []byte
-			switch strings.ToUpper(alg) {
-			case "MD5":
-				h := md5.Sum([]byte(s))
-				hash = h[:]
-			case "SHA-1", "SHA1":
-				h := sha1.Sum([]byte(s))
-				hash = h[:]
-			case "SHA-256", "SHA256":
-				h := sha256.Sum256([]byte(s))
-				hash = h[:]
-			case "SHA-384", "SHA384":
-				h := sha512.Sum384([]byte(s))
-				hash = h[:]
-			case "SHA-512", "SHA512":
-				h := sha512.Sum512([]byte(s))
-				hash = h[:]
-			default:
-				return nil, fmt.Errorf("$hash unsupported algorithm: %s", alg)
-			}
-			return hex.EncodeToString(hash), nil
-		},
-		"parse": func(args []any, focus any) (any, error) {
-			if len(args) < 1 {
-				return nil, fmt.Errorf("$parse requires 1 argument")
-			}
-			s, ok := args[0].(string)
-			if !ok {
-				return nil, fmt.Errorf("$parse argument must be a string")
-			}
-			var result any
-			if err := json.Unmarshal([]byte(s), &result); err != nil {
-				return nil, fmt.Errorf("$parse invalid JSON: %w", err)
-			}
-			return result, nil
-		},
-	}
-
-	env := gnata.NewCustomEnv(customFuncs)
+	env := gnata.NewCustomEnv(awsCustomFuncs)
 
 	tests := []struct {
 		name     string
@@ -266,7 +125,7 @@ func TestGnataCustomFunctionRegistration(t *testing.T) {
 			name:     "range ascending",
 			expr:     `$range(1, 5)`,
 			data:     nil,
-			expected: []any{1.0, 2.0, 3.0, 4.0},
+			expected: []any{1.0, 2.0, 3.0, 4.0, 5.0},
 		},
 		{
 			name:     "range with delta",
@@ -428,40 +287,7 @@ func TestGnataWithVarsAndData(t *testing.T) {
 func TestGnataCustomFuncsWithVarsWorkaround(t *testing.T) {
 	data := map[string]any{"items": []any{1.0, 2.0, 3.0, 4.0, 5.0}}
 
-	customFuncs := map[string]gnata.CustomFunc{
-		"partition": func(args []any, focus any) (any, error) {
-			if len(args) < 2 {
-				return nil, fmt.Errorf("$partition requires 2 arguments")
-			}
-			arr, ok := args[0].([]any)
-			if !ok {
-				return nil, fmt.Errorf("$partition first argument must be an array, got %T: %v", args[0], args[0])
-			}
-			var chunkSize float64
-			switch v := args[1].(type) {
-			case float64:
-				chunkSize = v
-			case int:
-				chunkSize = float64(v)
-			default:
-				return nil, fmt.Errorf("$partition second argument must be a number")
-			}
-			cs := int(chunkSize)
-			var result []any
-			for i := 0; i < len(arr); i += cs {
-				end := i + cs
-				if end > len(arr) {
-					end = len(arr)
-				}
-				chunk := make([]any, end-i)
-				copy(chunk, arr[i:end])
-				result = append(result, chunk)
-			}
-			return result, nil
-		},
-	}
-
-	env := gnata.NewCustomEnv(customFuncs)
+	env := gnata.NewCustomEnv(awsCustomFuncs)
 
 	t.Run("custom function with data as input", func(t *testing.T) {
 		expr, err := gnata.Compile(`$partition(items, 2)`)
@@ -524,20 +350,6 @@ func generateLargePayload(targetSize int) map[string]any {
 		payload["padding"] = strings.Repeat("p", paddingNeeded)
 	}
 	return payload
-}
-
-func TestGnataRandomFunction(t *testing.T) {
-	n, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
-	if err != nil {
-		t.Fatalf("rand: %v", err)
-	}
-	_ = n
-
-	seed := make([]byte, 8)
-	if _, err := rand.Read(seed); err != nil {
-		t.Fatalf("rand: %v", err)
-	}
-	_ = base64.StdEncoding.EncodeToString(seed)
 }
 
 func TestGnataIsFastPath(t *testing.T) {

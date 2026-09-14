@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,583 test cases (3,498 SDK + 67 cross-service integration + 18 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,586 test cases (3,500 SDK + 68 cross-service integration + 18 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -51,11 +51,11 @@ which are separate services in the SDK classification used by
 | SQS | 87 | 100% | ✅ Perfect |
 | SSM | 53 | 100% | ✅ Perfect |
 | STS | 57 | 100% | ✅ Perfect |
-| StepFunctions | 116 | 100% | ✅ Perfect |
+| StepFunctions | 130 | 100% | ✅ Perfect |
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,597/3,597 tests passing (100%) — 3,512 SDK + 67 integration + 18 WebSocket** (confirmed 2026-09-13 on main; per-session deltas live in git history)
+**Overall: 3,612/3,612 tests passing (100%) — 3,526 SDK + 68 integration + 18 WebSocket** (confirmed 2026-09-14 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

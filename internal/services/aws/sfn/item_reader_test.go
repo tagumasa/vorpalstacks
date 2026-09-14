@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"vorpalstacks/internal/common/invokers"
@@ -28,6 +29,17 @@ func TestParseCSVDataset(t *testing.T) {
 		{
 			name: "first row header",
 			data: "userId,rating\n1,3.5\n2,4.0\n",
+			rc:   &sfnstore.ItemReaderReaderConfig{InputType: "CSV", CSVHeaderLocation: "FIRST_ROW"},
+			want: []map[string]string{
+				{"userId": "1", "rating": "3.5"},
+				{"userId": "2", "rating": "4.0"},
+			},
+		},
+		{
+			// A CRLF pair is one record break: Windows-style files must
+			// not yield an empty record after every row.
+			name: "CRLF line endings",
+			data: "userId,rating\r\n1,3.5\r\n2,4.0\r\n",
 			rc:   &sfnstore.ItemReaderReaderConfig{InputType: "CSV", CSVHeaderLocation: "FIRST_ROW"},
 			want: []map[string]string{
 				{"userId": "1", "rating": "3.5"},
@@ -260,7 +272,7 @@ func TestResolveItemReaderArgs(t *testing.T) {
 		Resource:   "arn:aws:states:::s3:getObject",
 		Parameters: json.RawMessage(`{"Bucket":"src","Key":"items.csv","VersionId":"v1"}`),
 	}
-	args, ierr := e.resolveItemReaderArgs(&ExecutionContext{Input: `{}`}, reader)
+	args, ierr := e.resolveItemReaderArgs(context.Background(), &ExecutionContext{Input: `{}`}, reader)
 	if ierr != nil {
 		t.Fatalf("literal args failed: %v", ierr)
 	}
@@ -269,7 +281,7 @@ func TestResolveItemReaderArgs(t *testing.T) {
 	}
 
 	reader.Parameters = json.RawMessage(`{"Bucket.$":"$.bucket","Key.$":"$.key"}`)
-	args, ierr = e.resolveItemReaderArgs(&ExecutionContext{Input: `{"bucket":"dynamic","key":"data.json"}`}, reader)
+	args, ierr = e.resolveItemReaderArgs(context.Background(), &ExecutionContext{Input: `{"bucket":"dynamic","key":"data.json"}`}, reader)
 	if ierr != nil {
 		t.Fatalf("reference args failed: %v", ierr)
 	}
@@ -278,7 +290,7 @@ func TestResolveItemReaderArgs(t *testing.T) {
 	}
 
 	reader.Parameters = json.RawMessage(`{"Bucket":"src"}`)
-	if _, ierr := e.resolveItemReaderArgs(&ExecutionContext{Input: `{}`}, reader); ierr == nil {
+	if _, ierr := e.resolveItemReaderArgs(context.Background(), &ExecutionContext{Input: `{}`}, reader); ierr == nil {
 		t.Fatalf("Bucket without Key or Prefix should fail")
 	}
 }
@@ -361,7 +373,7 @@ func TestReadItemReaderItemsEndToEnd(t *testing.T) {
 			ReaderConfig: &sfnstore.ItemReaderReaderConfig{InputType: "CSV", CSVHeaderLocation: "FIRST_ROW"},
 		},
 	}
-	items, ierr := e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
+	items, _, ierr := e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
 	if ierr != nil {
 		t.Fatalf("csv read failed: %v", ierr.Cause)
 	}
@@ -370,7 +382,7 @@ func TestReadItemReaderItemsEndToEnd(t *testing.T) {
 	}
 
 	state.ItemReader.ReaderConfig.MaxItems = ptrInt64(1)
-	items, ierr = e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
+	items, _, ierr = e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
 	if ierr != nil {
 		t.Fatalf("capped read failed: %v", ierr.Cause)
 	}
@@ -381,7 +393,7 @@ func TestReadItemReaderItemsEndToEnd(t *testing.T) {
 	// gzip-compressed JSON dataset resolved by key extension.
 	state.ItemReader.Parameters = json.RawMessage(`{"Bucket":"src","Key":"gz.json.gz"}`)
 	state.ItemReader.ReaderConfig = &sfnstore.ItemReaderReaderConfig{InputType: "JSON"}
-	items, ierr = e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
+	items, _, ierr = e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
 	if ierr != nil {
 		t.Fatalf("gzip json read failed: %v", ierr.Cause)
 	}
@@ -394,7 +406,7 @@ func TestReadItemReaderItemsEndToEnd(t *testing.T) {
 		Resource:   "arn:aws:states:::s3:listObjectsV2",
 		Parameters: json.RawMessage(`{"Bucket":"src","Prefix":"data/"}`),
 	}
-	items, ierr = e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
+	items, _, ierr = e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
 	if ierr != nil {
 		t.Fatalf("list read failed: %v", ierr.Cause)
 	}
@@ -412,7 +424,7 @@ func TestReadItemReaderItemsEndToEnd(t *testing.T) {
 		Parameters:   json.RawMessage(`{"Bucket":"src","Key":"plain.json"}`),
 		ReaderConfig: &sfnstore.ItemReaderReaderConfig{InputType: "JSON"},
 	}
-	items, ierr = e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, `[{"y":9}]`)
+	items, _, ierr = e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, `[{"y":9}]`)
 	if ierr != nil {
 		t.Fatalf("raw override read failed: %v", ierr.Cause)
 	}
@@ -425,8 +437,59 @@ func TestReadItemReaderItemsEndToEnd(t *testing.T) {
 		Resource:   "arn:aws:states:::dynamodb:getItem",
 		Parameters: json.RawMessage(`{"Bucket":"src","Key":"x"}`),
 	}
-	if _, ierr := e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, ""); ierr == nil || ierr.ErrorCode != "States.ItemReaderFailed" {
+	if _, _, ierr := e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, ""); ierr == nil || ierr.ErrorCode != "States.ItemReaderFailed" {
 		t.Fatalf("unsupported resource error = %+v", ierr)
+	}
+}
+
+// TestReadItemReaderManifestDispatch pins the two ManifestType spellings
+// through the dispatch, not the parser: ManifestType S3_INVENTORY (no
+// InputType; the type is assumed CSV) reads the manifest.json and its data
+// files, and ManifestType ATHENA_DATA reads the headerless CSV manifest and
+// parses the data files per the InputType. Both previously fell through to
+// the plain-dataset branch and itemised the manifest itself.
+func TestReadItemReaderManifestDispatch(t *testing.T) {
+	stub := &stubItemReaderS3{objects: map[string][]byte{
+		"src/inv/manifest.json": []byte(`{"sourceBucket":"src","fileFormat":"CSV","fileSchema":"Bucket, Key","files":[{"key":"inv/data/0.csv","size":10}]}`),
+		"src/inv/data/0.csv":    []byte(`"src","a/x"` + "\n" + `"src","b/y"` + "\n"),
+		"src/ath/manifest.csv":  []byte("s3://ath/job/1.jsonl\ns3://ath/job/2.jsonl\n"),
+		"src/job/1.jsonl":       []byte(`{"a":1}` + "\n"),
+		"src/job/2.jsonl":       []byte(`{"a":2}` + "\n"),
+	}}
+	bus := eventbus.NewEventBus()
+	bus.SetS3Invoker(stub)
+	e := NewExecutor(nil, bus)
+	e.region = "us-east-1"
+
+	state := &sfnstore.MapState{
+		ItemReader: &sfnstore.ItemReaderConfig{
+			Resource:     "arn:aws:states:::s3:getObject",
+			Parameters:   json.RawMessage(`{"Bucket":"src","Key":"inv/manifest.json"}`),
+			ReaderConfig: &sfnstore.ItemReaderReaderConfig{ManifestType: "S3_INVENTORY"},
+		},
+	}
+	items, _, ierr := e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
+	if ierr != nil {
+		t.Fatalf("s3 inventory manifest read failed: %v", ierr.Cause)
+	}
+	if len(items) != 2 {
+		t.Fatalf("s3 inventory items = %v, want the two data-file rows", items)
+	}
+	if row := items[0].(map[string]interface{}); row["Key"] != "a/x" {
+		t.Errorf("first inventory row = %v", row)
+	}
+
+	state.ItemReader.Parameters = json.RawMessage(`{"Bucket":"src","Key":"ath/manifest.csv"}`)
+	state.ItemReader.ReaderConfig = &sfnstore.ItemReaderReaderConfig{ManifestType: "ATHENA_DATA", InputType: "JSONL"}
+	items, _, ierr = e.readItemReaderItems(context.Background(), &ExecutionContext{Input: `{}`}, state, "")
+	if ierr != nil {
+		t.Fatalf("athena manifest read failed: %v", ierr.Cause)
+	}
+	if len(items) != 2 {
+		t.Fatalf("athena items = %v, want one item per manifest data file", items)
+	}
+	if item := items[1].(map[string]interface{}); item["a"].(float64) != 2 {
+		t.Errorf("second athena item = %v", item)
 	}
 }
 
@@ -470,3 +533,77 @@ func TestParseManifestDatasetAthena(t *testing.T) {
 }
 
 func ptrInt64(v int64) *int64 { return &v }
+
+// TestResolveReaderArguments pins the shared ItemReader/ResultWriter
+// argument resolution: JSONPath Parameters pass through for the
+// reference-path lookup, and JSONata Arguments template-resolve their
+// {% %} expressions against the state input.
+func TestResolveReaderArguments(t *testing.T) {
+	e := NewExecutor(nil, nil)
+	execCtx := &ExecutionContext{Input: `{"day":"2026-09-13/","bucket":"exports"}`}
+
+	params, err := e.resolveReaderArguments(context.Background(), execCtx,
+		json.RawMessage(`{"Bucket.$":"$.bucket"}`), nil)
+	if err != nil {
+		t.Fatalf("parameters passthrough failed: %v", err)
+	}
+	var input map[string]interface{}
+	if err := json.Unmarshal([]byte(execCtx.Input), &input); err != nil {
+		t.Fatalf("input parse failed: %v", err)
+	}
+	lookup := readerParamLookup(params, input)
+	if bucket, ok := lookup("Bucket"); !ok || bucket != "exports" {
+		t.Errorf("reference-path bucket = %q %v, want exports", bucket, ok)
+	}
+
+	params, err = e.resolveReaderArguments(context.Background(), execCtx,
+		nil, json.RawMessage(`{"Bucket":"data","Prefix":"{% $states.input.day %}"}`))
+	if err != nil {
+		t.Fatalf("arguments resolution failed: %v", err)
+	}
+	lookup = readerParamLookup(params, input)
+	if bucket, ok := lookup("Bucket"); !ok || bucket != "data" {
+		t.Errorf("literal bucket = %q %v, want data", bucket, ok)
+	}
+	if prefix, ok := lookup("Prefix"); !ok || prefix != "2026-09-13/" {
+		t.Errorf("templated prefix = %q %v, want the $states.input.day value", prefix, ok)
+	}
+}
+
+// TestReaderArgumentDiagnosticsNameTheDialectMember pins the diagnostic
+// naming: an ItemReader argument failure names Arguments for a JSONata
+// definition and Parameters for a JSONPath one — never a field the
+// definition does not carry.
+func TestReaderArgumentDiagnosticsNameTheDialectMember(t *testing.T) {
+	store := newMapTestStore(t)
+	e := NewExecutor(store, nil)
+	e.region = "us-east-1"
+	execCtx := &ExecutionContext{
+		Execution:     &sfnstore.Execution{ExecutionArn: "arn:aws:states:us-east-1:000000000000:execution:sm:ra"},
+		EventId:       ptrEventID(),
+		Input:         `{"bucket":"b"}`,
+		QueryLanguage: "JSONata",
+	}
+
+	// JSONata: Arguments templating to a non-object surfaces the
+	// Arguments member name.
+	jsonata := &sfnstore.ItemReaderConfig{
+		Resource:  "arn:aws:states:::s3:listObjectsV2",
+		Arguments: []byte(`{"Bucket": "{% $states.input.bucket %}"}`),
+	}
+	execCtx.Input = `{"missing":true}`
+	if _, rerr := e.resolveItemReaderArgs(context.Background(), execCtx, jsonata); rerr == nil || !strings.Contains(rerr.Cause, "ItemReader Arguments") {
+		t.Fatalf("JSONata reader argument failure = %v, want the cause to name ItemReader Arguments", rerr)
+	}
+
+	// JSONPath: a Parameters value that is not an object names Parameters.
+	execCtx.QueryLanguage = "JSONPath"
+	execCtx.Input = `{"bucket":"b"}`
+	jsonPath := &sfnstore.ItemReaderConfig{
+		Resource:   "arn:aws:states:::s3:listObjectsV2",
+		Parameters: []byte(`"scalar"`),
+	}
+	if _, rerr := e.resolveItemReaderArgs(context.Background(), execCtx, jsonPath); rerr == nil || !strings.Contains(rerr.Cause, "ItemReader Parameters") {
+		t.Fatalf("JSONPath reader parameter failure = %v, want the cause to name ItemReader Parameters", rerr)
+	}
+}

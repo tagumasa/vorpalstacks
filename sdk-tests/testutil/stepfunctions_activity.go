@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -101,13 +102,14 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 		}
 		taskSMARN = *resp.StateMachineArn
 
-		_, err = tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
+		startResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
 			StateMachineArn: aws.String(taskSMARN),
 			Input:           aws.String(`{"task":"input"}`),
 		})
 		if err != nil {
 			return fmt.Errorf("start execution: %v", err)
 		}
+		execARN := *startResp.ExecutionArn
 
 		taskResp, err := tc.client.GetActivityTask(tc.ctx, &sfn.GetActivityTaskInput{
 			ActivityArn: aws.String(activityARN),
@@ -126,6 +128,30 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 		})
 		if err != nil {
 			return fmt.Errorf("send success: %v", err)
+		}
+
+		// The history event names must be the model's HistoryEventType
+		// members: the activity family is ActivityScheduled/ActivitySucceeded
+		// (never the ActivityTask* forms), and the task token must not ride
+		// in the scheduled event.
+		if _, err := tc.awaitTerminal(execARN, 200*time.Millisecond, 50); err != nil {
+			return fmt.Errorf("await terminal: %v", err)
+		}
+		hist, err := tc.client.GetExecutionHistory(tc.ctx, &sfn.GetExecutionHistoryInput{ExecutionArn: aws.String(execARN)})
+		if err != nil {
+			return fmt.Errorf("get history: %v", err)
+		}
+		typesSeen := map[string]bool{}
+		for _, ev := range hist.Events {
+			typesSeen[string(ev.Type)] = true
+		}
+		if !typesSeen["ActivityScheduled"] || !typesSeen["ActivitySucceeded"] {
+			return fmt.Errorf("history lacks the model activity events, got %v", typesSeen)
+		}
+		for _, forbidden := range []string{"TaskRetried", "ActivityTaskScheduled", "ActivityTaskStarted", "ActivityTaskSucceeded", "ActivityTaskFailed", "ActivityTaskTimedOut"} {
+			if typesSeen[forbidden] {
+				return fmt.Errorf("history contains non-model event type %q", forbidden)
+			}
 		}
 		return nil
 	}))
@@ -147,12 +173,13 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 		failSMARN := *failResp.StateMachineArn
 		defer tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(failSMARN)})
 
-		_, err = tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
+		startResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
 			StateMachineArn: aws.String(failSMARN),
 		})
 		if err != nil {
 			return fmt.Errorf("start: %v", err)
 		}
+		failExecARN := *startResp.ExecutionArn
 
 		taskResp, err := tc.client.GetActivityTask(tc.ctx, &sfn.GetActivityTaskInput{
 			ActivityArn: aws.String(activityARN),
@@ -172,6 +199,26 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 		})
 		if err != nil {
 			return err
+		}
+
+		if _, err := tc.awaitTerminal(failExecARN, 200*time.Millisecond, 50); err != nil {
+			return fmt.Errorf("await terminal: %v", err)
+		}
+		hist, err := tc.client.GetExecutionHistory(tc.ctx, &sfn.GetExecutionHistoryInput{ExecutionArn: aws.String(failExecARN)})
+		if err != nil {
+			return fmt.Errorf("get history: %v", err)
+		}
+		seenActivityFailed := false
+		for _, ev := range hist.Events {
+			if string(ev.Type) == "ActivityFailed" {
+				seenActivityFailed = true
+			}
+			if strings.HasPrefix(string(ev.Type), "ActivityTask") {
+				return fmt.Errorf("history contains non-model event type %q", string(ev.Type))
+			}
+		}
+		if !seenActivityFailed {
+			return fmt.Errorf("history lacks ActivityFailed for the failed activity task")
 		}
 		return nil
 	}))

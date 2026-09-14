@@ -20,7 +20,7 @@ func evalIntrinsic(t *testing.T, e *Executor, input, invocation string) (interfa
 			t.Fatalf("invalid test input JSON: %v", err)
 		}
 	}
-	return e.evaluateIntrinsic("", invocation, data, 1)
+	return e.evaluateIntrinsic(nil, "", invocation, data, 1)
 }
 
 func mustIntrinsic(t *testing.T, e *Executor, input, invocation string) interface{} {
@@ -206,11 +206,16 @@ func TestIntrinsicValidationErrors(t *testing.T) {
 	t.Run("MathAdd int32 overflow", func(t *testing.T) {
 		wantIntrinsicError(t, e, `{}`, `States.MathAdd(2147483647, 1)`, "2147483648")
 	})
-	t.Run("MathRandom empty range", func(t *testing.T) {
-		wantIntrinsicError(t, e, `{}`, `States.MathRandom(5, 5)`, "greater than start")
-	})
 	t.Run("MathAdd below int32 floor", func(t *testing.T) {
 		wantIntrinsicError(t, e, `{}`, `States.MathAdd(-2147483648, -1)`, "2147483648")
+	})
+	t.Run("MathAdd out-of-range arguments with in-range sum", func(t *testing.T) {
+		// The int32 range binds each argument value, so opposite-sign
+		// arguments beyond the range fail even though their sum fits.
+		wantIntrinsicError(t, e, `{}`, `States.MathAdd(-3000000000, 3000000000)`, "arguments must be in the range")
+	})
+	t.Run("MathRandom empty range", func(t *testing.T) {
+		wantIntrinsicError(t, e, `{}`, `States.MathRandom(5, 5)`, "greater than start")
 	})
 	t.Run("Base64Decode invalid", func(t *testing.T) {
 		wantIntrinsicError(t, e, `{"s":"!!!"}`, `States.Base64Decode($.s)`, "not a valid Base64")
@@ -250,7 +255,7 @@ func TestIntrinsicLimits(t *testing.T) {
 			big[i] = "0123456789"
 		}
 		data := map[string]interface{}{"v": big}
-		if _, err := e.evaluateIntrinsic("", `States.ArrayPartition($.v,4)`, data, 1); err == nil {
+		if _, err := e.evaluateIntrinsic(nil, "", `States.ArrayPartition($.v,4)`, data, 1); err == nil {
 			t.Fatal("ArrayPartition over the payload limit unexpectedly succeeded")
 		} else if !strings.Contains(err.Error(), "payload limit") {
 			t.Errorf("error = %q, want payload limit", err)
@@ -304,7 +309,7 @@ func TestIntrinsicNesting(t *testing.T) {
 	if string(gotJSON) != `[1,2,3]` {
 		t.Errorf("depth 10 chain = %s, want [1,2,3]", gotJSON)
 	}
-	if _, err := e.evaluateIntrinsic("", build(11), data, 1); err == nil {
+	if _, err := e.evaluateIntrinsic(nil, "", build(11), data, 1); err == nil {
 		t.Fatal("depth 11 chain unexpectedly succeeded")
 	} else if !strings.Contains(err.Error(), "nesting") {
 		t.Errorf("depth 11 error = %q, want nesting", err)
@@ -339,7 +344,7 @@ func TestApplyParametersIntrinsics(t *testing.T) {
 			"arrayPart.$": "States.ArrayPartition($.nine, 4)",
 		},
 	}}
-	out, evalErr := e.applyParameters("", `{"name":"Arnav","Id":123456,"base":{"x":1},"overlay":{"y":2},"nine":[1,2,3,4,5,6,7,8,9]}`, params)
+	out, evalErr := e.applyParameters(nil, "", `{"name":"Arnav","Id":123456,"base":{"x":1},"overlay":{"y":2},"nine":[1,2,3,4,5,6,7,8,9]}`, params)
 	if evalErr != nil {
 		t.Fatalf("applyParameters failed: %v", evalErr.Cause)
 	}
@@ -376,7 +381,7 @@ func TestApplyParametersIntrinsicFailure(t *testing.T) {
 	params := &sfnstore.Parameters{Values: map[string]interface{}{
 		"bad.$": "States.ArrayRange(1, 9, 0)",
 	}}
-	_, evalErr := e.applyParameters("", `{}`, params)
+	_, evalErr := e.applyParameters(nil, "", `{}`, params)
 	if evalErr == nil {
 		t.Fatal("invalid intrinsic unexpectedly succeeded")
 	}
@@ -398,7 +403,7 @@ func TestApplyResultSelectorArrayRoot(t *testing.T) {
 		"second.$": "$.1.total",
 		"len.$":    "States.ArrayLength($)",
 	}}
-	out, evalErr := e.applyResultSelector(`[{"total":1},{"total":2}]`, selector, "")
+	out, evalErr := e.applyResultSelector(nil, `[{"total":1},{"total":2}]`, selector, "")
 	if evalErr != nil {
 		t.Fatalf("applyResultSelector failed: %v", evalErr.Cause)
 	}
@@ -429,7 +434,7 @@ func TestExecutePassIntrinsicsThroughEngine(t *testing.T) {
 			},
 		},
 	}
-	states, err := e.extractStatesFromDefinition(def)
+	states, err := extractStatesFromDefinition(def)
 	if err != nil {
 		t.Fatalf("extract states failed: %v", err)
 	}
@@ -477,7 +482,7 @@ func TestExecuteFailIntrinsicPaths(t *testing.T) {
 			},
 		},
 	}
-	states, err := e.extractStatesFromDefinition(def)
+	states, err := extractStatesFromDefinition(def)
 	if err != nil {
 		t.Fatalf("extract states failed: %v", err)
 	}
@@ -546,7 +551,7 @@ func TestParallelParametersAndResultSelector(t *testing.T) {
 			},
 		},
 	}
-	states, err := e.extractStatesFromDefinition(def)
+	states, err := extractStatesFromDefinition(def)
 	if err != nil {
 		t.Fatalf("extract states failed: %v", err)
 	}
@@ -623,7 +628,7 @@ func TestMapLegacyParametersAndResultSelector(t *testing.T) {
 			},
 		},
 	}
-	states, err := e.extractStatesFromDefinition(def)
+	states, err := extractStatesFromDefinition(def)
 	if err != nil {
 		t.Fatalf("extract states failed: %v", err)
 	}

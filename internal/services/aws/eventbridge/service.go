@@ -142,7 +142,7 @@ func (s *EventsService) handleEventBusDelivery(ctx context.Context, evt *eventbu
 	var event eventsstore.Event
 	if err := json.Unmarshal(evt.Input, &event); err != nil {
 		logs.Warn("eventbridge: failed to unmarshal event for rule matching", logs.String("error", err.Error()))
-		return eventbus.HandlerResult{}
+		return eventbus.HandlerResult{Error: fmt.Errorf("eventbridge: unmarshal bus delivery input: %w", err)}
 	}
 
 	eventBusName := "default"
@@ -150,16 +150,20 @@ func (s *EventsService) handleEventBusDelivery(ctx context.Context, evt *eventbu
 		eventBusName = evt.TargetARN[idx+len(":event-bus/"):]
 	}
 
-	var es *eventsstore.EventsStore
-	if v, ok := s.eventsStores.Load(evt.Region); ok {
-		es = v.(*eventsstore.EventsStore)
-	}
-	if es == nil {
-		return eventbus.HandlerResult{}
+	es, err := s.GetStoreForRegion(evt.Region)
+	if err != nil {
+		logs.Warn("eventbridge: failed to get store for bus delivery",
+			logs.String("region", evt.Region),
+			logs.Err(err))
+		return eventbus.HandlerResult{Error: err}
 	}
 
 	if err := s.deliverEventWithStore(ctx, evt.Region, &event, eventBusName, es); err != nil {
 		logs.Warn("eventbridge: failed to deliver event via rule matching", logs.String("error", err.Error()))
+		// Synchronous publishers (the Scheduler engine publishes via
+		// PublishSync) rely on the handler error to drive their retry and
+		// dead-letter policy, so the failure must be propagated.
+		return eventbus.HandlerResult{Error: err}
 	}
 
 	return eventbus.HandlerResult{}
@@ -168,23 +172,17 @@ func (s *EventsService) handleEventBusDelivery(ctx context.Context, evt *eventbu
 func (s *EventsService) handlePutEventsEvent(ctx context.Context, evt *eventbus.EventBridgePutEventsEvent) eventbus.HandlerResult {
 	region := evt.Region
 	if region == "" {
-		return eventbus.HandlerResult{}
+		// An event without a region has no bus to land on; report the
+		// drop so the publisher's retry and dead-letter policy sees it.
+		return eventbus.HandlerResult{Error: fmt.Errorf("eventbridge: putEvents bus event carries no region")}
 	}
 
-	var es *eventsstore.EventsStore
-	if v, ok := s.eventsStores.Load(region); ok {
-		es = v.(*eventsstore.EventsStore)
-	}
-	if es == nil {
-		st, err := s.storageManager.GetStorage(region)
-		if err != nil {
-			logs.Warn("eventbridge: failed to get storage for putEvents bus event",
-				logs.String("region", region),
-				logs.Err(err))
-			return eventbus.HandlerResult{}
-		}
-		es = eventsstore.NewEventsStore(st, s.accountID, region)
-		s.eventsStores.Store(region, es)
+	es, err := s.GetStoreForRegion(region)
+	if err != nil {
+		logs.Warn("eventbridge: failed to get storage for putEvents bus event",
+			logs.String("region", region),
+			logs.Err(err))
+		return eventbus.HandlerResult{Error: err}
 	}
 
 	var inputMap map[string]interface{}
@@ -192,7 +190,10 @@ func (s *EventsService) handlePutEventsEvent(ctx context.Context, evt *eventbus.
 		logs.Warn("eventbridge: failed to unmarshal putEvents input",
 			logs.String("region", region),
 			logs.Err(err))
-		return eventbus.HandlerResult{}
+		// PutEvents rejects a malformed payload at invocation time; the
+		// bus path reports the same rejection instead of recording the
+		// drop as a successful delivery.
+		return eventbus.HandlerResult{Error: fmt.Errorf("eventbridge: unmarshal putEvents input: %w", err)}
 	}
 
 	// Source and DetailType can come from two places:
@@ -210,7 +211,9 @@ func (s *EventsService) handlePutEventsEvent(ctx context.Context, evt *eventbus.
 	if source == "" || detailType == "" {
 		logs.Warn("eventbridge: putEvents input missing Source or DetailType",
 			logs.String("region", region))
-		return eventbus.HandlerResult{}
+		// PutEvents requires Source and DetailType; a bus event carrying
+		// neither is a failed delivery, not a successful no-op.
+		return eventbus.HandlerResult{Error: fmt.Errorf("eventbridge: putEvents input missing Source or DetailType")}
 	}
 
 	var detail map[string]interface{}

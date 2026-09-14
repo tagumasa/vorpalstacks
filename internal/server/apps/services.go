@@ -10,6 +10,7 @@ import (
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
+	svcauthorization "vorpalstacks/internal/server/authorization"
 	svcacm "vorpalstacks/internal/services/aws/acm"
 	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
 	svccloudtrail "vorpalstacks/internal/services/aws/cloudtrail"
@@ -409,6 +410,10 @@ func (a *App) initSESv2(st *serviceState) error {
 
 func (a *App) initSFN(st *serviceState) error {
 	st.stepFunctionService = svcstepfunction.NewStepFunctionService(a.server.StorageManager(), st.accountID)
+	if iamStore := a.server.IAMStore(); iamStore != nil {
+		st.stepFunctionService.SetRoleProvider(iamStore.Roles())
+		st.stepFunctionService.SetTaskCredentialsAuthoriser(svcauthorization.NewTaskRoleAuthoriser(iamStore, st.accountID))
+	}
 	st.stepFunctionService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("sfn", func(ctx context.Context) error {
 		st.stepFunctionService.Shutdown()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -21,6 +22,22 @@ func generateMapRunArn(store *sfnstore.StepFunctionStore, region, accountID, exe
 		svcarn.ExtractStateMachineNameFromARN(executionArn), stateName, generateMapRunID(store)))
 }
 
+// mapRunLabelFromARN extracts the Map state label a Map Run ARN carries:
+// the resource segment between the state machine name and the run
+// identifier (mapRun:<stateMachineName>/<label>/<runId>).
+func mapRunLabelFromARN(mapRunArn string) string {
+	_, _, _, _, resource := svcarn.SplitARN(mapRunArn)
+	rest, ok := strings.CutPrefix(resource, "mapRun:")
+	if !ok {
+		return ""
+	}
+	parts := strings.Split(rest, "/")
+	if len(parts) < 2 {
+		return ""
+	}
+	return parts[1]
+}
+
 // generateMapRunID renders the unique identifier portion of a map run ARN.
 func generateMapRunID(store *sfnstore.StepFunctionStore) string {
 	id := store.NextMapRunSeq()
@@ -36,6 +53,14 @@ type UpdateMapRunInput struct {
 	ToleratedFailurePercentage *float32
 }
 
+// inlineRunNotFound is the response for an address that names an inline
+// map's internal checkpoint record: "When you run a Map state in
+// Distributed mode, Step Functions creates a Map Run resource", so an
+// inline record is not a describable or updatable Map Run.
+func inlineRunNotFound(mapRunArn string) error {
+	return NewResourceNotFound("Map Run does not exist: " + mapRunArn)
+}
+
 // describeMapRunCore is the single entry point for DescribeMapRun.
 func (s *StepFunctionService) describeMapRunCore(ctx context.Context, store *sfnstore.StepFunctionStore, mapRunArn string) (map[string]interface{}, error) {
 	if err := validateArnRequired(mapRunArn, "mapRunArn"); err != nil {
@@ -48,6 +73,9 @@ func (s *StepFunctionService) describeMapRunCore(ctx context.Context, store *sfn
 			return nil, NewResourceNotFound("Map Run does not exist: " + mapRunArn)
 		}
 		return nil, err
+	}
+	if mr.Inline {
+		return nil, inlineRunNotFound(mapRunArn)
 	}
 	return describeMapRunToResponse(mr), nil
 }
@@ -62,9 +90,13 @@ func (s *StepFunctionService) listMapRunsCore(ctx context.Context, store *sfnsto
 	if err := validateMaxResults(maxResults, 0, sfnstore.MaxPageSize, "maxResults"); err != nil {
 		return nil, err
 	}
+	maxResults = normaliseListLimit(maxResults)
 
 	if _, err := store.GetExecution(ctx, executionArn); err != nil {
-		return nil, NewExecutionDoesNotExist("Execution Does not exist: " + executionArn)
+		if errors.Is(err, sfnstore.ErrExecutionNotFound) {
+			return nil, NewExecutionDoesNotExist("Execution Does not exist: " + executionArn)
+		}
+		return nil, err
 	}
 
 	result, err := store.ListAllMapRuns(ctx, executionArn, maxResults, nextToken)
@@ -72,6 +104,9 @@ func (s *StepFunctionService) listMapRunsCore(ctx context.Context, store *sfnsto
 		return nil, err
 	}
 
+	// Inline-map checkpoint records never reach here: the store's list
+	// predicate excludes them before pagination, so every page is filled
+	// with describable Map Runs only.
 	mapRuns := make([]map[string]interface{}, 0, len(result.MapRuns))
 	for _, mr := range result.MapRuns {
 		mapRuns = append(mapRuns, mapRunListItemToResponse(mr))
@@ -97,6 +132,9 @@ func (s *StepFunctionService) updateMapRunCore(ctx context.Context, store *sfnst
 			return NewResourceNotFound("Map Run does not exist: " + in.MapRunArn)
 		}
 		return err
+	}
+	if mr.Inline {
+		return inlineRunNotFound(in.MapRunArn)
 	}
 
 	maxConcurrency := mr.MaxConcurrency

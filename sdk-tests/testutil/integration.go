@@ -493,6 +493,9 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 	results = append(results, r.runIntegWithTimeout("Scheduler_StepFunctions", func() TestResult {
 		return r.runSchedulerToStepFunctions(ic, ts)
 	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_EventBridge_DLQ", func() TestResult {
+		return r.runSchedulerToEventBridgeDLQ(ic, ts)
+	}))
 
 	results = append(results, r.runIntegWithTimeout("SFNTask_Lambda", func() TestResult {
 		return r.runSFNTaskLambda(ic, ts)

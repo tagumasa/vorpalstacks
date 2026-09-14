@@ -2,6 +2,7 @@ package sfn
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -68,11 +69,23 @@ func (s *StepFunctionService) recoverRegionExecutions(ctx context.Context, regio
 // boot. RedriveCount and RedriveDate stay untouched: they count
 // user-initiated redrives. An execution whose state machine no longer
 // exists or whose definition no longer parses is failed with
-// States.Runtime instead of being left as a zombie.
+// States.Runtime instead of being left as a zombie. Distributed Map child
+// executions are never resumed here: their unit of work belongs to the
+// parent execution, which the sweep resumes (or fails) itself — a child
+// resumed independently would run beside the re-dispatching parent and
+// duplicate every item.
 func (s *StepFunctionService) resumeRecoveredExecution(ctx context.Context, region string, store *sfnstore.StepFunctionStore, exec *sfnstore.Execution) bool {
+	if exec.MapRunArn != "" {
+		return s.deferMapChildToParent(ctx, store, exec)
+	}
+
 	sm, err := store.GetStateMachine(ctx, exec.StateMachineArn)
 	if err != nil {
-		s.failUnrecoverableExecution(ctx, store, exec, fmt.Sprintf("state machine %s no longer exists", exec.StateMachineArn))
+		if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
+			s.failUnrecoverableExecution(ctx, store, exec, fmt.Sprintf("state machine %s no longer exists", exec.StateMachineArn))
+			return false
+		}
+		s.failUnrecoverableExecution(ctx, store, exec, "its state machine record could not be read: "+err.Error())
 		return false
 	}
 	definition, err := parseStateMachineDefinition(sm.Definition)
@@ -87,27 +100,12 @@ func (s *StepFunctionService) resumeRecoveredExecution(ctx context.Context, regi
 	}
 
 	executionArn := exec.ExecutionArn
-	executor := NewExecutorWithStores(store, s.bus, s.accountID, region)
-	execCtx, cancel := context.WithCancel(context.Background())
-	store.RegisterExecution(executionArn, cancel)
-	s.asyncWg.Add(1)
-	go func() {
-		defer s.asyncWg.Done()
-		defer store.UnregisterExecution(executionArn)
-		defer func() {
-			if r := recover(); r != nil {
-				logs.Error("sfn: panic in recovered execution", logs.String("arn", executionArn), logs.Any("panic", r))
-				exec.Status = "FAILED"
-				exec.Error = "States.InternalError"
-				exec.Cause = fmt.Sprintf("internal panic: %v", r)
-				exec.StopDate = time.Now().UTC()
-				_ = store.UpdateExecution(context.Background(), exec)
-			}
-		}()
-		if err := executor.ExecuteStateMachineFromState(execCtx, exec, rp.StateName, rp.Input, rp.LastEventId); err != nil {
-			logs.Error("sfn: recovered execution failed", logs.String("arn", executionArn), logs.Err(err))
-		}
-	}()
+	executor := NewExecutorWithStores(store, s.bus, s.accountID, region, s.taskCredentialsAuthz)
+	s.launchExecutionGoroutine(store, exec, "recovered execution", func(ctx context.Context) error {
+		// Recovery keeps a fresh timeout window: the lost goroutine's
+		// elapsed time is unknowable after a restart.
+		return executor.ExecuteStateMachineFromState(ctx, exec, rp.StateName, rp.Input, rp.LastEventId, true)
+	})
 
 	logs.Info("sfn: resumed execution after restart",
 		logs.String("arn", executionArn),
@@ -116,16 +114,58 @@ func (s *StepFunctionService) resumeRecoveredExecution(ctx context.Context, regi
 	return true
 }
 
+// deferMapChildToParent decides the recovery ownership of a Distributed
+// Map child: the parent's own resume re-dispatches unfinished units, so a
+// child whose parent is still RUNNING is left entirely to it. A child
+// whose Map Run or parent is gone has no dispatcher and is failed instead
+// of being left a zombie.
+func (s *StepFunctionService) deferMapChildToParent(ctx context.Context, store *sfnstore.StepFunctionStore, exec *sfnstore.Execution) bool {
+	run, err := store.GetMapRun(ctx, exec.MapRunArn)
+	if err != nil {
+		if errors.Is(err, sfnstore.ErrMapRunNotFound) {
+			s.failUnrecoverableExecution(ctx, store, exec, "its Map Run no longer exists")
+			return false
+		}
+		s.failUnrecoverableExecution(ctx, store, exec, "its Map Run record could not be read: "+err.Error())
+		return false
+	}
+	parent, err := store.GetExecution(ctx, run.ExecutionArn)
+	if err != nil || parent.Status != "RUNNING" {
+		s.failUnrecoverableExecution(ctx, store, exec, "its parent execution is no longer running")
+		return false
+	}
+	return false
+}
+
 // failUnrecoverableExecution terminates an execution that cannot be
-// resumed so it never becomes a permanent zombie.
+// resumed so it never becomes a permanent zombie. The terminal event
+// accompanies the status, as on every other terminal path. A parent failed
+// here also fails its RUNNING Distributed Map children: they are never
+// resumed directly (the parent dispatches them), so without this cascade
+// they would stay RUNNING with no dispatcher behind them.
 func (s *StepFunctionService) failUnrecoverableExecution(ctx context.Context, store *sfnstore.StepFunctionStore, exec *sfnstore.Execution, cause string) {
 	exec.Status = "FAILED"
 	exec.Error = "States.Runtime"
 	exec.Cause = "recovery after restart: " + cause
 	exec.StopDate = time.Now().UTC()
+	appendTerminalFailureEvent(ctx, store, exec, exec.Error, exec.Cause)
 	if err := store.UpdateExecution(ctx, exec); err != nil {
 		logs.Error("sfn: failed to mark an unrecoverable execution FAILED", logs.String("arn", exec.ExecutionArn), logs.Err(err))
 	}
 	logs.Warn("sfn: execution could not be recovered after restart",
 		logs.String("arn", exec.ExecutionArn), logs.String("cause", cause))
+
+	runs, err := store.ListMapRunsByExecution(ctx, exec.ExecutionArn)
+	if err != nil {
+		return
+	}
+	for _, run := range runs {
+		children, cerr := store.ListAllExecutions(ctx, "", "RUNNING", run.MapRunArn, "")
+		if cerr != nil {
+			continue
+		}
+		for _, child := range children {
+			s.failUnrecoverableExecution(ctx, store, child, "its parent execution could not be recovered")
+		}
+	}
 }

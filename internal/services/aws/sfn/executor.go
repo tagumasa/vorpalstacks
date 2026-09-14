@@ -25,9 +25,14 @@ type Executor struct {
 	accountID           string
 	region              string
 	bus                 eventbus.ServiceBus
+	taskAuthz           TaskCredentialsAuthoriser
 	currentRoleArn      string
 	currentExecution    *sfnstore.Execution
 	currentStateMachine *sfnstore.StateMachine
+	// noPersistHistory keeps logged events out of the store: TestState
+	// "executes a state without creating a state machine", so no execution
+	// resource exists and no history record may.
+	noPersistHistory bool
 }
 
 // generateTaskToken returns an unguessable task token. Anyone holding the
@@ -51,12 +56,15 @@ func NewExecutor(store *sfnstore.StepFunctionStore, bus eventbus.ServiceBus) *Ex
 }
 
 // NewExecutorWithStores creates a new Step Functions executor with all dependencies.
-func NewExecutorWithStores(store *sfnstore.StepFunctionStore, bus eventbus.ServiceBus, accountID, region string) *Executor {
+// taskAuthz is the Task Credentials authorisation seam; nil leaves task
+// invocations on the machine-role behaviour.
+func NewExecutorWithStores(store *sfnstore.StepFunctionStore, bus eventbus.ServiceBus, accountID, region string, taskAuthz TaskCredentialsAuthoriser) *Executor {
 	return &Executor{
 		store:     store,
 		bus:       bus,
 		accountID: accountID,
 		region:    region,
+		taskAuthz: taskAuthz,
 	}
 }
 
@@ -99,10 +107,10 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 		Type:         "ExecutionStarted",
 		Timestamp:    time.Now().UTC(),
 		ExecutionStartedEventDetails: &sfnstore.ExecutionStartedEventDetails{
-			Input:           execution.Input,
-			RoleArn:         roleArn,
-			StateMachineArn: execution.StateMachineArn,
-			Name:            execution.Name,
+			Input:                  execution.Input,
+			RoleArn:                roleArn,
+			StateMachineAliasArn:   execution.StateMachineAliasArn,
+			StateMachineVersionArn: execution.StateMachineVersionArn,
 		},
 	})
 	if err != nil {
@@ -137,8 +145,12 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 // redrive, and the event history continues from lastEventId. The
 // IsRedrive flag on the ExecutionContext signals to Map and Parallel
 // states that they should consult stored checkpoints for
-// already-completed iterations or branches.
-func (e *Executor) ExecuteStateMachineFromState(ctx context.Context, execution *sfnstore.Execution, startState string, startInput string, lastEventId int64) error {
+// already-completed iterations or branches. armMachineTimeout re-arms the
+// state-machine-level timeout for restart recovery only: the documented
+// redrive contract resets it ("When you redrive an execution, the state
+// machine level timeout, if defined, is reset to 0"), so a redrive passes
+// false and runs without it.
+func (e *Executor) ExecuteStateMachineFromState(ctx context.Context, execution *sfnstore.Execution, startState string, startInput string, lastEventId int64, armMachineTimeout bool) error {
 	e.currentExecution = execution
 	sm, err := e.store.GetStateMachine(ctx, execution.StateMachineArn)
 	if err == nil && sm != nil {
@@ -158,13 +170,16 @@ func (e *Executor) ExecuteStateMachineFromState(ctx context.Context, execution *
 		return fmt.Errorf("failed to parse state machine definition: %w", err)
 	}
 
-	if definition.TimeoutSeconds > 0 {
+	if armMachineTimeout && definition.TimeoutSeconds > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(definition.TimeoutSeconds)*time.Second)
 		defer cancel()
 	}
 
-	eventId := lastEventId + 1
+	// The counter is add-and-fetch, so it starts at the last id the history
+	// already holds: the first state event after the resume takes
+	// lastEventId+1 and the id sequence stays gapless.
+	eventId := lastEventId
 
 	resumeInput := startInput
 	if resumeInput == "" {
@@ -203,7 +218,7 @@ func (e *Executor) finalizeExecution(ctx context.Context, execution *sfnstore.Ex
 
 		if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
 			ExecutionArn: execution.ExecutionArn,
-			EventId:      *execCtx.EventId,
+			EventId:      execCtx.nextEventId(),
 			Type:         "ExecutionSucceeded",
 			Timestamp:    time.Now().UTC(),
 			ExecutionSucceededEventDetails: &sfnstore.ExecutionSucceededEventDetails{
@@ -234,7 +249,7 @@ func (e *Executor) finalizeExecution(ctx context.Context, execution *sfnstore.Ex
 
 		if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
 			ExecutionArn: execution.ExecutionArn,
-			EventId:      *execCtx.EventId,
+			EventId:      execCtx.nextEventId(),
 			Type:         "ExecutionTimedOut",
 			Timestamp:    time.Now().UTC(),
 			ExecutionTimedOutEventDetails: &sfnstore.ExecutionTimedOutEventDetails{
@@ -246,13 +261,32 @@ func (e *Executor) finalizeExecution(ctx context.Context, execution *sfnstore.Ex
 		}
 	} else if ctx.Err() == context.Canceled {
 		execution.Status = "ABORTED"
-		execution.Error = "ExecutionAborted"
-		execution.Cause = "Execution was aborted by StopExecution"
 		execution.StopDate = time.Now().UTC()
+		// A StopExecution that landed first persisted the caller's error
+		// and cause on the stored record; the terminal event reports that
+		// pair and the record keeps it. A cancellation without a stop (the
+		// shutdown sweep) still reports the generic pair.
+		recordAlreadyTerminal := false
+		if stored, gerr := e.store.GetExecution(context.Background(), execution.ExecutionArn); gerr == nil && isTerminalStatus(stored.Status) {
+			recordAlreadyTerminal = true
+			execution.Error = stored.Error
+			execution.Cause = stored.Cause
+		}
+		if execution.Error == "" {
+			execution.Error = "ExecutionAborted"
+		}
+		if execution.Cause == "" {
+			execution.Cause = "Execution was aborted by StopExecution"
+		}
+
+		// The state that was running when the cancellation landed records
+		// its modelled Aborted variant before the execution's terminal
+		// event closes the history.
+		e.logStateAbortedEvent(ctx, execCtx)
 
 		if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
 			ExecutionArn: execution.ExecutionArn,
-			EventId:      *execCtx.EventId,
+			EventId:      execCtx.nextEventId(),
 			Type:         "ExecutionAborted",
 			Timestamp:    time.Now().UTC(),
 			ExecutionAbortedEventDetails: &sfnstore.ExecutionAbortedEventDetails{
@@ -261,6 +295,9 @@ func (e *Executor) finalizeExecution(ctx context.Context, execution *sfnstore.Ex
 			},
 		}); err != nil {
 			logs.Error("Failed to add ExecutionAborted event", logs.Err(err))
+		}
+		if recordAlreadyTerminal {
+			return
 		}
 	} else {
 		execution.Status = "FAILED"
@@ -281,7 +318,7 @@ func (e *Executor) finalizeExecution(ctx context.Context, execution *sfnstore.Ex
 
 		if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
 			ExecutionArn: execution.ExecutionArn,
-			EventId:      *execCtx.EventId,
+			EventId:      execCtx.nextEventId(),
 			Type:         "ExecutionFailed",
 			Timestamp:    time.Now().UTC(),
 			ExecutionFailedEventDetails: &sfnstore.ExecutionFailedEventDetails{
@@ -300,20 +337,26 @@ func (e *Executor) finalizeExecution(ctx context.Context, execution *sfnstore.Ex
 
 // ExecutionContext holds the context for a state machine execution.
 type ExecutionContext struct {
-	Execution         *sfnstore.Execution
-	Definition        *sfnstore.StateMachineDefinition
-	CurrentState      string
-	Input             string
-	Output            string
-	EventId           *int64
-	States            map[string]sfnstore.State
-	QueryLanguage     string
-	VariableScope     *VariableScope
-	PendingAssign     map[string]interface{}
-	StateEnteredTime  time.Time
-	RetryCount        int32
-	MapItemIndex      int
-	MapItemValue      interface{}
+	Execution        *sfnstore.Execution
+	Definition       *sfnstore.StateMachineDefinition
+	CurrentState     string
+	Input            string
+	Output           string
+	EventId          *int64
+	States           map[string]sfnstore.State
+	QueryLanguage    string
+	VariableScope    *VariableScope
+	PendingAssign    map[string]interface{}
+	StateEnteredTime time.Time
+	RetryCount       int32
+	MapItemIndex     int
+	MapItemValue     interface{}
+	// MapItemKey carries the current iteration's key when a Map iterates an
+	// object dataset; MapItemSource carries the Item provenance the context
+	// object reports as Map.Item.Source ("STATE_DATA" for state input, the
+	// Amazon S3 URI for ItemReader sources).
+	MapItemKey        string
+	MapItemSource     string
 	AfterArguments    *string
 	AfterItemSelector *string
 	IsRedrive         bool
@@ -378,11 +421,77 @@ func IsJSONataState(state sfnstore.State, defaultLang string) bool {
 type ExecutionError struct {
 	ErrorCode string
 	Cause     string
+	// underlying carries a Go-level cause for the errors.Is/As chain: the
+	// mid-execution cancellation vehicles wrap context.Canceled so every
+	// container layer recognises an interrupted execution through the
+	// platform's isCanceledError test instead of re-deriving it per layer.
+	underlying error
 }
 
 // Error returns the error representation of the ExecutionError.
 func (e *ExecutionError) Error() string {
 	return e.ErrorCode + ": " + e.Cause
+}
+
+// Unwrap exposes the underlying Go-level cause, if any.
+func (e *ExecutionError) Unwrap() error {
+	return e.underlying
+}
+
+// executionInterruptedError builds the vehicle for an execution whose
+// context ended mid-state. A cancellation (StopExecution or the shutdown
+// sweep) wraps context.Canceled, so container aggregates classify it as an
+// abort rather than a failure and Catch gates refuse to consume it; a
+// machine-level deadline keeps the plain States.Timeout identity.
+func executionInterruptedError(ctx context.Context, cause string) *ExecutionError {
+	if ctx.Err() == context.Canceled {
+		return &ExecutionError{ErrorCode: "States.Timeout", Cause: cause, underlying: context.Canceled}
+	}
+	return &ExecutionError{ErrorCode: "States.Timeout", Cause: cause}
+}
+
+// logStateAbortedEvent records the modelled Aborted variant of the state
+// that was running when the execution was cancelled. Only the long-running
+// state types carry an Aborted variant in the HistoryEventType enum; the
+// instant states (Pass, Choice, Fail, Succeed) terminate before a
+// cancellation can observe them.
+func (e *Executor) logStateAbortedEvent(ctx context.Context, execCtx *ExecutionContext) {
+	if execCtx == nil {
+		return
+	}
+	state, exists := execCtx.States[execCtx.CurrentState]
+	if !exists {
+		return
+	}
+	var eventType string
+	switch state.(type) {
+	case *sfnstore.TaskState:
+		eventType = "TaskStateAborted"
+	case *sfnstore.WaitState:
+		eventType = "WaitStateAborted"
+	case *sfnstore.MapState:
+		eventType = "MapStateAborted"
+	case *sfnstore.ParallelState:
+		eventType = "ParallelStateAborted"
+	default:
+		return
+	}
+	eventId := execCtx.nextEventId()
+	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
+		ExecutionArn:    execCtx.Execution.ExecutionArn,
+		EventId:         eventId,
+		PreviousEventId: eventId - 1,
+		Type:            eventType,
+		Timestamp:       time.Now().UTC(),
+	})
+}
+
+// isCanceledError reports whether an error chain carries a context
+// cancellation. Callers inside Map and Parallel hold a local variable named
+// errors (the per-unit error slice), so this helper keeps the package
+// qualifier reachable.
+func isCanceledError(err error) bool {
+	return errors.Is(err, context.Canceled)
 }
 
 func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext) error {
@@ -416,10 +525,7 @@ func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext)
 				return execErr
 			}
 		case *sfnstore.ChoiceState:
-			nextState, err = e.executeChoice(ctx, execCtx, s)
-			if err == nil {
-				output = execCtx.Input
-			}
+			output, nextState, err = e.executeChoice(ctx, execCtx, s)
 		case *sfnstore.WaitState:
 			output, nextState, err = e.executeWait(ctx, execCtx, s)
 		case *sfnstore.ParallelState:
@@ -484,12 +590,18 @@ func (e *Executor) addExecutionHistoryEvent(ctx context.Context, execution *sfns
 }
 
 func (e *Executor) logHistoryEvent(ctx context.Context, execution *sfnstore.Execution, event *sfnstore.ExecutionHistoryEvent) {
+	if e.noPersistHistory {
+		return
+	}
 	if err := e.addExecutionHistoryEvent(ctx, execution, event); err != nil {
 		logs.Error("Failed to add history event", logs.String("type", event.Type), logs.Err(err))
 	}
 }
 
 func (e *Executor) buildContextObject(execCtx *ExecutionContext) map[string]interface{} {
+	if execCtx == nil {
+		return map[string]interface{}{}
+	}
 	// A supplied context object replaces the derived one entirely: the
 	// TestState context parameter represents the exact Context object for
 	// the state under test.
@@ -506,13 +618,21 @@ func (e *Executor) buildContextObject(execCtx *ExecutionContext) map[string]inte
 				execInput = nil
 			}
 		}
-		ctx["Execution"] = map[string]interface{}{
-			"Id":        execCtx.Execution.ExecutionArn,
-			"Name":      execCtx.Execution.Name,
-			"RoleArn":   e.extractExecutionRoleArn(),
-			"StartTime": execCtx.Execution.StartDate.Format(time.RFC3339),
-			"Input":     execInput,
+		// RedriveTime exists in the Context object only for a redriven
+		// execution ("RedriveTime Context object is only available if
+		// you've redriven an execution").
+		execution := map[string]interface{}{
+			"Id":           execCtx.Execution.ExecutionArn,
+			"Name":         execCtx.Execution.Name,
+			"RoleArn":      e.extractExecutionRoleArn(),
+			"StartTime":    execCtx.Execution.StartDate.Format(time.RFC3339),
+			"Input":        execInput,
+			"RedriveCount": execCtx.Execution.RedriveCount,
 		}
+		if !execCtx.Execution.RedriveDate.IsZero() {
+			execution["RedriveTime"] = execCtx.Execution.RedriveDate.Format(time.RFC3339)
+		}
+		ctx["Execution"] = execution
 	}
 
 	if e.currentStateMachine != nil {
@@ -540,12 +660,22 @@ func (e *Executor) buildContextObject(execCtx *ExecutionContext) map[string]inte
 	}
 
 	if execCtx.MapItemIndex >= 0 {
-		ctx["Map"] = map[string]interface{}{
-			"Item": map[string]interface{}{
-				"Index": execCtx.MapItemIndex,
-				"Value": execCtx.MapItemValue,
-			},
+		// Source reports the item's provenance: "STATE_DATA" for state
+		// input, the Amazon S3 URI for ItemReader sources; Key exists only
+		// for object datasets.
+		source := execCtx.MapItemSource
+		if source == "" {
+			source = "STATE_DATA"
 		}
+		item := map[string]interface{}{
+			"Index":  execCtx.MapItemIndex,
+			"Value":  execCtx.MapItemValue,
+			"Source": source,
+		}
+		if execCtx.MapItemKey != "" {
+			item["Key"] = execCtx.MapItemKey
+		}
+		ctx["Map"] = map[string]interface{}{"Item": item}
 	}
 
 	return ctx
@@ -595,6 +725,32 @@ func newRuntimeValueError(field, cause string) *ExecutionError {
 	return &ExecutionError{ErrorCode: "States.Runtime", Cause: fmt.Sprintf("%s: %s", field, cause)}
 }
 
+// historyEventLogsAtLevel reports whether a history event is published to
+// the logging destination at the configured level, per the CloudWatch Logs
+// level table in the developer guide: the execution-terminal failures
+// (ExecutionFailed, ExecutionAborted, ExecutionTimedOut) form the FATAL
+// class; state- and task-level failures — event types whose names end in
+// Failed, Aborted or TimedOut, plus FailStateEntered — form the ERROR
+// class; everything else is logged at ALL only, and OFF logs nothing.
+func historyEventLogsAtLevel(level, eventType string) bool {
+	executionTerminal := eventType == "ExecutionFailed" || eventType == "ExecutionAborted" || eventType == "ExecutionTimedOut"
+	switch level {
+	case "ALL":
+		return true
+	case "OFF":
+		return false
+	case "FATAL":
+		return executionTerminal
+	case "ERROR":
+		return executionTerminal ||
+			eventType == "FailStateEntered" ||
+			strings.HasSuffix(eventType, "Failed") ||
+			strings.HasSuffix(eventType, "Aborted") ||
+			strings.HasSuffix(eventType, "TimedOut")
+	}
+	return false
+}
+
 func (e *Executor) publishHistoryToCloudWatchLogs(execution *sfnstore.Execution, event *sfnstore.ExecutionHistoryEvent) {
 	if e.bus == nil || e.currentStateMachine == nil {
 		return
@@ -615,6 +771,10 @@ func (e *Executor) publishHistoryToCloudWatchLogs(execution *sfnstore.Execution,
 		return
 	}
 
+	if !historyEventLogsAtLevel(lc.Level, event.Type) {
+		return
+	}
+
 	_, _, region, _, _ := arn.SplitARN(logGroupArn)
 	logGroup := arn.ExtractLogGroupNameFromARN(logGroupArn)
 	if logGroup == "" {
@@ -628,7 +788,10 @@ func (e *Executor) publishHistoryToCloudWatchLogs(execution *sfnstore.Execution,
 	}
 	logStream := fmt.Sprintf("%s-%s", e.currentStateMachine.Name, execName)
 
-	eventBytes, err := json.Marshal(event)
+	// The published record is the HistoryEvent API shape, so the
+	// includeExecutionData configuration governs its payload members.
+	record := historyEventToResponse(event, lc.IncludeExecutionData)
+	eventBytes, err := json.Marshal(record)
 	if err != nil {
 		return
 	}

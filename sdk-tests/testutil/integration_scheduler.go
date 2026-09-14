@@ -2,6 +2,8 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/scheduler"
@@ -245,5 +247,84 @@ func (r *TestRunner) runSchedulerToStepFunctions(ic *integClients, ts string) Te
 			return fmt.Errorf("expected SUCCEEDED, got %s", resp.Executions[0].Status)
 		}
 		return nil
+	})
+}
+
+// runSchedulerToEventBridgeDLQ pins the delivery-failure contract end to
+// end: a one-time schedule targeting the default event bus with a non-object
+// Input fails the PutEvents-style delivery, and with MaximumRetryAttempts=0
+// the engine routes the raw Input to the dead-letter queue. A handler that
+// answered the drop with an empty result would record the delivery as
+// successful and the queue would stay empty.
+func (r *TestRunner) runSchedulerToEventBridgeDLQ(ic *integClients, ts string) TestResult {
+	roleName := fmt.Sprintf("integ-sched-eb-role-%s", ts)
+	scheduleName := fmt.Sprintf("integ-sched-eb-dlq-%s", ts)
+	groupName := fmt.Sprintf("integ-sched-eb-group-%s", ts)
+	queueName := fmt.Sprintf("integ-sched-eb-dlq-q-%s", ts)
+
+	IAMCreateRole(ic.iam, roleName, schedulerTrustPolicy)
+	defer IAMDeleteRole(ic.iam, roleName)
+
+	ic.scheduler.CreateScheduleGroup(ic.ctx, &scheduler.CreateScheduleGroupInput{Name: aws.String(groupName)})
+	defer func() {
+		ic.scheduler.DeleteScheduleGroup(ic.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
+	}()
+
+	queueURL, err := ic.createQueue(queueName)
+	if err != nil {
+		return r.RunTest(integSvc, "Scheduler_EventBridge_DLQ", func() error { return fmt.Errorf("create queue: %w", err) })
+	}
+	defer ic.deleteQueue(queueURL)
+
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
+	busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/default", ic.region)
+	fireAt := time.Now().UTC().Add(20 * time.Second).Format("2006-01-02T15:04:05")
+
+	_, err = ic.scheduler.CreateSchedule(ic.ctx, &scheduler.CreateScheduleInput{
+		Name:                       aws.String(scheduleName),
+		GroupName:                  aws.String(groupName),
+		ScheduleExpression:         aws.String("at(" + fireAt + ")"),
+		ScheduleExpressionTimezone: aws.String("UTC"),
+		Target: &schedulertypes.Target{
+			Arn:     aws.String(busARN),
+			RoleArn: aws.String(intRoleARN(roleName, ic.accountID)),
+			// A JSON scalar is not a PutEvents payload: the delivery must
+			// fail and the dead-letter route must carry the event.
+			Input: aws.String(`"not-an-object"`),
+			EventBridgeParameters: &schedulertypes.EventBridgeParameters{
+				// The 'aws.' prefix is reserved and rejected at creation;
+				// a customer source keeps the schedule creatable.
+				Source:     aws.String("vorpal.test"),
+				DetailType: aws.String("dlq-pin"),
+			},
+			RetryPolicy: &schedulertypes.RetryPolicy{
+				MaximumRetryAttempts:     aws.Int32(0),
+				MaximumEventAgeInSeconds: aws.Int32(60),
+			},
+			DeadLetterConfig: &schedulertypes.DeadLetterConfig{Arn: aws.String(queueARN)},
+		},
+		FlexibleTimeWindow: &schedulertypes.FlexibleTimeWindow{Mode: schedulertypes.FlexibleTimeWindowModeOff},
+	})
+	if err != nil {
+		return r.RunTest(integSvc, "Scheduler_EventBridge_DLQ", func() error { return fmt.Errorf("create schedule: %w", err) })
+	}
+	defer func() {
+		ic.scheduler.DeleteSchedule(ic.ctx, &scheduler.DeleteScheduleInput{
+			Name:      aws.String(scheduleName),
+			GroupName: aws.String(groupName),
+		})
+	}()
+
+	return r.pollVerify("Scheduler_EventBridge_DLQ", schedulerPollTimeout, func() error {
+		msgs, err := ic.receiveMessages(queueURL, 5, 3)
+		if err != nil {
+			return err
+		}
+		for _, m := range msgs {
+			if m.Body != nil && strings.Contains(*m.Body, "not-an-object") {
+				return nil
+			}
+		}
+		return fmt.Errorf("dead-letter queue carries no message for the failed delivery (got %d messages)", len(msgs))
 	})
 }

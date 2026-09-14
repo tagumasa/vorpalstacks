@@ -2,6 +2,7 @@ package sfn
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"vorpalstacks/internal/core/storage"
@@ -177,5 +178,107 @@ func TestValidateStateMachineDefinitionResultAllowsWarnings(t *testing.T) {
 	}
 	if resp["result"] != "FAIL" {
 		t.Fatalf("definition with errors must FAIL, got %v", resp["result"])
+	}
+}
+
+// TestListStateMachinesValidatesMaxResults pins the Core-level bound so
+// both planes enforce the same range: the HTTP handler pre-validates via
+// parsePageLimit, and the admin gRPC handler forwards raw — the Core is
+// where they meet.
+func TestListStateMachinesValidatesMaxResults(t *testing.T) {
+	svc, store := newRecoveryService(t)
+	ctx := t.Context()
+
+	for _, bad := range []int32{1001, -1} {
+		_, err := svc.listStateMachinesCore(ctx, store, ListStateMachinesInput{MaxResults: bad})
+		requireAWSCode(t, err, "ValidationException")
+	}
+	if _, err := svc.listStateMachinesCore(ctx, store, ListStateMachinesInput{MaxResults: 0}); err != nil {
+		t.Errorf("default page size rejected: %v", err)
+	}
+}
+
+// stubRoleProvider backs the Core role-validation pin.
+type stubRoleProvider struct {
+	exists    map[string]bool
+	assumeFor map[string]string
+}
+
+func (s *stubRoleProvider) GetAssumeRolePolicyDocument(roleName string) (string, error) {
+	if doc, ok := s.assumeFor[roleName]; ok {
+		return doc, nil
+	}
+	return "", fmt.Errorf("role not found: %s", roleName)
+}
+
+func (s *stubRoleProvider) Exists(roleName string) bool {
+	return s.exists[roleName]
+}
+
+// TestCoreValidatesStateMachineRole pins the #29 single-path contract:
+// role validation runs inside the Core for every plane, not in the HTTP
+// handler — with the provider injected, a nonexistent role fails
+// creation identically however the Core is reached, and a nil provider
+// (not injected) leaves validation skipped.
+func TestCoreValidatesStateMachineRole(t *testing.T) {
+	store := newCreateTestStore(t)
+	ctx := context.Background()
+
+	withProvider := NewStepFunctionService(nil, "000000000000")
+	withProvider.SetRoleProvider(&stubRoleProvider{
+		exists:    map[string]bool{"good-role": true},
+		assumeFor: map[string]string{"good-role": `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"states.amazonaws.com"},"Action":"sts:AssumeRole"}]}`},
+	})
+	_, err := withProvider.createStateMachineCore(ctx, store, CreateStateMachineInput{
+		Name:       "role-sm",
+		Definition: `{"StartAt":"A","States":{"A":{"Type":"Pass","End":true}}}`,
+		RoleArn:    "arn:aws:iam::000000000000:role/missing-role",
+	})
+	if err == nil {
+		t.Fatal("the Core must reject a role the provider does not carry")
+	}
+	requireAWSCode(t, err, "ValidationException")
+
+	if _, err := withProvider.createStateMachineCore(ctx, store, CreateStateMachineInput{
+		Name:       "role-sm",
+		Definition: `{"StartAt":"A","States":{"A":{"Type":"Pass","End":true}}}`,
+		RoleArn:    "arn:aws:iam::000000000000:role/good-role",
+	}); err != nil {
+		t.Fatalf("a carried role must create: %v", err)
+	}
+
+	// Without the provider injected the Core proceeds (the validator is
+	// unavailable, not wrong) — the historical unit-test plane.
+	noProvider := &StepFunctionService{}
+	if _, err := noProvider.createStateMachineCore(ctx, store, CreateStateMachineInput{
+		Name:       "role-sm-2",
+		Definition: `{"StartAt":"A","States":{"A":{"Type":"Pass","End":true}}}`,
+		RoleArn:    "arn:aws:iam::000000000000:role/any",
+	}); err != nil {
+		t.Fatalf("nil provider must skip validation: %v", err)
+	}
+}
+
+// TestValidateDefinitionResultSpansTruncatedPage pins the result
+// semantics: the OK/FAIL verdict is computed over the definition's full
+// diagnostic set, while maxResults bounds only the returned diagnostics
+// page — an ERROR beyond the cutoff must still fail a WARNING-severity
+// validation.
+func TestValidateDefinitionResultSpansTruncatedPage(t *testing.T) {
+	svc, _ := newRecoveryService(t)
+	def := `{"StartAt":"A1","States":{` +
+		`"A1":{"Type":"Pass","Result":"$.looks.like.a.path","Next":"A2"},` +
+		`"A2":{"Type":"Pass","Result":"$.looks.like.a.path","Next":"Zbad"},` +
+		`"Zbad":{"Type":"Pass","Nope":1,"End":true}}}`
+	out, err := svc.validateStateMachineDefinitionCore(ValidateStateMachineDefinitionInput{
+		Definition: def, SMType: "STANDARD", Severity: "WARNING", MaxResults: 2})
+	if err != nil {
+		t.Fatalf("validate core: %v", err)
+	}
+	if out["result"] != "FAIL" {
+		t.Errorf("result = %v with diagnostics %v, want FAIL — the ERROR beyond the cutoff still fails the definition", out["result"], out["diagnostics"])
+	}
+	if out["truncated"] != true {
+		t.Errorf("truncated = %v, want true", out["truncated"])
 	}
 }

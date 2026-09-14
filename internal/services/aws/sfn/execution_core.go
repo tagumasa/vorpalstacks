@@ -13,6 +13,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/google/uuid"
+
 	"vorpalstacks/internal/core/logs"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -81,7 +83,10 @@ func resolveStateMachineReference(ctx context.Context, store *sfnstore.StepFunct
 	if !qualified {
 		sm, err := store.GetStateMachine(ctx, arn)
 		if err != nil {
-			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
+			if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
+				return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
+			}
+			return nil, err
 		}
 		return &stateMachineReference{StateMachine: sm}, nil
 	}
@@ -90,11 +95,17 @@ func resolveStateMachineReference(ctx context.Context, store *sfnstore.StepFunct
 		// Numeric qualifier: a version ARN.
 		version, err := store.GetStateMachineVersion(ctx, arn)
 		if err != nil {
-			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
+			if errors.Is(err, sfnstore.ErrStateMachineVersionNotFound) {
+				return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
+			}
+			return nil, err
 		}
 		sm, err := store.GetStateMachine(ctx, version.StateMachineArn)
 		if err != nil {
-			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + version.StateMachineArn)
+			if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
+				return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + version.StateMachineArn)
+			}
+			return nil, err
 		}
 		return &stateMachineReference{StateMachine: sm, Version: version}, nil
 	}
@@ -102,11 +113,17 @@ func resolveStateMachineReference(ctx context.Context, store *sfnstore.StepFunct
 	// Non-numeric qualifier: an alias ARN.
 	alias, err := store.GetStateMachineAlias(ctx, arn)
 	if err != nil {
-		return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
+		if errors.Is(err, sfnstore.ErrStateMachineAliasNotFound) {
+			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + arn)
+		}
+		return nil, err
 	}
 	sm, err := store.GetStateMachine(ctx, alias.StateMachineArn)
 	if err != nil {
-		return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + alias.StateMachineArn)
+		if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
+			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + alias.StateMachineArn)
+		}
+		return nil, err
 	}
 
 	versionArn, err := selectVersionByWeight(alias.RoutingConfiguration)
@@ -115,7 +132,10 @@ func resolveStateMachineReference(ctx context.Context, store *sfnstore.StepFunct
 	}
 	version, err := store.GetStateMachineVersion(ctx, versionArn)
 	if err != nil {
-		return nil, NewStateMachineDoesNotExist("State Machine Version Does not exist: " + versionArn)
+		if errors.Is(err, sfnstore.ErrStateMachineVersionNotFound) {
+			return nil, NewStateMachineDoesNotExist("State Machine Version Does not exist: " + versionArn)
+		}
+		return nil, err
 	}
 	return &stateMachineReference{StateMachine: sm, Version: version, Alias: alias}, nil
 }
@@ -306,25 +326,20 @@ func (s *StepFunctionService) startExecutionCore(ctx context.Context, store *sfn
 	}
 	sm := ref.StateMachine
 
-	executionArn := svcarn.NewARNBuilder(s.accountID, store.GetRegion()).StepFunctions().
-		Execution(svcarn.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
-
 	exec := sfnstore.NewExecution(sm.StateMachineArn, name, in.Input, in.TraceHeader)
-	exec.ExecutionArn = executionArn
 	exec.StateMachineVersionArn = ref.versionArn()
 	exec.StateMachineAliasArn = ref.aliasArn()
 
-	if err := store.CreateExecution(ctx, exec); err != nil {
+	if err := persistExecutionForStart(ctx, store, exec, s.accountID, store.GetRegion(), sm.StateMachineArn, sm.Type == "EXPRESS"); err != nil {
 		if errors.Is(err, sfnstore.ErrExecutionAlreadyExists) {
 			// StartExecution is idempotent for STANDARD workflows: the
 			// same name and input on a running execution returns that
-			// execution; EXPRESS workflows are not idempotent.
-			if sm.Type != "EXPRESS" {
-				if existing, idempotent, ierr := executionAlreadyExistsIdempotent(store, executionArn, in.Input); ierr == nil && idempotent {
-					return &StartExecutionResult{ExecutionArn: existing.ExecutionArn, StartDate: existing.StartDate}, nil
-				}
+			// execution. EXPRESS reuse never reaches this branch —
+			// persistExecutionForStart disambiguates its ARN.
+			if existing, idempotent, ierr := executionAlreadyExistsIdempotent(store, exec.ExecutionArn, in.Input); ierr == nil && idempotent {
+				return &StartExecutionResult{ExecutionArn: existing.ExecutionArn, StartDate: existing.StartDate}, nil
 			}
-			return nil, NewExecutionAlreadyExists("An execution with the same name already exists: " + executionArn)
+			return nil, NewExecutionAlreadyExists("An execution with the same name already exists: " + exec.ExecutionArn)
 		}
 		return nil, err
 	}
@@ -337,28 +352,50 @@ func (s *StepFunctionService) startExecutionCore(ctx context.Context, store *sfn
 // launchExecution runs an execution asynchronously with panic isolation,
 // registration for StopExecution cancellation and terminal-state
 // persistence on panic.
-func (s *StepFunctionService) launchExecution(store *sfnstore.StepFunctionStore, exec *sfnstore.Execution) {
-	executor := NewExecutorWithStores(store, s.bus, s.accountID, store.GetRegion())
+// launchExecutionGoroutine registers the execution for StopExecution
+// cancellation, runs run under the service's async wait group, and
+// persists a FAILED terminal state if the goroutine panics — a panic must
+// never leave a RUNNING zombie behind. The runLabel names the launch path
+// in logs (execution, recovered execution, redrive execution).
+// executionDrainWait bounds how long a redrive waits for the superseded
+// run's goroutine to finish its terminal history and record writes. The
+// drain is a handful of store writes in practice; the bound only guards
+// against a wedged goroutine holding the redrive hostage — on timeout the
+// transition's fresh-status guard still decides eligibility.
+const executionDrainWait = 5 * time.Second
+
+func (s *StepFunctionService) launchExecutionGoroutine(store *sfnstore.StepFunctionStore, exec *sfnstore.Execution, runLabel string, run func(ctx context.Context) error) {
 	execCtx, cancel := context.WithCancel(context.Background())
-	store.RegisterExecution(exec.ExecutionArn, cancel)
+	handle := store.RegisterExecution(exec.ExecutionArn, cancel)
 	s.asyncWg.Add(1)
 	go func() {
 		defer s.asyncWg.Done()
-		defer store.UnregisterExecution(exec.ExecutionArn)
+		defer store.UnregisterExecution(exec.ExecutionArn, handle)
 		defer func() {
 			if r := recover(); r != nil {
-				logs.Error("sfn: panic in execution", logs.String("arn", exec.ExecutionArn), logs.Any("panic", r))
+				logs.Error("sfn: panic in "+runLabel, logs.String("arn", exec.ExecutionArn), logs.Any("panic", r))
 				exec.Status = "FAILED"
-				exec.Error = "States.InternalError"
+				exec.Error = "States.Runtime"
 				exec.Cause = fmt.Sprintf("internal panic: %v", r)
 				exec.StopDate = time.Now().UTC()
+				// A terminal status without its terminal event would leave
+				// the history ending at the last state event; the event
+				// continues the stored sequence.
+				appendTerminalFailureEvent(context.Background(), store, exec, exec.Error, exec.Cause)
 				_ = store.UpdateExecution(context.Background(), exec)
 			}
 		}()
-		if err := executor.ExecuteStateMachine(execCtx, exec); err != nil {
-			logs.Error("sfn: execution error", logs.String("arn", exec.ExecutionArn), logs.Err(err))
+		if err := run(execCtx); err != nil {
+			logs.Error("sfn: "+runLabel+" failed", logs.String("arn", exec.ExecutionArn), logs.Err(err))
 		}
 	}()
+}
+
+func (s *StepFunctionService) launchExecution(store *sfnstore.StepFunctionStore, exec *sfnstore.Execution) {
+	executor := NewExecutorWithStores(store, s.bus, s.accountID, store.GetRegion(), s.taskCredentialsAuthz)
+	s.launchExecutionGoroutine(store, exec, "execution", func(ctx context.Context) error {
+		return executor.ExecuteStateMachine(ctx, exec)
+	})
 }
 
 // versionArn returns the version ARN an execution must be associated
@@ -377,6 +414,28 @@ func (r *stateMachineReference) aliasArn() string {
 		return r.Alias.StateMachineAliasArn
 	}
 	return ""
+}
+
+// persistExecutionForStart creates the execution record under the two
+// dialects' name contracts: STANDARD keeps the name-derived ARN and
+// surfaces ErrExecutionAlreadyExists for the caller's idempotence check,
+// while "For EXPRESS workflows, execution names can be reused" — the
+// store keys executions by ARN, so a reused name persists under a freshly
+// suffixed ARN while the record keeps the caller's name.
+func persistExecutionForStart(ctx context.Context, store *sfnstore.StepFunctionStore, exec *sfnstore.Execution, accountID, region, smArn string, express bool) error {
+	exec.ExecutionArn = svcarn.NewARNBuilder(accountID, region).StepFunctions().
+		Execution(svcarn.ExtractStateMachineNameFromARN(smArn), exec.Name)
+	for {
+		err := store.CreateExecution(ctx, exec)
+		if err == nil {
+			return nil
+		}
+		if !express || !errors.Is(err, sfnstore.ErrExecutionAlreadyExists) {
+			return err
+		}
+		exec.ExecutionArn = svcarn.NewARNBuilder(accountID, region).StepFunctions().
+			Execution(svcarn.ExtractStateMachineNameFromARN(smArn), exec.Name+"-"+uuid.New().String()[:8])
+	}
 }
 
 // startSyncExecutionCore is the single entry point for the synchronous
@@ -413,23 +472,30 @@ func (s *StepFunctionService) startSyncExecutionCore(ctx context.Context, store 
 		return nil, NewStateMachineTypeNotSupported("StartSyncExecution is not available for STANDARD workflows")
 	}
 
-	executionArn := svcarn.NewARNBuilder(s.accountID, store.GetRegion()).StepFunctions().
-		Execution(svcarn.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
-
 	exec := sfnstore.NewExecution(sm.StateMachineArn, name, in.Input, in.TraceHeader)
-	exec.ExecutionArn = executionArn
 	exec.StateMachineVersionArn = ref.versionArn()
 	exec.StateMachineAliasArn = ref.aliasArn()
 
-	if err := store.CreateExecution(ctx, exec); err != nil {
+	// StartSyncExecution is EXPRESS-only, so a name reuse persists under a
+	// freshly suffixed ARN — the operation's response carries it.
+	if err := persistExecutionForStart(ctx, store, exec, s.accountID, store.GetRegion(), sm.StateMachineArn, true); err != nil {
 		if errors.Is(err, sfnstore.ErrExecutionAlreadyExists) {
-			return nil, NewExecutionAlreadyExists("An execution with the same name already exists: " + executionArn)
+			return nil, NewExecutionAlreadyExists("An execution with the same name already exists: " + exec.ExecutionArn)
 		}
 		return nil, err
 	}
+	executionArn := exec.ExecutionArn
 
-	executor := NewExecutorWithStores(store, s.bus, s.accountID, store.GetRegion())
-	_ = executor.ExecuteStateMachine(ctx, exec)
+	executor := NewExecutorWithStores(store, s.bus, s.accountID, store.GetRegion(), s.taskCredentialsAuthz)
+	// The inline run registers for StopExecution like the async launch:
+	// without registration a stop only flips the stored record while the
+	// executor keeps running and overwrites the ABORTED status with its
+	// own terminal write.
+	execCtx, cancel := context.WithCancel(ctx)
+	handle := store.RegisterExecution(executionArn, cancel)
+	_ = executor.ExecuteStateMachine(execCtx, exec)
+	store.UnregisterExecution(executionArn, handle)
+	cancel()
 
 	updated, err := store.GetExecution(ctx, executionArn)
 	if err != nil {
@@ -441,13 +507,19 @@ func (s *StepFunctionService) startSyncExecutionCore(ctx context.Context, store 
 		"executionArn":    updated.ExecutionArn,
 		"stateMachineArn": updated.StateMachineArn,
 		"name":            updated.Name,
-		"startDate":       updated.StartDate.Unix(),
+		"startDate":       awsEpochSeconds(updated.StartDate),
 		"status":          updated.Status,
 		"inputDetails":    map[string]interface{}{"included": !metadataOnly},
-		"outputDetails":   map[string]interface{}{"included": !metadataOnly},
+	}
+	// The details members follow the serialiser's presence contract:
+	// outputDetails appears only when an output exists — a failed sync
+	// execution has none — or when METADATA_ONLY explicitly reports the
+	// withheld payload.
+	if metadataOnly || updated.Output != "" {
+		result["outputDetails"] = map[string]interface{}{"included": !metadataOnly}
 	}
 	if !updated.StopDate.IsZero() {
-		result["stopDate"] = updated.StopDate.Unix()
+		result["stopDate"] = awsEpochSeconds(updated.StopDate)
 	}
 	if !metadataOnly {
 		if updated.Input != "" {
@@ -517,11 +589,12 @@ func (s *StepFunctionService) stopExecutionCore(ctx context.Context, store *sfns
 	}
 
 	if isTerminalStatus(exec.Status) {
-		return map[string]interface{}{"stopDate": exec.StopDate.Unix()}, nil
+		return map[string]interface{}{"stopDate": awsEpochSeconds(exec.StopDate)}, nil
 	}
 
-	store.CancelExecution(in.ExecutionArn)
-
+	// Persist the terminal record before cancelling: the executor's
+	// terminal write must not overwrite the caller's error/cause pair in a
+	// last-writer race.
 	exec.Status = "ABORTED"
 	exec.StopDate = time.Now().UTC()
 	exec.Error = in.Error
@@ -531,12 +604,41 @@ func (s *StepFunctionService) stopExecutionCore(ctx context.Context, store *sfns
 		return nil, err
 	}
 
-	return map[string]interface{}{"stopDate": exec.StopDate.Unix()}, nil
+	store.CancelExecution(in.ExecutionArn)
+
+	return map[string]interface{}{"stopDate": awsEpochSeconds(exec.StopDate)}, nil
+}
+
+// appendTerminalFailureEvent writes the ExecutionFailed terminal event for
+// a path that fails an execution outside the executor (a goroutine panic
+// or restart recovery): it continues the stored history's id sequence.
+func appendTerminalFailureEvent(ctx context.Context, store *sfnstore.StepFunctionStore, exec *sfnstore.Execution, errorCode, cause string) {
+	lastId, err := store.LastExecutionHistoryId(ctx, exec.ExecutionArn)
+	if err != nil {
+		logs.Error("sfn: failed to read the history tail for a terminal event", logs.String("arn", exec.ExecutionArn), logs.Err(err))
+		return
+	}
+	event := &sfnstore.ExecutionHistoryEvent{
+		ExecutionArn:    exec.ExecutionArn,
+		EventId:         lastId + 1,
+		PreviousEventId: lastId,
+		Type:            "ExecutionFailed",
+		Timestamp:       time.Now().UTC(),
+		ExecutionFailedEventDetails: &sfnstore.ExecutionFailedEventDetails{
+			Error: errorCode,
+			Cause: cause,
+		},
+	}
+	if err := store.AddExecutionHistoryEvent(ctx, event); err != nil {
+		logs.Error("sfn: failed to append the ExecutionFailed event", logs.String("arn", exec.ExecutionArn), logs.Err(err))
+	}
 }
 
 // describeExecutionCore is the single entry point for DescribeExecution.
 // includedData=METADATA_ONLY omits the input and output payloads and
-// reports them as not included.
+// reports them as not included; in the default mode the serialiser owns
+// the presence contract (outputDetails appears only when an output
+// exists).
 func (s *StepFunctionService) describeExecutionCore(ctx context.Context, store *sfnstore.StepFunctionStore, in DescribeExecutionInput) (map[string]interface{}, error) {
 	if err := validateArnRequired(in.ExecutionArn, "executionArn"); err != nil {
 		return nil, err
@@ -553,15 +655,12 @@ func (s *StepFunctionService) describeExecutionCore(ctx context.Context, store *
 		return nil, err
 	}
 
-	response := executionToResponse(exec)
+	response := executionToResponse(ctx, store, exec)
 	if in.IncludedData == "METADATA_ONLY" {
 		delete(response, "input")
 		delete(response, "output")
 		response["inputDetails"] = map[string]interface{}{"included": false}
 		response["outputDetails"] = map[string]interface{}{"included": false}
-	} else {
-		response["inputDetails"] = map[string]interface{}{"included": true}
-		response["outputDetails"] = map[string]interface{}{"included": true}
 	}
 	return response, nil
 }
@@ -598,10 +697,7 @@ func (s *StepFunctionService) listExecutionsCore(ctx context.Context, store *sfn
 	if err := validateMaxResults(in.MaxResults, 0, sfnstore.MaxPageSize, "maxResults"); err != nil {
 		return nil, err
 	}
-	maxResults := in.MaxResults
-	if maxResults == 0 {
-		maxResults = sfnstore.DefaultPageSize
-	}
+	maxResults := normaliseListLimit(in.MaxResults)
 
 	filterArn := in.StateMachineArn
 	association := ""
@@ -694,13 +790,13 @@ func (s *StepFunctionService) getExecutionHistoryCore(ctx context.Context, store
 	if err := validateMaxResults(in.MaxResults, 0, sfnstore.MaxPageSize, "maxResults"); err != nil {
 		return nil, err
 	}
-	limit := in.MaxResults
-	if limit == 0 {
-		limit = sfnstore.DefaultPageSize
-	}
+	limit := normaliseListLimit(in.MaxResults)
 
 	if _, err := store.GetExecution(ctx, in.ExecutionArn); err != nil {
-		return nil, NewExecutionDoesNotExist("Execution Does not exist: " + in.ExecutionArn)
+		if errors.Is(err, sfnstore.ErrExecutionNotFound) {
+			return nil, NewExecutionDoesNotExist("Execution Does not exist: " + in.ExecutionArn)
+		}
+		return nil, err
 	}
 
 	// Reverse order must paginate in reverse as a whole: the store serves
@@ -803,6 +899,44 @@ func (c *redriveTokenCache) record(executionArn, token string, redriveDate time.
 	}
 }
 
+// evaluateRedriveEligibility applies the documented RedriveExecution
+// eligibility contract — STANDARD workflow, not a Distributed Map child
+// (those "can only be redriven by their Map Run"), an unsuccessful terminal
+// status, within the fourteen-day redrive window, below the history-event
+// ceiling — and is the single verdict both RedriveExecution and the
+// DescribeExecution redriveStatus derivation use, so the two can never
+// disagree. The reason continues the sentence "Execution <arn> …" and is
+// set exactly when eligible is false.
+func evaluateRedriveEligibility(ctx context.Context, store *sfnstore.StepFunctionStore, sm *sfnstore.StateMachine, exec *sfnstore.Execution) (eligible bool, reason string, err error) {
+	if sm.Type == "EXPRESS" {
+		return false, "is an EXPRESS workflow execution and cannot be redriven", nil
+	}
+	if exec.MapRunArn != "" {
+		return false, "is a Distributed Map child execution and can only be redriven by its Map Run", nil
+	}
+	if !isRedrivableStatus(exec.Status) {
+		return false, "is in " + exec.Status + " status and cannot be redriven", nil
+	}
+	return redrivePeriodChecks(ctx, store, exec)
+}
+
+// redrivePeriodChecks applies the time window and history-event ceiling
+// shared by the direct-redrive verdict and the child redriveStatus
+// derivation. The reason continues the sentence "Execution <arn> …".
+func redrivePeriodChecks(ctx context.Context, store *sfnstore.StepFunctionStore, exec *sfnstore.Execution) (eligible bool, reason string, err error) {
+	if !exec.StopDate.IsZero() && time.Since(exec.StopDate) > sfnstore.RedriveWindowDays*24*time.Hour {
+		return false, fmt.Sprintf("has exceeded the redrivable period of %d days", sfnstore.RedriveWindowDays), nil
+	}
+	eventCount, err := store.CountExecutionHistory(ctx, exec.ExecutionArn)
+	if err != nil {
+		return false, "", err
+	}
+	if eventCount >= sfnstore.MaxRedriveEventHistory {
+		return false, "has exceeded the execution history event limit", nil
+	}
+	return true, "", nil
+}
+
 // redriveExecutionCore is the single entry point for RedriveExecution: it
 // enforces the documented eligibility contract — STANDARD workflows only,
 // unsuccessful terminal status, within fourteen days of completion and
@@ -830,24 +964,16 @@ func (s *StepFunctionService) redriveExecutionCore(ctx context.Context, store *s
 
 	sm, err := store.GetStateMachine(ctx, exec.StateMachineArn)
 	if err != nil {
-		return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + exec.StateMachineArn)
-	}
-
-	if sm.Type == "EXPRESS" {
-		return nil, NewExecutionNotRedrivable(fmt.Sprintf("Execution %s is an EXPRESS workflow execution and cannot be redriven", in.ExecutionArn))
-	}
-	if !isRedrivableStatus(exec.Status) {
-		return nil, NewExecutionNotRedrivable(fmt.Sprintf("Execution %s is in %s status and cannot be redriven", in.ExecutionArn, exec.Status))
-	}
-	if !exec.StopDate.IsZero() && time.Since(exec.StopDate) > sfnstore.RedriveWindowDays*24*time.Hour {
-		return nil, NewExecutionNotRedrivable(fmt.Sprintf("Execution %s has exceeded the redrivable period of %d days", in.ExecutionArn, sfnstore.RedriveWindowDays))
-	}
-	eventCount, err := store.CountExecutionHistory(ctx, in.ExecutionArn)
-	if err != nil {
+		if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
+			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + exec.StateMachineArn)
+		}
 		return nil, err
 	}
-	if eventCount >= sfnstore.MaxRedriveEventHistory {
-		return nil, NewExecutionNotRedrivable(fmt.Sprintf("Execution %s has exceeded the execution history event limit", in.ExecutionArn))
+
+	if eligible, why, elErr := evaluateRedriveEligibility(ctx, store, sm, exec); elErr != nil {
+		return nil, elErr
+	} else if !eligible {
+		return nil, NewExecutionNotRedrivable(fmt.Sprintf("Execution %s %s", in.ExecutionArn, why))
 	}
 
 	definition, err := parseStateMachineDefinition(sm.Definition)
@@ -860,58 +986,75 @@ func (s *StepFunctionService) redriveExecutionCore(ctx context.Context, store *s
 		return nil, NewValidationException(fmt.Sprintf("failed to determine resume point: %v", err))
 	}
 
-	redriveDate := time.Now().UTC()
-	exec.Status = "RUNNING"
-	exec.Error = ""
-	exec.Cause = ""
-	exec.StopDate = time.Time{}
-	exec.RedriveCount++
-	exec.RedriveDate = redriveDate
-	exec.Output = ""
+	// The superseded run's goroutine flushes its terminal events and its
+	// final record write after the terminal status became visible (the
+	// stop persists the status first), and it numbers events from an
+	// in-memory counter this path cannot see. Transitioning or numbering
+	// before it drains lets its writes clobber the fresh record and the
+	// ExecutionRedriven event, and a stale ABORTED write can re-arm a
+	// second concurrent redrive. The registration's lifetime spans every
+	// write the goroutine makes, so waiting for it to disappear orders
+	// all of them before anything below; on timeout the transition guard
+	// still re-checks the fresh status.
+	store.WaitExecutionInactive(in.ExecutionArn, executionDrainWait)
 
-	if err := store.UpdateExecution(ctx, exec); err != nil {
-		return nil, NewConflictException(fmt.Sprintf("failed to update execution for redrive: %v", err))
+	redriveDate := time.Now().UTC()
+	// The status transition is serialised in the store: the eligibility
+	// verdict above ran against the pre-transition record, so a concurrent
+	// redrive of the same execution is rejected here against the fresh
+	// status instead of double-transitioning it.
+	exec, terr := store.TransitionExecutionForRedrive(ctx, in.ExecutionArn,
+		func(fresh *sfnstore.Execution) bool {
+			return fresh.MapRunArn == "" && isRedrivableStatus(fresh.Status)
+		},
+		func(fresh *sfnstore.Execution) {
+			fresh.Status = "RUNNING"
+			fresh.Error = ""
+			fresh.Cause = ""
+			fresh.StopDate = time.Time{}
+			fresh.RedriveCount++
+			fresh.RedriveDate = redriveDate
+			fresh.Output = ""
+		})
+	if terr != nil {
+		if errors.Is(terr, sfnstore.ErrExecutionNotRedrivable) {
+			return nil, NewExecutionNotRedrivable(fmt.Sprintf("Execution %s %s", in.ExecutionArn, "is no longer in a redrivable state"))
+		}
+		if errors.Is(terr, sfnstore.ErrExecutionNotFound) {
+			return nil, NewExecutionDoesNotExist("Execution Does not exist: " + in.ExecutionArn)
+		}
+		return nil, NewConflictException(fmt.Sprintf("failed to update execution for redrive: %v", terr))
 	}
 
-	executor := NewExecutorWithStores(store, s.bus, s.accountID, store.GetRegion())
+	executor := NewExecutorWithStores(store, s.bus, s.accountID, store.GetRegion(), s.taskCredentialsAuthz)
 
-	// Record the redrive in the history: the resumed state's next event
-	// follows this one, so the resume point passes lastEventId+1.
-	redriveEventId := rp.LastEventId + 1
+	// The event id follows the store's current maximum, not the resume
+	// point's derivation: the drained goroutine's terminal events sit
+	// above the failed state's last event, and the redriven history must
+	// continue after all of them.
+	lastId, lidErr := store.LastExecutionHistoryId(ctx, in.ExecutionArn)
+	if lidErr != nil {
+		logs.Error("Failed to read the last history id for redrive numbering", logs.Err(lidErr))
+		lastId = rp.LastEventId
+	}
+	redriveEventId := lastId + 1
 	if err := executor.addExecutionHistoryEvent(ctx, exec, &sfnstore.ExecutionHistoryEvent{
-		ExecutionArn: in.ExecutionArn,
-		EventId:      redriveEventId,
-		Type:         "ExecutionRedriven",
-		Timestamp:    redriveDate,
-		ExecutionRedrivedEventDetails: &sfnstore.ExecutionRedrivedEventDetails{
-			RedriveDate:     redriveDate,
-			StateMachineArn: exec.StateMachineArn,
-			ExecutionArn:    in.ExecutionArn,
+		ExecutionArn:    in.ExecutionArn,
+		EventId:         redriveEventId,
+		PreviousEventId: lastId,
+		Type:            "ExecutionRedriven",
+		Timestamp:       redriveDate,
+		ExecutionRedrivenEventDetails: &sfnstore.ExecutionRedrivenEventDetails{
+			RedriveCount: exec.RedriveCount,
 		},
 	}); err != nil {
 		logs.Error("Failed to add ExecutionRedriven event", logs.Err(err))
 	}
 
-	resumeCtx, cancel := context.WithCancel(context.Background())
-	store.RegisterExecution(in.ExecutionArn, cancel)
-	s.asyncWg.Add(1)
-	go func() {
-		defer s.asyncWg.Done()
-		defer store.UnregisterExecution(in.ExecutionArn)
-		defer func() {
-			if r := recover(); r != nil {
-				logs.Error("sfn: panic in redrive execution", logs.String("arn", in.ExecutionArn), logs.Any("panic", r))
-				exec.Status = "FAILED"
-				exec.Error = "States.InternalError"
-				exec.Cause = fmt.Sprintf("internal panic: %v", r)
-				exec.StopDate = time.Now().UTC()
-				_ = store.UpdateExecution(context.Background(), exec)
-			}
-		}()
-		if err := executor.ExecuteStateMachineFromState(resumeCtx, exec, rp.StateName, rp.Input, redriveEventId); err != nil {
-			logs.Error("sfn: redrive execution failed", logs.String("arn", in.ExecutionArn), logs.Err(err))
-		}
-	}()
+	s.launchExecutionGoroutine(store, exec, "redrive execution", func(ctx context.Context) error {
+		// A redrive does not re-arm the state-machine-level timeout.
+		return executor.ExecuteStateMachineFromState(ctx, exec, rp.StateName, rp.Input, redriveEventId, false)
+	})
 
 	redriveTokens.record(in.ExecutionArn, in.ClientToken, redriveDate)
 

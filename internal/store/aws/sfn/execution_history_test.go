@@ -195,3 +195,41 @@ func seedHistoryFrom(t *testing.T, store *StepFunctionStore, arn string, from, t
 		}
 	}
 }
+
+// A Distributed Map child ARN nests under its parent ("parent:M-0"), so
+// the parent's key prefix also covers the child's events. Every history
+// consumer that means "this execution's events" must see the parent's
+// events alone: leaking the child's would show foreign events on
+// GetExecutionHistory and gap the parent's id sequence on resume.
+func TestExecutionHistoryExcludesNestedChildren(t *testing.T) {
+	store := newHistoryTestStore(t)
+	ctx := context.Background()
+
+	parentArn := "arn:aws:states:us-east-1:000000000000:execution:sm:parent"
+	childArn := parentArn + ":M-0"
+	seedHistory(t, store, parentArn, 2)
+	seedHistory(t, store, childArn, 3)
+
+	events, _, err := store.GetExecutionHistory(ctx, parentArn, 100, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equalIDs(eventIDs(events), 1, 2) {
+		t.Fatalf("parent history leaked child events: %v", eventIDs(events))
+	}
+
+	childEvents, _, err := store.GetExecutionHistory(ctx, childArn, 100, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equalIDs(eventIDs(childEvents), 1, 2, 3) {
+		t.Fatalf("child history wrong: %v", eventIDs(childEvents))
+	}
+
+	if count, err := store.CountExecutionHistory(ctx, parentArn); err != nil || count != 2 {
+		t.Fatalf("parent count = %d (err %v), want 2", count, err)
+	}
+	if last, err := store.LastExecutionHistoryId(ctx, parentArn); err != nil || last != 2 {
+		t.Fatalf("parent last id = %d (err %v), want 2", last, err)
+	}
+}

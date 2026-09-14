@@ -11,9 +11,6 @@ import (
 // StartExecution starts an execution of a state machine.
 func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stateMachineArn := request.GetParamLowerFirst(req.Parameters, "stateMachineArn")
-	if stateMachineArn == "" {
-		stateMachineArn = request.GetParamLowerFirst(req.Parameters, "StateMachineArn")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -33,7 +30,7 @@ func (s *StepFunctionService) StartExecution(ctx context.Context, reqCtx *reques
 	// StartExecutionOutput carries the execution ARN and start date only.
 	return map[string]interface{}{
 		"executionArn": result.ExecutionArn,
-		"startDate":    result.StartDate.Unix(),
+		"startDate":    awsEpochSeconds(result.StartDate),
 	}, nil
 }
 
@@ -64,10 +61,7 @@ func (s *StepFunctionService) DescribeExecution(ctx context.Context, reqCtx *req
 
 // ListExecutions returns a list of executions for a state machine.
 func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit, err := parsePageLimit(req)
-	if err != nil {
-		return nil, err
-	}
+	limit := parsePageLimit(req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -93,26 +87,28 @@ func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *reques
 			"stateMachineArn": exec.StateMachineArn,
 			"name":            exec.Name,
 			"status":          exec.Status,
-			"startDate":       exec.StartDate.Unix(),
+			"startDate":       awsEpochSeconds(exec.StartDate),
 		}
 		if !exec.StopDate.IsZero() {
-			executions[i]["stopDate"] = exec.StopDate.Unix()
+			executions[i]["stopDate"] = awsEpochSeconds(exec.StopDate)
 		}
 		// The child-execution linkage members are only returned when the
-		// list is scoped by mapRunArn (ListExecutions member contract).
+		// list is scoped by mapRunArn: "This field is returned only if
+		// mapRunArn was specified in the ListExecutions API action."
+		// itemCount is emitted unconditionally inside that scope — a
+		// numeric zero is a count, and suppressing it would conflate an
+		// explicit 0 with an unset member.
 		if mapRunFilter != "" {
 			if exec.MapRunArn != "" {
 				executions[i]["mapRunArn"] = exec.MapRunArn
 			}
-			if exec.ItemCount != 0 {
-				executions[i]["itemCount"] = exec.ItemCount
-			}
+			executions[i]["itemCount"] = exec.ItemCount
 		}
 		if exec.RedriveCount != 0 {
 			executions[i]["redriveCount"] = exec.RedriveCount
 		}
 		if !exec.RedriveDate.IsZero() {
-			executions[i]["redriveDate"] = exec.RedriveDate.Unix()
+			executions[i]["redriveDate"] = awsEpochSeconds(exec.RedriveDate)
 		}
 		if exec.StateMachineAliasArn != "" {
 			executions[i]["stateMachineAliasArn"] = exec.StateMachineAliasArn
@@ -133,10 +129,7 @@ func (s *StepFunctionService) ListExecutions(ctx context.Context, reqCtx *reques
 
 // GetExecutionHistory returns the history of an execution.
 func (s *StepFunctionService) GetExecutionHistory(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit, err := parsePageLimit(req)
-	if err != nil {
-		return nil, err
-	}
+	limit := parsePageLimit(req)
 
 	includeExecutionData := true
 	if v, ok := req.Parameters["includeExecutionData"]; ok {
@@ -180,7 +173,7 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 	return map[string]interface{}{
-		"redriveDate": result.RedriveDate.Unix(),
+		"redriveDate": awsEpochSeconds(result.RedriveDate),
 	}, nil
 }
 
@@ -195,9 +188,6 @@ func generateExecutionName() string {
 // live in the execution Core.
 func (s *StepFunctionService) StartSyncExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stateMachineArn := request.GetParamLowerFirst(req.Parameters, "stateMachineArn")
-	if stateMachineArn == "" {
-		stateMachineArn = request.GetParamLowerFirst(req.Parameters, "StateMachineArn")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

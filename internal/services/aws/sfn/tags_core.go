@@ -8,7 +8,6 @@ import (
 
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	types "vorpalstacks/internal/common/tags"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -21,7 +20,7 @@ import (
 // enforceTagQuota verifies that applying the given tags keeps the resource
 // within the fifty-tags-per-resource quota, counting the keys already
 // present on the resource.
-func enforceTagQuota(store *sfnstore.StepFunctionStore, arn string, tags []types.Tag) error {
+func enforceTagQuota(store *sfnstore.StepFunctionStore, arn string, tags []tagutil.Tag) error {
 	existing, err := store.ListAsSlice(arn)
 	if err != nil {
 		return err
@@ -41,7 +40,7 @@ func enforceTagQuota(store *sfnstore.StepFunctionStore, arn string, tags []types
 
 // tagResourceCore validates the resource, enforces the tag quota and applies
 // the given tags. It is the single mutation path for TagResource.
-func (s *StepFunctionService) tagResourceCore(ctx context.Context, store *sfnstore.StepFunctionStore, arn string, tags []types.Tag) error {
+func (s *StepFunctionService) tagResourceCore(ctx context.Context, store *sfnstore.StepFunctionStore, arn string, tags []tagutil.Tag) error {
 	if err := validateTaggableResource(ctx, store, arn); err != nil {
 		return err
 	}
@@ -60,7 +59,7 @@ func (s *StepFunctionService) untagResourceCore(ctx context.Context, store *sfns
 }
 
 // listTagsForResourceCore validates the resource and returns its tags.
-func (s *StepFunctionService) listTagsForResourceCore(ctx context.Context, store *sfnstore.StepFunctionStore, arn string) ([]types.Tag, error) {
+func (s *StepFunctionService) listTagsForResourceCore(ctx context.Context, store *sfnstore.StepFunctionStore, arn string) ([]tagutil.Tag, error) {
 	if err := validateTaggableResource(ctx, store, arn); err != nil {
 		return nil, err
 	}

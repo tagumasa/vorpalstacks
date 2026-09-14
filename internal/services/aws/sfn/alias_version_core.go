@@ -2,12 +2,15 @@ package sfn
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
+	"vorpalstacks/internal/common/request"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -77,7 +80,7 @@ func validateAliasName(name string) error {
 // baseStateMachineArn strips the numeric version qualifier from a state
 // machine version ARN and returns the unqualified state machine ARN.
 func baseStateMachineArn(versionArn string) (string, error) {
-	partition, service, region, account, resource := svcarn.SplitARN(versionArn)
+	_, service, region, account, resource := svcarn.SplitARN(versionArn)
 	if service != "states" {
 		return "", fmt.Errorf("not a States ARN: %s", versionArn)
 	}
@@ -92,7 +95,7 @@ func baseStateMachineArn(versionArn string) (string, error) {
 	if _, err := strconv.Atoi(qualifier); err != nil {
 		return "", fmt.Errorf("not a version ARN: %s", versionArn)
 	}
-	return fmt.Sprintf("arn:%s:%s:%s:%s:stateMachine:%s", partition, service, region, account, name), nil
+	return svcarn.NewARNBuilder(account, region).Build("states", "stateMachine:"+name), nil
 }
 
 // publishStateMachineVersionCore is the single entry point for
@@ -125,7 +128,7 @@ func (s *StepFunctionService) publishStateMachineVersionCore(ctx context.Context
 	if existing, err := store.FindVersionByRevision(in.StateMachineArn, sm.RevisionId); err == nil {
 		return map[string]interface{}{
 			"stateMachineVersionArn": existing.StateMachineVersionArn,
-			"creationDate":           existing.CreationDate.Unix(),
+			"creationDate":           awsEpochSeconds(existing.CreationDate),
 		}, nil
 	} else if !errors.Is(err, sfnstore.ErrStateMachineVersionNotFound) {
 		return nil, err
@@ -142,7 +145,7 @@ func (s *StepFunctionService) publishStateMachineVersionCore(ctx context.Context
 
 	return map[string]interface{}{
 		"stateMachineVersionArn": version.StateMachineVersionArn,
-		"creationDate":           version.CreationDate.Unix(),
+		"creationDate":           awsEpochSeconds(version.CreationDate),
 	}, nil
 }
 
@@ -181,7 +184,10 @@ func (s *StepFunctionService) deleteStateMachineVersionCore(ctx context.Context,
 }
 
 // listStateMachineVersionsCore is the single entry point for
-// ListStateMachineVersions.
+// ListStateMachineVersions. "The results are sorted in descending order
+// of the version creation time": the full set is fetched, sorted
+// newest-first (the version number breaks same-instant ties, a higher
+// version having been published later) and offset-paged.
 func (s *StepFunctionService) listStateMachineVersionsCore(ctx context.Context, store *sfnstore.StepFunctionStore, smArn string, maxResults int32, nextToken string) (map[string]interface{}, error) {
 	if err := validateArnRequired(smArn, "stateMachineArn"); err != nil {
 		return nil, err
@@ -189,25 +195,89 @@ func (s *StepFunctionService) listStateMachineVersionsCore(ctx context.Context, 
 	if err := validateMaxResults(maxResults, 0, sfnstore.MaxPageSize, "maxResults"); err != nil {
 		return nil, err
 	}
+	maxResults = normaliseListLimit(maxResults)
 
-	result, err := store.ListStateMachineVersions(ctx, smArn, maxResults, nextToken)
+	all, err := store.ListAllStateMachineVersions(smArn)
 	if err != nil {
 		return nil, err
 	}
-
-	versions := make([]map[string]interface{}, len(result.Versions))
-	for i, v := range result.Versions {
-		versions[i] = map[string]interface{}{
-			"stateMachineVersionArn": v.StateMachineVersionArn,
-			"creationDate":           v.CreationDate.Unix(),
+	sort.SliceStable(all, func(i, j int) bool {
+		if !all[i].CreationDate.Equal(all[j].CreationDate) {
+			return all[i].CreationDate.After(all[j].CreationDate)
 		}
+		return all[i].Version > all[j].Version
+	})
+
+	offset := 0
+	if nextToken != "" {
+		parsed, parseErr := strconv.Atoi(nextToken)
+		if parseErr != nil || parsed < 0 || parsed > len(all) {
+			return nil, NewInvalidToken("Invalid nextToken: " + nextToken)
+		}
+		offset = parsed
+	}
+	end := offset + int(maxResults)
+	if end > len(all) {
+		end = len(all)
+	}
+
+	versions := make([]map[string]interface{}, 0, end-offset)
+	for _, v := range all[offset:end] {
+		versions = append(versions, map[string]interface{}{
+			"stateMachineVersionArn": v.StateMachineVersionArn,
+			"creationDate":           awsEpochSeconds(v.CreationDate),
+		})
 	}
 
 	response := map[string]interface{}{"stateMachineVersions": versions}
-	if result.NextToken != "" {
-		response["nextToken"] = result.NextToken
+	if end < len(all) {
+		response["nextToken"] = strconv.Itoa(end)
 	}
 	return response, nil
+}
+
+// parseRoutingConfiguration converts the wire forms of the routing
+// configuration parameter — a JSON string (URL-encoded) or a native
+// []interface{} (JSON-RPC) — to the Core DTO. Malformed input is a type
+// error here, not a degraded empty configuration: per-entry and weight
+// validation run in the Core (validateRoutingConfiguration).
+func parseRoutingConfiguration(req *request.ParsedRequest) ([]sfnstore.RoutingConfiguration, error) {
+	rawValue := req.Parameters["routingConfiguration"]
+	if rawValue == nil {
+		return nil, nil
+	}
+
+	var rawConfig []map[string]interface{}
+
+	switch v := rawValue.(type) {
+	case string:
+		if err := json.Unmarshal([]byte(v), &rawConfig); err != nil {
+			return nil, NewValidationException("routingConfiguration is not valid JSON")
+		}
+	case []interface{}:
+		for _, item := range v {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				return nil, NewValidationException("routingConfiguration entries must be objects, got " + fmt.Sprintf("%T", item))
+			}
+			rawConfig = append(rawConfig, m)
+		}
+	default:
+		return nil, NewValidationException("routingConfiguration must be a JSON array, got " + fmt.Sprintf("%T", rawValue))
+	}
+
+	config := make([]sfnstore.RoutingConfiguration, 0, len(rawConfig))
+	for _, item := range rawConfig {
+		versionArn, _ := item["stateMachineVersionArn"].(string)
+		weightVal, _ := item["weight"].(float64)
+
+		config = append(config, sfnstore.RoutingConfiguration{
+			StateMachineVersionArn: versionArn,
+			Weight:                 int32(weightVal),
+		})
+	}
+
+	return config, nil
 }
 
 // validateAliasRoutingConfig validates a routing configuration against the
@@ -226,7 +296,10 @@ func validateAliasRoutingConfig(ctx context.Context, store *sfnstore.StepFunctio
 			return NewValidationException("routingConfiguration entries must reference versions of the same state machine: " + entry.StateMachineVersionArn)
 		}
 		if _, err := store.GetStateMachineVersion(ctx, entry.StateMachineVersionArn); err != nil {
-			return NewResourceNotFound("State Machine Version Does not exist: " + entry.StateMachineVersionArn)
+			if errors.Is(err, sfnstore.ErrStateMachineVersionNotFound) {
+				return NewResourceNotFound("State Machine Version Does not exist: " + entry.StateMachineVersionArn)
+			}
+			return err
 		}
 	}
 	return nil
@@ -280,15 +353,14 @@ func (s *StepFunctionService) createStateMachineAliasCore(ctx context.Context, s
 		return nil, NewInvalidArnException("routingConfiguration entries must be state machine version ARNs")
 	}
 
-	sm, err := store.GetStateMachine(ctx, smArn)
-	if err != nil {
+	// The state machine record must exist for the alias to attach to; a
+	// deleting state machine is not a distinct state — deletion cascades
+	// synchronously.
+	if _, err := store.GetStateMachine(ctx, smArn); err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
 			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + smArn)
 		}
 		return nil, err
-	}
-	if sm.Status == "DELETING" {
-		return nil, NewStateMachineDeleting("State Machine is being deleted: " + smArn)
 	}
 
 	if err := validateAliasRoutingConfig(ctx, store, smArn, in.RoutingConfig); err != nil {
@@ -299,7 +371,7 @@ func (s *StepFunctionService) createStateMachineAliasCore(ctx context.Context, s
 		if existing.Description == in.Description && routingConfigsEqual(existing.RoutingConfiguration, in.RoutingConfig) {
 			return map[string]interface{}{
 				"stateMachineAliasArn": existing.StateMachineAliasArn,
-				"creationDate":         existing.CreationDate.Unix(),
+				"creationDate":         awsEpochSeconds(existing.CreationDate),
 			}, nil
 		}
 		return nil, NewConflictException(fmt.Sprintf("State Machine Alias already exists: %s", in.Name))
@@ -330,7 +402,7 @@ func (s *StepFunctionService) createStateMachineAliasCore(ctx context.Context, s
 
 	return map[string]interface{}{
 		"stateMachineAliasArn": alias.StateMachineAliasArn,
-		"creationDate":         alias.CreationDate.Unix(),
+		"creationDate":         awsEpochSeconds(alias.CreationDate),
 	}, nil
 }
 
@@ -352,8 +424,8 @@ func (s *StepFunctionService) describeStateMachineAliasCore(ctx context.Context,
 	resp := map[string]interface{}{
 		"stateMachineAliasArn": alias.StateMachineAliasArn,
 		"name":                 alias.Name,
-		"creationDate":         alias.CreationDate.Unix(),
-		"updateDate":           alias.UpdateDate.Unix(),
+		"creationDate":         awsEpochSeconds(alias.CreationDate),
+		"updateDate":           awsEpochSeconds(alias.UpdateDate),
 	}
 	if alias.Description != "" {
 		resp["description"] = alias.Description
@@ -392,7 +464,9 @@ func (s *StepFunctionService) updateStateMachineAliasCore(ctx context.Context, s
 		}
 	}
 
-	if in.DescriptionProvided && in.Description != "" {
+	// The Provided flag distinguishes an absent description from a
+	// present-and-empty one, so an explicit empty string clears it.
+	if in.DescriptionProvided {
 		alias.Description = in.Description
 	}
 	if in.RoutingProvided && len(in.RoutingConfig) > 0 {
@@ -406,7 +480,7 @@ func (s *StepFunctionService) updateStateMachineAliasCore(ctx context.Context, s
 		return nil, err
 	}
 
-	return map[string]interface{}{"updateDate": alias.UpdateDate.Unix()}, nil
+	return map[string]interface{}{"updateDate": awsEpochSeconds(alias.UpdateDate)}, nil
 }
 
 // deleteStateMachineAliasCore is the single entry point for
@@ -425,7 +499,9 @@ func (s *StepFunctionService) deleteStateMachineAliasCore(ctx context.Context, s
 }
 
 // listStateMachineAliasesCore is the single entry point for
-// ListStateMachineAliases; the state machine must exist.
+// ListStateMachineAliases; the state machine must exist. "Results are
+// sorted by time, with the most recently created aliases listed first":
+// the full set is fetched, sorted newest-first and offset-paged.
 func (s *StepFunctionService) listStateMachineAliasesCore(ctx context.Context, store *sfnstore.StepFunctionStore, smArn string, maxResults int32, nextToken string) (map[string]interface{}, error) {
 	if err := validateArnRequired(smArn, "stateMachineArn"); err != nil {
 		return nil, err
@@ -433,6 +509,7 @@ func (s *StepFunctionService) listStateMachineAliasesCore(ctx context.Context, s
 	if err := validateMaxResults(maxResults, 0, sfnstore.MaxPageSize, "maxResults"); err != nil {
 		return nil, err
 	}
+	maxResults = normaliseListLimit(maxResults)
 	if _, err := store.GetStateMachine(ctx, smArn); err != nil {
 		if errors.Is(err, sfnstore.ErrStateMachineNotFound) {
 			return nil, NewStateMachineDoesNotExist("State Machine Does not exist: " + smArn)
@@ -440,22 +517,41 @@ func (s *StepFunctionService) listStateMachineAliasesCore(ctx context.Context, s
 		return nil, err
 	}
 
-	result, err := store.ListStateMachineAliases(ctx, smArn, maxResults, nextToken)
+	all, err := store.ListAllStateMachineAliases(smArn)
 	if err != nil {
 		return nil, err
 	}
-
-	aliases := make([]map[string]interface{}, len(result.Aliases))
-	for i, a := range result.Aliases {
-		aliases[i] = map[string]interface{}{
-			"stateMachineAliasArn": a.StateMachineAliasArn,
-			"creationDate":         a.CreationDate.Unix(),
+	sort.SliceStable(all, func(i, j int) bool {
+		if !all[i].CreationDate.Equal(all[j].CreationDate) {
+			return all[i].CreationDate.After(all[j].CreationDate)
 		}
+		return all[i].StateMachineAliasArn > all[j].StateMachineAliasArn
+	})
+
+	offset := 0
+	if nextToken != "" {
+		parsed, parseErr := strconv.Atoi(nextToken)
+		if parseErr != nil || parsed < 0 || parsed > len(all) {
+			return nil, NewInvalidToken("Invalid nextToken: " + nextToken)
+		}
+		offset = parsed
+	}
+	end := offset + int(maxResults)
+	if end > len(all) {
+		end = len(all)
+	}
+
+	aliases := make([]map[string]interface{}, 0, end-offset)
+	for _, a := range all[offset:end] {
+		aliases = append(aliases, map[string]interface{}{
+			"stateMachineAliasArn": a.StateMachineAliasArn,
+			"creationDate":         awsEpochSeconds(a.CreationDate),
+		})
 	}
 
 	response := map[string]interface{}{"stateMachineAliases": aliases}
-	if result.NextToken != "" {
-		response["nextToken"] = result.NextToken
+	if end < len(all) {
+		response["nextToken"] = strconv.Itoa(end)
 	}
 	return response, nil
 }

@@ -17,12 +17,15 @@ import (
 func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.ParallelState) (string, string, *ExecutionError) {
 	isJSONata := IsJSONataState(state, execCtx.QueryLanguage)
 
-	processedInput := e.applyInputPath(execCtx.Input, state.GetInputPath())
+	processedInput, ipErr := e.applyInputPath(execCtx, execCtx.Input, state.GetInputPath())
+	if ipErr != nil {
+		return "", "", ipErr
+	}
 
 	if !isJSONata && state.Parameters != nil {
 		// A Parallel Parameters payload template transforms the state
 		// input once; every branch receives the transformed value.
-		applied, evalErr := e.applyParameters("", processedInput, state.Parameters)
+		applied, evalErr := e.applyParameters(execCtx, "", processedInput, state.Parameters)
 		if evalErr != nil {
 			return "", "", evalErr
 		}
@@ -45,22 +48,40 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 
 	eventId := execCtx.nextEventId()
 	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
+		ExecutionArn:             execCtx.Execution.ExecutionArn,
+		EventId:                  eventId,
+		PreviousEventId:          eventId - 1,
+		Type:                     "ParallelStateEntered",
+		Timestamp:                time.Now().UTC(),
+		StateEnteredEventDetails: stateEnteredDetails(execCtx, processedInput),
+	})
+
+	eventId = execCtx.nextEventId()
+	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
 		ExecutionArn:    execCtx.Execution.ExecutionArn,
 		EventId:         eventId,
 		PreviousEventId: eventId - 1,
-		Type:            "ParallelStateEntered",
+		Type:            "ParallelStateStarted",
 		Timestamp:       time.Now().UTC(),
-		ParallelStateEnteredEventDetails: &sfnstore.ParallelStateEnteredEventDetails{
-			Input:    processedInput,
-			Name:     execCtx.CurrentState,
-			Branches: getBranchNames(state.Branches),
-		},
 	})
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	results := make([]string, len(state.Branches))
 	errors := make([]error, len(state.Branches))
+
+	// Branch definitions are fixed at creation time, so the state tables
+	// are extracted once here rather than re-parsed inside each branch
+	// worker; a branch whose parse fails records the error and lets the
+	// shared aggregation own the outcome, exactly as the per-worker parse
+	// did.
+	branchStates := make([]map[string]sfnstore.State, len(state.Branches))
+	branchParseErrs := make([]error, len(state.Branches))
+	for i, branch := range state.Branches {
+		states, err := extractStatesFromDefinition(branch)
+		branchStates[i] = states
+		branchParseErrs[i] = err
+	}
 
 	if execCtx.IsRedrive && execCtx.Execution.ParallelCheckpoints != nil {
 		if cp, ok := execCtx.Execution.ParallelCheckpoints[execCtx.CurrentState]; ok {
@@ -76,6 +97,10 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 		if results[i] != "" {
 			continue
 		}
+		if branchParseErrs[i] != nil {
+			errors[i] = branchParseErrs[i]
+			continue
+		}
 		wg.Add(1)
 		go func(idx int, b *sfnstore.StateMachineDefinition) {
 			defer wg.Done()
@@ -87,13 +112,6 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 					mu.Unlock()
 				}
 			}()
-			branchStates, err := e.extractStatesFromDefinition(b)
-			if err != nil {
-				mu.Lock()
-				errors[idx] = err
-				mu.Unlock()
-				return
-			}
 			branchCtx := &ExecutionContext{
 				Execution:     execCtx.Execution,
 				Definition:    b,
@@ -101,28 +119,35 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 				Input:         processedInput,
 				Output:        "",
 				EventId:       execCtx.EventId,
-				States:        branchStates,
+				States:        branchStates[idx],
 				QueryLanguage: execCtx.QueryLanguage,
 				VariableScope: execCtx.VariableScope.NewChild(),
 				MapItemIndex:  -1,
 			}
+			// The branch's variables are scoped to the branch: the bytes
+			// return to the execution budget once it completes.
+			defer branchCtx.VariableScope.Release()
 			execErr := e.executeStates(ctx, branchCtx)
 			mu.Lock()
 			defer mu.Unlock()
 			errors[idx] = execErr
 			if execErr == nil {
 				results[idx] = branchCtx.Output
-				if execCtx.IsRedrive {
-					if execCtx.Execution.ParallelCheckpoints == nil {
-						execCtx.Execution.ParallelCheckpoints = make(map[string]*sfnstore.ParallelCheckpoint)
-					}
-					cp, ok := execCtx.Execution.ParallelCheckpoints[execCtx.CurrentState]
-					if !ok {
-						cp = &sfnstore.ParallelCheckpoint{BranchResults: make(map[int]string)}
-						execCtx.Execution.ParallelCheckpoints[execCtx.CurrentState] = cp
-					}
-					cp.BranchResults[idx] = branchCtx.Output
+				// Branch results are checkpointed on every run, not only on
+				// redrives: the original failed run must leave its successful
+				// branches behind so the FIRST redrive re-runs only the
+				// failed ones ("Reschedules and redrives only those branches
+				// that failed or aborted"). The checkpoint reaches the store
+				// with the terminal record write.
+				if execCtx.Execution.ParallelCheckpoints == nil {
+					execCtx.Execution.ParallelCheckpoints = make(map[string]*sfnstore.ParallelCheckpoint)
 				}
+				cp, ok := execCtx.Execution.ParallelCheckpoints[execCtx.CurrentState]
+				if !ok {
+					cp = &sfnstore.ParallelCheckpoint{BranchResults: make(map[int]string)}
+					execCtx.Execution.ParallelCheckpoints[execCtx.CurrentState] = cp
+				}
+				cp.BranchResults[idx] = branchCtx.Output
 			}
 		}(i, branch)
 	}
@@ -138,131 +163,92 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 	}
 
 	if firstError != nil {
-		if len(state.Catch) > 0 {
+		// The state-level terminal event carries no detail members in the
+		// model; an aborted parallel records the Aborted variant instead of
+		// Failed.
+		eventId = execCtx.nextEventId()
+		terminalType := "ParallelStateFailed"
+		if isCanceledError(firstError) {
+			terminalType = "ParallelStateAborted"
+		}
+		e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
+			ExecutionArn:    execCtx.Execution.ExecutionArn,
+			EventId:         eventId,
+			PreviousEventId: eventId - 1,
+			Type:            terminalType,
+			Timestamp:       time.Now().UTC(),
+		})
+
+		// Retriers run before catchers ("Step Functions uses any appropriate
+		// retriers first. If the retry policy fails to resolve the error,
+		// Step Functions applies the matching catcher transition"); a
+		// cancellation is not a failure to retry — the abort path owns the
+		// history. Each attempt re-enters the state, re-emitting its
+		// Entered/Started pair.
+		if !isCanceledError(firstError) && len(state.Retry) > 0 {
+			if matchedRetry := e.findMatchingRetryPolicy(state.Retry, "States.BranchFailed"); matchedRetry != nil && execCtx.RetryCount < matchedRetry.MaxAttempts {
+				if e.sleepForRetry(ctx, matchedRetry, execCtx.RetryCount+1) {
+					return "", "", executionInterruptedError(ctx, "Execution interrupted during retry")
+				}
+				execCtx.RetryCount++
+				return e.executeParallel(ctx, execCtx, state)
+			}
+		}
+
+		// A catcher never consumes a cancellation either: the machine is
+		// stopping, no recovery transition may run on the dead context.
+		if !isCanceledError(firstError) && len(state.Catch) > 0 {
 			catchPolicy := e.findMatchingCatchPolicy(state.Catch, "States.BranchFailed")
 			if catchPolicy != nil {
 				if isJSONata {
-					return e.executeParallelJSONataCatch(ctx, execCtx, state, processedInput, "States.BranchFailed", firstError.Error(), catchPolicy)
+					return e.executeJSONataCatch(ctx, execCtx, processedInput, "States.BranchFailed", firstError.Error(), catchPolicy)
 				}
-				catchOutput := e.buildCatchOutput(processedInput, "States.BranchFailed", firstError.Error(), catchPolicy.ResultPath)
+				catchOutput, coErr := e.buildCatchOutput(processedInput, "States.BranchFailed", firstError.Error(), catchPolicy.ResultPath)
+				if coErr != nil {
+					return "", "", coErr
+				}
+				if len(catchPolicy.Assign) > 0 {
+					if err := e.applyJSONPathCatchAssign(execCtx, catchPolicy.Assign, catchOutput); err != nil {
+						return "", "", err
+					}
+				}
 				return catchOutput, catchPolicy.Next, nil
 			}
+		}
+		if isCanceledError(firstError) {
+			// The interruption itself propagates as a cancellation: the
+			// abort path owns the history and the execution's terminal
+			// classification.
+			return "", "", executionInterruptedError(ctx, firstError.Error())
 		}
 		return "", "", &ExecutionError{ErrorCode: "States.BranchFailed", Cause: firstError.Error()}
 	}
 
 	output := fmt.Sprintf(`[%s]`, strings.Join(results, ","))
 
-	if isJSONata {
-		var inputData interface{}
-		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
-			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
-		}
-		var resultData interface{}
-		if err := json.Unmarshal([]byte(output), &resultData); err != nil {
-			return "", "", &ExecutionError{ErrorCode: "States.InvalidOutput", Cause: "failed to parse output JSON"}
-		}
-		statesVar := e.buildStatesVarWithContext(execCtx, inputData, resultData, nil)
-
-		if len(state.Assign) > 0 {
-			evaluated, err := evaluateAssign(ctx, state.Assign, statesVar, execCtx.VariableScope)
-			if err != nil {
-				return "", "", e.newQueryEvalError(ctx, execCtx, "Assign", err.Error())
-			}
-			execCtx.PendingAssign = evaluated
-		}
-
-		if state.JSONataOutput == nil && len(state.OutputRaw) > 0 {
-			var err error
-			state.JSONataOutput, err = resolveJSONataOutput(state)
-			if err != nil {
-				return "", "", e.newQueryEvalError(ctx, execCtx, "Output", err.Error())
-			}
-		}
-
-		if state.JSONataOutput != nil {
-			resolved, err := e.applyJSONataOutput(ctx, state.JSONataOutput, statesVar, execCtx.VariableScope)
-			if err != nil {
-				return "", "", e.newQueryEvalError(ctx, execCtx, "Output", err.Error())
-			}
-			outputJSON, err := json.Marshal(resolved)
-			if err != nil {
-				return "", "", e.newQueryEvalError(ctx, execCtx, "Output", fmt.Sprintf("failed to marshal: %s", err.Error()))
-			}
-			output = string(outputJSON)
-		}
-	} else {
-		if state.ResultSelector != nil {
-			// The selector receives the combined branch output array as
-			// its data, before ResultPath folds it into the state input.
-			selected, selErr := e.applyResultSelector(output, state.ResultSelector, "")
-			if selErr != nil {
-				return "", "", selErr
-			}
-			output = selected
-		}
-		if state.ResultPath != "" {
-			output = e.applyResultPath(processedInput, output, state.ResultPath)
-		}
-		output = e.applyOutputPath(output, state.GetOutputPath())
-	}
-
 	eventId = execCtx.nextEventId()
 	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
 		ExecutionArn:    execCtx.Execution.ExecutionArn,
 		EventId:         eventId,
 		PreviousEventId: eventId - 1,
-		Type:            "ParallelStateExited",
+		Type:            "ParallelStateSucceeded",
 		Timestamp:       time.Now().UTC(),
-		ParallelStateExitedEventDetails: &sfnstore.ParallelStateExitedEventDetails{
-			Output: output,
-			Name:   execCtx.CurrentState,
-		},
+	})
+
+	output, outErr := e.applyContainerStateOutput(ctx, execCtx, state, processedInput, output)
+	if outErr != nil {
+		return "", "", outErr
+	}
+
+	eventId = execCtx.nextEventId()
+	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
+		ExecutionArn:            execCtx.Execution.ExecutionArn,
+		EventId:                 eventId,
+		PreviousEventId:         eventId - 1,
+		Type:                    "ParallelStateExited",
+		Timestamp:               time.Now().UTC(),
+		StateExitedEventDetails: stateExitedDetails(execCtx, output),
 	})
 
 	return output, state.Next, nil
-}
-
-func (e *Executor) executeParallelJSONataCatch(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.ParallelState, processedInput, errorCode, cause string, catchPolicy *sfnstore.CatchPolicy) (string, string, *ExecutionError) {
-	errorOutput := map[string]interface{}{
-		"Error": errorCode,
-		"Cause": cause,
-	}
-
-	var inputData interface{}
-	if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
-		return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
-	}
-	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, errorOutput)
-
-	if len(catchPolicy.Assign) > 0 {
-		evaluated, err := evaluateAssign(ctx, catchPolicy.Assign, statesVar, execCtx.VariableScope)
-		if err != nil {
-			return "", "", e.newQueryEvalError(ctx, execCtx, "Catch.Assign", err.Error())
-		}
-		execCtx.PendingAssign = evaluated
-	}
-
-	if catchPolicy.Output != nil {
-		resolved, err := e.applyJSONataOutput(ctx, catchPolicy.Output, statesVar, execCtx.VariableScope)
-		if err != nil {
-			return "", "", e.newQueryEvalError(ctx, execCtx, "Catch.Output", err.Error())
-		}
-		outputJSON, err := json.Marshal(resolved)
-		if err != nil {
-			return "", "", e.newQueryEvalError(ctx, execCtx, "Catch.Output", fmt.Sprintf("failed to marshal: %s", err.Error()))
-		}
-		return string(outputJSON), catchPolicy.Next, nil
-	}
-
-	errorJSON, _ := json.Marshal(errorOutput)
-	return string(errorJSON), catchPolicy.Next, nil
-}
-
-func getBranchNames(branches []*sfnstore.StateMachineDefinition) []string {
-	names := make([]string, len(branches))
-	for i, branch := range branches {
-		names[i] = branch.StartAt
-	}
-	return names
 }

@@ -6,8 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
+	"github.com/google/uuid"
+
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/iam"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
 
@@ -63,7 +68,6 @@ type UpdateStateMachineInput struct {
 // UpdateStateMachineResult is the transport-agnostic result of
 // updateStateMachineCore.
 type UpdateStateMachineResult struct {
-	StateMachineArn        string
 	UpdateDate             time.Time
 	RevisionId             string
 	StateMachineVersionArn string
@@ -123,6 +127,9 @@ func (s *StepFunctionService) createStateMachineCore(ctx context.Context, store 
 	if err := validateRoleArnRequired(in.RoleArn); err != nil {
 		return nil, err
 	}
+	if err := s.validateStateMachineRole(ctx, in.RoleArn); err != nil {
+		return nil, err
+	}
 
 	// 6. LoggingConfiguration (Smithy LogLevel enum + AWS docs size-1 limit).
 	if err := validateLoggingConfiguration(in.LoggingConfiguration); err != nil {
@@ -146,7 +153,6 @@ func (s *StepFunctionService) createStateMachineCore(ctx context.Context, store 
 		Definition:              in.Definition,
 		RoleArn:                 in.RoleArn,
 		Type:                    smType,
-		Tags:                    in.Tags,
 		VariableReferences:      extractVariableReferences(in.Definition),
 		RevisionId:              generateRevisionId(),
 		LoggingConfiguration:    in.LoggingConfiguration,
@@ -200,6 +206,9 @@ func (s *StepFunctionService) idempotentCreateStateMachine(ctx context.Context, 
 
 	existing, err := store.GetStateMachineByName(ctx, in.Name)
 	if err != nil {
+		if !errors.Is(err, sfnstore.ErrStateMachineNotFound) {
+			return nil, err
+		}
 		return conflict()
 	}
 
@@ -250,6 +259,11 @@ func (s *StepFunctionService) updateStateMachineCore(ctx context.Context, store 
 	// configuration-only fields are present.
 	if !in.DefinitionProvided && !in.RoleArnProvided {
 		return nil, NewMissingRequiredParameter("Request is missing a required parameter: update must include definition or roleArn")
+	}
+	if in.RoleArn != "" {
+		if err := s.validateStateMachineRole(ctx, in.RoleArn); err != nil {
+			return nil, err
+		}
 	}
 	// versionDescription is only valid together with publish=true.
 	if in.VersionDescription != "" && !in.Publish {
@@ -308,9 +322,8 @@ func (s *StepFunctionService) updateStateMachineCore(ctx context.Context, store 
 	}
 
 	result := &UpdateStateMachineResult{
-		StateMachineArn: sm.StateMachineArn,
-		UpdateDate:      sm.UpdateDate,
-		RevisionId:      sm.RevisionId,
+		UpdateDate: sm.UpdateDate,
+		RevisionId: sm.RevisionId,
 	}
 
 	if in.Publish {
@@ -342,8 +355,14 @@ func (s *StepFunctionService) deleteStateMachineCore(ctx context.Context, store 
 }
 
 // listStateMachinesCore is the single entry point for listing state machines.
+// The bound is validated here so both planes — the HTTP handler's
+// parsePageLimit and the admin gRPC handler's raw forwarding — enforce the
+// same maxResults range, like every sibling list Core.
 func (s *StepFunctionService) listStateMachinesCore(ctx context.Context, store *sfnstore.StepFunctionStore, in ListStateMachinesInput) (*ListStateMachinesResult, error) {
-	result, err := store.ListStateMachines(ctx, in.MaxResults, in.NextToken)
+	if err := validateMaxResults(in.MaxResults, 0, sfnstore.MaxPageSize, "maxResults"); err != nil {
+		return nil, err
+	}
+	result, err := store.ListStateMachines(ctx, normaliseListLimit(in.MaxResults), in.NextToken)
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +432,7 @@ func (s *StepFunctionService) describeStateMachineCore(ctx context.Context, stor
 		"stateMachineArn": sm.StateMachineArn,
 		"name":            sm.Name,
 		"type":            sm.Type,
-		"creationDate":    sm.CreationDate.Unix(),
+		"creationDate":    awsEpochSeconds(sm.CreationDate),
 	}
 	if sm.Status != "" {
 		response["status"] = sm.Status
@@ -437,10 +456,21 @@ func (s *StepFunctionService) describeStateMachineCore(ctx context.Context, stor
 	definition := ref.definition()
 	if ref.Version != nil {
 		response["stateMachineArn"] = ref.Version.StateMachineVersionArn
-		response["creationDate"] = ref.Version.CreationDate.Unix()
+		response["creationDate"] = awsEpochSeconds(ref.Version.CreationDate)
 		if ref.Version.Description != "" {
 			response["description"] = ref.Version.Description
 		}
+	}
+	// label "is present only if the stateMachineArn specified in input is a
+	// qualified state machine ARN": the user-defined alias name or the
+	// auto-generated version number the qualified ARN carries. The third
+	// qualified form (a Distributed-Map label suffix) never reaches here —
+	// resolveStateMachineReference rejects it.
+	switch {
+	case ref.Alias != nil:
+		response["label"] = ref.Alias.Name
+	case ref.Version != nil:
+		response["label"] = strconv.FormatInt(ref.Version.Version, 10)
 	}
 
 	if in.IncludedData == "METADATA_ONLY" {
@@ -487,7 +517,11 @@ func (s *StepFunctionService) describeStateMachineForExecutionCore(ctx context.C
 
 	definition := sm.Definition
 	if exec.StateMachineVersionArn != "" {
-		if version, verr := store.GetStateMachineVersion(ctx, exec.StateMachineVersionArn); verr == nil {
+		version, verr := store.GetStateMachineVersion(ctx, exec.StateMachineVersionArn)
+		if verr != nil && !errors.Is(verr, sfnstore.ErrStateMachineVersionNotFound) {
+			return nil, verr
+		}
+		if version != nil {
 			definition = version.Definition
 		}
 	}
@@ -500,7 +534,7 @@ func (s *StepFunctionService) describeStateMachineForExecutionCore(ctx context.C
 		response["roleArn"] = sm.RoleArn
 	}
 	if !sm.UpdateDate.IsZero() {
-		response["updateDate"] = sm.UpdateDate.Unix()
+		response["updateDate"] = awsEpochSeconds(sm.UpdateDate)
 	}
 	if sm.RevisionId != "" {
 		response["revisionId"] = sm.RevisionId
@@ -516,6 +550,13 @@ func (s *StepFunctionService) describeStateMachineForExecutionCore(ctx context.C
 	}
 	if exec.MapRunArn != "" {
 		response["mapRunArn"] = exec.MapRunArn
+		// label is "returned only if the executionArn is a child workflow
+		// execution that was started by a Distributed Map state" — the
+		// Map Run ARN carries the Map state's label as the resource
+		// segment after the state machine name.
+		if label := mapRunLabelFromARN(exec.MapRunArn); label != "" {
+			response["label"] = label
+		}
 	}
 
 	if in.IncludedData == "METADATA_ONLY" {
@@ -587,21 +628,24 @@ func (s *StepFunctionService) validateStateMachineDefinitionCore(in ValidateStat
 		diagnostics = filtered
 	}
 
-	truncated := false
-	if maxResults > 0 && len(diagnostics) > int(maxResults) {
-		diagnostics = diagnostics[:maxResults]
-		truncated = true
-	}
-
 	// Warnings do not prevent deploying a workflow definition, so the
 	// result only fails when at least one ERROR-severity diagnostic is
-	// present; a warning-only definition stays OK.
+	// present; a warning-only definition stays OK. The result is computed
+	// over the FULL diagnostic set before truncation: "true if the number
+	// of diagnostics found in the workflow definition exceeds maxResults"
+	// bounds only the returned page, never the OK/FAIL verdict.
 	result := "OK"
 	for _, d := range diagnostics {
 		if d["severity"] == "ERROR" {
 			result = "FAIL"
 			break
 		}
+	}
+
+	truncated := false
+	if maxResults > 0 && len(diagnostics) > int(maxResults) {
+		diagnostics = diagnostics[:maxResults]
+		truncated = true
 	}
 
 	return map[string]interface{}{
@@ -632,65 +676,82 @@ func validateDefinitionStructure(definition, smType string) error {
 // JSON parsing helpers (used by both HTTP handler and core)
 // ---------------------------------------------------------------------------
 
-// parseLoggingConfigurationFromJSON deserialises a LoggingConfiguration
-// from a raw interface{} value (typically from request parameters).
-func parseLoggingConfigurationFromJSON(raw interface{}) (*sfnstore.LoggingConfiguration, error) {
+// parseConfigurationFromJSON deserialises a configuration struct from a
+// raw interface{} value (request parameters). The three configuration
+// shapes share the parse: nil passes through, a non-object is rejected
+// with the caller's configuration error, and the object is round-tripped
+// through JSON into the target type.
+func parseConfigurationFromJSON[T any](raw interface{}, param string, invalid func(string) *awserrors.AWSError) (*T, error) {
 	if raw == nil {
 		return nil, nil
 	}
-	// The configuration must be a JSON object; reject strings, arrays and
-	// scalars with the specific configuration error instead of an opaque
-	// marshal/unmarshal failure.
 	if _, ok := raw.(map[string]interface{}); !ok {
-		return nil, NewInvalidLoggingConfiguration("loggingConfiguration must be a JSON object")
+		return nil, invalid(param + " must be a JSON object")
 	}
 	bytes, err := json.Marshal(raw)
 	if err != nil {
-		return nil, NewInvalidLoggingConfiguration("loggingConfiguration is not serialisable: " + err.Error())
+		return nil, invalid(param + " is not serialisable: " + err.Error())
 	}
-	var lc sfnstore.LoggingConfiguration
-	if err := json.Unmarshal(bytes, &lc); err != nil {
-		return nil, NewInvalidLoggingConfiguration("loggingConfiguration is not valid JSON: " + err.Error())
+	var cfg T
+	if err := json.Unmarshal(bytes, &cfg); err != nil {
+		return nil, invalid(param + " is not valid JSON: " + err.Error())
 	}
-	return &lc, nil
+	return &cfg, nil
+}
+
+// parseLoggingConfigurationFromJSON deserialises a LoggingConfiguration
+// from a raw interface{} value (typically from request parameters).
+func parseLoggingConfigurationFromJSON(raw interface{}) (*sfnstore.LoggingConfiguration, error) {
+	return parseConfigurationFromJSON[sfnstore.LoggingConfiguration](raw, "loggingConfiguration", NewInvalidLoggingConfiguration)
 }
 
 // parseEncryptionConfigurationFromJSON deserialises an EncryptionConfiguration
 // from a raw interface{} value.
 func parseEncryptionConfigurationFromJSON(raw interface{}) (*sfnstore.EncryptionConfiguration, error) {
-	if raw == nil {
-		return nil, nil
-	}
-	if _, ok := raw.(map[string]interface{}); !ok {
-		return nil, NewInvalidEncryptionConfiguration("encryptionConfiguration must be a JSON object")
-	}
-	bytes, err := json.Marshal(raw)
-	if err != nil {
-		return nil, NewInvalidEncryptionConfiguration("encryptionConfiguration is not serialisable: " + err.Error())
-	}
-	var ec sfnstore.EncryptionConfiguration
-	if err := json.Unmarshal(bytes, &ec); err != nil {
-		return nil, NewInvalidEncryptionConfiguration("encryptionConfiguration is not valid JSON: " + err.Error())
-	}
-	return &ec, nil
+	return parseConfigurationFromJSON[sfnstore.EncryptionConfiguration](raw, "encryptionConfiguration", NewInvalidEncryptionConfiguration)
 }
 
 // parseTracingConfigurationFromJSON deserialises a TracingConfiguration
 // from a raw interface{} value.
 func parseTracingConfigurationFromJSON(raw interface{}) (*sfnstore.TracingConfiguration, error) {
-	if raw == nil {
-		return nil, nil
+	return parseConfigurationFromJSON[sfnstore.TracingConfiguration](raw, "tracingConfiguration", NewInvalidTracingConfiguration)
+}
+
+// generateRevisionId mints the opaque revision identifier a state machine
+// record carries; every accepted update rotates it.
+func generateRevisionId() string {
+	return uuid.New().String()
+}
+
+// validateStateMachineRole runs the role-ARN validation inside the Core
+// path: exists, assumable by the States service principal, and a well-formed
+// ARN. The validator comes from the service's injected role provider, so
+// both planes share the verdict.
+func (s *StepFunctionService) validateStateMachineRole(ctx context.Context, roleArn string) error {
+	validator := s.iamValidator()
+	if validator == nil {
+		return nil
 	}
-	if _, ok := raw.(map[string]interface{}); !ok {
-		return nil, NewInvalidTracingConfiguration("tracingConfiguration must be a JSON object")
-	}
-	bytes, err := json.Marshal(raw)
-	if err != nil {
-		return nil, NewInvalidTracingConfiguration("tracingConfiguration is not serialisable: " + err.Error())
-	}
-	var tc sfnstore.TracingConfiguration
-	if err := json.Unmarshal(bytes, &tc); err != nil {
-		return nil, NewInvalidTracingConfiguration("tracingConfiguration is not valid JSON: " + err.Error())
-	}
-	return &tc, nil
+	return validator.ValidateRoleForServiceWithErrors(ctx, roleArn, iam.ServicePrincipalStates, &iam.RoleErrorFactories{
+		RoleNotFoundError:        sfnRoleNotFoundError,
+		RoleCannotBeAssumedError: sfnRoleCannotBeAssumedError,
+		InvalidArnError:          sfnInvalidRoleArnError,
+	})
+}
+
+func sfnRoleNotFoundError(roleArn string) error {
+	// The Smithy model has no InvalidParameterException for SFN; an
+	// unresolvable role is an input-constraint failure of the create call.
+	return NewValidationException(fmt.Sprintf("Role Arn is not valid for State Machine: %s", roleArn))
+}
+
+func sfnRoleCannotBeAssumedError(roleArn string) error {
+	// AccessDeniedException is an AWS-common auth-class error rather than a
+	// Smithy-modelled SFN operation error; a role that exists but cannot be
+	// assumed is an authorisation failure, not an input-constraint failure.
+	return awserrors.NewAWSError("AccessDeniedException", fmt.Sprintf("Role %s is invalid or cannot be assumed.", roleArn), 403)
+}
+
+func sfnInvalidRoleArnError(roleArn string) error {
+	return NewInvalidArnException(fmt.Sprintf("Invalid Role Arn: %s", roleArn))
 }

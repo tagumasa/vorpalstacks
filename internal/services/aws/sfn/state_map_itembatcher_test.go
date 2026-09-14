@@ -3,6 +3,7 @@ package sfn
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"strings"
 	"testing"
 
@@ -61,7 +62,7 @@ func TestExecuteMapItemBatcher(t *testing.T) {
 		QueryLanguage: "JSONPath",
 		MapItemIndex:  -1,
 	}
-	states, err := e.extractStatesFromDefinition(def)
+	states, err := extractStatesFromDefinition(def)
 	if err != nil {
 		t.Fatalf("extract states failed: %v", err)
 	}
@@ -144,7 +145,7 @@ func TestExecuteMapItemBatcherBatchInput(t *testing.T) {
 		QueryLanguage: "JSONPath",
 		MapItemIndex:  -1,
 	}
-	states, err := e.extractStatesFromDefinition(def)
+	states, err := extractStatesFromDefinition(def)
 	if err != nil {
 		t.Fatalf("extract states failed: %v", err)
 	}
@@ -177,7 +178,7 @@ func TestBuildMapWorkUnitsByteCap(t *testing.T) {
 	e := &Executor{}
 	state := &sfnstore.MapState{
 		ItemBatcher: &sfnstore.ItemBatcherConfig{
-			MaxInputBytesPerBatch: ptrInt64(20),
+			MaxInputBytesPerBatch: float64(20),
 		},
 	}
 	// Each item renders as "x" (3 bytes); the wrapper {"Items":[]} is 11
@@ -198,7 +199,7 @@ func TestBuildMapWorkUnitsByteCap(t *testing.T) {
 
 	oversized := &sfnstore.MapState{
 		ItemBatcher: &sfnstore.ItemBatcherConfig{
-			MaxInputBytesPerBatch: ptrInt64(10),
+			MaxInputBytesPerBatch: float64(10),
 		},
 	}
 	big := strings.Repeat("y", 40)
@@ -240,5 +241,32 @@ func TestBuildMapWorkUnitsPathVariants(t *testing.T) {
 	}
 	if fixed, ok := payload["BatchInput"].(map[string]interface{}); !ok || fixed["k"] != "v" {
 		t.Errorf("BatchInput = %v", payload["BatchInput"])
+	}
+}
+
+// TestBuildMapWorkUnitsUnserialisableBatchInputFails pins that a BatchInput
+// which cannot render to JSON fails unit construction with the item-loop
+// error classification — a serialisation failure must never mint a unit
+// whose input is the literal JSON null.
+func TestBuildMapWorkUnitsUnserialisableBatchInputFails(t *testing.T) {
+	e := &Executor{}
+	state := &sfnstore.MapState{
+		ItemBatcher: &sfnstore.ItemBatcherConfig{
+			BatchInput: map[string]interface{}{"notSerializable": math.NaN()},
+		},
+	}
+	items := []interface{}{"a", "b"}
+	units, execErr := e.buildMapWorkUnits(context.Background(), &ExecutionContext{}, state, `{}`, items, items)
+	if execErr == nil {
+		t.Fatalf("an unserialisable BatchInput must fail unit construction, got units %+v", units)
+	}
+	if execErr.ErrorCode != "States.InvalidInput" {
+		t.Fatalf("error code = %q, want States.InvalidInput", execErr.ErrorCode)
+	}
+	if !strings.Contains(execErr.Cause, "BatchInput") {
+		t.Fatalf("cause = %q, want the BatchInput serialisation failure", execErr.Cause)
+	}
+	if len(units) != 0 {
+		t.Fatalf("no units may be minted from a failed construction, got %+v", units)
 	}
 }

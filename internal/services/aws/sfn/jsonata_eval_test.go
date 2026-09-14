@@ -2,7 +2,9 @@ package sfn
 
 import (
 	"context"
+	"strings"
 	"testing"
+	"time"
 
 	gnata "github.com/recolabs/gnata"
 )
@@ -133,9 +135,12 @@ func TestEvaluateJSONata_BasicExpressions(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:     "undefined variable returns nil",
-			expr:     `$nonexistent`,
-			expected: nil,
+			// An unbound variable is undefined and JSON cannot
+			// represent it, so the evaluation fails rather than
+			// degrading to null.
+			name:    "undefined variable fails",
+			expr:    `$nonexistent`,
+			wantErr: true,
 		},
 	}
 
@@ -236,7 +241,7 @@ func TestEvaluateJSONata_AWSFunctions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
-		expected := []interface{}{1.0, 2.0, 3.0, 4.0}
+		expected := []interface{}{1.0, 2.0, 3.0, 4.0, 5.0}
 		if !deepEqual(result, expected) {
 			t.Fatalf("expected %v, got %v", expected, result)
 		}
@@ -258,7 +263,7 @@ func TestEvaluateJSONata_AWSFunctions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
-		expected := []interface{}{5.0, 4.0, 3.0, 2.0}
+		expected := []interface{}{5.0, 4.0, 3.0, 2.0, 1.0}
 		if !deepEqual(result, expected) {
 			t.Fatalf("expected %v, got %v", expected, result)
 		}
@@ -305,6 +310,64 @@ func TestEvaluateJSONata_AWSFunctions(t *testing.T) {
 		_, err := EvaluateJSONata(context.Background(), `$hash("hello", "BLAKE2")`, nil, nil)
 		if err == nil {
 			t.Fatal("expected error")
+		}
+	})
+
+	t.Run("$hash rejects undocumented spellings", func(t *testing.T) {
+		// The documented set is exactly "MD5", "SHA-1", "SHA-256",
+		// "SHA-384", "SHA-512" — aliases and case variants fail.
+		for _, alg := range []string{`"SHA256"`, `"sha-256"`, `"SHA1"`, `"md5"`} {
+			if _, err := EvaluateJSONata(context.Background(), `$hash("hello", `+alg+`)`, nil, nil); err == nil {
+				t.Fatalf("algorithm %s was accepted", alg)
+			}
+		}
+	})
+
+	t.Run("$range caps the element count", func(t *testing.T) {
+		_, err := EvaluateJSONata(context.Background(), `$range(0, 100000, 1)`, nil, nil)
+		if err == nil || !strings.Contains(err.Error(), "elements") {
+			t.Fatalf("uncapped range error = %v, want the element limit", err)
+		}
+	})
+
+	t.Run("$random seed is deterministic", func(t *testing.T) {
+		// "If you use this function with the same seed value, it
+		// returns an identical number."
+		a, err := EvaluateJSONata(context.Background(), `$random(42)`, nil, nil)
+		if err != nil {
+			t.Fatalf("seeded draw a failed: %v", err)
+		}
+		b, err := EvaluateJSONata(context.Background(), `$random(42)`, nil, nil)
+		if err != nil {
+			t.Fatalf("seeded draw b failed: %v", err)
+		}
+		if a != b {
+			t.Fatalf("same seed produced different numbers: %v vs %v", a, b)
+		}
+		c, err := EvaluateJSONata(context.Background(), `$random(43)`, nil, nil)
+		if err != nil {
+			t.Fatalf("different seed draw failed: %v", err)
+		}
+		if c == a {
+			t.Fatalf("different seeds produced the same number: %v", a)
+		}
+	})
+
+	t.Run("$random unseeded stays random", func(t *testing.T) {
+		a, err := EvaluateJSONata(context.Background(), `$random()`, nil, nil)
+		if err != nil {
+			t.Fatalf("unseeded draw failed: %v", err)
+		}
+		f, ok := a.(float64)
+		if !ok || f < 0 || f >= 1 {
+			t.Fatalf("unseeded draw out of [0,1): %v", a)
+		}
+	})
+
+	t.Run("$eval is not available", func(t *testing.T) {
+		_, err := EvaluateJSONata(context.Background(), `$eval('{"a":1}')`, nil, nil)
+		if err == nil || !strings.Contains(err.Error(), "$eval is not available") {
+			t.Fatalf("$eval error = %v, want the documented unavailability message", err)
 		}
 	})
 
@@ -456,4 +519,23 @@ func TestEvaluateJSONataWithInputAndVars(t *testing.T) {
 		}
 		t.Logf("result type: %T, value: %v", result, result)
 	})
+}
+
+// TestEvaluateJSONataExpressionTimeout pins the documented budget: "A
+// JSONata expression that takes longer than 1 second to evaluate will fail
+// with an Expression evaluation timeout error." The test shrinks the
+// budget and runs an expression that certainly outlives it.
+func TestEvaluateJSONataExpressionTimeout(t *testing.T) {
+	orig := jsonataEvalTimeout
+	jsonataEvalTimeout = 5 * time.Millisecond
+	defer func() { jsonataEvalTimeout = orig }()
+
+	data := make([]interface{}, 500000)
+	for i := range data {
+		data[i] = float64(i)
+	}
+	_, err := EvaluateJSONata(context.Background(), `$map($, function($v){ $v + 1 })`, data, nil)
+	if err == nil || !strings.Contains(err.Error(), "Expression evaluation timeout") {
+		t.Fatalf("error = %v, want the expression evaluation timeout", err)
+	}
 }

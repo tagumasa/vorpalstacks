@@ -2,12 +2,7 @@ package sfn
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/google/uuid"
-
-	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -26,11 +21,6 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 		}
 	}
 	versionDescription := request.GetParamLowerFirst(req.Parameters, "versionDescription")
-
-	// Role validation requires the IAM validator from the request context.
-	if err := validateStateMachineRole(ctx, reqCtx, roleArn); err != nil {
-		return nil, err
-	}
 
 	loggingConfig, err := parseLoggingConfigurationFromJSON(req.Parameters["loggingConfiguration"])
 	if err != nil {
@@ -72,16 +62,12 @@ func (s *StepFunctionService) CreateStateMachine(ctx context.Context, reqCtx *re
 
 	resp := map[string]interface{}{
 		"stateMachineArn": result.StateMachineArn,
-		"creationDate":    result.CreationDate.Unix(),
+		"creationDate":    awsEpochSeconds(result.CreationDate),
 	}
 	if result.StateMachineVersionArn != "" {
 		resp["stateMachineVersionArn"] = result.StateMachineVersionArn
 	}
 	return resp, nil
-}
-
-func generateRevisionId() string {
-	return uuid.New().String()
 }
 
 // DeleteStateMachine deletes a state machine.
@@ -137,10 +123,7 @@ func (s *StepFunctionService) DescribeStateMachineForExecution(ctx context.Conte
 
 // ListStateMachines returns a list of state machines.
 func (s *StepFunctionService) ListStateMachines(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit, err := parsePageLimit(req)
-	if err != nil {
-		return nil, err
-	}
+	limit := parsePageLimit(req)
 	nextToken := request.GetParamLowerFirst(req.Parameters, "nextToken")
 
 	store, err := s.store(reqCtx)
@@ -161,7 +144,7 @@ func (s *StepFunctionService) ListStateMachines(ctx context.Context, reqCtx *req
 			"stateMachineArn": sm.StateMachineArn,
 			"name":            sm.Name,
 			"type":            sm.Type,
-			"creationDate":    sm.CreationDate.Unix(),
+			"creationDate":    awsEpochSeconds(sm.CreationDate),
 		}
 	}
 
@@ -190,13 +173,6 @@ func (s *StepFunctionService) UpdateStateMachine(ctx context.Context, reqCtx *re
 		}
 	}
 	versionDescription := request.GetParamLowerFirst(req.Parameters, "versionDescription")
-
-	// Role validation requires the IAM validator from the request context.
-	if roleArn != "" {
-		if err := validateStateMachineRole(ctx, reqCtx, roleArn); err != nil {
-			return nil, err
-		}
-	}
 
 	loggingConfig, err := parseLoggingConfigurationFromJSON(req.Parameters["loggingConfiguration"])
 	if err != nil {
@@ -234,41 +210,14 @@ func (s *StepFunctionService) UpdateStateMachine(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
+	// The response member set follows UpdateStateMachineOutput exactly:
+	// updateDate, revisionId, stateMachineVersionArn.
 	resp := map[string]interface{}{
-		"stateMachineArn": result.StateMachineArn,
-		"updateDate":      result.UpdateDate.Unix(),
-		"revisionId":      result.RevisionId,
+		"updateDate": awsEpochSeconds(result.UpdateDate),
+		"revisionId": result.RevisionId,
 	}
 	if result.StateMachineVersionArn != "" {
 		resp["stateMachineVersionArn"] = result.StateMachineVersionArn
 	}
 	return resp, nil
-}
-
-// StartExecution starts an execution of a state machine.
-
-func validateStateMachineRole(ctx context.Context, reqCtx *request.RequestContext, roleArn string) error {
-	validator := reqCtx.GetIAMValidator()
-	return validator.ValidateRoleForServiceWithErrors(ctx, roleArn, iam.ServicePrincipalStates, &iam.RoleErrorFactories{
-		RoleNotFoundError:        sfnRoleNotFoundError,
-		RoleCannotBeAssumedError: sfnRoleCannotBeAssumedError,
-		InvalidArnError:          sfnInvalidRoleArnError,
-	})
-}
-
-func sfnRoleNotFoundError(roleArn string) error {
-	// The Smithy model has no InvalidParameterException for SFN; an
-	// unresolvable role is an input-constraint failure of the create call.
-	return NewValidationException(fmt.Sprintf("Role Arn is not valid for State Machine: %s", roleArn))
-}
-
-func sfnRoleCannotBeAssumedError(roleArn string) error {
-	// AccessDeniedException is an AWS-common auth-class error rather than a
-	// Smithy-modelled SFN operation error; a role that exists but cannot be
-	// assumed is an authorisation failure, not an input-constraint failure.
-	return awserrors.NewAWSError("AccessDeniedException", fmt.Sprintf("Role %s is invalid or cannot be assumed.", roleArn), 403)
-}
-
-func sfnInvalidRoleArnError(roleArn string) error {
-	return NewInvalidArnException(fmt.Sprintf("Invalid Role Arn: %s", roleArn))
 }

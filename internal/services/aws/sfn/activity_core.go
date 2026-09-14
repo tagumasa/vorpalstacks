@@ -86,7 +86,7 @@ func (s *StepFunctionService) createActivityCore(ctx context.Context, store *sfn
 
 	return map[string]interface{}{
 		"activityArn":  activity.ActivityArn,
-		"creationDate": activity.CreationDate.Unix(),
+		"creationDate": awsEpochSeconds(activity.CreationDate),
 	}, nil
 }
 
@@ -125,7 +125,7 @@ func (s *StepFunctionService) listActivitiesCore(ctx context.Context, store *sfn
 	if err := validateMaxResults(maxResults, 0, sfnstore.MaxPageSize, "maxResults"); err != nil {
 		return nil, err
 	}
-	result, err := store.ListActivities(ctx, maxResults, nextToken)
+	result, err := store.ListActivities(ctx, normaliseListLimit(maxResults), nextToken)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (s *StepFunctionService) listActivitiesCore(ctx context.Context, store *sfn
 		activities[i] = map[string]interface{}{
 			"activityArn":  activity.ActivityArn,
 			"name":         activity.Name,
-			"creationDate": activity.CreationDate.Unix(),
+			"creationDate": awsEpochSeconds(activity.CreationDate),
 		}
 	}
 

@@ -230,6 +230,108 @@ func (r *TestRunner) runSFNItemReaderTests(tc *sfnTestContext) []TestResult {
 		return nil
 	}))
 
+	// ItemReader_ItemSourceReportsS3URI pins $$Map.Item.Source for S3
+	// datasets: "For all the other input types, the value will be the
+	// Amazon S3 URI. For example: S3://bucket-name/object-key" — written
+	// in the standard Bucket.$/Key.$ parameter form — and the bucket URI
+	// for a listing read ("S3://bucket-name").
+	results = append(results, r.RunTest("stepfunctions", "ItemReader_ItemSourceReportsS3URI", func() error {
+		if err := put("src.json", `[{"i":1},{"i":2}]`); err != nil {
+			return err
+		}
+		keyedSM, cerr := tc.createSingleStateSM(fmt.Sprintf("IrSrcKey-%d", time.Now().UnixNano()), map[string]interface{}{
+			"Type": "Map",
+			"ItemReader": map[string]interface{}{
+				"Resource":     "arn:aws:states:::s3:getObject",
+				"Parameters":   map[string]interface{}{"Bucket.$": "$.b", "Key.$": "$.k"},
+				"ReaderConfig": map[string]interface{}{"InputType": "JSON"},
+			},
+			"ItemSelector": map[string]interface{}{"src.$": "$$.Map.Item.Source"},
+			"ItemProcessor": map[string]interface{}{
+				"ProcessorConfig": map[string]interface{}{"Mode": "DISTRIBUTED", "ExecutionType": "STANDARD"},
+				"StartAt":         "W",
+				"States": map[string]interface{}{
+					"W": map[string]interface{}{"Type": "Pass", "ResultPath": "$", "End": true},
+				},
+			},
+			"End": true,
+		})
+		if cerr != nil {
+			return cerr
+		}
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(keyedSM)})
+		execArn, err := tc.startExecution(keyedSM, "", fmt.Sprintf(`{"b":%q,"k":"src.json"}`, bucket))
+		if err != nil {
+			return err
+		}
+		if _, err := tc.awaitTerminal(execArn, 200*time.Millisecond, 60); err != nil {
+			return err
+		}
+		desc, err := tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{ExecutionArn: aws.String(execArn)})
+		if err != nil {
+			return err
+		}
+		if desc.Status != types.ExecutionStatusSucceeded {
+			return fmt.Errorf("keyed read ended %s: %s %s", desc.Status, aws.ToString(desc.Error), aws.ToString(desc.Cause))
+		}
+		var keyed []map[string]interface{}
+		if err := json.Unmarshal([]byte(aws.ToString(desc.Output)), &keyed); err != nil {
+			return fmt.Errorf("keyed output not an array: %v (%s)", err, aws.ToString(desc.Output))
+		}
+		wantURI := "S3://" + bucket + "/src.json"
+		for i, item := range keyed {
+			if item["src"] != wantURI {
+				return fmt.Errorf("keyed item %d Source = %v, want %s", i, item["src"], wantURI)
+			}
+		}
+
+		if err := put("data/f1.json", `{"k":"f1"}`); err != nil {
+			return err
+		}
+		listSM, cerr := tc.createSingleStateSM(fmt.Sprintf("IrSrcList-%d", time.Now().UnixNano()), map[string]interface{}{
+			"Type": "Map",
+			"ItemReader": map[string]interface{}{
+				"Resource":   "arn:aws:states:::s3:listObjectsV2",
+				"Parameters": map[string]interface{}{"Bucket.$": "$.b", "Prefix.$": "$.p"},
+			},
+			"ItemSelector": map[string]interface{}{"src.$": "$$.Map.Item.Source"},
+			"ItemProcessor": map[string]interface{}{
+				"ProcessorConfig": map[string]interface{}{"Mode": "DISTRIBUTED", "ExecutionType": "STANDARD"},
+				"StartAt":         "W",
+				"States": map[string]interface{}{
+					"W": map[string]interface{}{"Type": "Pass", "ResultPath": "$", "End": true},
+				},
+			},
+			"End": true,
+		})
+		if cerr != nil {
+			return cerr
+		}
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(listSM)})
+		execArn, err = tc.startExecution(listSM, "", fmt.Sprintf(`{"b":%q,"p":"data/"}`, bucket))
+		if err != nil {
+			return err
+		}
+		if _, err := tc.awaitTerminal(execArn, 200*time.Millisecond, 60); err != nil {
+			return err
+		}
+		desc, err = tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{ExecutionArn: aws.String(execArn)})
+		if err != nil {
+			return err
+		}
+		if desc.Status != types.ExecutionStatusSucceeded {
+			return fmt.Errorf("list read ended %s: %s %s", desc.Status, aws.ToString(desc.Error), aws.ToString(desc.Cause))
+		}
+		var listed []map[string]interface{}
+		if err := json.Unmarshal([]byte(aws.ToString(desc.Output)), &listed); err != nil || len(listed) == 0 {
+			return fmt.Errorf("list output not a non-empty array: %v (%s)", err, aws.ToString(desc.Output))
+		}
+		if listed[0]["src"] != "S3://"+bucket {
+			return fmt.Errorf("list Source = %v, want S3://%s — a listing read reports the bucket URI", listed[0]["src"], bucket)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("stepfunctions", "ItemReader_ToleratedFailure_ExceedThreshold", func() error {
 		// Every iteration fails (the processor divides by a missing
 		// field) with a threshold of zero: the documented default fails
@@ -549,6 +651,30 @@ func (r *TestRunner) runSFNItemReaderTests(tc *sfnTestContext) []TestResult {
 		var items []interface{}
 		if uerr := json.Unmarshal([]byte(inspection["afterItemsPath"].(string)), &items); uerr != nil || len(items) != 2 {
 			return fmt.Errorf("afterItemsPath = %v, want 2 items from the substituted source", inspection["afterItemsPath"])
+		}
+		return nil
+	}))
+
+	// The documented primary form: with no stateName the definition is the
+	// single state under test — the guide's Choice example runs with Next
+	// targets that exist nowhere and returns SUCCEEDED with nextState.
+	results = append(results, r.RunTest("stepfunctions", "TestState_SingleStateForm", func() error {
+		def := `{"Type":"Choice","Choices":[{"Variable":"$.number","NumericEquals":1,"Next":"Equals 1"},{"Variable":"$.number","NumericEquals":2,"Next":"Equals 2"}],"Default":"No Match"}`
+		result, terr := tc.rawTestState(map[string]interface{}{
+			"definition": def,
+			"input":      `{"number":2}`,
+		})
+		if terr != nil {
+			return terr
+		}
+		if result["status"] != "SUCCEEDED" {
+			return fmt.Errorf("status = %v: %v %v", result["status"], result["error"], result["cause"])
+		}
+		if result["nextState"] != "Equals 2" {
+			return fmt.Errorf("nextState = %v, want Equals 2", result["nextState"])
+		}
+		if out, _ := result["output"].(string); !strings.Contains(out, `"number":2`) {
+			return fmt.Errorf("output = %v, want the unfiltered input", result["output"])
 		}
 		return nil
 	}))

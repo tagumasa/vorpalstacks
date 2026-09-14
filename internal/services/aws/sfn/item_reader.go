@@ -11,20 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/invokers"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/parquet-go/parquet-go"
 )
-
-// itemReaderS3 is the slice of the S3 invoker the ItemReader pipeline
-// consumes. invokers.S3Invoker satisfies it directly and tests can supply
-// their own stub.
-type itemReaderS3 interface {
-	GetObjectVersion(ctx context.Context, region, bucket, key, versionID string, maxBytes int64) ([]byte, error)
-	ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]invokers.S3ObjectEntry, error)
-}
 
 // itemReaderArgs carries the resolved ItemReader argument object.
 type itemReaderArgs struct {
@@ -34,18 +25,21 @@ type itemReaderArgs struct {
 	versionID string
 }
 
-// readItemReaderItems resolves the dataset of a Map state's ItemReader.
-// A nil ItemReader returns a nil slice. Every failure surfaces as a
-// States.ItemReaderFailed execution error, matching the documented error
-// contract ("A Map state failed because it couldn't read from the item
-// source specified in the ItemReader field"). rawOverride, when non-empty,
-// replaces the S3 read with the caller-supplied raw source bytes (the
-// TestState mapItemReaderData contract: the data as found at its original
-// source).
-func (e *Executor) readItemReaderItems(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.MapState, rawOverride string) ([]interface{}, *ExecutionError) {
+// readItemReaderItems resolves the dataset of a Map state's ItemReader and
+// returns it with the reader arguments the dataset was read through, so the
+// caller derives the context object's Map.Item.Source from the same
+// resolved values (a single interpretation of the reader parameters). A
+// nil ItemReader returns a nil slice and zero arguments. Every failure
+// surfaces as a States.ItemReaderFailed execution error, matching the
+// documented error contract ("A Map state failed because it couldn't read
+// from the item source specified in the ItemReader field"). rawOverride,
+// when non-empty, replaces the S3 read with the caller-supplied raw source
+// bytes (the TestState mapItemReaderData contract: the data as found at its
+// original source).
+func (e *Executor) readItemReaderItems(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.MapState, rawOverride string) ([]interface{}, itemReaderArgs, *ExecutionError) {
 	reader := state.ItemReader
 	if reader == nil {
-		return nil, nil
+		return nil, itemReaderArgs{}, nil
 	}
 
 	rc := reader.ReaderConfig
@@ -54,23 +48,23 @@ func (e *Executor) readItemReaderItems(ctx context.Context, execCtx *ExecutionCo
 		inputType = rc.InputType
 	}
 
-	fetchObject := func(bucket, key string) ([]byte, *ExecutionError) {
+	fetchObject := func(bucket, key, versionID string) ([]byte, *ExecutionError) {
 		if rawOverride != "" {
 			return []byte(rawOverride), nil
 		}
 		if e.bus == nil || e.bus.S3Invoker() == nil {
 			return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: "S3 integration is not available"}
 		}
-		data, err := e.bus.S3Invoker().GetObjectVersion(ctx, e.region, bucket, key, "", sfnstore.MaxItemReaderFileBytes)
+		data, err := e.bus.S3Invoker().GetObjectVersion(ctx, e.region, bucket, key, versionID, sfnstore.MaxItemReaderFileBytes)
 		if err != nil {
 			return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: fmt.Sprintf("failed to read s3://%s/%s: %s", bucket, key, err.Error())}
 		}
 		return data, nil
 	}
 
-	args, ierr := e.resolveItemReaderArgs(execCtx, reader)
+	args, ierr := e.resolveItemReaderArgs(ctx, execCtx, reader)
 	if ierr != nil {
-		return nil, ierr
+		return nil, itemReaderArgs{}, ierr
 	}
 
 	resource := reader.Resource
@@ -84,65 +78,70 @@ func (e *Executor) readItemReaderItems(ctx context.Context, execCtx *ExecutionCo
 		if rawOverride != "" {
 			data = []byte(rawOverride)
 		} else {
-			if e.bus == nil || e.bus.S3Invoker() == nil {
-				return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: "S3 integration is not available"}
+			// The reader's own object honours a resolved VersionID; the
+			// manifest/listing entries below address live keys, so their
+			// fetches carry no version pin.
+			fetched, ferr := fetchObject(args.bucket, args.key, args.versionID)
+			if ferr != nil {
+				return nil, args, ferr
 			}
-			var err error
-			data, err = e.bus.S3Invoker().GetObjectVersion(ctx, e.region, args.bucket, args.key, args.versionID, sfnstore.MaxItemReaderFileBytes)
-			if err != nil {
-				return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: fmt.Sprintf("failed to read s3://%s/%s: %s", args.bucket, args.key, err.Error())}
-			}
+			data = fetched
 		}
-		if inputType == "MANIFEST" {
+		// The manifest reader has three documented spellings: InputType
+		// MANIFEST, ManifestType ATHENA_DATA (InputType CSV, JSONL or
+		// Parquet names the data files' format), and ManifestType
+		// S3_INVENTORY (no InputType; the type is assumed CSV).
+		manifestReader := inputType == "MANIFEST" || (rc != nil && rc.ManifestType != "")
+		if manifestReader {
 			parsed, merr := parseManifestDataset(data, rc, args.bucket, func(key string) ([]byte, error) {
-				fileData, ferr := fetchObject(args.bucket, key)
+				fileData, ferr := fetchObject(args.bucket, key, "")
 				if ferr != nil {
 					return nil, fmt.Errorf("%s", ferr.Cause)
 				}
 				return fileData, nil
 			})
 			if merr != nil {
-				return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: merr.Error()}
+				return nil, args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: merr.Error()}
 			}
 			items = parsed
 		} else {
 			data, err := decompressItemReaderData(args.key, inputType, data)
 			if err != nil {
-				return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: err.Error()}
+				return nil, args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: err.Error()}
 			}
 			parsed, err := parseItemReaderData(data, inputType, rc)
 			if err != nil {
-				return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: err.Error()}
+				return nil, args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: err.Error()}
 			}
 			items = parsed
 		}
 	case strings.HasSuffix(resource, ":s3:listObjectsV2"):
 		if rawOverride != "" {
-			return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: "raw reader data cannot substitute an s3:listObjectsV2 ItemReader"}
+			return nil, args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: "raw reader data cannot substitute an s3:listObjectsV2 ItemReader"}
 		}
 		if e.bus == nil || e.bus.S3Invoker() == nil {
-			return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: "S3 integration is not available"}
+			return nil, args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: "S3 integration is not available"}
 		}
 		entries, err := e.bus.S3Invoker().ListObjectEntries(ctx, e.region, args.bucket, args.prefix, 0)
 		if err != nil {
-			return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: fmt.Sprintf("failed to list s3://%s/%s: %s", args.bucket, args.prefix, err.Error())}
+			return nil, args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: fmt.Sprintf("failed to list s3://%s/%s: %s", args.bucket, args.prefix, err.Error())}
 		}
 		if rc != nil && rc.Transformation == "LOAD_AND_FLATTEN" {
 			if inputType == "" {
 				inputType = "JSON"
 			}
 			for _, entry := range entries {
-				data, gerr := fetchObject(args.bucket, entry.Key)
+				data, gerr := fetchObject(args.bucket, entry.Key, "")
 				if gerr != nil {
-					return nil, gerr
+					return nil, args, gerr
 				}
 				data, err = decompressItemReaderData(entry.Key, inputType, data)
 				if err != nil {
-					return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: err.Error()}
+					return nil, args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: err.Error()}
 				}
 				parsed, err := parseItemReaderData(data, inputType, rc)
 				if err != nil {
-					return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: err.Error()}
+					return nil, args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: err.Error()}
 				}
 				items = append(items, parsed...)
 			}
@@ -158,46 +157,79 @@ func (e *Executor) readItemReaderItems(ctx context.Context, execCtx *ExecutionCo
 			}
 		}
 	default:
-		return nil, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: fmt.Sprintf("unsupported ItemReader Resource: %s", resource)}
+		return nil, args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: fmt.Sprintf("unsupported ItemReader Resource: %s", resource)}
 	}
 
 	maxItems, ierr := e.resolveItemReaderMaxItems(execCtx, reader)
 	if ierr != nil {
-		return nil, ierr
+		return nil, args, ierr
 	}
 	if maxItems >= 0 && int64(len(items)) > maxItems {
 		items = items[:maxItems]
 	}
-	return items, nil
+	return items, args, nil
 }
 
-// resolveItemReaderArgs resolves the Bucket, Key, Prefix and VersionId
-// arguments. JSONPath definitions carry reference paths on "Field.$" keys;
-// JSONata definitions may template the values. Literal values pass through
-// unchanged.
-func (e *Executor) resolveItemReaderArgs(execCtx *ExecutionContext, reader *sfnstore.ItemReaderConfig) (itemReaderArgs, *ExecutionError) {
-	raw := reader.Parameters
-	if len(raw) == 0 {
-		raw = reader.Arguments
+// itemSourceFromReader derives the provenance the context object reports
+// as Map.Item.Source, from the same resolved reader arguments the dataset
+// was read through: "For state input, the value will be: STATE_DATA"; a
+// keyed object read reports "the Amazon S3 URI. For example:
+// S3://bucket-name/object-key"; a listing read (no key) reports "the S3
+// URI for the bucket. For example: S3://bucket-name".
+func itemSourceFromReader(reader *sfnstore.ItemReaderConfig, args itemReaderArgs) string {
+	if reader == nil || args.bucket == "" {
+		return "STATE_DATA"
 	}
-	args := itemReaderArgs{}
-	if len(raw) == 0 {
-		return args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: "ItemReader requires Bucket with Key or Prefix"}
+	if args.key != "" {
+		return "S3://" + args.bucket + "/" + args.key
 	}
+	return "S3://" + args.bucket
+}
 
-	var params map[string]interface{}
-	if err := json.Unmarshal(raw, &params); err != nil {
-		return args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: "ItemReader Parameters is not a JSON object: " + err.Error()}
+// resolveReaderArguments renders the ItemReader/ResultWriter argument
+// object for both dialects. JSONPath Parameters pass through for the
+// "Field.$" reference-path lookup; JSONata Arguments ("For JSONata
+// states, Parameters will be replaced with Arguments") template-resolve
+// their {% %} expressions against the state input. Both empty returns a
+// nil map: the WriterConfig-only preview form carries no arguments.
+func (e *Executor) resolveReaderArguments(ctx context.Context, execCtx *ExecutionContext, parameters, arguments json.RawMessage) (map[string]interface{}, error) {
+	if len(parameters) == 0 && len(arguments) == 0 {
+		return nil, nil
 	}
-
-	var input map[string]interface{}
-	if execCtx.Input != "" {
-		if err := json.Unmarshal([]byte(execCtx.Input), &input); err != nil {
-			input = nil
+	if len(parameters) == 0 {
+		// The reader/writer Arguments are raw JSON on the store shape;
+		// parse them so the template walk sees the object, not the bytes.
+		var argumentsValue interface{}
+		if err := json.Unmarshal(arguments, &argumentsValue); err != nil {
+			return nil, err
 		}
+		var inputData interface{}
+		if err := json.Unmarshal([]byte(execCtx.Input), &inputData); err != nil {
+			inputData = nil
+		}
+		statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
+		resolved, err := e.applyJSONataArguments(ctx, argumentsValue, statesVar, execCtx.VariableScope)
+		if err != nil {
+			return nil, err
+		}
+		var params map[string]interface{}
+		if err := json.Unmarshal([]byte(resolved), &params); err != nil {
+			return nil, fmt.Errorf("Arguments did not resolve to a JSON object: %s", err.Error())
+		}
+		return params, nil
 	}
+	var params map[string]interface{}
+	if err := json.Unmarshal(parameters, &params); err != nil {
+		return nil, err
+	}
+	return params, nil
+}
 
-	lookup := func(name string) (string, bool) {
+// readerParamLookup resolves a reader/writer parameter by name: a literal
+// string value, or the JSONPath reference-path form ("Field.$") selecting
+// from the state input.
+func readerParamLookup(params, input map[string]interface{}) func(string) (string, bool) {
+	return func(name string) (string, bool) {
 		if v, ok := params[name]; ok {
 			if s, ok := v.(string); ok {
 				return s, true
@@ -218,6 +250,32 @@ func (e *Executor) resolveItemReaderArgs(execCtx *ExecutionContext, reader *sfns
 		}
 		return "", false
 	}
+}
+
+// resolveItemReaderArgs resolves the Bucket, Key, Prefix and VersionId
+// arguments. JSONPath definitions carry reference paths on "Field.$" keys;
+// JSONata definitions may template the values. Literal values pass through
+// unchanged.
+func (e *Executor) resolveItemReaderArgs(ctx context.Context, execCtx *ExecutionContext, reader *sfnstore.ItemReaderConfig) (itemReaderArgs, *ExecutionError) {
+	args := itemReaderArgs{}
+	// The failing member is named by the dialect the definition carries:
+	// JSONPath Parameters or the JSONata Arguments that replaced them.
+	member := "Parameters"
+	if len(reader.Parameters) == 0 {
+		member = "Arguments"
+	}
+	params, perr := e.resolveReaderArguments(ctx, execCtx, reader.Parameters, reader.Arguments)
+	if perr != nil {
+		return args, &ExecutionError{ErrorCode: "States.ItemReaderFailed", Cause: "ItemReader " + member + " is not a JSON object: " + perr.Error()}
+	}
+
+	var input map[string]interface{}
+	if execCtx.Input != "" {
+		if err := json.Unmarshal([]byte(execCtx.Input), &input); err != nil {
+			input = nil
+		}
+	}
+	lookup := readerParamLookup(params, input)
 
 	if v, ok := lookup("Bucket"); ok {
 		args.bucket = v
@@ -534,6 +592,11 @@ func scanCSVRecords(text string, delimiter rune) ([][]string, error) {
 		case c == delimiter:
 			flushField()
 		case c == '\r':
+			// A CRLF pair is one record break, not two — two breaks
+			// would emit an empty record after every row.
+			if i+1 < len(runes) && runes[i+1] == '\n' {
+				i++
+			}
 			flushRecord()
 		case c == '\n':
 			flushRecord()
@@ -574,9 +637,8 @@ type s3InventoryManifest struct {
 	FileFormat        string `json:"fileFormat"`
 	FileSchema        string `json:"fileSchema"`
 	Files             []struct {
-		Key       string `json:"key"`
-		Size      int64  `json:"size"`
-		MD5checks string `json:"MD5checksum"`
+		Key  string `json:"key"`
+		Size int64  `json:"size"`
 	} `json:"files"`
 }
 
@@ -671,6 +733,97 @@ func parseManifestDataset(data []byte, rc *sfnstore.ItemReaderReaderConfig, buck
 	}
 }
 
+// toleratedFailureThresholds carries the Distributed Map tolerated-failure
+// thresholds resolved once against the processed state input — the same
+// stage MaxConcurrency resolves at.
+type toleratedFailureThresholds struct {
+	count    float64
+	hasCount bool
+	pct      float64
+	hasPct   bool
+}
+
+// resolveToleratedFailureThresholds resolves the literal, *Path and
+// JSONata-expression threshold members. The *Path forms select from the
+// processed input (after InputPath); a path or expression that fails to
+// resolve surfaces its error instead of silently behaving as an
+// unconfigured threshold — the unconfigured default is fail-fast, so a
+// swallowed failure would invert the operator's configured tolerance.
+func (e *Executor) resolveToleratedFailureThresholds(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.MapState, processedInput string) (toleratedFailureThresholds, *ExecutionError) {
+	var thresholds toleratedFailureThresholds
+
+	var input map[string]interface{}
+	if processedInput != "" {
+		if err := json.Unmarshal([]byte(processedInput), &input); err != nil {
+			input = nil
+		}
+	}
+	resolvePath := func(path, field string) (float64, bool, *ExecutionError) {
+		if path == "" {
+			return 0, false, nil
+		}
+		if input == nil {
+			return 0, false, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: fmt.Sprintf("%s requires object input", field)}
+		}
+		resolved, err := getJSONPathValue(input, path)
+		if err != nil {
+			return 0, false, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: fmt.Sprintf("%s failed to resolve: %s", field, err.Error())}
+		}
+		if n, ok := resolved.(float64); ok {
+			return n, true, nil
+		}
+		return 0, false, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: fmt.Sprintf("%s must resolve to a number", field)}
+	}
+	resolveMember := func(field string, raw interface{}, min, max float64) (float64, bool, *ExecutionError) {
+		if raw == nil {
+			return 0, false, nil
+		}
+		f, isNumber := toFloat64(raw)
+		if isNumber && (f < min || (max > 0 && f > max)) {
+			// An out-of-range literal is rejected, not discarded: the
+			// JSONata-expression resolver errors on the same condition,
+			// and discarding would silently restore the fail-fast
+			// default.
+			return 0, false, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: fmt.Sprintf("Map state %s is outside the acceptable range", field)}
+		}
+		if !isNumber {
+			// "In JSONata states, you can specify a JSONata expression
+			// that evaluates to an integer" (Distributed-mode thresholds).
+			resolved, present, rerr := e.resolveMapNumericMember(ctx, execCtx, field, raw, processedInput, min, max)
+			if rerr != nil {
+				return 0, false, rerr
+			}
+			if !present {
+				return 0, false, nil
+			}
+			return resolved, true, nil
+		}
+		return f, true, nil
+	}
+
+	if n, ok, err := resolvePath(state.ToleratedFailureCountPath, "ToleratedFailureCountPath"); err != nil {
+		return thresholds, err
+	} else if ok {
+		thresholds.count, thresholds.hasCount = n, true
+	}
+	if c, ok, err := resolveMember("ToleratedFailureCount", state.ToleratedFailureCount, 0, 0); err != nil {
+		return thresholds, err
+	} else if ok {
+		thresholds.count, thresholds.hasCount = c, true
+	}
+	if n, ok, err := resolvePath(state.ToleratedFailurePercentagePath, "ToleratedFailurePercentagePath"); err != nil {
+		return thresholds, err
+	} else if ok {
+		thresholds.pct, thresholds.hasPct = n, true
+	}
+	if p, ok, err := resolveMember("ToleratedFailurePercentage", state.ToleratedFailurePercentage, 0, 100); err != nil {
+		return thresholds, err
+	} else if ok {
+		thresholds.pct, thresholds.hasPct = p, true
+	}
+	return thresholds, nil
+}
+
 // evaluateToleratedFailure applies the Distributed Map tolerated-failure
 // thresholds. Inline maps keep the classic fail-fast behaviour, so both
 // results are false. For Distributed maps the documented defaults apply
@@ -679,52 +832,23 @@ func parseManifestDataset(data []byte, rc *sfnstore.ItemReaderReaderConfig, buck
 // The first return value reports whether the failures stay within the
 // thresholds; the second reports whether an exceeded threshold (rather
 // than the generic iterator failure) caused the failure.
-func (e *Executor) evaluateToleratedFailure(execCtx *ExecutionContext, state *sfnstore.MapState, itemsFailed, totalItems int64) (tolerated bool, exceededThreshold bool) {
+func (e *Executor) evaluateToleratedFailure(state *sfnstore.MapState, thresholds toleratedFailureThresholds, itemsFailed, totalItems int64) (tolerated bool, exceededThreshold bool) {
 	if state.ItemProcessor == nil || state.ItemProcessor.ProcessorConfig == nil ||
 		state.ItemProcessor.ProcessorConfig.Mode != "DISTRIBUTED" {
 		return false, false
-	}
-
-	var input map[string]interface{}
-	if execCtx.Input != "" {
-		if err := json.Unmarshal([]byte(execCtx.Input), &input); err != nil {
-			input = nil
-		}
-	}
-	resolveInt := func(literal *int64, path string) (float64, bool) {
-		if literal != nil {
-			return float64(*literal), true
-		}
-		if path == "" || input == nil {
-			return 0, false
-		}
-		resolved, err := getJSONPathValue(input, path)
-		if err != nil {
-			return 0, false
-		}
-		if n, ok := resolved.(float64); ok {
-			return n, true
-		}
-		return 0, false
-	}
-
-	count, hasCount := resolveInt(state.ToleratedFailureCount, state.ToleratedFailureCountPath)
-	pct, hasPct := resolveInt(nil, state.ToleratedFailurePercentagePath)
-	if state.ToleratedFailurePercentage != nil {
-		pct, hasPct = *state.ToleratedFailurePercentage, true
 	}
 
 	// The documented defaults are a zero count and a zero percentage, so
 	// without any configured threshold a single failed item fails the
 	// Map Run.
 	exceeded := false
-	if hasCount && float64(itemsFailed) > count {
+	if thresholds.hasCount && float64(itemsFailed) > thresholds.count {
 		exceeded = true
 	}
-	if hasPct && totalItems > 0 && float64(itemsFailed)*100.0/float64(totalItems) > pct {
+	if thresholds.hasPct && totalItems > 0 && float64(itemsFailed)*100.0/float64(totalItems) > thresholds.pct {
 		exceeded = true
 	}
-	if !hasCount && !hasPct && itemsFailed > 0 {
+	if !thresholds.hasCount && !thresholds.hasPct && itemsFailed > 0 {
 		exceeded = true
 	}
 	if exceeded {
@@ -733,34 +857,29 @@ func (e *Executor) evaluateToleratedFailure(execCtx *ExecutionContext, state *sf
 	return itemsFailed > 0, false
 }
 
-// writeMapResultWriter exports the per-unit execution records of a Map Run
-// to S3 and returns the replacement state result: the Map Run ARN plus the
-// export location. Distributed units carry their dispatched child
+// writeMapResultWriter renders the formatted child results of a Map Run
+// and either returns them as the state output (the WriterConfig-only
+// preview form) or exports them to S3 and returns the Map Run ARN plus
+// the export location. Distributed units carry their dispatched child
 // execution identity; inline units fall back to the synthesised per-unit
 // identifiers. Failures surface as States.ResultWriterFailed.
 func (e *Executor) writeMapResultWriter(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.MapState, mapRunRecord *sfnstore.MapRun, renderedResults []string, itemErrors []error, itemInputs []string, childMetas []mapChildMeta) (string, *ExecutionError) {
-	if e.bus == nil || e.bus.S3Invoker() == nil {
-		return "", &ExecutionError{ErrorCode: "States.ResultWriterFailed", Cause: "S3 integration is not available"}
-	}
+	// The documented field combinations are WriterConfig alone (preview),
+	// Resource with Parameters (or Arguments), or all three. The preview
+	// form carries no export destination: "Non-existent Resource and
+	// Parameters fields ... imply the state output resource. The results
+	// are passed on to the next state."
+	exporting := len(state.ResultWriter.Parameters) > 0 || len(state.ResultWriter.Arguments) > 0
 
-	raw := state.ResultWriter.Parameters
-	if len(raw) == 0 {
-		raw = state.ResultWriter.Arguments
-	}
-	var params map[string]interface{}
-	if err := json.Unmarshal(raw, &params); err != nil {
-		return "", &ExecutionError{ErrorCode: "States.ResultWriterFailed", Cause: "ResultWriter Parameters is not a JSON object: " + err.Error()}
-	}
-	bucket, _ := params["Bucket"].(string)
-	prefix, _ := params["Prefix"].(string)
-	if bucket == "" {
-		return "", &ExecutionError{ErrorCode: "States.ResultWriterFailed", Cause: "ResultWriter requires a Bucket parameter"}
-	}
-	prefix = strings.Trim(prefix, "/")
-
+	transformation := "NONE"
 	outputType := "JSON"
-	if state.ResultWriter.WriterConfig != nil && state.ResultWriter.WriterConfig.OutputType == "JSONL" {
-		outputType = "JSONL"
+	if wc := state.ResultWriter.WriterConfig; wc != nil {
+		if wc.Transformation == "COMPACT" || wc.Transformation == "FLATTEN" {
+			transformation = wc.Transformation
+		}
+		if wc.OutputType == "JSONL" {
+			outputType = "JSONL"
+		}
 	}
 
 	// The export directory hangs off the Map Run identifier.
@@ -768,11 +887,6 @@ func (e *Executor) writeMapResultWriter(ctx context.Context, execCtx *ExecutionC
 	if idx := strings.LastIndex(mapRunID, "/"); idx >= 0 {
 		mapRunID = mapRunID[idx+1:]
 	}
-	dir := prefix
-	if dir != "" {
-		dir += "/"
-	}
-	dir += mapRunID + "/"
 
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	type itemRecord struct {
@@ -795,13 +909,22 @@ func (e *Executor) writeMapResultWriter(ctx context.Context, execCtx *ExecutionC
 		StopDate            string `json:"StopDate"`
 	}
 
-	renderRecords := func(status string) []byte {
-		var records []itemRecord
-		lines := []string{}
+	// collectRecords gathers the per-child execution records with their
+	// workflow metadata; the empty status collects every child, which the
+	// preview's NONE presentation uses.
+	collectRecords := func(status string) []interface{} {
+		var records []interface{}
 		for i, res := range renderedResults {
 			failed := i < len(itemErrors) && itemErrors[i] != nil
-			if (status == "SUCCEEDED") == failed {
+			if status != "" && (status == "SUCCEEDED") == failed {
 				continue
+			}
+			recStatus := status
+			if recStatus == "" {
+				recStatus = "SUCCEEDED"
+				if failed {
+					recStatus = "FAILED"
+				}
 			}
 			itemInput := "null"
 			if i < len(itemInputs) {
@@ -816,7 +939,7 @@ func (e *Executor) writeMapResultWriter(ctx context.Context, execCtx *ExecutionC
 				RedriveStatusReason: "Execution results are exported by the Map Run ResultWriter",
 				StartDate:           now,
 				StateMachineArn:     execCtx.Execution.StateMachineArn,
-				Status:              status,
+				Status:              recStatus,
 				StopDate:            now,
 			}
 			if i < len(childMetas) && childMetas[i].Arn != "" {
@@ -828,22 +951,103 @@ func (e *Executor) writeMapResultWriter(ctx context.Context, execCtx *ExecutionC
 			rec.OutputDetails.Included = true
 			records = append(records, rec)
 		}
-		if outputType == "JSONL" {
-			for _, rec := range records {
-				b, err := json.Marshal(rec)
-				if err != nil {
+		return records
+	}
+
+	// The transformation shapes the succeeded results: COMPACT keeps each
+	// child output in its original structure, FLATTEN splices array
+	// results into one array, and NONE (the default) returns the per-child
+	// execution records. "If a child workflow execution fails, Step
+	// Functions returns its execution result unchanged. The results would
+	// be equivalent to having set Transformation to NONE", so a failed
+	// child anywhere keeps the record presentation.
+	renderTransformed := func() ([]interface{}, bool) {
+		if transformation == "NONE" {
+			return nil, false
+		}
+		payload := []interface{}{}
+		for i, res := range renderedResults {
+			if i < len(itemErrors) && itemErrors[i] != nil {
+				return nil, false
+			}
+			var parsed interface{}
+			if err := json.Unmarshal([]byte(res), &parsed); err != nil {
+				parsed = res
+			}
+			if transformation == "FLATTEN" {
+				if arr, ok := parsed.([]interface{}); ok {
+					payload = append(payload, arr...)
 					continue
 				}
+			}
+			payload = append(payload, parsed)
+		}
+		return payload, true
+	}
+
+	// OutputType JSON renders the elements as a JSON array; JSONL renders
+	// them as JSON Lines — for the preview form that formatted text is
+	// itself the state output.
+	encodeElements := func(elements []interface{}) interface{} {
+		if outputType != "JSONL" {
+			return elements
+		}
+		lines := make([]string, 0, len(elements))
+		for _, el := range elements {
+			if b, err := json.Marshal(el); err == nil {
 				lines = append(lines, string(b))
 			}
-			return []byte(strings.Join(lines, "\n") + "\n")
 		}
-		b, err := json.Marshal(records)
+		return strings.Join(lines, "\n") + "\n"
+	}
+	encode := func(elements []interface{}) []byte {
+		b, err := json.Marshal(encodeElements(elements))
 		if err != nil {
 			return []byte("[]")
 		}
 		return b
 	}
+
+	if !exporting {
+		elements, ok := renderTransformed()
+		if !ok {
+			elements = collectRecords("")
+		}
+		return string(encode(elements)), nil
+	}
+
+	if e.bus == nil || e.bus.S3Invoker() == nil {
+		return "", &ExecutionError{ErrorCode: "States.ResultWriterFailed", Cause: "S3 integration is not available"}
+	}
+	// The failing member is named by the dialect the definition carries:
+	// JSONPath Parameters or the JSONata Arguments that replaced them.
+	writerMember := "Parameters"
+	if len(state.ResultWriter.Parameters) == 0 {
+		writerMember = "Arguments"
+	}
+	params, perr := e.resolveReaderArguments(ctx, execCtx, state.ResultWriter.Parameters, state.ResultWriter.Arguments)
+	if perr != nil {
+		return "", &ExecutionError{ErrorCode: "States.ResultWriterFailed", Cause: "ResultWriter " + writerMember + " is not a JSON object: " + perr.Error()}
+	}
+	var input map[string]interface{}
+	if execCtx.Input != "" {
+		if err := json.Unmarshal([]byte(execCtx.Input), &input); err != nil {
+			input = nil
+		}
+	}
+	lookup := readerParamLookup(params, input)
+	bucket, _ := lookup("Bucket")
+	prefix, _ := lookup("Prefix")
+	if bucket == "" {
+		return "", &ExecutionError{ErrorCode: "States.ResultWriterFailed", Cause: "ResultWriter requires a Bucket parameter"}
+	}
+	prefix = strings.Trim(prefix, "/")
+
+	dir := prefix
+	if dir != "" {
+		dir += "/"
+	}
+	dir += mapRunID + "/"
 
 	put := func(key string, data []byte) *ExecutionError {
 		if err := e.bus.S3Invoker().PutObject(ctx, e.region, bucket, key, data, "application/json"); err != nil {
@@ -860,7 +1064,11 @@ func (e *Executor) writeMapResultWriter(ctx context.Context, execCtx *ExecutionC
 		}
 	}
 	if len(renderedResults)-failedCount > 0 {
-		if ierr := put(dir+"SUCCEEDED_0.json", renderRecords("SUCCEEDED")); ierr != nil {
+		succeeded := collectRecords("SUCCEEDED")
+		if payload, ok := renderTransformed(); ok {
+			succeeded = payload
+		}
+		if ierr := put(dir+"SUCCEEDED_0.json", encode(succeeded)); ierr != nil {
 			return "", ierr
 		}
 		resultFiles["SUCCEEDED"] = []string{"SUCCEEDED_0.json"}
@@ -868,7 +1076,7 @@ func (e *Executor) writeMapResultWriter(ctx context.Context, execCtx *ExecutionC
 		resultFiles["SUCCEEDED"] = []string{}
 	}
 	if failedCount > 0 {
-		if ierr := put(dir+"FAILED_0.json", renderRecords("FAILED")); ierr != nil {
+		if ierr := put(dir+"FAILED_0.json", encode(collectRecords("FAILED"))); ierr != nil {
 			return "", ierr
 		}
 		resultFiles["FAILED"] = []string{"FAILED_0.json"}

@@ -60,7 +60,27 @@ func (e *Executor) buildMapWorkUnits(ctx context.Context, execCtx *ExecutionCont
 	}
 	maxBytes := int64(sfnstore.MaxExecutionDataBytes)
 	if ib.MaxInputBytesPerBatch != nil {
-		maxBytes = *ib.MaxInputBytesPerBatch
+		// The literal is a byte count; JSONata states may instead carry
+		// "a JSONata expression that evaluates to a positive integer".
+		if b, isNumber := toFloat64(ib.MaxInputBytesPerBatch); isNumber {
+			maxBytes = int64(b)
+		} else {
+			var inputData interface{}
+			if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+				return nil, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+			}
+			statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
+			vars := buildVarsMap(statesVar, execCtx.VariableScope)
+			resolved, qerr := ResolveTemplate(ctx, ib.MaxInputBytesPerBatch, nil, vars)
+			if qerr != nil {
+				return nil, e.newQueryEvalError(ctx, execCtx, "MaxInputBytesPerBatch", qerr.Error())
+			}
+			value, verr := positiveInt64(resolved, "MaxInputBytesPerBatch")
+			if verr != nil {
+				return nil, verr
+			}
+			maxBytes = value
+		}
 	} else if ib.MaxInputBytesPerBatchPath != "" {
 		resolved, rerr := resolveItemBatcherReference(processedInput, ib.MaxInputBytesPerBatchPath, "MaxInputBytesPerBatchPath")
 		if rerr != nil {
@@ -75,6 +95,22 @@ func (e *Executor) buildMapWorkUnits(ctx context.Context, execCtx *ExecutionCont
 	var batchInput interface{}
 	if ib.BatchInput != nil {
 		batchInput = ib.BatchInput
+		if IsJSONataState(state, execCtx.QueryLanguage) {
+			// "For JSONata-based states, you can provide JSONata
+			// expressions directly to BatchInput, or use JSONata
+			// expressions inside JSON objects or arrays."
+			var inputData interface{}
+			if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+				return nil, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
+			}
+			statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
+			vars := buildVarsMap(statesVar, execCtx.VariableScope)
+			resolved, qerr := ResolveTemplate(ctx, batchInput, nil, vars)
+			if qerr != nil {
+				return nil, e.newQueryEvalError(ctx, execCtx, "BatchInput", qerr.Error())
+			}
+			batchInput = resolved
+		}
 	} else if ib.BatchInputPath != "" {
 		resolved, rerr := resolveItemBatcherReference(processedInput, ib.BatchInputPath, "BatchInputPath")
 		if rerr != nil {
@@ -91,15 +127,21 @@ func (e *Executor) buildMapWorkUnits(ctx context.Context, execCtx *ExecutionCont
 	currentBytes := int64(0)
 	fixedBytes := int64(0)
 	if batchInput != nil {
-		if b, merr := json.Marshal(batchInput); merr == nil {
-			fixedBytes = int64(len(b)) + int64(len(`"BatchInput":`))
+		// BatchInput is marshalled once up front both to size every
+		// unit and to reject an unserialisable value here — a batch
+		// input that cannot render must fail unit construction, never
+		// mint degenerate units.
+		b, merr := json.Marshal(batchInput)
+		if merr != nil {
+			return nil, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to marshal ItemBatcher BatchInput: " + merr.Error()}
 		}
+		fixedBytes = int64(len(b)) + int64(len(`"BatchInput":`))
 	}
 	wrapperBytes := int64(len(`{"Items":[]}`))
 
-	flush := func(startIndex int) {
+	flush := func(startIndex int) *ExecutionError {
 		if len(current) == 0 {
-			return
+			return nil
 		}
 		payload := map[string]interface{}{"Items": current}
 		if batchInput != nil {
@@ -107,7 +149,7 @@ func (e *Executor) buildMapWorkUnits(ctx context.Context, execCtx *ExecutionCont
 		}
 		b, merr := json.Marshal(payload)
 		if merr != nil {
-			b = []byte("null")
+			return &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to marshal batch unit: " + merr.Error()}
 		}
 		units = append(units, mapWorkUnit{
 			StartIndex: startIndex,
@@ -116,6 +158,7 @@ func (e *Executor) buildMapWorkUnits(ctx context.Context, execCtx *ExecutionCont
 		})
 		current = make([]interface{}, 0, 16)
 		currentBytes = 0
+		return nil
 	}
 
 	for i, item := range processedItems {
@@ -128,7 +171,9 @@ func (e *Executor) buildMapWorkUnits(ctx context.Context, execCtx *ExecutionCont
 			countCapped := maxItems > 0 && int64(len(current)) >= maxItems
 			bytesCapped := currentBytes+1+itemBytes > maxBytes
 			if countCapped || bytesCapped {
-				flush(i - len(current))
+				if ferr := flush(i - len(current)); ferr != nil {
+					return nil, ferr
+				}
 			}
 		}
 		if len(current) == 0 {
@@ -142,7 +187,9 @@ func (e *Executor) buildMapWorkUnits(ctx context.Context, execCtx *ExecutionCont
 		current = append(current, item)
 		currentBytes += itemBytes
 	}
-	flush(len(processedItems) - len(current))
+	if ferr := flush(len(processedItems) - len(current)); ferr != nil {
+		return nil, ferr
+	}
 
 	return units, nil
 }

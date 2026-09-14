@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -159,6 +160,11 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 			if aws.ToString(child.MapRunArn) != mapRunArn {
 				return fmt.Errorf("child %q mapRunArn = %q", aws.ToString(child.Name), aws.ToString(child.MapRunArn))
 			}
+			// itemCount is part of the map-run-scoped listing contract —
+			// present for every listed child, never suppressed.
+			if child.ItemCount == nil {
+				return fmt.Errorf("child %q itemCount missing from the map-run-scoped listing", aws.ToString(child.Name))
+			}
 			if child.Status != types.ExecutionStatusSucceeded {
 				return fmt.Errorf("child %q status = %s", aws.ToString(child.Name), child.Status)
 			}
@@ -192,6 +198,163 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 		}
 		if len(history.Events) == 0 {
 			return fmt.Errorf("child history is empty")
+		}
+		return nil
+	}))
+
+	// MapRunRedriven_HistoryEvent: a failed Distributed Map redriven through
+	// the parent records the MapRunRedriven lifecycle event, whose details
+	// travel under the model member mapRunRedrivenEventDetails — a misspelt
+	// key is dropped by the SDK and leaves the details nil. The event type
+	// itself must be the model enum value MapRunRedriven.
+	results = append(results, r.RunTest("stepfunctions", "MapRunRedriven_HistoryEvent", func() error {
+		failState := map[string]interface{}{
+			"Type":      "Map",
+			"Label":     "distredrive",
+			"ItemsPath": "$.v",
+			"ItemProcessor": map[string]interface{}{
+				"ProcessorConfig": map[string]interface{}{"Mode": "DISTRIBUTED", "ExecutionType": "STANDARD"},
+				"StartAt":         "F",
+				"States": map[string]interface{}{
+					"F": map[string]interface{}{"Type": "Fail", "Error": "ItemError", "Cause": "iterator fails"},
+				},
+			},
+			"End": true,
+		}
+		smARN, err := tc.createSingleStateSM("MapRunRedriven-"+ts, failState)
+		if err != nil {
+			return fmt.Errorf("create SM: %v", err)
+		}
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
+
+		execArn, err := tc.startExecution(smARN, "", `{"v":[1]}`)
+		if err != nil {
+			return fmt.Errorf("start: %v", err)
+		}
+		desc, err := tc.awaitTerminal(execArn, 100*time.Millisecond, 30)
+		if err != nil {
+			return fmt.Errorf("execution did not fail before redrive: %v", err)
+		}
+		if desc.Status != types.ExecutionStatusFailed {
+			return fmt.Errorf("expected FAILED before redrive, got %s", desc.Status)
+		}
+
+		if _, err := tc.client.RedriveExecution(tc.ctx, &awssfn.RedriveExecutionInput{ExecutionArn: aws.String(execArn)}); err != nil {
+			return fmt.Errorf("redrive: %v", err)
+		}
+		if _, err := tc.awaitTerminal(execArn, 100*time.Millisecond, 30); err != nil {
+			return fmt.Errorf("execution did not terminate after redrive: %v", err)
+		}
+
+		history, err := tc.client.GetExecutionHistory(tc.ctx, &awssfn.GetExecutionHistoryInput{ExecutionArn: aws.String(execArn)})
+		if err != nil {
+			return fmt.Errorf("history: %v", err)
+		}
+		for _, evt := range history.Events {
+			if evt.Type != types.HistoryEventTypeMapRunRedriven {
+				continue
+			}
+			if evt.MapRunRedrivenEventDetails == nil {
+				return fmt.Errorf("MapRunRedriven event carries no mapRunRedrivenEventDetails — the wire member name must match the model")
+			}
+			if aws.ToString(evt.MapRunRedrivenEventDetails.MapRunArn) == "" {
+				return fmt.Errorf("MapRunRedriven details carry no mapRunArn")
+			}
+			if evt.MapRunRedrivenEventDetails.RedriveCount == nil || *evt.MapRunRedrivenEventDetails.RedriveCount < 1 {
+				return fmt.Errorf("MapRunRedriven redriveCount = %v, want >= 1", evt.MapRunRedrivenEventDetails.RedriveCount)
+			}
+			return nil
+		}
+		return fmt.Errorf("no MapRunRedriven event in the redriven history")
+	}))
+
+	// MapChild_RedriveContract: a failed Distributed Map child reports
+	// redriveStatus REDRIVABLE_BY_MAP_RUN and is redriven only by its Map
+	// Run — a direct RedriveExecution against the child is refused with
+	// ExecutionNotRedrivable.
+	results = append(results, r.RunTest("stepfunctions", "MapChild_RedriveContract", func() error {
+		failState := map[string]interface{}{
+			"Type":      "Map",
+			"Label":     "childrej",
+			"ItemsPath": "$.v",
+			"ItemProcessor": map[string]interface{}{
+				"ProcessorConfig": map[string]interface{}{"Mode": "DISTRIBUTED", "ExecutionType": "STANDARD"},
+				"StartAt":         "F",
+				"States": map[string]interface{}{
+					"F": map[string]interface{}{"Type": "Fail", "Error": "ItemError", "Cause": "iterator fails"},
+				},
+			},
+			"End": true,
+		}
+		smARN, err := tc.createSingleStateSM("MapChildRej-"+ts, failState)
+		if err != nil {
+			return fmt.Errorf("create SM: %v", err)
+		}
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
+
+		execArn, err := tc.startExecution(smARN, "", `{"v":[1]}`)
+		if err != nil {
+			return fmt.Errorf("start: %v", err)
+		}
+		if _, err := tc.awaitTerminal(execArn, 100*time.Millisecond, 30); err != nil {
+			return fmt.Errorf("execution did not fail: %v", err)
+		}
+
+		runArn, err := latestMapRunFor(execArn)
+		if err != nil {
+			return fmt.Errorf("list map runs: %v", err)
+		}
+		var childArn string
+		var listNext *string
+		for childArn == "" {
+			page, lerr := tc.client.ListExecutions(tc.ctx, &awssfn.ListExecutionsInput{
+				MapRunArn: aws.String(runArn),
+				NextToken: listNext,
+			})
+			if lerr != nil {
+				return fmt.Errorf("list executions by map run: %v", lerr)
+			}
+			for _, item := range page.Executions {
+				if aws.ToString(item.ExecutionArn) != execArn {
+					childArn = aws.ToString(item.ExecutionArn)
+					break
+				}
+			}
+			listNext = page.NextToken
+			if listNext == nil {
+				break
+			}
+		}
+		if childArn == "" {
+			return fmt.Errorf("no child execution listed under map run %s", runArn)
+		}
+
+		child, derr := tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{ExecutionArn: aws.String(childArn)})
+		if derr != nil {
+			return fmt.Errorf("describe child: %v", derr)
+		}
+		if child.Status != types.ExecutionStatusFailed {
+			return fmt.Errorf("child status = %s, want FAILED", child.Status)
+		}
+		if child.RedriveStatus != types.ExecutionRedriveStatusRedrivableByMapRun {
+			return fmt.Errorf("child redriveStatus = %s, want REDRIVABLE_BY_MAP_RUN", child.RedriveStatus)
+		}
+
+		if _, rerr := tc.client.RedriveExecution(tc.ctx, &awssfn.RedriveExecutionInput{ExecutionArn: aws.String(childArn)}); rerr != nil {
+			var notRedrivable *types.ExecutionNotRedrivable
+			if !errors.As(rerr, &notRedrivable) {
+				return fmt.Errorf("direct redrive of a map child = %v, want ExecutionNotRedrivable", rerr)
+			}
+		} else {
+			return fmt.Errorf("direct redrive of a map child succeeded — children are redriven only by their Map Run")
+		}
+
+		after, aerr := tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{ExecutionArn: aws.String(childArn)})
+		if aerr != nil {
+			return fmt.Errorf("describe child after the refused redrive: %v", aerr)
+		}
+		if after.Status != types.ExecutionStatusFailed || after.RedriveCount != nil && *after.RedriveCount != 0 {
+			return fmt.Errorf("refused redrive must leave the child untouched (status %s, redriveCount %v)", after.Status, after.RedriveCount)
 		}
 		return nil
 	}))

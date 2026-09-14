@@ -25,7 +25,7 @@ func newTaskTokenTestHarness(t *testing.T) (*Executor, *sfnstore.StepFunctionSto
 	if err := store.CreateActivity(context.Background(), &sfnstore.Activity{Name: "work"}); err != nil {
 		t.Fatal(err)
 	}
-	return NewExecutorWithStores(store, nil, "000000000000", "us-east-1"), store
+	return NewExecutorWithStores(store, nil, "000000000000", "us-east-1", nil), store
 }
 
 func newTaskTokenExecCtx(input string) *ExecutionContext {
@@ -486,17 +486,18 @@ func TestUnbackedTaskTokenClassifiedAsRuntimeEverywhere(t *testing.T) {
 	runtimeTokenErr(mapErr, "Map ItemSelector")
 
 	// Direct context resolution mirrors the paths above.
-	if _, ctxErr := e.getContextValue("", "$$.Task.Token"); ctxErr == nil {
+	if _, ctxErr := e.getContextValue(nil, "", "$$.Task.Token"); ctxErr == nil {
 		t.Fatal("getContextValue fabricated a token for an empty attempt token")
 	}
 }
 
-// The two query dialects handle a tokenless context differently, and both
-// behaviours are intentional: JSONPath fails hard with States.Runtime (see
-// TestUnbackedTaskTokenClassifiedAsRuntimeEverywhere) while JSONata treats
-// a missing context node as undefined, so the argument evaluates to null
-// instead of failing — the documented JSONata semantics for absent paths.
-func TestJSONataUnbackedTaskTokenIsUndefined(t *testing.T) {
+// Both query dialects fail a tokenless token reference, by the same
+// contract: JSONPath fails with States.Runtime (see
+// TestUnbackedTaskTokenClassifiedAsRuntimeEverywhere) and JSONata fails
+// with States.QueryEvaluationError, because the context object carries no
+// Task section outside a token-backed attempt and JSON cannot represent
+// an undefined value expression.
+func TestJSONataUnbackedTaskTokenFails(t *testing.T) {
 	e, _ := newTaskTokenTestHarness(t)
 	execCtx := newTaskTokenExecCtx(`{"orderId":"o-1"}`)
 
@@ -516,19 +517,12 @@ func TestJSONataUnbackedTaskTokenIsUndefined(t *testing.T) {
 	}
 
 	statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
-	out, err := e.applyJSONataArguments(context.Background(), arguments, statesVar, execCtx.VariableScope)
-	if err != nil {
-		t.Fatalf("JSONata evaluation failed on a tokenless context: %v", err)
+	_, err := e.applyJSONataArguments(context.Background(), arguments, statesVar, execCtx.VariableScope)
+	if err == nil {
+		t.Fatal("expected the tokenless token reference to fail the expression")
 	}
-	var resolved map[string]interface{}
-	if err := json.Unmarshal([]byte(out), &resolved); err != nil {
-		t.Fatalf("arguments output is not JSON: %v (%s)", err, out)
-	}
-	if got := resolved["order"]; got != "o-1" {
-		t.Fatalf("order argument resolved to %v, want o-1", got)
-	}
-	if token := resolved["token"]; token != nil {
-		t.Fatalf("token argument resolved to %v, want undefined", token)
+	if !strings.Contains(err.Error(), "undefined") {
+		t.Fatalf("tokenless token failure does not report undefined: %v", err)
 	}
 
 	// Control: with a token minted the same expression resolves to it.
@@ -537,7 +531,8 @@ func TestJSONataUnbackedTaskTokenIsUndefined(t *testing.T) {
 		t.Fatal("context object omitted the Task section for a token-backed attempt")
 	}
 	statesVar = e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
-	out, err = e.applyJSONataArguments(context.Background(), arguments, statesVar, execCtx.VariableScope)
+	var resolved map[string]interface{}
+	out, err := e.applyJSONataArguments(context.Background(), arguments, statesVar, execCtx.VariableScope)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -546,5 +541,218 @@ func TestJSONataUnbackedTaskTokenIsUndefined(t *testing.T) {
 	}
 	if got := resolved["token"]; got != "tok-1" {
 		t.Fatalf("token argument resolved to %v, want tok-1", got)
+	}
+}
+
+// TestActivityWaitTimeoutClassifiesTyped pins the typed timeout signal: an
+// activity task whose report never arrives fails with States.Timeout
+// through the waiter layer's timedOut flag, not through error-text
+// matching.
+func TestActivityWaitTimeoutClassifiesTyped(t *testing.T) {
+	e, _ := newTaskTokenTestHarness(t)
+	execCtx := newTaskTokenExecCtx(`{}`)
+	state := &sfnstore.TaskState{
+		Type:           "Task",
+		Resource:       tokenTestActivityARN,
+		End:            true,
+		TimeoutSeconds: float64(1),
+	}
+
+	_, _, execErr := e.executeTask(context.Background(), execCtx, state)
+	if execErr == nil {
+		t.Fatal("the unreported activity task must fail the state")
+	}
+	if execErr.ErrorCode != "States.Timeout" {
+		t.Fatalf("timeout classification = %q, want States.Timeout", execErr.ErrorCode)
+	}
+}
+
+// TestSendTaskFailureIdentityNotReclassifiedByCauseText pins that a worker
+// error whose NAME or CAUSE merely quotes "States.Timeout" keeps its own
+// identity: the timeout classification consumes typed signals only, so
+// Catch on the real error name fires.
+func TestSendTaskFailureIdentityNotReclassifiedByCauseText(t *testing.T) {
+	e, store := newTaskTokenTestHarness(t)
+	execCtx := newTaskTokenExecCtx(`{}`)
+	state := &sfnstore.TaskState{
+		Type:           "Task",
+		Resource:       tokenTestActivityARN,
+		End:            true,
+		TimeoutSeconds: float64(10),
+	}
+
+	type taskResult struct {
+		err *ExecutionError
+	}
+	done := make(chan taskResult, 1)
+	go func() {
+		_, _, execErr := e.executeTask(context.Background(), execCtx, state)
+		done <- taskResult{execErr}
+	}()
+
+	workerCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	task, err := store.GetActivityTask(workerCtx, tokenTestActivityARN, "worker-1")
+	if err != nil || task == nil {
+		t.Fatalf("no activity task became available: task=%v err=%v", task, err)
+	}
+	if err := store.FailActivityTask(task.TaskToken, "MyStates.TimeoutError", `upstream reported "States.Timeout"`); err != nil {
+		t.Fatalf("fail failed: %v", err)
+	}
+
+	select {
+	case r := <-done:
+		if r.err == nil {
+			t.Fatal("the failed report must fail the state")
+		}
+		if r.err.ErrorCode != "MyStates.TimeoutError" {
+			t.Fatalf("error identity = %q, want MyStates.TimeoutError (quoted timeout text must not reclassify)", r.err.ErrorCode)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("executeTask did not return after the failure report")
+	}
+}
+
+// TestTaskCredentialsTemplateResolves pins the Credentials payload
+// template: "you can also specify a JSONPath value or an intrinsic
+// function that resolves to an IAM role ARN at runtime based on the
+// execution input" — both dialects resolve, and the resolved ARN rides
+// the scheduled event's taskCredentials member. The per-task assume-role
+// step itself is the recorded platform exclusion.
+func TestTaskCredentialsTemplateResolves(t *testing.T) {
+	store := newMapTestStore(t)
+	e := NewExecutor(store, nil)
+	e.region = "us-east-1"
+
+	execCtx := &ExecutionContext{
+		Execution: &sfnstore.Execution{
+			ExecutionArn:    "arn:aws:states:us-east-1:000000000000:execution:sm:cred",
+			StateMachineArn: "arn:aws:states:us-east-1:000000000000:stateMachine:sm",
+		},
+		Input:         `{"acct":"123","role":"arn:aws:iam::9:role/X"}`,
+		QueryLanguage: "JSONPath",
+	}
+
+	state := &sfnstore.TaskState{
+		Resource: "arn:aws:states:::sns:publish",
+		Credentials: map[string]interface{}{
+			"RoleArn.$": "States.Format('arn:aws:iam::{}:role/R', $.acct)",
+		},
+	}
+	creds, cerr := e.evaluateTaskCredentials(context.Background(), execCtx, state, execCtx.Input)
+	if cerr != nil {
+		t.Fatalf("JSONPath credentials failed: %v", cerr.Cause)
+	}
+	if creds.RoleArn != "arn:aws:iam::123:role/R" {
+		t.Errorf("JSONPath roleArn = %q, want the formatted ARN", creds.RoleArn)
+	}
+
+	state.QueryLanguage = "JSONata"
+	state.Credentials = map[string]interface{}{"RoleArn": "{% $states.input.role %}"}
+	creds, cerr = e.evaluateTaskCredentials(context.Background(), execCtx, state, execCtx.Input)
+	if cerr != nil {
+		t.Fatalf("JSONata credentials failed: %v", cerr.Cause)
+	}
+	if creds.RoleArn != "arn:aws:iam::9:role/X" {
+		t.Errorf("JSONata roleArn = %q, want the input role", creds.RoleArn)
+	}
+
+	state.Credentials = map[string]interface{}{"Other.$": "$.acct"}
+	if _, cerr = e.evaluateTaskCredentials(context.Background(), execCtx, state, execCtx.Input); cerr == nil {
+		t.Error("a template without RoleArn must fail the evaluation")
+	}
+
+	// The scheduled event serialises the modelled taskCredentials member.
+	evt := &sfnstore.ExecutionHistoryEvent{
+		Type: "TaskScheduled",
+		TaskScheduledEventDetails: &sfnstore.TaskScheduledEventDetails{
+			Resource:        state.Resource,
+			ResourceType:    "sns",
+			TaskCredentials: &sfnstore.TaskScheduledCredentials{RoleArn: "arn:aws:iam::123:role/R"},
+		},
+	}
+	details, ok := historyEventToResponse(evt, true)["taskScheduledEventDetails"].(map[string]interface{})
+	if !ok {
+		t.Fatal("taskScheduledEventDetails did not serialise")
+	}
+	tc, _ := details["taskCredentials"].(map[string]interface{})
+	if tc["roleArn"] != "arn:aws:iam::123:role/R" {
+		t.Errorf("taskCredentials = %v, want the roleArn member", details["taskCredentials"])
+	}
+}
+
+// TestMachineTimeoutMidTaskRecordsNoTaskTimeout pins the deadline-source
+// discrimination: a machine-level TimeoutSeconds expiring while a task
+// without its own timeout is in flight terminates the execution
+// TIMED_OUT without minting the task's timeout event and without a
+// Catcher consuming the interruption.
+func TestMachineTimeoutMidTaskRecordsNoTaskTimeout(t *testing.T) {
+	e, store := newTaskTokenTestHarness(t)
+	definition := `{"StartAt":"T","TimeoutSeconds":1,"States":{
+		"T":{"Type":"Task","Resource":"` + tokenTestActivityARN + `","Catch":[{"ErrorEquals":["States.ALL"],"Next":"Fallback"}]},
+		"Fallback":{"Type":"Pass","Result":"recovered","End":true}}}`
+	sm := &sfnstore.StateMachine{Name: "mtimeout", Definition: definition}
+	if err := store.CreateStateMachine(context.Background(), sm); err != nil {
+		t.Fatalf("create machine: %v", err)
+	}
+	exec := sfnstore.NewExecution(sm.StateMachineArn, "mt-1", `{}`, "")
+	exec.ExecutionArn = sm.StateMachineArn + ":mt-1"
+	if err := store.CreateExecution(context.Background(), exec); err != nil {
+		t.Fatalf("create execution: %v", err)
+	}
+
+	// Direct-drive discrimination: with the machine context dead,
+	// executeTask must return the interruption vehicle, not consume the
+	// deadline through its Catch handler.
+	{
+		directCtx, directCancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer directCancel()
+		directExec := newTaskTokenExecCtx(`{}`)
+		directState := &sfnstore.TaskState{
+			Type:     "Task",
+			Resource: tokenTestActivityARN,
+			End:      true,
+			Catch:    []*sfnstore.CatchPolicy{{ErrorEquals: []string{"States.ALL"}, Next: "Fallback"}},
+		}
+		time.Sleep(150 * time.Millisecond)
+		_, next, directErr := e.executeTask(directCtx, directExec, directState)
+		if directErr == nil {
+			t.Error("executeTask consumed the machine deadline through its Catch handler — the terminal path owns a dead context")
+		} else if directErr.ErrorCode != "States.Timeout" || next != "" {
+			t.Errorf("executeTask returned (%s, %q), want the States.Timeout interruption vehicle with no transition", directErr.ErrorCode, next)
+		}
+	}
+
+	// The machine deadline propagates as the interruption vehicle; the
+	// caller (the async launcher) logs it, the record is what matters.
+	_ = e.ExecuteStateMachine(context.Background(), exec)
+	if exec.Status != "TIMED_OUT" {
+		t.Fatalf("status = %s, want TIMED_OUT", exec.Status)
+	}
+
+	history, _, herr := store.GetExecutionHistory(context.Background(), exec.ExecutionArn, 200, "", false)
+	if herr != nil {
+		t.Fatalf("history: %v", herr)
+	}
+	sawExecutionTimedOut, sawTaskTimeout, sawFallback := false, false, false
+	for _, ev := range history {
+		switch ev.Type {
+		case "ExecutionTimedOut":
+			sawExecutionTimedOut = true
+		case "TaskTimedOut", "ActivityTimedOut", "LambdaFunctionTimedOut":
+			sawTaskTimeout = true
+		}
+		if ev.StateEnteredEventDetails != nil && ev.StateEnteredEventDetails.Name == "Fallback" {
+			sawFallback = true
+		}
+	}
+	if !sawExecutionTimedOut {
+		t.Error("history lacks ExecutionTimedOut — the machine deadline must terminate the execution")
+	}
+	if sawTaskTimeout {
+		t.Error("history records a task timeout event for a task that configured no timeout — the machine deadline is not the task's own")
+	}
+	if sawFallback {
+		t.Error("the States.ALL Catcher consumed the machine deadline — no recovery transition may run")
 	}
 }

@@ -92,10 +92,10 @@ func TestMapStateDistributedFieldsParse(t *testing.T) {
 		t.Errorf("ProcessorConfig = %+v", ip.ProcessorConfig)
 	}
 
-	if ms.ToleratedFailureCount == nil || *ms.ToleratedFailureCount != 2 {
+	if ms.ToleratedFailureCount != float64(2) {
 		t.Errorf("ToleratedFailureCount = %v", ms.ToleratedFailureCount)
 	}
-	if ms.ToleratedFailurePercentage == nil || *ms.ToleratedFailurePercentage != 15.5 {
+	if ms.ToleratedFailurePercentage != float64(15.5) {
 		t.Errorf("ToleratedFailurePercentage = %v", ms.ToleratedFailurePercentage)
 	}
 
@@ -244,7 +244,7 @@ func TestMapStateItemBatcherPathVariantsParse(t *testing.T) {
 	if ib.MaxItemsPerBatchPath != "$.max" {
 		t.Errorf("MaxItemsPerBatchPath = %q", ib.MaxItemsPerBatchPath)
 	}
-	if ib.MaxInputBytesPerBatch == nil || *ib.MaxInputBytesPerBatch != 1024 {
+	if ib.MaxInputBytesPerBatch != float64(1024) {
 		t.Errorf("MaxInputBytesPerBatch = %v", ib.MaxInputBytesPerBatch)
 	}
 	if ib.BatchInputPath != "$.fixed" {
@@ -260,4 +260,44 @@ func jsonRemarshal(v interface{}, target interface{}) error {
 		return err
 	}
 	return json.Unmarshal(b, target)
+}
+
+// TestChoiceRuleOperatorsDecodeScalarForm pins the Choice operator wire
+// form: each operator carries its comparison value directly ("the value
+// may be a string, number, boolean, or timestamp"). A variable-keyed map
+// has no basis in the States Language and decodes no operand.
+func TestChoiceRuleOperatorsDecodeScalarForm(t *testing.T) {
+	var rule ChoiceRule
+	if err := jsonRemarshal(map[string]interface{}{
+		"Variable":        "$.v",
+		"StringEquals":    "x",
+		"NumericEquals":   float64(2),
+		"BooleanEquals":   true,
+		"TimestampEquals": "2024-03-14T01:59:00Z",
+	}, &rule); err != nil {
+		t.Fatalf("remarshal: %v", err)
+	}
+	if rule.StringEquals == nil || *rule.StringEquals != "x" {
+		t.Errorf("StringEquals = %v, want x", rule.StringEquals)
+	}
+	if rule.NumericEquals == nil || *rule.NumericEquals != 2 {
+		t.Errorf("NumericEquals = %v, want 2", rule.NumericEquals)
+	}
+	if rule.BooleanEquals == nil || !*rule.BooleanEquals {
+		t.Errorf("BooleanEquals = %v, want true", rule.BooleanEquals)
+	}
+	if rule.TimestampEquals == nil || *rule.TimestampEquals != "2024-03-14T01:59:00Z" {
+		t.Errorf("TimestampEquals = %v, want the timestamp string", rule.TimestampEquals)
+	}
+
+	var mapForm ChoiceRule
+	if err := jsonRemarshal(map[string]interface{}{
+		"Variable":     "$.v",
+		"StringEquals": map[string]interface{}{"$.v": "x"},
+	}, &mapForm); err != nil {
+		t.Fatalf("remarshal: %v", err)
+	}
+	if mapForm.StringEquals != nil {
+		t.Errorf("variable-keyed map decoded an operand (%v) — no such wire form exists", *mapForm.StringEquals)
+	}
 }

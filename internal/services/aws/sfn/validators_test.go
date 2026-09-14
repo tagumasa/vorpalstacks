@@ -99,7 +99,7 @@ func TestValidateWaitStates(t *testing.T) {
 		{"offset-less timestamp rejected", waitDefinition(`{"Type":"Wait","Timestamp":"2024-03-14T01:59:00"}`), true},
 		{"lowercase t rejected", waitDefinition(`{"Type":"Wait","Timestamp":"2024-03-14t01:59:00Z"}`), true},
 		{"lowercase z rejected", waitDefinition(`{"Type":"Wait","Timestamp":"2024-03-14T01:59:00z"}`), true},
-		{"two-digit fraction rejected", waitDefinition(`{"Type":"Wait","Timestamp":"2024-03-14T01:59:00.12Z"}`), true},
+		{"two-digit fraction accepted", waitDefinition(`{"Type":"Wait","Timestamp":"2024-03-14T01:59:00.12Z"}`), false},
 		{"timestamp path accepted", waitDefinition(`{"Type":"Wait","TimestampPath":"$.expiry"}`), false},
 		{"seconds path accepted", waitDefinition(`{"Type":"Wait","SecondsPath":"$.delay"}`), false},
 		{"empty timestamp path rejected", waitDefinition(`{"Type":"Wait","TimestampPath":""}`), true},

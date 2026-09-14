@@ -25,7 +25,7 @@ func newWaitExecutor(t *testing.T) (*Executor, *ExecutionContext) {
 		t.Fatalf("create execution: %v", err)
 	}
 
-	executor := NewExecutorWithStores(store, svc.bus, "000000000000", "us-east-1")
+	executor := NewExecutorWithStores(store, svc.bus, "000000000000", "us-east-1", nil)
 	eventId := int64(1)
 	execCtx := &ExecutionContext{
 		Execution:     exec,
@@ -101,9 +101,8 @@ func TestExecuteWaitValidTimestampsProceed(t *testing.T) {
 
 // TestExecuteWaitJSONataTimestamp pins the JSONata Wait contract: a
 // Timestamp literal or expression is honoured (a past time proceeds
-// immediately), while a non-string expression result or a non-timestamp
-// value fails with States.Runtime and an evaluation failure surfaces
-// States.QueryEvaluationError.
+// immediately), while a non-string expression result, a non-timestamp
+// value, or a broken expression all fail with States.QueryEvaluationError.
 func TestExecuteWaitJSONataTimestamp(t *testing.T) {
 	executor, execCtx := newWaitExecutor(t)
 	execCtx.QueryLanguage = "JSONata"
@@ -121,14 +120,14 @@ func TestExecuteWaitJSONataTimestamp(t *testing.T) {
 
 	nonString := &sfnstore.WaitState{Timestamp: "{% 42 %}"}
 	_, _, err := executor.executeWaitJSONata(context.Background(), execCtx, nonString)
-	if code := executionErrorCode(t, err); code != "States.Runtime" {
-		t.Errorf("non-string timestamp expression error code = %q, want States.Runtime", code)
+	if code := executionErrorCode(t, err); code != "States.QueryEvaluationError" {
+		t.Errorf("non-string timestamp expression error code = %q, want States.QueryEvaluationError", code)
 	}
 
 	notATimestamp := &sfnstore.WaitState{Timestamp: "{% 'tomorrow' %}"}
 	_, _, err = executor.executeWaitJSONata(context.Background(), execCtx, notATimestamp)
-	if code := executionErrorCode(t, err); code != "States.Runtime" {
-		t.Errorf("non-timestamp expression error code = %q, want States.Runtime", code)
+	if code := executionErrorCode(t, err); code != "States.QueryEvaluationError" {
+		t.Errorf("non-timestamp expression error code = %q, want States.QueryEvaluationError", code)
 	}
 
 	brokenExpression := &sfnstore.WaitState{Timestamp: "{% $ }( %}"}
@@ -139,8 +138,8 @@ func TestExecuteWaitJSONataTimestamp(t *testing.T) {
 }
 
 // TestExecuteWaitJSONataSecondsContract pins the JSONata Seconds
-// contract: an integer expression waits and a fractional or negative
-// result fails with States.Runtime.
+// contract: an integer expression from 0 waits and a fractional or
+// negative result fails with States.QueryEvaluationError.
 func TestExecuteWaitJSONataSecondsContract(t *testing.T) {
 	executor, execCtx := newWaitExecutor(t)
 	execCtx.QueryLanguage = "JSONata"
@@ -153,14 +152,14 @@ func TestExecuteWaitJSONataSecondsContract(t *testing.T) {
 
 	fractional := &sfnstore.WaitState{Seconds: "{% 1.5 %}"}
 	_, _, err := executor.executeWaitJSONata(context.Background(), execCtx, fractional)
-	if code := executionErrorCode(t, err); code != "States.Runtime" {
-		t.Errorf("fractional seconds error code = %q, want States.Runtime", code)
+	if code := executionErrorCode(t, err); code != "States.QueryEvaluationError" {
+		t.Errorf("fractional seconds error code = %q, want States.QueryEvaluationError", code)
 	}
 
 	negative := &sfnstore.WaitState{Seconds: "{% -1 %}"}
 	_, _, err = executor.executeWaitJSONata(context.Background(), execCtx, negative)
-	if code := executionErrorCode(t, err); code != "States.Runtime" {
-		t.Errorf("negative seconds error code = %q, want States.Runtime", code)
+	if code := executionErrorCode(t, err); code != "States.QueryEvaluationError" {
+		t.Errorf("negative seconds error code = %q, want States.QueryEvaluationError", code)
 	}
 }
 

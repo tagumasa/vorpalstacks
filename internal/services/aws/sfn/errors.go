@@ -12,18 +12,6 @@ import (
 // use these named errors (or the New* constructors below) instead of
 // ad-hoc NewAWSError calls.
 var (
-	// ErrStateMachineDoesNotExist is returned when the specified state machine does not exist.
-	ErrStateMachineDoesNotExist = awserrors.NewAWSError("StateMachineDoesNotExist", "State Machine Does not exist", http.StatusBadRequest)
-	// ErrExecutionDoesNotExist is returned when the specified execution does not exist.
-	ErrExecutionDoesNotExist = awserrors.NewAWSError("ExecutionDoesNotExist", "Execution Does not exist", http.StatusBadRequest)
-	// ErrActivityDoesNotExist is returned when the specified activity does not exist.
-	ErrActivityDoesNotExist = awserrors.NewAWSError("ActivityDoesNotExist", "Activity Does not exist", http.StatusBadRequest)
-	// ErrInvalidArn is returned when an ARN is invalid.
-	ErrInvalidArn = awserrors.NewAWSError("InvalidArn", "Invalid Arn", http.StatusBadRequest)
-	// ErrInvalidDefinition is returned when the state machine definition is invalid.
-	ErrInvalidDefinition = awserrors.NewAWSError("InvalidDefinition", "Invalid Definition", http.StatusBadRequest)
-	// ErrInvalidName is returned when a name is invalid.
-	ErrInvalidName = awserrors.NewAWSError("InvalidName", "Invalid Name", http.StatusBadRequest)
 	// ErrTaskTimedOut is returned when a task timed out.
 	ErrTaskTimedOut = awserrors.NewAWSError("TaskTimedOut", "Task timed out", http.StatusBadRequest)
 	// ErrTaskDoesNotExist is returned when a task token does not exist or
@@ -163,57 +151,6 @@ func NewInvalidExecutionInput(message string) *awserrors.AWSError {
 // the provided JSON output data is not valid.
 func NewInvalidOutput(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("InvalidOutput", message, http.StatusBadRequest)
-}
-
-// NewActivityLimitExceeded creates a new ActivityLimitExceeded error
-// (CreateActivity): the maximum number of activities has been reached.
-func NewActivityLimitExceeded(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("ActivityLimitExceeded", message, http.StatusBadRequest)
-}
-
-// NewActivityWorkerLimitExceeded creates a new ActivityWorkerLimitExceeded
-// error (GetActivityTask): the maximum number of activity workers has been
-// reached.
-func NewActivityWorkerLimitExceeded(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("ActivityWorkerLimitExceeded", message, http.StatusBadRequest)
-}
-
-// NewExecutionLimitExceeded creates a new ExecutionLimitExceeded error
-// (StartExecution, RedriveExecution): the maximum number of running
-// executions has been reached.
-func NewExecutionLimitExceeded(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("ExecutionLimitExceeded", message, http.StatusBadRequest)
-}
-
-// NewStateMachineLimitExceeded creates a new StateMachineLimitExceeded
-// error (CreateStateMachine): the maximum number of state machines has
-// been reached.
-func NewStateMachineLimitExceeded(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("StateMachineLimitExceeded", message, http.StatusBadRequest)
-}
-
-// NewStateMachineDeleting creates a new StateMachineDeleting error: the
-// specified state machine is being deleted.
-func NewStateMachineDeleting(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("StateMachineDeleting", message, http.StatusBadRequest)
-}
-
-// NewKmsAccessDeniedException creates a new KmsAccessDeniedException: the
-// KMS key policy or API caller lacks the required permissions.
-func NewKmsAccessDeniedException(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("KmsAccessDeniedException", message, http.StatusBadRequest)
-}
-
-// NewKmsInvalidStateException creates a new KmsInvalidStateException: the
-// KMS key is not in a valid state, for example Disabled or Deleted.
-func NewKmsInvalidStateException(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("KmsInvalidStateException", message, http.StatusBadRequest)
-}
-
-// NewKmsThrottlingException creates a new KmsThrottlingException: KMS
-// returned ThrottlingException for a call made on behalf of the caller.
-func NewKmsThrottlingException(message string) *awserrors.AWSError {
-	return awserrors.NewAWSError("KmsThrottlingException", message, http.StatusBadRequest)
 }
 
 // NewServiceQuotaExceededException creates a new

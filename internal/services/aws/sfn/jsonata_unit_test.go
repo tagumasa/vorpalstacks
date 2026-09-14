@@ -220,6 +220,33 @@ func TestExtractVariableReferences(t *testing.T) {
 		}
 	})
 
+	t.Run("variables in scalar expression members", func(t *testing.T) {
+		def := `{"QueryLanguage": "JSONata", "States": {"A": {"Type": "Task", "Resource": "arn", "TimeoutSeconds": "{% $x + 5 %}", "HeartbeatSeconds": "{% $y %}"}, "W": {"Type": "Wait", "Seconds": "{% $z %}", "Timestamp": "{% $when %}"}, "M": {"Type": "Map", "MaxConcurrency": "{% $c %}", "ToleratedFailureCount": "{% $t %}", "ToleratedFailurePercentage": "{% $p %}", "ItemProcessor": {"StartAt": "X", "States": {"X": {"Type": "Pass"}}}}}}`
+		refs := extractVariableReferences(def)
+		for state, want := range map[string][]string{
+			"A": {"x", "y"},
+			"W": {"when", "z"},
+			"M": {"c", "p", "t"},
+		} {
+			if len(refs[state]) != len(want) {
+				t.Fatalf("state %s refs = %v, want %v", state, refs[state], want)
+			}
+			for i, name := range want {
+				if refs[state][i] != name {
+					t.Fatalf("state %s refs = %v, want %v", state, refs[state], want)
+				}
+			}
+		}
+	})
+
+	t.Run("numeric scalar members contribute no references", func(t *testing.T) {
+		def := `{"QueryLanguage": "JSONata", "States": {"A": {"Type": "Task", "Resource": "arn", "TimeoutSeconds": 30}}}`
+		refs := extractVariableReferences(def)
+		if len(refs["A"]) != 0 {
+			t.Fatalf("numeric TimeoutSeconds tracked references: %v", refs)
+		}
+	})
+
 	t.Run("$states is not a variable reference", func(t *testing.T) {
 		def := `{"QueryLanguage": "JSONata", "States": {"A": {"Type": "Pass", "Assign": {"x": "{% $states.input %}"}}}}`
 		refs := extractVariableReferences(def)
@@ -337,26 +364,6 @@ func TestDeepCopyValue(t *testing.T) {
 		copy := deepCopyValue(orig)
 		if copy != orig {
 			t.Fatalf("scalar should pass through, got %v", copy)
-		}
-	})
-}
-
-func TestNormalizeResult(t *testing.T) {
-	t.Run("normal nil stays nil", func(t *testing.T) {
-		if NormalizeResult(nil) != nil {
-			t.Fatal("nil should stay nil")
-		}
-	})
-
-	t.Run("string passes through", func(t *testing.T) {
-		if NormalizeResult("hello") != "hello" {
-			t.Fatal("string should pass through")
-		}
-	})
-
-	t.Run("number passes through", func(t *testing.T) {
-		if NormalizeResult(42.0) != 42.0 {
-			t.Fatal("number should pass through")
 		}
 	})
 }

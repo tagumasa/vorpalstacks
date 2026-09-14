@@ -1,7 +1,9 @@
 package testutil
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -142,6 +144,141 @@ func (r *TestRunner) runSFNStateMachineTests(tc *sfnTestContext) []TestResult {
 		})
 		if err == nil {
 			return fmt.Errorf("expected error for maxResults=101, got nil")
+		}
+		return nil
+	}))
+
+	// Choice string operators follow the documented type discipline: "Step
+	// Functions doesn't attempt to match a numeric field to a string value"
+	// — a numeric variable falls through to Default — while a timestamp
+	// field is logically a string and matches StringEquals.
+	results = append(results, r.RunTest("stepfunctions", "Choice_StringOperatorTypeDiscipline", func() error {
+		def := `{"StartAt":"C","States":{
+			"C":{"Type":"Choice","Choices":[
+				{"Variable":"$.foo","StringEquals":"5","Next":"Named"}
+			],"Default":"Other"},
+			"Named":{"Type":"Pass","Result":"named","End":true},
+			"Other":{"Type":"Pass","Result":"other","End":true}
+		}}`
+		sm, cleanup, err := tc.createRoleBackedSM("ChoiceTypes-"+fmt.Sprintf("%d", time.Now().UnixNano()), def)
+		if err != nil {
+			return fmt.Errorf("create SM: %v", err)
+		}
+		defer cleanup()
+
+		_, out, err := tc.runWithInput(sm, "", `{"foo":5}`)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(out, "other") {
+			return fmt.Errorf("numeric 5 must not match StringEquals \"5\", got %s", out)
+		}
+
+		_, out, err = tc.runWithInput(sm, "", `{"foo":"5"}`)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(out, "named") {
+			return fmt.Errorf("string \"5\" must match StringEquals \"5\", got %s", out)
+		}
+
+		tsDef := `{"StartAt":"C","States":{
+			"C":{"Type":"Choice","Choices":[
+				{"Variable":"$.at","StringEquals":"2024-01-01T00:00:00Z","Next":"Named"}
+			],"Default":"Other"},
+			"Named":{"Type":"Pass","Result":"named","End":true},
+			"Other":{"Type":"Pass","Result":"other","End":true}
+		}}`
+		tsSM, tsCleanup, err := tc.createRoleBackedSM("ChoiceTs-"+fmt.Sprintf("%d", time.Now().UnixNano()), tsDef)
+		if err != nil {
+			return fmt.Errorf("create SM: %v", err)
+		}
+		defer tsCleanup()
+		_, out, err = tc.runWithInput(tsSM, "", `{"at":"2024-01-01T00:00:00Z"}`)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(out, "named") {
+			return fmt.Errorf("a timestamp field is logically a string and must match StringEquals, got %s", out)
+		}
+		return nil
+	}))
+
+	// Comparator literals are validated at definition time: the value must
+	// be of the operator's type, and a timestamp literal must conform to
+	// the RFC3339 profile with the uppercase-T and uppercase-Z
+	// restrictions. Both rejections happen at creation instead of leaving
+	// a rule that silently never matches at run time.
+	results = append(results, r.RunTest("stepfunctions", "Choice_ComparatorLiteralValidation", func() error {
+		badTimestamp := `{"StartAt":"C","States":{
+			"C":{"Type":"Choice","Choices":[
+				{"Variable":"$.t","TimestampEquals":"not-a-timestamp","Next":"Named"}
+			],"Default":"Other"},
+			"Named":{"Type":"Pass","End":true},
+			"Other":{"Type":"Pass","End":true}
+		}}`
+		_, _, err := tc.createRoleBackedSM("ChoiceBadTs-"+fmt.Sprintf("%d", time.Now().UnixNano()), badTimestamp)
+		if err == nil {
+			return fmt.Errorf("CreateStateMachine accepted a non-RFC3339 TimestampEquals literal")
+		}
+		if aerr := AssertErrorContains(err, "InvalidDefinition"); aerr != nil {
+			return aerr
+		}
+
+		mistyped := `{"StartAt":"C","States":{
+			"C":{"Type":"Choice","Choices":[
+				{"Variable":"$.v","StringEquals":123,"Next":"Named"}
+			],"Default":"Other"},
+			"Named":{"Type":"Pass","End":true},
+			"Other":{"Type":"Pass","End":true}
+		}}`
+		_, _, err = tc.createRoleBackedSM("ChoiceBadType-"+fmt.Sprintf("%d", time.Now().UnixNano()), mistyped)
+		if err == nil {
+			return fmt.Errorf("CreateStateMachine accepted a mistyped StringEquals literal")
+		}
+		if aerr := AssertErrorContains(err, "InvalidDefinition"); aerr != nil {
+			return aerr
+		}
+		return nil
+	}))
+
+	// The bare $$ selects the entire Context object: the language strips
+	// the first dollar sign of a $$-rooted path and applies the remaining
+	// JSONPath — the root path — to the context object. Creation admits
+	// it and the payload template resolves the whole object.
+	results = append(results, r.RunTest("stepfunctions", "ContextRootSelectsWholeObject", func() error {
+		def := `{"StartAt":"P","States":{
+			"P":{"Type":"Pass","Parameters":{"ctx.$":"$$"},"End":true}
+		}}`
+		sm, cleanup, err := tc.createRoleBackedSM("CtxRoot-"+fmt.Sprintf("%d", time.Now().UnixNano()), def)
+		if err != nil {
+			return fmt.Errorf("CreateStateMachine must admit a bare $$ path: %v", err)
+		}
+		defer cleanup()
+
+		execName := fmt.Sprintf("ctxroot-%d", time.Now().UnixNano())
+		_, out, err := tc.runWithInput(sm, execName, `{"x":1}`)
+		if err != nil {
+			return err
+		}
+		var payload struct {
+			Ctx struct {
+				Execution struct {
+					Name string `json:"Name"`
+				} `json:"Execution"`
+				State struct {
+					Name string `json:"Name"`
+				} `json:"State"`
+			} `json:"ctx"`
+		}
+		if jerr := json.Unmarshal([]byte(out), &payload); jerr != nil {
+			return fmt.Errorf("output not valid JSON: %v (%s)", jerr, out)
+		}
+		if payload.Ctx.Execution.Name != execName {
+			return fmt.Errorf("ctx.Execution.Name = %q, want the execution name %q", payload.Ctx.Execution.Name, execName)
+		}
+		if payload.Ctx.State.Name != "P" {
+			return fmt.Errorf("ctx.State.Name = %q, want P", payload.Ctx.State.Name)
 		}
 		return nil
 	}))

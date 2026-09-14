@@ -18,6 +18,10 @@ var (
 	// that already exists.
 	ErrExecutionAlreadyExists = errors.New("execution already exists")
 
+	// ErrExecutionNotRedrivable is returned when a redrive transition is
+	// attempted against an execution whose fresh status does not permit it.
+	ErrExecutionNotRedrivable = errors.New("execution is not in a redrivable state")
+
 	// ErrActivityNotFound is returned when the specified activity does not exist.
 	ErrActivityNotFound = errors.New("activity not found")
 
@@ -27,10 +31,6 @@ var (
 
 	// ErrInvalidARN is returned when the Amazon Resource Name (ARN) is not valid.
 	ErrInvalidARN = errors.New("invalid ARN")
-
-	// ErrInvalidDefinition is returned when the state machine definition
-	// is not valid.
-	ErrInvalidDefinition = errors.New("invalid state machine definition")
 
 	// ErrTaskNotFound is returned when the specified task does not exist.
 	ErrTaskNotFound = errors.New("task not found")
@@ -60,9 +60,6 @@ var (
 
 	// ErrStateMachineAliasAlreadyExists is returned when attempting to create an alias that already exists.
 	ErrStateMachineAliasAlreadyExists = errors.New("state machine alias already exists")
-
-	// ErrInvalidRoutingConfiguration is returned when the routing configuration is invalid.
-	ErrInvalidRoutingConfiguration = errors.New("invalid routing configuration")
 
 	// ErrMapRunNotFound is returned when the specified map run does not exist.
 	ErrMapRunNotFound = errors.New("map run not found")

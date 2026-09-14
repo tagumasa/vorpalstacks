@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"testing"
+	"vorpalstacks/internal/common/request"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/core/storage"
@@ -292,5 +295,273 @@ func TestRoutingConfigsEqualMatchesEntriesRegardlessOfOrder(t *testing.T) {
 	}
 	if routingConfigsEqual(a, a[:1]) {
 		t.Fatal("different lengths must not compare equal")
+	}
+}
+
+// TestParseRoutingConfigurationErrorVocabulary pins that routing-configuration
+// problems report ValidationException — the routing configuration is an
+// operation parameter, not a state machine definition, matching the sibling
+// validation in the alias Core. Malformed shape is a type error here, not
+// a silently degraded empty configuration.
+func TestParseRoutingConfigurationErrorVocabulary(t *testing.T) {
+	for name, raw := range map[string]interface{}{
+		"non-JSON string":  "not json",
+		"empty string":     "",
+		"non-array object": map[string]interface{}{"weight": 1},
+		"non-object entry": []interface{}{"arn:aws:states:us-east-1:000000000000:stateMachine:sm:1"},
+		"mixed entry":      []interface{}{map[string]interface{}{"weight": 100}, 7},
+	} {
+		req := &request.ParsedRequest{Parameters: map[string]interface{}{"routingConfiguration": raw}}
+		_, err := parseRoutingConfiguration(req)
+		requireAWSCode(t, err, "ValidationException")
+		_ = name
+	}
+}
+
+// TestListStateMachineVersionsMaxResultsZeroUsesDefaultPage pins the
+// Core-level page default: zero means unset on both protocol planes (the
+// AWS SDK leaves maxResults absent; the admin console's optional field
+// reads as zero), so an offset-paged listing with zero falls back to the
+// documented page size — an unnormalised zero emits an empty page and a
+// "0" nextToken that reproduces the empty page forever.
+func TestListStateMachineVersionsMaxResultsZeroUsesDefaultPage(t *testing.T) {
+	store, smArn, _, _ := newAliasTestStore(t)
+	svc := &StepFunctionService{}
+	ctx := context.Background()
+
+	sm, err := store.GetStateMachine(ctx, smArn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < sfnstore.DefaultPageSize+5; i++ {
+		sm.RevisionId = fmt.Sprintf("page-revision-%d", i)
+		if err := store.UpdateStateMachine(ctx, sm); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.PublishStateMachineVersion(ctx, smArn, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	total := sfnstore.DefaultPageSize + 7 // published here plus the two seeded
+
+	first, err := svc.listStateMachineVersionsCore(ctx, store, smArn, 0, "")
+	if err != nil {
+		t.Fatalf("list versions with maxResults=0: %v", err)
+	}
+	pageOne, _ := first["stateMachineVersions"].([]map[string]interface{})
+	if len(pageOne) != sfnstore.DefaultPageSize {
+		t.Fatalf("first page held %d versions, want the default page size %d", len(pageOne), sfnstore.DefaultPageSize)
+	}
+	nextToken, _ := first["nextToken"].(string)
+	if nextToken != strconv.Itoa(sfnstore.DefaultPageSize) {
+		t.Fatalf("first page nextToken = %q, want the default-page-size offset", nextToken)
+	}
+
+	second, err := svc.listStateMachineVersionsCore(ctx, store, smArn, 0, nextToken)
+	if err != nil {
+		t.Fatalf("list versions page two: %v", err)
+	}
+	pageTwo, _ := second["stateMachineVersions"].([]map[string]interface{})
+	if len(pageTwo) != total-sfnstore.DefaultPageSize {
+		t.Fatalf("second page held %d versions, want %d", len(pageTwo), total-sfnstore.DefaultPageSize)
+	}
+	if _, has := second["nextToken"]; has {
+		t.Fatalf("exhausted listing still pages: %v", second["nextToken"])
+	}
+}
+
+// TestListStateMachineAliasesMaxResultsZeroListsAll pins the same
+// Core-level default for the alias listing: three aliases and maxResults=0
+// list everything with no nextToken — an unnormalised zero would emit an
+// empty page plus a "0" token.
+func TestListStateMachineAliasesMaxResultsZeroListsAll(t *testing.T) {
+	store, smArn, _, v1 := newAliasTestStore(t)
+	svc := &StepFunctionService{}
+	ctx := context.Background()
+
+	for _, name := range []string{"p", "q", "r"} {
+		if err := store.CreateStateMachineAlias(ctx, &sfnstore.StateMachineAlias{
+			StateMachineArn: smArn,
+			Name:            name,
+			RoutingConfiguration: []sfnstore.RoutingConfiguration{
+				{StateMachineVersionArn: v1, Weight: 100},
+			},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	resp, err := svc.listStateMachineAliasesCore(ctx, store, smArn, 0, "")
+	if err != nil {
+		t.Fatalf("list aliases with maxResults=0: %v", err)
+	}
+	aliases, _ := resp["stateMachineAliases"].([]map[string]interface{})
+	if len(aliases) != 3 {
+		t.Fatalf("listed %d aliases with maxResults=0, want all 3", len(aliases))
+	}
+	if _, has := resp["nextToken"]; has {
+		t.Fatalf("exhausted alias listing still pages: %v", resp["nextToken"])
+	}
+}
+
+// TestListStateMachineVersionsNewestFirst pins the listing order: "The
+// results are sorted in descending order of the version creation time" —
+// the key-lexicographic paging (1, 10, 11, 2, ...) must not leak through.
+func TestListStateMachineVersionsNewestFirst(t *testing.T) {
+	store, smArn, _, _ := newAliasTestStore(t)
+	svc := &StepFunctionService{}
+	ctx := context.Background()
+
+	sm, err := store.GetStateMachine(ctx, smArn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 10; i++ {
+		sm.RevisionId = fmt.Sprintf("order-revision-%d", i)
+		if err := store.UpdateStateMachine(ctx, sm); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.PublishStateMachineVersion(ctx, smArn, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	resp, err := svc.listStateMachineVersionsCore(ctx, store, smArn, 100, "")
+	if err != nil {
+		t.Fatalf("list versions: %v", err)
+	}
+	versions, _ := resp["stateMachineVersions"].([]map[string]interface{})
+	if len(versions) != 12 {
+		t.Fatalf("listed %d versions, want the 12 published", len(versions))
+	}
+	first, _ := versions[0]["stateMachineVersionArn"].(string)
+	if !strings.HasSuffix(first, ":12") {
+		t.Errorf("first version = %s, want the newest :12 (descending creation order)", first)
+	}
+	versionNumber := func(arn string) int {
+		n, _ := strconv.Atoi(arn[strings.LastIndex(arn, ":")+1:])
+		return n
+	}
+	for i := 1; i < len(versions); i++ {
+		prev, _ := versions[i-1]["stateMachineVersionArn"].(string)
+		cur, _ := versions[i]["stateMachineVersionArn"].(string)
+		if versionNumber(prev) <= versionNumber(cur) {
+			t.Fatalf("order broke at %d: %s then %s (want strictly descending)", i-1, prev, cur)
+		}
+	}
+}
+
+// TestListStateMachineAliasesNewestFirst pins the listing order: "Results
+// are sorted by time, with the most recently created aliases listed
+// first" — name-ascending storage order must not leak through.
+func TestListStateMachineAliasesNewestFirst(t *testing.T) {
+	store, smArn, _, v1 := newAliasTestStore(t)
+	svc := &StepFunctionService{}
+	ctx := context.Background()
+
+	for _, name := range []string{"alpha", "beta", "gamma"} {
+		if err := store.CreateStateMachineAlias(ctx, &sfnstore.StateMachineAlias{
+			StateMachineArn: smArn,
+			Name:            name,
+			RoutingConfiguration: []sfnstore.RoutingConfiguration{
+				{StateMachineVersionArn: v1, Weight: 100},
+			},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	resp, err := svc.listStateMachineAliasesCore(ctx, store, smArn, 100, "")
+	if err != nil {
+		t.Fatalf("list aliases: %v", err)
+	}
+	aliases, _ := resp["stateMachineAliases"].([]map[string]interface{})
+	if len(aliases) != 3 {
+		t.Fatalf("listed %d aliases, want 3", len(aliases))
+	}
+	var names []string
+	for _, a := range aliases {
+		arn, _ := a["stateMachineAliasArn"].(string)
+		names = append(names, strings.TrimPrefix(arn, smArn+":"))
+	}
+	if strings.Join(names, ",") != "gamma,beta,alpha" {
+		t.Errorf("alias order = %v, want gamma,beta,alpha (most recent first)", names)
+	}
+
+	// Offset paging walks the same newest-first order.
+	page, err := svc.listStateMachineAliasesCore(ctx, store, smArn, 2, "2")
+	if err != nil {
+		t.Fatalf("second page: %v", err)
+	}
+	tail, _ := page["stateMachineAliases"].([]map[string]interface{})
+	if len(tail) != 1 {
+		t.Fatalf("second page has %d aliases, want the last one", len(tail))
+	}
+	if arn, _ := tail[0]["stateMachineAliasArn"].(string); !strings.HasSuffix(arn, ":alpha") {
+		t.Errorf("second page = %v, want the oldest alias alpha", tail)
+	}
+}
+
+// TestUpdateStateMachineAliasClearsDescription pins the Provided-flag
+// semantics: an explicitly empty description clears the alias
+// description, while an absent description member leaves it untouched.
+func TestUpdateStateMachineAliasClearsDescription(t *testing.T) {
+	store, smArn, _, v1 := newAliasTestStore(t)
+	svc := &StepFunctionService{}
+	ctx := context.Background()
+
+	created, err := svc.createStateMachineAliasCore(ctx, store, CreateStateMachineAliasInput{
+		Name:        "described",
+		Description: "original text",
+		RoutingConfig: []sfnstore.RoutingConfiguration{
+			{StateMachineVersionArn: v1, Weight: 100},
+		},
+	})
+	if err != nil {
+		t.Fatalf("create alias: %v", err)
+	}
+	aliasArn, _ := created["stateMachineAliasArn"].(string)
+	if aliasArn == "" {
+		t.Fatalf("create alias returned %v", created)
+	}
+	_ = smArn
+
+	if _, err := svc.updateStateMachineAliasCore(ctx, store, UpdateStateMachineAliasInput{
+		StateMachineAliasArn: aliasArn,
+		Description:          "",
+		DescriptionProvided:  true,
+	}); err != nil {
+		t.Fatalf("clear description: %v", err)
+	}
+	resp, err := svc.describeStateMachineAliasCore(ctx, store, aliasArn)
+	if err != nil {
+		t.Fatalf("describe alias: %v", err)
+	}
+	if _, present := resp["description"]; present {
+		t.Errorf("cleared description survives: %v", resp["description"])
+	}
+
+	if _, err := svc.updateStateMachineAliasCore(ctx, store, UpdateStateMachineAliasInput{
+		StateMachineAliasArn: aliasArn,
+		Description:          "restored",
+		DescriptionProvided:  true,
+	}); err != nil {
+		t.Fatalf("restore description: %v", err)
+	}
+	if _, err := svc.updateStateMachineAliasCore(ctx, store, UpdateStateMachineAliasInput{
+		StateMachineAliasArn: aliasArn,
+		RoutingConfig: []sfnstore.RoutingConfiguration{
+			{StateMachineVersionArn: v1, Weight: 100},
+		},
+		RoutingProvided: true,
+	}); err != nil {
+		t.Fatalf("routing-only update: %v", err)
+	}
+	resp, err = svc.describeStateMachineAliasCore(ctx, store, aliasArn)
+	if err != nil {
+		t.Fatalf("describe alias again: %v", err)
+	}
+	if resp["description"] != "restored" {
+		t.Errorf("routing-only update disturbed the description: %v", resp["description"])
 	}
 }

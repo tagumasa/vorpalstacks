@@ -19,31 +19,65 @@ type resumePoint struct {
 // determineResumePoint inspects the execution history to decide where a
 // redriven execution should resume.
 //
-// AWS Step Functions does not re-execute states that already succeeded.
-// The resume point is the first state that was entered but never exited
-// (i.e. the state that was running when the execution failed). Its input
-// is the output of the last successfully-exited state. If no state exited
-// successfully, the execution resumes from the start state with the
-// original execution input.
+// AWS Step Functions does not re-execute states that already succeeded:
+// the resume point is the state that follows the last top-level state that
+// exited successfully. Branch and iteration inner states write their events
+// into the parent history, so only exits outside any Parallel/Map container
+// count — a failure inside a branch resumes at the container itself, which
+// re-runs only the failed branches/iterations from its checkpoints. If no
+// top-level state exited successfully, the execution resumes from the start
+// state with the original execution input.
 func determineResumePoint(ctx context.Context, store *sfnstore.StepFunctionStore, executionArn string, definition *sfnstore.StateMachineDefinition) (*resumePoint, error) {
-	events, _, err := store.GetExecutionHistory(ctx, executionArn, 100000, "", false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load execution history: %w", err)
+	// The paginated history API caps any single call at the page ceiling,
+	// so the marker chain is followed until the history is exhausted: a
+	// clamped single call would compute the last event id and the last
+	// exited state from a truncated history, and the events the resume then
+	// appends would overwrite persisted ones (ids are blind Put keys).
+	var events []*sfnstore.ExecutionHistoryEvent
+	token := ""
+	for {
+		page, next, err := store.GetExecutionHistory(ctx, executionArn, sfnstore.MaxPageSize, token, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load execution history: %w", err)
+		}
+		events = append(events, page...)
+		if next == "" {
+			break
+		}
+		token = next
 	}
 
 	var lastExitedState string
 	var lastExitedOutput string
+	var lastExitedNextState string
 	var lastEventId int64
+	containerDepth := 0
 
 	for _, event := range events {
 		if event.EventId > lastEventId {
 			lastEventId = event.EventId
+		}
+		switch event.Type {
+		case "ParallelStateEntered", "MapStateEntered":
+			containerDepth++
+		case "ParallelStateExited", "MapStateExited":
+			if containerDepth > 0 {
+				containerDepth--
+			}
+		}
+		if containerDepth > 0 {
+			continue
 		}
 
 		name, output := extractStateExitInfo(event)
 		if name != "" {
 			lastExitedState = name
 			lastExitedOutput = output
+			// A Choice exit records the transition it took; the resume
+			// follows that record instead of consulting the definition,
+			// whose Choices rules would re-evaluate against data the
+			// rerun no longer holds.
+			lastExitedNextState = extractStateExitNextState(event)
 		}
 	}
 
@@ -51,6 +85,14 @@ func determineResumePoint(ctx context.Context, store *sfnstore.StepFunctionStore
 		return &resumePoint{
 			StateName:   definition.StartAt,
 			Input:       "",
+			LastEventId: lastEventId,
+		}, nil
+	}
+
+	if lastExitedNextState != "" {
+		return &resumePoint{
+			StateName:   lastExitedNextState,
+			Input:       lastExitedOutput,
 			LastEventId: lastEventId,
 		}, nil
 	}
@@ -72,35 +114,28 @@ func determineResumePoint(ctx context.Context, store *sfnstore.StepFunctionStore
 }
 
 // extractStateExitInfo returns the state name and output from a StateExited
-// event, or empty strings if the event is not a StateExited event.
+// event, or empty strings if the event is not a StateExited event. Choice
+// exits additionally carry the taken transition on the details' internal
+// NextState member; determineResumePoint reads it through
+// extractStateExitNextState.
 func extractStateExitInfo(event *sfnstore.ExecutionHistoryEvent) (string, string) {
 	switch event.Type {
-	case "PassStateExited":
-		if d := event.PassStateExitedEventDetails; d != nil {
-			return d.Name, d.Output
-		}
-	case "TaskStateExited":
-		if d := event.TaskStateExitedEventDetails; d != nil {
-			return d.Name, d.Output
-		}
-	case "ChoiceStateExited":
-		if d := event.ChoiceStateExitedEventDetails; d != nil {
-			return d.Name, d.Output
-		}
-	case "WaitStateExited":
-		if d := event.WaitStateExitedEventDetails; d != nil {
-			return d.Name, d.Output
-		}
-	case "MapStateExited":
-		if d := event.MapStateExitedEventDetails; d != nil {
-			return d.Name, d.Output
-		}
-	case "ParallelStateExited":
-		if d := event.ParallelStateExitedEventDetails; d != nil {
+	case "PassStateExited", "TaskStateExited", "ChoiceStateExited", "WaitStateExited",
+		"MapStateExited", "ParallelStateExited", "SucceedStateExited":
+		if d := event.StateExitedEventDetails; d != nil {
 			return d.Name, d.Output
 		}
 	}
 	return "", ""
+}
+
+// extractStateExitNextState returns the transition a Choice state recorded
+// on its exit event, or the empty string for other exits.
+func extractStateExitNextState(event *sfnstore.ExecutionHistoryEvent) string {
+	if event.Type == "ChoiceStateExited" && event.StateExitedEventDetails != nil {
+		return event.StateExitedEventDetails.NextState
+	}
+	return ""
 }
 
 // lookupNextState finds the Next field of a state in the definition. Returns

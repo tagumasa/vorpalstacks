@@ -73,7 +73,7 @@ type formatTemplate struct {
 // evaluateIntrinsic evaluates one intrinsic invocation against the state
 // input. depth counts the invocation itself as level one so that a chain of
 // ten nested functions is the documented limit.
-func (e *Executor) evaluateIntrinsic(taskToken string, invocation string, data interface{}, depth int) (interface{}, error) {
+func (e *Executor) evaluateIntrinsic(execCtx *ExecutionContext, taskToken string, invocation string, data interface{}, depth int) (interface{}, error) {
 	if depth > sfnstore.MaxIntrinsicNesting {
 		return nil, fmt.Errorf("intrinsic nesting exceeds %d levels", sfnstore.MaxIntrinsicNesting)
 	}
@@ -88,13 +88,13 @@ func (e *Executor) evaluateIntrinsic(taskToken string, invocation string, data i
 	for idx, arg := range args {
 		switch arg.kind {
 		case argIntrinsic:
-			v, err := e.evaluateIntrinsic(taskToken, arg.text, data, depth+1)
+			v, err := e.evaluateIntrinsic(execCtx, taskToken, arg.text, data, depth+1)
 			if err != nil {
 				return nil, err
 			}
 			vals[idx] = v
 		case argPath:
-			v, found, err := e.resolveIntrinsicPathArg(taskToken, arg.text, data)
+			v, found, err := e.resolveIntrinsicPathArg(execCtx, taskToken, arg.text, data)
 			if err != nil {
 				return nil, err
 			}
@@ -123,16 +123,20 @@ func (e *Executor) evaluateIntrinsic(taskToken string, invocation string, data i
 	return applyIntrinsic(name, vals)
 }
 
-// resolveIntrinsicPathArg resolves a $. or $$. argument path against the
-// state input and the context object. Array roots accept bare and bracketed
-// numeric segments.
-func (e *Executor) resolveIntrinsicPathArg(taskToken, path string, data interface{}) (interface{}, bool, error) {
-	if strings.HasPrefix(path, "$$.") {
-		v, err := e.getContextValue(taskToken, path)
+// resolveIntrinsicPathArg resolves a $. or $$. argument path, or a
+// workflow-variable reference, against the state input, the context object
+// and the variable scope. Array roots accept bare and bracketed numeric
+// segments.
+func (e *Executor) resolveIntrinsicPathArg(execCtx *ExecutionContext, taskToken, path string, data interface{}) (interface{}, bool, error) {
+	if isContextPath(path) {
+		v, err := e.getContextValue(execCtx, taskToken, path)
 		if err != nil {
 			return nil, false, err
 		}
 		return v, true, nil
+	}
+	if name, rest, isVar := parseVariableReference(path); isVar {
+		return e.resolveVariableRef(execCtx, name, rest)
 	}
 	if v, exists := getJSONPathValueAny(data, path); exists {
 		return v, true, nil
@@ -683,6 +687,13 @@ func applyIntrinsic(name string, vals []interface{}) (interface{}, error) {
 		addend, err := intrinsicRoundedInt(name, vals[1], 2)
 		if err != nil {
 			return nil, err
+		}
+		// "You must specify integer values in the range of -2147483648
+		// and 2147483647" — the bound applies to each argument, not only
+		// to the sum: two out-of-range arguments of opposite sign must
+		// not slip through on an in-range sum.
+		if augend < math.MinInt32 || augend > math.MaxInt32 || addend < math.MinInt32 || addend > math.MaxInt32 {
+			return nil, fmt.Errorf("States.MathAdd arguments must be in the range -2147483648 to 2147483647")
 		}
 		sum := augend + addend
 		if sum < math.MinInt32 || sum > math.MaxInt32 {
