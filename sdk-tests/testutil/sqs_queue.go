@@ -385,16 +385,53 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 		return nil
 	}))
 
+	// Attributes is a required member: the missing-parameter rejection
+	// fires before the queue is resolved, so even a nonexistent queue with
+	// an empty Attributes map reports MissingParameter.
 	results = append(results, r.RunTest("sqs", "SetQueueAttributes_EmptyAttributes_MissingQueue_Rejected", func() error {
 		_, err := client.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
 			QueueUrl:   aws.String("http://localhost:50080/queue/does-not-exist-at-all"),
 			Attributes: map[string]string{},
 		})
 		if err == nil {
-			return fmt.Errorf("SetQueueAttributes against a nonexistent queue must fail with QueueDoesNotExist")
+			return fmt.Errorf("SetQueueAttributes with an empty Attributes map must fail with MissingParameter")
 		}
-		if !strings.Contains(err.Error(), "QueueDoesNotExist") {
-			return fmt.Errorf("expected QueueDoesNotExist, got: %v", err)
+		if !strings.Contains(err.Error(), "MissingParameter") {
+			return fmt.Errorf("expected MissingParameter, got: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "SetQueueAttributes_ReadOnlyName_Rejected", func() error {
+		// "All" is a read-side wildcard, not a settable attribute: the write
+		// paths reject the read-only names (All, QueueArn, the approximate
+		// counts, the timestamps) with InvalidAttributeName instead of
+		// persisting them into the echoed attribute map.
+		url, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("WriteVocab-%d", time.Now().UnixNano()), nil)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+		_, err = client.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+			QueueUrl:   url,
+			Attributes: map[string]string{"All": "1"},
+		})
+		if err == nil {
+			return fmt.Errorf("SetQueueAttributes with All must be rejected")
+		}
+		if !strings.Contains(err.Error(), "InvalidAttributeName") {
+			return fmt.Errorf("expected InvalidAttributeName, got: %v", err)
+		}
+		// The rejection left nothing behind: "All" never echoes on read.
+		attrResp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       url,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameAll},
+		})
+		if err != nil {
+			return err
+		}
+		if _, ok := attrResp.Attributes["All"]; ok {
+			return fmt.Errorf("rejected write left an All key in the queue's attributes")
 		}
 		return nil
 	}))

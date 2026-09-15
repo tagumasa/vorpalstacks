@@ -49,9 +49,17 @@ var (
 	ErrMessageNotInflight = awserrors.NewAWSError("MessageNotInflight", "The message referred to is not in flight.", 400).SetQueryErrorCode("AWS.SimpleQueueService.MessageNotInflight")
 	// ErrPurgeQueueInProgress is returned when a purge queue operation is already running.
 	ErrPurgeQueueInProgress = awserrors.NewAWSError("PurgeQueueInProgress", "There is already a purge queue operation running.", 403).SetQueryErrorCode("AWS.SimpleQueueService.PurgeQueueInProgress")
-	// ErrMessageTooLarge is returned when the message body exceeds the queue's
-	// MaximumMessageSize.
-	ErrMessageTooLarge = awserrors.NewAWSError("InvalidMessageContents", "The message contains invalid message contents.", 400)
+	// ErrMessageTooLarge is returned when the message body plus attributes
+	// exceeds the queue's MaximumMessageSize. The service model defines no
+	// error shape for this failure and real AWS reports oversized messages
+	// as InvalidParameterValue ("One or more parameters are invalid.
+	// Reason: Message must be shorter than 262144 bytes." observed on queues
+	// at the default limit), so the code family is InvalidParameterValue,
+	// distinct from the charset failure InvalidMessageContents. The message
+	// quotes the platform's default bound, which equals NewQueue's
+	// MaximumMessageSize; queues configured with a smaller limit fail with
+	// the same code but quote the platform bound in the diagnostic text.
+	ErrMessageTooLarge = awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("One or more parameters are invalid. Reason: Message must be shorter than %d bytes.", sqsstore.MaxMaximumMessageSize), 400)
 	// ErrInvalidMessageContents is returned when the message body contains
 	// characters outside the allowed set: "The message contains characters
 	// outside the allowed set." (AWS SQS API Reference, SendMessage errors,
@@ -74,6 +82,11 @@ var (
 	// service model defines this error with HTTP 404 (httpError and
 	// awsQueryError httpResponseCode both 404).
 	ErrResourceNotFound = awserrors.NewAWSError("ResourceNotFoundException", "One or more specified resources don't exist.", 404).SetQueryErrorCode("ResourceNotFoundException")
+	// ErrInvalidAddress is returned when a message-move ARN argument does not
+	// parse as a queue ARN: "The specified ID is invalid." The service model
+	// defines this error with HTTP 404 (httpError and awsQueryError
+	// httpResponseCode both 404).
+	ErrInvalidAddress = awserrors.NewAWSError("InvalidAddress", "The specified ID is invalid.", 404).SetQueryErrorCode("InvalidAddress")
 	// ErrOverLimit is returned when a resource limit is exceeded.
 	ErrOverLimit = awserrors.NewAWSError("OverLimit", "The specified request exceeds the limit.", 403).SetQueryErrorCode("OverLimit")
 	// ErrInvalidAttributeValue is returned when an attribute value is invalid or immutable.
@@ -83,41 +96,11 @@ var (
 	ErrBatchRequestTooLong = awserrors.NewAWSError("BatchRequestTooLong", fmt.Sprintf("Batch requests cannot be longer than %d bytes.", sqsstore.MaxMaximumMessageSize), 400).SetQueryErrorCode("AWS.SimpleQueueService.BatchRequestTooLong")
 	// KMS-related errors — granular mapping matching the AWS SQS API. The
 	// query-protocol codes use the KMS.* prefix from the service model.
-	ErrKmsAccessDenied    = awserrors.NewAWSError("KmsAccessDenied", "Request was denied due to KMS access denied.", 400).SetQueryErrorCode("KMS.AccessDeniedException")
 	ErrKmsDisabled        = awserrors.NewAWSError("KmsDisabled", "The KMS key is disabled.", 400).SetQueryErrorCode("KMS.DisabledException")
 	ErrKmsInvalidKeyUsage = awserrors.NewAWSError("KmsInvalidKeyUsage", "The KMS key usage is invalid.", 400).SetQueryErrorCode("KMS.InvalidKeyUsageException")
 	ErrKmsInvalidState    = awserrors.NewAWSError("KmsInvalidState", "The KMS key is in an invalid state.", 400).SetQueryErrorCode("KMS.InvalidStateException")
 	ErrKmsNotFound        = awserrors.NewAWSError("KmsNotFound", "The KMS key was not found.", 400).SetQueryErrorCode("KMS.NotFoundException")
-	// ErrKmsOptInRequired is returned when the KMS key requires opt-in
-	// before use. The service model defines this error with HTTP 403
-	// (httpError and awsQueryError httpResponseCode both 403), unlike the
-	// rest of the KMS family which the model defines with 400.
-	ErrKmsOptInRequired = awserrors.NewAWSError("KmsOptInRequired", "KMS opt-in is required.", 403).SetQueryErrorCode("KMS.OptInRequired")
-	ErrKmsThrottled     = awserrors.NewAWSError("KmsThrottled", "Request was throttled by KMS.", 400).SetQueryErrorCode("KMS.ThrottlingException")
-	// ErrInvalidAddress is returned when a request carries an invalid
-	// identifier. The service model defines this error with HTTP 404
-	// (httpError and awsQueryError httpResponseCode both 404) for every
-	// operation.
-	ErrInvalidAddress = awserrors.NewAWSError("InvalidAddress", "The specified ID is invalid.", 404).SetQueryErrorCode("InvalidAddress")
-	// ErrInvalidSecurity is returned when the request was not made over HTTPS
-	// or did not use SigV4 for signing. The service model defines this error
-	// with HTTP 403 (httpError and awsQueryError httpResponseCode both 403)
-	// for every operation.
-	ErrInvalidSecurity = awserrors.NewAWSError("InvalidSecurity", "The request was not made over HTTPS or did not use SigV4 for signing.", 403).SetQueryErrorCode("InvalidSecurity")
-	// ErrRequestThrottled is returned when a request exceeds the permitted
-	// request rate. The service model defines this error with HTTP 403
-	// (httpError and awsQueryError httpResponseCode both 403) for every
-	// operation. Per-account request-rate quotas are AWS-account-tied rate
-	// limiting, which this platform does not enforce, so there is no return
-	// path for it.
-	ErrRequestThrottled = awserrors.NewAWSError("RequestThrottled", "The request was denied due to request throttling.", 403).SetQueryErrorCode("RequestThrottled")
 	// ErrUnsupportedOperation is returned for request members the service
 	// model marks as not implemented, such as message-attribute list values.
 	ErrUnsupportedOperation = awserrors.NewAWSError("UnsupportedOperation", "Error code 400. Unsupported operation.", 400).SetQueryErrorCode("AWS.SimpleQueueService.UnsupportedOperation")
-	// ErrInvalidIdFormat is a legacy DeleteMessage error the service model
-	// marks as deprecated and included in ReceiptHandleIsInvalid, which is
-	// what the platform returns for invalid receipt handles. The model gives
-	// it no awsQueryError trait, so the query wire falls back to the shape
-	// name.
-	ErrInvalidIdFormat = awserrors.NewAWSError("InvalidIdFormat", "The specified receipt handle isn't valid for the current version.", 400)
 )

@@ -1,7 +1,6 @@
 package sqs
 
 import (
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -32,12 +31,10 @@ type SQSStoreInterface interface {
 	ChangeMessageVisibility(queueURL, receiptHandle string, visibilityTimeout int32) error
 	PurgeQueue(queueURL string) error
 
-	StartMessageMoveTask(sourceARN, destARN string, maxMessages int32) (*MessageMoveTask, error)
+	StartMessageMoveTask(sourceARN, destARN string, maxRate int32) (*MessageMoveTask, error)
 	CancelMessageMoveTask(taskId string) (*MessageMoveTask, error)
 	ListMessageMoveTasks(sourceARN string, maxResults int32) ([]*MessageMoveTask, error)
-	GetMessageMoveTask(taskId string) (*MessageMoveTask, error)
 
-	Storage() storage.BasicStorage
 	GetAccountID() string
 	GetRegion() string
 }

@@ -227,6 +227,25 @@ func (r *TestRunner) runSQSEdgeTests(ctx context.Context, client *sqs.Client, qu
 		return nil
 	}))
 
+	// StartMessageMoveTask on a source that no queue redrives into must be
+	// rejected: only dead-letter queue ARNs are accepted.
+	results = append(results, r.RunTest("sqs", "StartMessageMoveTask_NonDLQSource_Rejected", func() error {
+		plainURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("PlainSrc-%d", time.Now().UnixNano()), nil)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+		plainArn, err := queueArn(ctx, client, plainURL)
+		if err != nil {
+			return err
+		}
+		_, err = client.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{SourceArn: aws.String(plainArn)})
+		if err := AssertErrorContains(err, "UnsupportedOperation"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	// SendMessage with 11 message attributes must be rejected (AWS cap: 10).
 	results = append(results, r.RunTest("sqs", "SendMessage_TooManyMessageAttributes_Rejected", func() error {
 		qName := fmt.Sprintf("TooManyAttrs-%d", time.Now().UnixNano())
@@ -294,6 +313,66 @@ func (r *TestRunner) runSQSEdgeTests(ctx context.Context, client *sqs.Client, qu
 			MaxResults: aws.Int32(1001),
 		})
 		if err := AssertErrorContains(err, "InvalidParameterValue"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// SetQueueAttributes with an empty Attributes map must be rejected: the
+	// member is required.
+	results = append(results, r.RunTest("sqs", "SetQueueAttributes_EmptyAttributes_Rejected", func() error {
+		qName := fmt.Sprintf("EmptyAttrs-%d", time.Now().UnixNano())
+		createResp, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(qName)})
+		if err != nil {
+			return fmt.Errorf("create failed: %v", err)
+		}
+		defer client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: createResp.QueueUrl})
+
+		_, err = client.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+			QueueUrl:   createResp.QueueUrl,
+			Attributes: map[string]string{},
+		})
+		if err := AssertErrorContains(err, "MissingParameter"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// TagQueue with an empty Tags map must be rejected: the member is
+	// required.
+	results = append(results, r.RunTest("sqs", "TagQueue_EmptyTags_Rejected", func() error {
+		qName := fmt.Sprintf("EmptyTags-%d", time.Now().UnixNano())
+		createResp, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(qName)})
+		if err != nil {
+			return fmt.Errorf("create failed: %v", err)
+		}
+		defer client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: createResp.QueueUrl})
+
+		_, err = client.TagQueue(ctx, &sqs.TagQueueInput{
+			QueueUrl: createResp.QueueUrl,
+			Tags:     map[string]string{},
+		})
+		if err := AssertErrorContains(err, "MissingParameter"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// UntagQueue with an empty TagKeys list must be rejected: the member is
+	// required.
+	results = append(results, r.RunTest("sqs", "UntagQueue_EmptyTagKeys_Rejected", func() error {
+		qName := fmt.Sprintf("EmptyTagKeys-%d", time.Now().UnixNano())
+		createResp, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(qName)})
+		if err != nil {
+			return fmt.Errorf("create failed: %v", err)
+		}
+		defer client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: createResp.QueueUrl})
+
+		_, err = client.UntagQueue(ctx, &sqs.UntagQueueInput{
+			QueueUrl: createResp.QueueUrl,
+			TagKeys:  []string{},
+		})
+		if err := AssertErrorContains(err, "MissingParameter"); err != nil {
 			return err
 		}
 		return nil

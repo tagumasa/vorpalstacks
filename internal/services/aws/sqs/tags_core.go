@@ -42,6 +42,25 @@ func sqsTagConfig(store sqsstore.SQSStoreInterface) tagutil.TagHandlerConfig {
 		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
 			return store.UntagQueue(resourceKey, tagKeys)
 		},
+		// The TagKeys member carries xmlName "TagKey" + xmlFlattened: the
+		// query wire spells the indexed list TagKey.N, which the generic
+		// fallback (TagKeys.member.N / TagKeys) never tries. Without this
+		// override a query-wire UntagQueue parses zero keys and the
+		// len(tagKeys) > 0 guard turns the request into a silent no-op.
+		// The stem read rejects a gapped list; this hook cannot carry the
+		// error, and a nil return makes the framework's RequireTagKeys rule
+		// reject the request instead — never a silent truncation.
+		ParseTagKeys: func(params map[string]interface{}) []string {
+			keys := tagutil.GetTagKeys(params, tagutil.SQSConfig)
+			if len(keys) > 0 {
+				return keys
+			}
+			stemKeys, err := getQueryListByStem(params, "TagKey")
+			if err != nil {
+				return nil
+			}
+			return stemKeys
+		},
 		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			m, err := store.ListQueueTags(resourceKey)
 			if err != nil {

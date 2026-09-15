@@ -47,8 +47,15 @@ type RedrivePolicy struct {
 // ParseRedrivePolicy parses a RedrivePolicy JSON string, accepting both
 // string and integer formats for maxReceiveCount per AWS convention. When
 // maxReceiveCount is absent it defaults to DefaultMaxReceiveCount (10 per the
-// AWS SQS API Reference: "Default: 10.").
+// AWS SQS API Reference: "Default: 10."); a value outside the documented
+// 1-1,000 range is rejected. The empty string is the clear form: it parses to
+// a nil policy (no dead-letter target), the same clear convention the other
+// clearable queue attributes (Policy, KmsMasterKeyId, RedriveAllowPolicy)
+// follow, so an association whose target has been deleted can be removed.
 func ParseRedrivePolicy(data string) (*RedrivePolicy, error) {
+	if data == "" {
+		return nil, nil
+	}
 	var raw struct {
 		DeadLetterTargetARN string          `json:"deadLetterTargetArn"`
 		MaxReceiveCount     json.RawMessage `json:"maxReceiveCount"`
@@ -73,6 +80,9 @@ func ParseRedrivePolicy(data string) (*RedrivePolicy, error) {
 			}
 			count = int32(v)
 		}
+	}
+	if count < MinMaxReceiveCount || count > MaxMaxReceiveCount {
+		return nil, ErrInvalidAttributeValue
 	}
 	return &RedrivePolicy{
 		DeadLetterTargetARN: raw.DeadLetterTargetARN,
@@ -121,9 +131,9 @@ func NewQueue(name, region, accountID string) *Queue {
 		AccountID:                     accountID,
 		CreatedTimestamp:              now,
 		LastModifiedTimestamp:         now,
-		VisibilityTimeout:             30,
+		VisibilityTimeout:             DefaultVisibilityTimeout,
 		MaximumMessageSize:            MaxMaximumMessageSize,
-		MessageRetentionPeriod:        345600,
+		MessageRetentionPeriod:        DefaultMessageRetentionPeriod,
 		DelaySeconds:                  0,
 		ReceiveMessageWaitTimeSeconds: 0,
 		Attributes:                    make(map[string]string),
@@ -144,9 +154,6 @@ func NewMessage(body string) *Message {
 }
 
 func calculateMD5(s string) string {
-	if s == "" {
-		return "d41d8cd98f00b204e9800998ecf8427e"
-	}
 	hash := md5.Sum([]byte(s))
 	return hex.EncodeToString(hash[:])
 }

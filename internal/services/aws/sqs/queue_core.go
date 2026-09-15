@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"vorpalstacks/internal/common/kmsutil"
+	"vorpalstacks/internal/utils/aws/arn"
 
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
@@ -54,6 +54,9 @@ type ListQueuesResult struct {
 // GetQueueUrlInput contains the parameters for resolving a queue URL.
 type GetQueueUrlInput struct {
 	QueueName string
+	// QueueOwnerAWSAccountID names the account whose queue the caller is
+	// resolving; empty means the caller's own account.
+	QueueOwnerAWSAccountID string
 }
 
 // GetQueueUrlResult contains the output of a get-queue-url operation.
@@ -62,17 +65,28 @@ type GetQueueUrlResult struct {
 }
 
 // GetQueueAttributesInput contains the parameters for reading queue
-// attributes. AttributeNames carries the parsed requested-attribute list
-// (empty means return all).
+// attributes. AttributeNames carries the parsed requested-attribute list;
+// an empty list is the documented empty-result request, not a request for
+// everything ("The AttributeNames parameter is optional, but if you don't
+// specify values for this parameter, the request returns empty results."
+// — model + API reference; "All" is the documented way to ask for every
+// attribute).
 type GetQueueAttributesInput struct {
 	QueueURL       string
 	AttributeNames []string
 }
 
+// GetQueueAttributesResult contains the output of reading queue attributes.
+type GetQueueAttributesResult struct {
+	Attributes map[string]string
+}
+
 // SetQueueAttributesInput contains the parameters for updating queue
-// attributes.
+// attributes. Region names the region the queue lives in, for the
+// platform-extension KMS key existence check.
 type SetQueueAttributesInput struct {
 	QueueURL string
+	Region   string
 	Attrs    map[string]string
 }
 
@@ -82,11 +96,22 @@ type PurgeQueueInput struct {
 }
 
 // ListDeadLetterSourceQueuesInput contains the parameters for listing the
-// dead-letter source queues of a queue.
+// dead-letter source queues of a queue. MaxResultsSet distinguishes an
+// explicitly supplied MaxResults from an omitted one, so an explicit 0 can
+// be rejected against the documented "Value range is 1 to 1000" while an
+// omitted member selects the default page.
 type ListDeadLetterSourceQueuesInput struct {
-	QueueURL   string
-	MaxResults int32
-	NextToken  string
+	QueueURL      string
+	MaxResults    int32
+	MaxResultsSet bool
+	NextToken     string
+}
+
+// ListDeadLetterSourceQueuesResult contains the output of listing the
+// dead-letter source queues of a queue.
+type ListDeadLetterSourceQueuesResult struct {
+	QueueURLs []string
+	NextToken string
 }
 
 // StartMessageMoveTaskInput contains the parameters for starting a message
@@ -97,10 +122,22 @@ type StartMessageMoveTaskInput struct {
 	MaxMessages    int32
 }
 
+// StartMessageMoveTaskResult contains the output of starting a message move
+// task.
+type StartMessageMoveTaskResult struct {
+	TaskHandle string
+}
+
 // CancelMessageMoveTaskInput contains the parameters for cancelling a
 // message move task.
 type CancelMessageMoveTaskInput struct {
 	TaskHandle string
+}
+
+// CancelMessageMoveTaskResult contains the output of cancelling a message
+// move task.
+type CancelMessageMoveTaskResult struct {
+	ApproximateNumberOfMessagesMoved int64
 }
 
 // ListMessageMoveTasksInput contains the parameters for listing message
@@ -108,6 +145,31 @@ type CancelMessageMoveTaskInput struct {
 type ListMessageMoveTasksInput struct {
 	SourceARN  string
 	MaxResults int32
+}
+
+// MessageMoveTaskDescription carries one entry of the ListMessageMoveTasks
+// result, mirroring the model's result-entry shape. Members with a documented
+// absent form (DestinationArn — NULL when the task named no destination;
+// TaskHandle; MaxNumberOfMessagesPerSecond — NULL for the system-optimised
+// rate; ApproximateNumberOfMessagesToMove; FailureReason) are omitted from
+// the emitted entry when unset; the moved/failed counters and
+// StartedTimestamp always emit their values, zero included.
+type MessageMoveTaskDescription struct {
+	TaskHandle                        string
+	Status                            string
+	SourceArn                         string
+	DestinationArn                    string
+	MaxNumberOfMessagesPerSecond      int32
+	ApproximateNumberOfMessagesMoved  int64
+	ApproximateNumberOfMessagesToMove int64
+	FailureReason                     string
+	StartedTimestamp                  int64
+}
+
+// ListMessageMoveTasksResult contains the output of listing message move
+// tasks.
+type ListMessageMoveTasksResult struct {
+	Results []MessageMoveTaskDescription
 }
 
 // ---------------------------------------------------------------------------
@@ -123,8 +185,22 @@ func (s *SQSService) createQueueCore(ctx context.Context, store sqsstore.SQSStor
 	if in.QueueName == "" {
 		return nil, ErrMissingParameter
 	}
-	if !isValidQueueName(in.QueueName) {
+	if err := sqsstore.ValidateQueueName(in.QueueName); err != nil {
 		return nil, ErrInvalidQueueName
+	}
+
+	// The single validation path: every attribute name and value, shared
+	// with the store's defence-in-depth re-check.
+	if err := sqsstore.ValidateQueueAttributes(in.Attrs); err != nil {
+		return nil, convertStoreError(err)
+	}
+
+	// FIFO queue naming is bidirectional: FifoQueue=true requires the
+	// ".fifo" suffix and vice-versa. Standard queue names cannot contain
+	// dots. The rule is the store's shared exported one, checked before any
+	// store access on the validated attribute view.
+	if err := sqsstore.ValidateFifoQueueName(in.QueueName, sqsstore.ParseBoolAttr(in.Attrs["FifoQueue"])); err != nil {
+		return nil, convertStoreError(err)
 	}
 
 	queue := sqsstore.NewQueue(in.QueueName, in.Region, store.GetAccountID())
@@ -133,16 +209,9 @@ func (s *SQSService) createQueueCore(ctx context.Context, store sqsstore.SQSStor
 		return nil, err
 	}
 
-	// Validate FIFO queue naming bidirectionally: FifoQueue=true requires
-	// ".fifo" suffix and vice-versa. Standard queue names cannot contain dots.
-	if queue.FifoQueue && !strings.HasSuffix(in.QueueName, ".fifo") {
-		return nil, ErrInvalidParameterValue
-	}
-	if !queue.FifoQueue && strings.HasSuffix(in.QueueName, ".fifo") {
-		return nil, ErrInvalidParameterValue
-	}
-
-	// Validate KMS key existence when a KmsMasterKeyId is set.
+	// KMS key existence is a platform extension on every write path that
+	// sets KmsMasterKeyId (the model carries no Kms-family errors on
+	// CreateQueue or SetQueueAttributes).
 	if kmsKey, ok := in.Attrs["KmsMasterKeyId"]; ok && kmsKey != "" && s.kmsChecker != nil {
 		if err := s.kmsChecker.CheckKey(ctx, in.Region, kmsKey); err != nil {
 			return nil, mapKMSError(err)
@@ -233,12 +302,22 @@ func (s *SQSService) getQueueUrlCore(store sqsstore.SQSStoreInterface, in GetQue
 	if err != nil {
 		return nil, convertStoreError(err)
 	}
+	// QueueOwnerAWSAccountID selects the owning account. The platform runs
+	// a single account, so a queue under any other owner does not exist in
+	// this deployment: the queue's own account is read from its ARN and a
+	// mismatch answers QueueDoesNotExist instead of silently returning the
+	// local queue's URL.
+	if in.QueueOwnerAWSAccountID != "" {
+		if _, _, _, ownerAccount, _ := arn.SplitARN(queue.ARN); ownerAccount != in.QueueOwnerAWSAccountID {
+			return nil, ErrQueueDoesNotExist
+		}
+	}
 	return &GetQueueUrlResult{QueueURL: queue.URL}, nil
 }
 
 // getQueueAttributesCore returns the attributes of an SQS queue.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_GetQueueAttributes.html
-func (s *SQSService) getQueueAttributesCore(store sqsstore.SQSStoreInterface, in GetQueueAttributesInput) (interface{}, error) {
+func (s *SQSService) getQueueAttributesCore(store sqsstore.SQSStoreInterface, in GetQueueAttributesInput) (*GetQueueAttributesResult, error) {
 	if in.QueueURL == "" {
 		return nil, ErrMissingParameter
 	}
@@ -246,6 +325,13 @@ func (s *SQSService) getQueueAttributesCore(store sqsstore.SQSStoreInterface, in
 	queue, err := store.GetQueue(in.QueueURL)
 	if err != nil {
 		return nil, convertStoreError(err)
+	}
+
+	// The attribute list is opt-in: an omitted AttributeNames returns empty
+	// results (the queue must still resolve, so QueueDoesNotExist keeps its
+	// precedence).
+	if len(in.AttributeNames) == 0 {
+		return &GetQueueAttributesResult{Attributes: map[string]string{}}, nil
 	}
 
 	visible, notVisible, delayed := store.GetMessageCounts(in.QueueURL)
@@ -290,12 +376,6 @@ func (s *SQSService) getQueueAttributesCore(store sqsstore.SQSStoreInterface, in
 
 	requestedAttrs := in.AttributeNames
 
-	if len(requestedAttrs) == 0 {
-		return map[string]interface{}{
-			"Attributes": allAttrs,
-		}, nil
-	}
-
 	attrs := make(map[string]string)
 	for _, attrName := range requestedAttrs {
 		if attrName == "All" {
@@ -310,29 +390,43 @@ func (s *SQSService) getQueueAttributesCore(store sqsstore.SQSStoreInterface, in
 		}
 	}
 
-	return map[string]interface{}{
-		"Attributes": attrs,
-	}, nil
+	return &GetQueueAttributesResult{Attributes: attrs}, nil
 }
 
 // setQueueAttributesCore sets the attributes of an SQS queue.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_SetQueueAttributes.html
-func (s *SQSService) setQueueAttributesCore(store sqsstore.SQSStoreInterface, in SetQueueAttributesInput) error {
+func (s *SQSService) setQueueAttributesCore(ctx context.Context, store sqsstore.SQSStoreInterface, in SetQueueAttributesInput) error {
 	if in.QueueURL == "" {
 		return ErrMissingParameter
 	}
+	// Attributes is @required (model): an omitted member is rejected rather
+	// than becoming a validation-free no-op success.
+	if len(in.Attrs) == 0 {
+		return ErrMissingParameter
+	}
 
-	if len(in.Attrs) > 0 {
-		// Validate through the same attribute validation path as CreateQueue
-		// (applyQueueAttributes). The store re-validates on write as
-		// defence-in-depth for other callers.
-		if err := applyQueueAttributes(in.Attrs, &sqsstore.Queue{}); err != nil {
-			return err
+	// The single validation path shared with CreateQueue: names and values.
+	if err := sqsstore.ValidateQueueAttributes(in.Attrs); err != nil {
+		return convertStoreError(err)
+	}
+
+	// Queue existence precedes the platform-extension KMS check: a request
+	// naming a nonexistent queue answers QueueDoesNotExist regardless of the
+	// key it carries, the same precedence the queue plane's other writes
+	// have (the KMS check is an add-on, not the request's target).
+	if _, err := store.GetQueue(in.QueueURL); err != nil {
+		return convertStoreError(err)
+	}
+
+	// KMS key existence is checked on every write path that sets
+	// KmsMasterKeyId (platform extension, symmetric with CreateQueue; the
+	// model carries no Kms-family errors on either operation).
+	if kmsKey, ok := in.Attrs["KmsMasterKeyId"]; ok && kmsKey != "" && s.kmsChecker != nil {
+		if err := s.kmsChecker.CheckKey(ctx, in.Region, kmsKey); err != nil {
+			return mapKMSError(err)
 		}
 	}
 
-	// The store call resolves the queue even for an empty attribute map so a
-	// nonexistent queue is rejected with QueueDoesNotExist.
 	if err := store.SetQueueAttributes(in.QueueURL, in.Attrs); err != nil {
 		return convertStoreError(err)
 	}
@@ -357,23 +451,28 @@ func (s *SQSService) purgeQueueCore(store sqsstore.SQSStoreInterface, in PurgeQu
 // listDeadLetterSourceQueuesCore lists the dead letter source queues for an
 // SQS queue.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_ListDeadLetterSourceQueues.html
-func (s *SQSService) listDeadLetterSourceQueuesCore(store sqsstore.SQSStoreInterface, in ListDeadLetterSourceQueuesInput) (interface{}, error) {
+func (s *SQSService) listDeadLetterSourceQueuesCore(store sqsstore.SQSStoreInterface, in ListDeadLetterSourceQueuesInput) (*ListDeadLetterSourceQueuesResult, error) {
 	if in.QueueURL == "" {
 		return nil, ErrMissingParameter
+	}
+
+	// MaxResults is documented "Value range is 1 to 1000" — the same
+	// sentence family ListQueues implements as reject-explicit-below-1;
+	// an omitted member selects the default page.
+	if in.MaxResultsSet && in.MaxResults < 1 {
+		return nil, ErrInvalidParameterValue
+	}
+	maxResults := in.MaxResults
+	if maxResults == 0 {
+		maxResults = int32(sqsstore.MaxListResults)
+	}
+	if maxResults > int32(sqsstore.MaxListResults) {
+		return nil, ErrInvalidParameterValue
 	}
 
 	dlq, err := store.GetQueue(in.QueueURL)
 	if err != nil {
 		return nil, convertStoreError(err)
-	}
-
-	// MaxResults is 1-1000 per the AWS API reference; the default is 1000.
-	maxResults := in.MaxResults
-	if maxResults == 0 {
-		maxResults = int32(sqsstore.MaxListResults)
-	}
-	if maxResults < 1 || maxResults > int32(sqsstore.MaxListResults) {
-		return nil, ErrInvalidParameterValue
 	}
 
 	opts := storecommon.ListOptions{
@@ -391,19 +490,24 @@ func (s *SQSService) listDeadLetterSourceQueuesCore(store sqsstore.SQSStoreInter
 		queueURLs = append(queueURLs, q.URL)
 	}
 
-	resp := map[string]interface{}{
-		"queueUrls": queueURLs,
+	nextToken := ""
+	// "You must set MaxResults to receive a value for NextToken in the
+	// response" (model + API reference) — the same gate ListQueues applies:
+	// a truncated default page surfaces no token, so the caller must opt into
+	// pagination explicitly.
+	if in.MaxResultsSet && result.IsTruncated && result.NextMarker != "" {
+		nextToken = result.NextMarker
 	}
-	if result.IsTruncated && result.NextMarker != "" {
-		resp["NextToken"] = result.NextMarker
-	}
-	return resp, nil
+	return &ListDeadLetterSourceQueuesResult{
+		QueueURLs: queueURLs,
+		NextToken: nextToken,
+	}, nil
 }
 
 // startMessageMoveTaskCore starts a message move task to move messages from
 // one queue to another.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_StartMessageMoveTask.html
-func (s *SQSService) startMessageMoveTaskCore(store sqsstore.SQSStoreInterface, in StartMessageMoveTaskInput) (interface{}, error) {
+func (s *SQSService) startMessageMoveTaskCore(store sqsstore.SQSStoreInterface, in StartMessageMoveTaskInput) (*StartMessageMoveTaskResult, error) {
 	if in.SourceARN == "" {
 		return nil, ErrMissingParameter
 	}
@@ -417,17 +521,26 @@ func (s *SQSService) startMessageMoveTaskCore(store sqsstore.SQSStoreInterface, 
 
 	task, err := store.StartMessageMoveTask(in.SourceARN, in.DestinationARN, in.MaxMessages)
 	if err != nil {
+		// StartMessageMoveTask documents exactly five errors — InvalidAddress,
+		// InvalidSecurity, RequestThrottled, ResourceNotFoundException,
+		// UnsupportedOperation (model error list, identical on the fetched API
+		// reference page). Not-found failures project onto that vocabulary
+		// instead of the queue-plane QueueDoesNotExist, which the operation
+		// does not carry.
+		if errors.Is(err, sqsstore.ErrQueueNotFound) {
+			return nil, ErrResourceNotFound
+		}
 		return nil, convertStoreError(err)
 	}
 
-	return map[string]interface{}{
-		"TaskHandle": task.TaskId,
+	return &StartMessageMoveTaskResult{
+		TaskHandle: task.TaskId,
 	}, nil
 }
 
 // cancelMessageMoveTaskCore cancels a message move task.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_CancelMessageMoveTask.html
-func (s *SQSService) cancelMessageMoveTaskCore(store sqsstore.SQSStoreInterface, in CancelMessageMoveTaskInput) (interface{}, error) {
+func (s *SQSService) cancelMessageMoveTaskCore(store sqsstore.SQSStoreInterface, in CancelMessageMoveTaskInput) (*CancelMessageMoveTaskResult, error) {
 	if in.TaskHandle == "" {
 		return nil, ErrMissingParameter
 	}
@@ -437,14 +550,14 @@ func (s *SQSService) cancelMessageMoveTaskCore(store sqsstore.SQSStoreInterface,
 		return nil, convertStoreError(err)
 	}
 
-	return map[string]interface{}{
-		"ApproximateNumberOfMessagesMoved": task.MovedMessages,
+	return &CancelMessageMoveTaskResult{
+		ApproximateNumberOfMessagesMoved: int64(task.MovedMessages),
 	}, nil
 }
 
 // listMessageMoveTasksCore lists the message move tasks for a source queue.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_ListMessageMoveTasks.html
-func (s *SQSService) listMessageMoveTasksCore(store sqsstore.SQSStoreInterface, in ListMessageMoveTasksInput) (interface{}, error) {
+func (s *SQSService) listMessageMoveTasksCore(store sqsstore.SQSStoreInterface, in ListMessageMoveTasksInput) (*ListMessageMoveTasksResult, error) {
 	if in.SourceARN == "" {
 		return nil, ErrMissingParameter
 	}
@@ -454,10 +567,10 @@ func (s *SQSService) listMessageMoveTasksCore(store sqsstore.SQSStoreInterface, 
 		return nil, ErrInvalidParameterValue
 	}
 	if maxResults == 0 {
-		maxResults = 1
+		maxResults = sqsstore.DefaultListMessageMoveTasksResults
 	}
-	if maxResults > 10 {
-		maxResults = 10
+	if maxResults > sqsstore.MaxListMessageMoveTasksResults {
+		maxResults = sqsstore.MaxListMessageMoveTasksResults
 	}
 
 	tasks, err := store.ListMessageMoveTasks(in.SourceARN, maxResults)
@@ -465,36 +578,23 @@ func (s *SQSService) listMessageMoveTasksCore(store sqsstore.SQSStoreInterface, 
 		return nil, convertStoreError(err)
 	}
 
-	var results []interface{}
+	results := make([]MessageMoveTaskDescription, 0, len(tasks))
 	for _, t := range tasks {
-		entry := map[string]interface{}{
-			"Status":                           t.Status,
-			"SourceArn":                        t.SourceQueueARN,
-			"ApproximateNumberOfMessagesMoved": t.MovedMessages,
-			"StartedTimestamp":                 t.StartTime.UnixMilli(),
-		}
-		// The rate member is only reported when a fixed rate was requested;
-		// an unset rate means the system-optimised variable rate.
-		if t.MaxNumberOfMessages > 0 {
-			entry["MaxNumberOfMessagesPerSecond"] = t.MaxNumberOfMessages
-		}
-		if t.TaskId != "" {
-			entry["TaskHandle"] = t.TaskId
-		}
-		if t.DestinationQueueARN != "" {
-			entry["DestinationArn"] = t.DestinationQueueARN
-		}
-		if t.ApproximateNumberOfMessagesToMove > 0 {
-			entry["ApproximateNumberOfMessagesToMove"] = t.ApproximateNumberOfMessagesToMove
-		}
-		if t.FailureReason != "" {
-			entry["FailureReason"] = t.FailureReason
-		}
-		results = append(results, entry)
+		results = append(results, MessageMoveTaskDescription{
+			TaskHandle:                        t.TaskId,
+			Status:                            t.Status,
+			SourceArn:                         t.SourceQueueARN,
+			DestinationArn:                    t.DestinationQueueARN,
+			MaxNumberOfMessagesPerSecond:      t.MaxNumberOfMessages,
+			ApproximateNumberOfMessagesMoved:  int64(t.MovedMessages),
+			ApproximateNumberOfMessagesToMove: int64(t.ApproximateNumberOfMessagesToMove),
+			FailureReason:                     t.FailureReason,
+			StartedTimestamp:                  t.StartTime.UnixMilli(),
+		})
 	}
 
-	return map[string]interface{}{
-		"Results": results,
+	return &ListMessageMoveTasksResult{
+		Results: results,
 	}, nil
 }
 
@@ -515,6 +615,12 @@ func mapKMSError(err error) error {
 	}
 }
 
+// typedQueueAttributes is not a name whitelist: the attribute-name
+// vocabulary is the store's 22-name validAttributeNames set (consulted via
+// IsValidAttributeName / ValidateQueueAttributes). This map records which
+// attribute names getQueueAttributesCore materialises from dedicated queue
+// fields and computed counts — everything not listed here is copied verbatim
+// from the stored raw attribute map.
 var typedQueueAttributes = map[string]bool{
 	"QueueArn": true, "ApproximateNumberOfMessages": true,
 	"ApproximateNumberOfMessagesNotVisible": true,
@@ -565,7 +671,14 @@ func queueAttrMatches(name, value string, existing *sqsstore.Queue) bool {
 		return value == existing.Policy
 	case "RedrivePolicy":
 		rdp, err := sqsstore.ParseRedrivePolicy(value)
-		if err != nil || existing.RedrivePolicy == nil {
+		if err != nil {
+			return false
+		}
+		// The clear form matches a queue without a redrive policy.
+		if rdp == nil {
+			return existing.RedrivePolicy == nil
+		}
+		if existing.RedrivePolicy == nil {
 			return false
 		}
 		return rdp.DeadLetterTargetARN == existing.RedrivePolicy.DeadLetterTargetARN &&
@@ -585,77 +698,35 @@ func boolAttrMatches(value string, existing bool) bool {
 	return err == nil && b == existing
 }
 
-// applyQueueAttributes validates and applies attribute key-value pairs to a Queue
-// struct. Returns ErrInvalidParameterValue for any invalid attribute value.
+// applyQueueAttributes applies validated attribute key-value pairs onto a
+// Queue struct: every value lands in the raw attribute map and the typed
+// fields are coerced onto the struct. Name and value validation happens
+// once, in sqsstore.ValidateQueueAttributes, before this runs; the error
+// return only guards a RedrivePolicy parse that validation has already
+// admitted.
 func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error {
+	if queue.Attributes == nil {
+		queue.Attributes = make(map[string]string)
+	}
 	for attrName, attrValue := range attrs {
-		if queue.Attributes == nil {
-			queue.Attributes = make(map[string]string)
-		}
 		queue.Attributes[attrName] = attrValue
 
 		switch attrName {
 		case "VisibilityTimeout":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 0 || val > int64(sqsstore.MaxVisibilityTimeout) {
-					return ErrInvalidParameterValue
-				}
-				queue.VisibilityTimeout = int32(val)
-			} else {
-				return ErrInvalidParameterValue
-			}
+			queue.VisibilityTimeout = sqsstore.ParseInt32Attr(attrValue)
 		case "MaximumMessageSize":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < int64(sqsstore.MinMaximumMessageSize) || val > int64(sqsstore.MaxMaximumMessageSize) {
-					return ErrInvalidParameterValue
-				}
-				queue.MaximumMessageSize = int32(val)
-			} else {
-				return ErrInvalidParameterValue
-			}
+			queue.MaximumMessageSize = sqsstore.ParseInt32Attr(attrValue)
 		case "MessageRetentionPeriod":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < int64(sqsstore.MinMessageRetentionPeriod) || val > int64(sqsstore.MaxMessageRetentionPeriod) {
-					return ErrInvalidParameterValue
-				}
-				queue.MessageRetentionPeriod = int32(val)
-			} else {
-				return ErrInvalidParameterValue
-			}
+			queue.MessageRetentionPeriod = sqsstore.ParseInt32Attr(attrValue)
 		case "DelaySeconds":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < int64(sqsstore.MinDelaySeconds) || val > int64(sqsstore.MaxDelaySeconds) {
-					return ErrInvalidParameterValue
-				}
-				queue.DelaySeconds = int32(val)
-			} else {
-				return ErrInvalidParameterValue
-			}
+			queue.DelaySeconds = sqsstore.ParseInt32Attr(attrValue)
 		case "ReceiveMessageWaitTimeSeconds":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < int64(sqsstore.MinReceiveMessageWaitTimeSeconds) || val > int64(sqsstore.MaxReceiveMessageWaitTimeSeconds) {
-					return ErrInvalidParameterValue
-				}
-				queue.ReceiveMessageWaitTimeSeconds = int32(val)
-			} else {
-				return ErrInvalidParameterValue
-			}
+			queue.ReceiveMessageWaitTimeSeconds = sqsstore.ParseInt32Attr(attrValue)
 		case "FifoQueue":
-			if val, err := strconv.ParseBool(attrValue); err == nil {
-				queue.FifoQueue = val
-			} else {
-				return ErrInvalidParameterValue
-			}
+			queue.FifoQueue = sqsstore.ParseBoolAttr(attrValue)
 		case "ContentBasedDeduplication":
-			if val, err := strconv.ParseBool(attrValue); err == nil {
-				queue.ContentBasedDeduplication = val
-			} else {
-				return ErrInvalidParameterValue
-			}
+			queue.ContentBasedDeduplication = sqsstore.ParseBoolAttr(attrValue)
 		case "Policy":
-			if err := sqsstore.ValidatePolicyJSON(attrValue); err != nil {
-				return convertStoreError(err)
-			}
 			queue.Policy = attrValue
 		case "RedrivePolicy":
 			rdp, err := sqsstore.ParseRedrivePolicy(attrValue)
@@ -663,31 +734,11 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 				return ErrInvalidParameterValue
 			}
 			queue.RedrivePolicy = rdp
-		case "KmsDataKeyReusePeriodSeconds":
-			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < int64(sqsstore.MinKmsDataKeyReusePeriodSeconds) || val > int64(sqsstore.MaxKmsDataKeyReusePeriodSeconds) {
-					return ErrInvalidParameterValue
-				}
-			} else {
-				return ErrInvalidParameterValue
-			}
-		case "DeduplicationScope":
-			if err := sqsstore.ValidateDeduplicationScope(attrValue); err != nil {
-				return convertStoreError(err)
-			}
-		case "FifoThroughputLimit":
-			if err := sqsstore.ValidateFifoThroughputLimit(attrValue); err != nil {
-				return convertStoreError(err)
-			}
-		case "SqsManagedSseEnabled":
-			if _, err := strconv.ParseBool(attrValue); err != nil {
-				return ErrInvalidParameterValue
-			}
-		case "RedriveAllowPolicy":
-			if attrValue != "" {
-				if err := sqsstore.ValidateRedriveAllowPolicyJSON(attrValue); err != nil {
-					return convertStoreError(err)
-				}
+			if rdp == nil {
+				// The empty value clears the association: the raw attribute
+				// is removed so the queue reports RedrivePolicy as unset.
+				delete(queue.Attributes, attrName)
+				continue
 			}
 		}
 	}

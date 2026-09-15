@@ -99,6 +99,8 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sqs", "GetQueueAttributes", func() error {
+		// "All" is the documented way to request every attribute; an omitted
+		// list is the documented empty-result request pinned separately.
 		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
 			QueueName: aws.String(queueName),
 		})
@@ -107,6 +109,9 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		}
 		attrResp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
 			QueueUrl: resp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{
+				types.QueueAttributeNameAll,
+			},
 		})
 		if err != nil {
 			return err
@@ -119,6 +124,27 @@ func (r *TestRunner) RunSQSTests() []TestResult {
 		}
 		if _, ok := attrResp.Attributes[string(types.QueueAttributeNameQueueArn)]; !ok {
 			return fmt.Errorf("GetQueueAttributes missing QueueArn")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "GetQueueAttributes_OmittedNames_EmptyResult", func() error {
+		// "The AttributeNames parameter is optional, but if you don't specify
+		// values for this parameter, the request returns empty results."
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(queueName),
+		})
+		if err != nil {
+			return err
+		}
+		attrResp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl: resp.QueueUrl,
+		})
+		if err != nil {
+			return err
+		}
+		if len(attrResp.Attributes) != 0 {
+			return fmt.Errorf("omitted AttributeNames returned %d attributes, want the documented empty result", len(attrResp.Attributes))
 		}
 		return nil
 	}))

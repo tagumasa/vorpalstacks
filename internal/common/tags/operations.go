@@ -74,15 +74,17 @@ var LambdaConfig = TagOperationConfig{
 	UseQueryFallback: false,
 }
 
-// SQSConfig is the tag operation configuration for SQS queues.
+// SQSConfig is the tag operation configuration for SQS queues. Tags and
+// TagKeys are @required on TagQueueRequest / UntagQueueRequest, so an
+// omitted member is rejected rather than becoming a no-op success.
 var SQSConfig = TagOperationConfig{
 	ResourceParam:      "QueueUrl",
 	TagsParam:          "Tags",
 	TagKeysParam:       "TagKeys",
 	TagKeyName:         "Key",
 	TagValueName:       "Value",
-	RequireTags:        false,
-	RequireTagKeys:     false,
+	RequireTags:        true,
+	RequireTagKeys:     true,
 	RequireResource:    true,
 	UseQueryFallback:   true,
 	CaseInsensitiveRes: true,

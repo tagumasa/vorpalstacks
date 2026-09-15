@@ -48,14 +48,14 @@ which are separate services in the SDK classification used by
 | SecretsManager | 53 | 100% | ✅ Perfect |
 | SESv2 | 86 | 100% | ✅ Perfect |
 | SNS | 73 | 100% | ✅ Perfect |
-| SQS | 87 | 100% | ✅ Perfect |
+| SQS | 102 | 100% | ✅ Perfect |
 | SSM | 53 | 100% | ✅ Perfect |
 | STS | 57 | 100% | ✅ Perfect |
 | StepFunctions | 130 | 100% | ✅ Perfect |
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,612/3,612 tests passing (100%) — 3,526 SDK + 68 integration + 18 WebSocket** (confirmed 2026-09-14 on main; per-session deltas live in git history)
+**Overall: 3,627/3,627 tests passing (100%) — 3,541 SDK + 68 integration + 18 WebSocket** (confirmed 2026-09-14 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

@@ -2,18 +2,30 @@ package sqs
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_sqs"
 	"vorpalstacks/internal/store/aws/common"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateQueue creates a new SQS queue.
 func (s *SQSStore) CreateQueue(queue *Queue) (*Queue, error) {
-	if err := validateQueueName(queue.Name); err != nil {
+	if err := ValidateQueueName(queue.Name); err != nil {
+		return nil, err
+	}
+	if err := ValidateFifoQueueName(queue.Name, queue.FifoQueue); err != nil {
+		return nil, err
+	}
+	// Attribute names and value formats run through the same shared
+	// validation as SetQueueAttributes, so the store's create path reaches
+	// full coverage independently of the caller.
+	if err := ValidateQueueAttributes(queue.Attributes); err != nil {
 		return nil, err
 	}
 
@@ -89,6 +101,18 @@ func (s *SQSStore) CreateQueue(queue *Queue) (*Queue, error) {
 
 	if len(queue.Tags) > 0 {
 		if err := s.TagStore.Tag(queueURL, queue.Tags); err != nil {
+			// The create must either happen completely or not at all: the
+			// record above already committed, so a failed tag write is
+			// compensated by removing the record — otherwise the queue
+			// exists tagless forever (the Core's idempotent-retry path
+			// returns the existing URL without re-applying the requested
+			// tags). No deletion marker is written: this queue was never
+			// observable to a client, so an immediate retry must succeed
+			// rather than hit the recreate-prohibition window.
+			if delErr := s.BaseStore.Delete(queueURL); delErr != nil {
+				logs.Error("SQS: queue record survived a failed tag write; the queue exists without its requested tags",
+					logs.String("queueUrl", queueURL), logs.Err(delErr))
+			}
 			return nil, err
 		}
 	}
@@ -116,66 +140,204 @@ func (s *SQSStore) UpdateQueue(queue *Queue) error {
 	if !s.Exists(queue.URL) {
 		return ErrQueueNotFound
 	}
+	// A queue without the raw attribute map would panic on the timestamp
+	// write below; CreateQueue always seeds the map, so this guard only
+	// covers callers constructing Queue values by hand.
+	if queue.Attributes == nil {
+		queue.Attributes = make(map[string]string)
+	}
 	queue.LastModifiedTimestamp = time.Now().UTC()
 	queue.Attributes["LastModifiedTimestamp"] = fmt.Sprintf("%d", queue.LastModifiedTimestamp.Unix())
 	return s.BaseStore.PutProto(queue.URL, QueueToProto(queue))
 }
 
-// DeleteQueue deletes a queue by its URL.
+// DeleteQueue deletes a queue by its URL and removes the move-task records
+// that reference it: a task without its source or destination queue can
+// neither run nor be meaningfully listed. The task-record cleanup runs after
+// the queue lock is released and takes only taskMu, so taskMu is never
+// nested inside the queue lock plane.
 func (s *SQSStore) DeleteQueue(queueURL string) error {
+	queueARN, err := s.deleteQueueRecord(queueURL)
+	if err != nil {
+		return err
+	}
+	s.deleteMoveTasksReferencingQueue(queueARN)
+	return nil
+}
+
+// deleteQueueRecord performs the queue deletion proper and returns the ARN of
+// the deleted queue. The queue record, its messages, their receipt-handle
+// entries and its deduplication keys are removed in ONE storage.Update
+// transaction: a failure on any leg rolls the whole deletion back and the
+// queue stays fully intact — messages included — instead of the previous
+// unsequenced series that left a half-deleted queue (messages wiped, record
+// and/or tags alive) on a later leg's failure. Deletion excludes both lock
+// planes: queueMutex blocks every queue mutator for the whole delete, so a
+// reader that already resolved the queue cannot resurrect the record through
+// UpdateQueue after the delete. Lock order is queueMutex → msgMutex, the
+// codebase's queue-then-messages layering.
+func (s *SQSStore) deleteQueueRecord(queueURL string) (string, error) {
+	s.queueMutex.Lock()
+	defer s.queueMutex.Unlock()
+	return s.deleteQueueRecordLocked(queueURL)
+}
+
+// deleteQueueRecordLocked is deleteQueueRecord's critical section; the
+// caller holds queueMutex. A failed key-scan aborts before the transaction
+// with the queue fully intact, never a partial delete.
+func (s *SQSStore) deleteQueueRecordLocked(queueURL string) (string, error) {
 	if !s.Exists(queueURL) {
-		return ErrQueueNotFound
+		return "", ErrQueueNotFound
 	}
 
-	if err := s.messagesStore.DeleteByPrefix(messagePrefix(queueURL)); err != nil {
-		return fmt.Errorf("failed to delete messages for queue %s: %w", queueURL, err)
+	idx := strings.LastIndex(queueURL, "/")
+	if idx < 0 || idx == len(queueURL)-1 {
+		return "", nil
+	}
+	queueARN := s.buildQueueARN(queueURL[idx+1:])
+
+	// The key sets are collected under both lock planes so the transaction
+	// deletes a stable set; the mutex releases through the closure so a
+	// panic inside the transaction cannot unwind past the unlock.
+	msgPrefix := []byte(messagePrefix(queueURL))
+	dedupPrefix := []byte(queueURL + "#")
+	receiptsPrefix := msgPrefix
+	var msgKeys, dedupKeys, receiptKeys [][]byte
+	collect := func() error {
+		messagesBucket := s.storage.Bucket(s.messagesBucketName)
+		if err := messagesBucket.ForEach(func(k, _ []byte) error {
+			if bytes.HasPrefix(k, msgPrefix) {
+				msgKeys = append(msgKeys, append([]byte(nil), k...))
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("scanning messages: %w", err)
+		}
+		dedupBucket := s.storage.Bucket(s.dedupBucket)
+		if err := dedupBucket.ForEach(func(k, _ []byte) error {
+			if bytes.HasPrefix(k, dedupPrefix) {
+				dedupKeys = append(dedupKeys, append([]byte(nil), k...))
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("scanning deduplication keys: %w", err)
+		}
+		receiptsBucket := s.storage.Bucket(s.receiptsBucket)
+		if err := receiptsBucket.ForEach(func(k, v []byte) error {
+			if bytes.HasPrefix(v, receiptsPrefix) {
+				receiptKeys = append(receiptKeys, append([]byte(nil), k...))
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("scanning receipt handles: %w", err)
+		}
+		return nil
+	}
+	txErr := func() error {
+		s.msgMutex.Lock()
+		defer s.msgMutex.Unlock()
+		// An incomplete key set must never reach the transaction: the commit
+		// would delete the queue record while the messages a failed scan
+		// missed survive under the deleted queue's prefix — the half-deleted
+		// state this single-transaction design exists to prevent.
+		if err := collect(); err != nil {
+			return err
+		}
+		return s.storage.Update(context.Background(), func(txn storage.Transaction) error {
+			messagesBucket := txn.Bucket(s.messagesBucketName)
+			for _, k := range msgKeys {
+				if err := messagesBucket.Delete(k); err != nil {
+					return err
+				}
+			}
+			receiptsBucket := txn.Bucket(s.receiptsBucket)
+			for _, k := range receiptKeys {
+				if err := receiptsBucket.Delete(k); err != nil {
+					return err
+				}
+			}
+			dedupBucket := txn.Bucket(s.dedupBucket)
+			for _, k := range dedupKeys {
+				if err := dedupBucket.Delete(k); err != nil {
+					return err
+				}
+			}
+			return txn.Bucket(auxiliaryBucketName("sqs-queues", s.region)).Delete([]byte(queueURL))
+		})
+	}()
+	if txErr != nil {
+		return "", txErr
 	}
 
-	if err := s.TagStore.Delete(queueURL); err != nil {
-		return fmt.Errorf("failed to delete tags for queue %s: %w", queueURL, err)
-	}
-
+	// The in-memory mirrors of the deleted state are reclaimed after the
+	// commit: sequence counters (otherwise only ever written), the
+	// receive-attempt cache entries (otherwise bounded only by size and age)
+	// and any lingering purge timestamp.
 	s.deduplicationMu.Lock()
 	s.cleanupDeduplicationCacheForQueue(queueURL)
 	s.deduplicationMu.Unlock()
 
-	msgPrefix := messagePrefix(queueURL)
-	prefixBytes := []byte(msgPrefix)
+	s.sequenceMu.Lock()
+	delete(s.sequenceCounters, queueURL)
+	s.sequenceMu.Unlock()
 
-	receiptsBucket := s.storage.Bucket("sqs-receipts-" + s.region)
-	var receiptKeys [][]byte
-	_ = receiptsBucket.ForEach(func(k, v []byte) error {
-		if bytes.HasPrefix(v, prefixBytes) {
-			keyCopy := make([]byte, len(k))
-			copy(keyCopy, k)
-			receiptKeys = append(receiptKeys, keyCopy)
+	s.receiveAttemptMu.Lock()
+	attemptPrefix := queueURL + "#"
+	for k := range s.receiveAttemptCache {
+		if strings.HasPrefix(k, attemptPrefix) {
+			delete(s.receiveAttemptCache, k)
 		}
-		return nil
-	})
-	for _, k := range receiptKeys {
-		_ = receiptsBucket.Delete(k)
 	}
+	s.receiveAttemptMu.Unlock()
 
-	dedupBucket := s.storage.Bucket("sqs-dedup-" + s.region)
-	dedupPrefix := queueURL + "#"
-	var dedupKeys [][]byte
-	_ = dedupBucket.ForEach(func(k, v []byte) error {
-		if bytes.HasPrefix(k, []byte(dedupPrefix)) {
-			keyCopy := make([]byte, len(k))
-			copy(keyCopy, k)
-			dedupKeys = append(dedupKeys, keyCopy)
-		}
-		return nil
-	})
-	for _, k := range dedupKeys {
-		_ = dedupBucket.Delete(k)
-	}
+	s.purgeMutex.Lock()
+	delete(s.purgeInProgress, queueURL)
+	s.purgeMutex.Unlock()
 
-	if err := s.BaseStore.Delete(queueURL); err != nil {
-		return err
+	// The tag record lives behind the tag framework's own API (a separate
+	// bucket the store cannot address through its transaction), so it is
+	// removed after the committed deletion. A failure here cannot fail the
+	// delete — the queue is already gone — and leaves inert tag residue for
+	// a URL no store-level tag operation serves, so it is logged loudly
+	// instead of surfacing a "deletion failed" for a deletion that happened.
+	if err := s.TagStore.Delete(queueURL); err != nil {
+		logs.Error("SQS: queue deleted but its tag record survived (inert residue; no tag operation serves a nonexistent queue)",
+			logs.String("queueUrl", queueURL), logs.Err(err))
 	}
 	s.recordQueueDeletion(queueURL)
-	return nil
+
+	return queueARN, nil
+}
+
+// deleteMoveTasksReferencingQueue removes every move-task record whose source
+// or destination ARN is the deleted queue's, so the tasks bucket holds no
+// records for queues that no longer exist.
+func (s *SQSStore) deleteMoveTasksReferencingQueue(queueARN string) {
+	if queueARN == "" {
+		return
+	}
+	s.taskMu.Lock()
+	defer s.taskMu.Unlock()
+	items, err := common.ListMatchingProto[*pb.MessageMoveTask](s.tasksStore, "",
+		func() *pb.MessageMoveTask { return &pb.MessageMoveTask{} },
+		func(t *pb.MessageMoveTask) bool {
+			return t.SourceQueueArn == queueARN || t.DestinationQueueArn == queueARN
+		})
+	if err != nil {
+		// Fail-open by design, never silently: the miss leaves task records
+		// naming a queue that no longer exists (unobservable — listing is
+		// by source ARN — but stored).
+		logs.Warn("SQS: move-task residue listing failed; records for the deleted queue stay", logs.String("queueArn", queueARN), logs.Err(err))
+		return
+	}
+	for _, t := range items {
+		if err := s.tasksStore.Delete(t.TaskId); err != nil {
+			// Fail-open by design, never silently: the surviving record names
+			// a queue that no longer exists (unobservable — listing is by
+			// source ARN) and stays stored.
+			logs.Warn("SQS: move-task residue delete failed; the record stays stored", logs.String("taskId", t.TaskId), logs.Err(err))
+		}
+	}
 }
 
 // ListQueues lists queues with the specified pagination options. When
@@ -227,127 +389,49 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 		return nil
 	}
 
+	// Names and value formats are validated through the single shared path
+	// (the service-layer Core validates the same way before calling).
+	if err := ValidateQueueAttributes(attributes); err != nil {
+		return err
+	}
+
 	if queue.Attributes == nil {
 		queue.Attributes = make(map[string]string)
 	}
 
+	// Coercion of the validated values onto the typed fields; every value
+	// is kept in the raw attribute map.
 	for k, v := range attributes {
 		switch k {
 		case "VisibilityTimeout":
-			val, err := strconv.ParseInt(v, 10, 32)
-			if err != nil {
-				return fmt.Errorf("invalid VisibilityTimeout: %w", ErrInvalidParameterValue)
-			}
-			if err := validateVisibilityTimeout(int32(val)); err != nil {
-				return fmt.Errorf("validating visibility timeout: %w", err)
-			}
-			queue.VisibilityTimeout = int32(val)
-
+			queue.VisibilityTimeout = ParseInt32Attr(v)
 		case "MaximumMessageSize":
-			val, err := strconv.ParseInt(v, 10, 32)
-			if err != nil {
-				return fmt.Errorf("invalid MaximumMessageSize: %w", ErrInvalidParameterValue)
-			}
-			if err := validateMaximumMessageSize(int32(val)); err != nil {
-				return fmt.Errorf("validating maximum message size: %w", err)
-			}
-			queue.MaximumMessageSize = int32(val)
-
+			queue.MaximumMessageSize = ParseInt32Attr(v)
 		case "MessageRetentionPeriod":
-			val, err := strconv.ParseInt(v, 10, 32)
-			if err != nil {
-				return fmt.Errorf("invalid MessageRetentionPeriod: %w", ErrInvalidParameterValue)
-			}
-			if err := validateMessageRetentionPeriod(int32(val)); err != nil {
-				return fmt.Errorf("validating message retention period: %w", err)
-			}
-			queue.MessageRetentionPeriod = int32(val)
-
+			queue.MessageRetentionPeriod = ParseInt32Attr(v)
 		case "DelaySeconds":
-			val, err := strconv.ParseInt(v, 10, 32)
-			if err != nil {
-				return fmt.Errorf("invalid DelaySeconds: %w", ErrInvalidParameterValue)
-			}
-			if err := validateDelaySeconds(int32(val)); err != nil {
-				return fmt.Errorf("validating delay seconds: %w", err)
-			}
-			queue.DelaySeconds = int32(val)
-
+			queue.DelaySeconds = ParseInt32Attr(v)
 		case "ReceiveMessageWaitTimeSeconds":
-			val, err := strconv.ParseInt(v, 10, 32)
-			if err != nil {
-				return fmt.Errorf("invalid ReceiveMessageWaitTimeSeconds: %w", ErrInvalidParameterValue)
-			}
-			if err := validateReceiveMessageWaitTimeSeconds(int32(val)); err != nil {
-				return fmt.Errorf("validating receive message wait time: %w", err)
-			}
-			queue.ReceiveMessageWaitTimeSeconds = int32(val)
-
+			queue.ReceiveMessageWaitTimeSeconds = ParseInt32Attr(v)
 		case "Policy":
-			if err := validatePolicyJSON(v); err != nil {
-				return err
-			}
 			queue.Policy = v
-
 		case "RedrivePolicy":
-			rdp, err := ParseRedrivePolicy(v)
-			if err != nil {
-				return fmt.Errorf("invalid RedrivePolicy: %w", ErrInvalidParameterValue)
-			}
+			rdp, _ := ParseRedrivePolicy(v)
 			queue.RedrivePolicy = rdp
-
-		case "FifoQueue":
-			val, err := strconv.ParseBool(v)
-			if err != nil {
-				return fmt.Errorf("invalid FifoQueue: %w", ErrInvalidParameterValue)
+			if rdp == nil {
+				// The empty value clears the association: the raw attribute
+				// is removed so the queue reports RedrivePolicy as unset.
+				delete(queue.Attributes, k)
+				continue
 			}
-			if val != queue.FifoQueue {
+		case "FifoQueue":
+			// Queue type is immutable after creation ("You can't change the
+			// queue type after you create it").
+			if ParseBoolAttr(v) != queue.FifoQueue {
 				return ErrInvalidAttributeValue
 			}
-
 		case "ContentBasedDeduplication":
-			val, err := strconv.ParseBool(v)
-			if err != nil {
-				return fmt.Errorf("invalid ContentBasedDeduplication: %w", ErrInvalidParameterValue)
-			}
-			queue.ContentBasedDeduplication = val
-
-		case "KmsMasterKeyId":
-			if err := validateKmsMasterKeyId(v); err != nil {
-				return err
-			}
-		case "KmsDataKeyReusePeriodSeconds":
-			val, err := strconv.ParseInt(v, 10, 32)
-			if err != nil {
-				return ErrInvalidParameterValue
-			}
-			if err := validateKmsDataKeyReusePeriod(int32(val)); err != nil {
-				return err
-			}
-
-		case "DeduplicationScope":
-			if err := validateDeduplicationScope(v); err != nil {
-				return err
-			}
-
-		case "FifoThroughputLimit":
-			if err := validateFifoThroughputLimit(v); err != nil {
-				return err
-			}
-
-		case "RedriveAllowPolicy":
-			if v != "" {
-				if err := validateRedriveAllowPolicyJSON(v); err != nil {
-					return err
-				}
-			}
-
-		case "SqsManagedSseEnabled":
-			if err := validateSqsManagedSseEnabled(v); err != nil {
-				return err
-			}
-
-		default:
+			queue.ContentBasedDeduplication = ParseBoolAttr(v)
 		}
 		queue.Attributes[k] = v
 	}
@@ -361,8 +445,15 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 	if err := validateHighThroughputFifo(queue.Attributes); err != nil {
 		return err
 	}
-	if err := s.validateRedrivePolicyTarget(queue, queue.RedrivePolicy); err != nil {
-		return err
+	// The redrive target is validated only when the request names a
+	// RedrivePolicy: an update to unrelated attributes must succeed even
+	// while the configured target is missing or misbehaving — revalidating
+	// the stored policy here would brick every attribute write on the queue
+	// once its dead-letter target is deleted.
+	if _, touchesRedrive := attributes["RedrivePolicy"]; touchesRedrive {
+		if err := s.validateRedrivePolicyTarget(queue, queue.RedrivePolicy); err != nil {
+			return err
+		}
 	}
 
 	return s.UpdateQueue(queue)
@@ -425,19 +516,121 @@ func (s *SQSStore) RemovePermission(queueURL, label string) error {
 }
 
 // ListQueueTags lists all tags for a queue.
+// ListQueueTags lists the tags attached to a queue. The queue must exist:
+// tag records for nonexistent or deleted queue URLs are not a writable
+// surface at the store level.
 func (s *SQSStore) ListQueueTags(queueURL string) (map[string]string, error) {
+	if !s.Exists(queueURL) {
+		return nil, ErrQueueNotFound
+	}
 	return s.TagStore.List(queueURL)
 }
 
-// TagQueue adds tags to a queue.
+// TagQueue adds tags to a queue, rejecting unknown queue URLs.
 func (s *SQSStore) TagQueue(queueURL string, tags map[string]string) error {
+	if !s.Exists(queueURL) {
+		return ErrQueueNotFound
+	}
 	if err := validateTags(tags); err != nil {
 		return fmt.Errorf("validating tags: %w", err)
 	}
 	return s.TagStore.Tag(queueURL, tags)
 }
 
-// UntagQueue removes tags from a queue.
+// UntagQueue removes tags from a queue, rejecting unknown queue URLs.
 func (s *SQSStore) UntagQueue(queueURL string, tagKeys []string) error {
+	if !s.Exists(queueURL) {
+		return ErrQueueNotFound
+	}
 	return s.TagStore.Untag(queueURL, tagKeys)
+}
+
+// validateRedrivePolicyTarget enforces the documented dead-letter-queue
+// constraints on a queue's RedrivePolicy: the target ARN must be well formed
+// and in the same account and Region, must resolve to an existing queue that
+// is a distinct queue from the source, and "The dead-letter queue of a FIFO
+// queue must also be a FIFO queue. Similarly, the dead-letter queue of a
+// standard queue must also be a standard queue." (AWS SQS API Reference.)
+// The target's own RedriveAllowPolicy governs whether the source may name it.
+func (s *SQSStore) validateRedrivePolicyTarget(source *Queue, rdp *RedrivePolicy) error {
+	if rdp == nil {
+		return nil
+	}
+	if rdp.DeadLetterTargetARN == "" {
+		return ErrInvalidAttributeValue
+	}
+	_, _, region, accountID, resource := svcarn.SplitARN(rdp.DeadLetterTargetARN)
+	if region != s.region || accountID != s.accountID || resource == "" {
+		return ErrInvalidAttributeValue
+	}
+	dlqURL := s.arnToQueueURL(rdp.DeadLetterTargetARN)
+	// A redrive moves a message between two distinct queues. A self-targeted
+	// policy would put and delete the same message key in one transaction,
+	// destroying the message on every over-count receive.
+	if dlqURL == source.URL {
+		return ErrInvalidAttributeValue
+	}
+	dlq, err := s.GetQueue(dlqURL)
+	if err != nil {
+		return ErrInvalidAttributeValue
+	}
+	if dlq.FifoQueue != source.FifoQueue {
+		return ErrInvalidAttributeValue
+	}
+	if !redriveAllowedByTarget(source, dlq) {
+		return ErrInvalidAttributeValue
+	}
+	return nil
+}
+
+// redriveAllowedByTarget applies the destination queue's RedriveAllowPolicy
+// to a source queue naming it as its dead-letter target: "allowAll –
+// (Default) Any source queues in this AWS account in the same Region can
+// specify this queue as the dead-letter queue. / denyAll – No source queues
+// can specify this queue as the dead-letter queue. / byQueue – Only queues
+// specified by the sourceQueueArns parameter can specify this queue as the
+// dead-letter queue." (AWS SQS API Reference.) An unset policy behaves as the
+// documented allowAll default.
+func redriveAllowedByTarget(source, dlq *Queue) bool {
+	policy := dlq.Attributes["RedriveAllowPolicy"]
+	if policy == "" {
+		return true
+	}
+	permission, sourceARNs := parseRedriveAllowPolicy(policy)
+	switch permission {
+	case "denyAll":
+		return false
+	case "byQueue":
+		for _, arn := range sourceARNs {
+			if arn == source.ARN {
+				return true
+			}
+		}
+		return false
+	default:
+		return true
+	}
+}
+
+// ListDeadLetterSourceQueues returns the queues that have the specified dead
+// letter queue as their target, honouring the pagination options carried by
+// the ListDeadLetterSourceQueues API (MaxResults 1-1000, NextToken).
+func (s *SQSStore) ListDeadLetterSourceQueues(dlqARN string, opts common.ListOptions) (*common.ListResult[Queue], error) {
+	result, err := common.ListProto[*pb.Queue](s.BaseStore, opts, func() *pb.Queue { return &pb.Queue{} }, func(q *pb.Queue) bool {
+		return q.GetRedrivePolicy() != nil && q.GetRedrivePolicy().GetDeadLetterTargetArn() == dlqARN
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	queues := make([]*Queue, 0, len(result.Items))
+	for _, pbQueue := range result.Items {
+		queues = append(queues, ProtoToQueue(pbQueue))
+	}
+
+	return &common.ListResult[Queue]{
+		Items:       queues,
+		NextMarker:  result.NextMarker,
+		IsTruncated: result.IsTruncated,
+	}, nil
 }

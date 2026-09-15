@@ -39,8 +39,12 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 
 	result, err := h.service.listQueuesCore(store, ListQueuesInput{
 		QueueNamePrefix: req.Msg.GetQueuenameprefix(),
-		MaxResults:      int(req.Msg.GetMaxresults()),
-		NextToken:       req.Msg.GetNexttoken(),
+		// Maxresults is optional in the proto: an explicitly provided 0 is
+		// a set value the Core rejects (< 1) exactly like the HTTP plane;
+		// only a nil field means "omitted, default page".
+		MaxResults:    int(req.Msg.GetMaxresults()),
+		MaxResultsSet: req.Msg.Maxresults != nil,
+		NextToken:     req.Msg.GetNexttoken(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -57,7 +61,8 @@ func (h *AdminHandler) GetQueueUrl(ctx context.Context, req *connect.Request[pb.
 	}
 
 	result, err := h.service.getQueueUrlCore(store, GetQueueUrlInput{
-		QueueName: req.Msg.Queuename,
+		QueueName:              req.Msg.Queuename,
+		QueueOwnerAWSAccountID: req.Msg.GetQueueownerawsaccountid(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

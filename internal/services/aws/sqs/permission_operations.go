@@ -28,12 +28,6 @@ func (s *SQSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 		for i := 1; ; i++ {
 			accountID := request.GetParamCaseInsensitive(req.Parameters, "AWSAccountId."+strconv.Itoa(i))
 			if accountID == "" {
-				aidKey := "AWSAccountId." + strconv.Itoa(i)
-				if val, ok := req.Parameters[aidKey].(string); ok {
-					accountID = val
-				}
-			}
-			if accountID == "" {
 				break
 			}
 			awsAccountIDs = append(awsAccountIDs, accountID)
@@ -50,12 +44,6 @@ func (s *SQSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 	} else {
 		for i := 1; ; i++ {
 			action := request.GetParamCaseInsensitive(req.Parameters, "ActionName."+strconv.Itoa(i))
-			if action == "" {
-				actKey := "ActionName." + strconv.Itoa(i)
-				if val, ok := req.Parameters[actKey].(string); ok {
-					action = val
-				}
-			}
 			if action == "" {
 				action = request.GetParamCaseInsensitive(req.Parameters, "Action."+strconv.Itoa(i))
 			}

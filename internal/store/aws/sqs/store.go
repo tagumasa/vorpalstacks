@@ -1,22 +1,12 @@
 package sqs
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"sort"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
-	"google.golang.org/protobuf/proto"
-
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	pb "vorpalstacks/internal/pb/storage/storage_sqs"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -85,9 +75,39 @@ const (
 	// ListQueues and ListDeadLetterSourceQueues (AWS SQS API Reference:
 	// "Value range is 1 to 1000").
 	MaxListResults = 1000
+	// MaxListMessageMoveTasksResults is the ListMessageMoveTasks MaxResults
+	// upper bound (AWS SQS API Reference: "The maximum number of results to
+	// include in the response. ... a maximum of 10 results").
+	MaxListMessageMoveTasksResults = 10
+	// DefaultListMessageMoveTasksResults is the ListMessageMoveTasks
+	// MaxResults default (AWS SQS API Reference: "The default value is 1.").
+	DefaultListMessageMoveTasksResults = 1
+	// MaxRedriveAllowPolicySourceQueues is the byQueue sourceQueueArns cap
+	// (AWS SQS Developer Guide, dead-letter queues: "you can specify up to
+	// 10 source queues using the sourceQueueArn").
+	MaxRedriveAllowPolicySourceQueues = 10
+	// MaxMessageMoveRate is the StartMessageMoveTask
+	// MaxNumberOfMessagesPerSecond ceiling (AWS SQS API Reference: "The
+	// maximum task rate is 500 messages per second."). Exported as the
+	// single owning definition; the services-layer validation references it.
+	MaxMessageMoveRate = 500
 	// DefaultMaxReceiveCount is the maxReceiveCount a RedrivePolicy uses when
 	// the field is absent (AWS SQS API Reference: "Default: 10.").
 	DefaultMaxReceiveCount = 10
+	// DefaultVisibilityTimeout is the VisibilityTimeout a new queue starts
+	// with (30 seconds per the AWS SQS specification).
+	DefaultVisibilityTimeout = 30
+	// DefaultMessageRetentionPeriod is the MessageRetentionPeriod a new
+	// queue starts with (4 days per the AWS SQS specification).
+	DefaultMessageRetentionPeriod = 345600
+	// MinMaxReceiveCount is the RedrivePolicy maxReceiveCount lower bound
+	// (AWS SQS Developer Guide, configuring a dead-letter queue: "Set the
+	// Maximum receives value ... (valid range: 1 to 1,000)").
+	MinMaxReceiveCount = 1
+	// MaxMaxReceiveCount is the RedrivePolicy maxReceiveCount upper bound
+	// (same page; AWS Knowledge Center: "You can increase the Maximum
+	// receives value for the DLQ redrive policy up to 1,000").
+	MaxMaxReceiveCount = 1000
 	// MaxFifoIdLength is the maximum length in characters of MessageGroupId
 	// and MessageDeduplicationId (AWS SQS API Reference: "The maximum length
 	// of MessageDeduplicationId is 128 characters." / "The length of
@@ -115,18 +135,22 @@ type SQSStore struct {
 	messagesStore *common.BaseStore
 	tasksStore    *common.BaseStore
 	*common.TagStore
-	arnBuilder          *svcarn.ARNBuilder
-	accountID           string
-	region              string
-	baseURL             string
-	msgMutex            sync.RWMutex
-	purgeMutex          sync.Mutex
-	queueMutex          sync.RWMutex
-	taskMu              sync.Mutex
-	purgeInProgress     map[string]time.Time
-	storage             storage.TransactionalStorage
-	deduplicationCache  map[string]*deduplicationEntry
-	deduplicationMu     sync.RWMutex
+	arnBuilder         *svcarn.ARNBuilder
+	accountID          string
+	region             string
+	baseURL            string
+	msgMutex           sync.RWMutex
+	purgeMutex         sync.Mutex
+	queueMutex         sync.RWMutex
+	taskMu             sync.Mutex
+	purgeInProgress    map[string]time.Time
+	storage            storage.TransactionalStorage
+	deduplicationCache map[string]*deduplicationEntry
+	deduplicationMu    sync.RWMutex
+	// dedupKeyLocker serialises the FIFO send's dedup check → message
+	// persist → entry registration sequence per dedup key, so two concurrent
+	// same-key sends cannot both miss and both persist.
+	dedupKeyLocker      common.KeyLocker
 	sequenceCounters    map[string]int64
 	sequenceMu          sync.Mutex
 	receiveAttemptCache map[string]*receiveAttemptEntry
@@ -134,11 +158,25 @@ type SQSStore struct {
 	ctx                 context.Context
 	cancel              context.CancelFunc
 	wg                  sync.WaitGroup
+	// closing refuses new move-task workers during shutdown; guarded by
+	// taskMu (see Close).
+	closing bool
+	// Auxiliary bucket names, derived once in the constructor through
+	// auxiliaryBucketName: every access to these buckets goes through these
+	// fields so the write paths and the background sweeps can never diverge
+	// to differently spelled buckets.
+	receiptsBucket     string
+	dedupBucket        string
+	deletionsBucket    string
+	messagesBucketName string
 }
 
-type deduplicationEntry struct {
-	messageID string
-	expiresAt time.Time
+// auxiliaryBucketName builds the name of a region-suffixed SQS bucket. Every
+// auxiliary bucket name in the package — the constructor's BaseStore wraps
+// and the ad-hoc bucket handles alike — is derived through this helper, so a
+// misspelling cannot address a different bucket than the sweeps read.
+func auxiliaryBucketName(base, region string) string {
+	return base + "-" + region
 }
 
 type receiveAttemptEntry struct {
@@ -149,12 +187,11 @@ type receiveAttemptEntry struct {
 // NewSQSStore creates a new SQS store with the specified storage, account ID, region, and base URL.
 func NewSQSStore(store storage.BasicStorage, accountID, region, baseURL string) *SQSStore {
 	ts, _ := store.(storage.TransactionalStorage)
-	regionSuffix := "-" + region
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &SQSStore{
-		BaseStore:           common.NewBaseStore(store.Bucket("sqs-queues"+regionSuffix), "sqs-queues"),
-		messagesStore:       common.NewBaseStore(store.Bucket("sqs-messages"+regionSuffix), "sqs-messages"),
-		tasksStore:          common.NewBaseStore(store.Bucket("sqs-move-tasks"+regionSuffix), "sqs-move-tasks"),
+		BaseStore:           common.NewBaseStore(store.Bucket(auxiliaryBucketName("sqs-queues", region)), "sqs-queues"),
+		messagesStore:       common.NewBaseStore(store.Bucket(auxiliaryBucketName("sqs-messages", region)), "sqs-messages"),
+		tasksStore:          common.NewBaseStore(store.Bucket(auxiliaryBucketName("sqs-move-tasks", region)), "sqs-move-tasks"),
 		TagStore:            common.NewTagStoreWithRegion(store, "sqs", region),
 		arnBuilder:          svcarn.NewARNBuilder(accountID, region),
 		accountID:           accountID,
@@ -167,141 +204,33 @@ func NewSQSStore(store storage.BasicStorage, accountID, region, baseURL string) 
 		receiveAttemptCache: make(map[string]*receiveAttemptEntry),
 		ctx:                 ctx,
 		cancel:              cancel,
+		receiptsBucket:      auxiliaryBucketName("sqs-receipts", region),
+		dedupBucket:         auxiliaryBucketName("sqs-dedup", region),
+		deletionsBucket:     auxiliaryBucketName("sqs-queue-deletions", region),
+		messagesBucketName:  auxiliaryBucketName("sqs-messages", region),
 	}
+	// An unclean shutdown leaves persisted move tasks in RUNNING/CANCELLING
+	// with no worker alive to finish them; recovery finalises them before
+	// any API call can observe the stale states.
+	s.recoverInterruptedMoveTasks()
 	s.wg.Add(1)
 	go s.cleanupExpiredMessages()
 	return s
 }
 
-// cleanupExpiredMessages periodically scans all queues and deletes messages
-// that have exceeded their MessageRetentionPeriod. Expired messages are never
-// delivered by ReceiveMessage (filtered by isMessageExpired), so this cleanup
-// can run without holding msgMutex.
-func (s *SQSStore) cleanupExpiredMessages() {
-	defer s.wg.Done()
-	defer func() {
-		if r := recover(); r != nil {
-			logs.Error("SQS: panic in cleanupExpiredMessages goroutine", logs.Any("panic", r))
-		}
-	}()
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-ticker.C:
-			s.doMessageRetentionCleanup()
-			s.doReceiptHandleCleanup()
-		}
-	}
-}
-
-// doMessageRetentionCleanup scans ALL queues (with pagination) and deletes
-// expired messages from each. Expired messages are never delivered by
-// ReceiveMessage (filtered by isMessageExpired), so this cleanup can run
-// without holding msgMutex. Errors are logged but do not stop the cleanup.
-func (s *SQSStore) doMessageRetentionCleanup() {
-	now := time.Now().UTC()
-	const pageSize = 100
-	var marker string
-
-	for {
-		if s.ctx.Err() != nil {
-			return
-		}
-
-		opts := common.ListOptions{MaxItems: pageSize}
-		if marker != "" {
-			opts.Marker = marker
-		}
-
-		result, err := s.ListQueues(opts, "")
-		if err != nil {
-			logs.Warn("SQS retention cleanup: ListQueues failed", logs.Err(err))
-			return
-		}
-
-		for _, queue := range result.Items {
-			if s.ctx.Err() != nil {
-				return
-			}
-			retentionCutoff := now.Add(-time.Duration(queue.MessageRetentionPeriod) * time.Second)
-			prefix := messagePrefix(queue.URL)
-
-			var expiredKeys []string
-			if err := common.ForEachAllProto[*pb.Message](s.messagesStore, prefix, func() *pb.Message { return &pb.Message{} }, nil, func(msgPb *pb.Message) error {
-				if s.isMessageExpired(msgPb, retentionCutoff) {
-					expiredKeys = append(expiredKeys, messageKey(queue.URL, msgPb.Id))
-				}
-				return nil
-			}); err != nil {
-				logs.Warn("SQS retention cleanup: message scan failed", logs.String("queue", queue.URL), logs.Err(err))
-				continue
-			}
-
-			for _, key := range expiredKeys {
-				if err := s.messagesStore.Delete(key); err != nil {
-					logs.Warn("SQS retention cleanup: delete failed", logs.String("key", key), logs.Err(err))
-				}
-			}
-		}
-
-		if !result.IsTruncated || result.NextMarker == "" {
-			break
-		}
-		marker = result.NextMarker
-	}
-}
-
-// Close stops the background cleanup goroutine.
-// doReceiptHandleCleanup deletes receipt-handle entries older than
-// receiptHandleRetention. Receipt handles embed their issue instant
-// ("<uuid>#<unix-nano>", see generateReceiptHandle), so the age is read from
-// the key alone; entries with an unparseable key are left untouched. Every
-// receive adds an entry, and old handles that are never reused have no other
-// reclamation path on queues that are neither purged nor deleted, so this
-// sweep is what bounds the receipts bucket.
-func (s *SQSStore) doReceiptHandleCleanup() {
-	if s.ctx.Err() != nil {
-		return
-	}
-	cutoff := time.Now().UTC().Add(-receiptHandleRetention)
-	receiptsBucket := s.storage.Bucket("sqs-receipts-" + s.region)
-	var stale [][]byte
-	_ = receiptsBucket.ForEach(func(k, _ []byte) error {
-		sep := strings.LastIndexByte(string(k), '#')
-		if sep < 0 || sep == len(k)-1 {
-			return nil
-		}
-		issuedNano, err := strconv.ParseInt(string(k[sep+1:]), 10, 64)
-		if err != nil {
-			return nil
-		}
-		if time.Unix(0, issuedNano).Before(cutoff) {
-			keyCopy := make([]byte, len(k))
-			copy(keyCopy, k)
-			stale = append(stale, keyCopy)
-		}
-		return nil
-	})
-	for _, k := range stale {
-		if err := receiptsBucket.Delete(k); err != nil {
-			logs.Warn("SQS receipt cleanup: delete failed", logs.String("handle", string(k)), logs.Err(err))
-		}
-	}
-}
-
+// Close stops the background cleanup goroutine. The closing flag is set
+// under taskMu so a StartMessageMoveTask racing the shutdown either
+// completes its wg.Add before this critical section (Wait counts the
+// worker) or is refused — never a positive-delta Add against a Wait that
+// already observes zero.
 func (s *SQSStore) Close() {
 	if s.cancel != nil {
+		s.taskMu.Lock()
+		s.closing = true
+		s.taskMu.Unlock()
 		s.cancel()
 		s.wg.Wait()
 	}
-}
-
-// Storage returns the underlying storage for the SQS store.
-func (s *SQSStore) Storage() storage.BasicStorage {
-	return s.storage
 }
 
 // GetAccountID returns the AWS account ID associated with this SQS store.
@@ -328,335 +257,4 @@ func (s *SQSStore) arnToQueueURL(arn string) string {
 		return ""
 	}
 	return s.buildQueueURL(queueName)
-}
-
-// validateRedrivePolicyTarget enforces the documented dead-letter-queue
-// constraints on a queue's RedrivePolicy: the target ARN must be well formed
-// and in the same account and Region, must resolve to an existing queue, and
-// "The dead-letter queue of a FIFO queue must also be a FIFO queue.
-// Similarly, the dead-letter queue of a standard queue must also be a
-// standard queue." (AWS SQS API Reference.)
-func (s *SQSStore) validateRedrivePolicyTarget(source *Queue, rdp *RedrivePolicy) error {
-	if rdp == nil {
-		return nil
-	}
-	if rdp.DeadLetterTargetARN == "" {
-		return ErrInvalidAttributeValue
-	}
-	_, _, region, accountID, resource := svcarn.SplitARN(rdp.DeadLetterTargetARN)
-	if region != s.region || accountID != s.accountID || resource == "" {
-		return ErrInvalidAttributeValue
-	}
-	dlq, err := s.GetQueue(s.arnToQueueURL(rdp.DeadLetterTargetARN))
-	if err != nil {
-		return ErrInvalidAttributeValue
-	}
-	if dlq.FifoQueue != source.FifoQueue {
-		return ErrInvalidAttributeValue
-	}
-	return nil
-}
-
-// deletedRecently reports whether a queue with the given URL was deleted
-// within the recreate-prohibition window. Stale markers are dropped
-// opportunistically so the ledger does not grow without bound.
-func (s *SQSStore) deletedRecently(queueURL string) bool {
-	bucket := s.storage.Bucket("sqs-queue-deletions-" + s.region)
-	raw, err := bucket.Get([]byte(queueURL))
-	if err != nil || len(raw) == 0 {
-		return false
-	}
-	deletedAt, err := strconv.ParseInt(string(raw), 10, 64)
-	if err != nil {
-		return false
-	}
-	if time.Since(time.Unix(deletedAt, 0)) < queueDeletionWindow {
-		return true
-	}
-	_ = bucket.Delete([]byte(queueURL))
-	return false
-}
-
-// recordQueueDeletion persists the deletion timestamp of a queue so that
-// same-name recreation inside the prohibition window can be rejected across
-// restarts.
-func (s *SQSStore) recordQueueDeletion(queueURL string) {
-	bucket := s.storage.Bucket("sqs-queue-deletions-" + s.region)
-	_ = bucket.Put([]byte(queueURL), []byte(strconv.FormatInt(time.Now().Unix(), 10)))
-}
-
-func (s *SQSStore) buildDeduplicationKey(queueURL string, message *Message) string {
-	if message.MessageDeduplicationID != "" {
-		return queueURL + "#" + message.MessageDeduplicationID
-	}
-	return queueURL + "#" + calculateMD5(message.Body)
-}
-
-func (s *SQSStore) getDeduplicationMessageID(dedupKey string) (string, bool) {
-	s.deduplicationMu.RLock()
-	entry, exists := s.deduplicationCache[dedupKey]
-	s.deduplicationMu.RUnlock()
-
-	if exists && time.Now().Before(entry.expiresAt) {
-		return entry.messageID, true
-	}
-
-	data, err := s.storage.Bucket("sqs-dedup-" + s.region).Get([]byte(dedupKey))
-	if err == nil && data != nil {
-		idx := bytes.IndexByte(data, '\x01')
-		if idx > 0 {
-			msgKey := string(data[:idx])
-			expiryStr := string(data[idx+1:])
-			if expiryMs, err := strconv.ParseInt(expiryStr, 10, 64); err == nil {
-				if time.Now().UnixMilli() >= expiryMs {
-					_ = s.storage.Bucket("sqs-dedup-" + s.region).Delete([]byte(dedupKey))
-					s.deduplicationMu.Lock()
-					delete(s.deduplicationCache, dedupKey)
-					s.deduplicationMu.Unlock()
-					return "", false
-				}
-			}
-			s.deduplicationMu.Lock()
-			s.deduplicationCache[dedupKey] = &deduplicationEntry{
-				messageID: msgKey,
-				expiresAt: time.Now().Add(deduplicationWindow),
-			}
-			s.deduplicationMu.Unlock()
-			return msgKey, true
-		}
-	}
-
-	return "", false
-}
-
-func (s *SQSStore) putDeduplicationEntry(dedupKey, messageID string) {
-	s.deduplicationMu.Lock()
-	s.deduplicationCache[dedupKey] = &deduplicationEntry{
-		messageID: messageID,
-		expiresAt: time.Now().Add(deduplicationWindow),
-	}
-	if len(s.deduplicationCache) > deduplicationCacheMaxSize {
-		s.cleanupDeduplicationCache()
-	}
-	s.deduplicationMu.Unlock()
-
-	expiry := time.Now().Add(deduplicationWindow).UnixMilli()
-	val := append([]byte(messageID), '\x01')
-	val = append(val, []byte(strconv.FormatInt(expiry, 10))...)
-	_ = s.storage.Bucket("sqs-dedup-"+s.region).Put([]byte(dedupKey), val)
-}
-
-func (s *SQSStore) cleanupDeduplicationCache() {
-	now := time.Now()
-	deleted := 0
-	const maxDeletesPerCleanup = 100
-	for key, entry := range s.deduplicationCache {
-		if now.After(entry.expiresAt) {
-			delete(s.deduplicationCache, key)
-			deleted++
-			if deleted >= maxDeletesPerCleanup {
-				break
-			}
-		}
-	}
-}
-
-func (s *SQSStore) cleanupDeduplicationCacheForQueue(queueURL string) {
-	prefix := queueURL + "#"
-	for key := range s.deduplicationCache {
-		if strings.HasPrefix(key, prefix) {
-			delete(s.deduplicationCache, key)
-		}
-	}
-}
-
-func generateReceiptHandle() string {
-	return uuid.New().String() + "#" + fmt.Sprintf("%d", time.Now().UnixNano())
-}
-
-func (s *SQSStore) moveToDLQ(msg *Message, dlqARN string) error {
-	dlqURL := s.arnToQueueURL(dlqARN)
-	if dlqURL == "" {
-		return fmt.Errorf("invalid DLQ ARN: %s", dlqARN)
-	}
-
-	// Preserve original SentTimestamp for standard queues. FIFO messages
-	// always have a MessageGroupID; only reset SentTimestamp for those.
-	sentTimestamp := msg.SentTimestamp
-	if msg.MessageGroupID != "" {
-		sentTimestamp = time.Now().UTC()
-	}
-
-	newMsg := &Message{
-		ID:                               msg.ID,
-		Body:                             msg.Body,
-		MD5OfBody:                        msg.MD5OfBody,
-		MD5OfMessageAttributes:           msg.MD5OfMessageAttributes,
-		MessageAttributes:                msg.MessageAttributes,
-		QueueURL:                         dlqURL,
-		QueueARN:                         dlqARN,
-		SentTimestamp:                    sentTimestamp,
-		ApproximateReceiveCount:          0,
-		ApproximateFirstReceiveTimestamp: time.Time{},
-		Attributes:                       make(map[string]string),
-		MessageDeduplicationID:           msg.MessageDeduplicationID,
-		MessageGroupID:                   msg.MessageGroupID,
-	}
-	newMsg.Attributes["SenderId"] = s.accountID
-	newMsg.Attributes["SentTimestamp"] = fmt.Sprintf("%d", newMsg.SentTimestamp.UnixMilli())
-	// DeadLetterQueueSourceArn identifies the source queue on messages
-	// delivered through a redrive policy; it is a documented receive system
-	// attribute.
-	newMsg.Attributes["DeadLetterQueueSourceArn"] = msg.QueueARN
-
-	dlqKey := messageKey(dlqURL, newMsg.ID)
-	srcKey := messageKey(msg.QueueURL, msg.ID)
-	dlqData, marshalErr := proto.Marshal(MessageToProto(newMsg))
-	if marshalErr != nil {
-		return fmt.Errorf("failed to marshal DLQ message: %w", marshalErr)
-	}
-	messagesBucket := "sqs-messages-" + s.region
-	receiptsBucket := "sqs-receipts-" + s.region
-	return s.storage.Update(context.Background(), func(txn storage.Transaction) error {
-		if err := txn.Bucket(messagesBucket).Put([]byte(dlqKey), dlqData); err != nil {
-			return err
-		}
-		if err := txn.Bucket(messagesBucket).Delete([]byte(srcKey)); err != nil {
-			return err
-		}
-		if msg.ReceiptHandle != "" {
-			_ = txn.Bucket(receiptsBucket).Delete([]byte(msg.ReceiptHandle))
-		}
-		return nil
-	})
-}
-
-func calculateMessageAttributesMD5(attrs map[string]*MessageAttributeValue) string {
-	return CalculateMessageAttributesMD5(attrs)
-}
-
-// CalculateMessageAttributesMD5 computes the MD5 digest of message attributes
-// per the AWS SQS specification. Exported for cross-package use.
-func CalculateMessageAttributesMD5(attrs map[string]*MessageAttributeValue) string {
-	if len(attrs) == 0 {
-		return calculateMD5("")
-	}
-
-	keys := make([]string, 0, len(attrs))
-	for k := range attrs {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	var buf bytes.Buffer
-	for _, k := range keys {
-		v := attrs[k]
-		if v == nil {
-			continue
-		}
-
-		buf.Write(uint32ToBytes(uint32(len(k))))
-		buf.WriteString(k)
-
-		buf.Write(uint32ToBytes(uint32(len(v.DataType))))
-		buf.WriteString(v.DataType)
-
-		if v.StringValue != nil {
-			buf.WriteByte(1)
-			buf.Write(uint32ToBytes(uint32(len(*v.StringValue))))
-			buf.WriteString(*v.StringValue)
-		} else if v.BinaryValue != nil {
-			buf.WriteByte(2)
-			buf.Write(uint32ToBytes(uint32(len(v.BinaryValue))))
-			buf.Write(v.BinaryValue)
-		} else if len(v.StringListValues) > 0 {
-			buf.WriteByte(3)
-			buf.Write(uint32ToBytes(uint32(len(v.StringListValues))))
-			for _, sv := range v.StringListValues {
-				buf.Write(uint32ToBytes(uint32(len(sv))))
-				buf.WriteString(sv)
-			}
-		} else if len(v.BinaryListValues) > 0 {
-			buf.WriteByte(4)
-			buf.Write(uint32ToBytes(uint32(len(v.BinaryListValues))))
-			for _, bv := range v.BinaryListValues {
-				buf.Write(uint32ToBytes(uint32(len(bv))))
-				buf.Write(bv)
-			}
-		} else {
-			buf.WriteByte(1)
-			buf.Write(uint32ToBytes(0))
-		}
-	}
-
-	return calculateMD5(buf.String())
-}
-
-func uint32ToBytes(n uint32) []byte {
-	return []byte{
-		byte(n >> 24),
-		byte(n >> 16),
-		byte(n >> 8),
-		byte(n),
-	}
-}
-
-// DecodeBinaryValue decodes a base64-encoded string into a byte slice.
-func DecodeBinaryValue(encoded string) ([]byte, error) {
-	return base64.StdEncoding.DecodeString(encoded)
-}
-
-// EncodeBinaryValue encodes a byte slice into a base64-encoded string.
-func EncodeBinaryValue(data []byte) string {
-	return base64.StdEncoding.EncodeToString(data)
-}
-
-// ListDeadLetterSourceQueues returns the queues that have the specified dead
-// letter queue as their target, honouring the pagination options carried by
-// the ListDeadLetterSourceQueues API (MaxResults 1-1000, NextToken).
-func (s *SQSStore) ListDeadLetterSourceQueues(dlqARN string, opts common.ListOptions) (*common.ListResult[Queue], error) {
-	result, err := common.ListProto[*pb.Queue](s.BaseStore, opts, func() *pb.Queue { return &pb.Queue{} }, func(q *pb.Queue) bool {
-		return q.GetRedrivePolicy() != nil && q.GetRedrivePolicy().GetDeadLetterTargetArn() == dlqARN
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	queues := make([]*Queue, 0, len(result.Items))
-	for _, pbQueue := range result.Items {
-		queues = append(queues, ProtoToQueue(pbQueue))
-	}
-
-	return &common.ListResult[Queue]{
-		Items:       queues,
-		NextMarker:  result.NextMarker,
-		IsTruncated: result.IsTruncated,
-	}, nil
-}
-
-// GetMessageCounts returns the count of visible, not visible, and delayed messages for a queue.
-func (s *SQSStore) GetMessageCounts(queueURL string) (visible, notVisible, delayed int32) {
-	s.msgMutex.RLock()
-	defer s.msgMutex.RUnlock()
-
-	now := time.Now().UTC()
-	prefix := messagePrefix(queueURL)
-
-	err := common.ForEachAllProto[*pb.Message](s.messagesStore, prefix, func() *pb.Message { return &pb.Message{} }, nil, func(msgPb *pb.Message) error {
-		visibleAfter := protoToTime(msgPb.VisibleAfter)
-		receivedAt := protoToTime(msgPb.ReceivedAt)
-		if !visibleAfter.IsZero() && now.Before(visibleAfter) {
-			delayed++
-		} else if msgPb.ReceiptHandle != "" && !receivedAt.IsZero() && now.Before(receivedAt.Add(time.Duration(msgPb.VisibilityTimeout)*time.Second)) {
-			notVisible++
-		} else {
-			visible++
-		}
-		return nil
-	})
-	if err != nil {
-		logs.Error("SQS: failed to count messages", logs.String("queueUrl", queueURL), logs.Err(err))
-		return 0, 0, 0
-	}
-	return visible, notVisible, delayed
 }

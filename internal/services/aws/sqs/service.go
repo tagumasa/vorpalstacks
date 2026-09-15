@@ -24,13 +24,6 @@ type SQSService struct {
 	kmsChecker     kmsutil.Checker
 }
 
-// NewSQSService creates a new SQS service instance.
-func NewSQSService(accountID string) *SQSService {
-	return &SQSService{
-		accountID: accountID,
-	}
-}
-
 // SetStorageManager injects the region storage manager for admin console access.
 func (s *SQSService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm

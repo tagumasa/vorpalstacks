@@ -34,6 +34,16 @@ func (s *SQSService) addPermissionCore(store sqsstore.SQSStoreInterface, in AddP
 	if in.Label == "" {
 		return ErrMissingParameter
 	}
+	// AWSAccountIds and Actions are @required on AddPermissionRequest: an
+	// absent member rejects with the same MissingParameter family as the
+	// shape's other required members, not the store's empty-list
+	// InvalidParameterValue.
+	if len(in.AWSAccountIDs) == 0 {
+		return ErrMissingParameter
+	}
+	if len(in.Actions) == 0 {
+		return ErrMissingParameter
+	}
 
 	if err := validatePermissionLabelFormat(in.Label); err != nil {
 		return err

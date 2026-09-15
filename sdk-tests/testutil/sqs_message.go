@@ -1,15 +1,21 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/aws/smithy-go"
 )
 
 func (r *TestRunner) runSQSMessageTests(ctx context.Context, client *sqs.Client, queueName string) []TestResult {
@@ -240,6 +246,103 @@ func (r *TestRunner) runSQSMessageTests(ctx context.Context, client *sqs.Client,
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sqs", "ReceiveMessage_DefaultOmitsAttributes", func() error {
+		// The attribute name lists are opt-in: a receive that names none
+		// returns the bare message even though it carries attributes and
+		// system attributes.
+		optQueueURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("OptQueue-%d", time.Now().UnixNano()), nil)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		if _, err := client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:    optQueueURL,
+			MessageBody: aws.String("attribute-carrying message"),
+			MessageAttributes: map[string]types.MessageAttributeValue{
+				"Attr1": {DataType: aws.String("String"), StringValue: aws.String("value1")},
+			},
+		}); err != nil {
+			return err
+		}
+
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl: optQueueURL,
+		})
+		if err != nil {
+			return err
+		}
+		if len(recvResp.Messages) != 1 {
+			return fmt.Errorf("expected 1 received message, got %d", len(recvResp.Messages))
+		}
+		msg := recvResp.Messages[0]
+		if len(msg.MessageAttributes) != 0 {
+			return fmt.Errorf("default receive returned %d message attributes, want 0 (the lists are opt-in)", len(msg.MessageAttributes))
+		}
+		if len(msg.Attributes) != 0 {
+			return fmt.Errorf("default receive returned %d system attributes, want 0 (the lists are opt-in)", len(msg.Attributes))
+		}
+		if msg.MD5OfMessageAttributes != nil {
+			return fmt.Errorf("default receive returned MD5OfMessageAttributes %q, want it omitted", *msg.MD5OfMessageAttributes)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ReceiveMessage_FilteredAttributesMD5Parity", func() error {
+		// MD5OfMessageAttributes is the digest of the attributes actually
+		// returned: a filtered receive must carry the subset digest, not the
+		// send-time full-set digest.
+		filterQueueURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("FilterQueue-%d", time.Now().UnixNano()), nil)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		sentAttrs := map[string]types.MessageAttributeValue{
+			"Attr1": {DataType: aws.String("String"), StringValue: aws.String("value1")},
+			"Attr2": {DataType: aws.String("String"), StringValue: aws.String("value2")},
+		}
+		sendResp, err := client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:          filterQueueURL,
+			MessageBody:       aws.String("filtered receive message"),
+			MessageAttributes: sentAttrs,
+		})
+		if err != nil {
+			return err
+		}
+		if sendResp.MD5OfMessageAttributes == nil {
+			return fmt.Errorf("send response omitted MD5OfMessageAttributes for an attribute-carrying message")
+		}
+
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:              filterQueueURL,
+			MessageAttributeNames: []string{"Attr1"},
+		})
+		if err != nil {
+			return err
+		}
+		if len(recvResp.Messages) != 1 {
+			return fmt.Errorf("expected 1 received message, got %d", len(recvResp.Messages))
+		}
+		msg := recvResp.Messages[0]
+		if len(msg.MessageAttributes) != 1 || msg.MessageAttributes["Attr1"].StringValue == nil {
+			return fmt.Errorf("filtered receive returned %v, want exactly Attr1", msg.MessageAttributes)
+		}
+		if msg.MD5OfMessageAttributes == nil {
+			return fmt.Errorf("filtered receive omitted MD5OfMessageAttributes")
+		}
+		want := sqsMessageAttributesMD5(map[string]types.MessageAttributeValue{
+			"Attr1": sentAttrs["Attr1"],
+		})
+		if *msg.MD5OfMessageAttributes != want {
+			return fmt.Errorf("filtered MD5OfMessageAttributes = %q, want subset digest %q", *msg.MD5OfMessageAttributes, want)
+		}
+		if *msg.MD5OfMessageAttributes == *sendResp.MD5OfMessageAttributes {
+			return fmt.Errorf("filtered MD5OfMessageAttributes equals the full-set digest; the basis must be the returned subset")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "ReceiveMessage_FifoSequenceNumber", func() error {
 		// FIFO messages expose SequenceNumber as a system attribute on
 		// receive when all system attributes are requested.
@@ -334,6 +437,126 @@ func (r *TestRunner) runSQSMessageTests(ctx context.Context, client *sqs.Client,
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sqs", "SendMessage_DedupIdOnStandardQueue_Rejected", func() error {
+		// "This parameter applies only to FIFO (first-in-first-out)
+		// queues" — a deduplication id on a standard queue is a parameter
+		// not valid for the queue type and is rejected, never silently
+		// ignored.
+		stdURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("StdQueueType-%d", time.Now().UnixNano()), nil)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		_, err = client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:               stdURL,
+			MessageBody:            aws.String("dedup id on a standard queue"),
+			MessageDeduplicationId: aws.String("dedup-std-1"),
+		})
+		if err == nil {
+			return fmt.Errorf("MessageDeduplicationId on a standard queue must be rejected")
+		}
+		// InvalidParameterValue is a legacy query-API code the Smithy model
+		// does not type, so it surfaces as a generic APIError.
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "InvalidParameterValue" {
+			return fmt.Errorf("expected InvalidParameterValue, got %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "SendMessage_GroupIdOnStandardQueue_Accepted", func() error {
+		// MessageGroupId is documented for standard queues as well (fair
+		// queues): it identifies the tenant a message belongs to and stays
+		// accepted there, unlike the FIFO-only deduplication id.
+		fairURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("FairQueue-%d", time.Now().UnixNano()), nil)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		sendResp, err := client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:       fairURL,
+			MessageBody:    aws.String("group id on a standard queue (fair queues)"),
+			MessageGroupId: aws.String("tenant-a"),
+		})
+		if err != nil {
+			return fmt.Errorf("MessageGroupId on a standard queue is valid (fair queues), got %v", err)
+		}
+		if sendResp.MessageId == nil || *sendResp.MessageId == "" {
+			return fmt.Errorf("SendMessage with MessageGroupId returned empty MessageId")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ReceiveMessage_ReceiveRequestAttemptIdOnStandardQueue_Rejected", func() error {
+		// "This parameter applies only to FIFO (first-in-first-out)
+		// queues" — a receive-request attempt id on a standard queue is a
+		// parameter not valid for the queue type and is rejected, never
+		// silently ignored (the same queue-type contract as the
+		// deduplication id).
+		stdURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("StdAttemptId-%d", time.Now().UnixNano()), nil)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		if _, err := client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:    stdURL,
+			MessageBody: aws.String("seed for the attempt-id rejection"),
+		}); err != nil {
+			return err
+		}
+
+		_, err = client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:                stdURL,
+			ReceiveRequestAttemptId: aws.String("attempt-std-1"),
+		})
+		if err == nil {
+			return fmt.Errorf("ReceiveRequestAttemptId on a standard queue must be rejected")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "InvalidParameterValue" {
+			return fmt.Errorf("expected InvalidParameterValue, got %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ReceiveMessage_SqsManagedSseEnabled_ReturnedWhenRequested", func() error {
+		// SqsManagedSseEnabled is a documented receivable value of the
+		// AttributeNames channel: its per-message value is the queue's own
+		// encryption setting, surfaced only when requested.
+		sseURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("SseProbe-%d", time.Now().UnixNano()), map[string]string{
+			"SqsManagedSseEnabled": "true",
+		})
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		if _, err := client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:    sseURL,
+			MessageBody: aws.String("sse emission probe"),
+		}); err != nil {
+			return err
+		}
+
+		recvResp, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:       sseURL,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameSqsManagedSseEnabled},
+		})
+		if err != nil {
+			return err
+		}
+		if len(recvResp.Messages) != 1 {
+			return fmt.Errorf("expected 1 message, got %d", len(recvResp.Messages))
+		}
+		if recvResp.Messages[0].Attributes["SqsManagedSseEnabled"] != "true" {
+			return fmt.Errorf("expected Attributes[SqsManagedSseEnabled]=true, got %v", recvResp.Messages[0].Attributes)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "ReceiveMessage_LongPoll_EmptyQueue_Waits", func() error {
 		lpQueueURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("LongPoll-%d", time.Now().UnixNano()), nil)
 		if err != nil {
@@ -392,8 +615,24 @@ func (r *TestRunner) runSQSMessageTests(ctx context.Context, client *sqs.Client,
 		}
 		defer cleanup()
 
+		// The purge's substance first: seeded messages must be gone.
+		for i := 0; i < 2; i++ {
+			if _, err = client.SendMessage(ctx, &sqs.SendMessageInput{
+				QueueUrl:    purgeQURL,
+				MessageBody: aws.String(fmt.Sprintf("purge me %d", i)),
+			}); err != nil {
+				return fmt.Errorf("seed %d: %v", i, err)
+			}
+		}
 		if _, err = client.PurgeQueue(ctx, &sqs.PurgeQueueInput{QueueUrl: purgeQURL}); err != nil {
 			return fmt.Errorf("first purge: %v", err)
+		}
+		after, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: purgeQURL})
+		if err != nil {
+			return fmt.Errorf("receive after purge: %v", err)
+		}
+		if len(after.Messages) != 0 {
+			return fmt.Errorf("expected 0 messages after the purge, got %d", len(after.Messages))
 		}
 		_, err = client.PurgeQueue(ctx, &sqs.PurgeQueueInput{QueueUrl: purgeQURL})
 		if err == nil {
@@ -903,6 +1142,32 @@ func (r *TestRunner) runSQSMessageTests(ctx context.Context, client *sqs.Client,
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sqs", "SendMessageBatch_EmptyEntries_Rejected", func() error {
+		// An empty (but present) Entries list is the documented
+		// EmptyBatchRequest rejection: "The batch request doesn't contain
+		// any entries." The SDK's client-side validation requires the
+		// member itself but admits an empty slice, so the wire carries an
+		// empty list and the server must reject it.
+		batchURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("EmptyBatch-%d", time.Now().UnixNano()), nil)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		_, err = client.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
+			QueueUrl: batchURL,
+			Entries:  []types.SendMessageBatchRequestEntry{},
+		})
+		if err == nil {
+			return fmt.Errorf("empty Entries list must be rejected")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "EmptyBatchRequest" {
+			return fmt.Errorf("expected EmptyBatchRequest, got %v", err)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "SendMessage_ReceiveRoundtrip", func() error {
 		rtQueueURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("RTQueue-%d", time.Now().UnixNano()), nil)
 		if err != nil {
@@ -1011,4 +1276,50 @@ func (r *TestRunner) runSQSMessageTests(ctx context.Context, client *sqs.Client,
 	}))
 
 	return results
+}
+
+// sqsMessageAttributesMD5 computes the SQS message-attribute digest per the
+// documented algorithm (Amazon SQS Developer Guide, "Calculating the MD5
+// message digest for message attributes"): attributes sorted by name; each
+// contributes its length-prefixed name, length-prefixed data type, a
+// one-byte transport marker (1 for String/Number, 2 for Binary) and its
+// length-prefixed value.
+func sqsMessageAttributesMD5(attrs map[string]types.MessageAttributeValue) string {
+	names := make([]string, 0, len(attrs))
+	for name := range attrs {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	var buf bytes.Buffer
+	for _, name := range names {
+		attr := attrs[name]
+		sqsWriteMD5Piece(&buf, []byte(name))
+		dataType := ""
+		if attr.DataType != nil {
+			dataType = *attr.DataType
+		}
+		sqsWriteMD5Piece(&buf, []byte(dataType))
+		if attr.BinaryValue != nil {
+			buf.WriteByte(2)
+			sqsWriteMD5Piece(&buf, attr.BinaryValue)
+		} else {
+			buf.WriteByte(1)
+			value := ""
+			if attr.StringValue != nil {
+				value = *attr.StringValue
+			}
+			sqsWriteMD5Piece(&buf, []byte(value))
+		}
+	}
+	sum := md5.Sum(buf.Bytes())
+	return hex.EncodeToString(sum[:])
+}
+
+// sqsWriteMD5Piece appends one 4-byte big-endian length-prefixed piece.
+func sqsWriteMD5Piece(buf *bytes.Buffer, piece []byte) {
+	var lenBytes [4]byte
+	binary.BigEndian.PutUint32(lenBytes[:], uint32(len(piece)))
+	buf.Write(lenBytes[:])
+	buf.Write(piece)
 }

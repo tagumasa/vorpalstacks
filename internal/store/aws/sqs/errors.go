@@ -20,24 +20,9 @@ var (
 	// SQS naming requirements.
 	ErrInvalidQueueName = errors.New("invalid queue name")
 
-	// ErrMessageNotFound is returned when the specified message cannot be
-	// found in the queue.
-	ErrMessageNotFound = errors.New("message not found")
-
 	// ErrInvalidReceiptHandle is returned when the receipt handle provided
 	// is not valid or has expired.
 	ErrInvalidReceiptHandle = errors.New("invalid receipt handle")
-
-	// ErrBatchEntryIdsNotDistinct is returned when two or more batch entries
-	// share the same entry ID.
-	ErrBatchEntryIdsNotDistinct = errors.New("batch entry ids not distinct")
-
-	// ErrTooManyEntriesInBatch is returned when a batch request contains
-	// more than the maximum allowed entries (10).
-	ErrTooManyEntriesInBatch = errors.New("too many entries in batch")
-
-	// ErrEmptyBatchRequest is returned when a batch request contains no entries.
-	ErrEmptyBatchRequest = errors.New("empty batch request")
 
 	// ErrInvalidAttributeName is returned when the specified attribute name
 	// is not valid for the queue.
@@ -85,10 +70,6 @@ var (
 	// is required for a FIFO queue but was not provided.
 	ErrMissingDeduplicationId = errors.New("missing deduplication id for fifo queue")
 
-	// ErrQueueNameExistsWithDiffConfig is returned when a queue with the same
-	// name already exists but with different attributes.
-	ErrQueueNameExistsWithDiffConfig = errors.New("queue name exists with different configuration")
-
 	// ErrOverLimit is returned when a resource limit is exceeded.
 	ErrOverLimit = errors.New("over limit")
 
@@ -100,10 +81,6 @@ var (
 	// message whose visibility timeout has expired.
 	ErrMessageNotInflight = errors.New("message not in flight")
 
-	// ErrBatchRequestTooLong is returned when a batch request payload exceeds
-	// the maximum allowed total payload size (MaxMaximumMessageSize).
-	ErrBatchRequestTooLong = errors.New("batch request too long")
-
 	// ErrInvalidDataType is returned when a message attribute DataType is invalid.
 	ErrInvalidDataType = errors.New("invalid message attribute data type")
 
@@ -111,4 +88,16 @@ var (
 	// move task that has already reached a terminal state (COMPLETED, FAILED,
 	// or CANCELLED).
 	ErrTaskAlreadyTerminal = errors.New("task already in terminal state")
+
+	// ErrInvalidAddress is returned when a message-move ARN argument does not
+	// parse as a queue ARN at all, as opposed to naming a queue that does not
+	// exist. The distinction matters for the wire: the operation's documented
+	// error for a malformed identifier is InvalidAddress, not a not-found.
+	ErrInvalidAddress = errors.New("invalid address")
+
+	// errStoreClosing is returned when a message move task is started while
+	// the store is shutting down: the worker must not outlive Close's
+	// worker-drain. Internal — the shutdown window is not an AWS-contract
+	// state.
+	errStoreClosing = errors.New("sqs store is closing")
 )

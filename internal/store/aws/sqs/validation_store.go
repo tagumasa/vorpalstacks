@@ -10,36 +10,70 @@ import (
 )
 
 var (
-	queueNameRegex      = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
-	fifoQueueNameRegex  = regexp.MustCompile(`^[a-zA-Z0-9_-]+\.fifo$`)
-	batchEntryIdRegex   = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
-	validAttributeNames = map[string]bool{
-		"All":                                   true,
-		"QueueArn":                              true,
-		"ApproximateNumberOfMessages":           true,
-		"ApproximateNumberOfMessagesDelayed":    true,
-		"ApproximateNumberOfMessagesNotVisible": true,
-		"CreatedTimestamp":                      true,
-		"LastModifiedTimestamp":                 true,
-		"VisibilityTimeout":                     true,
-		"MaximumMessageSize":                    true,
-		"MessageRetentionPeriod":                true,
-		"DelaySeconds":                          true,
-		"ReceiveMessageWaitTimeSeconds":         true,
-		"Policy":                                true,
-		"RedrivePolicy":                         true,
-		"FifoQueue":                             true,
-		"ContentBasedDeduplication":             true,
-		"KmsMasterKeyId":                        true,
-		"KmsDataKeyReusePeriodSeconds":          true,
-		"DeduplicationScope":                    true,
-		"FifoThroughputLimit":                   true,
-		"RedriveAllowPolicy":                    true,
-		"SqsManagedSseEnabled":                  true,
-	}
+	queueNameRegex     = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+	fifoQueueNameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+\.fifo$`)
+	batchEntryIdRegex  = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 )
 
-func validateQueueName(name string) error {
+// validAttributeNames is the READ-side vocabulary: every name the model's
+// QueueAttributeName enum carries (plus the "All" wildcard), consulted by
+// IsValidAttributeName for GetQueueAttributes requests.
+var validAttributeNames = map[string]bool{
+	"All":                                   true,
+	"QueueArn":                              true,
+	"ApproximateNumberOfMessages":           true,
+	"ApproximateNumberOfMessagesDelayed":    true,
+	"ApproximateNumberOfMessagesNotVisible": true,
+	"CreatedTimestamp":                      true,
+	"LastModifiedTimestamp":                 true,
+	"VisibilityTimeout":                     true,
+	"MaximumMessageSize":                    true,
+	"MessageRetentionPeriod":                true,
+	"DelaySeconds":                          true,
+	"ReceiveMessageWaitTimeSeconds":         true,
+	"Policy":                                true,
+	"RedrivePolicy":                         true,
+	"FifoQueue":                             true,
+	"ContentBasedDeduplication":             true,
+	"KmsMasterKeyId":                        true,
+	"KmsDataKeyReusePeriodSeconds":          true,
+	"DeduplicationScope":                    true,
+	"FifoThroughputLimit":                   true,
+	"RedriveAllowPolicy":                    true,
+	"SqsManagedSseEnabled":                  true,
+}
+
+// settableQueueAttributeNames is the WRITE-side vocabulary: the subset the
+// write paths (CreateQueue, SetQueueAttributes) accept. The read-only
+// names — "All" and the computed/report-only attributes (QueueArn, the
+// Approximate counts, Created/LastModifiedTimestamp) — are rejected on
+// writes with InvalidAttributeName (the error SetQueueAttributes documents
+// for unknown attribute names): AWS never stores or echoes a set "All", and
+// a persisted read-only name would surface verbatim in GetQueueAttributes
+// responses through the raw-attribute echo.
+var settableQueueAttributeNames = map[string]bool{
+	"VisibilityTimeout":             true,
+	"MaximumMessageSize":            true,
+	"MessageRetentionPeriod":        true,
+	"DelaySeconds":                  true,
+	"ReceiveMessageWaitTimeSeconds": true,
+	"Policy":                        true,
+	"RedrivePolicy":                 true,
+	"FifoQueue":                     true,
+	"ContentBasedDeduplication":     true,
+	"KmsMasterKeyId":                true,
+	"KmsDataKeyReusePeriodSeconds":  true,
+	"DeduplicationScope":            true,
+	"FifoThroughputLimit":           true,
+	"RedriveAllowPolicy":            true,
+	"SqsManagedSseEnabled":          true,
+}
+
+// ValidateQueueName validates a queue name against the SQS naming rules:
+// 1-80 characters of [a-zA-Z0-9_-], with a ".fifo" suffix for FIFO queues
+// (the suffix form may not contain further dots). Exported so the
+// service-layer Core shares the single rule definition.
+func ValidateQueueName(name string) error {
 	if len(name) == 0 {
 		return ErrInvalidQueueName
 	}
@@ -58,6 +92,17 @@ func validateQueueName(name string) error {
 	return nil
 }
 
+// ValidateFifoQueueName enforces the bidirectional queue-type naming rule:
+// FifoQueue=true requires the ".fifo" suffix and a ".fifo" suffix requires
+// FifoQueue=true. Shared by both layers so the cross-check exists at store
+// level as well.
+func ValidateFifoQueueName(name string, isFifo bool) error {
+	if isFifo != strings.HasSuffix(name, ".fifo") {
+		return ErrInvalidParameterValue
+	}
+	return nil
+}
+
 // ValidateBatchEntryId validates a batch entry ID.
 func ValidateBatchEntryId(id string) error {
 	if len(id) == 0 || len(id) > maxBatchEntryIdLength {
@@ -72,6 +117,31 @@ func ValidateBatchEntryId(id string) error {
 // IsValidAttributeName checks if an attribute name is valid for SQS queues.
 func IsValidAttributeName(name string) bool {
 	return validAttributeNames[name]
+}
+
+// validMessageSystemAttributeNames is the receive-side
+// MessageSystemAttributeName vocabulary of the sqs-2012-11-05 model — the
+// enum the MessageSystemAttributeNames filter member targets. The send side
+// admits AWSTraceHeader only (MessageSystemAttributeNameForSends).
+var validMessageSystemAttributeNames = map[string]bool{
+	"All":                              true,
+	"SenderId":                         true,
+	"SentTimestamp":                    true,
+	"ApproximateReceiveCount":          true,
+	"ApproximateFirstReceiveTimestamp": true,
+	"SequenceNumber":                   true,
+	"MessageDeduplicationId":           true,
+	"MessageGroupId":                   true,
+	"AWSTraceHeader":                   true,
+	"DeadLetterQueueSourceArn":         true,
+}
+
+// IsValidMessageSystemAttributeName reports whether name is in the
+// MessageSystemAttributeNames filter vocabulary. Exported so the
+// service-layer Core validates the receive filter against the same enum the
+// model defines.
+func IsValidMessageSystemAttributeName(name string) bool {
+	return validMessageSystemAttributeNames[name]
 }
 
 func validateVisibilityTimeout(value int32) error {
@@ -109,6 +179,105 @@ func validateReceiveMessageWaitTimeSeconds(value int32) error {
 	return nil
 }
 
+// ValidateQueueAttributes validates attribute names and value formats for
+// the queue write paths (CreateQueue, SetQueueAttributes). It is the single
+// validation definition shared by the service-layer Core (both the HTTP and
+// admin planes) and the store's defence-in-depth re-check: an unknown or
+// read-only name (the write vocabulary is settableQueueAttributeNames) is
+// ErrInvalidAttributeName; a known name with a malformed or out-of-range
+// value returns the attribute's own validation error.
+func ValidateQueueAttributes(attrs map[string]string) error {
+	for name, value := range attrs {
+		if !settableQueueAttributeNames[name] {
+			return ErrInvalidAttributeName
+		}
+		if err := validateQueueAttributeValue(name, value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// validateQueueAttributeValue holds every per-attribute value rule (parse +
+// range/format) in one place; the typed-field coercion of validated values
+// stays with the write paths themselves.
+func validateQueueAttributeValue(name, value string) error {
+	switch name {
+	case "VisibilityTimeout":
+		val, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return ErrInvalidParameterValue
+		}
+		return validateVisibilityTimeout(int32(val))
+	case "MaximumMessageSize":
+		val, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return ErrInvalidParameterValue
+		}
+		return validateMaximumMessageSize(int32(val))
+	case "MessageRetentionPeriod":
+		val, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return ErrInvalidParameterValue
+		}
+		return validateMessageRetentionPeriod(int32(val))
+	case "DelaySeconds":
+		val, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return ErrInvalidParameterValue
+		}
+		return validateDelaySeconds(int32(val))
+	case "ReceiveMessageWaitTimeSeconds":
+		val, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return ErrInvalidParameterValue
+		}
+		return validateReceiveMessageWaitTimeSeconds(int32(val))
+	case "FifoQueue", "ContentBasedDeduplication", "SqsManagedSseEnabled":
+		if _, err := strconv.ParseBool(value); err != nil {
+			return ErrInvalidParameterValue
+		}
+	case "Policy":
+		return validatePolicyJSON(value)
+	case "RedrivePolicy":
+		if _, err := ParseRedrivePolicy(value); err != nil {
+			return ErrInvalidParameterValue
+		}
+	case "KmsMasterKeyId":
+		return validateKmsMasterKeyId(value)
+	case "KmsDataKeyReusePeriodSeconds":
+		val, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return ErrInvalidParameterValue
+		}
+		return validateKmsDataKeyReusePeriod(int32(val))
+	case "DeduplicationScope":
+		return validateDeduplicationScope(value)
+	case "FifoThroughputLimit":
+		return validateFifoThroughputLimit(value)
+	case "RedriveAllowPolicy":
+		if value != "" {
+			return validateRedriveAllowPolicyJSON(value)
+		}
+	}
+	return nil
+}
+
+// ParseInt32Attr coerces an already-validated integer attribute value onto
+// the typed queue field; the zero result on parse failure is unreachable
+// through the validated write paths and only guards direct construction.
+func ParseInt32Attr(value string) int32 {
+	val, _ := strconv.ParseInt(value, 10, 32)
+	return int32(val)
+}
+
+// ParseBoolAttr coerces an already-validated boolean attribute value the
+// same way.
+func ParseBoolAttr(value string) bool {
+	val, _ := strconv.ParseBool(value)
+	return val
+}
+
 // validateTags validates queue tags against the SQS tag limits: at most 50
 // tags per queue, keys of 1-128 characters, values of at most 256 characters
 // and the aws: key prefix reserved for AWS use.
@@ -133,6 +302,7 @@ func validateTags(tags map[string]string) error {
 var (
 	awsAccountRegex = regexp.MustCompile(`^[0-9]{12}$`)
 	dataTypeRegex   = regexp.MustCompile(`^(String|Number|Binary)(\..+)?$`)
+	kmsKeyIdRegex   = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 )
 
 const (
@@ -233,20 +403,6 @@ func validateFifoThroughputLimit(value string) error {
 	return nil
 }
 
-// ValidateDeduplicationScope applies the store deduplication-scope rule
-// (valid values "messageGroup" and "queue") for callers outside the store
-// package.
-func ValidateDeduplicationScope(value string) error {
-	return validateDeduplicationScope(value)
-}
-
-// ValidateFifoThroughputLimit applies the store FIFO throughput-limit rule
-// (valid values "perQueue" and "perMessageGroupId") for callers outside the
-// store package.
-func ValidateFifoThroughputLimit(value string) error {
-	return validateFifoThroughputLimit(value)
-}
-
 // validateHighThroughputFifo enforces the documented cross-rule on the merged
 // attribute view of a queue: "The perMessageGroupId value is allowed only
 // when the value for DeduplicationScope is messageGroup." An absent
@@ -269,18 +425,6 @@ func validateSSEExclusion(attrs map[string]string) error {
 	return nil
 }
 
-func validateSqsManagedSseEnabled(value string) error {
-	if _, err := strconv.ParseBool(value); err != nil {
-		return ErrInvalidParameterValue
-	}
-	return nil
-}
-
-// ValidateRedriveAllowPolicyJSON validates a RedriveAllowPolicy JSON string.
-func ValidateRedriveAllowPolicyJSON(data string) error {
-	return validateRedriveAllowPolicyJSON(data)
-}
-
 // validateRedriveAllowPolicyJSON validates the structure of a RedriveAllowPolicy
 // JSON string. Valid fields: redrivePermission (enum), sourceQueueArns (list).
 func validateRedriveAllowPolicyJSON(data string) error {
@@ -297,15 +441,31 @@ func validateRedriveAllowPolicyJSON(data string) error {
 	if raw.RedrivePermission != "" && !validRedrivePermissions[raw.RedrivePermission] {
 		return ErrInvalidParameterValue
 	}
-	if len(raw.SourceQueueArns) > 10 {
+	if len(raw.SourceQueueArns) > MaxRedriveAllowPolicySourceQueues {
+		return ErrInvalidParameterValue
+	}
+	// "You can specify this parameter only when the redrivePermission
+	// parameter is set to byQueue." (AWS SQS API Reference.)
+	if len(raw.SourceQueueArns) > 0 && raw.RedrivePermission != "byQueue" {
 		return ErrInvalidParameterValue
 	}
 	return nil
 }
 
-// ValidatePolicyJSON validates that a Policy string is valid JSON.
-func ValidatePolicyJSON(policy string) error {
-	return validatePolicyJSON(policy)
+// parseRedriveAllowPolicy extracts the redrivePermission and sourceQueueArns
+// of a RedriveAllowPolicy JSON string. It is used on the read side, where the
+// value has already been validated at write time; malformed JSON parses to an
+// empty permission, which the caller treats as the documented allowAll
+// default.
+func parseRedriveAllowPolicy(data string) (permission string, sourceQueueArns []string) {
+	var raw struct {
+		RedrivePermission string   `json:"redrivePermission"`
+		SourceQueueArns   []string `json:"sourceQueueArns"`
+	}
+	if err := json.Unmarshal([]byte(data), &raw); err != nil {
+		return "", nil
+	}
+	return raw.RedrivePermission, raw.SourceQueueArns
 }
 
 // validatePolicyJSON validates that a Policy string is valid JSON.
@@ -461,8 +621,7 @@ func validateKmsMasterKeyId(v string) error {
 	if len(v) > 256 {
 		return ErrInvalidParameterValue
 	}
-	uuidRe := regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
-	if uuidRe.MatchString(v) {
+	if kmsKeyIdRegex.MatchString(v) {
 		return nil
 	}
 	if strings.HasPrefix(v, "alias/") || strings.HasPrefix(v, "key/") {

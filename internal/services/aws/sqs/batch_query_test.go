@@ -13,7 +13,7 @@ func TestParseBatchEntriesQueryRejectsEleventhEntry(t *testing.T) {
 		params[fmt.Sprintf("SendMessageBatchRequestEntry.%d.Id", i)] = fmt.Sprintf("entry-%d", i)
 		params[fmt.Sprintf("SendMessageBatchRequestEntry.%d.MessageBody", i)] = fmt.Sprintf("body-%d", i)
 	}
-	_, err := parseBatchEntriesQuery(params)
+	_, err := parseBatchSendEntries(params)
 	if err == nil {
 		t.Fatalf("11 query-format entries must fail with TooManyEntriesInBatchRequest")
 	}
@@ -28,7 +28,7 @@ func TestParseBatchEntriesQueryTenEntries(t *testing.T) {
 		params[fmt.Sprintf("SendMessageBatchRequestEntry.%d.Id", i)] = fmt.Sprintf("entry-%d", i)
 		params[fmt.Sprintf("SendMessageBatchRequestEntry.%d.MessageBody", i)] = fmt.Sprintf("body-%d", i)
 	}
-	entries, err := parseBatchEntriesQuery(params)
+	entries, err := parseBatchSendEntries(params)
 	if err != nil {
 		t.Fatalf("10 query-format entries must parse: %v", err)
 	}

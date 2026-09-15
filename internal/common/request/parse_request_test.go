@@ -506,3 +506,47 @@ func TestGetIntParamStrictCaseInsensitive(t *testing.T) {
 		t.Fatalf("lower-case fallback: got (%d, %v, %v)", v, present, err)
 	}
 }
+
+// TestGetIntParamStrictRejectsFractionalAndInt32Overflow pins the strict
+// integer helper's wire-type contract for both wire forms: JSON numbers
+// (which arrive as float64) and query-wire integers (which arrive as
+// strings). A fractional value is not an integer, and a magnitude beyond
+// the int32 domain cannot be an AWS Integer member's value — both reject
+// instead of truncating or wrapping at the call sites' int32 conversions.
+func TestGetIntParamStrictRejectsFractionalAndInt32Overflow(t *testing.T) {
+	for name, value := range map[string]float64{
+		"fractional":          2.5,
+		"negative fractional": -0.5,
+		"above int32":         4294967297,
+		"below int32":         -4294967297,
+	} {
+		_, present, err := GetIntParamStrictCaseInsensitive(
+			map[string]interface{}{"MaxNumberOfMessages": value}, "MaxNumberOfMessages")
+		if !present || err == nil {
+			t.Fatalf("%s: expected present+error, got present=%v err=%v", name, present, err)
+		}
+	}
+	if n, present, err := GetIntParamStrictCaseInsensitive(
+		map[string]interface{}{"MaxNumberOfMessages": float64(5)}, "MaxNumberOfMessages"); !present || err != nil || n != 5 {
+		t.Fatalf("integral float64: got (%d, %v, %v), want (5, true, nil)", n, present, err)
+	}
+	for name, value := range map[string]string{
+		"string above int32": "8589934592",
+		"string below int32": "-8589934592",
+		"string 2^32+1":      "4294967297",
+	} {
+		_, present, err := GetIntParamStrictCaseInsensitive(
+			map[string]interface{}{"MaxNumberOfMessages": value}, "MaxNumberOfMessages")
+		if !present || err == nil {
+			t.Fatalf("%s: expected present+error, got present=%v err=%v", name, present, err)
+		}
+	}
+	if n, present, err := GetIntParamStrictCaseInsensitive(
+		map[string]interface{}{"MaxNumberOfMessages": "10"}, "MaxNumberOfMessages"); !present || err != nil || n != 10 {
+		t.Fatalf("in-domain string: got (%d, %v, %v), want (10, true, nil)", n, present, err)
+	}
+	if _, present, err := GetIntParamStrictCaseInsensitive(
+		map[string]interface{}{}, "MaxNumberOfMessages"); present || err != nil {
+		t.Fatalf("absent member: got present=%v err=%v, want absent", present, err)
+	}
+}

@@ -4,6 +4,7 @@ package request
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -84,10 +85,24 @@ var ErrNonIntegerParameter = errors.New("parameter value is not an integer")
 // (0, true, ErrNonIntegerParameter) when it is present but unparseable.
 // Typed request members must reject the last state rather than falling
 // back to a default: only an omitted member means "use the default".
+// Both wire forms carry the int32 domain: JSON numbers arrive as float64,
+// where a fractional value is not an integer, and query-wire integers
+// arrive as strings parsed here. On either form a magnitude beyond the
+// int32 domain cannot be an AWS Integer member's value (the model's
+// Integer members are all int32), so every arm rejects instead of
+// truncating or wrapping at the call sites' int32 conversions.
 func GetIntParamStrictCaseInsensitive(params map[string]interface{}, key string) (int, bool, error) {
 	for _, k := range []string{key, LowerFirst(key), strings.ToLower(key)} {
 		if v, ok := params[k]; ok {
 			if n, ok := asInt(v); ok {
+				if f, isFloat := v.(float64); isFloat {
+					if f != math.Trunc(f) || f > math.MaxInt32 || f < math.MinInt32 {
+						return 0, true, fmt.Errorf("%w: %s", ErrNonIntegerParameter, k)
+					}
+				}
+				if n > math.MaxInt32 || n < math.MinInt32 {
+					return 0, true, fmt.Errorf("%w: %s", ErrNonIntegerParameter, k)
+				}
 				return n, true, nil
 			}
 			return 0, true, fmt.Errorf("%w: %s", ErrNonIntegerParameter, k)

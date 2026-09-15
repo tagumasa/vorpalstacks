@@ -35,7 +35,10 @@ func TestSQSErrorWireContract(t *testing.T) {
 		{"InvalidAttributeName", ErrInvalidAttributeName, "InvalidAttributeName", 400, ""},
 		{"MessageNotInflight", ErrMessageNotInflight, "MessageNotInflight", 400, "AWS.SimpleQueueService.MessageNotInflight"},
 		{"PurgeQueueInProgress", ErrPurgeQueueInProgress, "PurgeQueueInProgress", 403, "AWS.SimpleQueueService.PurgeQueueInProgress"},
-		{"MessageTooLarge", ErrMessageTooLarge, "InvalidMessageContents", 400, ""},
+		// No model shape exists for oversized messages; this row is pinned to
+		// AWS-observed behaviour (InvalidParameterValue, see the ErrMessageTooLarge
+		// definition) rather than to a modelled error shape.
+		{"MessageTooLarge", ErrMessageTooLarge, "InvalidParameterValue", 400, ""},
 		{"InvalidMessageContents", ErrInvalidMessageContents, "InvalidMessageContents", 400, ""},
 		{"TooManyTags", ErrTooManyTags, "InvalidParameterValue", 400, ""},
 		{"InvalidTagKey", ErrInvalidTagKey, "InvalidParameterValue", 400, ""},
@@ -47,18 +50,11 @@ func TestSQSErrorWireContract(t *testing.T) {
 		{"OverLimit", ErrOverLimit, "OverLimit", 403, "OverLimit"},
 		{"InvalidAttributeValue", ErrInvalidAttributeValue, "InvalidAttributeValue", 400, ""},
 		{"BatchRequestTooLong", ErrBatchRequestTooLong, "BatchRequestTooLong", 400, "AWS.SimpleQueueService.BatchRequestTooLong"},
-		{"KmsAccessDenied", ErrKmsAccessDenied, "KmsAccessDenied", 400, "KMS.AccessDeniedException"},
 		{"KmsDisabled", ErrKmsDisabled, "KmsDisabled", 400, "KMS.DisabledException"},
 		{"KmsInvalidKeyUsage", ErrKmsInvalidKeyUsage, "KmsInvalidKeyUsage", 400, "KMS.InvalidKeyUsageException"},
 		{"KmsInvalidState", ErrKmsInvalidState, "KmsInvalidState", 400, "KMS.InvalidStateException"},
 		{"KmsNotFound", ErrKmsNotFound, "KmsNotFound", 400, "KMS.NotFoundException"},
-		{"KmsOptInRequired", ErrKmsOptInRequired, "KmsOptInRequired", 403, "KMS.OptInRequired"},
-		{"KmsThrottled", ErrKmsThrottled, "KmsThrottled", 400, "KMS.ThrottlingException"},
-		{"InvalidAddress", ErrInvalidAddress, "InvalidAddress", 404, "InvalidAddress"},
-		{"InvalidSecurity", ErrInvalidSecurity, "InvalidSecurity", 403, "InvalidSecurity"},
-		{"RequestThrottled", ErrRequestThrottled, "RequestThrottled", 403, "RequestThrottled"},
 		{"UnsupportedOperation", ErrUnsupportedOperation, "UnsupportedOperation", 400, "AWS.SimpleQueueService.UnsupportedOperation"},
-		{"InvalidIdFormat", ErrInvalidIdFormat, "InvalidIdFormat", 400, ""},
 	}
 	for _, tc := range cases {
 		if tc.err.GetCode() != tc.code {

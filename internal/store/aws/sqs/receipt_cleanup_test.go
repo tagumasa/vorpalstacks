@@ -2,38 +2,20 @@ package sqs
 
 import (
 	"fmt"
-	"os"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-
-	"vorpalstacks/internal/core/storage"
 )
-
-func newReceiptTestStore(t *testing.T) (*SQSStore, func()) {
-	t.Helper()
-	tmpDir := "./tmp/sqs-receipt-test-" + t.Name()
-	require.NoError(t, os.MkdirAll(tmpDir, 0o755))
-	s, err := storage.Open(tmpDir)
-	require.NoError(t, err)
-	store := NewSQSStore(s, "123456789012", "us-east-1", "http://localhost:50080")
-	cleanup := func() {
-		store.Close()
-		s.Close()
-		os.RemoveAll(tmpDir)
-	}
-	return store, cleanup
-}
 
 // The sweep must delete only entries older than the retention window;
 // fresh entries and keys without an embedded timestamp stay untouched.
 func TestReceiptHandleCleanupDeletesOnlyStaleEntries(t *testing.T) {
-	store, cleanup := newReceiptTestStore(t)
-	defer cleanup()
+	store := newSQSTestStore(t)
 
-	receipts := store.storage.Bucket("sqs-receipts-us-east-1")
+	receipts := store.storage.Bucket(store.receiptsBucket)
 	fresh := fmt.Sprintf("%s#%d", uuid.New(), time.Now().UnixNano())
 	stale := fmt.Sprintf("%s#%d", uuid.New(),
 		time.Now().Add(-receiptHandleRetention-time.Hour).UnixNano())
@@ -64,8 +46,7 @@ func TestReceiptHandleCleanupDeletesOnlyStaleEntries(t *testing.T) {
 // behaviour: "the request will succeed, but the message might not be
 // deleted."). The TTL sweep is what eventually bounds those entries.
 func TestOldReceiptHandlesAccumulateAndStayResolvable(t *testing.T) {
-	store, cleanup := newReceiptTestStore(t)
-	defer cleanup()
+	store := newSQSTestStore(t)
 
 	q, err := store.CreateQueue(&Queue{
 		Name:                   "receipts-test",
@@ -88,7 +69,7 @@ func TestOldReceiptHandlesAccumulateAndStayResolvable(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, recv2, 1)
 
-	receipts := store.storage.Bucket("sqs-receipts-us-east-1")
+	receipts := store.storage.Bucket(store.receiptsBucket)
 	for _, handle := range []string{recv1[0].ReceiptHandle, recv2[0].ReceiptHandle} {
 		if val, _ := receipts.Get([]byte(handle)); len(val) == 0 {
 			t.Fatalf("receipt entry missing after receive")
@@ -105,4 +86,56 @@ func TestOldReceiptHandlesAccumulateAndStayResolvable(t *testing.T) {
 	}
 	// Deleting the already-deleted message through the old handle succeeds.
 	require.NoError(t, store.DeleteMessage(q.URL, recv1[0].ReceiptHandle))
+}
+
+// The deletion-marker sweep must remove markers older than the
+// recreate-prohibition window and markers with unparseable timestamps (they
+// can no longer answer the window question), while fresh markers stay.
+func TestDeletionMarkerCleanupSweepsStaleMarkers(t *testing.T) {
+	store := newSQSTestStore(t)
+
+	bucket := store.storage.Bucket(store.deletionsBucket)
+	freshURL := "http://localhost:50080/123456789012/fresh-queue"
+	staleURL := "http://localhost:50080/123456789012/stale-queue"
+	corruptURL := "http://localhost:50080/123456789012/corrupt-queue"
+	require.NoError(t, bucket.Put([]byte(freshURL), []byte(strconv.FormatInt(time.Now().Unix(), 10))))
+	require.NoError(t, bucket.Put([]byte(staleURL), []byte(strconv.FormatInt(time.Now().Add(-2*queueDeletionWindow).Unix(), 10))))
+	require.NoError(t, bucket.Put([]byte(corruptURL), []byte("not-a-timestamp")))
+
+	store.doDeletionMarkerCleanup()
+
+	freshVal, err := bucket.Get([]byte(freshURL))
+	require.NoError(t, err, "fresh deletion marker must survive the sweep")
+	require.NotEmpty(t, freshVal)
+	// The storage layer reports a missing key as an empty read, matching
+	// deletedRecently's own absence convention.
+	staleVal, _ := bucket.Get([]byte(staleURL))
+	require.Empty(t, staleVal, "stale deletion marker must be swept")
+	corruptVal, _ := bucket.Get([]byte(corruptURL))
+	require.Empty(t, corruptVal, "unparseable deletion marker must be swept")
+}
+
+// TestPurgeQueueRemovesReceiptEntries pins the purge's receipts leg: every
+// receipt-handle entry resolving into the purged queue's message prefix is
+// gone after PurgeQueue — a doubled prefix at the call site would match
+// nothing and leave the entries resolvable until the age sweep.
+func TestPurgeQueueRemovesReceiptEntries(t *testing.T) {
+	store := newSQSTestStore(t)
+
+	created, err := store.CreateQueue(NewQueue("purge-receipts", "us-east-1", "123456789012"))
+	require.NoError(t, err)
+	_, err = store.SendMessage(created.URL, NewMessage("purged body"))
+	require.NoError(t, err)
+	zero := int32(0)
+	received, err := store.ReceiveMessage(created.URL, 1, &zero, 0, "")
+	require.NoError(t, err)
+	require.Len(t, received, 1)
+	handle := received[0].ReceiptHandle
+
+	require.NoError(t, store.PurgeQueue(created.URL))
+
+	receipts := store.storage.Bucket(store.receiptsBucket)
+	got, err := receipts.Get([]byte(handle))
+	require.NoError(t, err)
+	require.Empty(t, got, "receipt entry survived the purge")
 }

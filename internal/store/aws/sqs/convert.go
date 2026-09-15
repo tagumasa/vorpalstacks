@@ -67,8 +67,8 @@ func ProtoToQueue(p *pb.Queue) *Queue {
 
 // Permission conversion
 
-// PermissionToProto converts a Permission to its protobuf representation.
-func PermissionToProto(p *Permission) *pb.Permission {
+// permissionToProto converts a Permission to its protobuf representation.
+func permissionToProto(p *Permission) *pb.Permission {
 	if p == nil {
 		return nil
 	}
@@ -79,8 +79,8 @@ func PermissionToProto(p *Permission) *pb.Permission {
 	}
 }
 
-// ProtoToPermission converts a protobuf Permission to its internal representation.
-func ProtoToPermission(p *pb.Permission) *Permission {
+// protoToPermission converts a protobuf Permission to its internal representation.
+func protoToPermission(p *pb.Permission) *Permission {
 	if p == nil {
 		return nil
 	}
@@ -97,7 +97,7 @@ func permissionsToProto(m map[string]*Permission) map[string]*pb.Permission {
 	}
 	result := make(map[string]*pb.Permission, len(m))
 	for k, v := range m {
-		result[k] = PermissionToProto(v)
+		result[k] = permissionToProto(v)
 	}
 	return result
 }
@@ -108,7 +108,7 @@ func protoToPermissions(m map[string]*pb.Permission) map[string]*Permission {
 	}
 	result := make(map[string]*Permission, len(m))
 	for k, v := range m {
-		result[k] = ProtoToPermission(v)
+		result[k] = protoToPermission(v)
 	}
 	return result
 }

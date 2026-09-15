@@ -99,3 +99,57 @@ func TestValidateSQSActionListAcceptsAnyActionName(t *testing.T) {
 		t.Errorf("name with invalid characters accepted")
 	}
 }
+
+func TestValidateQueueAttributesSharedWritePath(t *testing.T) {
+	cases := []struct {
+		name  string
+		attrs map[string]string
+		want  error
+	}{
+		{"unknown name", map[string]string{"Bogus": "x"}, ErrInvalidAttributeName},
+		{"all valid", map[string]string{
+			"VisibilityTimeout":            "30",
+			"MaximumMessageSize":           "1024",
+			"KmsMasterKeyId":               "alias/key",
+			"KmsDataKeyReusePeriodSeconds": "300",
+			"DeduplicationScope":           "messageGroup",
+			"FifoThroughputLimit":          "perMessageGroupId",
+			"FifoQueue":                    "true",
+		}, nil},
+		{"VisibilityTimeout not a number", map[string]string{"VisibilityTimeout": "abc"}, ErrInvalidParameterValue},
+		{"VisibilityTimeout out of range", map[string]string{"VisibilityTimeout": "43201"}, ErrInvalidParameterValue},
+		{"MaximumMessageSize out of range", map[string]string{"MaximumMessageSize": "1023"}, ErrInvalidParameterValue},
+		{"DelaySeconds out of range", map[string]string{"DelaySeconds": "901"}, ErrInvalidParameterValue},
+		{"FifoQueue not a boolean", map[string]string{"FifoQueue": "yes"}, ErrInvalidParameterValue},
+		{"KmsMasterKeyId malformed", map[string]string{"KmsMasterKeyId": "not a valid key!"}, ErrInvalidParameterValue},
+		{"KmsDataKeyReusePeriodSeconds out of range", map[string]string{"KmsDataKeyReusePeriodSeconds": "59"}, ErrInvalidParameterValue},
+		{"DeduplicationScope invalid", map[string]string{"DeduplicationScope": "queueMessageGroup"}, ErrInvalidParameterValue},
+		{"empty map", map[string]string{}, nil},
+	}
+	for _, tc := range cases {
+		got := ValidateQueueAttributes(tc.attrs)
+		if !errors.Is(got, tc.want) {
+			t.Errorf("%s: got %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestValidateFifoQueueNameCrossRule(t *testing.T) {
+	cases := []struct {
+		caseName  string
+		queueName string
+		isFifo    bool
+		want      error
+	}{
+		{"fifo flag with fifo suffix", "queue-a.fifo", true, nil},
+		{"standard flag with standard name", "queue-a", false, nil},
+		{"fifo flag without suffix", "queue-a", true, ErrInvalidParameterValue},
+		{"standard flag with fifo suffix", "queue-a.fifo", false, ErrInvalidParameterValue},
+	}
+	for _, tc := range cases {
+		got := ValidateFifoQueueName(tc.queueName, tc.isFifo)
+		if !errors.Is(got, tc.want) {
+			t.Errorf("%s: got %v, want %v", tc.caseName, got, tc.want)
+		}
+	}
+}
