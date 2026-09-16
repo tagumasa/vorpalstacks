@@ -9,7 +9,10 @@ import (
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
-func apiDestinationToMap(d *eventsstore.ApiDestination) map[string]interface{} {
+// apiDestinationToListItem serialises an ApiDestination for the
+// ListApiDestinations item shape: the list item models no Description —
+// that member exists on the Describe response alone.
+func apiDestinationToListItem(d *eventsstore.ApiDestination) map[string]interface{} {
 	result := map[string]interface{}{
 		"ApiDestinationArn":   d.ARN,
 		"ApiDestinationState": string(d.State),
@@ -24,11 +27,19 @@ func apiDestinationToMap(d *eventsstore.ApiDestination) map[string]interface{} {
 	if d.InvocationRateLimitPerSecond > 0 {
 		result["InvocationRateLimitPerSecond"] = d.InvocationRateLimitPerSecond
 	}
-	if d.Description != "" {
-		result["Description"] = d.Description
-	}
 	if !d.LastModifiedAt.IsZero() {
 		result["LastModifiedTime"] = d.LastModifiedAt.Unix()
+	}
+	return result
+}
+
+// apiDestinationToDescribeMap serialises an ApiDestination for the
+// DescribeApiDestinationResponse shape, which adds the Description member
+// on top of the list-item members.
+func apiDestinationToDescribeMap(d *eventsstore.ApiDestination) map[string]interface{} {
+	result := apiDestinationToListItem(d)
+	if d.Description != "" {
+		result["Description"] = d.Description
 	}
 	return result
 }
@@ -46,7 +57,10 @@ func parseCreateApiDestinationInput(req *request.ParsedRequest) CreateApiDestina
 		input.DescriptionSet = true
 		input.Description = desc
 	}
-	input.InvocationRateLimit = int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond"))
+	if _, ok := req.Parameters["InvocationRateLimitPerSecond"]; ok {
+		input.InvocationRateLimitSet = true
+		input.InvocationRateLimit = int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond"))
+	}
 	return input
 }
 
@@ -72,7 +86,10 @@ func parseUpdateApiDestinationInput(req *request.ParsedRequest) UpdateApiDestina
 		input.ConnectionArnSet = true
 		input.ConnectionArn = connArn
 	}
-	input.InvocationRateLimit = int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond"))
+	if _, ok := req.Parameters["InvocationRateLimitPerSecond"]; ok {
+		input.InvocationRateLimitSet = true
+		input.InvocationRateLimit = int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond"))
+	}
 	return input
 }
 
@@ -93,6 +110,7 @@ func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *reques
 	return map[string]interface{}{
 		"ApiDestinationArn":   apiDest.ARN,
 		"CreationTime":        apiDest.CreatedAt.Unix(),
+		"LastModifiedTime":    apiDest.LastModifiedAt.Unix(),
 		"ApiDestinationState": string(apiDest.State),
 	}, nil
 }
@@ -127,7 +145,7 @@ func (s *EventsService) DescribeApiDestination(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	result := apiDestinationToMap(apiDest)
+	result := apiDestinationToDescribeMap(apiDest)
 	result["Name"] = apiDest.Name
 
 	return result, nil
@@ -176,7 +194,7 @@ func (s *EventsService) ListApiDestinations(ctx context.Context, reqCtx *request
 
 	destinations := make([]map[string]interface{}, 0, len(result.ApiDestinations))
 	for _, dest := range result.ApiDestinations {
-		destinations = append(destinations, apiDestinationToMap(dest))
+		destinations = append(destinations, apiDestinationToListItem(dest))
 	}
 
 	resp := map[string]interface{}{

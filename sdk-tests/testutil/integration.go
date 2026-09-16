@@ -463,6 +463,12 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 	results = append(results, r.runIntegWithTimeout("EventBridge_Kinesis", func() TestResult {
 		return r.runEventBridgeToKinesis(ic, ts)
 	}))
+	results = append(results, r.runIntegWithTimeout("EventBridge_BusToBus", func() TestResult {
+		return r.runEventBridgeBusToBus(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("EventBridge_AppSync", func() TestResult {
+		return r.runEventBridgeToAppSync(ic, ts)
+	}))
 
 	results = append(results, r.runIntegWithTimeout("ESM_SQS_Lambda", func() TestResult {
 		return r.runESMSQSToLambda(ic, ts)

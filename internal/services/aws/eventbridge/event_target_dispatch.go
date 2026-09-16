@@ -3,10 +3,10 @@ package eventbridge
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,26 +17,23 @@ import (
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
-func (s *EventsService) deliverToTarget(ctx context.Context, region string, event *eventsstore.Event, target eventsstore.Target) {
-	payload := s.buildTargetPayload(event, target)
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		logs.Error("failed to marshal event payload",
-			logs.String("eventId", event.ID),
-			logs.String("targetId", target.ID),
-			logs.Err(err))
-		return
-	}
-
-	s.dispatchToTarget(ctx, region, event, target, payloadBytes)
+// deliverToTarget builds the target's payload and runs the synchronous
+// delivery lifecycle, returning dispatchToTarget's terminal error: nil on
+// success, otherwise the last delivery error once the retry budget is spent
+// (or the failure is permanent) and dead-letter routing has been attempted.
+func (s *EventsService) deliverToTarget(ctx context.Context, region, ruleARN, ruleName string, event *eventsstore.Event, target eventsstore.Target) error {
+	payloadBytes := s.buildTargetPayload(ruleARN, ruleName, event, target)
+	return s.dispatchToTarget(ctx, region, ruleARN, event, target, payloadBytes)
 }
 
 const (
-	// AWS production defaults: 185 retries / 86400 s (24 h) deadline,
-	// 1 s initial backoff, 60 s max backoff. These match the AWS
-	// EventBridge retry behaviour for target delivery.
-	prodMaxRetryAttempts     = 185
-	prodMaxEventAgeInSeconds = 86400
+	// AWS production defaults: the retry ceiling and the 24 h deadline
+	// coincide with the RetryPolicy bounds ("By default, EventBridge
+	// retries sending the event for 24 hours and up to 185 times with an
+	// exponential back off and jitter", EventBridge user guide), with a
+	// 1 s initial backoff growing to a 60 s cap.
+	prodMaxRetryAttempts     = eventsstore.RetryPolicyMaxRetryAttempts
+	prodMaxEventAgeInSeconds = eventsstore.RetryPolicyMaxEventAgeSeconds
 	prodRetryInitialBackoff  = 1 * time.Second
 	prodRetryMaxBackoff      = 60 * time.Second
 
@@ -62,132 +59,243 @@ func retryDefaults() (maxRetry int32, maxAge int32, initialBackoff, maxBackoff t
 	return prodMaxRetryAttempts, prodMaxEventAgeInSeconds, prodRetryInitialBackoff, prodRetryMaxBackoff
 }
 
-// retriesExhausted reports whether the retry budget is spent after the
-// given failed attempt. MaximumRetryAttempts counts retries after the
-// initial attempt, so the total attempt budget is maxRetries+1: zero
-// permits a single attempt with no retries.
-func retriesExhausted(attempt, maxRetries int32) bool {
-	return attempt > maxRetries
-}
-
-func (s *EventsService) dispatchToTarget(ctx context.Context, region string, event *eventsstore.Event, target eventsstore.Target, payload []byte) {
-	targetType := s.parseTargetType(target.ARN)
-
-	maxRetries, maxAge, defaultBackoff, maxBackoff := retryDefaults()
+// newDeliveryJob builds the retry state for one target delivery from the
+// target's explicit RetryPolicy (validated at PutTargets time; out-of-range
+// values keep the deployment defaults) or the production defaults.
+func (s *EventsService) newDeliveryJob(region string, event *eventsstore.Event, target eventsstore.Target, payload []byte) *deliveryJob {
+	maxRetries, maxAge, initialBackoff, maxBackoff := retryDefaults()
 	if target.RetryPolicy != nil {
-		if target.RetryPolicy.MaximumRetryAttempts >= 0 && target.RetryPolicy.MaximumRetryAttempts <= 185 {
-			maxRetries = target.RetryPolicy.MaximumRetryAttempts
+		if v := target.RetryPolicy.MaximumRetryAttempts; v >= 0 && v <= eventsstore.RetryPolicyMaxRetryAttempts {
+			maxRetries = v
 		}
-		if target.RetryPolicy.MaximumEventAgeInSeconds >= 60 && target.RetryPolicy.MaximumEventAgeInSeconds <= 86400 {
-			maxAge = target.RetryPolicy.MaximumEventAgeInSeconds
+		if v := target.RetryPolicy.MaximumEventAgeInSeconds; v >= eventsstore.RetryPolicyMinEventAgeSeconds && v <= eventsstore.RetryPolicyMaxEventAgeSeconds {
+			maxAge = v
 		}
 	}
-	deadline := time.Now().Add(time.Duration(maxAge) * time.Second)
-
-	attempt := int32(0)
-	backoff := defaultBackoff
-	var deliverErr error
-
-	for {
-		deliverErr = nil
-		switch targetType {
-		case "lambda":
-			deliverErr = s.deliverToLambda(ctx, region, event.ID, target.ARN, payload)
-		case "sqs":
-			deliverErr = s.deliverToSQS(ctx, region, target, payload)
-		case "sns":
-			deliverErr = s.deliverToSNS(ctx, region, target.ARN, payload)
-		case "logs":
-			deliverErr = s.deliverToCloudWatchLogs(ctx, region, event.ID, target.ARN, payload)
-		case "states":
-			deliverErr = s.deliverToStepFunctions(ctx, region, target.ARN, payload)
-		case "kinesis":
-			deliverErr = s.deliverToKinesis(ctx, region, event.ID, target, payload)
-		case "firehose":
-			deliverErr = s.deliverToFirehose(ctx, region, target.ARN, payload)
-		case "ecs":
-			deliverErr = s.deliverToECS(ctx, region, target.ARN, payload)
-		case "events":
-			deliverErr = s.deliverToEventBus(ctx, region, event, target.ARN)
-		default:
-			deliverErr = fmt.Errorf("target type %q not implemented", targetType)
-		}
-
-		if deliverErr == nil {
-			return
-		}
-
-		attempt++
-		if retriesExhausted(attempt, maxRetries) || time.Now().After(deadline) {
-			break
-		}
-
-		// Exponential backoff with jitter.
-		if backoff > maxBackoff {
-			backoff = maxBackoff
-		}
-		jitter := time.Duration(rand.Int63n(int64(backoff) / 2))
-		sleepDur := backoff + jitter
-		select {
-		case <-time.After(sleepDur):
-		case <-ctx.Done():
-			return
-		}
-		backoff *= 2
+	job := &deliveryJob{
+		region:     region,
+		event:      event,
+		target:     target,
+		payload:    payload,
+		maxRetries: maxRetries,
+		deadline:   time.Now().Add(time.Duration(maxAge) * time.Second),
+		backoff:    initialBackoff,
+		maxBackoff: maxBackoff,
 	}
-
-	logs.Error("event delivery to target failed after retries",
-		logs.String("targetArn", target.ARN),
-		logs.String("eventId", event.ID),
-		logs.Int("attempts", int(attempt)),
-		logs.Err(deliverErr))
-	s.routeToDeadLetter(ctx, region, event, target, payload)
+	// The partition-key path references the original event, which this
+	// constructor's callers hold in full (the bus handler overrides the
+	// field with the publisher's resolution for the stub event it carries).
+	if key := kinesisPartitionKeyFor(event, &target); key != "" {
+		job.partitionKey = key
+	}
+	return job
 }
 
-// routeToDeadLetter delivers the event payload to the configured dead-letter
-// queue (SQS or SNS) when the primary target delivery fails.
-func (s *EventsService) routeToDeadLetter(ctx context.Context, region string, event *eventsstore.Event, target eventsstore.Target, payload []byte) {
-	if target.DeadLetterConfig == nil || target.DeadLetterConfig.Arn == "" {
-		return
+// kinesisPartitionKeyFor resolves the target's Kinesis partition-key path
+// against the ORIGINAL event — "dynamic path parameters must reference the
+// original event, not the transformed event" — so the direct-dispatch
+// constructor and the bus-delivery publisher resolve it identically. An
+// unresolved or empty key returns "" so the caller leaves the field unset.
+func kinesisPartitionKeyFor(event *eventsstore.Event, target *eventsstore.Target) string {
+	if target.KinesisParameters == nil || target.KinesisParameters.PartitionKeyPath == "" {
+		return ""
 	}
-	dlqArn := target.DeadLetterConfig.Arn
-	dlqType := s.parseTargetType(dlqArn)
-	switch dlqType {
+	val, ok := resolveEventPathString(eventEnvelope(event), target.KinesisParameters.PartitionKeyPath)
+	if !ok {
+		return ""
+	}
+	valStr, ok := val.(string)
+	if !ok || valStr == "" {
+		return ""
+	}
+	return valStr
+}
+
+// attemptDelivery runs a single delivery attempt and returns its outcome.
+// Failures classified permanent (errPermanentDelivery) are never retried;
+// every other failure is transient and consumes the retry budget.
+func (s *EventsService) attemptDelivery(ctx context.Context, job *deliveryJob) error {
+	targetType := s.parseTargetType(job.target.ARN)
+	switch targetType {
+	case "lambda":
+		return s.deliverToLambda(ctx, job.region, job.event.ID, job.target.ARN, job.payload)
 	case "sqs":
-		if err := s.deliverToSQS(ctx, region, eventsstore.Target{ARN: dlqArn}, payload); err != nil {
-			// The event is now lost for this target: the primary delivery
-			// already failed and the DLQ copy failed too. Log loudly so
-			// the loss is visible instead of silently reported as routed.
-			logs.Error("failed to route event to DLQ (SQS)",
-				logs.String("dlqArn", dlqArn),
-				logs.String("eventId", event.ID),
-				logs.String("originalTarget", target.ARN),
-				logs.Err(err))
-			return
+		return s.deliverToSQS(ctx, job.region, job.target, job.payload, nil)
+	case "sns":
+		return s.deliverToSNS(ctx, job.region, job.target.ARN, job.payload)
+	case "logs":
+		return s.deliverToCloudWatchLogs(ctx, job.region, job.event.ID, job.target.ARN, job.payload)
+	case "states":
+		return s.deliverToStepFunctions(ctx, job.region, job.target.ARN, job.payload)
+	case "kinesis":
+		return s.deliverToKinesis(ctx, job.region, job.event.ID, job.partitionKey, job.target, job.payload)
+	case "appsync":
+		return s.deliverToAppSync(ctx, job.region, job.event.ID, job.target, job.payload)
+	case "firehose":
+		return s.deliverToFirehose(ctx, job.region, job.target.ARN, job.payload)
+	case "ecs":
+		return s.deliverToECS(ctx, job.region, job.target.ARN, job.payload)
+	case "events":
+		_, _, _, _, resource := arnutil.SplitARN(job.target.ARN)
+		switch {
+		case strings.HasPrefix(resource, "api-destination/"):
+			return s.deliverToApiDestination(ctx, job)
+		case strings.HasPrefix(resource, "event-bus/"):
+			return s.deliverToEventBus(ctx, job.region, job.event, job.target.ARN)
+		default:
+			// Every other events-service resource form (rule, archive, a
+			// bare name) would otherwise deliver to a phantom bus that no
+			// rule listing ever matches — a silent drop reported as success.
+			return permanentDeliveryError("unsupported events-service target resource %q: only event-bus/ and api-destination/ targets have a delivery path", job.target.ARN)
+		}
+	default:
+		return permanentDeliveryError("target type %q not implemented", targetType)
+	}
+}
+
+// terminalDelivery handles a delivery whose failure is permanent or whose
+// retry budget is spent. AWS drops the exhausted event ("If an event isn't
+// delivered after all retry attempts are exhausted, the event is dropped
+// and EventBridge doesn't continue to process it", user guide); a
+// configured dead-letter queue receives it first. The returned error is
+// non-nil only when a configured DLQ write itself failed, so the caller
+// can report the loss instead of recording a completed delivery.
+func (s *EventsService) terminalDelivery(ctx context.Context, job *deliveryJob, deliverErr error) error {
+	logs.Error("event delivery to target failed after retries",
+		logs.String("targetArn", job.target.ARN),
+		logs.String("eventId", job.event.ID),
+		logs.Int("attempts", int(job.attempts)),
+		logs.Err(deliverErr))
+	return s.routeToDeadLetter(ctx, job, deliverErr)
+}
+
+// dispatchToTarget runs the full delivery lifecycle synchronously — the
+// loop form of the retry engine, used by the non-bus delivery arm and
+// direct callers. It returns the terminal error: nil on success, otherwise
+// the last delivery error once the retry budget is spent (or the failure
+// is permanent) and dead-letter routing has been attempted. A caller
+// context cancelled mid-retry dead-letters the same way, through a
+// detached bounded context so the cancellation that ends the retry cannot
+// also kill the dead-letter write.
+func (s *EventsService) dispatchToTarget(ctx context.Context, region, ruleARN string, event *eventsstore.Event, target eventsstore.Target, payload []byte) error {
+	job := s.newDeliveryJob(region, event, target, payload)
+	job.ruleARN = ruleARN
+	for {
+		job.attempts++
+		err := s.attemptDelivery(ctx, job)
+		if err == nil {
+			return nil
+		}
+		if errors.Is(err, errPermanentDelivery) || job.exhausted() {
+			if dlqErr := s.terminalDelivery(ctx, job, err); dlqErr != nil {
+				return dlqErr
+			}
+			return err
+		}
+		select {
+		case <-time.After(backoffSleep(job.backoff, job.maxBackoff)):
+		case <-ctx.Done():
+			// The cancelled delivery gets the same terminal handling the
+			// engine path gives; the write runs on its own short-lived
+			// context because the caller's is gone.
+			dlqCtx, dlqCancel := context.WithTimeout(context.Background(), dlqShutdownWriteTimeout)
+			_ = s.terminalDelivery(dlqCtx, job, ctx.Err())
+			dlqCancel()
+			return ctx.Err()
+		}
+		job.backoff *= 2
+	}
+}
+
+// dlqShutdownWriteTimeout bounds the detached dead-letter write a
+// cancelled synchronous dispatch performs before returning the context
+// error.
+const dlqShutdownWriteTimeout = 5 * time.Second
+
+// dlqWriteAttempts bounds the dead-letter SendMessage retries: the DLQ
+// copy is the last durable form of an event whose primary budget is
+// already spent, so a transient queue fault gets a short bounded retry
+// rather than a single shot.
+const dlqWriteAttempts = 3
+
+// routeToDeadLetter delivers the event payload to the configured SQS
+// dead-letter queue when the primary target delivery fails terminally.
+// The message carries the attribute envelope AWS documents for EventBridge
+// DLQs — RULE_ARN, TARGET_ARN, ERROR_CODE, ERROR_MESSAGE,
+// EXHAUSTED_RETRY_CONDITION (MaximumRetryAttempts or
+// MaximumEventAgeInSeconds, present only when a retry condition ended the
+// delivery) and RETRY_ATTEMPTS — plus the trace header as the
+// AWSTraceHeader message attribute when the inbound event carried one.
+// It returns nil when no DLQ is configured (AWS drops the exhausted
+// event) or the write succeeded; a non-nil error means the event is lost
+// for this target and the caller must report the loss rather than record
+// a completed delivery.
+func (s *EventsService) routeToDeadLetter(ctx context.Context, job *deliveryJob, deliverErr error) error {
+	if job.target.DeadLetterConfig == nil || job.target.DeadLetterConfig.Arn == "" {
+		return nil
+	}
+	dlqArn := job.target.DeadLetterConfig.Arn
+	if dlqType := s.parseTargetType(dlqArn); dlqType != "sqs" {
+		return fmt.Errorf("dead-letter queue %s: EventBridge DLQs are SQS queues, got service %q", dlqArn, dlqType)
+	}
+
+	attrs := s.deadLetterAttributes(job, deliverErr)
+	dlqTarget := eventsstore.Target{ARN: dlqArn}
+	var lastErr error
+	for attempt := 0; attempt < dlqWriteAttempts; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-time.After(backoffSleep(time.Duration(attempt)*100*time.Millisecond, 400*time.Millisecond)):
+			case <-ctx.Done():
+				return fmt.Errorf("dead-letter write for event %s cancelled: %w", job.event.ID, ctx.Err())
+			}
+		}
+		if err := s.deliverToSQS(ctx, job.region, dlqTarget, job.payload, attrs); err != nil {
+			lastErr = fmt.Errorf("failed to route event %s to DLQ %s (attempt %d): %w", job.event.ID, dlqArn, attempt+1, err)
+			continue
 		}
 		logs.Info("event routed to DLQ (SQS)",
 			logs.String("dlqArn", dlqArn),
-			logs.String("eventId", event.ID),
-			logs.String("originalTarget", target.ARN))
-	case "sns":
-		if err := s.deliverToSNS(ctx, region, dlqArn, payload); err != nil {
-			logs.Error("failed to route event to DLQ (SNS)",
-				logs.String("dlqArn", dlqArn),
-				logs.String("eventId", event.ID),
-				logs.String("originalTarget", target.ARN),
-				logs.Err(err))
-			return
-		}
-		logs.Info("event routed to DLQ (SNS)",
-			logs.String("dlqArn", dlqArn),
-			logs.String("eventId", event.ID),
-			logs.String("originalTarget", target.ARN))
-	default:
-		logs.Warn("DLQ target type not supported",
-			logs.String("dlqArn", dlqArn),
-			logs.String("dlqType", dlqType),
-			logs.String("eventId", event.ID))
+			logs.String("eventId", job.event.ID),
+			logs.String("originalTarget", job.target.ARN))
+		return nil
 	}
+	return lastErr
+}
+
+// deadLetterAttributes builds the documented DLQ message-attribute
+// envelope. ERROR_CODE uses the AWS DLQ error-code vocabulary; the
+// EXHAUSTED_RETRY_CONDITION attribute is emitted only when a retry
+// condition (attempt budget or age deadline) ended the delivery —
+// permanent failures and permission denials go to the DLQ without
+// retries, so neither condition applies.
+func (s *EventsService) deadLetterAttributes(job *deliveryJob, deliverErr error) map[string]invokers.SQSMessageAttribute {
+	str := func(v string) invokers.SQSMessageAttribute {
+		return invokers.SQSMessageAttribute{DataType: "String", StringValue: v}
+	}
+	errorCode := "ERROR_FROM_TARGET"
+	if errors.Is(deliverErr, errPermanentDelivery) {
+		errorCode = "NO_RESOURCE"
+	} else if strings.Contains(deliverErr.Error(), "resource policy denied") {
+		errorCode = "NO_PERMISSIONS"
+	}
+
+	attrs := map[string]invokers.SQSMessageAttribute{
+		"RULE_ARN":       str(job.ruleARN),
+		"TARGET_ARN":     str(job.target.ARN),
+		"ERROR_CODE":     str(errorCode),
+		"ERROR_MESSAGE":  str(deliverErr.Error()),
+		"RETRY_ATTEMPTS": str(strconv.FormatInt(int64(job.attempts-1), 10)),
+	}
+	if job.attempts > job.maxRetries {
+		attrs["EXHAUSTED_RETRY_CONDITION"] = str("MaximumRetryAttempts")
+	} else if time.Now().After(job.deadline) {
+		attrs["EXHAUSTED_RETRY_CONDITION"] = str("MaximumEventAgeInSeconds")
+	}
+	if job.traceHeader != "" {
+		attrs["AWSTraceHeader"] = str(job.traceHeader)
+	}
+	return attrs
 }
 
 func (s *EventsService) parseTargetType(arnStr string) string {
@@ -230,104 +338,10 @@ func (s *EventsService) deliverToLambda(ctx context.Context, region string, even
 	return nil
 }
 
-func (s *EventsService) extractInputPath(payload map[string]interface{}, inputPath string) map[string]interface{} {
-	if inputPath == "" || inputPath == "$" {
-		return payload
-	}
-
-	path := strings.TrimPrefix(inputPath, "$.")
-	parts := strings.Split(path, ".")
-
-	current := interface{}(payload)
-	for _, part := range parts {
-		if part == "" {
-			continue
-		}
-		if current == nil {
-			return payload
-		}
-		m, ok := current.(map[string]interface{})
-		if !ok {
-			return payload
-		}
-		val, exists := m[part]
-		if !exists {
-			return payload
-		}
-		current = val
-	}
-
-	if result, ok := current.(map[string]interface{}); ok {
-		return result
-	}
-	return map[string]interface{}{"value": current}
-}
-
-func (s *EventsService) applyInputTransformer(payload map[string]interface{}, transformer *eventsstore.InputTransformer) map[string]interface{} {
-	if transformer == nil || transformer.InputTemplate == "" {
-		return payload
-	}
-
-	// Build values from InputPathsMap
-	values := make(map[string]interface{})
-	if transformer.InputPathsMap != nil {
-		for key, path := range transformer.InputPathsMap {
-			values[key] = s.extractValueByPath(payload, path)
-		}
-	}
-
-	// Apply template - simple replacement of <key> placeholders
-	template := transformer.InputTemplate
-	for key, value := range values {
-		placeholder := "<" + key + ">"
-		var valueStr string
-		switch v := value.(type) {
-		case string:
-			valueStr = v
-		case nil:
-			valueStr = "null"
-		default:
-			b, _ := json.Marshal(v)
-			valueStr = string(b)
-		}
-		template = strings.ReplaceAll(template, placeholder, valueStr)
-	}
-
-	// Try to parse as JSON, otherwise return as raw template
-	var parsed map[string]interface{}
-	if err := json.Unmarshal([]byte(template), &parsed); err == nil {
-		return parsed
-	}
-
-	return map[string]interface{}{"message": template}
-}
-
-func (s *EventsService) extractValueByPath(payload map[string]interface{}, path string) interface{} {
-	if path == "" || path == "$" {
-		return payload
-	}
-
-	path = strings.TrimPrefix(path, "$.")
-	parts := strings.Split(path, ".")
-
-	current := interface{}(payload)
-	for _, part := range parts {
-		if part == "" {
-			continue
-		}
-		if current == nil {
-			return nil
-		}
-		m, ok := current.(map[string]interface{})
-		if !ok {
-			return nil
-		}
-		current = m[part]
-	}
-	return current
-}
-
-func (s *EventsService) deliverToSQS(ctx context.Context, region string, target eventsstore.Target, payload []byte) error {
+// deliverToSQS sends the payload to the queue named by the target ARN.
+// extraAttributes carries the dead-letter envelope when this write is a
+// DLQ routing; regular target delivery passes nil.
+func (s *EventsService) deliverToSQS(ctx context.Context, region string, target eventsstore.Target, payload []byte, extraAttributes map[string]invokers.SQSMessageAttribute) error {
 	if s.bus == nil || s.bus.SQSInvoker() == nil {
 		return fmt.Errorf("SQS invoker not configured")
 	}
@@ -361,6 +375,9 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, target 
 	opts := invokers.SQSSendOptions{}
 	if target.SqsParameters != nil && target.SqsParameters.MessageGroupId != "" {
 		opts.MessageGroupID = target.SqsParameters.MessageGroupId
+	}
+	if extraAttributes != nil {
+		opts.TypedMessageAttributes = extraAttributes
 	}
 
 	if _, _, err := s.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, string(payload), opts); err != nil {
@@ -471,8 +488,11 @@ func (s *EventsService) deliverToStepFunctions(ctx context.Context, region strin
 // defaults to the event ID — the behaviour documented for Kinesis targets
 // in the EventBridge API reference (KinesisParameters) — and stays stable
 // across delivery retries, so a retried event lands on the same shard
-// instead of scattering a single logical event across the stream.
-func (s *EventsService) deliverToKinesis(ctx context.Context, region string, eventID string, target eventsstore.Target, payload []byte) error {
+// instead of scattering a single logical event across the stream. The
+// explicit key arrives already resolved from the original event ("dynamic
+// path parameters must reference the original event, not the transformed
+// event").
+func (s *EventsService) deliverToKinesis(ctx context.Context, region, eventID, partitionKey string, target eventsstore.Target, payload []byte) error {
 	if s.bus == nil || s.bus.KinesisInvoker() == nil {
 		return fmt.Errorf("Kinesis invoker not configured")
 	}
@@ -485,16 +505,8 @@ func (s *EventsService) deliverToKinesis(ctx context.Context, region string, eve
 		streamName = resource[idx+len("stream/"):]
 	}
 
-	partitionKey := eventID
-	if target.KinesisParameters != nil && target.KinesisParameters.PartitionKeyPath != "" {
-		var payloadMap map[string]interface{}
-		if err := json.Unmarshal(payload, &payloadMap); err == nil {
-			if val := s.extractValueByPath(payloadMap, target.KinesisParameters.PartitionKeyPath); val != nil {
-				if valStr, ok := val.(string); ok && valStr != "" {
-					partitionKey = valStr
-				}
-			}
-		}
+	if partitionKey == "" {
+		partitionKey = eventID
 	}
 
 	// The local Kinesis service stores data as-is and GetRecords returns it
@@ -512,18 +524,84 @@ func (s *EventsService) deliverToKinesis(ctx context.Context, region string, eve
 	return nil
 }
 
+// deliverToAppSync invokes the GraphQL mutation configured for the target.
+// The ARN names the GraphQL endpoint of the API
+// (arn:...:appsync:region:account:apis/<apiId>[/endpoints/GRAPHQL]);
+// AppSyncParameters.GraphQLOperation carries the mutation document and the
+// transformed event payload becomes the operation's variables — the shapes
+// documented on the AWS AppSync target page.
+func (s *EventsService) deliverToAppSync(ctx context.Context, region string, eventID string, target eventsstore.Target, payload []byte) error {
+	operation := ""
+	if target.AppSyncParameters != nil {
+		operation = target.AppSyncParameters.GraphQLOperation
+	}
+	if operation == "" {
+		return permanentDeliveryError("AppSync target %s carries no GraphQLOperation", target.ARN)
+	}
+	apiID := extractAppSyncApiIDFromARN(target.ARN)
+	if apiID == "" {
+		return permanentDeliveryError("AppSync target ARN %s does not name a GraphQL API endpoint (apis/<apiId>)", target.ARN)
+	}
+	if s.bus == nil || s.bus.AppSyncInvoker() == nil {
+		return fmt.Errorf("AppSync invoker not configured")
+	}
+
+	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, target.ARN, "appsync", "events.amazonaws.com", "appsync:GraphQL", target.ARN)
+	if evalErr != nil {
+		return fmt.Errorf("resource policy evaluation failed for AppSync target: %w", evalErr)
+	}
+	if !allowed {
+		return fmt.Errorf("resource policy denied AppSync GraphQL invocation")
+	}
+
+	_, _, arnRegion, _, _ := arnutil.SplitARN(target.ARN)
+	if arnRegion == "" {
+		arnRegion = region
+	}
+
+	if err := s.bus.AppSyncInvoker().ExecuteGraphQLMutation(ctx, arnRegion, apiID, operation, payload); err != nil {
+		return fmt.Errorf("failed to invoke AppSync mutation on %s: %w", target.ARN, err)
+	}
+
+	logs.Debug("event delivered to AppSync successfully",
+		logs.String("eventId", eventID),
+		logs.String("apiId", apiID))
+	return nil
+}
+
+// extractAppSyncApiIDFromARN pulls the API ID out of an AppSync endpoint
+// ARN resource: apis/<apiId> or apis/<apiId>/endpoints/GRAPHQL.
+func extractAppSyncApiIDFromARN(arnStr string) string {
+	_, _, _, _, resource := arnutil.SplitARN(arnStr)
+	rest, ok := strings.CutPrefix(resource, "apis/")
+	if !ok {
+		return ""
+	}
+	if idx := strings.Index(rest, "/"); idx != -1 {
+		rest = rest[:idx]
+	}
+	return rest
+}
+
+// deliverToFirehose fails permanently until the Firehose service exists on
+// this platform (release blocker 4): the target ARN stays accepted, the
+// delivery fails fast to its terminal handling instead of burning the
+// retry budget on a service that cannot answer.
 func (s *EventsService) deliverToFirehose(ctx context.Context, region string, targetArn string, payload []byte) error {
 	logs.Error("Firehose target delivery failed: Firehose service is not available",
 		logs.String("targetArn", targetArn),
 		logs.String("region", region))
-	return fmt.Errorf("firehose delivery target %s is not available in this deployment", targetArn)
+	return permanentDeliveryError("firehose delivery target %s is not available in this deployment", targetArn)
 }
 
+// deliverToECS fails permanently: the ECS service is out of scope for this
+// platform (Basic Policy future-expansion list), so a stored ECS target
+// terminates immediately instead of burning the retry budget.
 func (s *EventsService) deliverToECS(ctx context.Context, region string, targetArn string, payload []byte) error {
 	logs.Error("ECS target delivery failed: ECS service is not available",
 		logs.String("targetArn", targetArn),
 		logs.String("region", region))
-	return fmt.Errorf("ecs delivery target %s is not available in this deployment", targetArn)
+	return permanentDeliveryError("ecs delivery target %s is not available in this deployment", targetArn)
 }
 
 // deliveryDepthKey is used to track cross-bus delivery depth via context,
@@ -557,7 +635,7 @@ func (s *EventsService) deliverToEventBus(ctx context.Context, sourceRegion stri
 
 	childCtx := context.WithValue(ctx, deliveryDepthKey{}, depth+1)
 
-	s.archiveEvent(childCtx, store, event, busName)
-
-	return s.deliverEventWithStore(childCtx, targetRegion, event, busName, store)
+	// The unified ingress: archive onto the target bus's enabled archives,
+	// then rule matching with the carried hop depth.
+	return s.deliverEvent(childCtx, store, event, busName, targetRegion, depth+1)
 }

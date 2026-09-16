@@ -1,6 +1,9 @@
 package eventbridge
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 // The retry budget counts retries after the initial attempt: a
 // MaximumRetryAttempts of N permits N+1 total attempts, and zero permits a
@@ -19,8 +22,9 @@ func TestRetriesExhaustedSemantics(t *testing.T) {
 		{attempt: 186, maxRetries: 185, exhausted: true},
 	}
 	for _, tc := range cases {
-		if got := retriesExhausted(tc.attempt, tc.maxRetries); got != tc.exhausted {
-			t.Errorf("retriesExhausted(attempt=%d, maxRetries=%d) = %v, want %v",
+		job := &deliveryJob{attempts: tc.attempt, maxRetries: tc.maxRetries, deadline: time.Now().Add(time.Hour)}
+		if got := job.exhausted(); got != tc.exhausted {
+			t.Errorf("job{attempts=%d, maxRetries=%d}.exhausted() = %v, want %v",
 				tc.attempt, tc.maxRetries, got, tc.exhausted)
 		}
 	}

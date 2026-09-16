@@ -361,8 +361,8 @@ func (e *Executor) executeSNSPublish(ctx context.Context, resource, input string
 }
 
 func (e *Executor) executeEventsTask(ctx context.Context, execCtx *ExecutionContext, resource, input string) (string, error) {
-	if e.bus == nil || e.bus.EventsInvoker() == nil {
-		return "", fmt.Errorf("events invoker not configured")
+	if e.bus == nil {
+		return "", fmt.Errorf("event bus not configured")
 	}
 
 	resourceParts := strings.Split(resource, ":")
@@ -403,20 +403,26 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 	var results []map[string]interface{}
 	failedCount := 0
 	firstFailure := ""
-	now := time.Now().UTC()
 
 	for _, entry := range entries {
 		eventBusName := entryEventBusName(entry)
 
-		detail := map[string]interface{}{}
-		if d, ok := entry["Detail"]; ok {
-			if detailMap, ok := d.(map[string]interface{}); ok {
-				detail = detailMap
-			} else if detailStr, ok := d.(string); ok {
-				if jsonErr := json.Unmarshal([]byte(detailStr), &detail); jsonErr != nil {
-					detail = map[string]interface{}{"raw": detailStr}
-				}
+		// PutEvents requires every entry to carry Source, DetailType and
+		// Detail; an entry without a Detail member fails like the API
+		// plane's incomplete-entry rejection instead of publishing an
+		// event with an invented detail.
+		if _, ok := entry["Detail"]; !ok {
+			failedCount++
+			errMsg := "Source, DetailType, and Detail are required"
+			if firstFailure == "" {
+				firstFailure = errMsg
 			}
+			results = append(results, map[string]interface{}{
+				"EventId":      uuid.New().String(),
+				"ErrorCode":    "InvalidArgument",
+				"ErrorMessage": errMsg,
+			})
+			continue
 		}
 
 		// Entry Resources: the user's values first, then "the execution
@@ -432,62 +438,76 @@ func (e *Executor) executeEventsPutEvents(ctx context.Context, execCtx *Executio
 		}
 		resources = append(resources, execCtx.Execution.ExecutionArn, execCtx.Execution.StateMachineArn)
 
-		// An entry Time is honoured when supplied (an RFC3339
-		// timestamp); otherwise the publication instant applies.
-		entryTime := now
-		if ts, ok := entry["Time"].(string); ok {
-			if parsed, perr := time.Parse(time.RFC3339, ts); perr == nil {
-				entryTime = parsed
-			}
+		// The entry rides the unified internal ingress plane: the
+		// EventBridge handler applies the same member semantics the
+		// PutEvents API plane enforces (parseEntryTimestamp for Time —
+		// an RFC3339 string or an epoch number, anything else failing the
+		// entry; object Detail; string Resources) and its delivery
+		// verdict drives the per-entry result. Detail and Time therefore
+		// forward verbatim in their wire form: pre-normalising here (a
+		// null Detail rewritten to an empty object, an unparseable Time
+		// replaced by the publication instant) would silence exactly the
+		// rejections the handler applies. An entry Time is honoured when
+		// supplied; without one the publication instant applies.
+		ingressEntry := map[string]interface{}{
+			"Source":     getStr(entry, "Source"),
+			"DetailType": getStr(entry, "DetailType"),
+			"Detail":     entry["Detail"],
+			"Resources":  resources,
 		}
-
-		event := map[string]interface{}{
-			// EventBridge event IDs are UUIDs; entries published in the
-			// same tick must still receive distinct IDs (and storage
-			// keys), which a shared clock value cannot guarantee.
-			"ID":           uuid.New().String(),
-			"EventBusName": eventBusName,
-			"Source":       getStr(entry, "Source"),
-			"DetailType":   getStr(entry, "DetailType"),
-			"Time":         entryTime,
-			"Region":       eventsRegion,
-			"Account":      e.accountID,
-			"Detail":       detail,
-			"Resources":    resources,
+		if tv, ok := entry["Time"]; ok {
+			ingressEntry["Time"] = tv
 		}
-
-		key := fmt.Sprintf("events:%s:%s", eventBusName, event["ID"])
-		if err := e.bus.EventsInvoker().PutEvent(ctx, key, event); err != nil {
+		entryJSON, merr := json.Marshal(ingressEntry)
+		eventID := uuid.New().String()
+		if merr != nil {
 			// "PutEvents returns the number of failed entries in the
 			// FailedEntryCount field" — a failed entry is a per-entry
 			// result, not an invocation abort.
 			failedCount++
-			errMsg := fmt.Sprintf("failed to store event: %s", err.Error())
+			errMsg := fmt.Sprintf("failed to encode the PutEvents entry: %s", merr.Error())
 			if firstFailure == "" {
 				firstFailure = errMsg
 			}
 			results = append(results, map[string]interface{}{
-				"EventId":      event["ID"],
+				"EventId":      eventID,
+				"ErrorCode":    "InternalFailure",
+				"ErrorMessage": errMsg,
+			})
+			continue
+		}
+		ebEvt := &eventbus.EventBridgePutEventsEvent{
+			EventBusName: eventBusName,
+			Input:        string(entryJSON),
+		}
+		ebEvt.Region = eventsRegion
+		result, perr := e.bus.PublishSync(ctx, ebEvt)
+		if perr == nil && result.Error != nil {
+			perr = result.Error
+		}
+		if perr != nil {
+			// A failed entry is a per-entry result, not an invocation
+			// abort.
+			failedCount++
+			errMsg := fmt.Sprintf("failed to publish event: %s", perr.Error())
+			if firstFailure == "" {
+				firstFailure = errMsg
+			}
+			results = append(results, map[string]interface{}{
+				"EventId":      eventID,
 				"ErrorCode":    "InternalFailure",
 				"ErrorMessage": errMsg,
 			})
 			continue
 		}
 
-		// The bus was nil-checked by the caller (executeEventsTask);
-		// publishing is fire-and-forget — the event is already stored.
-		if eventJSON, merr := json.Marshal(event); merr == nil {
-			ebEvt := &eventbus.EventBridgeDeliveryEvent{
-				TargetARN: arnutil.NewARNBuilder(e.accountID, eventsRegion).Events().EventBus(eventBusName),
-				Input:     eventJSON,
-			}
-			ebEvt.Region = eventsRegion
-			if err := e.bus.Publish(context.Background(), ebEvt); err != nil {
-				logs.Warn("failed to publish EventBridge event from Step Functions", logs.Err(err))
-			}
+		// The ingress handler assigns the event's id and returns it in
+		// the result payload; a handler that answers without one keeps
+		// the locally minted identifier.
+		if len(result.Payload) > 0 {
+			eventID = string(result.Payload)
 		}
-
-		results = append(results, map[string]interface{}{"EventId": event["ID"]})
+		results = append(results, map[string]interface{}{"EventId": eventID})
 	}
 
 	// "Step Functions checks whether the FailedEntryCount is greater than

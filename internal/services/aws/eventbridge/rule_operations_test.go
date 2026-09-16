@@ -1,6 +1,39 @@
 package eventbridge
 
-import "testing"
+import (
+	"testing"
+
+	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
+)
+
+// TestRuleToMapShapeMembers pins the serialised Rule shapes against the
+// model: the ListRules item shape (Rule) carries exactly {Arn,
+// EventBusName, Name, State} plus the non-empty optionals — no timestamps,
+// no CreatedBy — while DescribeRuleResponse additionally models CreatedBy.
+func TestRuleToMapShapeMembers(t *testing.T) {
+	r := &eventsstore.Rule{
+		ARN:          "arn:aws:events:us-east-1:000000000000:rule/default/r1",
+		Name:         "r1",
+		EventBusName: "default",
+		State:        eventsstore.RuleStateEnabled,
+		Description:  "d",
+		EventPattern: `{"source":["s"]}`,
+		RoleARN:      "arn:aws:iam::000000000000:role/r",
+		ManagedBy:    ".amazonaws",
+		CreatedBy:    "arn:aws:iam::000000000000:root",
+	}
+	m := ruleToMap(r)
+	for _, key := range []string{"CreationTime", "LastModifiedTime", "CreatedBy"} {
+		if _, ok := m[key]; ok {
+			t.Errorf("ListRules item carries unmodelled member %s", key)
+		}
+	}
+	for _, key := range []string{"Arn", "Name", "EventBusName", "State", "Description", "EventPattern", "RoleArn", "ManagedBy"} {
+		if _, ok := m[key]; !ok {
+			t.Errorf("ListRules item missing modelled member %s", key)
+		}
+	}
+}
 
 // TestIsValidScheduleExpression pins the AWS contract for scheduled rule
 // expressions: rate() accepts only minute/hour/day units, the value is a

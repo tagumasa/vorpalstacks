@@ -3,7 +3,6 @@ package eventbridge
 import (
 	"context"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -30,11 +29,10 @@ func eventBusToListItem(eb *eventsstore.EventBus) map[string]interface{} {
 	return result
 }
 
-// eventBusToDescribeMap serialises an EventBus for the
-// DescribeEventBusResponse shape. Includes the Describe-only fields:
+// applyEventBusConfigMembers adds the configuration members shared by the
+// DescribeEventBusResponse and UpdateEventBusResponse shapes:
 // KmsKeyIdentifier, DeadLetterConfig, LogConfig.
-func eventBusToDescribeMap(eb *eventsstore.EventBus) map[string]interface{} {
-	result := eventBusToListItem(eb)
+func applyEventBusConfigMembers(result map[string]interface{}, eb *eventsstore.EventBus) {
 	if eb.KmsKeyIdentifier != "" {
 		result["KmsKeyIdentifier"] = eb.KmsKeyIdentifier
 	}
@@ -55,6 +53,14 @@ func eventBusToDescribeMap(eb *eventsstore.EventBus) map[string]interface{} {
 		}
 		result["LogConfig"] = lc
 	}
+}
+
+// eventBusToDescribeMap serialises an EventBus for the
+// DescribeEventBusResponse shape. Includes the Describe-only fields:
+// KmsKeyIdentifier, DeadLetterConfig, LogConfig.
+func eventBusToDescribeMap(eb *eventsstore.EventBus) map[string]interface{} {
+	result := eventBusToListItem(eb)
+	applyEventBusConfigMembers(result, eb)
 	return result
 }
 
@@ -69,26 +75,7 @@ func eventBusToUpdateMap(eb *eventsstore.EventBus) map[string]interface{} {
 	if eb.Description != "" {
 		result["Description"] = eb.Description
 	}
-	if eb.KmsKeyIdentifier != "" {
-		result["KmsKeyIdentifier"] = eb.KmsKeyIdentifier
-	}
-	if eb.DeadLetterConfig != nil {
-		dlc := map[string]interface{}{}
-		if eb.DeadLetterConfig.Arn != "" {
-			dlc["Arn"] = eb.DeadLetterConfig.Arn
-		}
-		result["DeadLetterConfig"] = dlc
-	}
-	if eb.LogConfig != nil {
-		lc := map[string]interface{}{}
-		if eb.LogConfig.IncludeDetail != "" {
-			lc["IncludeDetail"] = eb.LogConfig.IncludeDetail
-		}
-		if eb.LogConfig.Level != "" {
-			lc["Level"] = eb.LogConfig.Level
-		}
-		result["LogConfig"] = lc
-	}
+	applyEventBusConfigMembers(result, eb)
 	return result
 }
 
@@ -101,14 +88,7 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 	}
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
-		if !validateDescription(desc) {
-			return nil, errDescriptionTooLong()
-		}
 		input.Description = desc
-	}
-
-	if policy, ok := req.Parameters["Policy"].(string); ok {
-		input.Policy = policy
 	}
 
 	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
@@ -213,29 +193,22 @@ func eventBusNameParam(req *request.ParsedRequest) (string, bool) {
 // DescribeEventBus returns information about an event bus.
 func (s *EventsService) DescribeEventBus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		if _, ok := req.Parameters["Name"]; ok {
-			return nil, awserrors.NewValidationException("Name must not be empty")
-		}
-		name = "default"
-	}
+	_, nameProvided := req.Parameters["Name"]
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := s.describeEventBusCore(ctx, store, name)
+	result, err := s.describeEventBusCore(ctx, store, name, nameProvided)
 	if err != nil {
 		return nil, err
 	}
 
-	response := eventBusToDescribeMap(result.EventBus)
-	if len(result.Tags) > 0 {
-		response["Tags"] = tagListToMaps(result.Tags)
-	}
-
-	return response, nil
+	// The response shape carries no Tags member (the tag read surface is
+	// ListTagsForResource), so the Describe serialisation stops at the
+	// shape members.
+	return eventBusToDescribeMap(result.EventBus), nil
 }
 
 // ListEventBuses returns a list of event buses.
@@ -277,13 +250,10 @@ func parseUpdateEventBusInput(req *request.ParsedRequest) UpdateEventBusInput {
 	input := UpdateEventBusInput{
 		Name: request.GetParamLowerFirst(req.Parameters, "Name"),
 	}
+	_, input.NameProvided = req.Parameters["Name"]
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		input.DescriptionSet = true
 		input.Description = desc
-	}
-	if policy, ok := req.Parameters["Policy"].(string); ok {
-		input.PolicySet = true
-		input.Policy = policy
 	}
 	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
 		input.KmsKeyIdentifierSet = true
@@ -341,7 +311,15 @@ func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.Reque
 		Principal:       request.GetStringParam(req.Parameters, "Principal"),
 		StatementId:     request.GetStringParam(req.Parameters, "StatementId"),
 		Action:          request.GetStringParam(req.Parameters, "Action"),
-		Condition:       request.GetStringParam(req.Parameters, "Condition"),
+	}
+	// Condition is the modelled {Key, Type, Value} structure on the wire;
+	// reading it as a string silently drops SDK-sent conditions.
+	if cond, ok := req.Parameters["Condition"].(map[string]interface{}); ok {
+		c := &PutPermissionCondition{}
+		c.Key, _ = cond["Key"].(string)
+		c.Type, _ = cond["Type"].(string)
+		c.Value, _ = cond["Value"].(string)
+		input.Condition = c
 	}
 	if policyStr, ok := req.Parameters["Policy"].(string); ok {
 		input.PolicySet = true
@@ -382,20 +360,4 @@ func (s *EventsService) RemovePermission(ctx context.Context, reqCtx *request.Re
 	}
 
 	return response.EmptyResponse(), nil
-}
-
-// isValidLogIncludeDetail validates IncludeDetail against the Smithy enum
-// values: NONE or FULL.
-func isValidLogIncludeDetail(v string) bool {
-	return v == "NONE" || v == "FULL"
-}
-
-// isValidLogLevel validates Level against the Smithy enum values:
-// OFF, ERROR, INFO, or TRACE.
-func isValidLogLevel(v string) bool {
-	switch v {
-	case "OFF", "ERROR", "INFO", "TRACE":
-		return true
-	}
-	return false
 }

@@ -3,8 +3,6 @@ package eventbridge
 import (
 	"testing"
 	"time"
-
-	types "vorpalstacks/internal/common/tags"
 )
 
 func TestEventBus(t *testing.T) {
@@ -13,9 +11,6 @@ func TestEventBus(t *testing.T) {
 		ARN:       "arn:aws:events:us-east-1:123456789012:event-bus/my-event-bus",
 		Region:    "us-east-1",
 		AccountID: "123456789012",
-		Tags: []types.Tag{
-			{Key: "env", Value: "prod"},
-		},
 	}
 
 	if bus.Name != "my-event-bus" {
@@ -23,9 +18,6 @@ func TestEventBus(t *testing.T) {
 	}
 	if bus.ARN != "arn:aws:events:us-east-1:123456789012:event-bus/my-event-bus" {
 		t.Errorf("ARN = %v, want 'arn:aws:events:us-east-1:123456789012:event-bus/my-event-bus'", bus.ARN)
-	}
-	if len(bus.Tags) != 1 {
-		t.Errorf("len(Tags) = %v, want 1", len(bus.Tags))
 	}
 }
 

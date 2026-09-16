@@ -27,7 +27,7 @@ func (r *TestRunner) runEventBridgeToLambda(ic *integClients, ts string) TestRes
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), EventPattern: aws.String(`{"source":["com.integration.test"]}`)})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()
@@ -76,7 +76,7 @@ func (r *TestRunner) runEventBridgeToStepFunctions(ic *integClients, ts string) 
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), EventPattern: aws.String(`{"source":["com.integration.test"]}`)})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()
@@ -130,6 +130,83 @@ func (r *TestRunner) runEventBridgeToStepFunctions(ic *integClients, ts string) 
 	})
 }
 
+// runEventBridgeBusToBus pins the bus-to-bus hop: an event forwarded from
+// one event bus to another must keep its detail-type member, so a rule on
+// the destination bus matching on detail-type fires and the delivered
+// payload carries the member through to the target.
+func (r *TestRunner) runEventBridgeBusToBus(ic *integClients, ts string) TestResult {
+	queueName := fmt.Sprintf("integ-eb-b2b-sqs-%s", ts)
+	sourceBus := fmt.Sprintf("integ-eb-b2b-src-%s", ts)
+	destBus := fmt.Sprintf("integ-eb-b2b-dst-%s", ts)
+	sourceRule := fmt.Sprintf("integ-eb-b2b-src-rule-%s", ts)
+	destRule := fmt.Sprintf("integ-eb-b2b-dst-rule-%s", ts)
+
+	queueURL, err := ic.createQueue(queueName)
+	if err != nil {
+		return r.RunTest(integSvc, "EventBridge_BusToBus", func() error { return fmt.Errorf("create queue: %w", err) })
+	}
+	defer ic.deleteQueue(queueURL)
+
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
+	destBusARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", ic.region, destBus)
+
+	ic.eb.CreateEventBus(ic.ctx, &eventbridge.CreateEventBusInput{Name: aws.String(destBus)})
+	defer func() {
+		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(destBus)})
+	}()
+	ic.eb.CreateEventBus(ic.ctx, &eventbridge.CreateEventBusInput{Name: aws.String(sourceBus)})
+	defer func() {
+		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(sourceBus)})
+	}()
+
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{
+		Name: aws.String(destRule), EventBusName: aws.String(destBus),
+		EventPattern: aws.String(`{"detail-type":["BusHopTest"]}`),
+	})
+	defer func() {
+		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(destRule), EventBusName: aws.String(destBus)})
+	}()
+	ic.eb.PutTargets(ic.ctx, &eventbridge.PutTargetsInput{
+		Rule: aws.String(destRule), EventBusName: aws.String(destBus),
+		Targets: []types.Target{{Id: aws.String("t1"), Arn: aws.String(queueARN)}},
+	})
+	defer func() {
+		ic.eb.RemoveTargets(ic.ctx, &eventbridge.RemoveTargetsInput{
+			Rule: aws.String(destRule), EventBusName: aws.String(destBus), Ids: []string{"t1"},
+		})
+	}()
+
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{
+		Name: aws.String(sourceRule), EventBusName: aws.String(sourceBus),
+		EventPattern: aws.String(`{"source":["com.integration.test"]}`),
+	})
+	defer func() {
+		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(sourceRule), EventBusName: aws.String(sourceBus)})
+	}()
+	ic.eb.PutTargets(ic.ctx, &eventbridge.PutTargetsInput{
+		Rule: aws.String(sourceRule), EventBusName: aws.String(sourceBus),
+		Targets: []types.Target{{Id: aws.String("t1"), Arn: aws.String(destBusARN)}},
+	})
+	defer func() {
+		ic.eb.RemoveTargets(ic.ctx, &eventbridge.RemoveTargetsInput{
+			Rule: aws.String(sourceRule), EventBusName: aws.String(sourceBus), Ids: []string{"t1"},
+		})
+	}()
+
+	ic.eb.PutEvents(ic.ctx, &eventbridge.PutEventsInput{
+		Entries: []types.PutEventsRequestEntry{{
+			EventBusName: aws.String(sourceBus),
+			Source:       aws.String("com.integration.test"),
+			DetailType:   aws.String("BusHopTest"),
+			Detail:       aws.String(`{"message":"eb-bus-to-bus"}`),
+		}},
+	})
+
+	return r.pollVerify("EventBridge_BusToBus", defaultPollTimeout, func() error {
+		return ic.verifyMessageContainsAll(queueURL, `"detail-type":"BusHopTest"`, "eb-bus-to-bus")
+	})
+}
+
 func (r *TestRunner) runEventBridgeToSQS(ic *integClients, ts string) TestResult {
 	queueName := fmt.Sprintf("integ-eb-sqs-%s", ts)
 	busName := fmt.Sprintf("integ-eb-sqs-bus-%s", ts)
@@ -148,7 +225,7 @@ func (r *TestRunner) runEventBridgeToSQS(ic *integClients, ts string) TestResult
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), EventPattern: aws.String(`{"source":["com.integration.test"]}`)})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()
@@ -206,7 +283,7 @@ func (r *TestRunner) runEventBridgeToSNS(ic *integClients, ts string) TestResult
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), EventPattern: aws.String(`{"source":["com.integration.test"]}`)})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()
@@ -257,7 +334,7 @@ func (r *TestRunner) runEventBridgeToKinesis(ic *integClients, ts string) TestRe
 		ic.eb.DeleteEventBus(ic.ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(busName)})
 	}()
 
-	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), ScheduleExpression: aws.String("rate(1 hour)")})
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName), EventPattern: aws.String(`{"source":["com.integration.test"]}`)})
 	defer func() {
 		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String(busName)})
 	}()

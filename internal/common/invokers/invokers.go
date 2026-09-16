@@ -32,6 +32,17 @@ type LambdaInvocation struct {
 	FunctionError string
 }
 
+// AppSyncInvoker executes a GraphQL mutation on an AppSync API for
+// cross-service event delivery (EventBridge targets). The operation is the
+// mutation document (AppSyncParameters.GraphQLOperation); variablesJSON is
+// the transformed event payload as a JSON object — the shapes AWS
+// documents for AppSync targets (a valid GraphQL mutation invoked for
+// matched events with AWS_IAM authorisation, which the internal bus call
+// plays on this platform).
+type AppSyncInvoker interface {
+	ExecuteGraphQLMutation(ctx context.Context, region, apiID, operation string, variablesJSON []byte) error
+}
+
 // SQSInvoker provides SQS operations for cross-service consumers.
 // All methods require a region parameter to target the correct regional
 // SQS store, enabling cross-region delivery (e.g. alarm actions targeting
@@ -138,13 +149,6 @@ type KinesisRecord struct {
 	PartitionKey                string
 	Data                        []byte
 	ApproximateArrivalTimestamp time.Time
-}
-
-// EventsInvoker provides EventBridge store operations for cross-service
-// consumers. Consumers call these methods instead of holding a direct
-// reference to the EventBridge store.
-type EventsInvoker interface {
-	PutEvent(ctx context.Context, key string, event any) error
 }
 
 // EC2Invoker provides EC2 subnet, security group, and VPC lookup operations
@@ -263,6 +267,28 @@ type KMSInvoker interface {
 type KMSDataKeyResult struct {
 	Plaintext      []byte
 	CiphertextBlob []byte
+}
+
+// SecretsManagerInvoker provides secret lifecycle operations for
+// cross-service consumers (e.g. EventBridge connection credentials). AWS
+// stores a service-owned secret per connection ("When you create a
+// connection and add authorization parameters, EventBridge creates a secret
+// in AWS Secrets Manager", user guide) and surfaces it as the connection's
+// SecretArn; this contract lets the events service follow the same design
+// without importing the Secrets Manager store.
+type SecretsManagerInvoker interface {
+	// CreateServiceSecret creates a secret holding secretString and returns
+	// its ARN. The name is the caller's service-qualified name.
+	CreateServiceSecret(ctx context.Context, region, name, secretString, description string) (arn string, err error)
+	// GetServiceSecretString returns the current secret string of the secret
+	// addressed by ARN or name.
+	GetServiceSecretString(ctx context.Context, region, secretId string) (string, error)
+	// UpdateServiceSecretString replaces the secret string of the secret
+	// addressed by ARN or name.
+	UpdateServiceSecretString(ctx context.Context, region, secretId, secretString string) error
+	// DeleteServiceSecret immediately deletes the secret addressed by ARN or
+	// name (no recovery window — the caller owns the resource lifecycle).
+	DeleteServiceSecret(ctx context.Context, region, secretId string) error
 }
 
 // IAMPrincipalResolver resolves an access key ID to a username for audit

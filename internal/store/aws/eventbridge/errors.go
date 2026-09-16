@@ -54,9 +54,22 @@ var (
 	// that already exists.
 	ErrReplayAlreadyExists = errors.New("replay already exists")
 
-	// ErrInvalidEventPattern is returned when the event pattern is not valid.
-	ErrInvalidEventPattern = errors.New("invalid event pattern")
+	// ErrReplayCapReached is returned by CreateReplayCapped when the store
+	// already holds the maximum of active (non-terminal) replays — the
+	// documented concurrent-replay cap. The service maps it to
+	// LimitExceededException.
+	ErrReplayCapReached = errors.New("active replay cap reached")
 
-	// ErrInvalidARN is returned when the Amazon Resource Name (ARN) is not valid.
-	ErrInvalidARN = errors.New("invalid ARN")
+	// ErrRuleCapReached is returned by CreateRuleCapped when creating a
+	// NEW rule would push its event bus past the documented per-bus
+	// rule-count quota. The service maps it to
+	// LimitExceededException.
+	ErrRuleCapReached = errors.New("rule count cap reached")
+
+	// ErrEmptyResourceName is returned by the Create* methods when the
+	// resource name is empty — a write under an empty key would create a
+	// phantom record, so the store enforces the invariant itself. The
+	// service cores reject empty names before reaching the store; this
+	// sentinel is the store-level backstop.
+	ErrEmptyResourceName = errors.New("resource name is required")
 )

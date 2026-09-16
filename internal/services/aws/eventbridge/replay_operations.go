@@ -3,6 +3,7 @@ package eventbridge
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
@@ -57,6 +58,35 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 	return result, nil
 }
 
+// replayToListItem serialises a Replay for the ListReplays response. Per
+// the Smithy Replay shape (the ReplayList member type): EventEndTime,
+// EventLastReplayedTime, EventSourceArn, EventStartTime, ReplayEndTime,
+// ReplayName, ReplayStartTime, State, StateReason — the list item carries
+// neither the ARN nor the description nor the destination; those are
+// DescribeReplayResponse members.
+func replayToListItem(replay *eventsstore.Replay) map[string]interface{} {
+	result := map[string]interface{}{
+		"ReplayName":     replay.Name,
+		"State":          string(replay.State),
+		"EventSourceArn": replay.EventSourceARN,
+		"EventStartTime": replay.EventStartTime.Unix(),
+		"EventEndTime":   replay.EventEndTime.Unix(),
+	}
+	if replay.StateReason != "" {
+		result["StateReason"] = replay.StateReason
+	}
+	if !replay.ReplayStartTime.IsZero() {
+		result["ReplayStartTime"] = replay.ReplayStartTime.Unix()
+	}
+	if !replay.ReplayEndTime.IsZero() {
+		result["ReplayEndTime"] = replay.ReplayEndTime.Unix()
+	}
+	if !replay.EventLastReplayedTime.IsZero() {
+		result["EventLastReplayedTime"] = replay.EventLastReplayedTime.Unix()
+	}
+	return result
+}
+
 // DescribeReplay returns information about a replay.
 func (s *EventsService) DescribeReplay(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	replayName := request.GetParamLowerFirst(req.Parameters, "ReplayName")
@@ -71,35 +101,18 @@ func (s *EventsService) DescribeReplay(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	result := map[string]interface{}{
-		"ReplayName":     replay.Name,
-		"ReplayArn":      replay.ARN,
-		"State":          string(replay.State),
-		"EventSourceArn": replay.EventSourceARN,
-		"EventStartTime": replay.EventStartTime.Unix(),
-		"EventEndTime":   replay.EventEndTime.Unix(),
-	}
-
+	result := replayToListItem(replay)
+	// DescribeReplayResponse adds the ARN, description and destination on
+	// top of the list-item shape.
+	result["ReplayArn"] = replay.ARN
 	if replay.Description != "" {
 		result["Description"] = replay.Description
-	}
-	if replay.StateReason != "" {
-		result["StateReason"] = replay.StateReason
 	}
 	if replay.Destination != nil {
 		result["Destination"] = map[string]interface{}{
 			"Arn":        replay.Destination.Arn,
 			"FilterArns": replay.Destination.FilterArns,
 		}
-	}
-	if !replay.ReplayStartTime.IsZero() {
-		result["ReplayStartTime"] = replay.ReplayStartTime.Unix()
-	}
-	if !replay.ReplayEndTime.IsZero() {
-		result["ReplayEndTime"] = replay.ReplayEndTime.Unix()
-	}
-	if !replay.EventLastReplayedTime.IsZero() {
-		result["EventLastReplayedTime"] = replay.EventLastReplayedTime.Unix()
 	}
 
 	return result, nil
@@ -111,7 +124,7 @@ func (s *EventsService) ListReplays(ctx context.Context, reqCtx *request.Request
 		NamePrefix:     request.GetParamLowerFirst(req.Parameters, "NamePrefix"),
 		EventSourceArn: request.GetParamLowerFirst(req.Parameters, "EventSourceArn"),
 		Limit:          int32(request.GetIntParam(req.Parameters, "Limit")),
-		NextToken:      request.GetParamLowerFirst(req.Parameters, "NextToken"),
+		NextToken:      pagination.GetMarker(req.Parameters, "NextToken"),
 	}
 	if stateStr := request.GetParamLowerFirst(req.Parameters, "State"); stateStr != "" {
 		input.State = eventsstore.ReplayState(stateStr)
@@ -129,21 +142,7 @@ func (s *EventsService) ListReplays(ctx context.Context, reqCtx *request.Request
 
 	replays := make([]map[string]interface{}, 0, len(result.Replays))
 	for _, replay := range result.Replays {
-		r := map[string]interface{}{
-			"ReplayName":     replay.Name,
-			"ReplayArn":      replay.ARN,
-			"State":          string(replay.State),
-			"EventSourceArn": replay.EventSourceARN,
-			"EventStartTime": replay.EventStartTime.Unix(),
-			"EventEndTime":   replay.EventEndTime.Unix(),
-		}
-		if replay.Destination != nil {
-			r["Destination"] = map[string]interface{}{
-				"Arn":        replay.Destination.Arn,
-				"FilterArns": replay.Destination.FilterArns,
-			}
-		}
-		replays = append(replays, r)
+		replays = append(replays, replayToListItem(replay))
 	}
 
 	response := map[string]interface{}{

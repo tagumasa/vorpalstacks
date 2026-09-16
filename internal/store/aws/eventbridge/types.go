@@ -1,20 +1,8 @@
-// Package events provides EventBridge storage functionality for vorpalstacks.
 package eventbridge
 
 import (
+	"sort"
 	"time"
-
-	types "vorpalstacks/internal/common/tags"
-)
-
-// EventBusState represents the state of an EventBridge event bus.
-type EventBusState string
-
-// EventBusState constants define the possible states of an EventBridge event bus.
-const (
-	EventBusStateActive   EventBusState = "ACTIVE"
-	EventBusStateCreating EventBusState = "CREATING"
-	EventBusStateDeleting EventBusState = "DELETING"
 )
 
 // RuleState represents the state of an EventBridge rule.
@@ -30,25 +18,35 @@ const (
 // ArchiveState represents the state of an EventBridge archive.
 type ArchiveState string
 
-// ArchiveState constants define the possible states of an EventBridge archive.
+// ArchiveState constants are the complete ArchiveState enum from the
+// Smithy model (2015-10-07): CREATE_FAILED, CREATING, DISABLED, ENABLED,
+// UPDATE_FAILED, UPDATING.
 const (
-	ArchiveStateEnabled  ArchiveState = "ENABLED"
-	ArchiveStateDisabled ArchiveState = "DISABLED"
-	ArchiveStateCreating ArchiveState = "CREATING"
-	ArchiveStateUpdating ArchiveState = "UPDATING"
-	ArchiveStateDeleting ArchiveState = "DELETING"
+	ArchiveStateEnabled      ArchiveState = "ENABLED"
+	ArchiveStateDisabled     ArchiveState = "DISABLED"
+	ArchiveStateCreating     ArchiveState = "CREATING"
+	ArchiveStateUpdating     ArchiveState = "UPDATING"
+	ArchiveStateCreateFailed ArchiveState = "CREATE_FAILED"
+	ArchiveStateUpdateFailed ArchiveState = "UPDATE_FAILED"
 )
 
 // ConnectionState represents the state of an EventBridge connection.
 type ConnectionState string
 
-// ConnectionState constants define the possible states of an EventBridge connection.
+// ConnectionState constants are the complete ConnectionState enum from
+// the Smithy model (2015-10-07): ACTIVE, AUTHORIZED, AUTHORIZING,
+// CREATING, DEAUTHORIZED, DEAUTHORIZING, DELETING, FAILED_CONNECTIVITY,
+// UPDATING.
 const (
-	ConnectionStateAuthorized   ConnectionState = "AUTHORIZED"
-	ConnectionStateDeauthorized ConnectionState = "DEAUTHORIZED"
-	ConnectionStateCreating     ConnectionState = "CREATING"
-	ConnectionStateUpdating     ConnectionState = "UPDATING"
-	ConnectionStateDeleting     ConnectionState = "DELETING"
+	ConnectionStateAuthorized         ConnectionState = "AUTHORIZED"
+	ConnectionStateDeauthorized       ConnectionState = "DEAUTHORIZED"
+	ConnectionStateCreating           ConnectionState = "CREATING"
+	ConnectionStateUpdating           ConnectionState = "UPDATING"
+	ConnectionStateDeleting           ConnectionState = "DELETING"
+	ConnectionStateActive             ConnectionState = "ACTIVE"
+	ConnectionStateAuthorizing        ConnectionState = "AUTHORIZING"
+	ConnectionStateDeauthorizing      ConnectionState = "DEAUTHORIZING"
+	ConnectionStateFailedConnectivity ConnectionState = "FAILED_CONNECTIVITY"
 )
 
 // ApiDestinationState represents the state of an EventBridge API destination.
@@ -63,16 +61,85 @@ const (
 // ReplayState represents the state of an EventBridge replay.
 type ReplayState string
 
-// ReplayState constants define the possible states of an EventBridge replay.
+// ReplayState constants are the complete ReplayState enum from the Smithy
+// model (2015-10-07): CANCELLED, CANCELLING, COMPLETED, FAILED, RUNNING,
+// STARTING.
 const (
-	ReplayStateStarting  ReplayState = "STARTING"
-	ReplayStateRunning   ReplayState = "RUNNING"
-	ReplayStateCancelled ReplayState = "CANCELLED"
-	ReplayStateCompleted ReplayState = "COMPLETED"
-	ReplayStateFailed    ReplayState = "FAILED"
+	ReplayStateStarting   ReplayState = "STARTING"
+	ReplayStateRunning    ReplayState = "RUNNING"
+	ReplayStateCancelling ReplayState = "CANCELLING"
+	ReplayStateCancelled  ReplayState = "CANCELLED"
+	ReplayStateCompleted  ReplayState = "COMPLETED"
+	ReplayStateFailed     ReplayState = "FAILED"
 )
 
-// EventBus represents an EventBridge event bus.
+// The state-membership maps below hold each enum's complete model
+// vocabulary; list filters validate against them so an out-of-enum state
+// is a ValidationException rather than a silent empty match.
+var (
+	archiveStateMembers = map[ArchiveState]bool{
+		ArchiveStateEnabled:      true,
+		ArchiveStateDisabled:     true,
+		ArchiveStateCreating:     true,
+		ArchiveStateUpdating:     true,
+		ArchiveStateCreateFailed: true,
+		ArchiveStateUpdateFailed: true,
+	}
+	connectionStateMembers = map[ConnectionState]bool{
+		ConnectionStateAuthorized:         true,
+		ConnectionStateDeauthorized:       true,
+		ConnectionStateCreating:           true,
+		ConnectionStateUpdating:           true,
+		ConnectionStateDeleting:           true,
+		ConnectionStateActive:             true,
+		ConnectionStateAuthorizing:        true,
+		ConnectionStateDeauthorizing:      true,
+		ConnectionStateFailedConnectivity: true,
+	}
+	replayStateMembers = map[ReplayState]bool{
+		ReplayStateStarting:   true,
+		ReplayStateRunning:    true,
+		ReplayStateCancelling: true,
+		ReplayStateCancelled:  true,
+		ReplayStateCompleted:  true,
+		ReplayStateFailed:     true,
+	}
+)
+
+// IsValidArchiveState reports whether s is a member of the model's
+// ArchiveState vocabulary.
+func IsValidArchiveState(s ArchiveState) bool { return archiveStateMembers[s] }
+
+// IsValidConnectionState reports whether s is a member of the model's
+// ConnectionState vocabulary.
+func IsValidConnectionState(s ConnectionState) bool { return connectionStateMembers[s] }
+
+// IsValidReplayState reports whether s is a member of the model's
+// ReplayState vocabulary.
+func IsValidReplayState(s ReplayState) bool { return replayStateMembers[s] }
+
+// sortedVocabulary renders an enum-membership map as a sorted value list
+// for validation messages.
+func sortedVocabulary[T ~string](m map[T]bool) []string {
+	values := make([]string, 0, len(m))
+	for v := range m {
+		values = append(values, string(v))
+	}
+	sort.Strings(values)
+	return values
+}
+
+// ArchiveStateVocabulary returns the sorted ArchiveState vocabulary.
+func ArchiveStateVocabulary() []string { return sortedVocabulary(archiveStateMembers) }
+
+// ConnectionStateVocabulary returns the sorted ConnectionState vocabulary.
+func ConnectionStateVocabulary() []string { return sortedVocabulary(connectionStateMembers) }
+
+// ReplayStateVocabulary returns the sorted ReplayState vocabulary.
+func ReplayStateVocabulary() []string { return sortedVocabulary(replayStateMembers) }
+
+// EventBus represents an EventBridge event bus. Resource tags live in the
+// TagStore keyed by ARN; the record carries no tag mirror.
 type EventBus struct {
 	Name             string            `json:"name"`
 	ARN              string            `json:"arn"`
@@ -83,7 +150,6 @@ type EventBus struct {
 	KmsKeyIdentifier string            `json:"kmsKeyIdentifier,omitempty"`
 	DeadLetterConfig *DeadLetterConfig `json:"deadLetterConfig,omitempty"`
 	LogConfig        *BusLogConfig     `json:"logConfig,omitempty"`
-	Tags             []types.Tag       `json:"tags,omitempty"`
 	CreatedAt        time.Time         `json:"createdAt"`
 	LastModifiedAt   time.Time         `json:"lastModifiedAt,omitempty"`
 }
@@ -96,23 +162,23 @@ type BusLogConfig struct {
 	Level         string `json:"level,omitempty"`
 }
 
-// Rule represents an EventBridge rule.
+// Rule represents an EventBridge rule. Resource tags live in the TagStore
+// keyed by ARN; the record carries no tag mirror.
 type Rule struct {
-	Name               string      `json:"name"`
-	ARN                string      `json:"arn"`
-	Region             string      `json:"region"`
-	AccountID          string      `json:"accountId"`
-	EventBusName       string      `json:"eventBusName"`
-	Description        string      `json:"description,omitempty"`
-	EventPattern       string      `json:"eventPattern,omitempty"`
-	ScheduleExpression string      `json:"scheduleExpression,omitempty"`
-	State              RuleState   `json:"state"`
-	ManagedBy          string      `json:"managedBy,omitempty"`
-	RoleARN            string      `json:"roleArn,omitempty"`
-	CreatedBy          string      `json:"createdBy,omitempty"`
-	Tags               []types.Tag `json:"tags,omitempty"`
-	CreatedAt          time.Time   `json:"createdAt"`
-	LastModifiedAt     time.Time   `json:"lastModifiedAt"`
+	Name               string    `json:"name"`
+	ARN                string    `json:"arn"`
+	Region             string    `json:"region"`
+	AccountID          string    `json:"accountId"`
+	EventBusName       string    `json:"eventBusName"`
+	Description        string    `json:"description,omitempty"`
+	EventPattern       string    `json:"eventPattern,omitempty"`
+	ScheduleExpression string    `json:"scheduleExpression,omitempty"`
+	State              RuleState `json:"state"`
+	ManagedBy          string    `json:"managedBy,omitempty"`
+	RoleARN            string    `json:"roleArn,omitempty"`
+	CreatedBy          string    `json:"createdBy,omitempty"`
+	CreatedAt          time.Time `json:"createdAt"`
+	LastModifiedAt     time.Time `json:"lastModifiedAt"`
 	// LastFiredAt records the most recent schedule boundary this rule
 	// fired under. It is an internal durability marker for the scheduler
 	// worker (a restart re-seeds its dedup cache from it); it never
@@ -123,23 +189,21 @@ type Rule struct {
 
 // Target represents an EventBridge target.
 type Target struct {
-	ID                   string                `json:"id"`
-	RuleName             string                `json:"ruleName"`
-	EventBusName         string                `json:"eventBusName"`
-	ARN                  string                `json:"arn"`
-	Input                string                `json:"input,omitempty"`
-	InputPath            string                `json:"inputPath,omitempty"`
-	InputTransformer     *InputTransformer     `json:"inputTransformer,omitempty"`
-	RoleARN              string                `json:"roleArn,omitempty"`
-	DeadLetterConfig     *DeadLetterConfig     `json:"deadLetterConfig,omitempty"`
-	RetryPolicy          *RetryPolicy          `json:"retryPolicy,omitempty"`
-	SqsParameters        *SqsParameters        `json:"sqsParameters,omitempty"`
-	HttpParameters       *HttpParameters       `json:"httpParameters,omitempty"`
-	KinesisParameters    *KinesisParameters    `json:"kinesisParameters,omitempty"`
-	RunCommandParameters *RunCommandParameters `json:"runCommandParameters,omitempty"`
-	AppSyncParameters    *AppSyncParameters    `json:"appSyncParameters,omitempty"`
-	EcsParameters        *EcsParameters        `json:"ecsParameters,omitempty"`
-	CreatedAt            time.Time             `json:"createdAt"`
+	ID                string             `json:"id"`
+	RuleName          string             `json:"ruleName"`
+	EventBusName      string             `json:"eventBusName"`
+	ARN               string             `json:"arn"`
+	Input             string             `json:"input,omitempty"`
+	InputPath         string             `json:"inputPath,omitempty"`
+	InputTransformer  *InputTransformer  `json:"inputTransformer,omitempty"`
+	RoleARN           string             `json:"roleArn,omitempty"`
+	DeadLetterConfig  *DeadLetterConfig  `json:"deadLetterConfig,omitempty"`
+	RetryPolicy       *RetryPolicy       `json:"retryPolicy,omitempty"`
+	SqsParameters     *SqsParameters     `json:"sqsParameters,omitempty"`
+	HttpParameters    *HttpParameters    `json:"httpParameters,omitempty"`
+	KinesisParameters *KinesisParameters `json:"kinesisParameters,omitempty"`
+	AppSyncParameters *AppSyncParameters `json:"appSyncParameters,omitempty"`
+	CreatedAt         time.Time          `json:"createdAt"`
 }
 
 // KinesisParameters represents the Kinesis parameters for an EventBridge target.
@@ -147,38 +211,9 @@ type KinesisParameters struct {
 	PartitionKeyPath string `json:"partitionKeyPath,omitempty"`
 }
 
-// RunCommandTarget identifies a target for an SSM Run Command invocation.
-type RunCommandTarget struct {
-	Key    string   `json:"key"`
-	Values []string `json:"values"`
-}
-
-// RunCommandParameters configures the SSM Run Command target.
-type RunCommandParameters struct {
-	RunCommandTargets []RunCommandTarget `json:"runCommandTargets"`
-}
-
 // AppSyncParameters configures an AppSync GraphQL target.
 type AppSyncParameters struct {
 	GraphQLOperation string `json:"graphQLOperation,omitempty"`
-}
-
-// EcsParameters configures an ECS task target.  Delivery to ECS is not
-// available on this platform; parameters are persisted for SDK parity.
-type EcsParameters struct {
-	TaskDefinitionArn        string                   `json:"taskDefinitionArn,omitempty"`
-	TaskCount                int32                    `json:"taskCount,omitempty"`
-	LaunchType               string                   `json:"launchType,omitempty"`
-	NetworkConfiguration     map[string]interface{}   `json:"networkConfiguration,omitempty"`
-	PlatformVersion          string                   `json:"platformVersion,omitempty"`
-	Group                    string                   `json:"group,omitempty"`
-	CapacityProviderStrategy []map[string]interface{} `json:"capacityProviderStrategy,omitempty"`
-	EnableECSManagedTags     bool                     `json:"enableECSManagedTags,omitempty"`
-	EnableExecuteCommand     bool                     `json:"enableExecuteCommand,omitempty"`
-	PlacementConstraints     []map[string]interface{} `json:"placementConstraints,omitempty"`
-	PlacementStrategy        []map[string]interface{} `json:"placementStrategy,omitempty"`
-	PropagateTags            string                   `json:"propagateTags,omitempty"`
-	ReferenceId              string                   `json:"referenceId,omitempty"`
 }
 
 // InputTransformer represents an input transformer for EventBridge targets.
@@ -229,12 +264,41 @@ type Archive struct {
 	CreatedAt        time.Time    `json:"createdAt"`
 }
 
+// ConnectionHeaderParameter is one additional header parameter a connection
+// applies to its HTTP requests (Smithy ConnectionHeaderParameter: Key, Value,
+// IsValueSecret — "up to 100 additional header parameters per request").
+type ConnectionHeaderParameter struct {
+	Key           string `json:"key,omitempty"`
+	Value         string `json:"value,omitempty"`
+	IsValueSecret bool   `json:"isValueSecret,omitempty"`
+}
+
+// ConnectionQueryStringParameter is one additional query string parameter a
+// connection applies to its HTTP requests (Smithy
+// ConnectionQueryStringParameter: Key, Value, IsValueSecret).
+type ConnectionQueryStringParameter struct {
+	Key           string `json:"key,omitempty"`
+	Value         string `json:"value,omitempty"`
+	IsValueSecret bool   `json:"isValueSecret,omitempty"`
+}
+
+// ConnectionBodyParameter is one additional body parameter a connection
+// applies to its HTTP requests (Smithy ConnectionBodyParameter: Key, Value,
+// IsValueSecret).
+type ConnectionBodyParameter struct {
+	Key           string `json:"key,omitempty"`
+	Value         string `json:"value,omitempty"`
+	IsValueSecret bool   `json:"isValueSecret,omitempty"`
+}
+
 // ConnectionHttpParameters represents additional header/query/body parameters
-// to send on the HTTP request when invoking an API destination target.
+// to send on the HTTP request when invoking an API destination target. Each
+// family is a list of {Key, Value, IsValueSecret} entries per the Smithy
+// ConnectionHttpParameters shape (each list bounded at 100 entries).
 type ConnectionHttpParameters struct {
-	HeaderParameters      map[string]string `json:"headerParameters,omitempty"`
-	QueryStringParameters map[string]string `json:"queryStringParameters,omitempty"`
-	BodyParameters        []string          `json:"bodyParameters,omitempty"`
+	HeaderParameters      []ConnectionHeaderParameter      `json:"headerParameters,omitempty"`
+	QueryStringParameters []ConnectionQueryStringParameter `json:"queryStringParameters,omitempty"`
+	BodyParameters        []ConnectionBodyParameter        `json:"bodyParameters,omitempty"`
 }
 
 // BasicAuthParameters holds Basic HTTP authentication credentials.
@@ -307,7 +371,6 @@ type Connection struct {
 	SecretArn                        string                          `json:"secretArn,omitempty"`
 	State                            ConnectionState                 `json:"state"`
 	StateReason                      string                          `json:"stateReason,omitempty"`
-	Tags                             []types.Tag                     `json:"tags,omitempty"`
 	CreatedAt                        time.Time                       `json:"createdAt"`
 	LastModifiedAt                   time.Time                       `json:"lastModifiedAt,omitempty"`
 	LastAuthorizedAt                 time.Time                       `json:"lastAuthorizedAt,omitempty"`
@@ -325,7 +388,6 @@ type ApiDestination struct {
 	InvocationEndpoint           string              `json:"invocationEndpoint"`
 	InvocationRateLimitPerSecond int32               `json:"invocationRateLimitPerSecond,omitempty"`
 	State                        ApiDestinationState `json:"state"`
-	Tags                         []types.Tag         `json:"tags,omitempty"`
 	CreatedAt                    time.Time           `json:"createdAt"`
 	LastModifiedAt               time.Time           `json:"lastModifiedAt,omitempty"`
 }
@@ -343,6 +405,21 @@ type Event struct {
 	Detail       map[string]interface{} `json:"detail"`
 	EventBusName string                 `json:"eventBusName"`
 	TraceHeader  string                 `json:"traceHeader,omitempty"`
+	// ReplayName carries the replay-name metadata field EventBridge adds to
+	// an event while replaying it (the archives user guide documents the
+	// field and the {"replay-name":[{"exists":false}]} managed-rule pattern
+	// consumers use to ignore replays). It is a delivery-time property set
+	// only by the replay path; PutEvents ingress cannot supply it.
+	ReplayName string `json:"replayName,omitempty"`
+	// IngestionTime records when the platform received the event: the
+	// aws.events.event.ingestion-time reserved variable renders this
+	// stamp — "The time at which the event was received by EventBridge.
+	// This is an ISO 8601 timestamp. This variable is generated by
+	// EventBridge and can't be overwritten" (input transformation page) —
+	// never the publisher-suppliable Time member. Zero means the record
+	// predates the stamp (a pre-index archive record, a synthetic event);
+	// readers fall back to Time.
+	IngestionTime time.Time `json:"ingestionTime,omitempty"`
 }
 
 // Replay represents an EventBridge replay.
@@ -361,6 +438,10 @@ type Replay struct {
 	EventLastReplayedTime time.Time          `json:"eventLastReplayedTime,omitempty"`
 	ReplayStartTime       time.Time          `json:"replayStartTime,omitempty"`
 	ReplayEndTime         time.Time          `json:"replayEndTime,omitempty"`
+	// CreatedAt anchors the replay record's age: EventBridge deletes replay
+	// records after 90 days (the archives user guide), counted from the
+	// record's creation.
+	CreatedAt time.Time `json:"createdAt,omitempty"`
 }
 
 // ReplayDestination represents the destination configuration for an EventBridge replay.
@@ -369,12 +450,13 @@ type ReplayDestination struct {
 	FilterArns []string `json:"filterArns,omitempty"`
 }
 
-// ArchivedEvent represents an archived EventBridge event.
+// ArchivedEvent represents an archived EventBridge event. The archived
+// envelope is self-describing; the owning bus is recoverable from the
+// archive record and is not mirrored per event.
 type ArchivedEvent struct {
-	ID          string                 `json:"id"`
-	EventBusARN string                 `json:"eventBusArn"`
-	Event       map[string]interface{} `json:"event"`
-	Timestamp   time.Time              `json:"timestamp"`
+	ID        string                 `json:"id"`
+	Event     map[string]interface{} `json:"event"`
+	Timestamp time.Time              `json:"timestamp"`
 }
 
 // PutEventsRequestEntry represents an entry in a PutEvents request.

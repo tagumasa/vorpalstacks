@@ -37,8 +37,18 @@ func (r *TestRunner) runEventBridgeEdgeTests(ctx context.Context, client *eventb
 	}))
 
 	results = append(results, r.RunTest("events", "DeleteRule_NonExistent", func() error {
-		_, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{
+		// A missing rule on an existing bus deletes successfully ("If you
+		// call delete rule multiple times for the same rule, all calls
+		// will succeed"); the non-existent custom event bus is the
+		// documented ResourceNotFoundException case.
+		if _, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{
 			Name: aws.String("nonexistent-rule-xyz-12345"),
+		}); err != nil {
+			return fmt.Errorf("delete of a missing rule on the default bus must succeed: %v", err)
+		}
+		_, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{
+			Name:         aws.String("nonexistent-rule-xyz-12345"),
+			EventBusName: aws.String("nonexistent-bus-xyz-12345"),
 		})
 		return expectEventBridgeResourceNotFound(err)
 	}))

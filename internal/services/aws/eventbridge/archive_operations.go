@@ -9,22 +9,6 @@ import (
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
-var validAuthTypes = map[string]bool{
-	"API_KEY":                  true,
-	"BASIC":                    true,
-	"OAUTH_CLIENT_CREDENTIALS": true,
-}
-
-var validHttpMethods = map[string]bool{
-	"GET":     true,
-	"POST":    true,
-	"PUT":     true,
-	"DELETE":  true,
-	"HEAD":    true,
-	"OPTIONS": true,
-	"PATCH":   true,
-}
-
 // archiveToListItem serialises an Archive for the ListArchives response.
 // Per Smithy Archive shape: ArchiveName, EventSourceArn, State,
 // StateReason, RetentionDays, SizeBytes, EventCount, CreationTime.

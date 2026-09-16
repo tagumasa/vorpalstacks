@@ -2,7 +2,6 @@ package eventbridge
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -108,16 +107,18 @@ func connectionToListMap(c *eventsstore.Connection) map[string]interface{} {
 	return result
 }
 
-// redactAuthParameters mirrors AWS DescribeConnection semantics: the
-// AuthParameters shape is preserved but every credential-bearing field is
-// replaced with an empty string. This proves which sub-parameters were set
-// without leaking stored secrets.
+// redactAuthParameters renders the AuthParameters DescribeConnection
+// response shape. The response structures carry only the non-credential
+// members of each authorisation family — Username for Basic, ClientID for
+// OAuth clients, ApiKeyName for API keys (Password, ClientSecret and
+// ApiKeyValue are absent from the DescribeConnectionResponse.AuthParameters
+// shape entirely) — while the header/query/body parameter lists are returned
+// as stored, each entry keeping its Key, Value and IsValueSecret.
 func redactAuthParameters(p *eventsstore.AuthParameters) map[string]interface{} {
 	out := map[string]interface{}{}
 	if p.BasicAuthParameters != nil {
 		out["BasicAuthParameters"] = map[string]interface{}{
-			"Username": "",
-			"Password": "",
+			"Username": p.BasicAuthParameters.Username,
 		}
 	}
 	if p.OAuthParameters != nil {
@@ -127,8 +128,7 @@ func redactAuthParameters(p *eventsstore.AuthParameters) map[string]interface{} 
 		}
 		if p.OAuthParameters.ClientParameters != nil {
 			oauth["ClientParameters"] = map[string]interface{}{
-				"ClientID":     "",
-				"ClientSecret": "",
+				"ClientID": p.OAuthParameters.ClientParameters.ClientID,
 			}
 		}
 		if p.OAuthParameters.OAuthHttpParameters != nil {
@@ -138,8 +138,7 @@ func redactAuthParameters(p *eventsstore.AuthParameters) map[string]interface{} 
 	}
 	if p.ApiKeyAuthParameters != nil {
 		out["ApiKeyAuthParameters"] = map[string]interface{}{
-			"ApiKeyName":  "",
-			"ApiKeyValue": "",
+			"ApiKeyName": p.ApiKeyAuthParameters.ApiKeyName,
 		}
 	}
 	if p.InvocationHttpParameters != nil {
@@ -148,27 +147,44 @@ func redactAuthParameters(p *eventsstore.AuthParameters) map[string]interface{} 
 	return out
 }
 
-// redactHttpParameters returns ConnectionHttpParameters with header/query
-// values blanked, preserving only the keys. Body parameter keys are removed
-// entirely (their values are themselves the secret payload).
+// redactHttpParameters renders ConnectionHttpParameters for a Describe
+// response: each parameter list is returned as stored with its Key, Value
+// and IsValueSecret members (the response shape reuses the request's
+// parameter structures).
 func redactHttpParameters(p *eventsstore.ConnectionHttpParameters) map[string]interface{} {
 	out := map[string]interface{}{}
 	if len(p.HeaderParameters) > 0 {
-		hdrs := make(map[string]string, len(p.HeaderParameters))
-		for k := range p.HeaderParameters {
-			hdrs[k] = ""
+		hdrs := make([]map[string]interface{}, 0, len(p.HeaderParameters))
+		for _, h := range p.HeaderParameters {
+			hdrs = append(hdrs, map[string]interface{}{
+				"Key":           h.Key,
+				"Value":         h.Value,
+				"IsValueSecret": h.IsValueSecret,
+			})
 		}
 		out["HeaderParameters"] = hdrs
 	}
 	if len(p.QueryStringParameters) > 0 {
-		qs := make(map[string]string, len(p.QueryStringParameters))
-		for k := range p.QueryStringParameters {
-			qs[k] = ""
+		qs := make([]map[string]interface{}, 0, len(p.QueryStringParameters))
+		for _, q := range p.QueryStringParameters {
+			qs = append(qs, map[string]interface{}{
+				"Key":           q.Key,
+				"Value":         q.Value,
+				"IsValueSecret": q.IsValueSecret,
+			})
 		}
 		out["QueryStringParameters"] = qs
 	}
 	if len(p.BodyParameters) > 0 {
-		out["BodyParameters"] = []string{}
+		bodies := make([]map[string]interface{}, 0, len(p.BodyParameters))
+		for _, b := range p.BodyParameters {
+			bodies = append(bodies, map[string]interface{}{
+				"Key":           b.Key,
+				"Value":         b.Value,
+				"IsValueSecret": b.IsValueSecret,
+			})
+		}
+		out["BodyParameters"] = bodies
 	}
 	return out
 }
@@ -219,31 +235,48 @@ func parseAuthParameters(raw interface{}) *eventsstore.AuthParameters {
 }
 
 // parseConnectionHttpParameters builds a ConnectionHttpParameters from a
-// request map. HeaderParameters and QueryStringParameters are map[string]string
-// in the Smithy model; BodyParameters is a list of opaque strings.
+// request map. Each family is a list of {Key, Value, IsValueSecret}
+// structures on the wire (the SDK sends exactly that shape; the member
+// order inside each entry is irrelevant to map decoding).
 func parseConnectionHttpParameters(m map[string]interface{}) *eventsstore.ConnectionHttpParameters {
 	out := &eventsstore.ConnectionHttpParameters{}
-	if hdrs, ok := m["HeaderParameters"].(map[string]interface{}); ok {
-		out.HeaderParameters = make(map[string]string, len(hdrs))
-		for k, v := range hdrs {
-			if s, ok := v.(string); ok {
-				out.HeaderParameters[k] = s
+	if hdrs, ok := m["HeaderParameters"].([]interface{}); ok {
+		for _, h := range hdrs {
+			entry, ok := h.(map[string]interface{})
+			if !ok {
+				continue
 			}
+			out.HeaderParameters = append(out.HeaderParameters, eventsstore.ConnectionHeaderParameter{
+				Key:           getStringField(entry, "Key"),
+				Value:         getStringField(entry, "Value"),
+				IsValueSecret: getBoolField(entry, "IsValueSecret"),
+			})
 		}
 	}
-	if qs, ok := m["QueryStringParameters"].(map[string]interface{}); ok {
-		out.QueryStringParameters = make(map[string]string, len(qs))
-		for k, v := range qs {
-			if s, ok := v.(string); ok {
-				out.QueryStringParameters[k] = s
+	if qs, ok := m["QueryStringParameters"].([]interface{}); ok {
+		for _, q := range qs {
+			entry, ok := q.(map[string]interface{})
+			if !ok {
+				continue
 			}
+			out.QueryStringParameters = append(out.QueryStringParameters, eventsstore.ConnectionQueryStringParameter{
+				Key:           getStringField(entry, "Key"),
+				Value:         getStringField(entry, "Value"),
+				IsValueSecret: getBoolField(entry, "IsValueSecret"),
+			})
 		}
 	}
 	if bodies, ok := m["BodyParameters"].([]interface{}); ok {
 		for _, b := range bodies {
-			if s, ok := b.(string); ok {
-				out.BodyParameters = append(out.BodyParameters, s)
+			entry, ok := b.(map[string]interface{})
+			if !ok {
+				continue
 			}
+			out.BodyParameters = append(out.BodyParameters, eventsstore.ConnectionBodyParameter{
+				Key:           getStringField(entry, "Key"),
+				Value:         getStringField(entry, "Value"),
+				IsValueSecret: getBoolField(entry, "IsValueSecret"),
+			})
 		}
 	}
 	return out
@@ -258,12 +291,20 @@ func getStringField(m map[string]interface{}, key string) string {
 	return ""
 }
 
+// getBoolField returns the boolean value at key in m, or false if absent or
+// non-boolean (IsValueSecret defaults to false per the model's @default).
+func getBoolField(m map[string]interface{}, key string) bool {
+	if v, ok := m[key].(bool); ok {
+		return v
+	}
+	return false
+}
+
 // parseCreateConnectionInput reads the CreateConnection wire request into
 // the transport-agnostic Core input.
 func parseCreateConnectionInput(req *request.ParsedRequest) CreateConnectionInput {
 	input := CreateConnectionInput{
 		Name:              request.GetParamLowerFirst(req.Parameters, "Name"),
-		Description:       request.GetStringParam(req.Parameters, "Description"),
 		AuthorizationType: request.GetParamLowerFirst(req.Parameters, "AuthorizationType"),
 		AuthParameters:    parseAuthParameters(req.Parameters["AuthParameters"]),
 	}
@@ -319,12 +360,11 @@ func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	now := time.Now().UTC()
 	return map[string]interface{}{
 		"ConnectionArn":    connection.ARN,
 		"ConnectionState":  string(connection.State),
 		"CreationTime":     connection.CreatedAt.Unix(),
-		"LastModifiedTime": now.Unix(),
+		"LastModifiedTime": connection.LastModifiedAt.Unix(),
 	}, nil
 }
 
@@ -406,7 +446,7 @@ func (s *EventsService) DeauthorizeConnection(ctx context.Context, reqCtx *reque
 
 	resp := map[string]interface{}{
 		"ConnectionArn":   connection.ARN,
-		"ConnectionState": string(eventsstore.ConnectionStateDeauthorized),
+		"ConnectionState": string(connection.State),
 	}
 	resp["CreationTime"] = connection.CreatedAt.Unix()
 	resp["LastModifiedTime"] = connection.LastModifiedAt.Unix()

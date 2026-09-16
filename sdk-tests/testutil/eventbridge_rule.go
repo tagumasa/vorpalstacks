@@ -17,9 +17,9 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 
 	results = append(results, r.RunTest("events", "PutRule", func() error {
 		resp, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:               aws.String(ruleName),
-			EventBusName:       aws.String(busName),
-			ScheduleExpression: aws.String("rate(5 minutes)"),
+			Name:         aws.String(ruleName),
+			EventBusName: aws.String(busName),
+			EventPattern: aws.String(`{"source":["com.example.test"]}`),
 		})
 		if err != nil {
 			return err
@@ -39,10 +39,10 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 	results = append(results, r.RunTest("events", "PutRule_DescriptionMultibyteAccepted", func() error {
 		desc := strings.Repeat("\u65e5", 256)
 		if _, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:               aws.String(ruleName),
-			EventBusName:       aws.String(busName),
-			Description:        aws.String(desc),
-			ScheduleExpression: aws.String("rate(5 minutes)"),
+			Name:         aws.String(ruleName),
+			EventBusName: aws.String(busName),
+			Description:  aws.String(desc),
+			EventPattern: aws.String(`{"source":["com.example.test"]}`),
 		}); err != nil {
 			return fmt.Errorf("PutRule with multibyte description: %v", err)
 		}
@@ -73,14 +73,17 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 			// at() is EventBridge Scheduler syntax, not scheduled-rule syntax
 			"at(2026-01-01T12:00:00)",
 		}
+		// The expressions run against the default event bus: scheduled
+		// rules are restricted to it, and pinning the expression
+		// rejections there keeps the bus restriction from shadowing the
+		// expression validation.
 		for _, expr := range invalid {
 			_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
 				Name:               aws.String(fmt.Sprintf("BadRule-%d", time.Now().UnixNano())),
-				EventBusName:       aws.String(busName),
 				ScheduleExpression: aws.String(expr),
 			})
-			if err == nil {
-				return fmt.Errorf("expected error for ScheduleExpression %q", expr)
+			if codeErr := expectAWSErrorCode(err, "ValidationException"); codeErr != nil {
+				return fmt.Errorf("ScheduleExpression %q: %v", expr, codeErr)
 			}
 		}
 		return nil
@@ -88,7 +91,8 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 
 	results = append(results, r.RunTest("events", "PutRule_CronLastFriday", func() error {
 		// Documented AWS cron examples using the L, W and # day
-		// wildcards (EventBridge cron reference / PutRule examples).
+		// wildcards (EventBridge cron reference / PutRule examples) on
+		// the default event bus, the only bus scheduled rules accept.
 		valid := []string{
 			"cron(15 10 ? * 6L 2019-2022)", // last Friday of the month
 			"cron(0 9 1W * ? *)",           // weekday nearest the 1st
@@ -99,17 +103,15 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 			name := fmt.Sprintf("CronRule-%d", time.Now().UnixNano())
 			_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
 				Name:               aws.String(name),
-				EventBusName:       aws.String(busName),
 				ScheduleExpression: aws.String(expr),
 			})
 			if err != nil {
 				return fmt.Errorf("PutRule(%q): %v", expr, err)
 			}
-			defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(name), EventBusName: aws.String(busName)})
+			defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(name)})
 
 			resp, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{
-				Name:         aws.String(name),
-				EventBusName: aws.String(busName),
+				Name: aws.String(name),
 			})
 			if err != nil {
 				return fmt.Errorf("DescribeRule(%q): %v", expr, err)
@@ -124,7 +126,6 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 	results = append(results, r.RunTest("events", "PutRule_CronFiveFieldsRejected", func() error {
 		_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
 			Name:               aws.String(fmt.Sprintf("BadRule5-%d", time.Now().UnixNano())),
-			EventBusName:       aws.String(busName),
 			ScheduleExpression: aws.String("cron(0 12 * * ?)"),
 		})
 		if err == nil {
@@ -136,7 +137,6 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 	results = append(results, r.RunTest("events", "PutRule_CronDomDowBothSpecified", func() error {
 		_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
 			Name:               aws.String(fmt.Sprintf("BadRuleDD-%d", time.Now().UnixNano())),
-			EventBusName:       aws.String(busName),
 			ScheduleExpression: aws.String("cron(0 12 15 * FRI 2027)"),
 		})
 		if err == nil {
@@ -199,7 +199,6 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 
 		cleanupRule, err := createEventBridgeTestRule(ctx, client, rdBus, rdRule, func(input *eventbridge.PutRuleInput) {
 			input.Description = aws.String("test rule for disable")
-			input.ScheduleExpression = aws.String("rate(5 minutes)")
 		})
 		if err != nil {
 			return err
@@ -262,7 +261,6 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 		patternJSON, _ := json.Marshal(pattern)
 
 		cleanupRule, err := createEventBridgeTestRule(ctx, client, epBus, epRule, func(input *eventbridge.PutRuleInput) {
-			input.ScheduleExpression = nil
 			input.EventPattern = aws.String(string(patternJSON))
 		})
 		if err != nil {
@@ -337,6 +335,111 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 		}
 		if len(allRules) != 5 {
 			return fmt.Errorf("expected 5 paginated rules, got %d", len(allRules))
+		}
+		return nil
+	}))
+
+	// Scheduled rules are a default-event-bus-only feature ("You can only
+	// create scheduled rules using the default event bus" — user guide);
+	// the negative pin exercises the custom-bus rejection and the positive
+	// pin the default-bus acceptance together with DeleteRule's documented
+	// idempotency ("If you call delete rule multiple times for the same
+	// rule, all calls will succeed").
+	results = append(results, r.RunTest("events", "PutRule_ScheduledOnCustomBusRejected", func() error {
+		scBus := fmt.Sprintf("ScBus-%d", time.Now().UnixNano())
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, scBus)
+		if err != nil {
+			return err
+		}
+		defer cleanupBus()
+		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
+			Name:               aws.String(fmt.Sprintf("ScRule-%d", time.Now().UnixNano())),
+			EventBusName:       aws.String(scBus),
+			ScheduleExpression: aws.String("rate(5 minutes)"),
+		})
+		if codeErr := expectAWSErrorCode(err, "ValidationException"); codeErr != nil {
+			return codeErr
+		}
+		return AssertErrorContains(err, "default event bus")
+	}))
+
+	results = append(results, r.RunTest("events", "PutRule_ScheduledOnDefaultBus_IdempotentDelete", func() error {
+		name := fmt.Sprintf("DefRule-%d", time.Now().UnixNano())
+		resp, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
+			Name:               aws.String(name),
+			ScheduleExpression: aws.String("rate(5 minutes)"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.RuleArn == nil || *resp.RuleArn == "" {
+			return fmt.Errorf("rule ARN is nil or empty")
+		}
+		desc, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{Name: aws.String(name)})
+		if err != nil {
+			return fmt.Errorf("describe: %v", err)
+		}
+		if aws.ToString(desc.ScheduleExpression) != "rate(5 minutes)" {
+			return fmt.Errorf("ScheduleExpression mismatch: %v", desc.ScheduleExpression)
+		}
+		if _, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(name)}); err != nil {
+			return fmt.Errorf("delete: %v", err)
+		}
+		if _, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(name)}); err != nil {
+			return fmt.Errorf("repeat delete must succeed: %v", err)
+		}
+		return nil
+	}))
+
+	// EventBusNameOrArn members accept "the name or ARN of the event bus"
+	// on every rule-plane operation; the ARN form must address the same
+	// name-keyed record as the plain form.
+	results = append(results, r.RunTest("events", "EventBusName_ArnForm", func() error {
+		abBus := fmt.Sprintf("ArnBus-%d", time.Now().UnixNano())
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, abBus)
+		if err != nil {
+			return err
+		}
+		defer cleanupBus()
+
+		desc, err := client.DescribeEventBus(ctx, &eventbridge.DescribeEventBusInput{Name: aws.String(abBus)})
+		if err != nil {
+			return fmt.Errorf("describe bus: %v", err)
+		}
+		busARN := aws.ToString(desc.Arn)
+
+		arRule := fmt.Sprintf("ArnRule-%d", time.Now().UnixNano())
+		if _, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
+			Name:         aws.String(arRule),
+			EventBusName: aws.String(busARN),
+			EventPattern: aws.String(`{"source":["com.example.test"]}`),
+		}); err != nil {
+			return fmt.Errorf("PutRule via ARN form: %v", err)
+		}
+		defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(arRule), EventBusName: aws.String(busARN)})
+
+		// The plain name addresses the ARN-created rule and vice versa.
+		byName, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{Name: aws.String(arRule), EventBusName: aws.String(abBus)})
+		if err != nil {
+			return fmt.Errorf("DescribeRule via plain name: %v", err)
+		}
+		if aws.ToString(byName.EventBusName) != abBus {
+			return fmt.Errorf("EventBusName mismatch: %v", byName.EventBusName)
+		}
+		byARN, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{Name: aws.String(arRule), EventBusName: aws.String(busARN)})
+		if err != nil {
+			return fmt.Errorf("DescribeRule via ARN form: %v", err)
+		}
+		if aws.ToString(byARN.Arn) != aws.ToString(byName.Arn) {
+			return fmt.Errorf("ARN form resolved to a different rule: %v vs %v", byARN.Arn, byName.Arn)
+		}
+
+		if _, err := client.ListRules(ctx, &eventbridge.ListRulesInput{EventBusName: aws.String(busARN)}); err != nil {
+			return fmt.Errorf("ListRules via ARN form: %v", err)
+		}
+
+		if _, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(arRule), EventBusName: aws.String(busARN)}); err != nil {
+			return fmt.Errorf("DeleteRule via ARN form: %v", err)
 		}
 		return nil
 	}))

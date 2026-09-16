@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -232,6 +233,83 @@ func (r *TestRunner) runEventBridgeBusTests(ctx context.Context, client *eventbr
 		}
 		if codeErr := expectAWSErrorCode(err, "ValidationException"); codeErr != nil {
 			return fmt.Errorf("update rejection: %v", codeErr)
+		}
+		return nil
+	}))
+
+	// PutPermission's Condition is a modelled {Key, Type, Value} structure;
+	// the typed SDK input must round-trip into the stored resource policy
+	// as the nested IAM condition element, and the documented member
+	// patterns (Principal (\d{12}|\*), Action events:[a-zA-Z]+) are
+	// enforced.
+	results = append(results, r.RunTest("events", "PutPermission_ConditionRoundTrip", func() error {
+		ppBus := fmt.Sprintf("PpBus-%d", time.Now().UnixNano())
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, ppBus)
+		if err != nil {
+			return err
+		}
+		defer cleanupBus()
+
+		if _, err := client.PutPermission(ctx, &eventbridge.PutPermissionInput{
+			EventBusName: aws.String(ppBus),
+			Principal:    aws.String("*"),
+			StatementId:  aws.String("OrgStatement"),
+			Action:       aws.String("events:PutEvents"),
+			Condition: &types.Condition{
+				Type:  aws.String("StringEquals"),
+				Key:   aws.String("aws:PrincipalOrgID"),
+				Value: aws.String("o-1234567890"),
+			},
+		}); err != nil {
+			return fmt.Errorf("PutPermission with condition: %v", err)
+		}
+
+		desc, err := client.DescribeEventBus(ctx, &eventbridge.DescribeEventBusInput{Name: aws.String(ppBus)})
+		if err != nil {
+			return fmt.Errorf("DescribeEventBus: %v", err)
+		}
+		if aws.ToString(desc.Policy) == "" {
+			return fmt.Errorf("policy is empty after PutPermission")
+		}
+		var policy struct {
+			Statement []struct {
+				Condition map[string]map[string]string `json:"Condition"`
+			} `json:"Statement"`
+		}
+		if err := json.Unmarshal([]byte(*desc.Policy), &policy); err != nil {
+			return fmt.Errorf("unmarshal policy: %v", err)
+		}
+		if len(policy.Statement) != 1 {
+			return fmt.Errorf("expected 1 statement, got %d", len(policy.Statement))
+		}
+		orgID, ok := policy.Statement[0].Condition["StringEquals"]["aws:PrincipalOrgID"]
+		if !ok || orgID != "o-1234567890" {
+			return fmt.Errorf("Condition block missing or wrong: %+v", policy.Statement[0].Condition)
+		}
+
+		// The documented member patterns hold: a non-events action and a
+		// malformed principal are both rejected.
+		if _, err := client.PutPermission(ctx, &eventbridge.PutPermissionInput{
+			EventBusName: aws.String(ppBus),
+			Principal:    aws.String("111122223333"),
+			StatementId:  aws.String("BadAction"),
+			Action:       aws.String("sqs:SendMessage"),
+		}); err == nil {
+			return fmt.Errorf("expected rejection for a non-events action")
+		}
+		if _, err := client.PutPermission(ctx, &eventbridge.PutPermissionInput{
+			EventBusName: aws.String(ppBus),
+			Principal:    aws.String("not-an-account"),
+			StatementId:  aws.String("BadPrincipal"),
+		}); err == nil {
+			return fmt.Errorf("expected rejection for a malformed principal")
+		}
+
+		if _, err := client.RemovePermission(ctx, &eventbridge.RemovePermissionInput{
+			EventBusName: aws.String(ppBus),
+			StatementId:  aws.String("OrgStatement"),
+		}); err != nil {
+			return fmt.Errorf("RemovePermission: %v", err)
 		}
 		return nil
 	}))

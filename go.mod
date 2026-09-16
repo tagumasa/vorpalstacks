@@ -1,6 +1,6 @@
 module vorpalstacks
 
-go 1.25.13
+go 1.25.14
 
 require (
 	connectrpc.com/connect v1.20.0

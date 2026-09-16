@@ -2,11 +2,13 @@ package eventbridge
 
 import (
 	"context"
-	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
+	awstypes "vorpalstacks/internal/common/tags"
+
+	"google.golang.org/protobuf/proto"
 
 	pb "vorpalstacks/internal/pb/aws/cloudwatchevents"
 	cloudwatcheventsconnect "vorpalstacks/internal/pb/aws/cloudwatchevents/cloudwatcheventsconnect"
@@ -52,10 +54,13 @@ func (h *AdminHandler) ListEventBuses(ctx context.Context, req *connect.Request[
 		eventBuses[i] = toPbEventBus(eb)
 	}
 
-	return connect.NewResponse(&pb.ListEventBusesResponse{
-		Eventbuses: eventBuses,
-		Nexttoken:  proto.String(result.NextToken),
-	}), nil
+	// The response models the HTTP plane: an exhausted page omits the
+	// NextToken member instead of carrying an empty string.
+	resp := &pb.ListEventBusesResponse{Eventbuses: eventBuses}
+	if result.NextToken != "" {
+		resp.Nexttoken = proto.String(result.NextToken)
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // ListRules returns a paginated list of rules in the specified event bus.
@@ -82,10 +87,11 @@ func (h *AdminHandler) ListRules(ctx context.Context, req *connect.Request[pb.Li
 		rules[i] = toPbRule(r)
 	}
 
-	return connect.NewResponse(&pb.ListRulesResponse{
-		Rules:     rules,
-		Nexttoken: proto.String(result.NextToken),
-	}), nil
+	resp := &pb.ListRulesResponse{Rules: rules}
+	if result.NextToken != "" {
+		resp.Nexttoken = proto.String(result.NextToken)
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // CreateEventBus creates a new custom event bus via the admin console.
@@ -95,8 +101,16 @@ func (h *AdminHandler) CreateEventBus(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	// Convert proto tags; createEventBusCore applies them through the same
+	// tag store as the HTTP plane's TagResource.
+	var tags []awstypes.Tag
+	for _, t := range req.Msg.GetTags() {
+		tags = append(tags, awstypes.Tag{Key: t.GetKey(), Value: t.GetValue()})
+	}
+
 	result, err := h.service.createEventBusCore(ctx, store, CreateEventBusInput{
 		Name: req.Msg.Name,
+		Tags: tags,
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

@@ -60,12 +60,19 @@ func (b *EventsBuilder) RuleOnBus(bus, rule string) string {
 // Archive constructs an ARN for an EventBridge archive.
 func (b *EventsBuilder) Archive(name string) string { return b.Build("events", "archive/"+name) }
 
-// Connection constructs an ARN for an EventBridge connection.
-func (b *EventsBuilder) Connection(name string) string { return b.Build("events", "connection/"+name) }
+// Connection constructs an ARN for an EventBridge connection. The resource
+// carries a unique id after the name (Smithy @pattern
+// connection/<name>/<id>), matching the AWS ARN form
+// connection/my-conn/1a2b3c4d-....
+func (b *EventsBuilder) Connection(name, id string) string {
+	return b.Build("events", "connection/"+name+"/"+id)
+}
 
-// ApiDestination constructs an ARN for an EventBridge API destination.
-func (b *EventsBuilder) ApiDestination(name string) string {
-	return b.Build("events", "api-destination/"+name)
+// ApiDestination constructs an ARN for an EventBridge API destination. The
+// resource carries a unique id after the name (Smithy @pattern
+// api-destination/<name>/<id>).
+func (b *EventsBuilder) ApiDestination(name, id string) string {
+	return b.Build("events", "api-destination/"+name+"/"+id)
 }
 
 // Replay constructs an ARN for an EventBridge replay.

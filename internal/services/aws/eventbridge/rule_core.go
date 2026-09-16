@@ -2,6 +2,7 @@ package eventbridge
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -17,7 +18,9 @@ import (
 
 // PutRuleInput carries the parameters for PutRule (create and upsert). The
 // *Set flags distinguish an omitted member from an explicitly provided empty
-// one so the merge semantics survive the transport boundary.
+// one: validation applies to supplied values alone, while the stored outcome
+// of an upsert follows the model's replacement contract — omitted members
+// clear rather than keep their stored value.
 type PutRuleInput struct {
 	Name                  string
 	EventBusName          string
@@ -66,11 +69,11 @@ type SetRuleStateInput struct {
 	State                eventsstore.RuleState
 }
 
-// DescribeRuleResult holds the outcome of describeRuleCore: the rule record
-// plus its tags.
+// DescribeRuleResult holds the outcome of describeRuleCore: the rule
+// record. Tags are not a DescribeRuleResponse member — the tag read
+// surface is ListTagsForResource.
 type DescribeRuleResult struct {
 	Rule *eventsstore.Rule
-	Tags []tagutil.Tag
 }
 
 // ListRuleNamesByTargetInput carries the parameters for
@@ -127,6 +130,16 @@ func (s *EventsService) putRuleCore(ctx context.Context, store *eventsstore.Even
 		}
 	}
 
+	// "You can only create scheduled rules using the default event bus"
+	// (user guide, Creating an Amazon EventBridge rule that runs on a
+	// schedule). The restriction is enforced for both the create and the
+	// upsert path: a scheduled rule on a custom bus can never legitimately
+	// exist, so moving an existing custom-bus rule onto a schedule is
+	// rejected the same way.
+	if input.ScheduleExpressionSet && eventBusName != "default" {
+		return nil, awserrors.NewValidationException("Scheduled rules can only be created on the default event bus")
+	}
+
 	rule := &eventsstore.Rule{
 		Name:         input.Name,
 		EventBusName: eventBusName,
@@ -144,8 +157,8 @@ func (s *EventsService) putRuleCore(ctx context.Context, store *eventsstore.Even
 		if !validateEventPatternLength(input.EventPattern) {
 			return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
 		}
-		if !isValidEventPattern(input.EventPattern) {
-			return nil, awserrors.NewInvalidEventPatternException("EventPattern must be valid JSON")
+		if err := validateEventPatternStructure(input.EventPattern); err != nil {
+			return nil, err
 		}
 		rule.EventPattern = input.EventPattern
 	}
@@ -191,36 +204,42 @@ func (s *EventsService) putRuleCore(ctx context.Context, store *eventsstore.Even
 		rule.RoleARN = input.RoleArn
 	}
 
-	if err := store.CreateRule(ctx, rule); err != nil {
+	// "Maximum number of rules an account can have per event bus" — 300
+	// per the EventBridge quotas page; the model carries
+	// LimitExceededException on PutRule for the breach. The gate lives in
+	// the store's capped create (one locked section with the write), and
+	// the upsert path below never hits it: the quota bounds the creation
+	// of new rules alone.
+	if err := store.CreateRuleCapped(ctx, rule, eventsstore.MaxRulesPerEventBus); err != nil {
+		if err == eventsstore.ErrRuleCapReached {
+			return nil, awserrors.NewLimitExceededException(fmt.Sprintf(
+				"The maximum of %d rules per event bus has been reached", eventsstore.MaxRulesPerEventBus))
+		}
 		if err == eventsstore.ErrRuleAlreadyExists {
 			// The user's fields are applied through the store-level atomic
 			// mutation so a concurrent delivery-marker write can never be
-			// lost to this update's read-modify-write cycle.
+			// lost to this update's read-modify-write cycle. Every member
+			// was validated above, before the create attempt, so the
+			// mutation assigns without re-validating — one validation
+			// site per member, exercised by both the create and the
+			// upsert path.
+			//
+			// "If you are updating an existing rule, the rule is replaced
+			// with what you specify in this PutRule command. If you omit
+			// arguments in PutRule, the old values for those arguments
+			// are not kept. Instead, they are replaced with null values",
+			// and "Rules are enabled by default" (model operation
+			// documentation): the update replaces every request member
+			// with the input-built rule's value — omitted members clear,
+			// and an omitted State resets to ENABLED. The record's
+			// identity members (ARN, CreatedAt, CreatedBy, ManagedBy) and
+			// the scheduler bookkeeping survive the replacement.
 			if err := store.MutateRule(ctx, eventBusName, input.Name, func(existingRule *eventsstore.Rule) error {
-				if input.DescriptionSet {
-					if !validateDescription(input.Description) {
-						return errDescriptionTooLong()
-					}
-					existingRule.Description = input.Description
-				}
-				if input.EventPatternSet {
-					if !validateEventPatternLength(input.EventPattern) {
-						return awserrors.NewValidationException("EventPattern must be at most 4096 characters")
-					}
-					if !isValidEventPattern(input.EventPattern) {
-						return awserrors.NewInvalidEventPatternException("EventPattern must be valid JSON")
-					}
-					existingRule.EventPattern = input.EventPattern
-				}
-				if input.ScheduleExpressionSet {
-					existingRule.ScheduleExpression = input.ScheduleExpression
-				}
-				if input.RoleArnSet {
-					existingRule.RoleARN = input.RoleArn
-				}
-				if input.StateSet {
-					existingRule.State = eventsstore.RuleState(input.State)
-				}
+				existingRule.Description = rule.Description
+				existingRule.EventPattern = rule.EventPattern
+				existingRule.ScheduleExpression = rule.ScheduleExpression
+				existingRule.RoleARN = rule.RoleARN
+				existingRule.State = rule.State
 				existingRule.LastModifiedAt = time.Now().UTC()
 				return nil
 			}); err != nil {
@@ -230,11 +249,9 @@ func (s *EventsService) putRuleCore(ctx context.Context, store *eventsstore.Even
 			if err != nil {
 				return nil, err
 			}
-			if len(input.Tags) > 0 {
-				if err := store.TagStore.TagFromSlice(existingRule.ARN, input.Tags); err != nil {
-					return nil, err
-				}
-			}
+			// "If you are updating an existing rule, any tags you specify
+			// in the PutRule operation are ignored" (model operation
+			// documentation) — tags ride the create path alone.
 			return &PutRuleResult{RuleArn: existingRule.ARN}, nil
 		}
 		return nil, err
@@ -262,8 +279,25 @@ func (s *EventsService) deleteRuleCore(ctx context.Context, store *eventsstore.E
 		return err
 	}
 
+	// "If you call delete rule multiple times for the same rule, all calls
+	// will succeed. When you call delete rule for a non-existent custom
+	// eventbus, ResourceNotFoundException is returned" (model operation
+	// documentation) — so the bus's existence is checked first and a missing
+	// rule on an existing bus is a successful no-op. The default bus always
+	// exists on AWS; here it may not have been created yet, but no rule can
+	// exist without it either, so the delete still succeeds.
+	if _, err := store.GetEventBus(ctx, eventBusName); err != nil {
+		if err == eventsstore.ErrEventBusNotFound && eventBusName == "default" {
+			return nil
+		}
+		return mapStoreError(err, eventBusName)
+	}
+
 	rule, err := store.GetRule(ctx, eventBusName, input.Name)
 	if err != nil {
+		if err == eventsstore.ErrRuleNotFound {
+			return nil
+		}
 		return mapStoreError(err, input.Name)
 	}
 
@@ -305,9 +339,7 @@ func (s *EventsService) deleteRuleCore(ctx context.Context, store *eventsstore.E
 	}
 
 	// Clean up scheduler state for the deleted rule.
-	lastFireTimes.Delete(rule.ARN)
-
-	_ = store.TagStore.Delete(rule.ARN)
+	s.fireDedup.deleteLastFire(rule.ARN)
 
 	return nil
 }
@@ -328,11 +360,7 @@ func (s *EventsService) describeRuleCore(ctx context.Context, store *eventsstore
 		return nil, mapStoreError(err, input.Name)
 	}
 
-	result := &DescribeRuleResult{Rule: rule}
-	if tagSlice, err := store.TagStore.ListAsSlice(rule.ARN); err == nil && len(tagSlice) > 0 {
-		result.Tags = tagSlice
-	}
-	return result, nil
+	return &DescribeRuleResult{Rule: rule}, nil
 }
 
 // setRuleStateCore validates input and transitions the rule to the given
@@ -370,12 +398,9 @@ func (s *EventsService) listRuleNamesByTargetCore(ctx context.Context, store *ev
 		return nil, err
 	}
 
-	limit := input.Limit
-	if limit == 0 {
-		limit = 100
-	}
-	if limit < 1 || limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
+	limit, err := normaliseListLimit(input.Limit)
+	if err != nil {
+		return nil, err
 	}
 
 	var allRuleNames []string
@@ -386,18 +411,32 @@ func (s *EventsService) listRuleNamesByTargetCore(ctx context.Context, store *ev
 			return nil, err
 		}
 		for _, rule := range rulesResult.Rules {
-			targets, err := store.ListTargetsByRule(ctx, eventBusName, rule.Name, 100, "")
-			if err != nil {
-				// Swallowing the error here would silently omit rules
-				// from the result, under-reporting which rules reference
-				// the target. Fail the whole listing instead.
-				return nil, err
-			}
-			for _, t := range targets.Targets {
-				if t.ARN == input.TargetArn {
-					allRuleNames = append(allRuleNames, rule.Name)
+			// The per-rule target scan paginates like the identical scan
+			// on the delivery path: references beyond the first page are
+			// references too. (The 5-targets-per-rule API quota keeps
+			// live rules single-page; the bound holds the scan correct
+			// regardless.)
+			targetToken := ""
+			matched := false
+			for !matched {
+				targets, err := store.ListTargetsByRule(ctx, eventBusName, rule.Name, 100, targetToken)
+				if err != nil {
+					// Swallowing the error here would silently omit rules
+					// from the result, under-reporting which rules reference
+					// the target. Fail the whole listing instead.
+					return nil, err
+				}
+				for _, t := range targets.Targets {
+					if t.ARN == input.TargetArn {
+						allRuleNames = append(allRuleNames, rule.Name)
+						matched = true
+						break
+					}
+				}
+				if matched || targets.NextToken == "" {
 					break
 				}
+				targetToken = targets.NextToken
 			}
 		}
 		if rulesResult.NextToken == "" {

@@ -65,19 +65,19 @@ func (b *EventBus) KinesisInvoker() invokers.KinesisInvoker {
 	return b.kinesisInvoker
 }
 
-// SetEventsInvoker sets the EventBridge invoker used for dispatching
-// EventBridge PutEvents calls from bus events.
-func (b *EventBus) SetEventsInvoker(invoker invokers.EventsInvoker) {
+// SetAppSyncInvoker sets the AppSync invoker used for dispatching GraphQL
+// mutations from bus consumers (EventBridge targets).
+func (b *EventBus) SetAppSyncInvoker(invoker invokers.AppSyncInvoker) {
 	b.invokersMu.Lock()
 	defer b.invokersMu.Unlock()
-	b.eventsInvoker = invoker
+	b.appSyncInvoker = invoker
 }
 
-// EventsInvoker returns the configured EventBridge invoker.
-func (b *EventBus) EventsInvoker() invokers.EventsInvoker {
+// AppSyncInvoker returns the configured AppSync invoker.
+func (b *EventBus) AppSyncInvoker() invokers.AppSyncInvoker {
 	b.invokersMu.RLock()
 	defer b.invokersMu.RUnlock()
-	return b.eventsInvoker
+	return b.appSyncInvoker
 }
 
 // SetEC2Invoker sets the EC2 invoker used for dispatching EC2 API calls
@@ -298,6 +298,21 @@ func (b *EventBus) CognitoTokenValidator() invokers.CognitoTokenValidator {
 	b.invokersMu.RLock()
 	defer b.invokersMu.RUnlock()
 	return b.cognitoTokenValidator
+}
+
+// SetSecretsManagerInvoker sets the Secrets Manager invoker used for
+// service-owned secrets (e.g. EventBridge connection credentials).
+func (b *EventBus) SetSecretsManagerInvoker(invoker invokers.SecretsManagerInvoker) {
+	b.invokersMu.Lock()
+	defer b.invokersMu.Unlock()
+	b.secretsManagerInvoker = invoker
+}
+
+// SecretsManagerInvoker returns the configured Secrets Manager invoker.
+func (b *EventBus) SecretsManagerInvoker() invokers.SecretsManagerInvoker {
+	b.invokersMu.RLock()
+	defer b.invokersMu.RUnlock()
+	return b.secretsManagerInvoker
 }
 
 // RegisterSubnetUsageChecker registers a service that can report whether a

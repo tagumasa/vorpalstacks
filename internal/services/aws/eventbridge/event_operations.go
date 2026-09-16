@@ -6,13 +6,10 @@ import (
 
 	"github.com/google/uuid"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
-
-const maxPutEventsEntries = 10
 
 // PutEvents delivers one or more events to EventBridge.
 // Validates required fields (Source, DetailType, Detail) and delivers
@@ -21,12 +18,6 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 	entries, ok := req.Parameters["Entries"].([]interface{})
 	if !ok {
 		entries, ok = req.Parameters["entries"].([]interface{})
-	}
-	if !ok || len(entries) == 0 {
-		return nil, awserrors.NewValidationException("Entries are required")
-	}
-	if len(entries) > maxPutEventsEntries {
-		return nil, awserrors.NewValidationException("Maximum 10 entries allowed per request")
 	}
 
 	// EndpointId routes the request through a global endpoint. Global
@@ -57,37 +48,34 @@ func (s *EventsService) PutEvents(ctx context.Context, reqCtx *request.RequestCo
 	}, nil
 }
 
-func (s *EventsService) buildTargetPayload(event *eventsstore.Event, target eventsstore.Target) map[string]interface{} {
-	payload := map[string]interface{}{
-		"version":     event.Version,
-		"id":          event.ID,
-		"detail-type": event.DetailType,
-		"source":      event.Source,
-		"account":     event.Account,
-		"time":        event.Time,
-		"region":      event.Region,
-		"resources":   event.Resources,
-		"detail":      event.Detail,
+// buildTargetPayload renders the payload one target receives: the
+// constant Input verbatim, the InputPath extraction of the matched event,
+// the transformer output, or — with no input configuration — the whole
+// event envelope. ruleARN and ruleName feed the transformer's reserved
+// variables.
+func (s *EventsService) buildTargetPayload(ruleARN, ruleName string, event *eventsstore.Event, target eventsstore.Target) []byte {
+	switch {
+	case target.Input != "":
+		// Input is valid JSON text validated at PutTargets time and
+		// overrides the event entirely; it is passed through verbatim so
+		// non-object JSON constants survive.
+		return []byte(target.Input)
+	case target.InputPath != "":
+		if value, ok := resolveEventPathString(eventEnvelope(event), target.InputPath); ok {
+			if b, err := json.Marshal(value); err == nil {
+				return b
+			}
+		}
+		// An unresolvable InputPath passes the whole event: AWS validates
+		// no path against the event shape ("There is no validation when
+		// creating JSON path for your template"), so misses are tolerated
+		// at delivery and the no-input default — the entire event — holds.
+		return marshalEventEnvelope(event)
+	case target.InputTransformer != nil:
+		return s.applyInputTransform(ruleARN, ruleName, event, target.InputTransformer)
+	default:
+		return marshalEventEnvelope(event)
 	}
-
-	if target.Input != "" {
-		var inputPayload map[string]interface{}
-		if err := json.Unmarshal([]byte(target.Input), &inputPayload); err == nil {
-			payload = inputPayload
-		}
-	} else if target.InputPath != "" {
-		extracted := s.extractInputPath(payload, target.InputPath)
-		if extracted != nil {
-			payload = extracted
-		}
-	} else if target.InputTransformer != nil {
-		transformed := s.applyInputTransformer(payload, target.InputTransformer)
-		if transformed != nil {
-			payload = transformed
-		}
-	}
-
-	return payload
 }
 
 func (s *EventsService) TestEventPattern(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

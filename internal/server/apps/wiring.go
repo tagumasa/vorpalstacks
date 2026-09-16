@@ -61,9 +61,6 @@ func (a *App) wireCrossServiceDeps() error {
 			defaultRegion: st.region,
 		})
 	}
-	if st.eventsStoreInstance != nil {
-		eb.SetEventsInvoker(&eventsInvokerAdapter{putFn: st.eventsStoreInstance.Put})
-	}
 	if st.dynamoDBService != nil {
 		eb.SetDynamoDBInvoker(&dynamoDBInvokerAdapter{provider: st.dynamoDBService})
 		eb.SetDynamoDBStreamsInvoker(dynamodb.NewDynamoDBStreamsInvoker(st.dynamoDBService))

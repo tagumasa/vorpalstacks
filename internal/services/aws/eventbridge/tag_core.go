@@ -2,6 +2,7 @@ package eventbridge
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -11,9 +12,17 @@ import (
 )
 
 // resolveTaggableResourceCore validates that the ARN refers to an existing
-// EventBridge resource (event bus, rule, archive, connection, or API
-// destination).
+// taggable EventBridge resource. The taggable set is exactly event buses
+// and rules — the tagging page enumerates nothing else ("In EventBridge,
+// you can assign tags to rule and event buses", eb-tagging, fetched
+// 2026-09-15) — so archive, connection and API-destination ARNs are not
+// taggable and answer with the same resource-not-found shape as any other
+// unsupported resource form. The ResourceARN requirement of the tag family
+// is enforced here so every calling plane sees it.
 func (s *EventsService) resolveTaggableResourceCore(ctx context.Context, store *eventsstore.EventsStore, resourceArn string) error {
+	if resourceArn == "" {
+		return awserrors.NewValidationException("ResourceARN is required")
+	}
 	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
 
 	switch {
@@ -27,21 +36,6 @@ func (s *EventsService) resolveTaggableResourceCore(ctx context.Context, store *
 		if _, err := store.GetRule(ctx, eventBusName, ruleName); err != nil {
 			return NewResourceNotFoundException("Rule '" + ruleName + "' does not exist")
 		}
-	case strings.HasPrefix(resource, "archive/"):
-		name := strings.TrimPrefix(resource, "archive/")
-		if _, err := store.GetArchive(ctx, name); err != nil {
-			return NewResourceNotFoundException("Archive '" + name + "' does not exist")
-		}
-	case strings.HasPrefix(resource, "connection/"):
-		name := strings.TrimPrefix(resource, "connection/")
-		if _, err := store.GetConnection(ctx, name); err != nil {
-			return NewResourceNotFoundException("Connection '" + name + "' does not exist")
-		}
-	case strings.HasPrefix(resource, "api-destination/"):
-		name := strings.TrimPrefix(resource, "api-destination/")
-		if _, err := store.GetApiDestination(ctx, name); err != nil {
-			return NewResourceNotFoundException("API destination '" + name + "' does not exist")
-		}
 	default:
 		return NewResourceNotFoundException("Resource not found: " + resourceArn)
 	}
@@ -49,9 +43,38 @@ func (s *EventsService) resolveTaggableResourceCore(ctx context.Context, store *
 	return nil
 }
 
-// tagResourceCore validates the resource exists and applies the tag map.
+// validateResourceTags enforces the documented tag limits: at most 50 tags
+// per resource, keys of up to 128 Unicode characters, values of up to 256,
+// and the aws: prefix reserved (eb-tagging, fetched 2026-09-15).
+func validateResourceTags(tags []tagutil.Tag) error {
+	switch v, key := tagutil.CheckTags(tags, tagutil.StandardLimits()); v {
+	case tagutil.TooManyTags:
+		return awserrors.NewValidationException(fmt.Sprintf("too many tags (maximum %d)", tagutil.MaxTagsPerResource))
+	case tagutil.TagKeyTooShort:
+		return awserrors.NewValidationException("tag key cannot be empty")
+	case tagutil.TagKeyTooLong:
+		return awserrors.NewValidationException(fmt.Sprintf("tag key %q cannot exceed %d characters", key, tagutil.MaxTagKeyLength))
+	case tagutil.TagValueTooLong:
+		return awserrors.NewValidationException(fmt.Sprintf("tag value for key %q cannot exceed %d characters", key, tagutil.MaxTagValueLength))
+	case tagutil.ReservedTagKey:
+		return awserrors.NewValidationException(fmt.Sprintf("tag key %q cannot start with 'aws:' (reserved prefix)", key))
+	}
+	return nil
+}
+
+// tagResourceCore validates the required members, the resource's
+// taggability and the tag limits, then applies the tag map. Tags is a
+// required member of TagResourceRequest; the presence rejection lives
+// here so every calling plane sees it.
 func (s *EventsService) tagResourceCore(ctx context.Context, store *eventsstore.EventsStore, resourceArn string, tags []tagutil.Tag) error {
+	if len(tags) == 0 {
+		return awserrors.NewValidationException("Tags are required")
+	}
 	if err := s.resolveTaggableResourceCore(ctx, store, resourceArn); err != nil {
+		return err
+	}
+
+	if err := validateResourceTags(tags); err != nil {
 		return err
 	}
 
@@ -62,8 +85,14 @@ func (s *EventsService) tagResourceCore(ctx context.Context, store *eventsstore.
 	return store.TagStore.Tag(resourceArn, tagMap)
 }
 
-// untagResourceCore validates the resource exists and removes the tag keys.
+// untagResourceCore validates the required members and the resource's
+// taggability, then removes the tag keys. TagKeys is a required member of
+// UntagResourceRequest; the presence rejection lives here so every
+// calling plane sees it.
 func (s *EventsService) untagResourceCore(ctx context.Context, store *eventsstore.EventsStore, resourceArn string, tagKeysMap map[string]bool) error {
+	if len(tagKeysMap) == 0 {
+		return awserrors.NewValidationException("TagKeys are required")
+	}
 	if err := s.resolveTaggableResourceCore(ctx, store, resourceArn); err != nil {
 		return err
 	}
@@ -94,13 +123,4 @@ func tagListToMaps(tagSlice []tagutil.Tag) []map[string]string {
 		})
 	}
 	return tagMaps
-}
-
-// validateResourceArnParam enforces the common ResourceARN requirement of
-// the tag family.
-func validateResourceArnParam(resourceArn string) error {
-	if resourceArn == "" {
-		return awserrors.NewValidationException("ResourceARN is required")
-	}
-	return nil
 }

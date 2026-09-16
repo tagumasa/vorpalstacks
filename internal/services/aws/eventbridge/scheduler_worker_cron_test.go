@@ -17,17 +17,18 @@ type fireCheck struct {
 }
 
 // runFireChecks evaluates each observation with a fresh rule ARN so the
-// package-level last-fire bookkeeping cannot leak between cases.
+// dedup bookkeeping cannot leak between cases.
 func runFireChecks(t *testing.T, name string, checks []fireCheck) {
 	t.Helper()
+	var dedup scheduleFireDedup
 	for i, c := range checks {
 		ruleARN := fmt.Sprintf("arn:aws:events:us-east-1:123456789012:rule/%s-%d", name, i)
 		created := c.created
 		if created.IsZero() {
 			created = c.at
 		}
-		if got := shouldFireSchedule(ruleARN, c.expr, c.at, created); got != c.want {
-			t.Errorf("shouldFireSchedule(%q, %s) = %v, want %v", c.expr, c.at.Format(time.RFC3339), got, c.want)
+		if got := dedup.shouldFireSchedule(ruleARN, c.expr, c.at, created); got != c.want {
+			t.Errorf("dedup.shouldFireSchedule(%q, %s) = %v, want %v", c.expr, c.at.Format(time.RFC3339), got, c.want)
 		}
 	}
 }
@@ -93,21 +94,22 @@ func TestShouldFireScheduleCronEquivalence(t *testing.T) {
 // still fires the missed boundary on the next evaluation instead of
 // losing it silently.
 func TestShouldFireScheduleCronLateBoundary(t *testing.T) {
+	var dedup scheduleFireDedup
 	arn := "arn:aws:events:us-east-1:123456789012:rule/cron-late-probe"
-	lastFireTimes.Delete(arn)
+	dedup.deleteLastFire(arn)
 	creation := time.Date(2027, 1, 2, 12, 0, 0, 0, time.UTC)
 
 	// Evaluations ran up to 12:04, then the sweep paused; the 12:05
 	// boundary is missed and the next evaluation lands at 12:07.
-	if !shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(7*time.Minute), creation) {
+	if !dedup.shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(7*time.Minute), creation) {
 		t.Error("late evaluation did not fire the missed 12:05 boundary")
 	}
 	// The boundary fired once: a re-evaluation stays silent.
-	if shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(7*time.Minute+30*time.Second), creation) {
+	if dedup.shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(7*time.Minute+30*time.Second), creation) {
 		t.Error("missed boundary fired twice")
 	}
 	// The next boundary fires normally.
-	if !shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(10*time.Minute+10*time.Second), creation) {
+	if !dedup.shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(10*time.Minute+10*time.Second), creation) {
 		t.Error("next boundary after recovery did not fire")
 	}
 }
@@ -116,14 +118,15 @@ func TestShouldFireScheduleCronLateBoundary(t *testing.T) {
 // predates the rule's creation never fires: a rule created at 12:01
 // waits for the next 12:05-grid boundary, not the elapsed 12:00 one.
 func TestShouldFireScheduleCronCreationClamp(t *testing.T) {
+	var dedup scheduleFireDedup
 	arn := "arn:aws:events:us-east-1:123456789012:rule/cron-clamp-probe"
-	lastFireTimes.Delete(arn)
+	dedup.deleteLastFire(arn)
 	creation := time.Date(2027, 1, 2, 12, 1, 0, 0, time.UTC)
 
-	if shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(time.Minute), creation) {
+	if dedup.shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(time.Minute), creation) {
 		t.Error("cron boundary before the rule creation fired")
 	}
-	if !shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(4*time.Minute+30*time.Second), creation) {
+	if !dedup.shouldFireSchedule(arn, "cron(0/5 * * * ? *)", creation.Add(4*time.Minute+30*time.Second), creation) {
 		t.Error("first boundary after the rule creation did not fire")
 	}
 }
@@ -132,15 +135,16 @@ func TestShouldFireScheduleCronCreationClamp(t *testing.T) {
 // a second evaluation inside the same minute must not fire again, and
 // the next minute fires again for an every-minute schedule.
 func TestShouldFireScheduleCronOncePerMinute(t *testing.T) {
+	var dedup scheduleFireDedup
 	ruleARN := "arn:aws:events:us-east-1:123456789012:rule/once-per-minute"
 	now := time.Date(2027, 1, 2, 12, 0, 7, 0, time.UTC)
-	if !shouldFireSchedule(ruleARN, "cron(* * * * ? *)", now, now) {
+	if !dedup.shouldFireSchedule(ruleARN, "cron(* * * * ? *)", now, now) {
 		t.Fatalf("first evaluation in the minute should fire")
 	}
-	if shouldFireSchedule(ruleARN, "cron(* * * * ? *)", now.Add(10*time.Second), now) {
+	if dedup.shouldFireSchedule(ruleARN, "cron(* * * * ? *)", now.Add(10*time.Second), now) {
 		t.Errorf("second evaluation in the same minute should not fire")
 	}
-	if !shouldFireSchedule(ruleARN, "cron(* * * * ? *)", now.Add(time.Minute), now) {
+	if !dedup.shouldFireSchedule(ruleARN, "cron(* * * * ? *)", now.Add(time.Minute), now) {
 		t.Errorf("evaluation in the next minute should fire")
 	}
 }

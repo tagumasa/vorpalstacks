@@ -129,6 +129,12 @@ func TestBusDeliveryHandlerAnswersDropsAsFailures(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { st.Close() })
+	// The default bus must exist so the handler's bus-existence check
+	// passes and the injected rule-listing fault is what surfaces.
+	seed := eventsstore.NewEventsStore(st, "000000000000", "us-east-1")
+	if err := seed.CreateEventBus(ctx, &eventsstore.EventBus{Name: "default"}); err != nil {
+		t.Fatal(err)
+	}
 	faulted := eventsstore.NewEventsStore(&faultedReadStorage{
 		BasicStorage: st,
 		failOn:       "events-rules-us-east-1",

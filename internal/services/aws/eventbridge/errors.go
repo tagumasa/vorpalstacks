@@ -9,17 +9,6 @@ import (
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
-var (
-	// ErrValidation is a sentinel validation error for EventBridge operations.
-	ErrValidation = awserrors.NewValidationException("Validation error")
-	// ErrResourceNotFound is a sentinel resource-not-found error.
-	ErrResourceNotFound = awserrors.NewResourceNotFoundException("Resource", "")
-	// ErrResourceAlreadyExists is a sentinel duplicate-resource error.
-	ErrResourceAlreadyExists = awserrors.NewResourceAlreadyExistsException("Resource")
-	// ErrInvalidParameter is a sentinel invalid-parameter error.
-	ErrInvalidParameter = awserrors.NewInvalidParameterException("Invalid parameter")
-)
-
 // NewResourceNotFoundException creates an EventBridge ResourceNotFoundException.
 func NewResourceNotFoundException(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("ResourceNotFoundException", message, 404)
@@ -44,6 +33,8 @@ func mapStoreError(err error, resourceDesc string) error {
 		return NewResourceNotFoundException("Rule '" + resourceDesc + "' does not exist")
 	case errors.Is(err, eventsstore.ErrRuleAlreadyExists):
 		return awserrors.NewResourceAlreadyExistsException("Rule '" + resourceDesc + "'")
+	case errors.Is(err, eventsstore.ErrTargetNotFound):
+		return NewResourceNotFoundException("Target '" + resourceDesc + "' does not exist on the rule")
 	case errors.Is(err, eventsstore.ErrArchiveNotFound):
 		return NewResourceNotFoundException("Archive '" + resourceDesc + "' does not exist")
 	case errors.Is(err, eventsstore.ErrArchiveAlreadyExists):

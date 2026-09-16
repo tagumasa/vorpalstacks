@@ -194,6 +194,14 @@ func (a *App) initAppSync(st *serviceState) error {
 	st.appSyncService = svcappsync.NewAppSyncService(st.accountID)
 	st.appSyncService.SetEventBus(a.server.EventBus())
 	st.appSyncService.SetStorageManager(a.server.StorageManager())
+	// The AppSync invoker is registered here (not in wireCrossServiceDeps)
+	// because optional services are initialised after cross-service
+	// wiring; EventBridge target delivery resolves GraphQL mutations
+	// through it, so a registration left in the wiring phase never runs
+	// and every AppSync target delivery fails at invocation time.
+	if eb := a.server.EventBus(); eb != nil {
+		eb.SetAppSyncInvoker(st.appSyncService)
+	}
 	if a.cfg.SignatureVerification {
 		st.appSyncService.SetSigVerifier(auth.NewSignatureV4Verifier(
 			auth.NewStaticCredentialsProvider(

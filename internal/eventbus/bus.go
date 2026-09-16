@@ -197,7 +197,7 @@ type EventBus struct {
 	sqsInvoker              invokers.SQSInvoker
 	snsInvoker              invokers.SNSInvoker
 	kinesisInvoker          invokers.KinesisInvoker
-	eventsInvoker           invokers.EventsInvoker
+	appSyncInvoker          invokers.AppSyncInvoker
 	ec2Invoker              invokers.EC2Invoker
 	dynamoDBInvoker         invokers.DynamoDBInvoker
 	dynamoDBStreamsInvoker  invokers.DynamoDBStreamsInvoker
@@ -213,6 +213,7 @@ type EventBus struct {
 	logsInvoker             invokers.LogsInvoker
 	rdsDataInvoker          invokers.RDSDataInvoker
 	cognitoTokenValidator   invokers.CognitoTokenValidator
+	secretsManagerInvoker   invokers.SecretsManagerInvoker
 	subnetUsageCheckers     []invokers.SubnetUsageChecker
 	securityGroupCheckers   []invokers.SecurityGroupUsageChecker
 	nextSubID               atomic.Int64

@@ -13,11 +13,12 @@ import (
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
-// recordingKinesisInvoker captures the partition key of every PutRecord so
-// tests can assert what a retried delivery actually sent.
+// recordingKinesisInvoker captures the partition key and payload of every
+// PutRecord so tests can assert what a retried delivery actually sent.
 type recordingKinesisInvoker struct {
 	mu       sync.Mutex
 	putKeys  []string
+	putData  [][]byte
 	failNext int
 }
 
@@ -29,6 +30,7 @@ func (r *recordingKinesisInvoker) PutRecord(ctx context.Context, streamName stri
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.putKeys = append(r.putKeys, partitionKey)
+	r.putData = append(r.putData, append([]byte(nil), data...))
 	if r.failNext > 0 {
 		r.failNext--
 		return "", errors.New("kinesis unavailable")
@@ -54,6 +56,12 @@ func (r *recordingKinesisInvoker) keys() []string {
 	return append([]string(nil), r.putKeys...)
 }
 
+func (r *recordingKinesisInvoker) payloads() [][]byte {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([][]byte(nil), r.putData...)
+}
+
 // The Kinesis partition key must default to the event ID (the behaviour
 // documented for Kinesis targets in the EventBridge API reference) and
 // stay stable across retries: a per-attempt random key would scatter one
@@ -77,7 +85,7 @@ func TestKinesisPartitionKeyIsStableAcrossRetries(t *testing.T) {
 		ARN: "arn:aws:kinesis:us-east-1:000000000000:stream/demo",
 	}
 
-	svc.dispatchToTarget(context.Background(), "us-east-1", event, target, []byte(`{"detail":{}}`))
+	svc.dispatchToTarget(context.Background(), "us-east-1", "", event, target, []byte(`{"detail":{}}`))
 
 	keys := invoker.keys()
 	if len(keys) != 2 {
@@ -91,7 +99,8 @@ func TestKinesisPartitionKeyIsStableAcrossRetries(t *testing.T) {
 }
 
 // An explicit PartitionKeyPath that resolves keeps precedence over the
-// event-ID default.
+// event-ID default, and the path resolves against the original event —
+// not the transformed payload the target receives.
 func TestKinesisPartitionKeyPathTakesPrecedence(t *testing.T) {
 	t.Setenv("TEST_MODE", "true")
 
@@ -105,19 +114,61 @@ func TestKinesisPartitionKeyPathTakesPrecedence(t *testing.T) {
 	bus.SetKinesisInvoker(invoker)
 	svc.SetEventBus(bus)
 
-	event := &eventsstore.Event{ID: "evt-with-path"}
+	event := &eventsstore.Event{
+		ID:     "evt-with-path",
+		Detail: map[string]interface{}{"key": "shard-me"},
+	}
 	target := eventsstore.Target{
 		ARN:               "arn:aws:kinesis:us-east-1:000000000000:stream/demo",
 		KinesisParameters: &eventsstore.KinesisParameters{PartitionKeyPath: "$.detail.key"},
 	}
 
-	svc.dispatchToTarget(context.Background(), "us-east-1", event, target, []byte(`{"detail":{"key":"shard-me"}}`))
+	// The payload carries a different key: only the original event may
+	// feed the partition-key path.
+	svc.dispatchToTarget(context.Background(), "us-east-1", "", event, target, []byte(`{"detail":{"key":"transformed-key"}}`))
 
 	keys := invoker.keys()
 	if len(keys) != 1 {
-		t.Fatalf("expected exactly one put, got %d", len(keys))
+		t.Fatalf("expected exactly one put, got %d puts", len(keys))
 	}
 	if keys[0] != "shard-me" {
-		t.Fatalf("expected the extracted partition key, got %q", keys[0])
+		t.Fatalf("expected the key extracted from the original event, got %q", keys[0])
+	}
+}
+
+// On the bus delivery path the publisher resolves the partition key from
+// the original event and the resolved key rides the bus event; the
+// handler's identity stub must not override it.
+func TestKinesisPartitionKeyRidesTheBus(t *testing.T) {
+	t.Setenv("TEST_MODE", "true")
+
+	mgr, err := storage.NewRegionStorageManager(&storage.Config{Path: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := NewEventsService(mgr, "000000000000")
+	invoker := &recordingKinesisInvoker{}
+	bus := eventbus.NewEventBus()
+	bus.SetKinesisInvoker(invoker)
+	svc.SetEventBus(bus)
+
+	delivery := &eventbus.EventBridgeDeliveryEvent{
+		TargetARN:           "arn:aws:kinesis:us-east-1:000000000000:stream/demo",
+		Input:               []byte(`{"detail":{"key":"transformed-key"}}`),
+		EventBridgeEventID:  "evt-bus-path",
+		KinesisPartitionKey: "publisher-key",
+	}
+	delivery.Region = "us-east-1"
+
+	if res := svc.handleBusDelivery(context.Background(), delivery); res.Error != nil {
+		t.Fatalf("delivery must succeed: %v", res.Error)
+	}
+
+	keys := invoker.keys()
+	if len(keys) != 1 {
+		t.Fatalf("expected exactly one put, got %d puts", len(keys))
+	}
+	if keys[0] != "publisher-key" {
+		t.Fatalf("expected the publisher-resolved key, got %q", keys[0])
 	}
 }

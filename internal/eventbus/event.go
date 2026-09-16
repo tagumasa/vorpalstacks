@@ -101,8 +101,57 @@ type EventBridgeDeliveryEvent struct {
 	DeadLetterConfigArn      string `json:"dead_letter_config_arn,omitempty"`
 	MaximumRetryAttempts     int32  `json:"maximum_retry_attempts,omitempty"`
 	MaximumEventAgeInSeconds int32  `json:"maximum_event_age_in_seconds,omitempty"`
-	SqsMessageGroupId        string `json:"sqs_message_group_id,omitempty"`
-	KinesisPartitionKeyPath  string `json:"kinesis_partition_key_path,omitempty"`
+	// RetryPolicySet records that the delivering target carried an explicit
+	// RetryPolicy. The numeric members cannot carry "explicitly zero" — an
+	// MaximumRetryAttempts of 0 is the documented "no retries" setting, not
+	// an unset member — so the subscriber reconstructs the policy only when
+	// this flag is set, instead of inferring presence from non-zero values.
+	RetryPolicySet    bool   `json:"retry_policy_set,omitempty"`
+	SqsMessageGroupId string `json:"sqs_message_group_id,omitempty"`
+	// KinesisPartitionKey carries the partition key resolved from the
+	// original event at publish time: dynamic path parameters reference
+	// the original event, not the transformed payload, and only the
+	// publisher holds the full event — the delivery handler's event copy
+	// is the identity stub. Empty falls back to the event ID.
+	KinesisPartitionKey string `json:"kinesis_partition_key,omitempty"`
+	// AppSyncGraphQLOperation carries the mutation document of an AppSync
+	// target (AppSyncParameters.GraphQLOperation) across the bus so the
+	// delivery handler can invoke it without re-reading the stored target.
+	AppSyncGraphQLOperation string `json:"appsync_graphql_operation,omitempty"`
+	// TargetHttpParameters carries the target's HttpParameters (the header,
+	// query-string and path-value parameters of an API destination or API
+	// Gateway target) as their JSON encoding, so the delivery handler
+	// invokes the endpoint with the dispatch-time snapshot instead of
+	// re-reading the stored target. Empty means the target carried none.
+	TargetHttpParameters []byte `json:"target_http_parameters,omitempty"`
+	// TraceHeader carries the PutEvents trace header to the dead-letter
+	// write: the X-Ray integration page rules it off the delivered event
+	// body but "included on the Amazon SQS message attribute" of the DLQ
+	// copy, so the terminal path needs it alongside the payload.
+	TraceHeader string `json:"trace_header,omitempty"`
+	// HopDepth counts cross-bus hops the event has already taken: each
+	// hop re-publishes the event on the destination bus as a fresh chain
+	// root, so neither the context-borne depth nor the bus event-depth cap
+	// can see the cycle. The subscriber refuses deliveries at or beyond
+	// the cross-bus depth bound using this counter.
+	HopDepth int `json:"hop_depth,omitempty"`
+	// EventBridgeEventID carries the ID of the EventBridge event being
+	// delivered. It is deliberately separate from the bus identity in
+	// EventBase: one EventBridge event fans out to N targets as N bus
+	// events, and outbox entries are keyed by bus event ID, so reusing the
+	// EventBridge ID as the bus ID would make the fan-out overwrite its
+	// own outbox entries. Delivery-side consumers that need the event's
+	// identity (the Kinesis partition-key default, log-stream naming) read
+	// this field and fall back to the bus ID for publishers that predate
+	// it.
+	EventBridgeEventID string `json:"eventbridge_event_id,omitempty"`
+	// EventIngestionTime carries the platform receipt stamp of the
+	// delivered event across the bus — the value the destination bus's
+	// transformers render as aws.events.event.ingestion-time. A
+	// rule-dispatched bus target keeps the stamp of the original ingress;
+	// zero means the publisher never went through ingress, and the
+	// subscriber stamps arrival instead.
+	EventIngestionTime time.Time `json:"event_ingestion_time,omitempty"`
 }
 
 // EventType returns "events:deliver" for this event type.
@@ -330,9 +379,14 @@ type StepFunctionsStartExecutionEvent struct {
 // EventType returns "states:startExecution" for this event type.
 func (e *StepFunctionsStartExecutionEvent) EventType() string { return "states:startExecution" }
 
-// EventBridgePutEventsEvent is published when Scheduler or another service
-// needs to put events into an EventBridge event bus. The EventBridge service
-// subscribes to this event and delivers to matching rules/targets.
+// EventBridgePutEventsEvent is published when a service needs to put
+// events into an EventBridge event bus. The EventBridge service subscribes
+// to this event and delivers to matching rules/targets. Input carries a
+// PutEvents entry's members — Source, DetailType, Detail, and optionally
+// Resources and Time (an RFC 3339 timestamp), which the handler applies
+// with the same semantics as the PutEvents API plane. The handler returns
+// the assigned event id in HandlerResult.Payload, so a synchronous
+// publisher can report it; asynchronous publishers ignore it.
 type EventBridgePutEventsEvent struct {
 	EventBase
 	EventBusName string `json:"event_bus_name"`

@@ -2,7 +2,6 @@ package eventbridge
 
 import (
 	"context"
-	"encoding/json"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -12,16 +11,18 @@ import (
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
-func ruleToMap(r *eventsstore.Rule, includeTimestamps bool) map[string]interface{} {
+// ruleToMap serialises a Rule for the ListRules item shape. The modelled
+// Rule shape carries no timestamps and no CreatedBy; the timestamps are
+// rendered nowhere (DescribeRuleResponse models CreatedBy only, which the
+// Describe handler adds) and the epoch-second timestamp rendering follows
+// the awsJson1_1 protocol default (the model's Timestamp shape carries no
+// timestampFormat trait).
+func ruleToMap(r *eventsstore.Rule) map[string]interface{} {
 	result := map[string]interface{}{
 		"Arn":          r.ARN,
 		"Name":         r.Name,
 		"EventBusName": r.EventBusName,
 		"State":        string(r.State),
-	}
-	if includeTimestamps {
-		result["CreationTime"] = r.CreatedAt.Unix()
-		result["LastModifiedTime"] = r.LastModifiedAt.Unix()
 	}
 	if r.Description != "" {
 		result["Description"] = r.Description
@@ -38,18 +39,7 @@ func ruleToMap(r *eventsstore.Rule, includeTimestamps bool) map[string]interface
 	if r.ManagedBy != "" {
 		result["ManagedBy"] = r.ManagedBy
 	}
-	if r.CreatedBy != "" {
-		result["CreatedBy"] = r.CreatedBy
-	}
 	return result
-}
-
-func isValidEventPattern(pattern string) bool {
-	if pattern == "" {
-		return true
-	}
-	var js map[string]interface{}
-	return json.Unmarshal([]byte(pattern), &js) == nil
 }
 
 func isValidScheduleExpression(expr string) bool {
@@ -159,12 +149,15 @@ func (s *EventsService) DescribeRule(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	response := ruleToMap(result.Rule, false)
-	if len(result.Tags) > 0 {
-		response["Tags"] = tagListToMaps(result.Tags)
+	resp := ruleToMap(result.Rule)
+	// DescribeRuleResponse is the one Rule serialisation that models
+	// CreatedBy. The shape carries no Tags member (the tag read surface is
+	// ListTagsForResource).
+	if result.Rule.CreatedBy != "" {
+		resp["CreatedBy"] = result.Rule.CreatedBy
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // ListRules returns a list of rules for the specified event bus,
@@ -192,7 +185,7 @@ func (s *EventsService) ListRules(ctx context.Context, reqCtx *request.RequestCo
 
 	rules := make([]map[string]interface{}, len(result.Rules))
 	for i, r := range result.Rules {
-		rules[i] = ruleToMap(r, true)
+		rules[i] = ruleToMap(r)
 	}
 
 	response := map[string]interface{}{

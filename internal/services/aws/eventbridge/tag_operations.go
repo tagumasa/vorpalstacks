@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -29,70 +28,54 @@ func extractRuleInfoFromArn(arn string) (eventBusName, ruleName string) {
 	return eventBusName, ruleName
 }
 
-// TagResource adds tags to an EventBridge resource.
+// TagResource adds tags to an EventBridge resource. The required-member
+// rejections (ResourceARN, Tags) and the limit validation live in
+// tagResourceCore.
 func (s *EventsService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
-	if err := validateResourceArnParam(resourceArn); err != nil {
-		return nil, err
-	}
-
 	newTags := tagutil.ParseTags(req.Parameters, "Tags")
-	if len(newTags) == 0 {
-		return nil, awserrors.NewValidationException("Tags are required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.tagResourceCore(ctx, store, resourceArn, newTags); err != nil {
+	if err := s.tagResourceCore(ctx, store, request.GetParamLowerFirst(req.Parameters, "ResourceARN"), newTags); err != nil {
 		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
 }
 
-// UntagResource removes tags from an EventBridge resource.
+// UntagResource removes tags from an EventBridge resource. The
+// required-member rejections (ResourceARN, TagKeys) live in
+// untagResourceCore.
 func (s *EventsService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
-	if err := validateResourceArnParam(resourceArn); err != nil {
-		return nil, err
-	}
-
 	tagKeysMap := tagutil.ParseTagKeys(req.Parameters, "TagKeys")
 	if len(tagKeysMap) == 0 {
 		tagKeysMap = tagutil.ParseTagKeys(req.Parameters, "tagKeys")
 	}
-	if len(tagKeysMap) == 0 {
-		return nil, awserrors.NewValidationException("TagKeys are required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.untagResourceCore(ctx, store, resourceArn, tagKeysMap); err != nil {
+	if err := s.untagResourceCore(ctx, store, request.GetParamLowerFirst(req.Parameters, "ResourceARN"), tagKeysMap); err != nil {
 		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
 }
 
-// ListTagsForResource lists tags for an EventBridge resource.
+// ListTagsForResource lists tags for an EventBridge resource. The
+// ResourceARN requirement lives in listTagsForResourceCore's resolver.
 func (s *EventsService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetParamLowerFirst(req.Parameters, "ResourceARN")
-	if err := validateResourceArnParam(resourceArn); err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	tagSlice, err := s.listTagsForResourceCore(ctx, store, resourceArn)
+	tagSlice, err := s.listTagsForResourceCore(ctx, store, request.GetParamLowerFirst(req.Parameters, "ResourceARN"))
 	if err != nil {
 		return nil, err
 	}

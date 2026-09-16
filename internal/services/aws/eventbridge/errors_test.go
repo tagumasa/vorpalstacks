@@ -14,18 +14,14 @@ func TestEventsErrors(t *testing.T) {
 		assert.Equal(t, "ValidationException: test", err.Error())
 	})
 
-	t.Run("predefined errors", func(t *testing.T) {
-		assert.Equal(t, "ValidationException: Validation error", ErrValidation.Error())
-		assert.Equal(t, 400, ErrValidation.GetHTTPStatusCode())
+	t.Run("predefined error constructors", func(t *testing.T) {
+		err := awserrors.NewValidationException("Validation error")
+		assert.Equal(t, "ValidationException: Validation error", err.Error())
+		assert.Equal(t, 400, err.GetHTTPStatusCode())
 
-		assert.Equal(t, "ResourceNotFoundException: Resource  not found", ErrResourceNotFound.Error())
-		assert.Equal(t, 404, ErrResourceNotFound.GetHTTPStatusCode())
-
-		assert.Equal(t, "ResourceAlreadyExistsException: Resource already exists", ErrResourceAlreadyExists.Error())
-		assert.Equal(t, 409, ErrResourceAlreadyExists.GetHTTPStatusCode())
-
-		assert.Equal(t, "InvalidParameterException: Invalid parameter", ErrInvalidParameter.Error())
-		assert.Equal(t, 400, ErrInvalidParameter.GetHTTPStatusCode())
+		notFound := awserrors.NewResourceNotFoundException("Resource", "")
+		assert.Equal(t, "ResourceNotFoundException: Resource  not found", notFound.Error())
+		assert.Equal(t, 404, notFound.GetHTTPStatusCode())
 	})
 
 	t.Run("NewValidationException", func(t *testing.T) {

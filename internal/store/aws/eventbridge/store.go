@@ -1,13 +1,16 @@
-// Package events provides EventBridge storage functionality for vorpalstacks.
+// Package eventbridge provides EventBridge storage functionality for vorpalstacks.
 package eventbridge
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
@@ -24,13 +27,35 @@ type EventsStore struct {
 	replaysStore         *common.BaseStore
 	connectionsStore     *common.BaseStore
 	apiDestinationsStore *common.BaseStore
+	// archiveBusIndexStore holds the per-bus archive index: one row per
+	// (source bus, archive) pair, key "<bus>:<archive>", value the archive
+	// name. The delivery path resolves a bus's archives per delivered event,
+	// so the index answers with a prefix scan of the bus's own rows instead
+	// of walking and decoding every archive record in the region per event.
+	archiveBusIndexStore *common.BaseStore
 	*common.TagStore
-	arnBuilder        *svcarn.ARNBuilder
-	accountID         string
-	region            string
-	createMu          sync.Mutex
-	archiveCountersMu sync.Mutex
+	arnBuilder *svcarn.ARNBuilder
+	accountID  string
+	region     string
+	createMu   sync.Mutex
 }
+
+// The recordWriteMu family serialises record read-modify-write and delete
+// cycles per family across EventsStore instances: the scheduler, replay
+// and delivery workers and the API handlers operate separate store
+// instances over the same Pebble keyspace, so instance-scoped locking
+// cannot protect a record cycle. Every Mutate* callback and every Delete*
+// runs under its family's mutex, which also closes the delete-vs-mutate
+// resurrection window (a cycle that read before the delete can no longer
+// write the record back after it).
+var (
+	eventBusRecordWriteMu       sync.Mutex
+	targetRecordWriteMu         sync.Mutex
+	archiveRecordWriteMu        sync.Mutex
+	connectionRecordWriteMu     sync.Mutex
+	apiDestinationRecordWriteMu sync.Mutex
+	replayRecordWriteMu         sync.Mutex
+)
 
 // ruleRecordWriteMu serialises rule-record read-modify-write cycles
 // across EventsStore instances: the scheduler worker and the API
@@ -38,6 +63,12 @@ type EventsStore struct {
 // keyspace, so TouchRuleLastFired's read-modify-write could otherwise
 // lose a concurrent UpdateRule write (or vice versa).
 var ruleRecordWriteMu sync.Mutex
+
+// Region returns the region this store instance serves. Cross-service
+// calls keyed by region (e.g. the connection-credential secret in the
+// region's Secrets Manager) use it to address the same region as the
+// records they belong to.
+func (s *EventsStore) Region() string { return s.region }
 
 // NewEventsStore creates a new EventBridge events store.
 func NewEventsStore(store storage.BasicStorage, accountID, region string) *EventsStore {
@@ -47,6 +78,7 @@ func NewEventsStore(store storage.BasicStorage, accountID, region string) *Event
 		targetsStore:         common.NewBaseStore(store.Bucket("events-targets-"+region), "events-targets"),
 		archivesStore:        common.NewBaseStore(store.Bucket("events-archives-"+region), "events-archives"),
 		archivedEventsStore:  common.NewBaseStore(store.Bucket("events-archived-events-"+region), "events-archived-events"),
+		archiveBusIndexStore: common.NewBaseStore(store.Bucket("events-archive-bus-index-"+region), "events-archive-bus-index"),
 		replaysStore:         common.NewBaseStore(store.Bucket("events-replays-"+region), "events-replays"),
 		connectionsStore:     common.NewBaseStore(store.Bucket("events-connections-"+region), "events-connections"),
 		apiDestinationsStore: common.NewBaseStore(store.Bucket("events-apidestinations-"+region), "events-apidestinations"),
@@ -80,11 +112,15 @@ func (s *EventsStore) buildArchiveARN(name string) string {
 }
 
 func (s *EventsStore) buildConnectionARN(name string) string {
-	return s.arnBuilder.Events().Connection(name)
+	// The ARN carries a unique id after the name per the Smithy ConnectionArn
+	// pattern (connection/<name>/<id>).
+	return s.arnBuilder.Events().Connection(name, uuid.NewString())
 }
 
 func (s *EventsStore) buildApiDestinationARN(name string) string {
-	return s.arnBuilder.Events().ApiDestination(name)
+	// The ARN carries a unique id after the name per the Smithy
+	// ApiDestinationArn pattern (api-destination/<name>/<id>).
+	return s.arnBuilder.Events().ApiDestination(name, uuid.NewString())
 }
 
 // EventBus operations
@@ -101,7 +137,7 @@ func (s *EventsStore) CreateEventBus(ctx context.Context, eventBus *EventBus) er
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 	if eventBus.Name == "" {
-		return ErrInvalidARN
+		return ErrEmptyResourceName
 	}
 
 	arn := s.buildEventBusARN(eventBus.Name)
@@ -119,7 +155,9 @@ func (s *EventsStore) CreateEventBus(ctx context.Context, eventBus *EventBus) er
 	return s.Put(arn, eventBus)
 }
 
-// GetEventBus retrieves an event bus by name.
+// GetEventBus retrieves an event bus by name. A missing record is the
+// not-found sentinel; any other storage fault surfaces as itself so the
+// Cores can tell a permanent absence from a transient failure.
 //
 // Parameters:
 //   - ctx: The context
@@ -127,30 +165,51 @@ func (s *EventsStore) CreateEventBus(ctx context.Context, eventBus *EventBus) er
 //
 // Returns:
 //   - *EventBus: The event bus if found
-//   - error: An error if not found
+//   - error: ErrEventBusNotFound if not found, the storage fault otherwise
 func (s *EventsStore) GetEventBus(ctx context.Context, name string) (*EventBus, error) {
 	arn := s.buildEventBusARN(name)
 	var eventBus EventBus
 	if err := s.BaseStore.Get(arn, &eventBus); err != nil {
-		return nil, ErrEventBusNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrEventBusNotFound
+		}
+		return nil, err
 	}
 	return &eventBus, nil
 }
 
-// UpdateEventBus updates an existing event bus.
+// MutateEventBus applies fn to the event bus record inside the write mutex
+// so the whole read-modify-write cycle is atomic with respect to every
+// other event bus record writer (description updates, permission-policy
+// merges and deletes run on separate store instances over the same Pebble
+// keyspace, hence the package-scope lock). fn mutates the record in place;
+// fn returning an error aborts the write. Callers stamp LastModifiedAt
+// themselves.
 //
 // Parameters:
 //   - ctx: The context
-//   - eventBus: The event bus to update
+//   - name: The event bus name
+//   - fn: The mutation applied to the record read under the lock
 //
 // Returns:
-//   - error: An error if update fails
-func (s *EventsStore) UpdateEventBus(ctx context.Context, eventBus *EventBus) error {
-	if !s.Exists(eventBus.ARN) {
-		return ErrEventBusNotFound
+//   - error: ErrEventBusNotFound if the event bus does not exist, the
+//     storage fault otherwise
+func (s *EventsStore) MutateEventBus(ctx context.Context, name string, fn func(*EventBus) error) error {
+	arn := s.buildEventBusARN(name)
+	eventBusRecordWriteMu.Lock()
+	defer eventBusRecordWriteMu.Unlock()
+
+	var eventBus EventBus
+	if err := s.BaseStore.Get(arn, &eventBus); err != nil {
+		if common.IsNotFound(err) {
+			return ErrEventBusNotFound
+		}
+		return err
 	}
-	eventBus.LastModifiedAt = time.Now().UTC()
-	return s.Put(eventBus.ARN, eventBus)
+	if err := fn(&eventBus); err != nil {
+		return err
+	}
+	return s.Put(arn, &eventBus)
 }
 
 // DeleteEventBus deletes an event bus by name.
@@ -163,6 +222,11 @@ func (s *EventsStore) UpdateEventBus(ctx context.Context, eventBus *EventBus) er
 //   - error: An error if deletion fails
 func (s *EventsStore) DeleteEventBus(ctx context.Context, name string) error {
 	arn := s.buildEventBusARN(name)
+	// The record lock closes the resurrection window: without it a
+	// MutateEventBus cycle that read before the delete could write the
+	// record back after it.
+	eventBusRecordWriteMu.Lock()
+	defer eventBusRecordWriteMu.Unlock()
 	if !s.Exists(arn) {
 		return ErrEventBusNotFound
 	}
@@ -181,9 +245,17 @@ func (s *EventsStore) DeleteEventBus(ctx context.Context, name string) error {
 // Returns:
 //   - *EventBusListResult: The list result with event buses and next token
 //   - error: An error if listing fails
+//
+// eventBusKeyPrefix is the key head every event bus record carries: bus
+// records are stored under their full ARN, which this prefix matches. The
+// events-eventbuses bucket also holds residue rows from the retired
+// raw-write cross-service ingress plane (keyed "events:<bus>:<id>"); the
+// prefix keeps that residue invisible to listings without deleting data.
+const eventBusKeyPrefix = "arn:aws:events:"
+
 func (s *EventsStore) ListEventBuses(ctx context.Context, namePrefix string, limit int32, nextToken string) (*EventBusListResult, error) {
 	opts := common.ListOptions{
-		Prefix:   "",
+		Prefix:   eventBusKeyPrefix,
 		Marker:   nextToken,
 		MaxItems: int(limit),
 	}
@@ -210,7 +282,8 @@ func (s *EventsStore) buildRuleKey(eventBusName, ruleName string) string {
 	return fmt.Sprintf("%s:%s", eventBusName, ruleName)
 }
 
-// CreateRule creates a new rule on an event bus.
+// CreateRule creates a new rule on an event bus without a count cap —
+// the test and internal seeding path.
 //
 // Parameters:
 //   - ctx: The context
@@ -219,15 +292,49 @@ func (s *EventsStore) buildRuleKey(eventBusName, ruleName string) string {
 // Returns:
 //   - error: An error if creation fails
 func (s *EventsStore) CreateRule(ctx context.Context, rule *Rule) error {
+	return s.CreateRuleCapped(ctx, rule, 0)
+}
+
+// CreateRuleCapped creates a new rule on an event bus under the per-bus
+// rule-count quota: it mirrors CreateRule's contract and adds
+// ErrRuleCapReached when creating a NEW rule would push the bus past
+// maxPerBus records. The existence check, the count and the write run
+// inside the one create lock, so concurrent creates cannot both pass
+// the gate; an existing rule name never hits the cap — the quota bounds
+// the creation of new rules, and updating a rule at the quota stays
+// allowed. maxPerBus <= 0 disables the cap. The count lists at most
+// maxPerBus+1 records: the gate needs the threshold comparison alone,
+// not the exact total.
+//
+// Parameters:
+//   - ctx: The context
+//   - rule: The rule to create
+//   - maxPerBus: The per-bus rule-count ceiling
+//
+// Returns:
+//   - error: An error if creation fails
+func (s *EventsStore) CreateRuleCapped(ctx context.Context, rule *Rule, maxPerBus int) error {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 	if rule.Name == "" {
-		return ErrInvalidARN
+		return ErrEmptyResourceName
 	}
 
 	key := s.buildRuleKey(rule.EventBusName, rule.Name)
 	if s.rulesStore.Exists(key) {
 		return ErrRuleAlreadyExists
+	}
+	if maxPerBus > 0 {
+		counted, err := common.List[Rule](s.rulesStore, common.ListOptions{
+			Prefix:   rule.EventBusName + ":",
+			MaxItems: maxPerBus + 1,
+		}, func(*Rule) bool { return true })
+		if err != nil {
+			return err
+		}
+		if len(counted.Items) >= maxPerBus {
+			return ErrRuleCapReached
+		}
 	}
 
 	now := time.Now().UTC()
@@ -243,7 +350,10 @@ func (s *EventsStore) CreateRule(ctx context.Context, rule *Rule) error {
 	return s.rulesStore.Put(key, rule)
 }
 
-// GetRule retrieves a rule by event bus name and rule name.
+// GetRule retrieves a rule by event bus name and rule name. A missing
+// record is the not-found sentinel; any other storage fault surfaces as
+// itself so the Cores can tell a permanent absence from a transient
+// failure.
 //
 // Parameters:
 //   - ctx: The context
@@ -252,12 +362,15 @@ func (s *EventsStore) CreateRule(ctx context.Context, rule *Rule) error {
 //
 // Returns:
 //   - *Rule: The rule if found
-//   - error: An error if not found
+//   - error: ErrRuleNotFound if not found, the storage fault otherwise
 func (s *EventsStore) GetRule(ctx context.Context, eventBusName, name string) (*Rule, error) {
 	key := s.buildRuleKey(eventBusName, name)
 	var rule Rule
 	if err := s.rulesStore.Get(key, &rule); err != nil {
-		return nil, ErrRuleNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrRuleNotFound
+		}
+		return nil, err
 	}
 	return &rule, nil
 }
@@ -276,7 +389,8 @@ func (s *EventsStore) GetRule(ctx context.Context, eventBusName, name string) (*
 //   - fn: The mutation applied to the record read under the lock
 //
 // Returns:
-//   - error: ErrRuleNotFound if the rule does not exist
+//   - error: ErrRuleNotFound if the rule does not exist, the storage
+//     fault otherwise
 func (s *EventsStore) MutateRule(ctx context.Context, eventBusName, name string, fn func(*Rule) error) error {
 	key := s.buildRuleKey(eventBusName, name)
 	ruleRecordWriteMu.Lock()
@@ -284,7 +398,10 @@ func (s *EventsStore) MutateRule(ctx context.Context, eventBusName, name string,
 
 	var rule Rule
 	if err := s.rulesStore.Get(key, &rule); err != nil {
-		return ErrRuleNotFound
+		if common.IsNotFound(err) {
+			return ErrRuleNotFound
+		}
+		return err
 	}
 	if err := fn(&rule); err != nil {
 		return err
@@ -325,6 +442,10 @@ func (s *EventsStore) DeleteRule(ctx context.Context, eventBusName, name string)
 	if !s.rulesStore.Exists(key) {
 		return ErrRuleNotFound
 	}
+	// Tags follow the record under the same lock, like every other
+	// resource family's delete: a caller-side clean would leak tag rows to
+	// any future direct store caller.
+	_ = s.TagStore.Delete(s.buildRuleARN(eventBusName, name))
 	return s.rulesStore.Delete(key)
 }
 
@@ -340,8 +461,16 @@ func (s *EventsStore) DeleteRule(ctx context.Context, eventBusName, name string)
 // Returns:
 //   - *RuleListResult: The list result with rules and next token
 //   - error: An error if listing fails
+//
+// ListRules lists rules, optionally scoped to one event bus. An empty
+// eventBusName sweeps every bus — the scheduler's tick path, which must
+// reach scheduled rules on all of them; the API plane always resolves a
+// concrete bus name (defaulting to "default") before calling.
 func (s *EventsStore) ListRules(ctx context.Context, eventBusName, namePrefix string, limit int32, nextToken string) (*RuleListResult, error) {
 	prefix := eventBusName + ":"
+	if eventBusName == "" {
+		prefix = ""
+	}
 	opts := common.ListOptions{
 		Prefix:   prefix,
 		Marker:   nextToken,
@@ -370,7 +499,11 @@ func (s *EventsStore) buildTargetKey(eventBusName, ruleName, targetID string) st
 	return fmt.Sprintf("%s:%s:%s", eventBusName, ruleName, targetID)
 }
 
-// PutTarget adds or updates a target for a rule.
+// PutTarget adds or updates a target for a rule. The CreatedAt
+// read-preserve-write runs inside the record lock so a concurrent put of
+// the same target ID can never observe or restore a zero creation time
+// (putters race across separate store instances over the same Pebble
+// keyspace, hence the package-scope lock).
 //
 // Parameters:
 //   - ctx: The context
@@ -380,6 +513,9 @@ func (s *EventsStore) buildTargetKey(eventBusName, ruleName, targetID string) st
 //   - error: An error if the operation fails
 func (s *EventsStore) PutTarget(ctx context.Context, target *Target) error {
 	key := s.buildTargetKey(target.EventBusName, target.RuleName, target.ID)
+	targetRecordWriteMu.Lock()
+	defer targetRecordWriteMu.Unlock()
+
 	var existing Target
 	if err := s.targetsStore.Get(key, &existing); err == nil && !existing.CreatedAt.IsZero() {
 		target.CreatedAt = existing.CreatedAt
@@ -389,7 +525,10 @@ func (s *EventsStore) PutTarget(ctx context.Context, target *Target) error {
 	return s.targetsStore.Put(key, target)
 }
 
-// GetTarget retrieves a target by event bus name, rule name, and target ID.
+// GetTarget retrieves a target by event bus name, rule name, and target
+// ID. A missing record is the not-found sentinel; any other storage fault
+// surfaces as itself so the Cores can tell a permanent absence from a
+// transient failure.
 //
 // Parameters:
 //   - ctx: The context
@@ -399,12 +538,15 @@ func (s *EventsStore) PutTarget(ctx context.Context, target *Target) error {
 //
 // Returns:
 //   - *Target: The target if found
-//   - error: An error if not found
+//   - error: ErrTargetNotFound if not found, the storage fault otherwise
 func (s *EventsStore) GetTarget(ctx context.Context, eventBusName, ruleName, targetID string) (*Target, error) {
 	key := s.buildTargetKey(eventBusName, ruleName, targetID)
 	var target Target
 	if err := s.targetsStore.Get(key, &target); err != nil {
-		return nil, ErrTargetNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrTargetNotFound
+		}
+		return nil, err
 	}
 	return &target, nil
 }
@@ -421,6 +563,10 @@ func (s *EventsStore) GetTarget(ctx context.Context, eventBusName, ruleName, tar
 //   - error: An error if deletion fails
 func (s *EventsStore) DeleteTarget(ctx context.Context, eventBusName, ruleName, targetID string) error {
 	key := s.buildTargetKey(eventBusName, ruleName, targetID)
+	// The record lock closes the resurrection window against a concurrent
+	// PutTarget of the same key.
+	targetRecordWriteMu.Lock()
+	defer targetRecordWriteMu.Unlock()
 	if !s.targetsStore.Exists(key) {
 		return ErrTargetNotFound
 	}
@@ -458,26 +604,6 @@ func (s *EventsStore) ListTargetsByRule(ctx context.Context, eventBusName, ruleN
 	}, nil
 }
 
-// DeleteTargetsByRule deletes multiple targets for a rule.
-//
-// Parameters:
-//   - ctx: The context
-//   - eventBusName: The event bus name
-//   - ruleName: The rule name
-//   - targetIDs: The list of target IDs to delete
-//
-// Returns:
-//   - error: An error if deletion fails
-func (s *EventsStore) DeleteTargetsByRule(ctx context.Context, eventBusName, ruleName string, targetIDs []string) error {
-	for _, targetID := range targetIDs {
-		key := s.buildTargetKey(eventBusName, ruleName, targetID)
-		if err := s.targetsStore.Delete(key); err != nil {
-			return fmt.Errorf("failed to delete target %s: %w", targetID, err)
-		}
-	}
-	return nil
-}
-
 // Archive operations
 
 // CreateArchive creates a new event archive.
@@ -492,7 +618,7 @@ func (s *EventsStore) CreateArchive(ctx context.Context, archive *Archive) error
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 	if archive.Name == "" {
-		return ErrInvalidARN
+		return ErrEmptyResourceName
 	}
 
 	if s.archivesStore.Exists(archive.Name) {
@@ -508,10 +634,17 @@ func (s *EventsStore) CreateArchive(ctx context.Context, archive *Archive) error
 		archive.State = ArchiveStateEnabled
 	}
 
+	// The per-bus index row lands with the record so the delivery path can
+	// resolve the bus's archives from the moment the archive exists.
+	if err := s.archiveBusIndexStore.Put(archive.EventBusName+":"+archive.Name, archive.Name); err != nil {
+		return err
+	}
 	return s.archivesStore.Put(archive.Name, archive)
 }
 
-// GetArchive retrieves an archive by name.
+// GetArchive retrieves an archive by name. A missing record is the
+// not-found sentinel; any other storage fault surfaces as itself so the
+// Cores can tell a permanent absence from a transient failure.
 //
 // Parameters:
 //   - ctx: The context
@@ -519,16 +652,20 @@ func (s *EventsStore) CreateArchive(ctx context.Context, archive *Archive) error
 //
 // Returns:
 //   - *Archive: The archive if found
-//   - error: An error if not found
+//   - error: ErrArchiveNotFound if not found, the storage fault otherwise
 func (s *EventsStore) GetArchive(ctx context.Context, name string) (*Archive, error) {
 	var archive Archive
 	if err := s.archivesStore.Get(name, &archive); err != nil {
-		return nil, ErrArchiveNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrArchiveNotFound
+		}
+		return nil, err
 	}
 	return &archive, nil
 }
 
-// DeleteArchive deletes an archive by name.
+// DeleteArchive deletes an archive by name: its stored event rows, the
+// record, its tags and its bus-index row.
 //
 // Parameters:
 //   - ctx: The context
@@ -537,45 +674,95 @@ func (s *EventsStore) GetArchive(ctx context.Context, name string) (*Archive, er
 // Returns:
 //   - error: An error if deletion fails
 func (s *EventsStore) DeleteArchive(ctx context.Context, name string) error {
+	// The record lock closes the resurrection window: without it a
+	// MutateArchive cycle that read before the delete could write the
+	// record back after it. The event-row sweep runs inside the same
+	// locked section, so an ingress write (StoreArchiveEvent holds the same
+	// lock and re-checks existence) cannot slip between the sweep and the
+	// record delete — no orphaned event row survives the archive to
+	// surface in a same-named archive created later.
+	archiveRecordWriteMu.Lock()
+	defer archiveRecordWriteMu.Unlock()
 	if !s.archivesStore.Exists(name) {
 		return ErrArchiveNotFound
 	}
-	return s.archivesStore.Delete(name)
-}
-
-// IncrementArchiveCounters atomically increments EventCount and SizeBytes for an archive.
-func (s *EventsStore) IncrementArchiveCounters(ctx context.Context, archiveName string, eventSize int64) error {
-	s.archiveCountersMu.Lock()
-	defer s.archiveCountersMu.Unlock()
-
-	var archive Archive
-	if err := s.archivesStore.Get(archiveName, &archive); err != nil {
+	// The index row's bus comes from the record itself, read under the
+	// same lock as the delete so a concurrent create cannot interleave.
+	current, err := s.GetArchive(ctx, name)
+	if err != nil {
 		return err
 	}
-	archive.EventCount++
-	archive.SizeBytes += eventSize
-	return s.archivesStore.Put(archiveName, &archive)
+	// Events go before the record: a fault between the two leaves a
+	// retryable record whose events are partially gone — never orphaned
+	// events under a deleted record (the retention worker no longer
+	// iterates a deleted archive).
+	if err := s.deleteArchiveEventsByName(name); err != nil {
+		return err
+	}
+	_ = s.TagStore.Delete(s.buildArchiveARN(name))
+	if err := s.archivesStore.Delete(name); err != nil {
+		return err
+	}
+	// The index row goes after the record delete: a fault between the two
+	// leaves a stale row the reader skips (its Get misses), never a live
+	// record hidden from delivery.
+	return s.archiveBusIndexStore.Delete(current.EventBusName + ":" + name)
 }
 
-// UpdateArchive updates an existing archive. It takes the archiveCountersMu
-// lock so that IncrementArchiveCounters (which runs from the event delivery
-// path) cannot observe a torn EventCount/SizeBytes during a user-initiated
-// update, and vice versa.
+// deleteArchiveEventsByName removes every stored event row of the archive.
+// The caller holds the archive family lock (DeleteArchive) or accepts the
+// unlocked sweep (DeleteExpiredArchiveEvents filters by time instead).
+func (s *EventsStore) deleteArchiveEventsByName(name string) error {
+	prefix := name + ":"
+	return common.ForEachAll[ArchivedEvent](s.archivedEventsStore, prefix, nil, func(e *ArchivedEvent) error {
+		key := prefix + fmt.Sprintf("%d:", e.Timestamp.UnixNano()) + e.ID
+		return s.archivedEventsStore.Delete(key)
+	})
+}
+
+// MutateArchive applies fn to the archive record inside the write mutex so
+// the whole read-modify-write cycle is atomic with respect to every other
+// archive record writer. Counter increments from the event delivery path
+// and user-initiated configuration merges run on separate store instances
+// over the same Pebble keyspace, hence the package-scope lock: without it a
+// merge that read the record before a concurrent increment silently
+// regresses EventCount/SizeBytes. fn mutates the record in place; fn
+// returning an error aborts the write.
 //
 // Parameters:
 //   - ctx: The context
-//   - archive: The archive to update
+//   - name: The archive name
+//   - fn: The mutation applied to the record read under the lock
 //
 // Returns:
-//   - error: An error if update fails
-func (s *EventsStore) UpdateArchive(ctx context.Context, archive *Archive) error {
-	s.archiveCountersMu.Lock()
-	defer s.archiveCountersMu.Unlock()
+//   - error: ErrArchiveNotFound if the archive does not exist, the storage
+//     fault otherwise
+func (s *EventsStore) MutateArchive(ctx context.Context, name string, fn func(*Archive) error) error {
+	archiveRecordWriteMu.Lock()
+	defer archiveRecordWriteMu.Unlock()
 
-	if !s.archivesStore.Exists(archive.Name) {
-		return ErrArchiveNotFound
+	var archive Archive
+	if err := s.archivesStore.Get(name, &archive); err != nil {
+		if common.IsNotFound(err) {
+			return ErrArchiveNotFound
+		}
+		return err
 	}
-	return s.archivesStore.Put(archive.Name, archive)
+	if err := fn(&archive); err != nil {
+		return err
+	}
+	return s.archivesStore.Put(name, &archive)
+}
+
+// IncrementArchiveCounters increments EventCount and SizeBytes for an
+// archive through the atomic record mutation so the increment can never be
+// lost to (or regress) a concurrent configuration update.
+func (s *EventsStore) IncrementArchiveCounters(ctx context.Context, archiveName string, eventSize int64) error {
+	return s.MutateArchive(ctx, archiveName, func(archive *Archive) error {
+		archive.EventCount++
+		archive.SizeBytes += eventSize
+		return nil
+	})
 }
 
 // ArchiveListResult represents the result of listing archives.
@@ -594,9 +781,31 @@ type ArchiveListResult struct {
 //   - []*Archive: The list of archives
 //   - error: An error if listing fails
 func (s *EventsStore) ListArchivesForEventBus(ctx context.Context, eventBusName string) ([]*Archive, error) {
-	return common.ListMatching[Archive](s.archivesStore, "", func(a *Archive) bool {
-		return a.EventBusName == eventBusName
+	// The per-bus index answers with a prefix scan of the bus's own rows;
+	// bus names cannot contain ":" (the EventBusName Smithy pattern excludes
+	// it), so "<bus>:" cannot bleed into another bus's rows. A stale index
+	// row — whose archive was deleted between the index write and this read
+	// — is skipped; a real storage fault surfaces as itself.
+	var archives []*Archive
+	err := s.archiveBusIndexStore.ScanPrefix(eventBusName+":", func(key string, value []byte) error {
+		var name string
+		if err := json.Unmarshal(value, &name); err != nil {
+			return err
+		}
+		archive, err := s.GetArchive(ctx, name)
+		if err != nil {
+			if errors.Is(err, ErrArchiveNotFound) {
+				return nil
+			}
+			return err
+		}
+		archives = append(archives, archive)
+		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	return archives, nil
 }
 
 // Connection operations
@@ -613,7 +822,7 @@ func (s *EventsStore) CreateConnection(ctx context.Context, connection *Connecti
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 	if connection.Name == "" {
-		return ErrInvalidARN
+		return ErrEmptyResourceName
 	}
 
 	if s.connectionsStore.Exists(connection.Name) {
@@ -625,6 +834,7 @@ func (s *EventsStore) CreateConnection(ctx context.Context, connection *Connecti
 	connection.Region = s.region
 	connection.AccountID = s.accountID
 	connection.CreatedAt = now
+	connection.LastModifiedAt = now
 	if connection.State == "" {
 		connection.State = ConnectionStateAuthorized
 	}
@@ -632,7 +842,9 @@ func (s *EventsStore) CreateConnection(ctx context.Context, connection *Connecti
 	return s.connectionsStore.Put(connection.Name, connection)
 }
 
-// GetConnection retrieves a connection by name.
+// GetConnection retrieves a connection by name. A missing record is the
+// not-found sentinel; any other storage fault surfaces as itself so the
+// Cores can tell a permanent absence from a transient failure.
 //
 // Parameters:
 //   - ctx: The context
@@ -640,11 +852,14 @@ func (s *EventsStore) CreateConnection(ctx context.Context, connection *Connecti
 //
 // Returns:
 //   - *Connection: The connection if found
-//   - error: An error if not found
+//   - error: ErrConnectionNotFound if not found, the storage fault otherwise
 func (s *EventsStore) GetConnection(ctx context.Context, name string) (*Connection, error) {
 	var connection Connection
 	if err := s.connectionsStore.Get(name, &connection); err != nil {
-		return nil, ErrConnectionNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrConnectionNotFound
+		}
+		return nil, err
 	}
 	return &connection, nil
 }
@@ -658,29 +873,51 @@ func (s *EventsStore) GetConnection(ctx context.Context, name string) (*Connecti
 // Returns:
 //   - error: An error if deletion fails
 func (s *EventsStore) DeleteConnection(ctx context.Context, name string) error {
+	// The record lock closes the resurrection window: without it a
+	// MutateConnection cycle that read before the delete could write the
+	// record back after it.
+	connectionRecordWriteMu.Lock()
+	defer connectionRecordWriteMu.Unlock()
 	if !s.connectionsStore.Exists(name) {
 		return ErrConnectionNotFound
+	}
+	// Tags are keyed by the stored ARN; the ARN carries a unique id minted
+	// at creation, so rebuilding it here would target a different key.
+	if connection, err := s.GetConnection(ctx, name); err == nil {
+		_ = s.TagStore.Delete(connection.ARN)
 	}
 	return s.connectionsStore.Delete(name)
 }
 
-// UpdateConnection updates an existing EventBridge connection.
-func (s *EventsStore) UpdateConnection(ctx context.Context, connection *Connection) error {
-	if !s.connectionsStore.Exists(connection.Name) {
-		return ErrConnectionNotFound
-	}
-	return s.connectionsStore.Put(connection.Name, connection)
-}
+// MutateConnection applies fn to the connection record inside the write
+// mutex so the whole read-modify-write cycle is atomic with respect to
+// every other connection record writer (configuration updates and
+// deauthorization run on separate store instances over the same Pebble
+// keyspace, hence the package-scope lock). fn mutates the record in place;
+// fn returning an error aborts the write.
+//
+// Parameters:
+//   - ctx: The context
+//   - name: The connection name
+//   - fn: The mutation applied to the record read under the lock
+//
+// Returns:
+//   - error: ErrConnectionNotFound if the connection does not exist, the
+//     storage fault otherwise
+func (s *EventsStore) MutateConnection(ctx context.Context, name string, fn func(*Connection) error) error {
+	connectionRecordWriteMu.Lock()
+	defer connectionRecordWriteMu.Unlock()
 
-// DeauthorizeConnection deauthorises an EventBridge connection, setting its state to deauthorised.
-func (s *EventsStore) DeauthorizeConnection(ctx context.Context, name string) error {
 	var connection Connection
 	if err := s.connectionsStore.Get(name, &connection); err != nil {
-		return ErrConnectionNotFound
+		if common.IsNotFound(err) {
+			return ErrConnectionNotFound
+		}
+		return err
 	}
-	connection.State = ConnectionStateDeauthorized
-	connection.StateReason = "User initiated deauthorization"
-	connection.LastAuthorizedAt = time.Time{}
+	if err := fn(&connection); err != nil {
+		return err
+	}
 	return s.connectionsStore.Put(name, &connection)
 }
 
@@ -698,7 +935,7 @@ func (s *EventsStore) CreateApiDestination(ctx context.Context, apiDest *ApiDest
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 	if apiDest.Name == "" {
-		return ErrInvalidARN
+		return ErrEmptyResourceName
 	}
 
 	if s.apiDestinationsStore.Exists(apiDest.Name) {
@@ -710,6 +947,7 @@ func (s *EventsStore) CreateApiDestination(ctx context.Context, apiDest *ApiDest
 	apiDest.Region = s.region
 	apiDest.AccountID = s.accountID
 	apiDest.CreatedAt = now
+	apiDest.LastModifiedAt = now
 	if apiDest.State == "" {
 		apiDest.State = ApiDestinationStateActive
 	}
@@ -717,7 +955,9 @@ func (s *EventsStore) CreateApiDestination(ctx context.Context, apiDest *ApiDest
 	return s.apiDestinationsStore.Put(apiDest.Name, apiDest)
 }
 
-// GetApiDestination retrieves an API destination by name.
+// GetApiDestination retrieves an API destination by name. A missing record
+// is the not-found sentinel; any other storage fault surfaces as itself so
+// the Cores can tell a permanent absence from a transient failure.
 //
 // Parameters:
 //   - ctx: The context
@@ -725,11 +965,14 @@ func (s *EventsStore) CreateApiDestination(ctx context.Context, apiDest *ApiDest
 //
 // Returns:
 //   - *ApiDestination: The API destination if found
-//   - error: An error if not found
+//   - error: ErrApiDestinationNotFound if not found, the storage fault otherwise
 func (s *EventsStore) GetApiDestination(ctx context.Context, name string) (*ApiDestination, error) {
 	var apiDest ApiDestination
 	if err := s.apiDestinationsStore.Get(name, &apiDest); err != nil {
-		return nil, ErrApiDestinationNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrApiDestinationNotFound
+		}
+		return nil, err
 	}
 	return &apiDest, nil
 }
@@ -743,25 +986,62 @@ func (s *EventsStore) GetApiDestination(ctx context.Context, name string) (*ApiD
 // Returns:
 //   - error: An error if deletion fails
 func (s *EventsStore) DeleteApiDestination(ctx context.Context, name string) error {
+	// The record lock closes the resurrection window against a concurrent
+	// MutateApiDestination cycle.
+	apiDestinationRecordWriteMu.Lock()
+	defer apiDestinationRecordWriteMu.Unlock()
 	if !s.apiDestinationsStore.Exists(name) {
 		return ErrApiDestinationNotFound
+	}
+	// Tags are keyed by the stored ARN; the ARN carries a unique id minted
+	// at creation, so rebuilding it here would target a different key.
+	if apiDest, err := s.GetApiDestination(ctx, name); err == nil {
+		_ = s.TagStore.Delete(apiDest.ARN)
 	}
 	return s.apiDestinationsStore.Delete(name)
 }
 
-// UpdateApiDestination updates an existing EventBridge API destination.
-func (s *EventsStore) UpdateApiDestination(ctx context.Context, apiDest *ApiDestination) error {
-	if !s.apiDestinationsStore.Exists(apiDest.Name) {
-		return ErrApiDestinationNotFound
+// MutateApiDestination applies fn to the API destination record inside the
+// write mutex so the whole read-modify-write cycle is atomic with respect
+// to every other API destination record writer (updaters run on separate
+// store instances over the same Pebble keyspace, hence the package-scope
+// lock). fn mutates the record in place; fn returning an error aborts the
+// write.
+//
+// Parameters:
+//   - ctx: The context
+//   - name: The API destination name
+//   - fn: The mutation applied to the record read under the lock
+//
+// Returns:
+//   - error: ErrApiDestinationNotFound if the API destination does not
+//     exist, the storage fault otherwise
+func (s *EventsStore) MutateApiDestination(ctx context.Context, name string, fn func(*ApiDestination) error) error {
+	apiDestinationRecordWriteMu.Lock()
+	defer apiDestinationRecordWriteMu.Unlock()
+
+	var apiDest ApiDestination
+	if err := s.apiDestinationsStore.Get(name, &apiDest); err != nil {
+		if common.IsNotFound(err) {
+			return ErrApiDestinationNotFound
+		}
+		return err
 	}
-	return s.apiDestinationsStore.Put(apiDest.Name, apiDest)
+	if err := fn(&apiDest); err != nil {
+		return err
+	}
+	return s.apiDestinationsStore.Put(name, &apiDest)
 }
 
 func (s *EventsStore) buildReplayARN(name string) string {
 	return s.arnBuilder.Events().Replay(name)
 }
 
-// StoreArchiveEvent stores an event in an archive.
+// StoreArchiveEvent stores an event in an archive. The write runs under the
+// archive family's record lock and re-checks the archive's existence, so an
+// ingress racing the archive's delete cannot land an event row under a dead
+// archive name — a row a same-named archive created later would surface as
+// its own.
 //
 // Parameters:
 //   - ctx: The context
@@ -769,45 +1049,54 @@ func (s *EventsStore) buildReplayARN(name string) string {
 //   - event: The archived event to store
 //
 // Returns:
-//   - error: An error if storage fails
+//   - error: ErrArchiveNotFound when the archive record is gone, the storage
+//     fault otherwise
 func (s *EventsStore) StoreArchiveEvent(ctx context.Context, archiveName string, event *ArchivedEvent) error {
+	archiveRecordWriteMu.Lock()
+	defer archiveRecordWriteMu.Unlock()
+	if !s.archivesStore.Exists(archiveName) {
+		return ErrArchiveNotFound
+	}
 	key := fmt.Sprintf("%s:%d:%s", archiveName, event.Timestamp.UnixNano(), event.ID)
 	return s.archivedEventsStore.Put(key, event)
 }
 
-// GetArchiveEvents retrieves archived events for an archive within a time range.
+// ListArchiveEvents retrieves one page of archived events for an archive
+// within a time range (inclusive bounds).
 //
 // Parameters:
 //   - ctx: The context
 //   - archiveName: The archive name
 //   - startTime: The start time for retrieval
 //   - endTime: The end time for retrieval
+//   - limit: The maximum number of events to return
+//   - nextToken: The continuation token from the previous page
 //
 // Returns:
-//   - []*ArchivedEvent: The list of archived events
+//   - *ArchivedEventListResult: One page of archived events plus the
+//     continuation token
 //   - error: An error if retrieval fails
-func (s *EventsStore) GetArchiveEvents(ctx context.Context, archiveName string, startTime, endTime time.Time) ([]*ArchivedEvent, error) {
-	prefix := archiveName + ":"
-	return common.ListMatching[ArchivedEvent](s.archivedEventsStore, prefix, func(e *ArchivedEvent) bool {
-		return (startTime.IsZero() || e.Timestamp.After(startTime) || e.Timestamp.Equal(startTime)) &&
-			(endTime.IsZero() || e.Timestamp.Before(endTime) || e.Timestamp.Equal(endTime))
-	})
-}
-
-// DeleteArchiveEvents deletes all archived events for an archive.
 //
-// Parameters:
-//   - ctx: The context
-//   - archiveName: The archive name
-//
-// Returns:
-//   - error: An error if deletion fails
-func (s *EventsStore) DeleteArchiveEvents(ctx context.Context, archiveName string) error {
-	prefix := archiveName + ":"
-	return common.ForEachAll[ArchivedEvent](s.archivedEventsStore, prefix, nil, func(e *ArchivedEvent) error {
-		key := prefix + fmt.Sprintf("%d:", e.Timestamp.UnixNano()) + e.ID
-		return s.archivedEventsStore.Delete(key)
+// The scan is page-bounded so a replay walks its window in pages instead of
+// materialising the archive's entire filtered set before delivering the
+// first event.
+func (s *EventsStore) ListArchiveEvents(ctx context.Context, archiveName string, startTime, endTime time.Time, limit int32, nextToken string) (*ArchivedEventListResult, error) {
+	opts := common.ListOptions{
+		Prefix:   archiveName + ":",
+		Marker:   nextToken,
+		MaxItems: int(limit),
+	}
+	result, err := common.List[ArchivedEvent](s.archivedEventsStore, opts, func(e *ArchivedEvent) bool {
+		return (startTime.IsZero() || !e.Timestamp.Before(startTime)) &&
+			(endTime.IsZero() || !e.Timestamp.After(endTime))
 	})
+	if err != nil {
+		return nil, err
+	}
+	return &ArchivedEventListResult{
+		Events:    result.Items,
+		NextToken: result.NextMarker,
+	}, nil
 }
 
 // DeleteExpiredArchiveEvents deletes archived events older than the cutoff
@@ -821,9 +1110,11 @@ func (s *EventsStore) DeleteExpiredArchiveEvents(ctx context.Context, archiveNam
 		if err := s.archivedEventsStore.Delete(key); err != nil {
 			return err
 		}
-		s.archiveCountersMu.Lock()
-		var archive Archive
-		if err := s.archivesStore.Get(archiveName, &archive); err == nil {
+		// The counter decrement runs through the atomic record mutation;
+		// a concurrently deleted archive is a legitimate outcome of the
+		// sweep (the retention worker iterates live archives), so its
+		// not-found error is tolerated rather than aborting the pass.
+		if err := s.MutateArchive(ctx, archiveName, func(archive *Archive) error {
 			if archive.EventCount > 0 {
 				archive.EventCount--
 			}
@@ -836,9 +1127,10 @@ func (s *EventsStore) DeleteExpiredArchiveEvents(ctx context.Context, archiveNam
 			} else {
 				archive.SizeBytes = 0
 			}
-			_ = s.archivesStore.Put(archiveName, &archive)
+			return nil
+		}); err != nil && err != ErrArchiveNotFound {
+			return err
 		}
-		s.archiveCountersMu.Unlock()
 		return nil
 	})
 }
@@ -854,8 +1146,59 @@ func (s *EventsStore) DeleteExpiredArchiveEvents(ctx context.Context, archiveNam
 func (s *EventsStore) CreateReplay(ctx context.Context, replay *Replay) error {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
+	return s.createReplayLocked(ctx, replay)
+}
+
+// CreateReplayCapped counts the store's active (non-terminal) replays and
+// creates the record inside one locked section, so the concurrent-replay cap
+// holds under concurrent creators: the count-then-create pair is atomic with
+// every other capped create and with the state transitions that free cap
+// slots (the replay family's record lock serialises them all). Lock order is
+// createMu → replayRecordWriteMu; no other path nests these.
+//
+// Parameters:
+//   - ctx: The context
+//   - replay: The replay to create
+//   - maxActive: The maximum of non-terminal replays the store may hold
+//
+// Returns:
+//   - error: ErrReplayCapReached when maxActive is already reached, the
+//     CreateReplay errors otherwise
+func (s *EventsStore) CreateReplayCapped(ctx context.Context, replay *Replay, maxActive int) error {
+	s.createMu.Lock()
+	defer s.createMu.Unlock()
+	replayRecordWriteMu.Lock()
+	defer replayRecordWriteMu.Unlock()
+
+	active := 0
+	nextToken := ""
+	for {
+		result, err := s.ListReplays(ctx, "", "", "", ListLimitMaximum, nextToken)
+		if err != nil {
+			return err
+		}
+		for _, r := range result.Replays {
+			switch r.State {
+			case ReplayStateStarting, ReplayStateRunning, ReplayStateCancelling:
+				active++
+			}
+		}
+		if result.NextToken == "" {
+			break
+		}
+		nextToken = result.NextToken
+	}
+	if active >= maxActive {
+		return ErrReplayCapReached
+	}
+	return s.createReplayLocked(ctx, replay)
+}
+
+// createReplayLocked is the create body shared by CreateReplay and
+// CreateReplayCapped; the caller holds the create lock.
+func (s *EventsStore) createReplayLocked(ctx context.Context, replay *Replay) error {
 	if replay.Name == "" {
-		return ErrInvalidARN
+		return ErrEmptyResourceName
 	}
 
 	if s.replaysStore.Exists(replay.Name) {
@@ -865,6 +1208,7 @@ func (s *EventsStore) CreateReplay(ctx context.Context, replay *Replay) error {
 	replay.ARN = s.buildReplayARN(replay.Name)
 	replay.Region = s.region
 	replay.AccountID = s.accountID
+	replay.CreatedAt = time.Now().UTC()
 	if replay.State == "" {
 		replay.State = ReplayStateStarting
 	}
@@ -872,7 +1216,9 @@ func (s *EventsStore) CreateReplay(ctx context.Context, replay *Replay) error {
 	return s.replaysStore.Put(replay.Name, replay)
 }
 
-// GetReplay retrieves a replay by name.
+// GetReplay retrieves a replay by name. A missing record is the not-found
+// sentinel; any other storage fault surfaces as itself so the Cores can
+// tell a permanent absence from a transient failure.
 //
 // Parameters:
 //   - ctx: The context
@@ -880,28 +1226,50 @@ func (s *EventsStore) CreateReplay(ctx context.Context, replay *Replay) error {
 //
 // Returns:
 //   - *Replay: The replay if found
-//   - error: An error if not found
+//   - error: ErrReplayNotFound if not found, the storage fault otherwise
 func (s *EventsStore) GetReplay(ctx context.Context, name string) (*Replay, error) {
 	var replay Replay
 	if err := s.replaysStore.Get(name, &replay); err != nil {
-		return nil, ErrReplayNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrReplayNotFound
+		}
+		return nil, err
 	}
 	return &replay, nil
 }
 
-// UpdateReplay updates an existing replay.
+// MutateReplay applies fn to the replay record inside the write mutex so
+// the whole read-modify-write cycle is atomic with respect to every other
+// replay record writer: the replay worker's state transitions, the cancel
+// path and the delete all run on separate store instances over the same
+// Pebble keyspace, hence the package-scope lock — a terminal-write race
+// between cancel and complete is decided by lock order, not by which
+// goroutine re-read first. fn mutates the record in place; fn returning an
+// error aborts the write.
 //
 // Parameters:
 //   - ctx: The context
-//   - replay: The replay to update
+//   - name: The replay name
+//   - fn: The mutation applied to the record read under the lock
 //
 // Returns:
-//   - error: An error if update fails
-func (s *EventsStore) UpdateReplay(ctx context.Context, replay *Replay) error {
-	if !s.replaysStore.Exists(replay.Name) {
-		return ErrReplayNotFound
+//   - error: ErrReplayNotFound if the replay does not exist, the storage
+//     fault otherwise
+func (s *EventsStore) MutateReplay(ctx context.Context, name string, fn func(*Replay) error) error {
+	replayRecordWriteMu.Lock()
+	defer replayRecordWriteMu.Unlock()
+
+	var replay Replay
+	if err := s.replaysStore.Get(name, &replay); err != nil {
+		if common.IsNotFound(err) {
+			return ErrReplayNotFound
+		}
+		return err
 	}
-	return s.replaysStore.Put(replay.Name, replay)
+	if err := fn(&replay); err != nil {
+		return err
+	}
+	return s.replaysStore.Put(name, &replay)
 }
 
 // DeleteReplay deletes a replay by name.
@@ -913,6 +1281,10 @@ func (s *EventsStore) UpdateReplay(ctx context.Context, replay *Replay) error {
 // Returns:
 //   - error: An error if deletion fails
 func (s *EventsStore) DeleteReplay(ctx context.Context, name string) error {
+	// The record lock closes the resurrection window against a concurrent
+	// MutateReplay cycle.
+	replayRecordWriteMu.Lock()
+	defer replayRecordWriteMu.Unlock()
 	if !s.replaysStore.Exists(name) {
 		return ErrReplayNotFound
 	}
@@ -934,6 +1306,12 @@ type ApiDestinationListResult struct {
 // ReplayListResult represents the result of listing replays.
 type ReplayListResult struct {
 	Replays   []*Replay
+	NextToken string
+}
+
+// ArchivedEventListResult represents one page of archived events.
+type ArchivedEventListResult struct {
+	Events    []*ArchivedEvent
 	NextToken string
 }
 

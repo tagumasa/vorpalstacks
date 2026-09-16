@@ -389,17 +389,6 @@ func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, streamName string,
 	return out, nextSeq, nil
 }
 
-// eventsInvokerAdapter adapts the EventBridge store Put function to the
-// invokers.EventsInvoker interface.
-type eventsInvokerAdapter struct {
-	putFn func(key string, data any) error
-}
-
-// PutEvent persists an event in the EventBridge store.
-func (a *eventsInvokerAdapter) PutEvent(_ context.Context, key string, event any) error {
-	return a.putFn(key, event)
-}
-
 // convertToSQSMessageAttributes converts a simple string map to SQS
 // MessageAttributeValue map for SendMessage.
 func convertToSQSMessageAttributes(attrs map[string]string) map[string]*storesqs.MessageAttributeValue {

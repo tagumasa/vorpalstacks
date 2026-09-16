@@ -141,6 +141,36 @@ func ExtractArchiveNameFromARN(arn string) string {
 	return ""
 }
 
+// ExtractConnectionNameFromARN extracts the EventBridge connection name from
+// a connection ARN (resource form connection/<name>/<id>; the trailing id
+// segment is the ARN's unique suffix, not part of the name).
+func ExtractConnectionNameFromARN(arn string) string {
+	_, _, _, _, resource := SplitARN(arn)
+	if !strings.HasPrefix(resource, "connection/") {
+		return ""
+	}
+	parts := strings.Split(strings.TrimPrefix(resource, "connection/"), "/")
+	if len(parts) == 0 || parts[0] == "" {
+		return ""
+	}
+	return parts[0]
+}
+
+// ExtractApiDestinationNameFromARN extracts the EventBridge API destination
+// name from an API destination ARN (resource form
+// api-destination/<name>/<id>).
+func ExtractApiDestinationNameFromARN(arn string) string {
+	_, _, _, _, resource := SplitARN(arn)
+	if !strings.HasPrefix(resource, "api-destination/") {
+		return ""
+	}
+	parts := strings.Split(strings.TrimPrefix(resource, "api-destination/"), "/")
+	if len(parts) == 0 || parts[0] == "" {
+		return ""
+	}
+	return parts[0]
+}
+
 // ExtractStateMachineNameFromARN extracts the Step Functions state machine name from an ARN.
 func ExtractStateMachineNameFromARN(arn string) string {
 	_, _, _, _, resource := SplitARN(arn)

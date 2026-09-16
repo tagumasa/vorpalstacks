@@ -15,8 +15,8 @@ type Registry interface {
 	SetSNSInvoker(invoker SNSInvoker)
 	KinesisInvoker() KinesisInvoker
 	SetKinesisInvoker(invoker KinesisInvoker)
-	EventsInvoker() EventsInvoker
-	SetEventsInvoker(invoker EventsInvoker)
+	AppSyncInvoker() AppSyncInvoker
+	SetAppSyncInvoker(invoker AppSyncInvoker)
 	EC2Invoker() EC2Invoker
 	SetEC2Invoker(invoker EC2Invoker)
 	DynamoDBInvoker() DynamoDBInvoker
@@ -45,6 +45,8 @@ type Registry interface {
 	SetRDSDataInvoker(invoker RDSDataInvoker)
 	CognitoTokenValidator() CognitoTokenValidator
 	SetCognitoTokenValidator(validator CognitoTokenValidator)
+	SecretsManagerInvoker() SecretsManagerInvoker
+	SetSecretsManagerInvoker(invoker SecretsManagerInvoker)
 	RegisterSubnetUsageChecker(checker SubnetUsageChecker)
 	RegisterSecurityGroupUsageChecker(checker SecurityGroupUsageChecker)
 	SubnetUsageCheckers() []SubnetUsageChecker

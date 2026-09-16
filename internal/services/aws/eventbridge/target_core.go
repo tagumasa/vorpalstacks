@@ -2,11 +2,14 @@ package eventbridge
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ---------------------------------------------------------------------------
@@ -22,11 +25,13 @@ type PutTargetsInput struct {
 	EventBusNameProvided bool
 	Rule                 string
 	Targets              []interface{}
+	Region               string
 	IAMValidator         *iam.IAMValidator
 }
 
-// PutTargetsResult holds the outcome of putTargetsCore.
-type PutTargetsResult struct {
+// TargetsMutationResult holds the outcome of putTargetsCore and
+// removeTargetsCore: the per-entry failure report both operations return.
+type TargetsMutationResult struct {
 	FailedEntryCount int32
 	FailedEntries    []map[string]interface{}
 }
@@ -52,10 +57,65 @@ type ListTargetsByRuleInput struct {
 // Core functions
 // ---------------------------------------------------------------------------
 
+// validateTargetARNAcceptance adjudicates the accept/deliver matrix at
+// PutTargets: a target ARN is accepted only when the platform has a
+// delivery path for its service AND resource form. Every rejection names
+// the reason in the per-entry failure.
+//
+// Accepted (delivery implemented in attemptDelivery):
+//
+//	lambda, sqs, sns, states (Step Functions), logs, kinesis — the six
+//	  invoker/bus delivery arms.
+//	events — the event-bus/ resource form (same- or cross-account bus
+//	  delivery with the hop-depth guard) and the api-destination/ form
+//	  (HTTPS invocation of the destination's endpoint, authorised by its
+//	  connection); every other events-service resource form (rule, archive,
+//	  a bare name) has no delivery path.
+//	appsync — a GraphQL endpoint ARN (apis/<apiId>[/endpoints/GRAPHQL])
+//	  with AppSyncParameters.GraphQLOperation; delivery invokes the
+//	  mutation with the transformed payload as variables.
+//	firehose — accepted because the Firehose service is a planned release
+//	  blocker 4 deliverable; until it lands, delivery fails fast to the
+//	  terminal handling instead of burning the retry budget.
+//
+// Rejected (no delivery path can exist on this platform):
+//
+//	ecs — the ECS service is not implemented (Basic Policy future
+//	  expansion list).
+//	ssm — SSM Run Command requires the SendCommand operation and an
+//	  instance execution plane; the SSM service implements Parameter
+//	  Store only (docs/services.md).
+func validateTargetARNAcceptance(arn string) error {
+	if arn == "" {
+		return fmt.Errorf("Target ARN must not be empty")
+	}
+	_, service, _, _, resource := svcarn.SplitARN(arn)
+	switch service {
+	case "lambda", "sqs", "sns", "states", "logs", "kinesis", "firehose":
+		return nil
+	case "events":
+		if !strings.HasPrefix(resource, "event-bus/") && !strings.HasPrefix(resource, "api-destination/") {
+			return fmt.Errorf("Target ARN %s: only event-bus/ and api-destination/ resources of the events service have a delivery path", arn)
+		}
+		return nil
+	case "appsync":
+		if extractAppSyncApiIDFromARN(arn) == "" {
+			return fmt.Errorf("Target ARN %s: AppSync targets must name a GraphQL API endpoint (apis/<apiId>)", arn)
+		}
+		return nil
+	case "ecs":
+		return fmt.Errorf("Target ARN %s: ECS task targets are not supported (the ECS service is not available on this platform)", arn)
+	case "ssm":
+		return fmt.Errorf("Target ARN %s: SSM Run Command targets are not supported (the SSM service implements Parameter Store only on this platform)", arn)
+	default:
+		return fmt.Errorf("Target ARN %s: service %q has no delivery path on this platform", arn, service)
+	}
+}
+
 // putTargetsCore validates the rule and target entries, enforces the
 // per-rule target quota and stores the targets, reporting per-entry
 // failures.
-func (s *EventsService) putTargetsCore(ctx context.Context, store *eventsstore.EventsStore, input PutTargetsInput) (*PutTargetsResult, error) {
+func (s *EventsService) putTargetsCore(ctx context.Context, store *eventsstore.EventsStore, input PutTargetsInput) (*TargetsMutationResult, error) {
 	ruleName := input.Rule
 	if ruleName == "" {
 		return nil, awserrors.NewValidationException("Rule name is required")
@@ -156,11 +216,11 @@ func (s *EventsService) putTargetsCore(ctx context.Context, store *eventsstore.E
 			continue
 		}
 
-		if !isValidTargetARN(targetArn) {
+		if err := validateTargetARNAcceptance(targetArn); err != nil {
 			failedEntries = append(failedEntries, map[string]interface{}{
 				"TargetId":     targetID,
 				"ErrorCode":    "ValidationException",
-				"ErrorMessage": "Invalid target ARN",
+				"ErrorMessage": err.Error(),
 			})
 			failedCount++
 			continue
@@ -226,26 +286,53 @@ func (s *EventsService) putTargetsCore(ctx context.Context, store *eventsstore.E
 			}
 		}
 
+		if err := validateTargetInputConfiguration(target); err != nil {
+			failedEntries = append(failedEntries, map[string]interface{}{
+				"TargetId":     targetID,
+				"ErrorCode":    "ValidationException",
+				"ErrorMessage": err.Error(),
+			})
+			failedCount++
+			continue
+		}
+
 		if dlConfig, ok := targetMap["DeadLetterConfig"].(map[string]interface{}); ok {
 			target.DeadLetterConfig = &eventsstore.DeadLetterConfig{}
 			if arn, ok := dlConfig["Arn"].(string); ok {
+				if err := validateDeadLetterQueueARN(arn, input.Region); err != nil {
+					failedEntries = append(failedEntries, map[string]interface{}{
+						"TargetId":     targetID,
+						"ErrorCode":    "ValidationException",
+						"ErrorMessage": err.Error(),
+					})
+					failedCount++
+					continue
+				}
 				target.DeadLetterConfig.Arn = arn
 			}
 		}
 
 		if retryPolicy, ok := targetMap["RetryPolicy"].(map[string]interface{}); ok {
 			target.RetryPolicy = &eventsstore.RetryPolicy{}
+			// The age member distinguishes "explicitly supplied" from
+			// "omitted": an explicit value outside 60-86400 (zero
+			// included) is a per-entry validation failure; an omitted
+			// member keeps the deployment default.
+			_, maxAgeProvided := retryPolicy["MaximumEventAgeInSeconds"]
 			if maxAge, ok := retryPolicy["MaximumEventAgeInSeconds"].(float64); ok {
 				target.RetryPolicy.MaximumEventAgeInSeconds = int32(maxAge)
 			}
 			if maxRetry, ok := retryPolicy["MaximumRetryAttempts"].(float64); ok {
 				target.RetryPolicy.MaximumRetryAttempts = int32(maxRetry)
 			}
-			if !validateRetryPolicy(target.RetryPolicy) {
+			if !validateRetryPolicy(target.RetryPolicy, maxAgeProvided) {
 				failedEntries = append(failedEntries, map[string]interface{}{
-					"TargetId":     targetID,
-					"ErrorCode":    "ValidationException",
-					"ErrorMessage": "RetryPolicy: MaximumRetryAttempts must be 0-185, MaximumEventAgeInSeconds must be 60-86400",
+					"TargetId":  targetID,
+					"ErrorCode": "ValidationException",
+					"ErrorMessage": fmt.Sprintf("RetryPolicy: MaximumRetryAttempts must be 0-%d, MaximumEventAgeInSeconds must be %d-%d when provided",
+						eventsstore.RetryPolicyMaxRetryAttempts,
+						eventsstore.RetryPolicyMinEventAgeSeconds,
+						eventsstore.RetryPolicyMaxEventAgeSeconds),
 				})
 				failedCount++
 				continue
@@ -293,27 +380,23 @@ func (s *EventsService) putTargetsCore(ctx context.Context, store *eventsstore.E
 			}
 		}
 
-		if rcp, ok := targetMap["RunCommandParameters"].(map[string]interface{}); ok {
-			target.RunCommandParameters = parseRunCommandParameters(rcp)
-		}
 		if asp, ok := targetMap["AppSyncParameters"].(map[string]interface{}); ok {
 			target.AppSyncParameters = &eventsstore.AppSyncParameters{}
 			if op, ok := asp["GraphQLOperation"].(string); ok {
 				target.AppSyncParameters.GraphQLOperation = op
 			}
 		}
-		if ecs, ok := targetMap["EcsParameters"].(map[string]interface{}); ok {
-			ecsParams, err := parseEcsParameters(ecs)
-			if err != nil {
-				failedEntries = append(failedEntries, map[string]interface{}{
-					"TargetId":     targetID,
-					"ErrorCode":    "ValidationException",
-					"ErrorMessage": err.Error(),
-				})
-				failedCount++
-				continue
-			}
-			target.EcsParameters = ecsParams
+		// An AppSync target without an operation document cannot invoke
+		// anything: the mutation is the target's entire delivery payload.
+		if _, service, _, _, _ := svcarn.SplitARN(targetArn); service == "appsync" &&
+			(target.AppSyncParameters == nil || target.AppSyncParameters.GraphQLOperation == "") {
+			failedEntries = append(failedEntries, map[string]interface{}{
+				"TargetId":     targetID,
+				"ErrorCode":    "ValidationException",
+				"ErrorMessage": "AppSync targets require AppSyncParameters.GraphQLOperation (the mutation to invoke)",
+			})
+			failedCount++
+			continue
 		}
 
 		if err := store.PutTarget(ctx, target); err != nil {
@@ -326,7 +409,7 @@ func (s *EventsService) putTargetsCore(ctx context.Context, store *eventsstore.E
 		}
 	}
 
-	return &PutTargetsResult{
+	return &TargetsMutationResult{
 		FailedEntryCount: failedCount,
 		FailedEntries:    failedEntries,
 	}, nil
@@ -334,7 +417,7 @@ func (s *EventsService) putTargetsCore(ctx context.Context, store *eventsstore.E
 
 // removeTargetsCore validates the rule and deletes the requested target IDs,
 // reporting per-entry failures.
-func (s *EventsService) removeTargetsCore(ctx context.Context, store *eventsstore.EventsStore, input RemoveTargetsInput) (*PutTargetsResult, error) {
+func (s *EventsService) removeTargetsCore(ctx context.Context, store *eventsstore.EventsStore, input RemoveTargetsInput) (*TargetsMutationResult, error) {
 	ruleName := input.Rule
 	if ruleName == "" {
 		return nil, awserrors.NewValidationException("Rule name is required")
@@ -358,7 +441,13 @@ func (s *EventsService) removeTargetsCore(ctx context.Context, store *eventsstor
 	failedCount := int32(0)
 
 	for _, targetID := range targetIDs {
-		if err := store.DeleteTarget(ctx, eventBusName, ruleName, targetID); err != nil {
+		// Removing a target ID that no longer exists succeeds: the API
+		// reference frames a successful RemoveTargets as "the target(s)
+		// listed in the request are removed" and documents no per-entry
+		// error code for a missing target, so an idempotent removal is
+		// the contract — not an InternalFailure entry carrying the raw
+		// store error string.
+		if err := store.DeleteTarget(ctx, eventBusName, ruleName, targetID); err != nil && err != eventsstore.ErrTargetNotFound {
 			failedEntries = append(failedEntries, map[string]interface{}{
 				"TargetId":     targetID,
 				"ErrorCode":    "InternalFailure",
@@ -368,7 +457,7 @@ func (s *EventsService) removeTargetsCore(ctx context.Context, store *eventsstor
 		}
 	}
 
-	return &PutTargetsResult{
+	return &TargetsMutationResult{
 		FailedEntryCount: failedCount,
 		FailedEntries:    failedEntries,
 	}, nil
@@ -386,12 +475,9 @@ func (s *EventsService) listTargetsByRuleCore(ctx context.Context, store *events
 		return nil, err
 	}
 
-	limit := input.Limit
-	if limit == 0 {
-		limit = 100
-	}
-	if limit < 1 || limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 1 and 100")
+	limit, err := normaliseListLimit(input.Limit)
+	if err != nil {
+		return nil, err
 	}
 
 	if _, err := store.GetRule(ctx, eventBusName, ruleName); err != nil {

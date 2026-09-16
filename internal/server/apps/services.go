@@ -389,6 +389,7 @@ func (a *App) initSecretsManager(st *serviceState) error {
 	st.secretsManagerService.SetRegion(st.region)
 	st.secretsManagerService.SetStorageManager(a.server.StorageManager())
 	st.secretsManagerService.RegisterHandlers(a.server.Dispatcher())
+	a.server.EventBus().SetSecretsManagerInvoker(st.secretsManagerService.SecretsManagerBusInvoker())
 	st.secretsManagerService.StartRotationChecker(context.Background())
 	a.addShutdown("secretsmanager", func(ctx context.Context) error {
 		st.secretsManagerService.StopRotationChecker()

@@ -3,7 +3,6 @@ package lambda
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/eventbus"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -82,7 +82,7 @@ func deliverDestination(
 	case "lambda":
 		deliverToLambda(ctx, s, destinationArn, payloadBytes)
 	case "events":
-		deliverToEventBridge(ctx, s, destinationArn, payloadStr)
+		deliverToEventBridge(ctx, s, destinationArn, payloadStr, onSuccess, function.FunctionArn, region)
 	default:
 		logs.Warn("unsupported destination type", logs.String("arn", destinationArn))
 	}
@@ -141,10 +141,18 @@ func deliverToLambda(ctx context.Context, s *LambdaService, arn string, payload 
 	}
 }
 
-func deliverToEventBridge(ctx context.Context, s *LambdaService, arn, payload string) {
-	eventsInvoker := s.bus.EventsInvoker()
-	if eventsInvoker == nil {
-		logs.Warn("destination: EventBridge invoker not configured", logs.String("arn", arn))
+// deliverToEventBridge publishes the invocation record onto the
+// destination bus through the unified internal ingress. The destination
+// table ("Capturing records of Lambda asynchronous invocations", Lambda
+// developer guide) defines the EventBridge envelope: "Lambda passes the
+// invocation record as the detail in the PutEvents call", "The value for
+// the source event field is lambda", the detail-type is "Lambda Function
+// Invocation Result - Success" or "... - Failure", and "The resource event
+// field contains the function and destination Amazon Resource Names
+// (ARNs)".
+func deliverToEventBridge(ctx context.Context, s *LambdaService, arn, payload string, onSuccess bool, functionArn, region string) {
+	if s.bus == nil {
+		logs.Warn("destination: event bus not configured", logs.String("arn", arn))
 		return
 	}
 	busName := arnutil.ExtractEventBusNameFromARN(arn)
@@ -152,9 +160,26 @@ func deliverToEventBridge(ctx context.Context, s *LambdaService, arn, payload st
 		logs.Warn("destination: failed to extract event bus name", logs.String("arn", arn))
 		return
 	}
-	eventID := fmt.Sprintf("dest-%d", time.Now().UnixNano())
-	key := fmt.Sprintf("events:%s:%s", busName, eventID)
-	if err := eventsInvoker.PutEvent(ctx, key, payload); err != nil {
-		logs.Warn("destination: failed to put EventBridge event", logs.String("arn", arn), logs.Err(err))
+	detailType := "Lambda Function Invocation Result - Failure"
+	if onSuccess {
+		detailType = "Lambda Function Invocation Result - Success"
+	}
+	input, err := json.Marshal(map[string]interface{}{
+		"Source":     "lambda",
+		"DetailType": detailType,
+		"Detail":     json.RawMessage(payload),
+		"Resources":  []string{functionArn, arn},
+	})
+	if err != nil {
+		logs.Warn("destination: failed to build the EventBridge event", logs.String("arn", arn), logs.Err(err))
+		return
+	}
+	evt := &eventbus.EventBridgePutEventsEvent{EventBusName: busName, Input: string(input)}
+	evt.Region = region
+	// Publishing is fire-and-forget, matching the sibling destination
+	// arms: the delivery failure surfaces through the bus handler's
+	// reporting, not the invocation.
+	if err := s.bus.Publish(ctx, evt); err != nil {
+		logs.Warn("destination: failed to publish EventBridge event", logs.String("arn", arn), logs.Err(err))
 	}
 }

@@ -33,14 +33,16 @@ func createEventBridgeTestBus(ctx context.Context, client *eventbridge.Client, n
 }
 
 // createEventBridgeTestRule puts a throwaway rule on a bus and returns a
-// cleanup closure deleting it. The default input is a rate(1 hour)
-// schedule; opts adapt rules whose input differs (extra descriptions,
-// event patterns).
+// cleanup closure deleting it. The default input is an event pattern that
+// matches nothing the suite publishes — scheduled rules are restricted to
+// the default event bus, so a custom-bus helper rule must be pattern-based;
+// opts adapt rules whose input differs (extra descriptions, other
+// patterns).
 func createEventBridgeTestRule(ctx context.Context, client *eventbridge.Client, busName, name string, opts ...func(*eventbridge.PutRuleInput)) (func(), error) {
 	input := &eventbridge.PutRuleInput{
-		Name:               aws.String(name),
-		EventBusName:       aws.String(busName),
-		ScheduleExpression: aws.String("rate(1 hour)"),
+		Name:         aws.String(name),
+		EventBusName: aws.String(busName),
+		EventPattern: aws.String(`{"source":["vorpalstacks.test.helper"]}`),
 	}
 	for _, opt := range opts {
 		opt(input)
@@ -54,11 +56,13 @@ func createEventBridgeTestRule(ctx context.Context, client *eventbridge.Client, 
 }
 
 // createEventBridgeTestConnection creates a throwaway connection with
-// basic auth and returns a cleanup closure deleting it; opts adapt the
-// authorisation input (API key connections, other credentials). Tests
-// that delete the connection as the operation under test call the helper
-// without keeping the cleanup.
-func createEventBridgeTestConnection(ctx context.Context, client *eventbridge.Client, name string, opts ...func(*eventbridge.CreateConnectionInput)) (func(), error) {
+// basic auth and returns the created connection's ARN plus a cleanup
+// closure deleting it; opts adapt the authorisation input (API key
+// connections, other credentials). Tests that delete the connection as the
+// operation under test call the helper without keeping the cleanup. The
+// returned ARN is the server-assigned one (resource form
+// connection/<name>/<id>) — callers must not hand-assemble it.
+func createEventBridgeTestConnection(ctx context.Context, client *eventbridge.Client, name string, opts ...func(*eventbridge.CreateConnectionInput)) (string, func(), error) {
 	input := &eventbridge.CreateConnectionInput{
 		Name:              aws.String(name),
 		AuthorizationType: types.ConnectionAuthorizationTypeBasic,
@@ -72,10 +76,15 @@ func createEventBridgeTestConnection(ctx context.Context, client *eventbridge.Cl
 	for _, opt := range opts {
 		opt(input)
 	}
-	if _, err := client.CreateConnection(ctx, input); err != nil {
-		return func() {}, fmt.Errorf("create connection %s: %w", name, err)
+	resp, err := client.CreateConnection(ctx, input)
+	if err != nil {
+		return "", func() {}, fmt.Errorf("create connection %s: %w", name, err)
 	}
-	return func() {
+	arn := ""
+	if resp.ConnectionArn != nil {
+		arn = *resp.ConnectionArn
+	}
+	return arn, func() {
 		_, _ = client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(name)})
 	}, nil
 }
