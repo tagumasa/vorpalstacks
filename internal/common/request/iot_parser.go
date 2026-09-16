@@ -813,14 +813,6 @@ func (p *iotRESTParser) ExtractPathParams(r *http.Request, params map[string]int
 			if len(parts) >= 6 && parts[4] == "executionNumber" {
 				params["executionNumber"] = parts[5]
 			}
-		} else if method == http.MethodPost {
-			params["_operation"] = "CreateThing"
-		} else if method == http.MethodPatch {
-			params["_operation"] = "UpdateThing"
-		} else if method == http.MethodGet {
-			params["_operation"] = "DescribeThing"
-		} else if method == http.MethodDelete {
-			params["_operation"] = "DeleteThing"
 		}
 	case strings.HasPrefix(path, "/topics/") && len(parts) >= 2:
 		params["topic"] = strings.Join(parts[1:], "/")
@@ -833,9 +825,6 @@ func (p *iotRESTParser) ExtractPathParams(r *http.Request, params map[string]int
 		// GetPolicyVersion/DeletePolicyVersion: /policies/{name}/version/{versionId}
 		if len(parts) >= 4 && parts[2] == "version" {
 			params["policyVersionId"] = parts[3]
-		}
-		if method == http.MethodPost {
-			params["_operation"] = "CreatePolicy"
 		}
 	case strings.HasPrefix(path, "/destinations/") && len(parts) >= 2:
 		// {arn+} is a greedy label; capture the entire remainder of the path.
@@ -967,19 +956,10 @@ func (p *iotRESTParser) ExtractPathParams(r *http.Request, params map[string]int
 		params["taskId"] = parts[3]
 	}
 
-	// Handle tag operations with resourceArn from body
-	if path == "/tags" || path == "/untag" {
-		params["_operation"] = "TagResource"
-		if path == "/untag" {
-			params["_operation"] = "UntagResource"
-		}
-	}
-
 	// Extract query params for list operations
 	if path == "/things" && method == http.MethodGet {
 		if tn := r.URL.Query().Get("thingTypeName"); tn != "" {
 			params["thingTypeName"] = tn
-			params["_operation"] = "ListThingsForThingType"
 		}
 	}
 	if path == "/endpoint" && method == http.MethodGet {

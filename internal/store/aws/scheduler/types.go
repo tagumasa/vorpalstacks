@@ -46,6 +46,12 @@ const (
 	FlexibleTimeWindowModeFlexible FlexibleTimeWindowMode = "FLEXIBLE"
 )
 
+// DefaultGroupName is the schedule group assumed when a request omits
+// GroupName: "If you omit this value, EventBridge Scheduler assumes the
+// group is associated to the default group" (API reference). The group is
+// permanent — "You can't delete, or edit, the default group" (User Guide).
+const DefaultGroupName = "default"
+
 // ScheduleGroup represents a schedule group in Amazon EventBridge Scheduler.
 type ScheduleGroup struct {
 	Name                 string             `json:"name"`
@@ -152,10 +158,17 @@ type Target struct {
 
 // Schedule represents a schedule in Amazon EventBridge Scheduler.
 type Schedule struct {
-	Name                       string                `json:"name"`
-	GroupName                  string                `json:"groupName"`
-	ARN                        string                `json:"arn"`
-	Region                     string                `json:"region"`
+	Name      string `json:"name"`
+	GroupName string `json:"groupName"`
+	ARN       string `json:"arn"`
+	// Region is engine working memory, never persisted state: the region
+	// sweep assigns it after loading the record, and the bus and retry
+	// paths rebuild it from the firing event or the retry record, so that
+	// delivery resolves the right regional store. The stored record is
+	// already region-scoped by its storage bucket and the wire carries the
+	// region inside the ARN — persisted, the field would only ever hold
+	// the empty string the create path leaves behind.
+	Region                     string                `json:"-"`
 	ScheduleExpression         string                `json:"scheduleExpression"`
 	ScheduleExpressionTimezone string                `json:"scheduleExpressionTimezone,omitempty"`
 	State                      ScheduleState         `json:"state"`
@@ -232,8 +245,6 @@ type RetryRecord struct {
 	Region string `json:"region"`
 	// Target is the full target (JSON-serialised) used for re-delivery.
 	Target string `json:"target"`
-	// Input is the schedule input passed to the target.
-	Input string `json:"input"`
 	// AttemptCount is the number of delivery attempts so far (including
 	// the initial fire and the immediate retry).
 	AttemptCount int `json:"attemptCount"`
@@ -246,4 +257,11 @@ type RetryRecord struct {
 	// after the retry lifecycle completes (success or exhaustion), matching
 	// AWS EventBridge Scheduler semantics.
 	ActionAfterCompletion string `json:"actionAfterCompletion,omitempty"`
+	// ScheduleExpression captures the firing schedule's expression at fire
+	// time. Like ActionAfterCompletion it is fire-time state: the retry
+	// path ends a one-time schedule's lifecycle when its delivery
+	// completes, and the completion decision is expression-based. Records
+	// persisted before this field existed deserialize with the empty
+	// expression and complete no lifecycle.
+	ScheduleExpression string `json:"scheduleExpression,omitempty"`
 }

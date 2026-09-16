@@ -162,16 +162,17 @@ func (s *DynamoDBService) sendToKinesisDestinations(table *dbstore.Table, eventN
 		// (base64 text), matching records written through the Kinesis API, so
 		// GetRecords consumers decode every record the same way.
 		wireData := base64.StdEncoding.EncodeToString(payload)
+		_, _, destRegion, _, _ := arn.SplitARN(dest.StreamArn)
 
-		go func(sn, pk, payload string) {
+		go func(sn, region, pk, payload string) {
 			defer func() { resilience.RecoverPanic("dynamodb Kinesis destination emit") }()
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if _, err := kinesisInvoker.PutRecord(ctx, sn, pk, []byte(payload)); err != nil {
+			if _, err := kinesisInvoker.PutRecord(ctx, region, sn, pk, []byte(payload)); err != nil {
 				logs.Warn("failed to send record to Kinesis destination",
 					logs.String("stream", sn), logs.Err(err))
 			}
-		}(streamName, partitionKey, wireData)
+		}(streamName, destRegion, partitionKey, wireData)
 	}
 }
 

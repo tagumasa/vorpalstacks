@@ -177,6 +177,10 @@ type ScheduleFiredEvent struct {
 	// setting (e.g. "DELETE") so the delivery path can defer deletion until
 	// the retry lifecycle completes (AWS-compliant delayed deletion).
 	ActionAfterCompletion string `json:"action_after_completion,omitempty"`
+	// ScheduleExpression carries the firing schedule's expression so the
+	// delivery lifecycle's completion points can end a one-time schedule's
+	// lifecycle — the completion decision is expression-based.
+	ScheduleExpression string `json:"schedule_expression,omitempty"`
 }
 
 // EventType returns "scheduler:fired" for this event type.

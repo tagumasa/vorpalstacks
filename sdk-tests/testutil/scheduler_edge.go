@@ -3,6 +3,7 @@ package testutil
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
@@ -74,13 +75,24 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_InvalidExpression", func() error {
-		invName := tc.uniqueName("InvExprSched")
-		_, err := tc.createSchedule(invName, "not-a-valid-expression", &types.Target{
-			Arn:     aws.String(tc.lambdaARN()),
-			RoleArn: aws.String(rARN),
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
+		// A syntactically impossible expression and an out-of-range cron
+		// field are both rejected at creation: AWS validates every cron
+		// field's range, and an accepted-but-never-matching expression
+		// would silently never fire.
+		invalidExpressions := []string{
+			"not-a-valid-expression",
+			"cron(99 12 * * ? *)",
+		}
+		for _, expr := range invalidExpressions {
+			invName := tc.uniqueName("InvExprSched")
+			defer tc.cleanupSchedule(invName)
+			_, err := tc.createSchedule(invName, expr, &types.Target{
+				Arn:     aws.String(tc.lambdaARN()),
+				RoleArn: aws.String(rARN),
+			})
+			if err := AssertErrorContains(err, "ValidationException"); err != nil {
+				return fmt.Errorf("expression %q: %v", expr, err)
+			}
 		}
 		return nil
 	}))
@@ -94,6 +106,68 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		})
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return err
+		}
+		return nil
+	}))
+
+	// The universal-target ARN form (arn:aws:scheduler:::aws-sdk:{service}:{action})
+	// is accepted at creation for any SDK service — delivery decides per
+	// target, mirroring AWS — while the read-only action prefixes, non-JSON
+	// Input and templated sub-parameters on a universal target are
+	// creation-time rejections.
+	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_UniversalTarget_Validation", func() error {
+		schedName := tc.uniqueName("UniversalTarget")
+		defer tc.cleanupSchedule(schedName)
+
+		universalARN := "arn:aws:scheduler:::aws-sdk:batch:submitJob"
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+			Arn:     aws.String(universalARN),
+			RoleArn: aws.String(rARN),
+			Input:   aws.String(`{"JobName":"validation-pin"}`),
+		})
+		if err != nil {
+			return fmt.Errorf("an unimplemented-service universal target must be creatable: %w", err)
+		}
+		got, err := tc.getSchedule(schedName)
+		if err != nil {
+			return fmt.Errorf("get schedule: %w", err)
+		}
+		if got.Target == nil || aws.ToString(got.Target.Arn) != universalARN {
+			return fmt.Errorf("universal ARN must round-trip, got %+v", got.Target)
+		}
+		if _, err := tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)}); err != nil {
+			return fmt.Errorf("delete schedule: %w", err)
+		}
+
+		rows := []struct {
+			name   string
+			target *types.Target
+		}{
+			{"read-only action prefix", &types.Target{
+				Arn:     aws.String("arn:aws:scheduler:::aws-sdk:sqs:getQueueUrl"),
+				RoleArn: aws.String(rARN),
+			}},
+			{"non-JSON Input", &types.Target{
+				Arn:     aws.String("arn:aws:scheduler:::aws-sdk:lambda:invoke"),
+				RoleArn: aws.String(rARN),
+				Input:   aws.String(`not-json`),
+			}},
+			{"templated sub-parameters on a universal target", &types.Target{
+				Arn:           aws.String("arn:aws:scheduler:::aws-sdk:sqs:sendMessage"),
+				RoleArn:       aws.String(rARN),
+				Input:         aws.String(`{"QueueUrl":"http://q","MessageBody":"m"}`),
+				SqsParameters: &types.SqsParameters{MessageGroupId: aws.String("g")},
+			}},
+			{"malformed scheduler-service ARN", &types.Target{
+				Arn:     aws.String("arn:aws:scheduler:::aws-sdk:sqs"),
+				RoleArn: aws.String(rARN),
+			}},
+		}
+		for _, row := range rows {
+			if _, err := tc.createSchedule(tc.uniqueName("UniversalReject"), "rate(30 minutes)", row.target); err == nil ||
+				!strings.Contains(err.Error(), "ValidationException") {
+				return fmt.Errorf("%s: expected ValidationException, got %v", row.name, err)
+			}
 		}
 		return nil
 	}))
@@ -157,6 +231,38 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 					PlacementStrategy: []types.PlacementStrategy{
 						{Type: types.PlacementStrategyType("bogus")},
 					}}
+			}},
+			{"PlacementExpressionTooLong", clusterArn, func() *types.EcsParameters {
+				// PlacementConstraintExpression @length(max 2000).
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef),
+					PlacementConstraints: []types.PlacementConstraint{
+						{Type: types.PlacementConstraintType("memberOf"), Expression: aws.String(strings.Repeat("a", 2001))},
+					}}
+			}},
+			{"PlacementFieldTooLong", clusterArn, func() *types.EcsParameters {
+				// PlacementStrategyField @length(max 255).
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef),
+					PlacementStrategy: []types.PlacementStrategy{
+						{Type: types.PlacementStrategyType("spread"), Field: aws.String(strings.Repeat("a", 256))},
+					}}
+			}},
+			{"TagsTooManyItems", clusterArn, func() *types.EcsParameters {
+				// Tags @length(0, 50): the list of TagMap entries.
+				tags := make([]map[string]string, 51)
+				for i := range tags {
+					tags[i] = map[string]string{"env": "prod"}
+				}
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef), Tags: tags}
+			}},
+			{"TagsKeyTooLong", clusterArn, func() *types.EcsParameters {
+				// TagKey @length(1, 128).
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef),
+					Tags: []map[string]string{{strings.Repeat("k", 129): "v"}}}
+			}},
+			{"TagsValueTooLong", clusterArn, func() *types.EcsParameters {
+				// TagValue @length(1, 256).
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef),
+					Tags: []map[string]string{{"k": strings.Repeat("v", 257)}}}
 			}},
 			{"EmptySubnetsRejected", clusterArn, func() *types.EcsParameters {
 				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef),
@@ -239,6 +345,89 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		return nil
 	}))
 
+	// The schedule-level modelled traits are enforced at creation: KmsKeyArn
+	// @pattern + @length(1,2048), the DeadLetterConfig.Arn member @pattern,
+	// the FlexibleTimeWindow.MaximumWindowInMinutes @range(1,1440)
+	// (unconditional on the shape, so a bound outside the range is rejected
+	// in OFF mode too), and ScheduleExpressionTimezone taking IANA zone
+	// names only.
+	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_ModelTraitValidation", func() error {
+		rows := []struct {
+			name      string
+			kmsKeyArn string
+			timezone  string
+		}{
+			{"KmsKeyArnWrongResourceType", fmt.Sprintf("arn:aws:kms:%s:%s:secret/not-a-key", tc.region, tc.accountID), ""},
+			{"KmsKeyArnOverLength", "arn:aws:kms:" + tc.region + ":" + tc.accountID + ":key/" + strings.Repeat("k", 2048), ""},
+			{"TimezoneLocalRejected", "", "Local"},
+		}
+		for _, row := range rows {
+			schedName := tc.uniqueName("ModelTrait")
+			defer tc.cleanupSchedule(schedName)
+			input := &scheduler.CreateScheduleInput{
+				Name:               aws.String(schedName),
+				ScheduleExpression: aws.String("rate(30 minutes)"),
+				Target: &types.Target{
+					Arn:     aws.String(tc.lambdaARN()),
+					RoleArn: aws.String(rARN),
+				},
+				FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+			}
+			if row.kmsKeyArn != "" {
+				input.KmsKeyArn = aws.String(row.kmsKeyArn)
+			}
+			if row.timezone != "" {
+				input.ScheduleExpressionTimezone = aws.String(row.timezone)
+			} else {
+				input.ScheduleExpressionTimezone = aws.String("UTC")
+			}
+			_, err := tc.client.CreateSchedule(tc.ctx, input)
+			if err := AssertErrorContains(err, "ValidationException"); err != nil {
+				return fmt.Errorf("%s: %w", row.name, err)
+			}
+		}
+
+		// DeadLetterConfig.Arn outside the member pattern (queue-name
+		// charset is [a-zA-Z0-9-_]).
+		schedName := tc.uniqueName("ModelTrait")
+		defer tc.cleanupSchedule(schedName)
+		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
+			Name:               aws.String(schedName),
+			ScheduleExpression: aws.String("rate(30 minutes)"),
+			Target: &types.Target{
+				Arn:     aws.String(tc.lambdaARN()),
+				RoleArn: aws.String(rARN),
+				DeadLetterConfig: &types.DeadLetterConfig{
+					Arn: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:bad name", tc.region, tc.accountID)),
+				},
+			},
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return fmt.Errorf("DeadLetterConfigBadQueueCharset: %w", err)
+		}
+
+		// MaximumWindowInMinutes above the @range maximum in OFF mode.
+		schedName = tc.uniqueName("ModelTrait")
+		defer tc.cleanupSchedule(schedName)
+		_, err = tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
+			Name:               aws.String(schedName),
+			ScheduleExpression: aws.String("rate(30 minutes)"),
+			Target: &types.Target{
+				Arn:     aws.String(tc.lambdaARN()),
+				RoleArn: aws.String(rARN),
+			},
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{
+				Mode:                   types.FlexibleTimeWindowModeOff,
+				MaximumWindowInMinutes: aws.Int32(1441),
+			},
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return fmt.Errorf("OffModeWindowOutOfRange: %w", err)
+		}
+		return nil
+	}))
+
 	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_LogsTargetRejected", func() error {
 		schedName := tc.uniqueName("LogsTarget")
 		defer tc.cleanupSchedule(schedName)
@@ -267,6 +456,109 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		})
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return err
+		}
+		return nil
+	}))
+
+	// SqsParameters without a MessageGroupId is model-valid input: the
+	// member carries no @required in the model, and the FIFO fallback to
+	// the schedule name is applied at delivery.
+	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_SqsParametersEmptyAccepted", func() error {
+		schedName := tc.uniqueName("EmptySqs")
+		defer tc.cleanupSchedule(schedName)
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+			Arn:           aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:sqs-parameters-empty-pin", tc.region, tc.accountID)),
+			RoleArn:       aws.String(rARN),
+			SqsParameters: &types.SqsParameters{},
+		})
+		if err != nil {
+			return err
+		}
+		out, err := tc.getSchedule(schedName)
+		if err != nil {
+			return err
+		}
+		if out.Target == nil || out.Target.SqsParameters == nil {
+			return fmt.Errorf("GetSchedule did not return the SqsParameters of the created schedule")
+		}
+		// The unset MessageGroupId member is omitted from the read-back
+		// rather than emitted as an empty string.
+		if out.Target.SqsParameters.MessageGroupId != nil {
+			return fmt.Errorf("unset MessageGroupId emitted as %q, want omission", *out.Target.SqsParameters.MessageGroupId)
+		}
+
+		// An explicitly present empty MessageGroupId is out of bounds on
+		// the wire (@length min 1) — distinct from the omitted member
+		// above, which stays accepted.
+		presentEmpty := tc.uniqueName("EmptySqs2")
+		defer tc.cleanupSchedule(presentEmpty)
+		_, err = tc.createSchedule(presentEmpty, "rate(30 minutes)", &types.Target{
+			Arn:     aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:sqs-parameters-present-empty-pin", tc.region, tc.accountID)),
+			RoleArn: aws.String(rARN),
+			SqsParameters: &types.SqsParameters{
+				MessageGroupId: aws.String(""),
+			},
+		})
+		return AssertErrorContains(err, "ValidationException")
+	}))
+
+	// The model's Target.Input contract for the JSON-bound templated
+	// families: "If you are configuring a templated Lambda, AWS Step
+	// Functions, or Amazon EventBridge target, the input must be a
+	// well-formed JSON" — any JSON value qualifies, and EventBridgeParameters
+	// is optional on the wire. The object form is a delivery-time concern of
+	// the events family, not a creation-time restriction.
+	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EventBridgeTarget_Validation", func() error {
+		busArn := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/default", tc.region, tc.accountID)
+
+		// Model-legal requests are created: a missing EventBridgeParameters
+		// and non-object JSON Input values alike (delivery, not creation,
+		// decides their fate).
+		accepted := []struct {
+			name string
+			in   string
+			eb   *types.EventBridgeParameters
+		}{
+			{"MissingEventBridgeParameters", `{"k":"v"}`, nil},
+			{"ArrayInput", `[1,2]`, &types.EventBridgeParameters{
+				Source: aws.String("vorpal.test"), DetailType: aws.String("validation-pin"),
+			}},
+		}
+		for _, row := range accepted {
+			schedName := tc.uniqueName("EbValidation")
+			defer tc.cleanupSchedule(schedName)
+			_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+				Arn:                   aws.String(busArn),
+				RoleArn:               aws.String(rARN),
+				Input:                 aws.String(row.in),
+				EventBridgeParameters: row.eb,
+			})
+			if err != nil {
+				return fmt.Errorf("%s: created-schedule rejected: %w", row.name, err)
+			}
+		}
+
+		// A non-JSON Input on a JSON-bound templated family (events and
+		// lambda) is rejected at creation.
+		rejected := []struct {
+			name string
+			arn  string
+			in   string
+		}{
+			{"MalformedEventsInput", busArn, `{k:v}`},
+			{"NonJSONLambdaInput", tc.lambdaARN(), "hello"},
+		}
+		for _, row := range rejected {
+			schedName := tc.uniqueName("EbValidation")
+			defer tc.cleanupSchedule(schedName)
+			_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+				Arn:     aws.String(row.arn),
+				RoleArn: aws.String(rARN),
+				Input:   aws.String(row.in),
+			})
+			if err := AssertErrorContains(err, "ValidationException"); err != nil {
+				return fmt.Errorf("%s: %w", row.name, err)
+			}
 		}
 		return nil
 	}))
@@ -363,6 +655,33 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 			if err := AssertErrorContains(err, "ValidationException"); err != nil {
 				return fmt.Errorf("RoleArn %q: %v", roleArn, err)
 			}
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_UntrustedRoleRejected", func() error {
+		// A role that exists but whose trust policy names a principal other
+		// than scheduler.amazonaws.com is refused at creation, and the
+		// refusal carries the modelled ValidationException identity — the
+		// scheduler model defines no Lambda-style
+		// InvalidParameterValueException or InvalidArn error shape.
+		roleName := fmt.Sprintf("SchedUntrustedRole-%d", time.Now().UnixNano())
+		lambdaOnlyTrust := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
+		IAMCreateRole(tc.iamClient, roleName, lambdaOnlyTrust)
+		defer IAMDeleteRole(tc.iamClient, roleName)
+		untrustedARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, roleName)
+
+		schedName := tc.uniqueName("UntrustedRole")
+		defer tc.cleanupSchedule(schedName)
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+			Arn:     aws.String(tc.lambdaARN()),
+			RoleArn: aws.String(untrustedARN),
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		if strings.Contains(err.Error(), "InvalidParameterValueException") || strings.Contains(err.Error(), "InvalidArn") {
+			return fmt.Errorf("role refusal surfaced an unmodelled error identity: %v", err)
 		}
 		return nil
 	}))

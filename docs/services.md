@@ -79,7 +79,7 @@
 | Lambda | CloudWatch Logs | Automatic log streaming |
 | Lambda | SQS | Event source mapping (polling) |
 | S3 | Lambda, SQS, SNS, EventBridge | S3 event notifications |
-| Scheduler | Lambda, SQS, SNS | Scheduled invocation |
+| Scheduler | Lambda, SQS, SNS, Kinesis, Step Functions, EventBridge | Scheduled invocation (templated and universal targets) |
 | SNS | Lambda, SQS | Pub/Sub fanout |
 | Step Functions | Lambda, SQS, SNS, EventBridge, DynamoDB, Step Functions | Workflow orchestration |
 
@@ -152,7 +152,11 @@ Platform behaviour detail and restrictions, including where AWS leaves behaviour
 
 - **SFN — task integration surface**: the optimised and AWS SDK integration forms run for the services the platform carries — Lambda (invoke), SQS (sendMessage), SNS (publish), EventBridge (putEvents), DynamoDB (getItem, putItem, updateItem, deleteItem), and the Step Functions self-integration (startExecution across the plain, .sync, .sync:2 and waitForTaskToken patterns, with the callback pattern available wherever AWS documents it). Definition validation enforces the per-service pattern and action combinations AWS documents; resource forms naming services the platform does not carry (batch, ECS, Glue, and the rest of the AWS SDK namespace) remain valid definitions and fail at run time with a cause naming the unavailable integration, the same way a task referencing any other nonexistent resource fails.
 
-- **Scheduler — templated targets**: platform-implemented targets are Lambda, SQS, SNS, Kinesis, Step Functions, and EventBridge; ECS and Firehose targets are accepted by rule templates but delivery fails until those services exist on the platform; SageMaker, CodeBuild, CodePipeline, and Inspector targets are permanently out of scope (those services are not implemented on this platform).
+- **Scheduler — templated targets**: platform-implemented targets are Lambda, SQS, SNS, Kinesis, Step Functions, and EventBridge; ECS and Firehose targets are accepted by rule templates but delivery fails until those services exist on the platform; SageMaker, CodeBuild, CodePipeline, and Inspector targets are permanently out of scope (those services are not implemented on this platform), and a present SageMakerPipelineParameters member is rejected at creation.
+
+- **Scheduler — universal targets**: the ARN form `arn:aws:scheduler:::aws-sdk:{service}:{action}` with `Input` carrying the invoked API's request JSON; `{service}` is the AWS SDK identifier (sfn, not states; eventbridge, not events). Creation accepts any SDK service, rejecting read-only action prefixes, non-JSON `Input`, and templated sub-parameters. lambda:invoke (Event and RequestResponse; DryRun unsupported), sqs:sendMessage, sns:publish, kinesis:putRecord, sfn:startExecution, and eventbridge:putEvents deliver; every other operation fails at delivery and enters the retry and dead-letter path, as the ECS and Firehose templated stubs do.
+
+- **Scheduler — universal-target request translation**: an SQS `QueueUrl` addresses its host's region in the AWS URL form and the schedule's region otherwise; a Kinesis `StreamName` addresses the schedule's region and wins when both `StreamName` and `StreamARN` are present (AWS allows either or both; the ARN is consulted only when the name is absent); SNS Binary message attributes fail the delivery; the sfn execution `Name` member is not carried — the platform generates execution names.
 
 - **Secrets Manager — ListTagsForResource and managed rotation members**: the operation does not exist in the 2017-10-17 model, so AWS SDKs never generate a client method for it; the platform operation serves raw-HTTP/console consumers. Managed external rotation members are configuration storage and echo only — the partner integration itself is external.
 

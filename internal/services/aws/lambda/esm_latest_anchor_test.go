@@ -165,6 +165,7 @@ type scriptedKinesisStream struct {
 	invokes int
 	reads   int
 	anchors []string
+	regions []string
 }
 
 func (s *scriptedKinesisStream) publish(seq string) {
@@ -178,11 +179,14 @@ func (s *scriptedKinesisStream) publish(seq string) {
 	})
 }
 
-func (s *scriptedKinesisStream) ListShards(context.Context, string) ([]invokers.ShardInfo, error) {
+func (s *scriptedKinesisStream) ListShards(_ context.Context, region, _ string) ([]invokers.ShardInfo, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.regions = append(s.regions, region)
 	return s.shards, nil
 }
 
-func (s *scriptedKinesisStream) PutRecord(context.Context, string, string, []byte) (string, error) {
+func (s *scriptedKinesisStream) PutRecord(context.Context, string, string, string, []byte) (string, error) {
 	return "", fmt.Errorf("not implemented in test")
 }
 
@@ -193,10 +197,17 @@ func (s *scriptedKinesisStream) latest() string {
 	return s.records[len(s.records)-1].SequenceNumber
 }
 
-func (s *scriptedKinesisStream) CreateShardIterator(_ context.Context, _ string, _ string, iteratorType string, _ string, _ *time.Time) (string, error) {
+func (s *scriptedKinesisStream) seenRegions() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.regions...)
+}
+
+func (s *scriptedKinesisStream) CreateShardIterator(_ context.Context, region, _ string, _ string, iteratorType string, _ string, _ *time.Time) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.invokes++
+	s.regions = append(s.regions, region)
 	switch iteratorType {
 	case "LATEST":
 		anchor := s.latest()
@@ -207,10 +218,11 @@ func (s *scriptedKinesisStream) CreateShardIterator(_ context.Context, _ string,
 	}
 }
 
-func (s *scriptedKinesisStream) GetRecords(_ context.Context, _ string, _ string, from string, limit int32, includeStart bool) ([]invokers.KinesisRecord, string, error) {
+func (s *scriptedKinesisStream) GetRecords(_ context.Context, region, _ string, _ string, from string, limit int32, includeStart bool) ([]invokers.KinesisRecord, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.reads++
+	s.regions = append(s.regions, region)
 	var out []invokers.KinesisRecord
 	for _, r := range s.records {
 		if from != "" && ((includeStart && r.SequenceNumber < from) || (!includeStart && r.SequenceNumber <= from)) {
@@ -304,6 +316,55 @@ func TestKinesisLatestAnchorPersistedForBufferedMapping(t *testing.T) {
 	}
 	if got := p.kinesisCP[cpKey]; got != "3" {
 		t.Fatalf("checkpoint must advance past the flushed burst, got %q", got)
+	}
+}
+
+// TestKinesisESMPollerAddressesStreamARNRegion pins that a Kinesis mapping's
+// poll addresses the stream in the ARN's region for every read it makes:
+// the shard listing, the iterator creation and the record fetch must all
+// resolve the ARN's regional store — a default-region read never sees a
+// cross-region stream and the mapping silently delivers nothing.
+func TestKinesisESMPollerAddressesStreamARNRegion(t *testing.T) {
+	const (
+		streamARN = "arn:aws:kinesis:eu-west-1:123456789012:stream/cross-region-stream"
+		funcARN   = "arn:aws:lambda:eu-west-1:123456789012:function:cross-region-fn"
+	)
+	esmStore := lambdastore.NewEventSourceStore(&memStorage{bucket: newMemBucket()}, "123456789012", "eu-west-1")
+	created, err := esmStore.Create(&lambdastore.EventSourceMapping{
+		EventSourceArn:   streamARN,
+		FunctionArn:      funcARN,
+		StartingPosition: "TRIM_HORIZON",
+		BatchSize:        10,
+		State:            "Enabled",
+	})
+	if err != nil {
+		t.Fatalf("create mapping: %v", err)
+	}
+
+	stream := &scriptedKinesisStream{
+		shards: []invokers.ShardInfo{{ShardID: "shard-0"}},
+		floor:  "0",
+	}
+	stream.publish("1")
+	p := &esmPoller{
+		bus:       &fakeKinesisBus{invoker: stream},
+		invoke:    (&capturePayloads{}).invoke,
+		kinesisCP: make(map[string]string),
+		buffers:   make(map[string]*streamBuffer),
+		esmStore:  esmStore,
+		lambdaSvc: &LambdaService{accountID: "123456789012"},
+	}
+
+	p.processKinesisMapping(context.Background(), created)
+
+	regions := stream.seenRegions()
+	if len(regions) < 3 {
+		t.Fatalf("a poll cycle must list shards, create an iterator and read records, saw %d region-carrying calls", len(regions))
+	}
+	for _, region := range regions {
+		if region != "eu-west-1" {
+			t.Errorf("Kinesis read addressed region %q, want the stream ARN's eu-west-1 (all calls: %v)", region, regions)
+		}
 	}
 }
 

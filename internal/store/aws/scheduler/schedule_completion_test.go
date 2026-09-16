@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"encoding/json"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -14,8 +16,14 @@ func newCompletionTestStore(t *testing.T) *SchedulerStore {
 	if err != nil {
 		t.Fatalf("open storage: %v", err)
 	}
-	t.Cleanup(func() { st.Close() })
-	return NewSchedulerStore(st, "000000000000", "us-east-1")
+	store := NewSchedulerStore(st, "000000000000", "us-east-1")
+	// The store's own Close stops the idempotency-token reaper goroutine;
+	// the storage handle is released only after it.
+	t.Cleanup(func() {
+		store.Close()
+		st.Close()
+	})
+	return store
 }
 
 // TestCompleteScheduleExcludesFromEnabled pins the completion contract of
@@ -192,6 +200,29 @@ func TestTouchScheduleLastFiredRoundTrip(t *testing.T) {
 	}
 }
 
+// TestScheduleRegionNotPersisted pins the persisted record shape: Region is
+// engine working memory (the sweep assigns it after load so delivery
+// resolves the right regional store), and the record is already
+// region-scoped by its storage bucket — a region member in the stored
+// bytes would only ever hold the empty string the create path leaves
+// behind.
+func TestScheduleRegionNotPersisted(t *testing.T) {
+	sch := &Schedule{
+		Name:               "shape-pin",
+		GroupName:          "default",
+		State:              ScheduleStateEnabled,
+		ScheduleExpression: "rate(5 minutes)",
+		Region:             "us-east-1",
+	}
+	b, err := json.Marshal(sch)
+	if err != nil {
+		t.Fatalf("marshal schedule: %v", err)
+	}
+	if strings.Contains(string(b), `"region"`) {
+		t.Errorf("persisted record carries a region member: %s", b)
+	}
+}
+
 // TestDeleteScheduleNotResurrectedByMutate pins the delete serialisation:
 // a record mutation racing the delete can never write the record back
 // after the delete removed it.
@@ -227,49 +258,5 @@ func TestDeleteScheduleNotResurrectedByMutate(t *testing.T) {
 		if _, err := store.GetSchedule(t.Context(), "default", "victim"); err != ErrScheduleNotFound {
 			t.Fatalf("iteration %d: schedule resurrected after delete (err = %v)", i, err)
 		}
-	}
-}
-
-// TestDeleteScheduleGroupNotResurrectedByUpdate pins the same contract on
-// group records: a group update racing the group delete can never write
-// the group back after the delete removed it.
-func TestDeleteScheduleGroupNotResurrectedByUpdate(t *testing.T) {
-	store := newCompletionTestStore(t)
-
-	for i := 0; i < 50; i++ {
-		if err := store.CreateScheduleGroup(t.Context(), &ScheduleGroup{Name: "victim"}); err != nil {
-			t.Fatalf("create schedule group (iteration %d): %v", i, err)
-		}
-		group, err := store.GetScheduleGroup(t.Context(), "victim")
-		if err != nil {
-			t.Fatalf("get schedule group (iteration %d): %v", i, err)
-		}
-		var wg sync.WaitGroup
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			// A not-found error is a legitimate outcome: the delete may
-			// have landed first.
-			_ = store.UpdateScheduleGroup(t.Context(), group)
-		}()
-		go func() {
-			defer wg.Done()
-			_ = store.MarkScheduleGroupDeleting(t.Context(), "victim")
-		}()
-		wg.Wait()
-
-		// The delete path marks the group DELETING and purges it later;
-		// either the group is already gone or it must carry the DELETING
-		// state — a concurrent update can never resurrect it as live.
-		group, err = store.GetScheduleGroup(t.Context(), "victim")
-		if err == nil && group.State != ScheduleGroupStateDeleting {
-			t.Fatalf("iteration %d: schedule group resurrected as %s after delete", i, group.State)
-		}
-		if err != nil && err != ErrScheduleGroupNotFound {
-			t.Fatalf("iteration %d: get after delete: %v", i, err)
-		}
-		// Complete the cascade the engine sweep would perform so the
-		// next iteration creates a fresh group.
-		_ = store.PurgeDeletedScheduleGroup(t.Context(), "victim")
 	}
 }

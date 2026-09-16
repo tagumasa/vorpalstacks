@@ -18,17 +18,29 @@ func schedulerMapError(err error) error {
 // TagResource adds or overwrites tags on an EventBridge Scheduler schedule
 // group.
 func (s *SchedulerService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return tagutil.HandleTag(ctx, req, s.scheduleGroupTagConfig(reqCtx))
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	return tagutil.HandleTag(ctx, req, s.scheduleGroupTagConfig(store))
 }
 
 // UntagResource removes the specified tags from an EventBridge Scheduler
 // schedule group.
 func (s *SchedulerService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return tagutil.HandleUntag(ctx, req, s.scheduleGroupTagConfig(reqCtx))
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	return tagutil.HandleUntag(ctx, req, s.scheduleGroupTagConfig(store))
 }
 
 // ListTagsForResource lists all tags assigned to an EventBridge Scheduler
 // schedule group.
 func (s *SchedulerService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return tagutil.HandleList(ctx, req, s.scheduleGroupTagConfig(reqCtx))
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	return tagutil.HandleList(ctx, req, s.scheduleGroupTagConfig(store))
 }

@@ -125,7 +125,18 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 		if desc.LastRotatedDate != nil {
 			return fmt.Errorf("LastRotatedDate set although RotateImmediately=false")
 		}
-		return nil
+
+		// The rotation rate() interval is in hours or days with a four-hour
+		// floor ("You can rotate a secret as often as every four hours") —
+		// a minutes interval is rejected instead of being stored.
+		_, err = tc.client.RotateSecret(tc.ctx, &secretsmanager.RotateSecretInput{
+			SecretId:          aws.String(name),
+			RotateImmediately: boolPtr(false),
+			RotationRules: &types.RotationRulesType{
+				ScheduleExpression: aws.String("rate(30 minutes)"),
+			},
+		})
+		return AssertErrorContains(err, "InvalidParameterException")
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "RotateSecret_ExternalSecretRotationMembers", func() error {

@@ -28,7 +28,9 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		streamName = resource[idx+len("stream/"):]
 	}
 
-	shards, err := p.bus.KinesisInvoker().ListShards(ctx, streamName)
+	// The stream's region comes from the event-source ARN: every read the
+	// poller makes must address the ARN's regional store.
+	shards, err := p.bus.KinesisInvoker().ListShards(ctx, streamRegion, streamName)
 	if err != nil {
 		p.log("failed to list shards for Kinesis ESM", "stream", streamName, "error", err)
 		return
@@ -90,7 +92,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 			}
 		}
 
-		iteratorSeq, err := p.bus.KinesisInvoker().CreateShardIterator(ctx, streamName, shard.ShardID, iteratorType, iteratorSeqNum, iteratorTimestamp)
+		iteratorSeq, err := p.bus.KinesisInvoker().CreateShardIterator(ctx, streamRegion, streamName, shard.ShardID, iteratorType, iteratorSeqNum, iteratorTimestamp)
 		if err != nil {
 			p.log("failed to create shard iterator", "stream", streamName, "shard", shard.ShardID, "error", err)
 			continue
@@ -108,7 +110,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		var batches []streamFetchedBatch
 		pos := iteratorSeq
 		for i := 0; i < pf; i++ {
-			records, next, gerr := p.bus.KinesisInvoker().GetRecords(ctx, streamName, shard.ShardID, pos, cycle.batchSize, i == 0 && anchorInitialLATEST)
+			records, next, gerr := p.bus.KinesisInvoker().GetRecords(ctx, streamRegion, streamName, shard.ShardID, pos, cycle.batchSize, i == 0 && anchorInitialLATEST)
 			if gerr != nil {
 				p.log("failed to get records from Kinesis", "stream", streamName, "shard", shard.ShardID, "error", gerr)
 				break

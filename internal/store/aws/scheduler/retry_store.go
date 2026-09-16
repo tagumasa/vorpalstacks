@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -53,7 +54,10 @@ func (rs *RetryStore) DeleteRetryRecord(recordID string, nextAttemptAt time.Time
 
 // GetDueRetryRecords returns all RetryRecords whose NextAttemptAt is at or
 // before the given cutoff time. Uses ScanRange to read only the relevant
-// prefix of the keyspace instead of iterating every record.
+// prefix of the keyspace instead of iterating every record. A record whose
+// stored value fails deserialisation is reaped: it can never be processed,
+// and its key sorts at or before every future cutoff, so retaining it would
+// rescan the corruption on every engine tick.
 func (rs *RetryStore) GetDueRetryRecords(cutoff time.Time) ([]*RetryRecord, error) {
 	// Include records whose timestamp equals the cutoff by adding 1ns
 	// to the end key (ScanRange is exclusive on the end boundary).
@@ -62,12 +66,30 @@ func (rs *RetryStore) GetDueRetryRecords(cutoff time.Time) ([]*RetryRecord, erro
 	defer iter.Close()
 
 	var due []*RetryRecord
+	var corruptKeys []string
 	for iter.Next() {
 		var record RetryRecord
 		if err := json.Unmarshal(iter.Value(), &record); err != nil {
+			// string(iter.Key()) copies the bytes, so the collected key
+			// survives the iterator reusing its buffer. Deletion happens
+			// after the scan, never while it is in progress.
+			corruptKeys = append(corruptKeys, string(iter.Key()))
 			continue // skip corrupt records
 		}
 		due = append(due, &record)
 	}
-	return due, iter.Error()
+	iterErr := iter.Error()
+	for _, key := range corruptKeys {
+		if err := rs.store.Delete(key); err != nil {
+			// A failed reap stays visible to the next tick's scan, which
+			// retries it; suppressing the healthy due records gathered
+			// above over one undeletable key would be the worse failure.
+			logs.Error("Failed to reap corrupt retry record",
+				logs.String("key", key),
+				logs.Err(err))
+			continue
+		}
+		logs.Warn("Reaped corrupt retry record", logs.String("key", key))
+	}
+	return due, iterErr
 }

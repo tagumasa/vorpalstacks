@@ -498,7 +498,7 @@ func (s *EventsService) deliverToKinesis(ctx context.Context, region, eventID, p
 	}
 
 	targetArn := target.ARN
-	_, _, _, _, resource := arnutil.SplitARN(targetArn)
+	_, _, kinesisRegion, _, resource := arnutil.SplitARN(targetArn)
 
 	streamName := resource
 	if idx := strings.Index(resource, "stream/"); idx != -1 {
@@ -514,7 +514,7 @@ func (s *EventsService) deliverToKinesis(ctx context.Context, region, eventID, p
 	// the GetRecords response, so cross-service callers must pre-encode the
 	// payload to match the format that the Kinesis SDK PutRecord would send.
 	encodedPayload := base64.StdEncoding.EncodeToString(payload)
-	_, err := s.bus.KinesisInvoker().PutRecord(ctx, streamName, partitionKey, []byte(encodedPayload))
+	_, err := s.bus.KinesisInvoker().PutRecord(ctx, kinesisRegion, streamName, partitionKey, []byte(encodedPayload))
 	if err != nil {
 		return fmt.Errorf("failed to put record to Kinesis stream %s: %w", streamName, err)
 	}

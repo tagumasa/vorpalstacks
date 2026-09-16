@@ -74,9 +74,13 @@ func targetToResponse(target *schedulerstore.Target) map[string]interface{} {
 		resp["RetryPolicy"] = rp
 	}
 	if target.SqsParameters != nil {
-		resp["SqsParameters"] = map[string]interface{}{
-			"MessageGroupId": target.SqsParameters.MessageGroupId,
+		// MessageGroupId is optional inside SqsParameters: an unset member
+		// is omitted rather than emitted as an empty string.
+		sqs := map[string]interface{}{}
+		if target.SqsParameters.MessageGroupId != "" {
+			sqs["MessageGroupId"] = target.SqsParameters.MessageGroupId
 		}
+		resp["SqsParameters"] = sqs
 	}
 	if target.EcsParameters != nil {
 		ecs := map[string]interface{}{
@@ -106,8 +110,11 @@ func targetToResponse(target *schedulerstore.Target) map[string]interface{} {
 		if target.EcsParameters.EnableExecuteCommand != nil {
 			ecs["EnableExecuteCommand"] = *target.EcsParameters.EnableExecuteCommand
 		}
-		if target.EcsParameters.NetworkConfiguration != nil {
-			ecs["NetworkConfiguration"] = networkConfigurationToResponse(target.EcsParameters.NetworkConfiguration)
+		// The member is omitted when the configuration carries no
+		// awsvpcConfiguration: restJson1 omits an absent structure member
+		// rather than emitting it as null.
+		if nc := networkConfigurationToResponse(target.EcsParameters.NetworkConfiguration); nc != nil {
+			ecs["NetworkConfiguration"] = nc
 		}
 		if len(target.EcsParameters.CapacityProviderStrategy) > 0 {
 			ecs["CapacityProviderStrategy"] = capacityProviderStrategyToResponse(target.EcsParameters.CapacityProviderStrategy)

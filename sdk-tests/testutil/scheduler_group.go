@@ -199,6 +199,57 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 		}
 	}))
 
+	// The ClientToken idempotency member: a replayed delete-with-token
+	// reports the first deletion's outcome, including after the cascade
+	// has purged the group record (where a token-less delete is
+	// not-found).
+	results = append(results, tc.runner.RunTest("scheduler", "DeleteScheduleGroup_ClientTokenReplay", func() error {
+		tokGroupName := tc.uniqueName("TokGroup")
+		if _, err := tc.createScheduleGroup(tokGroupName); err != nil {
+			return fmt.Errorf("create schedule group: %v", err)
+		}
+		const token = "group-delete-replay-token-1"
+		if _, err := tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{
+			Name:        aws.String(tokGroupName),
+			ClientToken: aws.String(token),
+		}); err != nil {
+			return fmt.Errorf("delete with token: %v", err)
+		}
+
+		// Wait for the cascade to purge the group record so the replay is
+		// exercised past the DELETING state, where the outcome differs.
+		deadline := time.Now().Add(15 * time.Second)
+		for {
+			_, err := tc.client.GetScheduleGroup(tc.ctx, &scheduler.GetScheduleGroupInput{
+				Name: aws.String(tokGroupName),
+			})
+			if err != nil {
+				if err := AssertErrorContains(err, "ResourceNotFoundException"); err == nil {
+					break
+				}
+				return fmt.Errorf("get after delete: %v", err)
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("group %q still exists after the cascade window", tokGroupName)
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+
+		// The replayed token reports the first deletion's success...
+		if _, err := tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{
+			Name:        aws.String(tokGroupName),
+			ClientToken: aws.String(token),
+		}); err != nil {
+			return fmt.Errorf("replayed delete with token: %v", err)
+		}
+		// ...while a delete of the purged group without a token is
+		// not-found.
+		_, err := tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{
+			Name: aws.String(tokGroupName),
+		})
+		return AssertErrorContains(err, "ResourceNotFoundException")
+	}))
+
 	// Deleting a group cascades: the group goes to DELETING, its schedules
 	// are deleted, and only then does the group disappear.
 	results = append(results, tc.runner.RunTest("scheduler", "DeleteScheduleGroup_CascadesToSchedules", func() error {

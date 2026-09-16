@@ -22,11 +22,11 @@ type streamRecordingInvoker struct {
 	stream []string
 }
 
-func (r *streamRecordingInvoker) PutRecord(ctx context.Context, streamName, partitionKey string, data []byte) (string, error) {
+func (r *streamRecordingInvoker) PutRecord(ctx context.Context, region, streamName, partitionKey string, data []byte) (string, error) {
 	r.mu.Lock()
 	r.stream = append(r.stream, streamName)
 	r.mu.Unlock()
-	return r.recordingKinesisInvoker.PutRecord(ctx, streamName, partitionKey, data)
+	return r.recordingKinesisInvoker.PutRecord(ctx, region, streamName, partitionKey, data)
 }
 
 func (r *streamRecordingInvoker) streams() []string {

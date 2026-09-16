@@ -1,6 +1,7 @@
 package secretsmanager
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -54,10 +55,14 @@ func contains(s, substr string) bool {
 
 // TestValidateScheduleExpressionForms pins that the rotation schedule
 // accepts the rate()/cron() forms AWS documents for RotationRules and
-// rejects structural errors and the EventBridge-only at() form.
+// rejects structural errors, the EventBridge-only at() form, and rate()
+// intervals outside the rotation contract (minutes, and the sub-four-hour
+// floor).
 func TestValidateScheduleExpressionForms(t *testing.T) {
 	valid := []string{
-		"rate(1 minute)",
+		"rate(4 hours)",
+		"rate(12 hours)",
+		"rate(1 day)",
 		"rate(30 days)",
 		"cron(0 16 1,15 * ? *)",
 	}
@@ -68,14 +73,36 @@ func TestValidateScheduleExpressionForms(t *testing.T) {
 	}
 	invalid := []string{
 		"at(2026-01-01T00:00:00)", // one-shot form, not part of this contract
-		"rate(1 days)",            // unit must agree with the value
-		"cron(0 16 1,15 * *)",     // five fields
-		"weekly",                  // not a schedule form
+		"rate(1 minute)",          // rotation intervals are in hours or days
+		"rate(30 minutes)",
+		"rate(2 hours)",       // below the four-hour rotation floor
+		"rate(1 days)",        // unit must agree with the value
+		"cron(0 16 1,15 * *)", // five fields
+		"weekly",              // not a schedule form
 	}
 	for _, expr := range invalid {
 		if err := validateScheduleExpression(expr); err == nil {
 			t.Errorf("validateScheduleExpression(%q) accepted invalid expression", expr)
 		}
+	}
+}
+
+// TestValidateScheduleExpressionLengthBasis pins the cap's measurement
+// basis: the 256 limit counts characters, so a multibyte string within the
+// character cap is rejected by the alphabet arm (which it can never
+// satisfy) rather than by the length arm — a byte-measured cap would have
+// rejected the same string with the length message.
+func TestValidateScheduleExpressionLengthBasis(t *testing.T) {
+	overLength := strings.Repeat("a", 257)
+	err := validateScheduleExpression(overLength)
+	if err == nil || !contains(err.Error(), "must not exceed 256 characters") {
+		t.Fatalf("257-character expression: error = %v, want the length rejection", err)
+	}
+	// 130 CJK runes: 390 bytes, within the 256-character cap.
+	multibyte := strings.Repeat("あ", 130)
+	err = validateScheduleExpression(multibyte)
+	if err == nil || contains(err.Error(), "must not exceed 256 characters") {
+		t.Fatalf("390-byte, 130-character expression: error = %v, want the alphabet rejection — the cap counts characters", err)
 	}
 }
 

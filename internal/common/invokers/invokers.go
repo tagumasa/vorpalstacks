@@ -118,16 +118,26 @@ type SubscriptionInfo struct {
 // Consumers call these methods instead of holding a direct reference to the
 // Kinesis store.
 type KinesisInvoker interface {
-	ListShards(ctx context.Context, streamName string) ([]ShardInfo, error)
-	PutRecord(ctx context.Context, streamName string, partitionKey string, data []byte) (sequenceNumber string, err error)
-	// CreateShardIterator creates a shard iterator. The timestamp is used
+	// ListShards lists the shards of the stream in the given region —
+	// callers address a stream by its ARN and must pass the ARN's region so
+	// cross-region reads reach the correct regional store. An empty region
+	// addresses the server default region.
+	ListShards(ctx context.Context, region, streamName string) ([]ShardInfo, error)
+	// PutRecord writes to the stream in the given region — callers address a
+	// stream by its ARN and must pass the ARN's region so cross-region
+	// delivery reaches the correct regional store. An empty region addresses
+	// the server default region (callers with no region information at all).
+	PutRecord(ctx context.Context, region, streamName, partitionKey string, data []byte) (sequenceNumber string, err error)
+	// CreateShardIterator creates a shard iterator for the stream in the
+	// given region (empty = the server default region). The timestamp is used
 	// when iteratorType is AT_TIMESTAMP and may be nil otherwise.
-	CreateShardIterator(ctx context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (iteratorSequenceNumber string, err error)
-	// GetRecords reads records from the position onwards. includeStart
+	CreateShardIterator(ctx context.Context, region, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (iteratorSequenceNumber string, err error)
+	// GetRecords reads records from the stream in the given region (empty =
+	// the server default region), from the position onwards. includeStart
 	// also returns the starting record itself, mirroring the store's
 	// AT_SEQUENCE_NUMBER semantics; checkpoint resumes stay strictly
 	// after their position so consumed records are never redelivered.
-	GetRecords(ctx context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) (records []KinesisRecord, nextSequenceNumber string, err error)
+	GetRecords(ctx context.Context, region, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) (records []KinesisRecord, nextSequenceNumber string, err error)
 	// StreamExists reports whether the stream addressed by the ARN exists in
 	// the given region. DynamoDB streaming destinations may only target a
 	// stream in the table's own region, so the ARN region must match and the

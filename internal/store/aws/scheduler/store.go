@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/scheduleexpr"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
@@ -21,16 +22,19 @@ type SchedulerStore struct {
 	*common.TagStore
 	clientTokens *ClientTokenStore
 	arnBuilder   *svcarn.ARNBuilder
-	accountID    string
 	region       string
-	createMu     sync.Mutex
 }
 
 // scheduleRecordWriteMu serialises read-modify-write cycles on schedule
-// records across SchedulerStore instances. The engine and the service
-// each construct their own store over the same Pebble keyspace, so an
-// instance-level lock cannot prevent CompleteSchedule's read-modify-write
-// from losing a concurrent UpdateSchedule write (or vice versa).
+// records across SchedulerStore instances. The engine and the service now
+// share one store cache, so one instance per region exists in practice;
+// the package scope keeps CompleteSchedule's read-modify-write from losing
+// a concurrent UpdateSchedule write (or vice versa) independent of that
+// invariant. Every record writer — group records included — takes this one
+// lock: the group-state transitions (mark, purge) and the check-then-write
+// creates (schedules, groups) must not interleave, or a schedule could be
+// admitted into a group being deleted, or a group record recreated between
+// a purge's emptiness check and its delete.
 var scheduleRecordWriteMu sync.Mutex
 
 // NewSchedulerStore creates a new Scheduler store instance.
@@ -49,7 +53,6 @@ func NewSchedulerStore(store storage.BasicStorage, accountID, region string) *Sc
 		TagStore:       common.NewTagStoreWithRegion(store, "scheduler", region),
 		clientTokens:   NewClientTokenStore(common.NewBaseStore(store.Bucket("scheduler-tokens-"+region), "scheduler-tokens")),
 		arnBuilder:     svcarn.NewARNBuilder(accountID, region),
-		accountID:      accountID,
 		region:         region,
 	}
 }
@@ -66,11 +69,6 @@ func (s *SchedulerStore) Close() {
 	}
 }
 
-// GetAccountID returns the AWS account ID associated with this store.
-func (s *SchedulerStore) GetAccountID() string {
-	return s.accountID
-}
-
 // GetRegion returns the AWS region associated with this store.
 func (s *SchedulerStore) GetRegion() string {
 	return s.region
@@ -82,11 +80,6 @@ func (s *SchedulerStore) buildScheduleGroupARN(name string) string {
 
 func (s *SchedulerStore) buildScheduleARN(groupName, scheduleName string) string {
 	return s.arnBuilder.Scheduler().Schedule(groupName, scheduleName)
-}
-
-// BuildScheduleARNFromName builds an ARN for a schedule with the default group.
-func (s *SchedulerStore) BuildScheduleARNFromName(name string) string {
-	return s.buildScheduleARN("default", name)
 }
 
 // BuildScheduleARN builds an ARN for a schedule with an explicit group.
@@ -110,10 +103,13 @@ func (s *SchedulerStore) BuildScheduleGroupARN(name string) string {
 // Returns:
 //   - error: An error if creation fails
 func (s *SchedulerStore) CreateScheduleGroup(ctx context.Context, group *ScheduleGroup) error {
-	s.createMu.Lock()
-	defer s.createMu.Unlock()
+	// The record lock keeps the name-existence check and the write atomic
+	// against the other group writers (mark, purge): recreating a record a
+	// purge is mid-way through deleting must not interleave with it.
+	scheduleRecordWriteMu.Lock()
+	defer scheduleRecordWriteMu.Unlock()
 	if group.Name == "" {
-		return ErrInvalidARN
+		return ErrInvalidName
 	}
 
 	arn := s.buildScheduleGroupARN(group.Name)
@@ -138,25 +134,21 @@ func (s *SchedulerStore) CreateScheduleGroup(ctx context.Context, group *Schedul
 //
 // Returns:
 //   - *ScheduleGroup: The schedule group if found
-//   - error: An error if not found
+//   - error: ErrScheduleGroupNotFound when the group is absent; any other
+//     error is a storage failure returned as-is so callers can tell a
+//     client-facing not-found from a server fault
 func (s *SchedulerStore) GetScheduleGroup(ctx context.Context, name string) (*ScheduleGroup, error) {
 	arn := s.buildScheduleGroupARN(name)
 	var group ScheduleGroup
 	if err := s.BaseStore.Get(arn, &group); err != nil {
-		return nil, ErrScheduleGroupNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrScheduleGroupNotFound
+		}
+		return nil, err
 	}
 	return &group, nil
 }
 
-// DeleteScheduleGroup deletes a schedule group by name.
-//
-// Parameters:
-//   - ctx: The context
-//   - name: The schedule group name to delete
-//
-// Returns:
-//   - error: An error if deletion fails
-//
 // MarkScheduleGroupDeleting transitions a schedule group to the DELETING
 // state. Deleting a group cascades: per the DeleteScheduleGroup model
 // documentation, the group remains in DELETING until all of its schedules
@@ -178,15 +170,13 @@ func (s *SchedulerStore) MarkScheduleGroupDeleting(ctx context.Context, name str
 }
 
 // ListDeletingScheduleGroups returns every schedule group currently in the
-// DELETING state (the engine's cascade sweep input).
+// DELETING state (the engine's cascade sweep input). The walk is
+// unbounded: the paged List form clamps a zero MaxItems to the default
+// page size and would silently starve the groups beyond the first page.
 func (s *SchedulerStore) ListDeletingScheduleGroups(ctx context.Context) ([]*ScheduleGroup, error) {
-	result, err := common.List[ScheduleGroup](s.BaseStore, common.ListOptions{}, func(g *ScheduleGroup) bool {
+	return common.ListMatching[ScheduleGroup](s.BaseStore, "", func(g *ScheduleGroup) bool {
 		return g.State == ScheduleGroupStateDeleting
 	})
-	if err != nil {
-		return nil, err
-	}
-	return result.Items, nil
 }
 
 // DeleteSchedulesInGroup deletes every schedule that belongs to the group.
@@ -211,8 +201,9 @@ func (s *SchedulerStore) DeleteSchedulesInGroup(ctx context.Context, groupName s
 func (s *SchedulerStore) PurgeDeletedScheduleGroup(ctx context.Context, name string) error {
 	arn := s.buildScheduleGroupARN(name)
 	// The record lock keeps the emptiness check and the delete in one
-	// critical section so a racing CreateSchedule cannot resurrect the
-	// group between the two.
+	// critical section against every record writer: a CreateSchedule cannot
+	// add a member and a CreateScheduleGroup cannot recreate the record
+	// between the two.
 	scheduleRecordWriteMu.Lock()
 	defer scheduleRecordWriteMu.Unlock()
 	if !s.Exists(arn) {
@@ -283,33 +274,6 @@ func (s *SchedulerStore) ListScheduleGroups(ctx context.Context, namePrefix stri
 	}, nil
 }
 
-// UpdateScheduleGroup updates an existing schedule group.
-//
-// Parameters:
-//   - ctx: The context
-//   - group: The schedule group to update
-//
-// Returns:
-//   - error: An error if update fails
-func (s *SchedulerStore) UpdateScheduleGroup(ctx context.Context, group *ScheduleGroup) error {
-	// The record lock serialises this read-modify-write against
-	// MarkScheduleGroupDeleting on the same group record: an update that
-	// loses the race to the DELETING mark is refused instead of writing
-	// the stale ACTIVE copy back over it (the engine sweep only purges
-	// groups it observes in DELETING).
-	scheduleRecordWriteMu.Lock()
-	defer scheduleRecordWriteMu.Unlock()
-	var stored ScheduleGroup
-	if err := s.BaseStore.Get(group.ARN, &stored); err != nil {
-		return ErrScheduleGroupNotFound
-	}
-	if stored.State == ScheduleGroupStateDeleting {
-		return ErrScheduleGroupNotFound
-	}
-	group.LastModificationDate = time.Now().UTC()
-	return s.Put(group.ARN, group)
-}
-
 // Schedule operations
 
 func (s *SchedulerStore) buildScheduleKey(groupName, scheduleName string) string {
@@ -325,32 +289,59 @@ func (s *SchedulerStore) buildScheduleKey(groupName, scheduleName string) string
 // Returns:
 //   - error: An error if creation fails
 func (s *SchedulerStore) CreateSchedule(ctx context.Context, schedule *Schedule) error {
-	s.createMu.Lock()
-	defer s.createMu.Unlock()
-	if schedule.Name == "" {
-		return ErrInvalidARN
+	// The group name arrives resolved: the service layer owns the
+	// default-group semantics, so an empty name is a malformed identity (it
+	// would persist the record under a phantom key, not the implicit
+	// default group).
+	if schedule.Name == "" || schedule.GroupName == "" {
+		return ErrInvalidName
 	}
 
-	groupName := schedule.GroupName
-	if groupName == "" {
-		groupName = "default"
-	}
-	schedule.GroupName = groupName
+	// The record lock holds the duplicate-name check, the group-state
+	// check, and the write in one critical section against the group
+	// writers: a schedule can neither be admitted into a group already
+	// DELETING nor slip into the window between a purge's emptiness check
+	// and its delete.
+	scheduleRecordWriteMu.Lock()
+	defer scheduleRecordWriteMu.Unlock()
 
-	key := s.buildScheduleKey(groupName, schedule.Name)
+	key := s.buildScheduleKey(schedule.GroupName, schedule.Name)
 	if s.schedulesStore.Exists(key) {
 		return ErrScheduleAlreadyExists
 	}
-
-	now := time.Now().UTC()
-	schedule.ARN = s.buildScheduleARN(groupName, schedule.Name)
-	schedule.CreationDate = now
-	schedule.LastModificationDate = now
-	if schedule.State == "" {
-		schedule.State = ScheduleStateEnabled
+	if err := s.requireGroupNotDeleting(schedule.GroupName); err != nil {
+		return err
 	}
 
+	now := time.Now().UTC()
+	schedule.ARN = s.buildScheduleARN(schedule.GroupName, schedule.Name)
+	schedule.CreationDate = now
+	schedule.LastModificationDate = now
+
 	return s.schedulesStore.Put(key, schedule)
+}
+
+// requireGroupNotDeleting reports whether groupName may receive schedule
+// records: the group record must exist and must not be in the DELETING
+// state, whose engine cascade would silently destroy any schedule admitted
+// now. The implicit default group is the exception — it can never be
+// deleted, so an unseeded record is not a refusal for it.
+func (s *SchedulerStore) requireGroupNotDeleting(groupName string) error {
+	groupArn := s.buildScheduleGroupARN(groupName)
+	var group ScheduleGroup
+	if err := s.BaseStore.Get(groupArn, &group); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
+		if groupName == DefaultGroupName {
+			return nil
+		}
+		return ErrScheduleGroupNotFound
+	}
+	if group.State == ScheduleGroupStateDeleting {
+		return ErrScheduleGroupDeleting
+	}
+	return nil
 }
 
 // GetSchedule retrieves a schedule by group name and schedule name.
@@ -362,42 +353,69 @@ func (s *SchedulerStore) CreateSchedule(ctx context.Context, schedule *Schedule)
 //
 // Returns:
 //   - *Schedule: The schedule if found
-//   - error: An error if not found
+//   - error: ErrScheduleNotFound when the schedule is absent; any other
+//     error is a storage failure returned as-is so callers can tell a
+//     client-facing not-found from a server fault
 func (s *SchedulerStore) GetSchedule(ctx context.Context, groupName, name string) (*Schedule, error) {
-	if groupName == "" {
-		groupName = "default"
-	}
 	key := s.buildScheduleKey(groupName, name)
 	var schedule Schedule
 	if err := s.schedulesStore.Get(key, &schedule); err != nil {
-		return nil, ErrScheduleNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrScheduleNotFound
+		}
+		return nil, err
 	}
 	return &schedule, nil
 }
 
 // MutateSchedule applies fn to the schedule record inside the write mutex
 // so the whole read-modify-write cycle is atomic with respect to every
-// other record writer (the engine and the service each construct their own
-// store over the same Pebble keyspace, hence the package-scope lock). fn
-// mutates the record in place; callers decide whether to stamp
-// LastModificationDate — user-initiated updates do, internal markers must
-// not.
+// other record writer — the engine and the service share one store cache
+// (one instance per region in practice), and the package-scope lock keeps
+// the cycle atomic independent of that invariant. fn mutates the record in
+// place; callers decide whether to stamp LastModificationDate —
+// user-initiated updates do, internal markers must not.
 //
 // Parameters:
 //   - ctx: The context
-//   - groupName: The schedule group (empty means "default")
+//   - groupName: The schedule group (resolved by the caller)
 //   - name: The schedule name
 //   - fn: The mutation applied to the record read under the lock
 //
 // Returns:
 //   - error: ErrScheduleNotFound if the schedule does not exist
 func (s *SchedulerStore) MutateSchedule(ctx context.Context, groupName, name string, fn func(*Schedule) error) error {
-	if groupName == "" {
-		groupName = "default"
-	}
 	scheduleRecordWriteMu.Lock()
 	defer scheduleRecordWriteMu.Unlock()
 
+	return s.mutateScheduleLocked(ctx, groupName, name, fn)
+}
+
+// MutateScheduleInLiveGroup applies fn to the schedule record with the
+// group-state check held inside the same critical section as the write:
+// an update may not land in a group whose deletion cascade started after
+// the caller's fast-path probe, because the cascade would destroy the
+// acknowledged write. The engine's own markers (completion, delivered
+// boundaries) keep the plain MutateSchedule — those must keep working on
+// the schedules of a group already being deleted, exactly until the
+// cascade removes them.
+//
+// Returns:
+//   - error: ErrScheduleGroupDeleting or ErrScheduleGroupNotFound from the
+//     in-lock check; ErrScheduleNotFound if the schedule does not exist
+func (s *SchedulerStore) MutateScheduleInLiveGroup(ctx context.Context, groupName, name string, fn func(*Schedule) error) error {
+	scheduleRecordWriteMu.Lock()
+	defer scheduleRecordWriteMu.Unlock()
+
+	if err := s.requireGroupNotDeleting(groupName); err != nil {
+		return err
+	}
+	return s.mutateScheduleLocked(ctx, groupName, name, fn)
+}
+
+// mutateScheduleLocked performs the locked read-modify-write; the caller
+// holds scheduleRecordWriteMu.
+func (s *SchedulerStore) mutateScheduleLocked(ctx context.Context, groupName, name string, fn func(*Schedule) error) error {
 	schedule, err := s.GetSchedule(ctx, groupName, name)
 	if err != nil {
 		return err
@@ -453,9 +471,6 @@ func (s *SchedulerStore) TouchScheduleLastFired(ctx context.Context, groupName, 
 // Returns:
 //   - error: An error if deletion fails
 func (s *SchedulerStore) DeleteSchedule(ctx context.Context, groupName, name string) error {
-	if groupName == "" {
-		groupName = "default"
-	}
 	key := s.buildScheduleKey(groupName, name)
 	// The record lock closes the resurrection window: without it a
 	// MutateSchedule cycle that read before the delete could write the
@@ -465,9 +480,8 @@ func (s *SchedulerStore) DeleteSchedule(ctx context.Context, groupName, name str
 		scheduleRecordWriteMu.Unlock()
 		return ErrScheduleNotFound
 	}
-	// Delete the primary resource first so tag metadata I/O errors never
-	// block resource lifecycle. Tag cleanup is best-effort:
-	// orphaned tag entries are harmless and can be reaped later.
+	// Schedules carry no tag metadata — only schedule groups are taggable —
+	// so deleting the record is the whole removal.
 	err := s.schedulesStore.Delete(key)
 	scheduleRecordWriteMu.Unlock()
 	if err != nil {
@@ -544,14 +558,13 @@ func (s *SchedulerStore) ListSchedules(ctx context.Context, groupName, namePrefi
 // Returns:
 //   - []*Schedule: The list of enabled schedules
 //   - error: An error if retrieval fails
+//
+// The walk is unbounded — the same form the deletion cascade uses: the
+// paged List clamps a zero MaxItems to the default page size and discards
+// the marker, which would silently starve the enabled schedules beyond
+// the first page of the firing sweep.
 func (s *SchedulerStore) GetAllEnabledSchedules(ctx context.Context) ([]*Schedule, error) {
-	opts := common.ListOptions{
-		Prefix:   "",
-		Marker:   "",
-		MaxItems: 0,
-	}
-
-	result, err := common.List[Schedule](s.schedulesStore, opts, func(sch *Schedule) bool {
+	return common.ListMatching[Schedule](s.schedulesStore, "", func(sch *Schedule) bool {
 		if sch.State != ScheduleStateEnabled {
 			return false
 		}
@@ -563,21 +576,16 @@ func (s *SchedulerStore) GetAllEnabledSchedules(ctx context.Context) ([]*Schedul
 		}
 		// at() expressions ignore StartDate/EndDate (AWS spec).
 		// For rate()/cron() expressions, filter out permanently expired
-		// schedules as defence-in-depth alongside the engine's
-		// shouldExecute check. This avoids fetching and evaluating
-		// schedules whose EndDate has already passed.
-		if !strings.HasPrefix(sch.ScheduleExpression, "at(") {
+		// schedules as defence-in-depth alongside the engine's dueBoundary
+		// decision. This avoids fetching and evaluating schedules whose
+		// EndDate has already passed.
+		if !scheduleexpr.IsAtExpression(sch.ScheduleExpression) {
 			if sch.EndDate != nil && time.Now().UTC().After(*sch.EndDate) {
 				return false
 			}
 		}
 		return true
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return result.Items, nil
 }
 
 // EnsureDefaultGroup creates the default schedule group if it doesn't exist.
@@ -588,16 +596,16 @@ func (s *SchedulerStore) GetAllEnabledSchedules(ctx context.Context) ([]*Schedul
 // Returns:
 //   - error: An error if creation fails
 func (s *SchedulerStore) EnsureDefaultGroup(ctx context.Context) error {
-	s.createMu.Lock()
-	defer s.createMu.Unlock()
-	arn := s.buildScheduleGroupARN("default")
+	scheduleRecordWriteMu.Lock()
+	defer scheduleRecordWriteMu.Unlock()
+	arn := s.buildScheduleGroupARN(DefaultGroupName)
 	if s.Exists(arn) {
 		return nil
 	}
 
 	now := time.Now().UTC()
 	group := &ScheduleGroup{
-		Name:                 "default",
+		Name:                 DefaultGroupName,
 		ARN:                  arn,
 		State:                ScheduleGroupStateActive,
 		CreationDate:         now,

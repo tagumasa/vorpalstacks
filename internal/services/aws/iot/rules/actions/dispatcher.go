@@ -14,6 +14,7 @@ import (
 	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/iot/iotutil"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ActionConfig holds the configuration for a single rule action extracted
@@ -373,11 +374,15 @@ func (d *Dispatcher) dispatchKinesis(ctx context.Context, config *ActionConfig, 
 		return fmt.Errorf("kinesis stream name not specified")
 	}
 
+	// The stream's region comes from the action's ARN when one is
+	// configured; an ARN-less action addresses the server default region.
+	_, _, streamRegion, _, _ := svcarn.SplitARN(config.TargetARN)
+
 	partitionKey := iotutil.StrFromMap(config.Extra, "partitionKey")
 	if partitionKey == "" {
 		partitionKey = fmt.Sprintf("%d", time.Now().UnixNano())
 	}
-	_, err := invoker.PutRecord(ctx, streamName, partitionKey, p.JSONBytes)
+	_, err := invoker.PutRecord(ctx, streamRegion, streamName, partitionKey, p.JSONBytes)
 	if err != nil {
 		return fmt.Errorf("kinesis put record failed: %w", err)
 	}

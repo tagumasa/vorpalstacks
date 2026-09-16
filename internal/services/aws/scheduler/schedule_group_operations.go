@@ -12,7 +12,11 @@ import (
 
 // CreateScheduleGroup creates a new schedule group in EventBridge Scheduler.
 func (s *SchedulerService) CreateScheduleGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	result, err := s.createScheduleGroupCore(ctx, reqCtx, &CreateScheduleGroupInput{
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.createScheduleGroupCore(ctx, store, &CreateScheduleGroupInput{
 		Name:        request.GetStringParam(req.Parameters, "Name"),
 		Tags:        tags.ParseTags(req.Parameters, "Tags"),
 		ClientToken: request.GetStringParam(req.Parameters, "ClientToken"),
@@ -27,8 +31,15 @@ func (s *SchedulerService) CreateScheduleGroup(ctx context.Context, reqCtx *requ
 
 // DeleteScheduleGroup deletes a schedule group from EventBridge Scheduler.
 func (s *SchedulerService) DeleteScheduleGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	if err := s.deleteScheduleGroupCore(ctx, reqCtx, &DeleteScheduleGroupInput{
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.deleteScheduleGroupCore(ctx, store, &DeleteScheduleGroupInput{
 		Name: request.GetStringParam(req.Parameters, "Name"),
+		// DeleteScheduleGroupInput.ClientToken is the httpQuery
+		// "clientToken" binding the model declares.
+		ClientToken: request.GetStringParam(req.Parameters, "clientToken"),
 	}); err != nil {
 		return nil, err
 	}
@@ -37,7 +48,11 @@ func (s *SchedulerService) DeleteScheduleGroup(ctx context.Context, reqCtx *requ
 
 // GetScheduleGroup retrieves a schedule group from EventBridge Scheduler.
 func (s *SchedulerService) GetScheduleGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	group, err := s.getScheduleGroupCore(ctx, reqCtx, &GetScheduleGroupInput{
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	group, err := s.getScheduleGroupCore(ctx, store, &GetScheduleGroupInput{
 		Name: request.GetStringParam(req.Parameters, "Name"),
 	})
 	if err != nil {
@@ -59,7 +74,11 @@ func (s *SchedulerService) ListScheduleGroups(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	result, err := s.listScheduleGroupsCore(ctx, reqCtx, &ListScheduleGroupsInput{
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.listScheduleGroupsCore(ctx, store, &ListScheduleGroupsInput{
 		NamePrefix: request.GetStringParam(req.Parameters, "NamePrefix"),
 		MaxResults: maxResults,
 		NextToken:  pagination.GetMarker(req.Parameters, "NextToken"),
@@ -73,7 +92,7 @@ func (s *SchedulerService) ListScheduleGroups(ctx context.Context, reqCtx *reque
 		item := map[string]interface{}{
 			"Arn":   g.Arn,
 			"Name":  g.Name,
-			"State": g.State,
+			"State": string(g.State),
 		}
 		if g.CreationDate != nil {
 			item["CreationDate"] = timeutils.FormatEpochSeconds(*g.CreationDate)

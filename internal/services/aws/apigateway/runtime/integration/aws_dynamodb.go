@@ -569,7 +569,11 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 			data = []byte(req.Headers["Data"])
 		}
 
-		sequenceNumber, err := e.bus.KinesisInvoker().PutRecord(ctx, streamName, partitionKey, data)
+		// The Kinesis integration URI (arn:aws:apigateway:<region>:
+		// kinesis:action/PutRecord) does carry a region partition, but the
+		// integration resolves the stream by name only and does not extract
+		// it — the empty region routes to the server default.
+		sequenceNumber, err := e.bus.KinesisInvoker().PutRecord(ctx, "", streamName, partitionKey, data)
 		if err != nil {
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Kinesis PutRecord failed: %v", err),
@@ -597,7 +601,9 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 		}, nil
 
 	case "ListShards":
-		shards, err := e.bus.KinesisInvoker().ListShards(ctx, streamName)
+		// Name-only addressing like the PutRecord branch above: the empty
+		// region routes to the server default.
+		shards, err := e.bus.KinesisInvoker().ListShards(ctx, "", streamName)
 		if err != nil {
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Kinesis ListShards failed: %v", err),

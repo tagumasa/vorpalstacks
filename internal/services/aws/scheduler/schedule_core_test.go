@@ -2,10 +2,15 @@ package scheduler
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"strings"
 	"testing"
 
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
 
@@ -18,12 +23,61 @@ func testSchedulerCoreStore(t *testing.T) *schedulerstore.SchedulerStore {
 	if err != nil {
 		t.Fatalf("storage.Open failed: %v", err)
 	}
-	t.Cleanup(func() { st.Close() })
 	store := schedulerstore.NewSchedulerStore(st, "123456789012", "us-east-1")
+	// The store's own Close stops the idempotency-token reaper goroutine;
+	// the storage handle is released only after it.
+	t.Cleanup(func() {
+		store.Close()
+		st.Close()
+	})
 	if err := store.EnsureDefaultGroup(context.Background()); err != nil {
 		t.Fatalf("EnsureDefaultGroup failed: %v", err)
 	}
 	return store
+}
+
+// assertResourceNotFound pins the modelled ResourceNotFoundException: the
+// error identity is the AWS error code (both transport planes map by code),
+// and the message names the resource the request addressed.
+func assertResourceNotFound(t *testing.T, err error, resource, identifier string) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("want %s %q not-found, got nil", strings.ToLower(resource), identifier)
+	}
+	var awsErr *awserrors.AWSError
+	if !errors.As(err, &awsErr) || awsErr.Code != "ResourceNotFoundException" {
+		t.Fatalf("error = %v, want ResourceNotFoundException", err)
+	}
+	if !strings.Contains(awsErr.Message, identifier) {
+		t.Fatalf("not-found message %q does not name the identifier %q", awsErr.Message, identifier)
+	}
+}
+
+// A replayed DeleteScheduleGroup ClientToken reports the first deletion's
+// outcome even after the cascade has purged the group record — the plain
+// DELETING-state idempotency cannot cover that window.
+func TestDeleteScheduleGroupClientTokenReplayAfterPurge(t *testing.T) {
+	ctx := context.Background()
+	store := testSchedulerCoreStore(t)
+	svc := &SchedulerService{}
+
+	if err := store.CreateScheduleGroup(ctx, &schedulerstore.ScheduleGroup{Name: "replay-group"}); err != nil {
+		t.Fatalf("CreateScheduleGroup failed: %v", err)
+	}
+	if err := svc.deleteScheduleGroupCore(ctx, store, &DeleteScheduleGroupInput{Name: "replay-group", ClientToken: "group-delete-tok-1"}); err != nil {
+		t.Fatalf("deleteScheduleGroupCore(token) failed: %v", err)
+	}
+	// Complete the cascade synchronously, as the engine sweep would.
+	if err := store.PurgeDeletedScheduleGroup(ctx, "replay-group"); err != nil {
+		t.Fatalf("PurgeDeletedScheduleGroup failed: %v", err)
+	}
+	// The replayed token reports the first deletion's success; without it
+	// the purged group is not-found.
+	if err := svc.deleteScheduleGroupCore(ctx, store, &DeleteScheduleGroupInput{Name: "replay-group", ClientToken: "group-delete-tok-1"}); err != nil {
+		t.Fatalf("deleteScheduleGroupCore(replayed token) = %v, want the first deletion's success outcome", err)
+	}
+	err := svc.deleteScheduleGroupCore(ctx, store, &DeleteScheduleGroupInput{Name: "replay-group"})
+	assertResourceNotFound(t, err, "Schedule group", "replay-group")
 }
 
 func int32Ptr(v int32) *int32 { return &v }
@@ -69,16 +123,14 @@ func TestListSchedulesCoreFilterValidation(t *testing.T) {
 }
 
 // A listing scoped to a group that does not exist reports the model's
-// ResourceNotFoundException, not an empty page.
+// ResourceNotFoundException naming the group, not an empty page.
 func TestListSchedulesCoreGroupMissingIsResourceNotFound(t *testing.T) {
 	ctx := context.Background()
 	store := testSchedulerCoreStore(t)
 	svc := &SchedulerService{}
 
 	_, err := svc.listSchedulesCore(ctx, store, &ListSchedulesInput{GroupName: "ghost"})
-	if err != ErrScheduleGroupNotFound {
-		t.Fatalf("listSchedulesCore error = %v, want ErrScheduleGroupNotFound", err)
-	}
+	assertResourceNotFound(t, err, "Schedule group", "ghost")
 }
 
 // An invalid group-name charset is a validation failure, never a
@@ -170,7 +222,42 @@ func TestValidateTargetRoleArnShapeAndInputSize(t *testing.T) {
 	maxInput := validTarget()
 	maxInput.Input = strings.Repeat("a", 262144)
 	if err := validateTarget(maxInput); err != nil {
-		t.Fatalf("validateTarget(rejected an Input at the 256 KiB maximum: %v", err)
+		t.Fatalf("validateTarget rejected an Input at the 256 KiB maximum: %v", err)
+	}
+}
+
+// TestMapScheduleRecordWriteError pins the shared record-write mapping:
+// every sentinel the locked writes can raise maps to its modelled
+// exception, so a group purged mid-flight answers 404 on the update path
+// exactly as it already does on the create path, and only genuine storage
+// faults fall to the internal-server catch-all.
+func TestMapScheduleRecordWriteError(t *testing.T) {
+	cases := []struct {
+		name       string
+		in         error
+		code       string
+		httpStatus int
+	}{
+		{"duplicate name", schedulerstore.ErrScheduleAlreadyExists, "ConflictException", http.StatusConflict},
+		{"group deleting", schedulerstore.ErrScheduleGroupDeleting, "ConflictException", http.StatusConflict},
+		{"group purged mid-flight", schedulerstore.ErrScheduleGroupNotFound, "ResourceNotFoundException", http.StatusNotFound},
+		{"schedule deleted mid-flight", schedulerstore.ErrScheduleNotFound, "ResourceNotFoundException", http.StatusNotFound},
+		{"storage fault", errors.New("storage handle closed"), "InternalServerException", http.StatusInternalServerError},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			mapped := mapScheduleRecordWriteError(tc.in, "grp", "sch")
+			awsErr, ok := mapped.(*awserrors.AWSError)
+			if !ok {
+				t.Fatalf("mapped error type = %T, want *awserrors.AWSError", mapped)
+			}
+			if awsErr.Code != tc.code {
+				t.Errorf("code = %q, want %q", awsErr.Code, tc.code)
+			}
+			if awsErr.HTTPStatus != tc.httpStatus {
+				t.Errorf("HTTP status = %d, want %d", awsErr.HTTPStatus, tc.httpStatus)
+			}
+		})
 	}
 }
 
@@ -244,14 +331,13 @@ func TestScheduleClientTokenValidationAndReplay(t *testing.T) {
 	}
 
 	// Without a token the deletion is a plain idempotent-trait delete: the
-	// second call finds no schedule and reports not-found.
+	// second call finds no schedule and reports not-found naming it.
 	seedSchedule(t, store, "hourly", "default")
 	if err := svc.deleteScheduleCore(ctx, store, &DeleteScheduleInput{Name: "hourly"}); err != nil {
 		t.Fatalf("deleteScheduleCore() failed: %v", err)
 	}
-	if err := svc.deleteScheduleCore(ctx, store, &DeleteScheduleInput{Name: "hourly"}); err != ErrScheduleNotFound {
-		t.Fatalf("deleteScheduleCore(second, no token) = %v, want ErrScheduleNotFound", err)
-	}
+	err = svc.deleteScheduleCore(ctx, store, &DeleteScheduleInput{Name: "hourly"})
+	assertResourceNotFound(t, err, "Schedule", "hourly")
 }
 
 // UpdateSchedule validates the identifier pair before the existence probe:
@@ -276,5 +362,157 @@ func TestUpdateScheduleCoreIdentifierValidation(t *testing.T) {
 	}
 	if result.ScheduleArn == "" {
 		t.Fatal("updateScheduleCore returned an empty ScheduleArn")
+	}
+}
+
+// A group in DELETING refuses both schedule creation and schedule update:
+// the engine cascade deletes the group's members within one sweep, so a
+// request acknowledged now would be silently destroyed otherwise.
+func TestScheduleCoresRejectDeletingGroup(t *testing.T) {
+	ctx := context.Background()
+	store := testSchedulerCoreStore(t)
+	svc := &SchedulerService{}
+
+	if err := store.CreateScheduleGroup(ctx, &schedulerstore.ScheduleGroup{Name: "dying"}); err != nil {
+		t.Fatalf("create group: %v", err)
+	}
+	seedSchedule(t, store, "existing", "dying")
+	if err := store.MarkScheduleGroupDeleting(ctx, "dying"); err != nil {
+		t.Fatalf("mark deleting: %v", err)
+	}
+
+	if _, err := svc.createScheduleCore(ctx, store, &CreateScheduleInput{
+		Spec:   testTokenSpec("late-create", "dying"),
+		Region: "us-east-1",
+	}); err != ErrScheduleGroupDeleting {
+		t.Fatalf("createScheduleCore into DELETING group: error = %v, want ErrScheduleGroupDeleting", err)
+	}
+
+	if _, err := svc.updateScheduleCore(ctx, store, &UpdateScheduleInput{
+		Spec:   testTokenSpec("existing", "dying"),
+		Region: "us-east-1",
+	}); err != ErrScheduleGroupDeleting {
+		t.Fatalf("updateScheduleCore in DELETING group: error = %v, want ErrScheduleGroupDeleting", err)
+	}
+}
+
+// fakeRoleProvider fakes the two-method RolePolicyProvider the IAM validator
+// consults: every role resolves to the provider's trust document.
+type fakeRoleProvider struct{ trustDoc string }
+
+func (f fakeRoleProvider) GetAssumeRolePolicyDocument(roleName string) (string, error) {
+	return f.trustDoc, nil
+}
+
+func (f fakeRoleProvider) Exists(roleName string) bool { return true }
+
+// Role validation failures must surface the scheduler model's error
+// vocabulary — ValidationException naming the role — never the shared IAM
+// validator's Lambda-flavoured default identity, whose
+// InvalidParameterValueException/InvalidArn codes the scheduler model does
+// not define. The pin drives a role that exists but trusts only Lambda, so
+// the failure is the trust-policy refusal.
+func TestScheduleCoresSurfaceValidationExceptionOnUntrustedRole(t *testing.T) {
+	ctx := context.Background()
+	store := testSchedulerCoreStore(t)
+	svc := &SchedulerService{}
+	lambdaTrustDoc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
+	validator := iam.NewIAMValidator(fakeRoleProvider{trustDoc: lambdaTrustDoc}, "123456789012")
+	roleArn := "arn:aws:iam::123456789012:role/untrusted"
+
+	assertRoleValidationError := func(t *testing.T, err error) {
+		t.Helper()
+		var awsErr *awserrors.AWSError
+		if !errors.As(err, &awsErr) {
+			t.Fatalf("role failure is not an AWSError: %v", err)
+		}
+		if awsErr.Code != "ValidationException" {
+			t.Fatalf("role failure code = %q, want ValidationException", awsErr.Code)
+		}
+		if !strings.Contains(awsErr.Message, roleArn) {
+			t.Fatalf("role failure message %q does not name the role ARN", awsErr.Message)
+		}
+	}
+
+	createSpec := validTarget()
+	createSpec.RoleArn = roleArn
+	_, err := svc.createScheduleCore(ctx, store, &CreateScheduleInput{
+		Spec: &ScheduleSpec{
+			Name:               "untrusted-role-create",
+			ScheduleExpression: "rate(1 hour)",
+			State:              "ENABLED",
+			Target:             createSpec,
+			FlexibleTimeWindow: validFTW(),
+		},
+		IAMValidator: validator,
+	})
+	assertRoleValidationError(t, err)
+
+	seedSchedule(t, store, "existing", "default")
+	updateSpec := validTarget()
+	updateSpec.RoleArn = roleArn
+	_, err = svc.updateScheduleCore(ctx, store, &UpdateScheduleInput{
+		Spec: &ScheduleSpec{
+			Name:               "existing",
+			ScheduleExpression: "rate(1 hour)",
+			State:              "ENABLED",
+			Target:             updateSpec,
+			FlexibleTimeWindow: validFTW(),
+		},
+		IAMValidator: validator,
+	})
+	assertRoleValidationError(t, err)
+}
+
+// TestAbsentCrossServiceInvokerFailsClosed pins the unified posture of the
+// optional cross-service validators: a built engine whose bus carries no
+// invoker for the service fails the creation request closed for both EC2
+// (VPC configuration) and KMS (key existence), while a service without an
+// engine — the construction window before BuildEngine, or store-only unit
+// harnesses — skips the cross-service existence check (the modelled trait
+// validation in validators.go still applies there; documented at both
+// sites).
+func TestAbsentCrossServiceInvokerFailsClosed(t *testing.T) {
+	svc := newLifecycleService(t)
+	bus := eventbus.NewEventBus()
+	if err := bus.Start(context.Background()); err != nil {
+		t.Fatalf("start bus: %v", err)
+	}
+	t.Cleanup(func() { _ = bus.Shutdown(context.Background()) })
+	svc.engine.SetEventBus(bus)
+
+	vpcTarget := &schedulerstore.Target{
+		Arn: "arn:aws:ecs:us-east-1:000000000000:cluster/pin",
+		EcsParameters: &schedulerstore.EcsParameters{
+			TaskDefinitionArn: "arn:aws:ecs:us-east-1:000000000000:task-definition/family:1",
+			NetworkConfiguration: &schedulerstore.NetworkConfiguration{
+				AwsVpcConfiguration: &schedulerstore.AwsVpcConfiguration{
+					Subnets: []string{"subnet-00000000000000001"},
+				},
+			},
+		},
+	}
+	for name, err := range map[string]error{
+		"absent EC2 invoker": svc.validateVpcConfig(context.Background(), "us-east-1", vpcTarget),
+		"absent KMS invoker": svc.validateKmsKey(context.Background(), "us-east-1",
+			"arn:aws:kms:us-east-1:000000000000:key/abcd-1234"),
+	} {
+		if err == nil {
+			t.Errorf("%s: validation must fail closed", name)
+			continue
+		}
+		var awsErr *awserrors.AWSError
+		if !errors.As(err, &awsErr) || awsErr.Code != "ValidationException" {
+			t.Errorf("%s: error is %v, want ValidationException", name, err)
+		}
+	}
+
+	bare := &SchedulerService{}
+	if err := bare.validateVpcConfig(context.Background(), "us-east-1", vpcTarget); err != nil {
+		t.Errorf("engine-less service must skip the VPC existence check, got %v", err)
+	}
+	if err := bare.validateKmsKey(context.Background(), "us-east-1",
+		"arn:aws:kms:us-east-1:000000000000:key/abcd-1234"); err != nil {
+		t.Errorf("engine-less service must skip the KMS key check, got %v", err)
 	}
 }

@@ -6,12 +6,12 @@ import (
 
 // Error variables provide common Scheduler error instances.
 var (
-	// ErrScheduleGroupNotFound is returned when the specified schedule group does not exist.
-	ErrScheduleGroupNotFound = awserrors.NewResourceNotFoundException("Schedule group", "")
 	// ErrScheduleGroupAlreadyExists is returned when a schedule group already exists.
 	ErrScheduleGroupAlreadyExists = awserrors.NewConflictException("Schedule group already exists")
-	// ErrScheduleNotFound is returned when the specified schedule does not exist.
-	ErrScheduleNotFound = awserrors.NewResourceNotFoundException("Schedule", "")
+	// ErrScheduleGroupDeleting is returned when the target schedule group's
+	// deletion is in progress — the group exists but admits no new or
+	// updated schedules (the cascade would destroy the acknowledged write).
+	ErrScheduleGroupDeleting = awserrors.NewConflictException("Schedule group is being deleted")
 	// ErrScheduleAlreadyExists is returned when a schedule already exists.
 	ErrScheduleAlreadyExists = awserrors.NewConflictException("Schedule already exists")
 	// ErrValidation is returned when validation fails.
@@ -33,3 +33,17 @@ var (
 	// (smithy.api#error "server", httpError 500).
 	ErrInternalServer = awserrors.NewInternalServerException("Unexpected error encountered while processing the request.")
 )
+
+// scheduleNotFound builds the modelled ResourceNotFoundException naming the
+// schedule the request addressed — every raise site knows the identifier,
+// and a shared empty-identifier sentinel would format the message as
+// "Schedule  not found".
+func scheduleNotFound(name string) error {
+	return awserrors.NewResourceNotFoundException("Schedule", name)
+}
+
+// scheduleGroupNotFound builds the modelled ResourceNotFoundException naming
+// the schedule group the request addressed.
+func scheduleGroupNotFound(name string) error {
+	return awserrors.NewResourceNotFoundException("Schedule group", name)
+}

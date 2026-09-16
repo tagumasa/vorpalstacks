@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/utils/timeutils"
 
@@ -30,6 +31,10 @@ const (
 	MaxRateHours = 8760
 	// MaxRateDays is the largest accepted rate() value in days.
 	MaxRateDays = 365
+	// MaxExpressionLength is the @length(1, 256) maximum of the
+	// ScheduleExpression shape, counted in Unicode characters (the @length
+	// trait's counting basis).
+	MaxExpressionLength = 256
 )
 
 // ValidateExpression checks whether an AWS schedule expression is
@@ -41,13 +46,17 @@ const (
 //     (singular for 1, plural for values greater than 1) and at most one
 //     year expressed in the chosen unit (MaxRateMinutes, MaxRateHours or
 //     MaxRateDays).
-//   - cron(): exactly 6 whitespace-delimited fields inside the parentheses.
+//   - cron(): exactly 6 whitespace-delimited fields inside the parentheses,
+//     each within its documented range (minute 0-59, hour 0-23,
+//     day-of-month 1-31, month 1-12, day-of-week 1-7, year 1970-2199),
+//     with month/day-of-week names and the L/W/# day wildcards — the same
+//     AWS cron grammar ValidateRuleExpression enforces for rules.
 //
 // This is a format check only; it does not guarantee that the resulting
 // schedule will ever fire. Use NextExecutionTime to compute actual fire
 // times.
 func ValidateExpression(expr string) bool {
-	if len(expr) > 256 {
+	if utf8.RuneCountInString(expr) > MaxExpressionLength {
 		return false
 	}
 
@@ -63,26 +72,48 @@ func ValidateExpression(expr string) bool {
 	}
 
 	if matches := cronExprPattern.FindStringSubmatch(expr); len(matches) == 2 {
-		fields := strings.Fields(matches[1])
-		if len(fields) != 6 {
-			return false
-		}
-		// "You can't use * in both the Day-of-month and Day-of-week
-		// fields. If you specify a value or a * in one of the fields,
-		// you must use a ? in the other." (Schedule types in EventBridge
-		// Scheduler; the same AWS cron convention governs every consumer
-		// of this profile). "?" is a wildcard in the two day fields only.
-		if fields[2] != "?" && fields[4] != "?" {
-			return false
-		}
-		for i, f := range fields {
-			if i != 2 && i != 4 && strings.Contains(f, "?") {
-				return false
-			}
-		}
-		return true
+		// The Scheduler and PutRule profiles share the AWS cron grammar,
+		// so the field-level checks live in ValidateCronFields: the
+		// six-field layout, "You can't use * in both the Day-of-month
+		// and Day-of-week fields. If you specify a value or a * in one
+		// of the fields, you must use a ? in the other." (Schedule types
+		// in EventBridge Scheduler), and the per-field ranges, names and
+		// day wildcards. A field-only structure check would accept
+		// impossible expressions such as cron(99 12 * * ? *) that can
+		// never match at evaluation time.
+		return ValidateCronFields(matches[1])
 	}
 
+	return false
+}
+
+// ValidateCronFields reports whether the inner body of a cron(...)
+// expression satisfies the AWS cron grammar: the six-field layout, the
+// day-fields ?-exclusivity, per-field ranges (minute 0-59, hour 0-23,
+// day-of-month 1-31, month 1-12, day-of-week 1-7, year 1970-2199),
+// month/day-of-week names and the L/W/# day wildcards. Consumers whose
+// schedule grammars include cron() but not at() or the Scheduler's rate()
+// upper bounds (Timestream scheduled queries) share this helper instead of
+// the full ValidateExpression profile.
+func ValidateCronFields(inner string) bool {
+	return validateRuleCronFields("cron(" + inner + ")")
+}
+
+// ValidateCronOrRateExpression checks the cron()/rate() grammar shared by
+// the schedule-expression profiles that exclude the at() one-shot form:
+// cron bodies go through ValidateCronFields and rate values through the
+// value/unit agreement rule. No rate upper bound is imposed — a profile
+// that carries one (EventBridge Scheduler's one-year maximum) applies it
+// on top. Consumers: the EventBridge PutRule rule profile and Timestream
+// scheduled queries ("Two ways to specify the schedule expressions are
+// cron and rate", Timestream developer guide, scheduled queries).
+func ValidateCronOrRateExpression(expr string) bool {
+	if matches := cronExprPattern.FindStringSubmatch(expr); len(matches) == 2 {
+		return ValidateCronFields(matches[1])
+	}
+	if matches := rateExprPattern.FindStringSubmatch(expr); len(matches) == 3 {
+		return rateValueAgrees(matches[1], matches[2])
+	}
 	return false
 }
 
@@ -132,7 +163,7 @@ func validateRateFormat(expr string) bool {
 // should prefer ElapsedExecutionTime, which expresses that contract
 // directly.
 func NextExecutionTime(expr string, now time.Time, creationTime time.Time, startDate *time.Time) (time.Time, error) {
-	if strings.HasPrefix(expr, "at(") {
+	if IsAtExpression(expr) {
 		if t, ok := parseAtTime(expr); ok {
 			return t, nil
 		}
@@ -154,6 +185,15 @@ func NextExecutionTime(expr string, now time.Time, creationTime time.Time, start
 	}
 
 	return time.Time{}, fmt.Errorf("unsupported schedule expression: %s", expr)
+}
+
+// IsAtExpression reports whether expr is the one-time at(...) form. The
+// classification is one logical fact — a one-time schedule, for which AWS
+// ignores StartDate/EndDate and whose lifecycle ends after one delivery —
+// so consumers inside and outside this package ask this predicate instead
+// of re-spelling the prefix.
+func IsAtExpression(expr string) bool {
+	return strings.HasPrefix(expr, "at(")
 }
 
 // parseAtTime extracts the timestamp of an at(yyyy-MM-ddTHH:mm:ss)
@@ -262,7 +302,7 @@ const (
 //     recovered; an evaluation that arrives late fires the pending
 //     boundary instead of skipping it silently.
 func ElapsedExecutionTime(expr string, now time.Time, creationTime time.Time, startDate *time.Time, first RateFirstBoundary) (time.Time, bool) {
-	if strings.HasPrefix(expr, "at(") {
+	if IsAtExpression(expr) {
 		t, ok := parseAtTime(expr)
 		if !ok {
 			return time.Time{}, false

@@ -429,11 +429,26 @@ func (s *LogsService) putToKinesis(destArn string, compressed []byte) {
 	}
 
 	streamName := arn.ExtractStreamNameFromARN(destArn)
+	_, _, destRegion, _, _ := arn.SplitARN(destArn)
 	encodedData := base64.StdEncoding.EncodeToString(compressed)
 	ctx := context.Background()
 
-	shards, err := s.bus.KinesisInvoker().ListShards(ctx, streamName)
-	if err != nil || len(shards) == 0 {
+	// The destination ARN addresses the stream in its own region: the shard
+	// probe and the record write must resolve the same regional store, or a
+	// cross-region destination fails the probe against the wrong region and
+	// the delivery vanishes.
+	shards, err := s.bus.KinesisInvoker().ListShards(ctx, destRegion, streamName)
+	if err != nil {
+		logs.Warn("Failed to list shards for subscription filter delivery to Kinesis",
+			logs.String("stream", streamName),
+			logs.String("region", destRegion),
+			logs.Err(err))
+		return
+	}
+	if len(shards) == 0 {
+		logs.Warn("Subscription filter Kinesis destination has no shards",
+			logs.String("stream", streamName),
+			logs.String("region", destRegion))
 		return
 	}
 
@@ -446,6 +461,9 @@ func (s *LogsService) putToKinesis(destArn string, compressed []byte) {
 	}
 
 	if activeShardID == "" {
+		logs.Warn("Subscription filter Kinesis destination has no open shard",
+			logs.String("stream", streamName),
+			logs.String("region", destRegion))
 		return
 	}
 
@@ -457,7 +475,7 @@ func (s *LogsService) putToKinesis(destArn string, compressed []byte) {
 	}
 
 	b64Envelope := base64.StdEncoding.EncodeToString(envelope)
-	if _, err := s.bus.KinesisInvoker().PutRecord(ctx, streamName, activeShardID, []byte(b64Envelope)); err != nil {
+	if _, err := s.bus.KinesisInvoker().PutRecord(ctx, destRegion, streamName, activeShardID, []byte(b64Envelope)); err != nil {
 		logs.Warn("Failed to deliver subscription filter log events to Kinesis", logs.Err(err))
 	}
 }

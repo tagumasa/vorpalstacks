@@ -11,6 +11,11 @@ var (
 	// group that already exists.
 	ErrScheduleGroupAlreadyExists = errors.New("schedule group already exists")
 
+	// ErrScheduleGroupDeleting is returned when an operation would add or
+	// modify schedule records in a group whose deletion is in progress —
+	// the engine cascade would destroy the acknowledged write.
+	ErrScheduleGroupDeleting = errors.New("schedule group is being deleted")
+
 	// ErrScheduleNotFound is returned when the specified schedule does not exist.
 	ErrScheduleNotFound = errors.New("schedule not found")
 
@@ -18,10 +23,12 @@ var (
 	// that already exists.
 	ErrScheduleAlreadyExists = errors.New("schedule already exists")
 
-	// ErrInvalidARN is returned when the Amazon Resource Name (ARN) is not valid.
-	ErrInvalidARN = errors.New("invalid ARN")
+	// ErrInvalidName is returned when a schedule or group record arrives
+	// with an empty name — records are keyed by name, so the write has no
+	// identity to persist under.
+	ErrInvalidName = errors.New("invalid name")
 
-	// ErrInvalidScheduleExpression is returned when the schedule expression
-	// is not valid.
+	// ErrScheduleGroupNotEmpty is returned when attempting to purge a
+	// schedule group that still contains member schedules.
 	ErrScheduleGroupNotEmpty = errors.New("schedule group not empty")
 )

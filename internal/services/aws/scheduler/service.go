@@ -34,10 +34,14 @@ func NewSchedulerService(storageManager *storage.RegionStorageManager, accountID
 	}
 }
 
-// BuildEngine constructs the scheduling engine from the currently injected dependencies.
-// Must be called after all setter methods and before StartEngine.
+// BuildEngine constructs the scheduling engine from the currently injected
+// dependencies and hands it the service's store cache as its single store
+// source — one construction path and one closer (StopEngine) serve both the
+// HTTP/admin planes and the engine. Must be called after all setter methods
+// and before StartEngine.
 func (s *SchedulerService) BuildEngine() {
 	s.engine = NewEngine(s.storageManager, s.accountID)
+	s.engine.SetStoreProvider(s.GetStoreForRegion)
 }
 
 // SetEventBus injects the event bus into the scheduler engine and registers
@@ -80,6 +84,7 @@ func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.
 		Name:                  evt.ScheduleName,
 		GroupName:             evt.GroupName,
 		Region:                evt.Region,
+		ScheduleExpression:    evt.ScheduleExpression,
 		Target:                target,
 		ActionAfterCompletion: schedulerstore.ActionAfterCompletion(evt.ActionAfterCompletion),
 	}
@@ -93,34 +98,27 @@ func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.
 }
 
 // GetStoreForRegion returns the cached SchedulerStore for the given region,
-// creating a new store instance if not already cached.
+// creating a new store instance if not already cached. It is the single
+// construction path, shared by the admin plane and (as the engine's store
+// provider) the scheduling engine.
 func (s *SchedulerService) GetStoreForRegion(region string) (*schedulerstore.SchedulerStore, error) {
-	if v, ok := s.stores.Load(region); ok {
-		return v.(*schedulerstore.SchedulerStore), nil
-	}
-	if s.storageManager == nil {
-		return nil, fmt.Errorf("scheduler storage manager not initialised")
-	}
-	st, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	store := schedulerstore.NewSchedulerStore(st, s.accountID, region)
-	actual, loaded := s.stores.LoadOrStore(region, store)
-	if loaded {
-		store.Close()
-	}
-	return actual.(*schedulerstore.SchedulerStore), nil
-}
-
-func (s *SchedulerService) store(ctx *request.RequestContext) (*schedulerstore.SchedulerStore, error) {
-	return storecommon.GetOrCreateStoreE(&s.stores, ctx.GetRegion(), func() (*schedulerstore.SchedulerStore, error) {
-		st, err := s.storageManager.GetStorage(ctx.GetRegion())
+	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (*schedulerstore.SchedulerStore, error) {
+		if s.storageManager == nil {
+			return nil, fmt.Errorf("scheduler storage manager not initialised")
+		}
+		st, err := s.storageManager.GetStorage(region)
 		if err != nil {
 			return nil, err
 		}
-		return schedulerstore.NewSchedulerStore(st, s.accountID, ctx.GetRegion()), nil
+		return schedulerstore.NewSchedulerStore(st, s.accountID, region), nil
 	})
+}
+
+// store resolves the regional store for a request-scoped region through
+// the shared construction path (the engine's store provider binds to the
+// same cache).
+func (s *SchedulerService) store(ctx *request.RequestContext) (*schedulerstore.SchedulerStore, error) {
+	return s.GetStoreForRegion(ctx.GetRegion())
 }
 
 // SetRoleProvider injects the IAM role policy provider so that the admin
@@ -147,8 +145,10 @@ func (s *SchedulerService) StartEngine() error {
 	return nil
 }
 
-// StopEngine stops the scheduler engine and cleans up per-region store
-// resources (ClientTokenStore background goroutines).
+// StopEngine stops the scheduler engine and closes the shared per-region
+// store cache, releasing each store's ClientTokenStore background cleanup
+// goroutine. The engine owns no stores, so this single close covers
+// everything the service created.
 func (s *SchedulerService) StopEngine() error {
 	var firstErr error
 	if s.engine != nil {

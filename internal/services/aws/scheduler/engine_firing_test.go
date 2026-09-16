@@ -5,9 +5,24 @@ import (
 	"testing"
 	"time"
 
+	// The at()-timezone pins seed ScheduleExpressionTimezone directly into
+	// the store record, bypassing the creation validator that would reject
+	// an unloadable zone; the engine silently falls back to UTC when a zone
+	// fails to load, so on a host without system zoneinfo the pins would
+	// fail spuriously. The embedded database supplies the IANA zones.
+	_ "time/tzdata"
+
 	"vorpalstacks/internal/core/storage"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
+
+// shouldExecute is the firing tests' boolean view of dueBoundary: the
+// production sweep consumes the boundary itself, so the predicate wrapper
+// lives here with its only callers.
+func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time) bool {
+	_, ok := e.dueBoundary(schedule, now)
+	return ok
+}
 
 // TestRouteToDLQNilBusDoesNotPanic pins that the bus-less direct-delivery
 // path (executeSchedule falls back to deliverWithRetry when e.bus is nil)
@@ -173,9 +188,6 @@ func TestShouldExecuteFlexibleWindowUnchanged(t *testing.T) {
 	}
 }
 
-// TestShouldExecuteRateWaitsFirstInterval pins the AWS rate() contract:
-// the schedule does not fire on the creation boundary — the first
-// invocation happens one full interval after creation.
 // TestShouldExecuteRateFiresOnCreationBoundary pins the rate-schedule first
 // occurrence contract: StartDate (or the creation instant when absent) sets
 // the first occurrence, so the creation boundary itself is due. Without a
@@ -301,8 +313,14 @@ func newFiringStore(t *testing.T) *schedulerstore.SchedulerStore {
 	if err != nil {
 		t.Fatalf("open storage: %v", err)
 	}
-	t.Cleanup(func() { st.Close() })
-	return schedulerstore.NewSchedulerStore(st, "000000000000", "us-east-1")
+	store := schedulerstore.NewSchedulerStore(st, "000000000000", "us-east-1")
+	// The store's own Close stops the idempotency-token reaper goroutine;
+	// the storage handle is released only after it.
+	t.Cleanup(func() {
+		store.Close()
+		st.Close()
+	})
+	return store
 }
 
 // TestDeliveredBoundaryMarkerSuppressesRefire pins that the record's

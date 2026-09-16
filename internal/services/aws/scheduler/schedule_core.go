@@ -2,8 +2,10 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
@@ -81,7 +83,7 @@ type ListSchedulesResult struct {
 // reference), and validates the ScheduleGroupName shape.
 func resolveScheduleGroup(groupName string) (string, error) {
 	if groupName == "" {
-		return "default", nil
+		return schedulerstore.DefaultGroupName, nil
 	}
 	if err := validateScheduleGroupName(groupName); err != nil {
 		return "", err
@@ -100,6 +102,48 @@ func resolveScheduleIdentifier(name, groupName string) (string, error) {
 	return resolveScheduleGroup(groupName)
 }
 
+// validateScheduleRole runs the target-role validation with
+// scheduler-appropriate error factories: the scheduler model's error
+// vocabulary carries no Lambda-style InvalidParameterValueException or
+// InvalidArn shape, so every role failure surfaces as the modelled
+// ValidationException naming the role. Both cores share this path so the
+// HTTP and admin planes report the same error identity.
+func validateScheduleRole(ctx context.Context, validator *iam.IAMValidator, roleArn string) error {
+	return validator.ValidateRoleForServiceWithErrors(ctx, roleArn, iam.ServicePrincipalScheduler, &iam.RoleErrorFactories{
+		RoleNotFoundError:        schedulerRoleValidationError,
+		RoleCannotBeAssumedError: schedulerRoleValidationError,
+		InvalidArnError:          schedulerRoleValidationError,
+	})
+}
+
+func schedulerRoleValidationError(roleArn string) error {
+	return awserrors.NewValidationException(fmt.Sprintf(
+		"Role %s is invalid or cannot be assumed by EventBridge Scheduler.", roleArn))
+}
+
+// mapScheduleRecordWriteError translates the sentinels of the locked record
+// writes — creation, and the update path's live-group mutate — into their
+// modelled exceptions. Both writes refuse on the group lifecycle (the group
+// marked DELETING, or its record purged between the caller's fast-path probe
+// and the lock); the update write can additionally lose the schedule record
+// to a concurrent delete, and creation can hit a duplicate name. One shared
+// mapping keeps the two surfaces from drifting apart again: a sentinel one
+// path maps must never fall to the other path's internal-server catch-all.
+func mapScheduleRecordWriteError(err error, groupName, scheduleName string) error {
+	switch err {
+	case schedulerstore.ErrScheduleAlreadyExists:
+		return ErrScheduleAlreadyExists
+	case schedulerstore.ErrScheduleGroupDeleting:
+		return ErrScheduleGroupDeleting
+	case schedulerstore.ErrScheduleGroupNotFound:
+		return scheduleGroupNotFound(groupName)
+	case schedulerstore.ErrScheduleNotFound:
+		return scheduleNotFound(scheduleName)
+	default:
+		return ErrInternalServer
+	}
+}
+
 // createScheduleCore is the single entry point for schedule creation shared
 // by the HTTP API and the admin gRPC handler. It performs validation, IAM
 // role validation, VPC validation, group existence check, ClientToken
@@ -113,7 +157,7 @@ func (s *SchedulerService) createScheduleCore(ctx context.Context, store *schedu
 	target := in.Spec.Target
 
 	if in.IAMValidator != nil && target != nil && target.RoleArn != "" {
-		if err := in.IAMValidator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
+		if err := validateScheduleRole(ctx, in.IAMValidator, target.RoleArn); err != nil {
 			return nil, err
 		}
 	}
@@ -131,29 +175,28 @@ func (s *SchedulerService) createScheduleCore(ctx context.Context, store *schedu
 		return nil, err
 	}
 
-	clientToken := in.ClientToken
-	tokenClaimed := false
-	var expectedArn string
-	if clientToken != "" {
-		if err := validateClientToken(clientToken); err != nil {
-			return nil, err
-		}
-		expectedArn = store.BuildScheduleARN(groupName, in.Spec.Name)
-		if entry, created := store.ClientTokens().LookupOrClaim(clientToken, expectedArn, "schedule"); !created {
-			return &CreateScheduleResult{ScheduleArn: entry.ResourceArn}, nil
-		}
-		tokenClaimed = true
+	replayArn, releaseToken, err := claimClientToken(store, in.ClientToken, store.BuildScheduleARN(groupName, in.Spec.Name), "schedule")
+	if err != nil {
+		return nil, err
+	}
+	if replayArn != "" {
+		return &CreateScheduleResult{ScheduleArn: replayArn}, nil
 	}
 
-	if groupName != "default" {
-		if _, err := store.GetScheduleGroup(ctx, groupName); err != nil {
-			if tokenClaimed {
-				store.ClientTokens().Release(clientToken, expectedArn, "schedule")
-			}
+	if groupName != schedulerstore.DefaultGroupName {
+		group, err := store.GetScheduleGroup(ctx, groupName)
+		if err != nil {
+			releaseToken()
 			if err == schedulerstore.ErrScheduleGroupNotFound {
-				return nil, ErrScheduleGroupNotFound
+				return nil, scheduleGroupNotFound(groupName)
 			}
 			return nil, ErrInternalServer
+		}
+		// A group in DELETING refuses new schedules: the engine cascade
+		// would destroy the acknowledged write within one sweep.
+		if group.State == schedulerstore.ScheduleGroupStateDeleting {
+			releaseToken()
+			return nil, ErrScheduleGroupDeleting
 		}
 	}
 
@@ -173,13 +216,10 @@ func (s *SchedulerService) createScheduleCore(ctx context.Context, store *schedu
 	}
 
 	if err := store.CreateSchedule(ctx, schedule); err != nil {
-		if tokenClaimed {
-			store.ClientTokens().Release(clientToken, expectedArn, "schedule")
-		}
-		if err == schedulerstore.ErrScheduleAlreadyExists {
-			return nil, ErrScheduleAlreadyExists
-		}
-		return nil, ErrInternalServer
+		releaseToken()
+		// The store re-checks the group under the record lock; these fire
+		// only when the group was marked or purged after the probe above.
+		return nil, mapScheduleRecordWriteError(err, groupName, in.Spec.Name)
 	}
 
 	return &CreateScheduleResult{ScheduleArn: schedule.ARN}, nil
@@ -199,9 +239,24 @@ func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedu
 	}
 	if _, err := store.GetSchedule(ctx, groupName, in.Spec.Name); err != nil {
 		if err == schedulerstore.ErrScheduleNotFound {
-			return nil, ErrScheduleNotFound
+			return nil, scheduleNotFound(in.Spec.Name)
 		}
 		return nil, ErrInternalServer
+	}
+	// The schedule's group must still be accepting writes: a group in
+	// DELETING refuses updates — its cascade deletes the schedule anyway,
+	// so an acknowledged update would be silently destroyed.
+	if groupName != schedulerstore.DefaultGroupName {
+		group, groupErr := store.GetScheduleGroup(ctx, groupName)
+		if groupErr == schedulerstore.ErrScheduleGroupNotFound {
+			return nil, scheduleGroupNotFound(groupName)
+		}
+		if groupErr != nil {
+			return nil, ErrInternalServer
+		}
+		if group.State == schedulerstore.ScheduleGroupStateDeleting {
+			return nil, ErrScheduleGroupDeleting
+		}
 	}
 
 	validated, err := validateScheduleFields(in.Spec)
@@ -212,7 +267,7 @@ func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedu
 	target := in.Spec.Target
 
 	if in.IAMValidator != nil && target != nil && target.RoleArn != "" {
-		if err := in.IAMValidator.ValidateRoleForService(ctx, target.RoleArn, iam.ServicePrincipalScheduler); err != nil {
+		if err := validateScheduleRole(ctx, in.IAMValidator, target.RoleArn); err != nil {
 			return nil, err
 		}
 	}
@@ -229,25 +284,23 @@ func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedu
 	// a replay returns the first application's ARN without re-applying the
 	// full-override mutation (so a replay does not re-stamp the record's
 	// modification date).
-	clientToken := in.ClientToken
-	tokenClaimed := false
-	var expectedArn string
-	if clientToken != "" {
-		if err := validateClientToken(clientToken); err != nil {
-			return nil, err
-		}
-		expectedArn = store.BuildScheduleARN(groupName, in.Spec.Name)
-		if entry, created := store.ClientTokens().LookupOrClaim(clientToken, expectedArn, "schedule-update"); !created {
-			return &UpdateScheduleResult{ScheduleArn: entry.ResourceArn}, nil
-		}
-		tokenClaimed = true
+	replayArn, releaseToken, err := claimClientToken(store, in.ClientToken, store.BuildScheduleARN(groupName, in.Spec.Name), "schedule-update")
+	if err != nil {
+		return nil, err
+	}
+	if replayArn != "" {
+		return &UpdateScheduleResult{ScheduleArn: replayArn}, nil
 	}
 
 	// The user's fields are applied through the store-level atomic mutation
 	// so a concurrent engine write (completion or firing markers) can never
-	// be lost to this update's read-modify-write cycle.
+	// be lost to this update's read-modify-write cycle. The live-group
+	// variant holds the group-state check inside the same critical section:
+	// a deletion cascade that started after the fast-path probe above must
+	// refuse the write instead of letting the acknowledged update be
+	// destroyed by the cascade.
 	var scheduleARN string
-	err = store.MutateSchedule(ctx, groupName, in.Spec.Name, func(existing *schedulerstore.Schedule) error {
+	err = store.MutateScheduleInLiveGroup(ctx, groupName, in.Spec.Name, func(existing *schedulerstore.Schedule) error {
 		// Captured before the assignments: re-lifecycling a completed
 		// schedule and changing the expression both start a new firing
 		// lifecycle and must reset the delivered-boundary marker.
@@ -280,13 +333,8 @@ func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedu
 		return nil
 	})
 	if err != nil {
-		if tokenClaimed {
-			store.ClientTokens().Release(clientToken, expectedArn, "schedule-update")
-		}
-		if err == schedulerstore.ErrScheduleNotFound {
-			return nil, ErrScheduleNotFound
-		}
-		return nil, ErrInternalServer
+		releaseToken()
+		return nil, mapScheduleRecordWriteError(err, groupName, in.Spec.Name)
 	}
 
 	return &UpdateScheduleResult{ScheduleArn: scheduleARN}, nil
@@ -300,25 +348,17 @@ func (s *SchedulerService) deleteScheduleCore(ctx context.Context, store *schedu
 	}
 	// A replayed idempotency token reports the first deletion's outcome;
 	// an unrecoverable failure releases the claim so a retry re-executes.
-	clientToken := in.ClientToken
-	tokenClaimed := false
-	var expectedArn string
-	if clientToken != "" {
-		if err := validateClientToken(clientToken); err != nil {
-			return err
-		}
-		expectedArn = store.BuildScheduleARN(groupName, in.Name)
-		if _, created := store.ClientTokens().LookupOrClaim(clientToken, expectedArn, "schedule-delete"); !created {
-			return nil
-		}
-		tokenClaimed = true
+	replayArn, releaseToken, err := claimClientToken(store, in.ClientToken, store.BuildScheduleARN(groupName, in.Name), "schedule-delete")
+	if err != nil {
+		return err
+	}
+	if replayArn != "" {
+		return nil
 	}
 	if err := store.DeleteSchedule(ctx, groupName, in.Name); err != nil {
-		if tokenClaimed {
-			store.ClientTokens().Release(clientToken, expectedArn, "schedule-delete")
-		}
+		releaseToken()
 		if err == schedulerstore.ErrScheduleNotFound {
-			return ErrScheduleNotFound
+			return scheduleNotFound(in.Name)
 		}
 		return ErrInternalServer
 	}
@@ -334,7 +374,7 @@ func (s *SchedulerService) getScheduleCore(ctx context.Context, store *scheduler
 	schedule, err := store.GetSchedule(ctx, groupName, in.Name)
 	if err != nil {
 		if err == schedulerstore.ErrScheduleNotFound {
-			return nil, ErrScheduleNotFound
+			return nil, scheduleNotFound(in.Name)
 		}
 		return nil, ErrInternalServer
 	}
@@ -366,7 +406,7 @@ func (s *SchedulerService) listSchedulesCore(ctx context.Context, store *schedul
 		}
 		if _, err := store.GetScheduleGroup(ctx, in.GroupName); err != nil {
 			if err == schedulerstore.ErrScheduleGroupNotFound {
-				return nil, ErrScheduleGroupNotFound
+				return nil, scheduleGroupNotFound(in.GroupName)
 			}
 			return nil, ErrInternalServer
 		}

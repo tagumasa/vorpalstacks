@@ -22,11 +22,11 @@ type recordingKinesisInvoker struct {
 	failNext int
 }
 
-func (r *recordingKinesisInvoker) ListShards(ctx context.Context, streamName string) ([]invokers.ShardInfo, error) {
+func (r *recordingKinesisInvoker) ListShards(ctx context.Context, region, streamName string) ([]invokers.ShardInfo, error) {
 	return nil, nil
 }
 
-func (r *recordingKinesisInvoker) PutRecord(ctx context.Context, streamName string, partitionKey string, data []byte) (string, error) {
+func (r *recordingKinesisInvoker) PutRecord(ctx context.Context, region, streamName, partitionKey string, data []byte) (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.putKeys = append(r.putKeys, partitionKey)
@@ -38,11 +38,11 @@ func (r *recordingKinesisInvoker) PutRecord(ctx context.Context, streamName stri
 	return "seq-1", nil
 }
 
-func (r *recordingKinesisInvoker) CreateShardIterator(ctx context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (string, error) {
+func (r *recordingKinesisInvoker) CreateShardIterator(ctx context.Context, region, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (string, error) {
 	return "", nil
 }
 
-func (r *recordingKinesisInvoker) GetRecords(ctx context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]invokers.KinesisRecord, string, error) {
+func (r *recordingKinesisInvoker) GetRecords(ctx context.Context, region, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]invokers.KinesisRecord, string, error) {
 	return nil, "", nil
 }
 

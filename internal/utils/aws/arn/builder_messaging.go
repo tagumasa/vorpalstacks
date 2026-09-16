@@ -1,8 +1,6 @@
 // Package arn provides utilities for parsing and constructing Amazon Resource Names (ARNs).
 package arn
 
-import "strings"
-
 // SQSBuilder provides methods for constructing SQS (Simple Queue Service) ARNs.
 type SQSBuilder struct{ *ARNBuilder }
 
@@ -117,31 +115,4 @@ func (b *SchedulerBuilder) ScheduleGroup(name string) string {
 // Schedule constructs an ARN for an EventBridge Scheduler schedule.
 func (b *SchedulerBuilder) Schedule(group, name string) string {
 	return b.Build("scheduler", "schedule/"+group+"/"+name)
-}
-
-// ParseScheduleGroupName extracts the schedule group name from an EventBridge Scheduler ARN.
-func (b *SchedulerBuilder) ParseScheduleGroupName(arn string) string {
-	_, _, _, _, resource := SplitARN(arn)
-	if strings.HasPrefix(resource, "schedule-group/") {
-		return strings.TrimPrefix(resource, "schedule-group/")
-	}
-	if strings.HasPrefix(resource, "schedule/") {
-		parts := strings.Split(strings.TrimPrefix(resource, "schedule/"), "/")
-		if len(parts) > 0 {
-			return parts[0]
-		}
-	}
-	return ""
-}
-
-// ParseScheduleName extracts the schedule name from an EventBridge Scheduler ARN.
-func (b *SchedulerBuilder) ParseScheduleName(arn string) string {
-	_, _, _, _, resource := SplitARN(arn)
-	if strings.HasPrefix(resource, "schedule/") {
-		parts := strings.Split(strings.TrimPrefix(resource, "schedule/"), "/")
-		if len(parts) > 1 {
-			return parts[1]
-		}
-	}
-	return ""
 }

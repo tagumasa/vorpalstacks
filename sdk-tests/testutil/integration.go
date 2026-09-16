@@ -496,11 +496,38 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 	results = append(results, r.runIntegWithTimeout("Scheduler_SNS", func() TestResult {
 		return r.runSchedulerToSNS(ic, ts)
 	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_Kinesis", func() TestResult {
+		return r.runSchedulerToKinesis(ic, ts)
+	}))
 	results = append(results, r.runIntegWithTimeout("Scheduler_StepFunctions", func() TestResult {
 		return r.runSchedulerToStepFunctions(ic, ts)
 	}))
 	results = append(results, r.runIntegWithTimeout("Scheduler_EventBridge_DLQ", func() TestResult {
 		return r.runSchedulerToEventBridgeDLQ(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_EventBridge_CustomBus", func() TestResult {
+		return r.runSchedulerToEventBridgeCustomBus(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_Universal_Lambda", func() TestResult {
+		return r.runSchedulerUniversalToLambda(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_Universal_SQS", func() TestResult {
+		return r.runSchedulerUniversalToSQS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_Universal_SNS", func() TestResult {
+		return r.runSchedulerUniversalToSNS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_Universal_Kinesis", func() TestResult {
+		return r.runSchedulerUniversalToKinesis(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_Universal_StepFunctions", func() TestResult {
+		return r.runSchedulerUniversalToStepFunctions(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_Universal_EventBridge", func() TestResult {
+		return r.runSchedulerUniversalToEventBridge(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("Scheduler_Universal_AcceptFail", func() TestResult {
+		return r.runSchedulerUniversalAcceptThenFail(ic, ts)
 	}))
 
 	results = append(results, r.runIntegWithTimeout("SFNTask_Lambda", func() TestResult {

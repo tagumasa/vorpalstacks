@@ -1,41 +1,27 @@
 package scheduleexpr
 
 import (
-	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
-
-// ruleCronExprPattern matches a cron(...) expression whose inner body is
-// non-empty (field-level validation follows).
-var ruleCronExprPattern = regexp.MustCompile(`^cron\(.+\)$`)
-
-// ruleRateExprPattern matches a rate(value unit) expression. minute,
-// hour and day are the only accepted units.
-var ruleRateExprPattern = regexp.MustCompile(`^rate\((\d+)\s+(minute|minutes|hour|hours|day|days)\)$`)
 
 // ValidateRuleExpression checks a scheduled-rule expression against the
 // Amazon EventBridge PutRule contract — the rule-validation profile of
 // this package. It differs from ValidateExpression (the EventBridge
-// Scheduler / Timestream profile) in two ways: at() expressions are not
-// rules and are rejected, and rate() values carry no upper bound (the
-// EventBridge PutRule model specifies only the overall length trait,
-// @length(0, 256), which is enforced here). An empty expression is
-// valid: the parameter is optional.
+// Scheduler profile) in two ways: at() expressions are not rules and are
+// rejected, and rate() values carry no upper bound (the EventBridge
+// PutRule model specifies only the overall length trait, @length(0, 256),
+// which is enforced here in characters — the @length counting basis). An
+// empty expression is valid: the parameter is optional.
 func ValidateRuleExpression(expr string) bool {
 	if expr == "" {
 		return true
 	}
-	if len(expr) > 256 {
+	if utf8.RuneCountInString(expr) > MaxExpressionLength {
 		return false
 	}
-	if ruleCronExprPattern.MatchString(expr) {
-		return validateRuleCronFields(expr)
-	}
-	if matches := ruleRateExprPattern.FindStringSubmatch(expr); len(matches) == 3 {
-		return rateValueAgrees(matches[1], matches[2])
-	}
-	return false
+	return ValidateCronOrRateExpression(expr)
 }
 
 // rateValueAgrees enforces the AWS rate() contract: the value is a

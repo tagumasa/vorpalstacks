@@ -9,35 +9,29 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-// getScheduleNameAndGroup extracts the raw identifier pair from the wire.
-// Required-member rejection, the Name/GroupName patterns, and the
-// default-group resolution live in the Core (resolveScheduleIdentifier).
+// getScheduleNameAndGroup extracts the identifier pair for GetSchedule and
+// DeleteSchedule: Name is the URI label (the router carries labels under
+// the modelled member name) and GroupName is the httpQuery "groupName"
+// binding both operations carry in the model. UpdateSchedule differs — its
+// GroupName is a body member — and reads its own pair. Required-member
+// rejection, the Name/GroupName patterns, and the default-group resolution
+// live in the Core (resolveScheduleIdentifier); the shared request helper's
+// all-lowercase fallback is architecture-level behaviour, not a handler
+// spelling chain.
 func getScheduleNameAndGroup(params map[string]interface{}) (name, groupName string) {
 	name = request.GetStringParam(params, "Name")
-	if name == "" {
-		name = request.GetStringParam(params, "name")
-	}
-	groupName = request.GetStringParam(params, "GroupName")
-	if groupName == "" {
-		groupName = request.GetStringParam(params, "groupName")
-	}
+	groupName = request.GetStringParam(params, "groupName")
 	return name, groupName
 }
 
-// getListGroupName extracts the GroupName filter for ListSchedules. An
-// absent parameter means no group filter: per the ListSchedulesInput
-// member documentation, the group filter only applies "if specified", so
-// an unfiltered list must return schedules from every group (the store
-// treats an empty group name as no prefix filter).
+// getListGroupName extracts the GroupName filter for ListSchedules, whose
+// model binding is the httpQuery "ScheduleGroup". An absent parameter means
+// no group filter: per the ListSchedulesInput member documentation, the
+// group filter only applies "if specified", so an unfiltered list must
+// return schedules from every group (the store treats an empty group name
+// as no prefix filter).
 func getListGroupName(params map[string]interface{}) string {
-	groupName := request.GetStringParam(params, "GroupName")
-	if groupName == "" {
-		groupName = request.GetStringParam(params, "groupName")
-	}
-	if groupName == "" {
-		groupName = request.GetStringParam(params, "ScheduleGroup")
-	}
-	return groupName
+	return request.GetStringParam(params, "ScheduleGroup")
 }
 
 // CreateSchedule creates a new schedule in EventBridge Scheduler.
@@ -90,10 +84,10 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 // DeleteSchedule deletes a schedule from EventBridge Scheduler.
 func (s *SchedulerService) DeleteSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name, groupName := getScheduleNameAndGroup(req.Parameters)
-	clientToken := request.GetStringParam(req.Parameters, "ClientToken")
-	if clientToken == "" {
-		clientToken = request.GetStringParam(req.Parameters, "clientToken")
-	}
+	// DeleteScheduleInput.ClientToken is the httpQuery "clientToken"
+	// binding the model declares (the Pascal try was a dead key: query
+	// keys are case-sensitive).
+	clientToken := request.GetStringParam(req.Parameters, "clientToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -133,7 +127,10 @@ func (s *SchedulerService) GetSchedule(ctx context.Context, reqCtx *request.Requ
 
 // UpdateSchedule updates an existing schedule in EventBridge Scheduler.
 func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name, groupName := getScheduleNameAndGroup(req.Parameters)
+	// UpdateScheduleInput binds Name as the URI label and GroupName as a
+	// body member (Pascal) — unlike the Get/Delete httpQuery "groupName".
+	name := request.GetStringParam(req.Parameters, "Name")
+	groupName := request.GetStringParam(req.Parameters, "GroupName")
 
 	store, err := s.store(reqCtx)
 	if err != nil {

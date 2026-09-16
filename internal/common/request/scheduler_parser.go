@@ -29,6 +29,12 @@ func extractSchedulerOperation(r *http.Request) string {
 
 	if len(parts) >= 1 && parts[0] == "schedule-groups" {
 		if len(parts) >= 2 && parts[1] != "" {
+			// The model defines no sub-resource under
+			// /schedule-groups/{Name} either — deeper paths stay unrouted
+			// like the schedules branch below.
+			if len(parts) >= 3 {
+				return ""
+			}
 			switch method {
 			case http.MethodPost:
 				return "CreateScheduleGroup"
@@ -44,26 +50,20 @@ func extractSchedulerOperation(r *http.Request) string {
 
 	if len(parts) >= 1 && parts[0] == "schedules" {
 		if len(parts) >= 2 && parts[1] != "" {
-			if len(parts) >= 3 && parts[2] == "tags" {
-				switch method {
-				case http.MethodPost:
-					return "TagResource"
-				case http.MethodDelete:
-					return "UntagResource"
-				case http.MethodGet:
-					return "ListTagsForResource"
-				}
-			} else {
-				switch method {
-				case http.MethodPost:
-					return "CreateSchedule"
-				case http.MethodGet:
-					return "GetSchedule"
-				case http.MethodPut:
-					return "UpdateSchedule"
-				case http.MethodDelete:
-					return "DeleteSchedule"
-				}
+			if len(parts) >= 3 {
+				// The model defines no sub-resource under /schedules/{Name};
+				// the tag trio binds only to /tags/{ResourceArn+}.
+				return ""
+			}
+			switch method {
+			case http.MethodPost:
+				return "CreateSchedule"
+			case http.MethodGet:
+				return "GetSchedule"
+			case http.MethodPut:
+				return "UpdateSchedule"
+			case http.MethodDelete:
+				return "DeleteSchedule"
 			}
 		} else if method == http.MethodGet {
 			return "ListSchedules"
@@ -73,7 +73,7 @@ func extractSchedulerOperation(r *http.Request) string {
 	return ""
 }
 
-func extractSchedulerPathParams(path string, method string, params map[string]interface{}) {
+func extractSchedulerPathParams(path string, params map[string]interface{}) {
 	if TagsRouteService(path) == "scheduler" {
 		if _, ok := params["resourceArn"]; !ok {
 			params["resourceArn"] = strings.TrimPrefix(path, "/tags/")
@@ -82,43 +82,18 @@ func extractSchedulerPathParams(path string, method string, params map[string]in
 
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 
+	// The depth guards mirror extractSchedulerOperation: the model defines
+	// no sub-resource under /schedule-groups/{Name} or /schedules/{Name},
+	// so deeper paths stay unrouted and bind no path parameter.
 	if len(parts) >= 2 && parts[0] == "schedule-groups" {
-		if parts[1] != "" {
+		if len(parts) == 2 && parts[1] != "" {
 			params["Name"] = parts[1]
-			if method == http.MethodPost {
-				params["_operation"] = "CreateScheduleGroup"
-			} else if method == http.MethodGet {
-				params["_operation"] = "GetScheduleGroup"
-			} else if method == http.MethodDelete {
-				params["_operation"] = "DeleteScheduleGroup"
-			}
-		} else if method == http.MethodGet {
-			params["_operation"] = "ListScheduleGroups"
 		}
 	}
 
 	if len(parts) >= 2 && parts[0] == "schedules" {
-		if parts[1] != "" {
+		if len(parts) == 2 && parts[1] != "" {
 			params["Name"] = parts[1]
-			if len(parts) >= 3 && parts[2] == "tags" {
-				if method == http.MethodPost {
-					params["_operation"] = "TagResource"
-				} else if method == http.MethodDelete {
-					params["_operation"] = "UntagResource"
-				} else if method == http.MethodGet {
-					params["_operation"] = "ListTagsForResource"
-				}
-			} else {
-				if method == http.MethodPost {
-					params["_operation"] = "CreateSchedule"
-				} else if method == http.MethodGet {
-					params["_operation"] = "GetSchedule"
-				} else if method == http.MethodPut {
-					params["_operation"] = "UpdateSchedule"
-				} else if method == http.MethodDelete {
-					params["_operation"] = "DeleteSchedule"
-				}
-			}
 		}
 	}
 }
@@ -139,5 +114,5 @@ func (p *schedulerRESTParser) ExtractOperation(r *http.Request) string {
 
 // ExtractPathParams extracts URI-bound parameters from the Scheduler request path.
 func (p *schedulerRESTParser) ExtractPathParams(r *http.Request, params map[string]interface{}) {
-	extractSchedulerPathParams(r.URL.Path, r.Method, params)
+	extractSchedulerPathParams(r.URL.Path, params)
 }

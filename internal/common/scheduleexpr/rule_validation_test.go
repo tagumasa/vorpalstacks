@@ -77,6 +77,28 @@ func TestValidateExpressionSchedulerProfile(t *testing.T) {
 		{"cron dom asterisk dow question", "cron(0 9 * * ? *)", true},
 		{"cron dom question dow asterisk", "cron(0 9 ? * * *)", true},
 		{"cron dom value dow question", "cron(0 9 15 * ? *)", true},
+		// Cron fields carry their documented ranges in this profile too:
+		// an out-of-range field is rejected here instead of being accepted
+		// and never matching at evaluation time. Boundary values are
+		// valid; names and the L/W/# day wildcards stay accepted (the
+		// evaluation side understands them).
+		{"cron minute boundary", "cron(59 12 * * ? *)", true},
+		{"cron minute out of range", "cron(60 12 * * ? *)", false},
+		{"cron hour boundary", "cron(0 23 * * ? *)", true},
+		{"cron hour out of range", "cron(0 24 * * ? *)", false},
+		{"cron day of month boundary", "cron(0 12 31 * ? *)", true},
+		{"cron day of month out of range", "cron(0 12 32 * ? *)", false},
+		{"cron month name boundary", "cron(0 12 1 DEC ? *)", true},
+		{"cron month out of range", "cron(0 12 1 13 ? *)", false},
+		{"cron day of week name boundary", "cron(0 12 ? * SAT *)", true},
+		{"cron day of week out of range", "cron(0 12 ? * 8 *)", false},
+		{"cron year lower boundary", "cron(0 12 * * ? 1970)", true},
+		{"cron year upper boundary", "cron(0 12 * * ? 2199)", true},
+		{"cron year before range", "cron(0 12 * * ? 1969)", false},
+		{"cron year after range", "cron(0 12 * * ? 2200)", false},
+		{"cron inverted range", "cron(0 12 15-1 * ? *)", false},
+		{"cron month name accepted", "cron(0 12 1 JAN ? 2027)", true},
+		{"cron day wildcards accepted", "cron(0 0 L * ? *)", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

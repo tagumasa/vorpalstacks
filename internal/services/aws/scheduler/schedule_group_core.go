@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
@@ -31,12 +31,15 @@ type CreateScheduleGroupResult struct {
 	ScheduleGroupArn string
 }
 
-// DeleteScheduleGroupInput carries the DeleteScheduleGroup request. The
-// wire member ClientToken is not carried here: the operation's
-// idempotency is realised by the DELETING-state handling, so a repeated
-// delete with the same token returns success without a second sweep.
+// DeleteScheduleGroupInput carries the DeleteScheduleGroup request.
+// ClientToken preserves the wire member's idempotency semantics
+// (@length(1,64), @pattern): an invalid token is rejected, and a replayed
+// token reports the first deletion's outcome instead of surfacing not-found
+// for a purged group — the same protocol DeleteSchedule carries, layered
+// over the DELETING-state idempotency the operation already has.
 type DeleteScheduleGroupInput struct {
-	Name string
+	Name        string
+	ClientToken string
 }
 
 // GetScheduleGroupInput carries the GetScheduleGroup request.
@@ -53,15 +56,6 @@ type GetScheduleGroupResult struct {
 	LastModificationDate time.Time
 }
 
-// ScheduleGroupSummary is one list entry of ListScheduleGroups.
-type ScheduleGroupSummary struct {
-	Arn                  string
-	Name                 string
-	State                string
-	CreationDate         *time.Time
-	LastModificationDate *time.Time
-}
-
 // ListScheduleGroupsInput carries the ListScheduleGroups request. MaxResults
 // is nil when the member was absent; the Core applies the default page size.
 type ListScheduleGroupsInput struct {
@@ -71,16 +65,19 @@ type ListScheduleGroupsInput struct {
 	NextToken  string
 }
 
-// ListScheduleGroupsResult carries the ListScheduleGroups response.
+// ListScheduleGroupsResult carries the ListScheduleGroups response. The list
+// path reuses the store's summary type, the same convention the schedule
+// listing follows — the summary is a projection of the store record, with no
+// service-side transformation.
 type ListScheduleGroupsResult struct {
-	ScheduleGroups []ScheduleGroupSummary
+	ScheduleGroups []schedulerstore.ScheduleGroupSummary
 	NextToken      string
 }
 
 // createScheduleGroupCore validates and creates a schedule group, applies
 // its tags, and honours ClientToken idempotency. A tagging failure rolls
 // the group back so no orphan resource remains.
-func (s *SchedulerService) createScheduleGroupCore(ctx context.Context, reqCtx *request.RequestContext, in *CreateScheduleGroupInput) (*CreateScheduleGroupResult, error) {
+func (s *SchedulerService) createScheduleGroupCore(ctx context.Context, store *schedulerstore.SchedulerStore, in *CreateScheduleGroupInput) (*CreateScheduleGroupResult, error) {
 	if in.Name == "" || !namePattern.MatchString(in.Name) {
 		return nil, ErrValidation
 	}
@@ -90,30 +87,18 @@ func (s *SchedulerService) createScheduleGroupCore(ctx context.Context, reqCtx *
 		return nil, err
 	}
 
-	store, err := s.store(reqCtx)
+	group := &schedulerstore.ScheduleGroup{Name: in.Name}
+
+	replayArn, releaseToken, err := claimClientToken(store, in.ClientToken, store.BuildScheduleGroupARN(in.Name), "schedule-group")
 	if err != nil {
 		return nil, err
 	}
-
-	group := &schedulerstore.ScheduleGroup{Name: in.Name}
-
-	tokenClaimed := false
-	var expectedArn string
-	if in.ClientToken != "" {
-		if err := validateClientToken(in.ClientToken); err != nil {
-			return nil, err
-		}
-		expectedArn = store.BuildScheduleGroupARN(in.Name)
-		if entry, created := store.ClientTokens().LookupOrClaim(in.ClientToken, expectedArn, "schedule-group"); !created {
-			return &CreateScheduleGroupResult{ScheduleGroupArn: entry.ResourceArn}, nil
-		}
-		tokenClaimed = true
+	if replayArn != "" {
+		return &CreateScheduleGroupResult{ScheduleGroupArn: replayArn}, nil
 	}
 
 	if err := store.CreateScheduleGroup(ctx, group); err != nil {
-		if tokenClaimed {
-			store.ClientTokens().Release(in.ClientToken, expectedArn, "schedule-group")
-		}
+		releaseToken()
 		if err == schedulerstore.ErrScheduleGroupAlreadyExists {
 			return nil, ErrScheduleGroupAlreadyExists
 		}
@@ -128,9 +113,7 @@ func (s *SchedulerService) createScheduleGroupCore(ctx context.Context, reqCtx *
 			logs.Warn("Failed to tag schedule group, rolling back",
 				logs.String("arn", group.ARN),
 				logs.String("error", err.Error()))
-			if tokenClaimed {
-				store.ClientTokens().Release(in.ClientToken, expectedArn, "schedule-group")
-			}
+			releaseToken()
 			// Roll the group back: mark deleting and purge immediately
 			// (the group was just created and has no member schedules).
 			_ = store.MarkScheduleGroupDeleting(ctx, in.Name)
@@ -146,7 +129,7 @@ func (s *SchedulerService) createScheduleGroupCore(ctx context.Context, reqCtx *
 // deletion. Deleting a group cascades (the model documentation: the group
 // remains in a DELETING state until all of its schedules are deleted); the
 // engine's sweep deletes the member schedules and then purges the group.
-func (s *SchedulerService) deleteScheduleGroupCore(ctx context.Context, reqCtx *request.RequestContext, in *DeleteScheduleGroupInput) error {
+func (s *SchedulerService) deleteScheduleGroupCore(ctx context.Context, store *schedulerstore.SchedulerStore, in *DeleteScheduleGroupInput) error {
 	// The ScheduleGroupName shape (pattern + length, which also rejects an
 	// empty name) is validated before any resource lookup.
 	if err := validateScheduleGroupName(in.Name); err != nil {
@@ -154,19 +137,24 @@ func (s *SchedulerService) deleteScheduleGroupCore(ctx context.Context, reqCtx *
 	}
 	// The default group cannot be deleted (User Guide: "You can't delete,
 	// or edit, the default group").
-	if in.Name == "default" {
+	if in.Name == schedulerstore.DefaultGroupName {
 		return awserrors.NewValidationException("cannot delete the default schedule group")
 	}
-
-	store, err := s.store(reqCtx)
+	// A replayed idempotency token reports the first deletion's outcome;
+	// an unrecoverable failure releases the claim so a retry re-executes.
+	replayArn, releaseToken, err := claimClientToken(store, in.ClientToken, store.BuildScheduleGroupARN(in.Name), "schedule-group-delete")
 	if err != nil {
 		return err
+	}
+	if replayArn != "" {
+		return nil
 	}
 
 	group, err := store.GetScheduleGroup(ctx, in.Name)
 	if err != nil {
+		releaseToken()
 		if err == schedulerstore.ErrScheduleGroupNotFound {
-			return ErrScheduleGroupNotFound
+			return scheduleGroupNotFound(in.Name)
 		}
 		logs.Debug("Failed to get schedule group", logs.String("name", in.Name), logs.String("error", err.Error()))
 		return ErrInternalServer
@@ -178,8 +166,9 @@ func (s *SchedulerService) deleteScheduleGroupCore(ctx context.Context, reqCtx *
 	}
 
 	if err := store.MarkScheduleGroupDeleting(ctx, in.Name); err != nil {
+		releaseToken()
 		if err == schedulerstore.ErrScheduleGroupNotFound {
-			return ErrScheduleGroupNotFound
+			return scheduleGroupNotFound(in.Name)
 		}
 		logs.Debug("Failed to mark schedule group deleting", logs.String("name", in.Name), logs.String("error", err.Error()))
 		return ErrInternalServer
@@ -188,22 +177,17 @@ func (s *SchedulerService) deleteScheduleGroupCore(ctx context.Context, reqCtx *
 }
 
 // getScheduleGroupCore validates and retrieves a schedule group.
-func (s *SchedulerService) getScheduleGroupCore(ctx context.Context, reqCtx *request.RequestContext, in *GetScheduleGroupInput) (*GetScheduleGroupResult, error) {
+func (s *SchedulerService) getScheduleGroupCore(ctx context.Context, store *schedulerstore.SchedulerStore, in *GetScheduleGroupInput) (*GetScheduleGroupResult, error) {
 	// The ScheduleGroupName shape (pattern + length, which also rejects an
 	// empty name) is validated before any resource lookup.
 	if err := validateScheduleGroupName(in.Name); err != nil {
 		return nil, err
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	group, err := store.GetScheduleGroup(ctx, in.Name)
 	if err != nil {
 		if err == schedulerstore.ErrScheduleGroupNotFound {
-			return nil, ErrScheduleGroupNotFound
+			return nil, scheduleGroupNotFound(in.Name)
 		}
 		logs.Debug("Failed to get schedule group", logs.String("name", in.Name), logs.String("error", err.Error()))
 		return nil, ErrInternalServer
@@ -221,7 +205,7 @@ func (s *SchedulerService) getScheduleGroupCore(ctx context.Context, reqCtx *req
 // listScheduleGroupsCore validates the filter and paging parameters and
 // lists schedule groups. An absent MaxResults is defaulted to the model's
 // page default; an explicitly invalid value is rejected.
-func (s *SchedulerService) listScheduleGroupsCore(ctx context.Context, reqCtx *request.RequestContext, in *ListScheduleGroupsInput) (*ListScheduleGroupsResult, error) {
+func (s *SchedulerService) listScheduleGroupsCore(ctx context.Context, store *schedulerstore.SchedulerStore, in *ListScheduleGroupsInput) (*ListScheduleGroupsResult, error) {
 	maxResults, err := resolveListMaxResults(in.MaxResults)
 	if err != nil {
 		return nil, err
@@ -233,29 +217,13 @@ func (s *SchedulerService) listScheduleGroupsCore(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	result, err := store.ListScheduleGroups(ctx, in.NamePrefix, maxResults, in.NextToken)
 	if err != nil {
 		logs.Debug("Failed to list schedule groups", logs.String("error", err.Error()))
 		return nil, ErrInternalServer
 	}
-
-	groups := make([]ScheduleGroupSummary, len(result.ScheduleGroups))
-	for i, g := range result.ScheduleGroups {
-		groups[i] = ScheduleGroupSummary{
-			Arn:                  g.Arn,
-			Name:                 g.Name,
-			State:                string(g.State),
-			CreationDate:         g.CreationDate,
-			LastModificationDate: g.LastModificationDate,
-		}
-	}
 	return &ListScheduleGroupsResult{
-		ScheduleGroups: groups,
+		ScheduleGroups: result.ScheduleGroups,
 		NextToken:      result.NextToken,
 	}, nil
 }
@@ -263,26 +231,29 @@ func (s *SchedulerService) listScheduleGroupsCore(ctx context.Context, reqCtx *r
 // scheduleGroupArnToName validates that the ARN addresses a schedule group
 // (the only taggable scheduler resource) and returns the group name.
 func scheduleGroupArnToName(resourceArn string) (string, error) {
+	// TagResourceArn @length(1, 1011) in characters: an over-length ARN is
+	// a validation failure, not a missing resource. The shape's pattern
+	// charset is ASCII, so conforming ARNs never rely on the counting
+	// basis; the check still counts characters like every @length bound.
+	if utf8.RuneCountInString(resourceArn) > maxTagResourceArnLength {
+		return "", ErrValidation
+	}
 	_, service, _, _, resource := svcarn.SplitARN(resourceArn)
 	if service != "scheduler" {
 		return "", ErrValidation
 	}
 	groupName, ok := strings.CutPrefix(resource, "schedule-group/")
-	if !ok || groupName == "" {
+	if !ok {
 		return "", ErrValidation
 	}
-	// The TagResourceArn pattern constrains the group-name portion to
-	// [0-9a-zA-Z-_.]+ ; a malformed ARN is a validation failure, not a
-	// missing resource.
-	for _, r := range groupName {
-		switch {
-		case r >= '0' && r <= '9':
-		case r >= 'a' && r <= 'z':
-		case r >= 'A' && r <= 'Z':
-		case r == '-' || r == '_' || r == '.':
-		default:
-			return "", ErrValidation
-		}
+	// The ARN-embedded group name carries the ScheduleGroupName shape
+	// constraints: TagResourceArn's pattern supplies the charset, and the
+	// 1-64 bound holds because a tag target can only name a group whose
+	// creation passed the same bound — namePattern is the single
+	// definition of that grammar. A malformed ARN is a validation
+	// failure, not a missing resource.
+	if !namePattern.MatchString(groupName) {
+		return "", ErrValidation
 	}
 	return groupName, nil
 }
@@ -292,18 +263,14 @@ func scheduleGroupArnToName(resourceArn string) (string, error) {
 // TagResourceArn Smithy pattern accepts schedule-group ARNs only, and the
 // TagResource documentation states "You can only assign tags to schedule
 // groups."
-func (s *SchedulerService) validateScheduleGroupTagTargetCore(ctx context.Context, reqCtx *request.RequestContext, resourceArn string) error {
+func (s *SchedulerService) validateScheduleGroupTagTargetCore(ctx context.Context, store *schedulerstore.SchedulerStore, resourceArn string) error {
 	groupName, err := scheduleGroupArnToName(resourceArn)
-	if err != nil {
-		return err
-	}
-	store, err := s.store(reqCtx)
 	if err != nil {
 		return err
 	}
 	if _, err := store.GetScheduleGroup(ctx, groupName); err != nil {
 		if err == schedulerstore.ErrScheduleGroupNotFound {
-			return ErrScheduleGroupNotFound
+			return scheduleGroupNotFound(groupName)
 		}
 		logs.Debug("Failed to get schedule group", logs.String("name", groupName), logs.String("error", err.Error()))
 		return ErrInternalServer
@@ -313,11 +280,7 @@ func (s *SchedulerService) validateScheduleGroupTagTargetCore(ctx context.Contex
 
 // tagScheduleGroupCore applies tags to the schedule group addressed by the
 // ARN.
-func (s *SchedulerService) tagScheduleGroupCore(ctx context.Context, reqCtx *request.RequestContext, resourceArn string, tags []tagutil.Tag) error {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return err
-	}
+func (s *SchedulerService) tagScheduleGroupCore(ctx context.Context, store *schedulerstore.SchedulerStore, resourceArn string, tags []tagutil.Tag) error {
 	if err := store.TagFromSlice(resourceArn, tags); err != nil {
 		logs.Debug("Failed to tag resource", logs.String("arn", resourceArn), logs.String("error", err.Error()))
 		return ErrInternalServer
@@ -327,11 +290,7 @@ func (s *SchedulerService) tagScheduleGroupCore(ctx context.Context, reqCtx *req
 
 // untagScheduleGroupCore removes tag keys from the schedule group addressed
 // by the ARN.
-func (s *SchedulerService) untagScheduleGroupCore(ctx context.Context, reqCtx *request.RequestContext, resourceArn string, tagKeys []string) error {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return err
-	}
+func (s *SchedulerService) untagScheduleGroupCore(ctx context.Context, store *schedulerstore.SchedulerStore, resourceArn string, tagKeys []string) error {
 	if err := store.Untag(resourceArn, tagKeys); err != nil {
 		logs.Debug("Failed to untag resource", logs.String("arn", resourceArn), logs.String("error", err.Error()))
 		return ErrInternalServer
@@ -341,11 +300,7 @@ func (s *SchedulerService) untagScheduleGroupCore(ctx context.Context, reqCtx *r
 
 // listScheduleGroupTagsCore lists the tags of the schedule group addressed
 // by the ARN.
-func (s *SchedulerService) listScheduleGroupTagsCore(ctx context.Context, reqCtx *request.RequestContext, resourceArn string) ([]tagutil.Tag, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
+func (s *SchedulerService) listScheduleGroupTagsCore(ctx context.Context, store *schedulerstore.SchedulerStore, resourceArn string) ([]tagutil.Tag, error) {
 	tags, err := store.ListAsSlice(resourceArn)
 	if err != nil {
 		logs.Debug("Failed to list tags", logs.String("arn", resourceArn), logs.String("error", err.Error()))
@@ -357,20 +312,20 @@ func (s *SchedulerService) listScheduleGroupTagsCore(ctx context.Context, reqCtx
 // scheduleGroupTagConfig builds the shared tag-handler configuration; every
 // closure delegates to a Core function so the handler files carry no store
 // access.
-func (s *SchedulerService) scheduleGroupTagConfig(reqCtx *request.RequestContext) tagutil.TagHandlerConfig {
+func (s *SchedulerService) scheduleGroupTagConfig(store *schedulerstore.SchedulerStore) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
 		ValidateResource: func(ctx context.Context, resourceKey string) error {
-			return s.validateScheduleGroupTagTargetCore(ctx, reqCtx, resourceKey)
+			return s.validateScheduleGroupTagTargetCore(ctx, store, resourceKey)
 		},
 		TagFunc: func(ctx context.Context, resourceKey string, tags []tagutil.Tag) error {
-			return s.tagScheduleGroupCore(ctx, reqCtx, resourceKey, tags)
+			return s.tagScheduleGroupCore(ctx, store, resourceKey, tags)
 		},
 		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
-			return s.untagScheduleGroupCore(ctx, reqCtx, resourceKey, tagKeys)
+			return s.untagScheduleGroupCore(ctx, store, resourceKey, tagKeys)
 		},
 		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
-			return s.listScheduleGroupTagsCore(ctx, reqCtx, resourceKey)
+			return s.listScheduleGroupTagsCore(ctx, store, resourceKey)
 		},
 		ValidateTagsFunc: ValidateScheduleGroupTags,
 		EmptyResponse:    func() (interface{}, error) { return response.EmptyResponse(), nil },

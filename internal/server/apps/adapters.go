@@ -270,11 +270,6 @@ func (a *kinesisInvokerAdapter) getStore(region string) (*storekinesis.KinesisSt
 	return a.provider.GetStoreForRegion(region)
 }
 
-// defaultStore returns the KinesisStore of the adapter's default region.
-func (a *kinesisInvokerAdapter) defaultStore() (*storekinesis.KinesisStore, error) {
-	return a.provider.GetStoreForRegion(a.defaultRegion)
-}
-
 // StreamExists reports whether the stream addressed by the ARN exists in the
 // given region. A DynamoDB streaming destination may only target a stream in
 // the table's own region, so the ARN region must match the requested region.
@@ -303,9 +298,11 @@ func (a *kinesisInvokerAdapter) StreamExists(_ context.Context, region, streamAR
 	return true, nil
 }
 
-// ListShards lists the shards in the given Kinesis stream.
-func (a *kinesisInvokerAdapter) ListShards(_ context.Context, streamName string) ([]invokers.ShardInfo, error) {
-	store, err := a.defaultStore()
+// ListShards lists the shards of the given Kinesis stream in the given
+// region (empty = the adapter's default region, for callers with no region
+// information).
+func (a *kinesisInvokerAdapter) ListShards(_ context.Context, region, streamName string) ([]invokers.ShardInfo, error) {
+	store, err := a.getStore(region)
 	if err != nil {
 		return nil, err
 	}
@@ -327,9 +324,11 @@ func (a *kinesisInvokerAdapter) ListShards(_ context.Context, streamName string)
 	return out, nil
 }
 
-// PutRecord puts a record into the given Kinesis stream on an open shard.
-func (a *kinesisInvokerAdapter) PutRecord(_ context.Context, streamName string, partitionKey string, data []byte) (string, error) {
-	store, err := a.defaultStore()
+// PutRecord puts a record into the given Kinesis stream on an open shard,
+// resolving the regional store from the caller's region (empty = the
+// adapter's default region, for callers with no region information).
+func (a *kinesisInvokerAdapter) PutRecord(_ context.Context, region, streamName, partitionKey string, data []byte) (string, error) {
+	store, err := a.getStore(region)
 	if err != nil {
 		return "", err
 	}
@@ -348,10 +347,12 @@ func (a *kinesisInvokerAdapter) PutRecord(_ context.Context, streamName string, 
 	return record.SequenceNumber, nil
 }
 
-// CreateShardIterator creates a shard iterator for the given stream and shard.
-// The timestamp parameter is honoured for AT_TIMESTAMP iterators.
-func (a *kinesisInvokerAdapter) CreateShardIterator(_ context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (string, error) {
-	store, err := a.defaultStore()
+// CreateShardIterator creates a shard iterator for the given stream and
+// shard in the given region (empty = the adapter's default region, for
+// callers with no region information). The timestamp parameter is honoured
+// for AT_TIMESTAMP iterators.
+func (a *kinesisInvokerAdapter) CreateShardIterator(_ context.Context, region, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (string, error) {
+	store, err := a.getStore(region)
 	if err != nil {
 		return "", err
 	}
@@ -362,14 +363,16 @@ func (a *kinesisInvokerAdapter) CreateShardIterator(_ context.Context, streamNam
 	return iterator.SequenceNumber, nil
 }
 
-// GetRecords retrieves records from a Kinesis shard strictly after the
-// given sequence number. The poller resumes from checkpoints and chains
-// batch reads, so re-including the boundary record would redeliver it on
-// every cycle; the public API keeps the same exclusive semantics for
-// every iterator type except AT_SEQUENCE_NUMBER. includeStart re-enables
-// the inclusive read for the poller's initial LATEST anchor.
-func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]invokers.KinesisRecord, string, error) {
-	store, err := a.defaultStore()
+// GetRecords retrieves records from a Kinesis shard in the given region
+// (empty = the adapter's default region, for callers with no region
+// information), strictly after the given sequence number. The poller
+// resumes from checkpoints and chains batch reads, so re-including the
+// boundary record would redeliver it on every cycle; the public API keeps
+// the same exclusive semantics for every iterator type except
+// AT_SEQUENCE_NUMBER. includeStart re-enables the inclusive read for the
+// poller's initial LATEST anchor.
+func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, region, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]invokers.KinesisRecord, string, error) {
+	store, err := a.getStore(region)
 	if err != nil {
 		return nil, "", err
 	}

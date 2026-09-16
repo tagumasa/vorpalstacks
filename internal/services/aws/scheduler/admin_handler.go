@@ -70,10 +70,16 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 		summaries = append(summaries, summary)
 	}
 
-	return connect.NewResponse(&pb.ListSchedulesOutput{
+	out := &pb.ListSchedulesOutput{
 		Schedules: summaries,
-		Nexttoken: proto.String(result.NextToken),
-	}), nil
+	}
+	// The model documents NextToken as "If the value is null, there are no
+	// more results": an exhausted listing omits the member instead of
+	// emitting an empty token.
+	if result.NextToken != "" {
+		out.Nexttoken = proto.String(result.NextToken)
+	}
+	return connect.NewResponse(out), nil
 }
 
 // CreateSchedule creates a new schedule via the admin console.

@@ -42,3 +42,46 @@ func TestValidateTagKeyUnicodeLengths(t *testing.T) {
 		t.Error("257-character CJK tag value accepted")
 	}
 }
+
+// TestValidateScheduleExpressionCronGrammar pins the full creation-time
+// grammar: a cron() ScheduleExpression carries the shared AWS cron field
+// grammar (an out-of-range field is rejected instead of being stored
+// accepted and never triggering a run), the schedule is a cron or rate
+// expression alone (the at() one-shot is an EventBridge Scheduler form),
+// and rate values agree with their unit with no upper bound (the Timestream
+// guide documents none).
+func TestValidateScheduleExpressionCronGrammar(t *testing.T) {
+	valid := []string{
+		"cron(0 12 * * ? *)",
+		"cron(59 23 31 DEC ? 2199)",
+		"cron(0 0 L * ? *)",
+		"rate(5 minutes)",
+		"rate(1 minute)",
+	}
+	for _, expr := range valid {
+		if err := validateScheduleExpression(expr); err != nil {
+			t.Errorf("valid expression %q rejected: %v", expr, err)
+		}
+	}
+	invalid := []string{
+		"cron(60 12 * * ? *)",
+		"cron(0 24 * * ? *)",
+		"cron(0 12 32 * ? *)",
+		"cron(0 12 1 13 ? *)",
+		"cron(0 12 ? * 8 *)",
+		"cron(0 12 * * ? 2200)",
+		// Both day fields specified violates the ?-exclusivity rule.
+		"cron(0 12 15 * MON 2027)",
+		// The at() one-shot is not a Timestream schedule form.
+		"at(2026-01-01T00:00:00)",
+		// A malformed rate body or a value/unit disagreement is rejected.
+		"rate(bogus)",
+		"rate(5 minute)",
+		"rate(0 minutes)",
+	}
+	for _, expr := range invalid {
+		if err := validateScheduleExpression(expr); err == nil {
+			t.Errorf("invalid expression %q accepted", expr)
+		}
+	}
+}

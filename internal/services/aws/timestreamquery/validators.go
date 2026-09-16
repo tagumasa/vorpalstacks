@@ -7,6 +7,7 @@ import (
 
 	"vorpalstacks/internal/common/bucketname"
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/scheduleexpr"
 )
 
 // ----------------------------------------------------------------------------
@@ -164,11 +165,22 @@ func validateQueryString(qs string) error {
 }
 
 // validateScheduleExpression validates a ScheduleExpression against the
-// Smithy ScheduleExpression shape: length {1,256}.
+// Smithy ScheduleExpression shape: length {1,256} counted in Unicode
+// characters. Timestream supports cron and rate expressions alone ("This
+// can be a cron expression or a rate expression", model documentation;
+// "Two ways to specify the schedule expressions are cron and rate",
+// Timestream developer guide) — the at() one-shot is an EventBridge
+// Scheduler form and is rejected here, and the rate value/unit agreement
+// is enforced with no upper bound (the guide documents none; only a
+// minimum precision of one minute).
 func validateScheduleExpression(expr string) error {
-	if len(expr) < 1 || len(expr) > maxScheduleExpression {
+	if n := utf8.RuneCountInString(expr); n < 1 || n > maxScheduleExpression {
 		return awserrors.NewAWSError("ValidationException",
 			"ScheduleExpression must be between 1 and 256 characters.", 400)
+	}
+	if !scheduleexpr.ValidateCronOrRateExpression(expr) {
+		return awserrors.NewAWSError("ValidationException",
+			"ScheduleExpression must be a cron or rate expression.", 400)
 	}
 	return nil
 }

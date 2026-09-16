@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -36,6 +37,7 @@ const (
 	maxTagValueLength          = tagutil.MaxTagValueLength  // TagValueType @length(min=0, max=256)
 	maxKmsKeyIdLength          = 2048                       // KmsKeyIdType @length(min=0, max=2048)
 	maxRotationLambdaARNLength = 2048                       // RotationLambdaARNType @length(min=0, max=2048)
+	maxRotationScheduleExprLen = 256                        // ScheduleExpressionType @length(min=1, max=256)
 	maxExcludeCharactersLength = 4096                       // ExcludeCharactersType @length(min=0, max=4096)
 	maxListSecretsResults      = 100                        // MaxResultsType @range(1-100) — ListSecrets, ListSecretVersionIds
 	maxBatchSecretsResults     = 20                         // MaxResultsBatchType @range(1-20) — BatchGetSecretValue
@@ -400,19 +402,32 @@ func validateDuration(d string) error {
 	return nil
 }
 
+// minRotationInterval is the shortest rate() interval Secrets Manager
+// rotates on: "You can rotate a secret as often as every four hours"
+// (RotationRules.ScheduleExpression, model documentation).
+const minRotationInterval = 4 * time.Hour
+
+// rotationRateUnitPattern binds the rotation-specific rate() grammar: the
+// interval is "in hours or days ... for example rate(12 hours) or
+// rate(10 days)" (model documentation) — the minute units the shared
+// schedule grammar allows are not rotation intervals.
+var rotationRateUnitPattern = regexp.MustCompile(`^rate\(\d+\s+(hours?|days?)\)$`)
+
 // validateScheduleExpression validates the RotationRules ScheduleExpression
-// against the Smithy ScheduleExpressionType @length(min=1, max=256) and
+// against the Smithy ScheduleExpressionType @length(min=1, max=256) —
+// measured in characters, the platform's expression-length basis — and
 // @pattern constraints, and structurally against the shared AWS schedule
 // expression engine. Secrets Manager schedules are rate() or cron()
 // expressions (the at() form is an EventBridge Scheduler one-shot and is
-// not part of this contract).
+// not part of this contract); a rate() interval is in hours or days and
+// no shorter than the four-hour rotation floor.
 func validateScheduleExpression(expr string) error {
 	if expr == "" {
 		return nil
 	}
-	if len(expr) > 256 {
+	if utf8.RuneCountInString(expr) > maxRotationScheduleExprLen {
 		return awserrors.NewAWSError("InvalidParameterException",
-			"ScheduleExpression must not exceed 256 characters.", http.StatusBadRequest)
+			fmt.Sprintf("ScheduleExpression must not exceed %d characters.", maxRotationScheduleExprLen), http.StatusBadRequest)
 	}
 	if !scheduleExprPattern.MatchString(expr) {
 		return awserrors.NewAWSError("InvalidParameterException",
@@ -425,6 +440,16 @@ func validateScheduleExpression(expr string) error {
 	if !scheduleexpr.ValidateExpression(expr) {
 		return awserrors.NewAWSError("InvalidParameterException",
 			fmt.Sprintf("ScheduleExpression is not a valid rate() or cron() expression: '%s'.", expr), http.StatusBadRequest)
+	}
+	if strings.HasPrefix(expr, "rate(") {
+		if !rotationRateUnitPattern.MatchString(expr) {
+			return awserrors.NewAWSError("InvalidParameterException",
+				fmt.Sprintf("ScheduleExpression rate() interval must be in hours or days, got '%s'.", expr), http.StatusBadRequest)
+		}
+		if interval, ok := scheduleexpr.ParseRateDuration(expr); !ok || interval < minRotationInterval {
+			return awserrors.NewAWSError("InvalidParameterException",
+				fmt.Sprintf("ScheduleExpression rate() interval must be at least four hours, got '%s'.", expr), http.StatusBadRequest)
+		}
 	}
 	return nil
 }

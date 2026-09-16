@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -12,8 +13,8 @@ import (
 )
 
 func parseTarget(params map[string]interface{}) (*schedulerstore.Target, error) {
-	targetData, _ := getMapField(params, "Target")
-	if targetData == nil {
+	targetData, ok := params["Target"]
+	if !ok || targetData == nil {
 		return nil, nil
 	}
 
@@ -24,7 +25,10 @@ func parseTarget(params map[string]interface{}) (*schedulerstore.Target, error) 
 
 	// Arn and RoleArn are required members of the Target shape; their
 	// absence is rejected by validateTarget in the Core validation path.
-	target := parseTargetFromMap(rawMap)
+	target, err := parseTargetFromMap(rawMap)
+	if err != nil {
+		return nil, err
+	}
 	return &target, nil
 }
 
@@ -59,255 +63,503 @@ func coerceToMap(v interface{}) (map[string]interface{}, error) {
 	}
 }
 
-func parseTargetFromMap(m map[string]interface{}) schedulerstore.Target {
+// parseTargetFromMap binds the Target body members to the member names the
+// model declares (Pascal at the Target level; the nested shapes use the
+// names the model gives them — see each nested parser). A present member
+// whose JSON type does not match the shape is a wire-format violation
+// reported to the caller, never a silently dropped value the Core validator
+// cannot see; an absent member flows through as the zero value and is
+// rejected by the Core validation path when the shape requires it.
+func parseTargetFromMap(m map[string]interface{}) (schedulerstore.Target, error) {
 	var target schedulerstore.Target
-	target.Arn = getStringFromMap(m, "arn", "Arn")
-	target.RoleArn = getStringFromMap(m, "roleArn", "RoleArn")
-	target.Input = getStringFromMap(m, "input", "Input")
+	var err error
 
-	if dl, ok := getMapField(m, "deadLetterConfig", "DeadLetterConfig"); ok {
-		target.DeadLetterConfig = &schedulerstore.DeadLetterConfig{
-			Arn: getStringFromMap(dl, "arn", "Arn"),
+	if target.Arn, err = stringMember(m, "Arn", "Target.Arn"); err != nil {
+		return target, err
+	}
+	if target.RoleArn, err = stringMember(m, "RoleArn", "Target.RoleArn"); err != nil {
+		return target, err
+	}
+	if target.Input, err = stringMember(m, "Input", "Target.Input"); err != nil {
+		return target, err
+	}
+
+	dl, err := mapMember(m, "DeadLetterConfig", "Target.DeadLetterConfig")
+	if err != nil {
+		return target, err
+	}
+	if dl != nil {
+		arn, err := stringMember(dl, "Arn", "Target.DeadLetterConfig.Arn")
+		if err != nil {
+			return target, err
+		}
+		target.DeadLetterConfig = &schedulerstore.DeadLetterConfig{Arn: arn}
+	}
+	rp, err := mapMember(m, "RetryPolicy", "Target.RetryPolicy")
+	if err != nil {
+		return target, err
+	}
+	if rp != nil {
+		if target.RetryPolicy, err = parseRetryPolicyFromMap(rp); err != nil {
+			return target, err
 		}
 	}
-	if rp, ok := getMapField(m, "retryPolicy", "RetryPolicy"); ok {
-		target.RetryPolicy = parseRetryPolicyFromMap(rp)
+	sqs, err := mapMember(m, "SqsParameters", "Target.SqsParameters")
+	if err != nil {
+		return target, err
 	}
-	if sqs, ok := getMapField(m, "sqsParameters", "SqsParameters"); ok {
-		target.SqsParameters = &schedulerstore.SqsParameters{
-			MessageGroupId: getStringFromMap(sqs, "messageGroupId", "MessageGroupId"),
+	if sqs != nil {
+		if target.SqsParameters, err = parseSqsParameters(sqs); err != nil {
+			return target, err
 		}
 	}
-	if ecs, ok := getMapField(m, "ecsParameters", "EcsParameters"); ok {
-		target.EcsParameters = parseEcsParameters(ecs)
+	ecs, err := mapMember(m, "EcsParameters", "Target.EcsParameters")
+	if err != nil {
+		return target, err
 	}
-	if eb, ok := getMapField(m, "eventBridgeParameters", "EventBridgeParameters"); ok {
-		target.EventBridgeParameters = parseEventBridgeParameters(eb)
+	if ecs != nil {
+		if target.EcsParameters, err = parseEcsParameters(ecs); err != nil {
+			return target, err
+		}
 	}
-	if kinesis, ok := getMapField(m, "kinesisParameters", "KinesisParameters"); ok {
-		target.KinesisParameters = parseKinesisParameters(kinesis)
+	eb, err := mapMember(m, "EventBridgeParameters", "Target.EventBridgeParameters")
+	if err != nil {
+		return target, err
 	}
-	return target
+	if eb != nil {
+		if target.EventBridgeParameters, err = parseEventBridgeParameters(eb); err != nil {
+			return target, err
+		}
+	}
+	kinesis, err := mapMember(m, "KinesisParameters", "Target.KinesisParameters")
+	if err != nil {
+		return target, err
+	}
+	if kinesis != nil {
+		if target.KinesisParameters, err = parseKinesisParameters(kinesis); err != nil {
+			return target, err
+		}
+	}
+	// SageMaker templated targets are permanently out of scope on this
+	// platform, so a present SageMakerPipelineParameters member is never a
+	// carryable value on an accepted target — it is reported like every
+	// other sub-parameter the target's service cannot use, instead of being
+	// silently dropped where the Core validator cannot see it.
+	if _, ok := m["SageMakerPipelineParameters"]; ok {
+		return target, awserrors.NewValidationException(
+			"SageMakerPipelineParameters can only be specified for SageMaker targets; SageMaker targets are not supported on this platform")
+	}
+	return target, nil
 }
 
-func getMapField(m map[string]interface{}, keys ...string) (map[string]interface{}, bool) {
-	for _, k := range keys {
-		if v, ok := m[k].(map[string]interface{}); ok {
-			return v, true
-		}
+// stringMember reads one modelled string member: an absent or null member
+// yields "" (required members are rejected by the Core validation path),
+// while a present value of another JSON type is a wire-format violation.
+// The path names the member for the error message.
+func stringMember(m map[string]interface{}, key, path string) (string, error) {
+	v, ok := m[key]
+	if !ok || v == nil {
+		return "", nil
 	}
-	return nil, false
+	s, ok := v.(string)
+	if !ok {
+		return "", awserrors.NewValidationException(fmt.Sprintf("%s must be a string", path))
+	}
+	return s, nil
 }
 
-func getStringFromMap(m map[string]interface{}, keys ...string) string {
-	for _, key := range keys {
-		if val, ok := m[key].(string); ok {
-			return val
-		}
+// mapMember reads one modelled structure member under the same absent/null
+// and type-mismatch rules as stringMember.
+func mapMember(m map[string]interface{}, key, path string) (map[string]interface{}, error) {
+	v, ok := m[key]
+	if !ok || v == nil {
+		return nil, nil
 	}
-	return ""
+	mp, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, awserrors.NewValidationException(fmt.Sprintf("%s must be a structure", path))
+	}
+	return mp, nil
 }
 
-func parseRetryPolicyFromMap(retryPolicy map[string]interface{}) *schedulerstore.RetryPolicy {
+// sliceMember reads one modelled list member under the same absent/null and
+// type-mismatch rules as stringMember.
+func sliceMember(m map[string]interface{}, key, path string) ([]interface{}, error) {
+	v, ok := m[key]
+	if !ok || v == nil {
+		return nil, nil
+	}
+	sl, ok := v.([]interface{})
+	if !ok {
+		return nil, awserrors.NewValidationException(fmt.Sprintf("%s must be a list", path))
+	}
+	return sl, nil
+}
+
+// numberMember reads one modelled numeric member; the boolean reports
+// presence so a zero stays distinguishable from an absent member.
+// encoding/json decodes every JSON number to float64 — the int/int32/int64
+// arms serve callers that build the map with Go-native values. A
+// fractional JSON number is a wire violation for the modelled integer
+// shapes (restJson1), reported rather than truncated into a reshaped
+// value.
+func numberMember(m map[string]interface{}, key, path string) (int, bool, error) {
+	v, ok := m[key]
+	if !ok || v == nil {
+		return 0, false, nil
+	}
+	switch n := v.(type) {
+	case float64:
+		if n != math.Trunc(n) {
+			return 0, false, awserrors.NewValidationException(fmt.Sprintf("%s must be an integer", path))
+		}
+		return int(n), true, nil
+	case int:
+		return n, true, nil
+	case int32:
+		return int(n), true, nil
+	case int64:
+		return int(n), true, nil
+	default:
+		return 0, false, awserrors.NewValidationException(fmt.Sprintf("%s must be a number", path))
+	}
+}
+
+// boolMember reads one modelled boolean member; nil means absent.
+func boolMember(m map[string]interface{}, key, path string) (*bool, error) {
+	v, ok := m[key]
+	if !ok || v == nil {
+		return nil, nil
+	}
+	b, ok := v.(bool)
+	if !ok {
+		return nil, awserrors.NewValidationException(fmt.Sprintf("%s must be a boolean", path))
+	}
+	return &b, nil
+}
+
+// stringSlice binds a modelled list of strings; a non-string entry is a
+// wire-format violation rather than a silently dropped value.
+func stringSlice(items []interface{}, path string) ([]string, error) {
+	out := make([]string, 0, len(items))
+	for i, item := range items {
+		s, ok := item.(string)
+		if !ok {
+			return nil, awserrors.NewValidationException(fmt.Sprintf("%s[%d] must be a string", path, i))
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}
+
+func parseRetryPolicyFromMap(retryPolicy map[string]interface{}) (*schedulerstore.RetryPolicy, error) {
 	rp := &schedulerstore.RetryPolicy{}
 	// Accept the raw values without range filtering. Range validation is
 	// performed by validateTarget in validators.go.
-	if val, ok := getFloatField(retryPolicy, "maximumEventAgeInSeconds", "MaximumEventAgeInSeconds"); ok {
+	if val, ok, err := numberMember(retryPolicy, "MaximumEventAgeInSeconds", "RetryPolicy.MaximumEventAgeInSeconds"); err != nil {
+		return nil, err
+	} else if ok {
 		rp.MaximumEventAgeInSeconds = &val
 	}
-	if val, ok := getFloatField(retryPolicy, "maximumRetryAttempts", "MaximumRetryAttempts"); ok {
+	if val, ok, err := numberMember(retryPolicy, "MaximumRetryAttempts", "RetryPolicy.MaximumRetryAttempts"); err != nil {
+		return nil, err
+	} else if ok {
 		rp.MaximumRetryAttempts = &val
 	}
-	return rp
+	return rp, nil
 }
 
-func getFloatField(m map[string]interface{}, keys ...string) (int, bool) {
-	for _, k := range keys {
-		switch v := m[k].(type) {
-		case float64:
-			return int(v), true
-		case int:
-			return v, true
-		case int32:
-			return int(v), true
-		case int64:
-			return int(v), true
-		}
+// parseSqsParameters binds SqsParameters to its single modelled member.
+// MessageGroupId carries @length(1, 128): an explicitly present empty
+// string is out of bounds on the wire, where presence is still visible —
+// distinct from an absent member, which leaves the DTO empty and lets
+// delivery fall back to the schedule name for FIFO queues.
+func parseSqsParameters(m map[string]interface{}) (*schedulerstore.SqsParameters, error) {
+	sqs := &schedulerstore.SqsParameters{}
+	v, ok := m["MessageGroupId"]
+	if !ok || v == nil {
+		return sqs, nil
 	}
-	return 0, false
+	s, ok := v.(string)
+	if !ok {
+		return nil, awserrors.NewValidationException("SqsParameters.MessageGroupId must be a string")
+	}
+	if s == "" {
+		return nil, awserrors.NewValidationException(fmt.Sprintf(
+			"SqsParameters.MessageGroupId must be 1-%d characters", MaxMessageGroupIdLength))
+	}
+	sqs.MessageGroupId = s
+	return sqs, nil
 }
 
-func parseEcsParameters(data map[string]interface{}) *schedulerstore.EcsParameters {
-	params := &schedulerstore.EcsParameters{
-		TaskDefinitionArn: getStringFromMap(data, "taskDefinitionArn", "TaskDefinitionArn"),
-		LaunchType:        getStringFromMap(data, "launchType", "LaunchType"),
-		PlatformVersion:   getStringFromMap(data, "platformVersion", "PlatformVersion"),
-		Group:             getStringFromMap(data, "group", "Group"),
-		PropagateTags:     getStringFromMap(data, "propagateTags", "PropagateTags"),
-		ReferenceId:       getStringFromMap(data, "referenceId", "ReferenceId"),
+func parseEcsParameters(data map[string]interface{}) (*schedulerstore.EcsParameters, error) {
+	params := &schedulerstore.EcsParameters{}
+	var err error
+	if params.TaskDefinitionArn, err = stringMember(data, "TaskDefinitionArn", "EcsParameters.TaskDefinitionArn"); err != nil {
+		return nil, err
 	}
-	if val, ok := getFloatField(data, "taskCount", "TaskCount"); ok {
+	if params.LaunchType, err = stringMember(data, "LaunchType", "EcsParameters.LaunchType"); err != nil {
+		return nil, err
+	}
+	if params.PlatformVersion, err = stringMember(data, "PlatformVersion", "EcsParameters.PlatformVersion"); err != nil {
+		return nil, err
+	}
+	if params.Group, err = stringMember(data, "Group", "EcsParameters.Group"); err != nil {
+		return nil, err
+	}
+	if params.PropagateTags, err = stringMember(data, "PropagateTags", "EcsParameters.PropagateTags"); err != nil {
+		return nil, err
+	}
+	if params.ReferenceId, err = stringMember(data, "ReferenceId", "EcsParameters.ReferenceId"); err != nil {
+		return nil, err
+	}
+	if val, ok, err := numberMember(data, "TaskCount", "EcsParameters.TaskCount"); err != nil {
+		return nil, err
+	} else if ok {
 		params.TaskCount = &val
 	}
-	if val, ok := getBoolField(data, "enableECSManagedTags", "EnableECSManagedTags"); ok {
-		params.EnableECSManagedTags = &val
+	if val, err := boolMember(data, "EnableECSManagedTags", "EcsParameters.EnableECSManagedTags"); err != nil {
+		return nil, err
+	} else if val != nil {
+		params.EnableECSManagedTags = val
 	}
-	if val, ok := getBoolField(data, "enableExecuteCommand", "EnableExecuteCommand"); ok {
-		params.EnableExecuteCommand = &val
+	if val, err := boolMember(data, "EnableExecuteCommand", "EcsParameters.EnableExecuteCommand"); err != nil {
+		return nil, err
+	} else if val != nil {
+		params.EnableExecuteCommand = val
 	}
-	if nc, ok := getMapField(data, "networkConfiguration", "NetworkConfiguration"); ok {
-		params.NetworkConfiguration = parseNetworkConfiguration(nc)
+	nc, err := mapMember(data, "NetworkConfiguration", "EcsParameters.NetworkConfiguration")
+	if err != nil {
+		return nil, err
 	}
-	if cps, ok := getSliceField(data, "capacityProviderStrategy", "CapacityProviderStrategy"); ok {
-		params.CapacityProviderStrategy = parseCapacityProviderStrategy(cps)
-	}
-	if pc, ok := getSliceField(data, "placementConstraints", "PlacementConstraints"); ok {
-		params.PlacementConstraints = parsePlacementConstraints(pc)
-	}
-	if ps, ok := getSliceField(data, "placementStrategy", "PlacementStrategy"); ok {
-		params.PlacementStrategy = parsePlacementStrategy(ps)
-	}
-	if tags, ok := getSliceField(data, "tags", "Tags"); ok {
-		params.Tags = parseEcsTags(tags)
-	}
-	return params
-}
-
-func getBoolField(m map[string]interface{}, keys ...string) (bool, bool) {
-	for _, k := range keys {
-		if v, ok := m[k].(bool); ok {
-			return v, true
+	if nc != nil {
+		if params.NetworkConfiguration, err = parseNetworkConfiguration(nc); err != nil {
+			return nil, err
 		}
 	}
-	return false, false
-}
-
-func getSliceField(m map[string]interface{}, keys ...string) ([]interface{}, bool) {
-	for _, k := range keys {
-		if v, ok := m[k].([]interface{}); ok {
-			return v, true
+	cps, err := sliceMember(data, "CapacityProviderStrategy", "EcsParameters.CapacityProviderStrategy")
+	if err != nil {
+		return nil, err
+	}
+	if cps != nil {
+		if params.CapacityProviderStrategy, err = parseCapacityProviderStrategy(cps); err != nil {
+			return nil, err
 		}
 	}
-	return nil, false
-}
-
-func parseNetworkConfiguration(data map[string]interface{}) *schedulerstore.NetworkConfiguration {
-	nc := &schedulerstore.NetworkConfiguration{}
-	if vpc, ok := getMapField(data, "awsvpcConfiguration", "AwsvpcConfiguration"); ok {
-		nc.AwsVpcConfiguration = parseAwsVpcConfiguration(vpc)
+	pc, err := sliceMember(data, "PlacementConstraints", "EcsParameters.PlacementConstraints")
+	if err != nil {
+		return nil, err
 	}
-	return nc
-}
-
-func parseAwsVpcConfiguration(data map[string]interface{}) *schedulerstore.AwsVpcConfiguration {
-	vpc := &schedulerstore.AwsVpcConfiguration{
-		AssignPublicIp: getStringFromMap(data, "assignPublicIp", "AssignPublicIp"),
-	}
-	if subnets, ok := getSliceField(data, "subnets", "Subnets"); ok {
-		for _, s := range subnets {
-			if str, ok := s.(string); ok {
-				vpc.Subnets = append(vpc.Subnets, str)
-			}
+	if pc != nil {
+		if params.PlacementConstraints, err = parsePlacementConstraints(pc); err != nil {
+			return nil, err
 		}
 	}
-	if sgs, ok := getSliceField(data, "securityGroups", "SecurityGroups"); ok {
-		// Allocate before appending so an explicitly empty list stays
-		// distinguishable from an omitted member: the model constrains a
-		// provided SecurityGroups list to at least one entry, while an
+	ps, err := sliceMember(data, "PlacementStrategy", "EcsParameters.PlacementStrategy")
+	if err != nil {
+		return nil, err
+	}
+	if ps != nil {
+		if params.PlacementStrategy, err = parsePlacementStrategy(ps); err != nil {
+			return nil, err
+		}
+	}
+	tags, err := sliceMember(data, "Tags", "EcsParameters.Tags")
+	if err != nil {
+		return nil, err
+	}
+	if tags != nil {
+		if params.Tags, err = parseEcsTags(tags); err != nil {
+			return nil, err
+		}
+	}
+	return params, nil
+}
+
+// parseNetworkConfiguration binds the NetworkConfiguration member. The
+// modelled shape carries exactly one member, awsvpcConfiguration (the
+// model's own lowerCamel name), so an absent sub-member means the structure
+// itself is absent — the empty wrapper is never stored, because restJson1
+// omits an absent structure rather than round-tripping it as null.
+func parseNetworkConfiguration(data map[string]interface{}) (*schedulerstore.NetworkConfiguration, error) {
+	// Absent and null both mean the structure is omitted (restJson1 never
+	// round-trips an absent structure as null); any other value whose JSON
+	// type contradicts the shape is a wire-format violation reported like
+	// every other member, never a silently dropped configuration the Core
+	// validator cannot see.
+	v, present := data["awsvpcConfiguration"]
+	if !present || v == nil {
+		return nil, nil
+	}
+	vpc, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, awserrors.NewValidationException("NetworkConfiguration.awsvpcConfiguration must be a structure")
+	}
+	parsed, err := parseAwsVpcConfiguration(vpc)
+	if err != nil {
+		return nil, err
+	}
+	return &schedulerstore.NetworkConfiguration{
+		AwsVpcConfiguration: parsed,
+	}, nil
+}
+
+func parseAwsVpcConfiguration(data map[string]interface{}) (*schedulerstore.AwsVpcConfiguration, error) {
+	vpc := &schedulerstore.AwsVpcConfiguration{}
+	var err error
+	if vpc.AssignPublicIp, err = stringMember(data, "AssignPublicIp", "NetworkConfiguration.awsvpcConfiguration.AssignPublicIp"); err != nil {
+		return nil, err
+	}
+	subnets, err := sliceMember(data, "Subnets", "NetworkConfiguration.awsvpcConfiguration.Subnets")
+	if err != nil {
+		return nil, err
+	}
+	if subnets != nil {
+		if vpc.Subnets, err = stringSlice(subnets, "NetworkConfiguration.awsvpcConfiguration.Subnets"); err != nil {
+			return nil, err
+		}
+	}
+	sgs, err := sliceMember(data, "SecurityGroups", "NetworkConfiguration.awsvpcConfiguration.SecurityGroups")
+	if err != nil {
+		return nil, err
+	}
+	if sgs != nil {
+		// stringSlice allocates before filling so an explicitly empty list
+		// stays distinguishable from an omitted member: the model constrains
+		// a provided SecurityGroups list to at least one entry, while an
 		// omitted member selects the VPC default security group.
-		vpc.SecurityGroups = []string{}
-		for _, sg := range sgs {
-			if str, ok := sg.(string); ok {
-				vpc.SecurityGroups = append(vpc.SecurityGroups, str)
-			}
+		if vpc.SecurityGroups, err = stringSlice(sgs, "NetworkConfiguration.awsvpcConfiguration.SecurityGroups"); err != nil {
+			return nil, err
 		}
 	}
-	return vpc
+	return vpc, nil
 }
 
-func parseCapacityProviderStrategy(data []interface{}) []schedulerstore.CapacityProviderStrategyItem {
+func parseCapacityProviderStrategy(data []interface{}) ([]schedulerstore.CapacityProviderStrategyItem, error) {
 	var result []schedulerstore.CapacityProviderStrategyItem
-	for _, item := range data {
-		if m, ok := item.(map[string]interface{}); ok {
-			cps := schedulerstore.CapacityProviderStrategyItem{
-				CapacityProvider: getStringFromMap(m, "capacityProvider", "CapacityProvider"),
-			}
-			if w, ok := getFloatField(m, "weight", "Weight"); ok {
-				cps.Weight = &w
-			}
-			if b, ok := getFloatField(m, "base", "Base"); ok {
-				cps.Base = &b
-			}
-			result = append(result, cps)
+	for i, item := range data {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.CapacityProviderStrategy[%d] must be a structure", i))
 		}
+		cps := schedulerstore.CapacityProviderStrategyItem{}
+		var err error
+		if cps.CapacityProvider, err = stringMember(m, "capacityProvider", "CapacityProviderStrategy.capacityProvider"); err != nil {
+			return nil, err
+		}
+		if w, ok, err := numberMember(m, "weight", "CapacityProviderStrategy.weight"); err != nil {
+			return nil, err
+		} else if ok {
+			cps.Weight = &w
+		}
+		if b, ok, err := numberMember(m, "base", "CapacityProviderStrategy.base"); err != nil {
+			return nil, err
+		} else if ok {
+			cps.Base = &b
+		}
+		result = append(result, cps)
 	}
-	return result
+	return result, nil
 }
 
-func parsePlacementConstraints(data []interface{}) []schedulerstore.PlacementConstraint {
+func parsePlacementConstraints(data []interface{}) ([]schedulerstore.PlacementConstraint, error) {
 	var result []schedulerstore.PlacementConstraint
-	for _, item := range data {
-		if m, ok := item.(map[string]interface{}); ok {
-			result = append(result, schedulerstore.PlacementConstraint{
-				Type:       getStringFromMap(m, "type", "Type"),
-				Expression: getStringFromMap(m, "expression", "Expression"),
-			})
+	for i, item := range data {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.PlacementConstraints[%d] must be a structure", i))
 		}
+		var pc schedulerstore.PlacementConstraint
+		var err error
+		if pc.Type, err = stringMember(m, "type", "PlacementConstraints.type"); err != nil {
+			return nil, err
+		}
+		if pc.Expression, err = stringMember(m, "expression", "PlacementConstraints.expression"); err != nil {
+			return nil, err
+		}
+		result = append(result, pc)
 	}
-	return result
+	return result, nil
 }
 
-func parsePlacementStrategy(data []interface{}) []schedulerstore.PlacementStrategy {
+func parsePlacementStrategy(data []interface{}) ([]schedulerstore.PlacementStrategy, error) {
 	var result []schedulerstore.PlacementStrategy
-	for _, item := range data {
-		if m, ok := item.(map[string]interface{}); ok {
-			result = append(result, schedulerstore.PlacementStrategy{
-				Type:  getStringFromMap(m, "type", "Type"),
-				Field: getStringFromMap(m, "field", "Field"),
-			})
+	for i, item := range data {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.PlacementStrategy[%d] must be a structure", i))
 		}
+		var ps schedulerstore.PlacementStrategy
+		var err error
+		if ps.Type, err = stringMember(m, "type", "PlacementStrategy.type"); err != nil {
+			return nil, err
+		}
+		if ps.Field, err = stringMember(m, "field", "PlacementStrategy.field"); err != nil {
+			return nil, err
+		}
+		result = append(result, ps)
 	}
-	return result
+	return result, nil
 }
 
-func parseEventBridgeParameters(data map[string]interface{}) *schedulerstore.EventBridgeParameters {
-	return &schedulerstore.EventBridgeParameters{
-		DetailType: getStringFromMap(data, "detailType", "DetailType"),
-		Source:     getStringFromMap(data, "source", "Source"),
+func parseEventBridgeParameters(data map[string]interface{}) (*schedulerstore.EventBridgeParameters, error) {
+	eb := &schedulerstore.EventBridgeParameters{}
+	var err error
+	if eb.DetailType, err = stringMember(data, "DetailType", "EventBridgeParameters.DetailType"); err != nil {
+		return nil, err
 	}
+	if eb.Source, err = stringMember(data, "Source", "EventBridgeParameters.Source"); err != nil {
+		return nil, err
+	}
+	return eb, nil
 }
 
-func parseKinesisParameters(data map[string]interface{}) *schedulerstore.KinesisParameters {
-	return &schedulerstore.KinesisParameters{
-		PartitionKey: getStringFromMap(data, "partitionKey", "PartitionKey"),
+func parseKinesisParameters(data map[string]interface{}) (*schedulerstore.KinesisParameters, error) {
+	kin := &schedulerstore.KinesisParameters{}
+	var err error
+	if kin.PartitionKey, err = stringMember(data, "PartitionKey", "KinesisParameters.PartitionKey"); err != nil {
+		return nil, err
 	}
+	return kin, nil
 }
 
+// parseFlexibleTimeWindow binds the FlexibleTimeWindow body member: the
+// wire key and the nested Mode/MaximumWindowInMinutes members are the
+// Pascal names the model declares. The value may arrive as a structure or
+// as a JSON string carrying one; both bind through the same members.
 func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.FlexibleTimeWindow, error) {
 	ftwData, ok := params["FlexibleTimeWindow"]
-	if !ok {
-		ftwData, ok = params["flexibleTimeWindow"]
-	}
-	if ftwData == nil || !ok {
+	if !ok || ftwData == nil {
 		return nil, nil
 	}
 
-	ftw := &schedulerstore.FlexibleTimeWindow{}
+	var m map[string]interface{}
 	switch v := ftwData.(type) {
 	case string:
-		if err := json.Unmarshal([]byte(v), ftw); err != nil {
+		if err := json.Unmarshal([]byte(v), &m); err != nil {
 			return nil, ErrInvalidFlexibleTimeWindow
 		}
 	case map[string]interface{}:
-		mode := getStringFromMap(v, "mode", "Mode")
-		if mode != "" {
-			ftw.Mode = schedulerstore.FlexibleTimeWindowMode(mode)
-		}
-		if maxWindow, ok := getFloatField(v, "maximumWindowInMinutes", "MaximumWindowInMinutes"); ok {
-			ftw.MaximumWindowInMinutes = &maxWindow
-		}
+		m = v
 	default:
 		return nil, ErrInvalidFlexibleTimeWindow
+	}
+
+	ftw := &schedulerstore.FlexibleTimeWindow{}
+	mode, err := stringMember(m, "Mode", "FlexibleTimeWindow.Mode")
+	if err != nil {
+		return nil, err
+	}
+	if mode != "" {
+		ftw.Mode = schedulerstore.FlexibleTimeWindowMode(mode)
+	}
+	if maxWindow, ok, err := numberMember(m, "MaximumWindowInMinutes", "FlexibleTimeWindow.MaximumWindowInMinutes"); err != nil {
+		return nil, err
+	} else if ok {
+		ftw.MaximumWindowInMinutes = &maxWindow
 	}
 
 	// Mode is a required member of the FlexibleTimeWindow shape; an empty
@@ -321,6 +573,10 @@ func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.Fle
 // and belong to the same VPC. Accepts region directly so both the HTTP API
 // and admin console paths can call it.
 func (s *SchedulerService) validateVpcConfig(ctx context.Context, region string, target *schedulerstore.Target) error {
+	// The engine is attached by BuildEngine, which runs before the service
+	// takes traffic in the running server. A service without one (unit
+	// harnesses, the construction window) skips the cross-service existence
+	// check — the modelled trait validation in validators.go still applies.
 	if s.engine == nil || s.engine.bus == nil {
 		return nil
 	}
@@ -332,6 +588,9 @@ func (s *SchedulerService) validateVpcConfig(ctx context.Context, region string,
 		return nil
 	}
 
+	// A built engine whose bus carries no EC2 invoker is a deployment whose
+	// EC2 service is unavailable: the creation request fails closed instead
+	// of persisting a VPC configuration nobody verified.
 	ec2 := s.engine.bus.EC2Invoker()
 	if ec2 == nil {
 		return awserrors.NewValidationException("scheduler: EC2 service not available for VPC configuration validation")
@@ -362,12 +621,21 @@ func (s *SchedulerService) validateKmsKey(ctx context.Context, region, kmsKeyArn
 	if kmsKeyArn == "" {
 		return nil
 	}
+	// The engine is attached by BuildEngine, which runs before the service
+	// takes traffic in the running server. A service without one (unit
+	// harnesses, the construction window) skips the cross-service key
+	// check — the KmsKeyArn @pattern/@length validation in validators.go
+	// still applies.
 	if s.engine == nil || s.engine.bus == nil {
 		return nil
 	}
+	// A built engine whose bus carries no KMS invoker is a deployment whose
+	// KMS service is unavailable: the creation request fails closed (the
+	// posture validateVpcConfig already applied for EC2) instead of
+	// accepting a key ARN nobody can verify.
 	kms := s.engine.bus.KMSInvoker()
 	if kms == nil {
-		return nil
+		return awserrors.NewValidationException("scheduler: KMS service not available for KMS key validation")
 	}
 	if !kms.KeyExists(ctx, kmsKeyArn) {
 		return awserrors.NewValidationException(fmt.Sprintf("scheduler: KMS key %s does not exist", kmsKeyArn))
@@ -379,4 +647,25 @@ func (s *SchedulerService) validateKmsKey(ctx context.Context, region, kmsKeyArn
 		return awserrors.NewValidationException(fmt.Sprintf("scheduler: KMS key %s is not a symmetric encryption KMS key", kmsKeyArn))
 	}
 	return nil
+}
+
+// claimClientToken owns the ClientToken idempotency protocol shared by the
+// create, update and delete cores: an empty token claims nothing, an invalid
+// token is a validation error, and a valid token is claimed for the
+// (scope, resourceArn) pair. A replay returns the first application's
+// resource ARN with a no-op release; a fresh claim returns a release closure
+// that rolls the claim back — it must be called on every error path after
+// the claim, and is idempotent-safe to skip on success (the entry expires
+// with the token TTL).
+func claimClientToken(store *schedulerstore.SchedulerStore, token, resourceArn, scope string) (replayedArn string, release func(), err error) {
+	if token == "" {
+		return "", func() {}, nil
+	}
+	if err := validateClientToken(token); err != nil {
+		return "", nil, err
+	}
+	if entry, created := store.ClientTokens().LookupOrClaim(token, resourceArn, scope); !created {
+		return entry.ResourceArn, func() {}, nil
+	}
+	return "", func() { store.ClientTokens().Release(token, resourceArn, scope) }, nil
 }

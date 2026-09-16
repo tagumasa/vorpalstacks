@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/scheduler"
@@ -271,6 +272,44 @@ func (tc *schedTestContext) runTagTests() []TestResult {
 			return fmt.Errorf("untag non-existent key should not error: %v", err)
 		}
 		return nil
+	}))
+
+	// Tag keys count Unicode characters: a 128-character multibyte key at
+	// the TagKey @length maximum is accepted even though its UTF-8 byte
+	// length (384) exceeds the bound, and the key round-trips through
+	// ListTagsForResource.
+	results = append(results, tc.runner.RunTest("scheduler", "TagResource_MultibyteKeyAccepted", func() error {
+		groupName := tc.uniqueName("CjkTag")
+		groupResp, err := tc.createScheduleGroup(groupName)
+		if err != nil {
+			return err
+		}
+		defer tc.cleanupScheduleGroup(groupName)
+
+		cjkKey := strings.Repeat("\u65e5", 128)
+		_, err = tc.client.TagResource(tc.ctx, &scheduler.TagResourceInput{
+			ResourceArn: groupResp.ScheduleGroupArn,
+			Tags:        []types.Tag{{Key: aws.String(cjkKey), Value: aws.String("unicode-pin")}},
+		})
+		if err != nil {
+			return err
+		}
+
+		tagResp, err := tc.client.ListTagsForResource(tc.ctx, &scheduler.ListTagsForResourceInput{
+			ResourceArn: groupResp.ScheduleGroupArn,
+		})
+		if err != nil {
+			return fmt.Errorf("list tags: %v", err)
+		}
+		for _, t := range tagResp.Tags {
+			if t.Key != nil && *t.Key == cjkKey {
+				if t.Value == nil || *t.Value != "unicode-pin" {
+					return fmt.Errorf("multibyte key value mismatch: got %q", aws.ToString(t.Value))
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("multibyte tag key not found after tagging")
 	}))
 
 	return results

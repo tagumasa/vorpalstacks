@@ -18,10 +18,11 @@ const clientTokenTTL = 24 * time.Hour
 const tokenKeyPrefix = "token:"
 
 // ClientTokenEntry records the resource created for a given ClientToken.
+// The claim's operation and resource scope live in the storage key alone
+// (clientTokenKey); the entry carries only what a replay needs to answer.
 type ClientTokenEntry struct {
-	ResourceArn  string    `json:"resourceArn"`
-	ResourceType string    `json:"resourceType"`
-	CreatedAt    time.Time `json:"createdAt"`
+	ResourceArn string    `json:"resourceArn"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 // ClientTokenStore provides idempotency token deduplication for the
@@ -29,28 +30,35 @@ type ClientTokenEntry struct {
 // operation, the resource ARN and the token, and persisted to Pebble so
 // that idempotency survives server restarts.
 type ClientTokenStore struct {
-	mu     sync.Mutex
-	store  *common.BaseStore
-	stopCh chan struct{}
+	mu       sync.Mutex
+	store    *common.BaseStore
+	stopCh   chan struct{}
+	stopOnce sync.Once
 }
 
 // NewClientTokenStore creates a new ClientTokenStore backed by the given
-// BaseStore (a Pebble bucket). Existing entries are loaded on construction
-// so that previously claimed tokens are honoured after a server restart.
+// BaseStore (a Pebble bucket). Existing entries are reaped on construction
+// so that expired leftovers from a previous server run are removed while
+// non-expired entries are kept, preserving idempotency across restarts.
 func NewClientTokenStore(store *common.BaseStore) *ClientTokenStore {
 	s := &ClientTokenStore{
 		store:  store,
 		stopCh: make(chan struct{}),
 	}
-	s.loadExisting()
+	s.reapExpired()
 	go s.cleanupLoop()
 	return s
 }
 
-// loadExisting scans the Pebble bucket and removes expired entries left
-// over from a previous server run. Non-expired entries are kept so that
-// idempotency is preserved across restarts.
-func (s *ClientTokenStore) loadExisting() {
+// reapExpired scans the token bucket and removes every entry older than
+// clientTokenTTL. It runs once on construction and hourly from cleanupLoop.
+// The mutex keeps the scan-delete atomic with LookupOrClaim's claim write:
+// without it the reaper could read an expired value, let a concurrent claim
+// overwrite the key, and then delete that fresh claim — losing the
+// idempotency mapping a client retry depends on.
+func (s *ClientTokenStore) reapExpired() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	now := time.Now()
 	_ = s.store.ScanPrefix(tokenKeyPrefix, func(key string, value []byte) error {
 		var entry ClientTokenEntry
@@ -95,9 +103,8 @@ func (s *ClientTokenStore) LookupOrClaim(token, resourceArn, resourceType string
 
 	// Claim the token.
 	entry := &ClientTokenEntry{
-		ResourceArn:  resourceArn,
-		ResourceType: resourceType,
-		CreatedAt:    time.Now().UTC(),
+		ResourceArn: resourceArn,
+		CreatedAt:   time.Now().UTC(),
 	}
 
 	if err := s.store.PutRaw(key, mustMarshal(entry)); err != nil {
@@ -118,40 +125,25 @@ func (s *ClientTokenStore) Release(token, resourceArn, resourceType string) {
 	_ = s.store.Delete(clientTokenKey(resourceType, resourceArn, token))
 }
 
-// cleanupLoop periodically removes expired entries from Pebble.
+// cleanupLoop periodically reaps expired entries from Pebble.
 func (s *ClientTokenStore) cleanupLoop() {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			s.cleanupExpired()
+			s.reapExpired()
 		case <-s.stopCh:
 			return
 		}
 	}
 }
 
-// cleanupExpired removes all entries older than clientTokenTTL.
-func (s *ClientTokenStore) cleanupExpired() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	now := time.Now()
-	_ = s.store.ScanPrefix(tokenKeyPrefix, func(key string, value []byte) error {
-		var entry ClientTokenEntry
-		if err := json.Unmarshal(value, &entry); err != nil {
-			return nil
-		}
-		if now.Sub(entry.CreatedAt) >= clientTokenTTL {
-			_ = s.store.Delete(key)
-		}
-		return nil
-	})
-}
-
-// Stop shuts down the background cleanup goroutine.
+// Stop shuts down the background cleanup goroutine. It is idempotent:
+// StopEngine closes every cached store without evicting the cache, so a
+// repeated shutdown must not close an already-closed channel.
 func (s *ClientTokenStore) Stop() {
-	close(s.stopCh)
+	s.stopOnce.Do(func() { close(s.stopCh) })
 }
 
 // mustMarshal serialises a ClientTokenEntry to JSON. Panics are impossible
