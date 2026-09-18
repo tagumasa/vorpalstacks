@@ -37,6 +37,14 @@ func (s *stubImportS3) PutObject(_ context.Context, _, bucket, key string, data 
 	return nil
 }
 
+func (s *stubImportS3) PutObjectWithMetadata(_ context.Context, _, bucket, key string, data []byte, _ string, _ map[string]string) error {
+	return s.PutObject(context.Background(), "", bucket, key, data, "")
+}
+
+func (s *stubImportS3) GetBucketPolicy(_ context.Context, _ string, _ string) (string, error) {
+	return "", nil
+}
+
 func (s *stubImportS3) ListObjects(_ context.Context, _, bucket, prefix string, _ int) ([]string, error) {
 	var keys []string
 	for k := range s.objects {

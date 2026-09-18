@@ -54,9 +54,12 @@ func (h *S3Handler) newRequestContext(r *http.Request) *request.RequestContext {
 	ctx := request.NewRequestContext(r.Context(), h.storageManager, h.svc.accountID, region)
 	ctx.SourceIP = extractSourceIP(r)
 	ctx.UserAgent = r.UserAgent()
+	// The S3 plane has no per-user authentication of its own; its implicit
+	// caller is the platform account itself, which CloudTrail records as
+	// the account root principal.
 	ctx.Principal = h.svc.accountID
 	ctx.PrincipalID = h.svc.accountID
-	ctx.PrincipalType = request.PrincipalTypeUser
+	ctx.PrincipalType = request.PrincipalTypeRoot
 	return ctx
 }
 

@@ -3,13 +3,17 @@ package cloudtrail
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_cloudtrail"
 	"vorpalstacks/internal/store/aws/common"
@@ -43,7 +47,6 @@ type CloudTrailStore struct {
 	queryStore          *common.BaseStore
 	channelStore        *common.BaseStore
 	eventConfigStore    *common.BaseStore
-	delegatedAdminStore *common.BaseStore
 	importStore         *common.BaseStore
 	storage             storage.TransactionalStorageWith2PC
 }
@@ -84,10 +87,6 @@ func eventConfigBucketName(region string) string {
 	return "cloudtrail-event-config-" + region
 }
 
-func delegatedAdminBucketName(region string) string {
-	return "cloudtrail-delegated-admins-" + region
-}
-
 func importBucketName(region string) string {
 	return "cloudtrail-imports-" + region
 }
@@ -97,6 +96,16 @@ func eventIDIndexBucketName(region string) string {
 }
 
 // NewCloudTrailStore creates a new CloudTrail store.
+//
+// Persistence regimes (recorded decision): trails, events, ARN indexes,
+// resource policies and public keys persist through storage_cloudtrail.proto
+// (typed schemas with generated converters); the CloudTrail Lake families —
+// event data stores, queries, channels, event configurations, imports —
+// persist as JSON through BaseStore, so a model-shaped member rides a struct
+// change without a proto regeneration. The split stands deliberately:
+// unifying either direction would rewrite every family's converters and
+// reset the data directory for no behavioural gain. New record families
+// persist as JSON unless the event write path's compactness demands binary.
 func NewCloudTrailStore(store storage.BasicStorage, accountID, region string) *CloudTrailStore {
 	var tstore storage.TransactionalStorageWith2PC
 	if ts, ok := store.(storage.TransactionalStorageWith2PC); ok {
@@ -119,7 +128,6 @@ func NewCloudTrailStore(store storage.BasicStorage, accountID, region string) *C
 		queryStore:          common.NewBaseStore(store.Bucket(queryBucketName(region)), "cloudtrail-queries"),
 		channelStore:        common.NewBaseStore(store.Bucket(channelBucketName(region)), "cloudtrail-channels"),
 		eventConfigStore:    common.NewBaseStore(store.Bucket(eventConfigBucketName(region)), "cloudtrail-event-config"),
-		delegatedAdminStore: common.NewBaseStore(store.Bucket(delegatedAdminBucketName(region)), "cloudtrail-delegated-admins"),
 		importStore:         common.NewBaseStore(store.Bucket(importBucketName(region)), "cloudtrail-imports"),
 		storage:             tstore,
 	}
@@ -153,16 +161,26 @@ func (s *CloudTrailStore) CreateTrail(trail *Trail) (*Trail, error) {
 		return nil, ErrTrailAlreadyExists
 	}
 
+	// The trail quota holds at admission: "Trails per Region — 5 ... This
+	// quota cannot be increased" (Quotas in AWS CloudTrail). Counting under
+	// the creation mutex makes the check-and-write one step.
+	trailCount := 0
+	if err := s.BaseStore.ForEach(func(_ string, _ []byte) error {
+		trailCount++
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	if trailCount >= MaxTrailsPerRegion {
+		return nil, ErrTrailQuotaExceeded
+	}
+
 	now := time.Now().UTC()
 	trail.TrailARN = s.BuildTrailARN(trail.Name)
 	trail.HomeRegion = s.region
 	trail.CreatedAt = now
 	trail.LastUpdated = now
 	trail.IsLogging = false
-
-	if trail.Tags == nil {
-		trail.Tags = make(map[string]string)
-	}
 
 	trailData, err := proto.Marshal(TrailToProto(trail))
 	if err != nil {
@@ -194,12 +212,6 @@ func (s *CloudTrailStore) CreateTrail(trail *Trail) (*Trail, error) {
 		}
 	}
 
-	if len(trail.Tags) > 0 {
-		if err := s.TagStore.Tag(trail.Name, trail.Tags); err != nil {
-			return nil, err
-		}
-	}
-
 	if trail.LogFileValidationEnabled {
 		if _, err := s.GenerateAndStorePublicKey(trail.Name); err != nil {
 			return nil, fmt.Errorf("failed to generate public key for trail: %w", err)
@@ -209,28 +221,31 @@ func (s *CloudTrailStore) CreateTrail(trail *Trail) (*Trail, error) {
 	return trail, nil
 }
 
-// GetTrail retrieves a CloudTrail trail by name.
+// GetTrail retrieves a CloudTrail trail by name. A missing record yields
+// ErrTrailNotFound; every other failure (I/O, a corrupt record) propagates
+// so callers can tell an absent trail from a broken read.
 func (s *CloudTrailStore) GetTrail(trailName string) (*Trail, error) {
 	var p pb.Trail
 	if err := s.BaseStore.GetProto(trailName, &p); err != nil {
-		return nil, ErrTrailNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrTrailNotFound
+		}
+		return nil, err
 	}
 	return ProtoToTrail(&p), nil
 }
 
 // GetTrailByARN retrieves a CloudTrail trail by ARN.
 func (s *CloudTrailStore) GetTrailByARN(trailARN string) (*Trail, error) {
-	normalizedARN := s.normalizeARN(trailARN)
-
-	if s.arnIndexStore != nil && s.arnIndexStore.Exists(normalizedARN) {
+	if s.arnIndexStore != nil && s.arnIndexStore.Exists(trailARN) {
 		var trailName string
-		if err := s.arnIndexStore.Get(normalizedARN, &trailName); err == nil {
+		if err := s.arnIndexStore.Get(trailARN, &trailName); err == nil {
 			return s.GetTrail(trailName)
 		}
 	}
 
 	trails, err := common.ListMatchingProto[*pb.Trail](s.BaseStore, "", func() *pb.Trail { return &pb.Trail{} }, func(t *pb.Trail) bool {
-		return s.normalizeARN(t.TrailArn) == normalizedARN
+		return t.TrailArn == trailARN
 	})
 	if err != nil {
 		return nil, err
@@ -239,17 +254,6 @@ func (s *CloudTrailStore) GetTrailByARN(trailARN string) (*Trail, error) {
 		return ProtoToTrail(trails[0]), nil
 	}
 	return nil, ErrTrailNotFound
-}
-
-// normalizeARN fills in the account-id slot of trail ARNs that were
-// recorded without one; resource parts containing colons (versioned or
-// qualified resources) are preserved by the shared splitter.
-func (s *CloudTrailStore) normalizeARN(arn string) string {
-	partition, service, region, accountID, resource := svcarn.SplitARN(arn)
-	if service == "" || accountID != "" {
-		return arn
-	}
-	return "arn:" + partition + ":" + service + ":" + region + ":" + s.accountID + ":" + resource
 }
 
 // ResolveTrail resolves a trail by name or ARN.
@@ -261,11 +265,36 @@ func (s *CloudTrailStore) ResolveTrail(nameOrARN string) (*Trail, error) {
 	return s.GetTrail(nameOrARN)
 }
 
-// UpdateTrail updates an existing CloudTrail trail.
-func (s *CloudTrailStore) UpdateTrail(trail *Trail) error {
+// MutateTrail loads a trail by name, applies the mutation under the store
+// mutex, and persists the result — the load-apply-persist surface trail
+// writers use (API updates, delivery bookkeeping) so concurrent writers
+// cannot lose each other's changes. A missing record answers
+// ErrTrailNotFound; any other load failure propagates so callers can tell
+// an absent trail from a broken read. An error from apply aborts the
+// mutation verbatim; ErrUnchanged leaves the record unwritten.
+func (s *CloudTrailStore) MutateTrail(trailName string, apply func(*Trail) error) (*Trail, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.updateTrailInternal(trail)
+
+	var p pb.Trail
+	if err := s.BaseStore.GetProto(trailName, &p); err != nil {
+		if common.IsNotFound(err) {
+			return nil, ErrTrailNotFound
+		}
+		return nil, err
+	}
+	trail := ProtoToTrail(&p)
+	if err := apply(trail); err != nil {
+		if errors.Is(err, ErrUnchanged) {
+			return trail, nil
+		}
+		return nil, err
+	}
+	trail.LastUpdated = time.Now().UTC()
+	if err := s.PutProto(trail.Name, TrailToProto(trail)); err != nil {
+		return nil, err
+	}
+	return trail, nil
 }
 
 func (s *CloudTrailStore) updateTrailInternal(trail *Trail) error {
@@ -410,15 +439,6 @@ func (s *CloudTrailStore) PutAdvancedEventSelectors(trailName string, selectors 
 	return s.updateTrailInternal(trail)
 }
 
-// GetEventSelector retrieves event selectors for a CloudTrail trail.
-func (s *CloudTrailStore) GetEventSelector(trailName string) ([]EventSelector, error) {
-	trail, err := s.GetTrail(trailName)
-	if err != nil {
-		return nil, err
-	}
-	return trail.EventSelectors, nil
-}
-
 // PutInsightSelectors sets insight selectors for a CloudTrail trail.
 func (s *CloudTrailStore) PutInsightSelectors(trailName string, insightSelectors []InsightSelector) error {
 	s.mu.Lock()
@@ -435,16 +455,10 @@ func (s *CloudTrailStore) PutInsightSelectors(trailName string, insightSelectors
 	return s.updateTrailInternal(trail)
 }
 
-// GetInsightSelectors retrieves insight selectors for a CloudTrail trail.
-func (s *CloudTrailStore) GetInsightSelectors(trailName string) ([]InsightSelector, error) {
-	trail, err := s.GetTrail(trailName)
-	if err != nil {
-		return nil, err
-	}
-	return trail.InsightSelectors, nil
-}
-
-// PutEvent stores a CloudTrail event.
+// PutEvent stores a CloudTrail event. Besides the event history entry, the
+// record is copied into every event data store whose advanced event
+// selectors match it, making each store an independent data boundary (Lake
+// queries read only their own store's copies).
 func (s *CloudTrailStore) PutEvent(event *Event) error {
 	if event.EventID == "" {
 		event.EventID = uuid.New().String()
@@ -459,6 +473,13 @@ func (s *CloudTrailStore) PutEvent(event *Event) error {
 		return err
 	}
 
+	// The EDS list is read before the transaction opens so the fan-out
+	// writes join the event's own single transaction.
+	edsList, err := s.listEventDataStoresRaw()
+	if err != nil {
+		return err
+	}
+
 	if s.storage != nil {
 		return s.storage.Update(context.Background(), func(txn storage.Transaction) error {
 			if err := txn.Bucket(eventBucketName(s.region)).Put([]byte(key), eventData); err != nil {
@@ -468,9 +489,11 @@ func (s *CloudTrailStore) PutEvent(event *Event) error {
 				return err
 			}
 			if s.indexer != nil {
-				return s.indexer.AddIndexInTxn(txn, event)
+				if err := s.indexer.AddIndexInTxn(txn, event); err != nil {
+					return err
+				}
 			}
-			return nil
+			return s.ingestEventIntoEDSs(txn, edsList, event, key, eventData)
 		})
 	}
 
@@ -481,27 +504,30 @@ func (s *CloudTrailStore) PutEvent(event *Event) error {
 		return err
 	}
 	if s.indexer != nil {
-		return s.indexer.AddIndex(event)
+		if err := s.indexer.AddIndex(event); err != nil {
+			return err
+		}
 	}
-	return nil
+	return s.ingestEventIntoEDSs(nil, edsList, event, key, eventData)
 }
 
-// LookupEvents looks up CloudTrail events by query. The indexer paths
-// (EventName, Username, EventSource, Time) paginate via an opaque
-// IndexCursor encoded into the returned nextToken. The default scan path
-// uses a plain marker string. Callers should treat nextToken as opaque
-// and pass it back unchanged in subsequent calls.
+// LookupEvents looks up CloudTrail events by query. Results are ordered
+// most recent first on every path (the LookupEvents contract). Pagination
+// runs through an opaque IndexCursor encoded into the returned nextToken —
+// every path, including the filterless scan, issues this one token format —
+// and a nextToken that does not decode yields ErrInvalidNextToken rather
+// than silently restarting the walk. Callers should treat nextToken as
+// opaque and pass it back unchanged in subsequent calls.
 func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, error) {
 	if query.MaxResults <= 0 {
-		query.MaxResults = 50
+		query.MaxResults = DefaultLookupEventsResults
 	}
 
-	// Decode the incoming nextToken into an IndexCursor for indexer paths.
-	// Non-indexed tokens (empty or scan-path markers) yield an empty cursor,
-	// causing the query to start from the beginning.
+	// Decode the incoming nextToken into an IndexCursor. A non-empty token
+	// that does not decode was never issued by this store.
 	cursor, cursorErr := decodeIndexCursor(query.NextToken)
 	if cursorErr != nil {
-		cursor = IndexCursor{}
+		return nil, "", fmt.Errorf("%w: %v", ErrInvalidNextToken, cursorErr)
 	}
 
 	var eventIDs []string
@@ -512,7 +538,12 @@ func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, erro
 	case query.EventID != "":
 		event, getErr := s.GetEventByID(query.EventID)
 		if getErr != nil {
-			return nil, "", nil
+			if errors.Is(getErr, ErrEventNotFound) {
+				// An EventId that matches no recorded event is a valid
+				// empty result, not a failure.
+				return nil, "", nil
+			}
+			return nil, "", getErr
 		}
 		return []*Event{event}, "", nil
 	case len(query.EventNames) > 0 && s.indexer != nil:
@@ -522,9 +553,20 @@ func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, erro
 	case query.EventSource != "" && s.indexer != nil:
 		eventIDs, nextCursor, err = s.indexer.QueryByEventSource(query.EventSource, query.MaxResults, cursor)
 	case (query.StartTime != nil || query.EndTime != nil) && s.indexer != nil:
-		eventIDs, nextCursor, err = s.indexer.QueryByTime(query.StartTime, query.EndTime, query.MaxResults, cursor)
+		// An unbounded side is resolved against the recorded event span,
+		// so a single-bound lookup walks every hour from its bound to the
+		// newest (or from the oldest to its bound) recorded event.
+		start, end, spanErr := s.resolveTimeBounds(query.StartTime, query.EndTime)
+		if spanErr != nil {
+			return nil, "", spanErr
+		}
+		if start == nil || end == nil {
+			// No recorded events at all.
+			return nil, "", nil
+		}
+		eventIDs, nextCursor, err = s.indexer.QueryByTime(start, end, query.MaxResults, cursor)
 	default:
-		return s.lookupEventsScan(query)
+		return s.lookupEventsScan(query, cursor)
 	}
 
 	if err != nil {
@@ -536,9 +578,15 @@ func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, erro
 		if int32(len(events)) >= query.MaxResults {
 			break
 		}
-		event, err := s.GetEventByID(id)
-		if err != nil {
-			continue
+		event, getErr := s.GetEventByID(id)
+		if getErr != nil {
+			// An index entry whose event is gone (purged between the
+			// index walk and the fetch) is skipped; a genuine read
+			// failure surfaces.
+			if errors.Is(getErr, ErrEventNotFound) {
+				continue
+			}
+			return nil, "", getErr
 		}
 		if s.eventMatchesQuery(event, query) {
 			events = append(events, event)
@@ -548,49 +596,159 @@ func (s *CloudTrailStore) LookupEvents(query EventQuery) ([]*Event, string, erro
 	return events, encodeIndexCursor(nextCursor), nil
 }
 
+// resolveTimeBounds completes a partially-bounded time query from the
+// recorded event span: a missing start becomes the oldest recorded event's
+// time and a missing end the newest's. Both bounds are returned nil when no
+// events are recorded at all.
+func (s *CloudTrailStore) resolveTimeBounds(startTime, endTime *time.Time) (*time.Time, *time.Time, error) {
+	if startTime != nil && endTime != nil {
+		return startTime, endTime, nil
+	}
+	oldest, newest, err := s.eventSpanBounds()
+	if err != nil {
+		return nil, nil, err
+	}
+	if startTime == nil {
+		startTime = oldest
+	}
+	if endTime == nil {
+		endTime = newest
+	}
+	return startTime, endTime, nil
+}
+
+// eventSpanBounds reads the oldest and newest recorded event times from the
+// endpoint keys of the events bucket ("<unixnano>#<eventID>", whose
+// lexicographic order is chronological). Nil, nil means the bucket is
+// empty.
+func (s *CloudTrailStore) eventSpanBounds() (*time.Time, *time.Time, error) {
+	parse := func(key string) (*time.Time, error) {
+		nanos, _, ok := strings.Cut(key, "#")
+		if !ok {
+			return nil, fmt.Errorf("cloudtrail store: malformed event key %q", key)
+		}
+		ts, err := strconv.ParseInt(nanos, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("cloudtrail store: malformed event key %q: %w", key, err)
+		}
+		t := time.Unix(0, ts).UTC()
+		return &t, nil
+	}
+
+	iter := s.eventsStore.Bucket().ScanPrefix(nil)
+	var oldest *time.Time
+	if iter.Next() {
+		t, err := parse(string(iter.Key()))
+		if err != nil {
+			iter.Close()
+			return nil, nil, err
+		}
+		oldest = t
+	}
+	if err := iter.Error(); err != nil {
+		iter.Close()
+		return nil, nil, err
+	}
+	iter.Close()
+	if oldest == nil {
+		return nil, nil, nil
+	}
+
+	revIter := s.eventsStore.Bucket().ScanPrefixReverse(nil, nil)
+	var newest *time.Time
+	if revIter.Next() {
+		t, err := parse(string(revIter.Key()))
+		if err != nil {
+			revIter.Close()
+			return nil, nil, err
+		}
+		newest = t
+	}
+	if err := revIter.Error(); err != nil {
+		revIter.Close()
+		return nil, nil, err
+	}
+	revIter.Close()
+
+	return oldest, newest, nil
+}
+
 func (s *CloudTrailStore) eventIDIndexBucket() storage.Bucket {
 	if s.storage != nil {
-		return s.storage.(storage.BasicStorage).Bucket(eventIDIndexBucketName(s.region))
+		if basic, ok := s.storage.(storage.BasicStorage); ok {
+			return basic.Bucket(eventIDIndexBucketName(s.region))
+		}
 	}
 	return nil
 }
 
-// GetEventByID retrieves a CloudTrail event by ID.
+// GetEventByID retrieves a CloudTrail event by ID. A missing event yields
+// ErrEventNotFound; every other failure (I/O, a corrupt record) propagates
+// so callers can tell an absent event from a broken read.
 func (s *CloudTrailStore) GetEventByID(eventID string) (*Event, error) {
 	var fullKey string
 	if bucket := s.eventIDIndexBucket(); bucket != nil {
 		fullKeyBytes, err := bucket.Get([]byte(eventID))
-		if err != nil || fullKeyBytes == nil {
+		if err != nil {
+			return nil, err
+		}
+		if fullKeyBytes == nil {
 			return nil, ErrEventNotFound
 		}
 		fullKey = string(fullKeyBytes)
 	} else if err := s.eventIDIndexStore.Get(eventID, &fullKey); err != nil {
-		return nil, ErrEventNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrEventNotFound
+		}
+		return nil, err
 	}
 
 	var p pb.Event
 	if err := s.eventsStore.GetProto(fullKey, &p); err != nil {
-		return nil, ErrEventNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrEventNotFound
+		}
+		return nil, err
 	}
 	return ProtoToEvent(&p), nil
 }
 
-func (s *CloudTrailStore) lookupEventsScan(query EventQuery) ([]*Event, string, error) {
-	opts := common.ListOptions{
-		Marker:   query.NextToken,
-		MaxItems: int(query.MaxResults),
+// lookupEventsScan serves the filterless default path: a newest-first walk
+// over the whole events bucket ("<unixnano>#<eventID>" keys order
+// chronologically), filtered by the query, paginated through the shared
+// IndexCursor token — the cursor's Key is the last served storage key and
+// iteration resumes strictly below it.
+func (s *CloudTrailStore) lookupEventsScan(query EventQuery, cursor IndexCursor) ([]*Event, string, error) {
+	before := []byte(cursor.Key)
+	if len(before) == 0 {
+		before = nil
 	}
-	result, err := common.ListProto[*pb.Event](s.eventsStore, opts, func() *pb.Event { return &pb.Event{} }, func(e *pb.Event) bool {
-		return protoMatchesQuery(e, query)
-	})
-	if err != nil {
+	iter := s.eventsStore.Bucket().ScanPrefixReverse(nil, before)
+	defer iter.Close()
+
+	var events []*Event
+	var lastKey string
+	for iter.Next() {
+		if int32(len(events)) >= query.MaxResults {
+			// Budget reached while another key remains below: issue a
+			// continuation token so the walk can resume.
+			return events, encodeIndexCursor(IndexCursor{Key: lastKey}), nil
+		}
+		key := string(iter.Key())
+		var p pb.Event
+		if err := proto.Unmarshal(iter.Value(), &p); err != nil {
+			return nil, "", err
+		}
+		lastKey = key
+		if protoMatchesQuery(&p, query) {
+			events = append(events, ProtoToEvent(&p))
+		}
+	}
+	if err := iter.Error(); err != nil {
 		return nil, "", err
 	}
-	events := make([]*Event, len(result.Items))
-	for i, p := range result.Items {
-		events[i] = ProtoToEvent(p)
-	}
-	return events, result.NextMarker, nil
+
+	return events, "", nil
 }
 
 func protoMatchesQuery(event *pb.Event, query EventQuery) bool {
@@ -689,13 +847,16 @@ func (s *CloudTrailStore) eventMatchesQuery(event *Event, query EventQuery) bool
 }
 
 // RecordServiceEvent records a service event to CloudTrail.
-func (s *CloudTrailStore) RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP, accessKeyID string, requestParams, responseElements map[string]interface{}, resources []Resource) error {
-	event := NewEvent(eventName, eventSource, userIdentity)
+func (s *CloudTrailStore) RecordServiceEvent(eventName, eventSource string, userIdentity *UserIdentity, sourceIP, accessKeyID, userAgent string, readOnly bool, errorCode, errorMessage string, requestParams, responseElements map[string]interface{}, resources []Resource) error {
+	event := NewEvent(eventName, eventSource, userIdentity, readOnly)
+	event.AwsRegion = s.region
 	event.RequestParameters = requestParams
 	event.ResponseElements = responseElements
 	event.SourceIPAddress = sourceIP
 	event.AccessKeyId = accessKeyID
-	event.UserAgent = "vorpalstacks-internal"
+	event.UserAgent = userAgent
+	event.ErrorCode = errorCode
+	event.ErrorMessage = errorMessage
 	for _, r := range resources {
 		event.Resources = append(event.Resources, Resource{ResourceType: r.ResourceType, ResourceName: r.ResourceName})
 	}
@@ -723,7 +884,7 @@ type EventQuery struct {
 // NewEventQuery creates a new CloudTrail event query with default values.
 func NewEventQuery() EventQuery {
 	return EventQuery{
-		MaxResults: 50,
+		MaxResults: DefaultLookupEventsResults,
 	}
 }
 
@@ -779,17 +940,72 @@ func (s *CloudTrailStore) ListPublicKeys(startTime, endTime *time.Time) ([]*Publ
 	return keys, nil
 }
 
-// GenerateAndStorePublicKey creates a new RSA key pair and stores the public key.
+// GenerateAndStorePublicKey creates a new RSA key pair and stores the public
+// key alongside its private half: the trail's hourly digest chain signs with
+// this key across restarts, so the private material must survive the process.
 func (s *CloudTrailStore) GenerateAndStorePublicKey(trailName string) (*PublicKey, error) {
-	pk, err := GenerateKeyPair()
+	pk, priv, err := GenerateKeyPair()
 	if err != nil {
 		return nil, err
 	}
 	pk.TrailName = trailName
+	pk.PrivateKeyDER = x509.MarshalPKCS1PrivateKey(priv)
 	if err := s.StorePublicKey(pk); err != nil {
 		return nil, err
 	}
 	return pk, nil
+}
+
+// LoadTrailSigningKey returns the trail's newest validation key pair. A
+// stored key without private material (issued before the digest chain
+// persisted it) is replaced by a freshly generated pair, so the caller
+// always receives a usable signer.
+func (s *CloudTrailStore) LoadTrailSigningKey(trailName string) (*PublicKey, *rsa.PrivateKey, error) {
+	keys, err := s.ListPublicKeys(nil, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	var newest *PublicKey
+	for _, pk := range keys {
+		if pk.TrailName != trailName || len(pk.PrivateKeyDER) == 0 {
+			continue
+		}
+		if newest == nil || pk.ValidityStartTime.After(newest.ValidityStartTime) {
+			newest = pk
+		}
+	}
+	if newest != nil {
+		priv, err := x509.ParsePKCS1PrivateKey(newest.PrivateKeyDER)
+		if err == nil {
+			return newest, priv, nil
+		}
+	}
+	pub, err := s.GenerateAndStorePublicKey(trailName)
+	if err != nil {
+		return nil, nil, err
+	}
+	priv, err := x509.ParsePKCS1PrivateKey(pub.PrivateKeyDER)
+	if err != nil {
+		return nil, nil, err
+	}
+	return pub, priv, nil
+}
+
+// CreateAndStoreSigningKey generates a fresh RSA signing key for a query
+// result sign file, persists the public half as a region key (no trail
+// association, so trail deletion never collects it), and returns both
+// halves: the private key signs the sign file now, the stored public key
+// is what ListPublicKeys later serves to validators matching its
+// fingerprint.
+func (s *CloudTrailStore) CreateAndStoreSigningKey() (*PublicKey, *rsa.PrivateKey, error) {
+	pub, priv, err := GenerateKeyPair()
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := s.StorePublicKey(pub); err != nil {
+		return nil, nil, err
+	}
+	return pub, priv, nil
 }
 
 // DeletePublicKeysByTrail removes all public keys associated with the
@@ -835,6 +1051,15 @@ func (s *CloudTrailStore) CreateEventDataStore(eds *EventDataStore) (*EventDataS
 		}
 	}
 
+	// The event data store quota counts every lifecycle stage — the
+	// PENDING_DELETION records above included: "Event data stores — 10 ...
+	// This includes event data stores in any lifecycle stage" (Quotas in
+	// AWS CloudTrail). The list was loaded under this mutex, so the count
+	// and the write are one step.
+	if len(existing) >= MaxEventDataStoresPerRegion {
+		return nil, ErrEventDataStoreQuotaExceeded
+	}
+
 	eds.CreatedTimestamp = time.Now().UTC()
 	eds.UpdatedTimestamp = eds.CreatedTimestamp
 
@@ -845,12 +1070,18 @@ func (s *CloudTrailStore) CreateEventDataStore(eds *EventDataStore) (*EventDataS
 	return eds, nil
 }
 
-// GetEventDataStore retrieves an event data store by ID or ARN.
+// GetEventDataStore retrieves an event data store by ID or ARN. A missing
+// record yields ErrEventDataStoreNotFound; every other failure (I/O, a
+// corrupt record) propagates so guards can tell an absent destination from
+// a broken one.
 func (s *CloudTrailStore) GetEventDataStore(idOrARN string) (*EventDataStore, error) {
-	id := extractEventDataStoreID(idOrARN)
+	id := ExtractEventDataStoreID(idOrARN)
 	var eds EventDataStore
 	if err := s.eventDataStoreStore.Get(id, &eds); err != nil {
-		return nil, ErrEventDataStoreNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrEventDataStoreNotFound
+		}
+		return nil, err
 	}
 	return &eds, nil
 }
@@ -860,33 +1091,79 @@ func (s *CloudTrailStore) ListEventDataStores(opts common.ListOptions) (*common.
 	return common.List[EventDataStore](s.eventDataStoreStore, opts, nil)
 }
 
-// UpdateEventDataStore updates an existing event data store.
-func (s *CloudTrailStore) UpdateEventDataStore(eds *EventDataStore) error {
-	eds.UpdatedTimestamp = time.Now().UTC()
-	return s.eventDataStoreStore.Put(eds.EventDataStoreID, eds)
+// ListEventDataStoresAll drains every ListEventDataStores page. The
+// retention sweep and the hard-delete sweeper must see every store, not the
+// first page.
+func (s *CloudTrailStore) ListEventDataStoresAll() ([]*EventDataStore, error) {
+	var all []*EventDataStore
+	marker := ""
+	for {
+		result, err := s.ListEventDataStores(common.ListOptions{
+			MaxItems: MaxListEventDataStoresResults,
+			Marker:   marker,
+		})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, result.Items...)
+		if result.NextMarker == "" {
+			return all, nil
+		}
+		marker = result.NextMarker
+	}
 }
 
-// DeleteEventDataStore soft-deletes an event data store by setting its status
-// to PENDING_DELETION. AWS spec: after 7 days it is permanently deleted.
-func (s *CloudTrailStore) DeleteEventDataStore(id string) error {
-	id = extractEventDataStoreID(id)
+// ErrUnchanged aborts a mutation without writing: an apply function returns
+// it to leave the loaded record exactly as it was. The executor transitions
+// use it to refuse overwriting a status another caller has already settled.
+var ErrUnchanged = errors.New("record unchanged")
+
+// MutateEventDataStore loads the event data store addressed by ID or ARN,
+// applies apply under the store mutex, and persists the result. The whole
+// read-modify-write is atomic: concurrent updates, ingestion toggles,
+// federation changes, and lifecycle transitions cannot lose writes or
+// interleave with each other. An error from apply aborts the mutation and
+// is returned verbatim. The store mutex is held while apply runs, so apply
+// must not call mutating store methods; read-only ones are safe.
+func (s *CloudTrailStore) MutateEventDataStore(idOrARN string, apply func(*EventDataStore) error) (*EventDataStore, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	id := ExtractEventDataStoreID(idOrARN)
 	var eds EventDataStore
 	if err := s.eventDataStoreStore.Get(id, &eds); err != nil {
-		return ErrEventDataStoreNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrEventDataStoreNotFound
+		}
+		return nil, err
 	}
-	eds.Status = "PENDING_DELETION"
-	now := time.Now().UTC()
-	eds.DeletedTimestamp = &now
-	return s.eventDataStoreStore.Put(eds.EventDataStoreID, &eds)
+	if err := apply(&eds); err != nil {
+		if errors.Is(err, ErrUnchanged) {
+			return &eds, nil
+		}
+		return nil, err
+	}
+	eds.UpdatedTimestamp = time.Now().UTC()
+	if err := s.eventDataStoreStore.Put(eds.EventDataStoreID, &eds); err != nil {
+		return nil, err
+	}
+	return &eds, nil
 }
 
 // RestoreEventDataStore restores a PENDING_DELETION event data store to
-// ENABLED status.
+// ENABLED status. The status check and the write run under the store mutex
+// as one step.
 func (s *CloudTrailStore) RestoreEventDataStore(id string) (*EventDataStore, error) {
-	id = extractEventDataStoreID(id)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	id = ExtractEventDataStoreID(id)
 	var eds EventDataStore
 	if err := s.eventDataStoreStore.Get(id, &eds); err != nil {
-		return nil, ErrEventDataStoreNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrEventDataStoreNotFound
+		}
+		return nil, err
 	}
 	if eds.Status != "PENDING_DELETION" {
 		return nil, ErrEventDataStoreNotPendingDeletion
@@ -900,13 +1177,45 @@ func (s *CloudTrailStore) RestoreEventDataStore(id string) (*EventDataStore, err
 	return &eds, nil
 }
 
-// listEventDataStoresRaw returns all stored event data stores.
+// DeleteEventDataStoreIf deletes an event data store's record when guard
+// raises no objection. The guard runs under the store mutex with the loaded
+// record, so its verdict cannot race with a concurrent update or restore;
+// ErrUnchanged from the guard refuses the delete without an error. The
+// store's event bucket is NOT touched — the caller owns dropping it after
+// the record is gone.
+func (s *CloudTrailStore) DeleteEventDataStoreIf(idOrARN string, guard func(*EventDataStore) error) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	id := ExtractEventDataStoreID(idOrARN)
+	var eds EventDataStore
+	if err := s.eventDataStoreStore.Get(id, &eds); err != nil {
+		if common.IsNotFound(err) {
+			return false, ErrEventDataStoreNotFound
+		}
+		return false, err
+	}
+	if err := guard(&eds); err != nil {
+		if errors.Is(err, ErrUnchanged) {
+			return false, nil
+		}
+		return false, err
+	}
+	if err := s.eventDataStoreStore.Delete(id); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// listEventDataStoresRaw returns all stored event data stores. A record
+// that fails to unmarshal aborts the listing — corrupt state must surface,
+// not silently shrink the result set.
 func (s *CloudTrailStore) listEventDataStoresRaw() ([]*EventDataStore, error) {
 	var result []*EventDataStore
 	err := s.eventDataStoreStore.ForEach(func(_ string, value []byte) error {
 		var eds EventDataStore
 		if err := json.Unmarshal(value, &eds); err != nil {
-			return nil
+			return err
 		}
 		result = append(result, &eds)
 		return nil
@@ -917,8 +1226,11 @@ func (s *CloudTrailStore) listEventDataStoresRaw() ([]*EventDataStore, error) {
 	return result, nil
 }
 
-// extractEventDataStoreID extracts the UUID from an ID or ARN.
-func extractEventDataStoreID(idOrARN string) string {
+// ExtractEventDataStoreID extracts the UUID from an event data store ID or
+// ARN. It is the single definition of EDS identity normalisation: every
+// caller that must turn an ID-or-ARN wire value into the storage key routes
+// through here.
+func ExtractEventDataStoreID(idOrARN string) string {
 	if idx := strings.LastIndex(idOrARN, "/"); idx >= 0 {
 		return idOrARN[idx+1:]
 	}
@@ -927,8 +1239,41 @@ func extractEventDataStoreID(idOrARN string) string {
 
 // --- Query operations ---
 
-// SaveQuery persists a query record.
+// SaveQuery persists a new query record. It is the creation write; every
+// later status transition goes through MutateQuery so a terminal status
+// written by CancelQuery can never be blindly overwritten.
 func (s *CloudTrailStore) SaveQuery(qr *QueryRecord) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.queryStore.Put(qr.QueryID, qr)
+}
+
+// AdmitQuery persists a new query record unless the store already holds
+// maxRunning non-terminal queries, in which case it refuses the admission
+// with ErrMaxConcurrentQueries. The count and the write run under the
+// store mutex as one step, so two simultaneous admissions cannot both
+// slip past the bound.
+func (s *CloudTrailStore) AdmitQuery(qr *QueryRecord, maxRunning int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	running := 0
+	err := s.queryStore.ForEach(func(_ string, value []byte) error {
+		var existing QueryRecord
+		if err := json.Unmarshal(value, &existing); err != nil {
+			return err
+		}
+		if !QueryTerminalStatus(existing.QueryStatus) {
+			running++
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if running >= maxRunning {
+		return ErrMaxConcurrentQueries
+	}
 	return s.queryStore.Put(qr.QueryID, qr)
 }
 
@@ -936,53 +1281,226 @@ func (s *CloudTrailStore) SaveQuery(qr *QueryRecord) error {
 func (s *CloudTrailStore) GetQuery(queryID string) (*QueryRecord, error) {
 	var qr QueryRecord
 	if err := s.queryStore.Get(queryID, &qr); err != nil {
-		return nil, ErrQueryNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrQueryNotFound
+		}
+		return nil, err
 	}
 	return &qr, nil
 }
 
-// ListQueriesByEDS lists queries for an event data store.
+// MutateQuery loads the query record, applies apply under the store mutex,
+// and persists the result — the compare-and-set the executor and CancelQuery
+// coordinate through: both check the persisted status inside apply, so the
+// status one caller wrote is never silently overwritten by the other. An
+// error from apply aborts the mutation and is returned verbatim.
+func (s *CloudTrailStore) MutateQuery(queryID string, apply func(*QueryRecord) error) (*QueryRecord, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var qr QueryRecord
+	if err := s.queryStore.Get(queryID, &qr); err != nil {
+		if common.IsNotFound(err) {
+			return nil, ErrQueryNotFound
+		}
+		return nil, err
+	}
+	if err := apply(&qr); err != nil {
+		if errors.Is(err, ErrUnchanged) {
+			return &qr, nil
+		}
+		return nil, err
+	}
+	if err := s.queryStore.Put(qr.QueryID, &qr); err != nil {
+		return nil, err
+	}
+	return &qr, nil
+}
+
+// ListQueriesByEDS lists queries for an event data store. A record that
+// fails to unmarshal aborts the listing — corrupt state must surface, not
+// silently shrink the result set.
 func (s *CloudTrailStore) ListQueriesByEDS(edsID string) ([]*QueryRecord, error) {
 	var result []*QueryRecord
 	err := s.queryStore.ForEach(func(_ string, value []byte) error {
 		var qr QueryRecord
 		if err := json.Unmarshal(value, &qr); err != nil {
-			return nil
+			return err
 		}
-		if extractEventDataStoreID(qr.EventDataStore) == edsID {
+		if ExtractEventDataStoreID(qr.EventDataStore) == edsID {
 			result = append(result, &qr)
 		}
 		return nil
 	})
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// PurgeQueriesBefore deletes every query record whose StartTime precedes
+// the cutoff, collecting the doomed keys first and deleting after the
+// walk — the store's purge pattern. "Returns a list of queries and query
+// statuses for the past seven days" (ListQueries) bounds the records'
+// lifetime as well as the listing — the retention sweep keeps the bucket
+// from growing without bound.
+func (s *CloudTrailStore) PurgeQueriesBefore(cutoff time.Time) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	purged := 0
+	var doomed []string
+	err := s.queryStore.ForEach(func(key string, value []byte) error {
+		var qr QueryRecord
+		if err := json.Unmarshal(value, &qr); err != nil {
+			return err
+		}
+		if qr.StartTime.Before(cutoff) {
+			doomed = append(doomed, key)
+		}
+		return nil
+	})
+	if err != nil {
+		return purged, err
+	}
+	for _, key := range doomed {
+		if err := s.queryStore.Delete(key); err != nil {
+			return purged, err
+		}
+		purged++
+	}
+	return purged, nil
 }
 
 // --- Channel operations ---
 
-// CreateChannel persists a new channel.
+// CreateChannel persists a new channel. Channel names are unique within
+// the account and region: a name already carried by another channel is
+// rejected with ErrChannelAlreadyExists. Sources are unique too — "A
+// maximum of one channel is allowed per source" (CreateChannel Source) —
+// so a source already carried by another channel is rejected with
+// ErrChannelSourceInUse.
 func (s *CloudTrailStore) CreateChannel(ch *Channel) (*Channel, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	taken, err := s.channelTaken("", func(c *Channel) bool { return c.Name == ch.Name })
+	if err != nil {
+		return nil, err
+	}
+	if taken {
+		return nil, ErrChannelAlreadyExists
+	}
+	sourceTaken, err := s.channelTaken("", func(c *Channel) bool { return c.Source == ch.Source })
+	if err != nil {
+		return nil, err
+	}
+	if sourceTaken {
+		return nil, ErrChannelSourceInUse
+	}
+
+	// The channel quota holds at admission: "Channels — 25 ... This quota
+	// cannot be increased" (Quotas in AWS CloudTrail); the count runs under
+	// the creation mutex so the check and the write are one step.
+	channelCount := 0
+	if err := s.channelStore.ForEach(func(_ string, _ []byte) error {
+		channelCount++
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	if channelCount >= MaxChannelsPerRegion {
+		return nil, ErrChannelQuotaExceeded
+	}
+
 	ch.CreatedAt = time.Now().UTC()
 	ch.UpdatedAt = ch.CreatedAt
 	return ch, s.channelStore.Put(ch.ChannelARN, ch)
+}
+
+// channelTaken reports whether a channel other than excludeARN matches
+// match — the one scan the name- and source-uniqueness guards share,
+// running under the caller's store mutex.
+func (s *CloudTrailStore) channelTaken(excludeARN string, match func(*Channel) bool) (bool, error) {
+	taken := false
+	err := s.channelStore.ForEach(func(_ string, value []byte) error {
+		var ch Channel
+		if err := json.Unmarshal(value, &ch); err != nil {
+			return nil
+		}
+		if ch.ChannelARN != excludeARN && match(&ch) {
+			taken = true
+		}
+		return nil
+	})
+	return taken, err
 }
 
 // GetChannel retrieves a channel by ARN.
 func (s *CloudTrailStore) GetChannel(arn string) (*Channel, error) {
 	var ch Channel
 	if err := s.channelStore.Get(arn, &ch); err != nil {
-		return nil, ErrChannelNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrChannelNotFound
+		}
+		return nil, err
 	}
 	return &ch, nil
 }
 
-// UpdateChannel updates an existing channel.
-func (s *CloudTrailStore) UpdateChannel(ch *Channel) error {
+// MutateChannel loads the channel, applies apply under the store mutex,
+// enforces channel-name uniqueness (the applied record may carry a new
+// name), and persists the result. The whole read-modify-write is atomic.
+// An error from apply aborts the mutation and is returned verbatim.
+func (s *CloudTrailStore) MutateChannel(arn string, apply func(*Channel) error) (*Channel, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var ch Channel
+	if err := s.channelStore.Get(arn, &ch); err != nil {
+		if common.IsNotFound(err) {
+			return nil, ErrChannelNotFound
+		}
+		return nil, err
+	}
+	if err := apply(&ch); err != nil {
+		if errors.Is(err, ErrUnchanged) {
+			return &ch, nil
+		}
+		return nil, err
+	}
+	taken, err := s.channelTaken(ch.ChannelARN, func(c *Channel) bool { return c.Name == ch.Name })
+	if err != nil {
+		return nil, err
+	}
+	if taken {
+		return nil, ErrChannelAlreadyExists
+	}
 	ch.UpdatedAt = time.Now().UTC()
-	return s.channelStore.Put(ch.ChannelARN, ch)
+	if err := s.channelStore.Put(ch.ChannelARN, &ch); err != nil {
+		return nil, err
+	}
+	return &ch, nil
 }
 
-// DeleteChannel deletes a channel by ARN.
-func (s *CloudTrailStore) DeleteChannel(arn string) error {
+// DeleteChannelIf deletes a channel when guard raises no objection. The
+// guard runs under the store mutex with the loaded record, so its verdict
+// cannot race with a concurrent channel update; an error from guard aborts
+// the delete and is returned verbatim.
+func (s *CloudTrailStore) DeleteChannelIf(arn string, guard func(*Channel) error) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var ch Channel
+	if err := s.channelStore.Get(arn, &ch); err != nil {
+		if common.IsNotFound(err) {
+			return ErrChannelNotFound
+		}
+		return err
+	}
+	if err := guard(&ch); err != nil {
+		return err
+	}
 	return s.channelStore.Delete(arn)
 }
 
@@ -994,11 +1512,16 @@ func (s *CloudTrailStore) ListChannels(opts common.ListOptions) (*common.ListRes
 // --- Event Configuration ---
 
 // GetEventConfiguration retrieves event configuration for a trail or EDS.
+// A missing record yields ErrEventConfigurationNotFound; every other
+// failure propagates (the Lake families' not-found/I-O distinction).
 func (s *CloudTrailStore) GetEventConfiguration(trailName, edsID string) (map[string]interface{}, error) {
 	key := eventConfigKey(trailName, edsID)
 	var config map[string]interface{}
 	if err := s.eventConfigStore.Get(key, &config); err != nil {
-		return nil, fmt.Errorf("event configuration not found")
+		if common.IsNotFound(err) {
+			return nil, ErrEventConfigurationNotFound
+		}
+		return nil, err
 	}
 	return config, nil
 }
@@ -1009,6 +1532,14 @@ func (s *CloudTrailStore) PutEventConfiguration(trailName, edsID string, config 
 	return s.eventConfigStore.Put(key, config)
 }
 
+// DeleteEventConfiguration removes the event configuration for a trail or
+// event data store — the trail-deletion cleanup path, so a deleted trail
+// leaves no orphan configuration record behind.
+func (s *CloudTrailStore) DeleteEventConfiguration(trailName, edsID string) error {
+	key := eventConfigKey(trailName, edsID)
+	return s.eventConfigStore.Delete(key)
+}
+
 func eventConfigKey(trailName, edsID string) string {
 	if trailName != "" {
 		return "trail:" + trailName
@@ -1016,27 +1547,50 @@ func eventConfigKey(trailName, edsID string) string {
 	return "eds:" + edsID
 }
 
-// --- Delegated Admin ---
-
-// RegisterDelegatedAdmin registers a delegated admin account.
-func (s *CloudTrailStore) RegisterDelegatedAdmin(accountID string) error {
-	return s.delegatedAdminStore.Put(accountID, true)
-}
-
-// DeregisterDelegatedAdmin removes a delegated admin registration.
-func (s *CloudTrailStore) DeregisterDelegatedAdmin(accountID string) error {
-	return s.delegatedAdminStore.Delete(accountID)
-}
-
-// IsDelegatedAdmin checks if an account is a registered delegated admin.
-func (s *CloudTrailStore) IsDelegatedAdmin(accountID string) bool {
-	return s.delegatedAdminStore.Exists(accountID)
-}
-
 // --- Import operations ---
 
 // CreateImport persists a new import record.
 func (s *CloudTrailStore) CreateImport(imp *Import) (*Import, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return imp, s.importStore.Put(imp.ImportID, imp)
+}
+
+// ErrImportOngoing is returned by CreateImportIfNoOngoing when any import
+// record is INITIALIZING or IN_PROGRESS.
+var ErrImportOngoing = errors.New("an import is already in progress")
+
+// Resource-quota sentinels: the creation methods enforce the fetched
+// "Quotas in AWS CloudTrail" counts under the store mutex; the service
+// layer maps each to the model's declared error shape.
+var (
+	ErrTrailQuotaExceeded          = errors.New("the trail quota for the region is exceeded")
+	ErrEventDataStoreQuotaExceeded = errors.New("the event data store quota for the region is exceeded")
+	ErrChannelQuotaExceeded        = errors.New("the channel quota for the region is exceeded")
+)
+
+// CreateImportIfNoOngoing admits a new import only when no other import is
+// INITIALIZING or IN_PROGRESS: the ongoing scan and the creation write run
+// under the store mutex as one step, so two concurrent StartImport calls
+// cannot both pass the one-ongoing-import contract (AdmitQuery is the
+// precedent for count-and-write admission).
+func (s *CloudTrailStore) CreateImportIfNoOngoing(imp *Import) (*Import, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	err := s.importStore.ForEach(func(_ string, value []byte) error {
+		var existing Import
+		if err := json.Unmarshal(value, &existing); err != nil {
+			return err
+		}
+		if existing.ImportStatus == "INITIALIZING" || existing.ImportStatus == "IN_PROGRESS" {
+			return ErrImportOngoing
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 	return imp, s.importStore.Put(imp.ImportID, imp)
 }
 
@@ -1044,15 +1598,41 @@ func (s *CloudTrailStore) CreateImport(imp *Import) (*Import, error) {
 func (s *CloudTrailStore) GetImport(importID string) (*Import, error) {
 	var imp Import
 	if err := s.importStore.Get(importID, &imp); err != nil {
-		return nil, ErrImportNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrImportNotFound
+		}
+		return nil, err
 	}
 	return &imp, nil
 }
 
-// UpdateImport updates an existing import record.
-func (s *CloudTrailStore) UpdateImport(imp *Import) error {
+// MutateImport loads the import record, applies apply under the store mutex,
+// and persists the result. The status transitions of the import executor and
+// StopImport coordinate through it: both check the persisted status inside
+// apply, so a STOPPED verdict written mid-execution is never overwritten.
+// An error from apply aborts the mutation and is returned verbatim.
+func (s *CloudTrailStore) MutateImport(importID string, apply func(*Import) error) (*Import, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var imp Import
+	if err := s.importStore.Get(importID, &imp); err != nil {
+		if common.IsNotFound(err) {
+			return nil, ErrImportNotFound
+		}
+		return nil, err
+	}
+	if err := apply(&imp); err != nil {
+		if errors.Is(err, ErrUnchanged) {
+			return &imp, nil
+		}
+		return nil, err
+	}
 	imp.UpdatedTimestamp = time.Now().UTC()
-	return s.importStore.Put(imp.ImportID, imp)
+	if err := s.importStore.Put(imp.ImportID, &imp); err != nil {
+		return nil, err
+	}
+	return &imp, nil
 }
 
 // ListImports lists imports with optional destination and status filters.
@@ -1084,34 +1664,20 @@ func (s *CloudTrailStore) ListImportFailures(importID string, opts common.ListOp
 		return nil, err
 	}
 
-	total := len(imp.Failures)
-	offset := 0
-	if opts.Marker != "" {
-		if n, err := strconv.Atoi(opts.Marker); err == nil && n >= 0 {
-			offset = n
-		}
-	}
 	maxItems := opts.MaxItems
 	if maxItems <= 0 {
-		maxItems = 50
+		maxItems = DefaultListImportsResults
 	}
 
-	end := offset + maxItems
-	if end > total {
-		end = total
+	paged := pagination.PaginateSliceByPosition(imp.Failures, opts.Marker, maxItems)
+	items := make([]*ImportFailure, 0, len(paged.Items))
+	for i := range paged.Items {
+		items = append(items, &paged.Items[i])
 	}
 
-	var items []*ImportFailure
-	for i := offset; i < end; i++ {
-		items = append(items, &imp.Failures[i])
-	}
-
-	result := &common.ListResult[ImportFailure]{
-		Items: items,
-	}
-	if end < total {
-		result.NextMarker = strconv.Itoa(end)
-		result.IsTruncated = true
-	}
-	return result, nil
+	return &common.ListResult[ImportFailure]{
+		Items:       items,
+		NextMarker:  paged.NextMarker,
+		IsTruncated: paged.IsTruncated,
+	}, nil
 }

@@ -98,6 +98,10 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 		name := tc.uniqueName("tagtrail")
 		defer tc.deleteTrail(name)
 
+		if err := tc.ensureTrailBucket("tagtrail-bucket"); err != nil {
+			return err
+		}
+
 		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:         aws.String(name),
 			S3BucketName: aws.String("tagtrail-bucket"),
@@ -179,6 +183,10 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 		name := tc.uniqueName("listtags")
 		defer tc.deleteTrail(name)
 
+		if err := tc.ensureTrailBucket("listtags-bucket"); err != nil {
+			return err
+		}
+
 		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:         aws.String(name),
 			S3BucketName: aws.String("listtags-bucket"),
@@ -218,6 +226,10 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 	results = append(results, r.RunTest("cloudtrail", "RemoveTags", func() error {
 		name := tc.uniqueName("rmtags")
 		defer tc.deleteTrail(name)
+
+		if err := tc.ensureTrailBucket("rmtags-bucket"); err != nil {
+			return err
+		}
 
 		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:         aws.String(name),

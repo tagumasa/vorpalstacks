@@ -49,6 +49,18 @@ type SessionCredentials struct {
 	// it is the root user name, which lets the authoriser recognise
 	// legitimate root sessions instead of trusting the ARN suffix alone.
 	PrincipalName string
+	// RoleArn and RoleSessionName mirror the session store's fields; audit
+	// records report them as the sessionIssuer and session name of an
+	// AssumedRole credential.
+	RoleArn         string
+	RoleSessionName string
+	// MFAAuthenticated reports whether the caller authenticated with an
+	// MFA device when obtaining the credentials; the session store's
+	// MultiFactorAuthPresent field.
+	MFAAuthenticated bool
+	// CreatedAt is the session's issuance time (the session store's
+	// CreatedAt), reported as the record's sessionContext creationDate.
+	CreatedAt time.Time
 	// Tags carries the caller-supplied session tags and any transitive
 	// tags forwarded from a previous role session. They populate the
 	// EvaluationContext.SessionContext map for policy evaluation.

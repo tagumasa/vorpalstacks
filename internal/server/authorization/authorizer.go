@@ -16,7 +16,9 @@ import (
 	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/store/aws/common"
 	"vorpalstacks/internal/store/aws/iam"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // Authorizer handles IAM-based authorization for AWS service requests.
@@ -152,7 +154,7 @@ func (a *Authorizer) Authorize(
 	if accessKey.UserName == iam.RootUserName {
 		reqCtx.Principal = iam.RootUserName
 		reqCtx.PrincipalID = iam.RootUserName
-		reqCtx.PrincipalType = request.PrincipalTypeUser
+		reqCtx.PrincipalType = request.PrincipalTypeRoot
 		return true, nil
 	}
 
@@ -395,7 +397,8 @@ func (a *Authorizer) authorizeSession(
 	if sessionCreds.PrincipalType == "Root" {
 		reqCtx.Principal = iam.RootUserName
 		reqCtx.PrincipalID = iam.RootUserName
-		reqCtx.PrincipalType = request.PrincipalTypeUser
+		reqCtx.PrincipalType = request.PrincipalTypeRoot
+		reqCtx.Session = a.rootSessionInfo(reqCtx, sessionCreds)
 
 		if sessionCreds.Policy == "" && len(sessionCreds.PolicyArns) == 0 {
 			logs.Warn("Root session without a task policy denied",
@@ -428,7 +431,8 @@ func (a *Authorizer) authorizeSession(
 	if strings.HasSuffix(sessionCreds.PrincipalArn, ":root") && sessionCreds.PrincipalName == iam.RootUserName {
 		reqCtx.Principal = iam.RootUserName
 		reqCtx.PrincipalID = iam.RootUserName
-		reqCtx.PrincipalType = request.PrincipalTypeUser
+		reqCtx.PrincipalType = request.PrincipalTypeRoot
+		reqCtx.Session = a.rootSessionInfo(reqCtx, sessionCreds)
 		return true, nil
 	}
 
@@ -452,11 +456,13 @@ func (a *Authorizer) authorizeSession(
 		reqCtx.Principal = userName
 		reqCtx.PrincipalID = userName
 		reqCtx.PrincipalType = request.PrincipalTypeUser
+		reqCtx.Session = a.userSessionInfo(reqCtx, sessionCreds, userName)
 	} else {
 		effectivePolicies, _ = a.fetchEffectiveRolePolicies(ctx, sessionCreds.PrincipalArn)
 		reqCtx.Principal = sessionCreds.PrincipalArn
 		reqCtx.PrincipalID = sessionCreds.PrincipalArn
 		reqCtx.PrincipalType = request.PrincipalTypeRole
+		reqCtx.Session = a.roleSessionInfo(reqCtx, sessionCreds)
 	}
 
 	// Build the session evaluation context.
@@ -700,6 +706,95 @@ func extractUserNameFromArn(arn string) string {
 	const userSuffix = ":user/"
 	if idx := strings.Index(arn, userSuffix); idx >= 0 {
 		return arn[idx+len(userSuffix):]
+	}
+	return ""
+}
+
+// rootSessionInfo reports the account-root issuer of a root temporary
+// credential (AssumeRoot, or GetSessionToken called with the root permanent
+// key) for the caller's CloudTrail sessionContext.
+func (a *Authorizer) rootSessionInfo(reqCtx *request.RequestContext, creds *auth.SessionCredentials) *request.SessionInfo {
+	accountID := reqCtx.GetAccountID()
+	return &request.SessionInfo{
+		CredentialPrincipalType: "Root",
+		IssuerType:              "Root",
+		IssuerPrincipalID:       accountID,
+		IssuerARN:               arnutil.NewARNBuilder(accountID, "").IAM().Root(),
+		IssuerAccountID:         accountID,
+		IssuerUserName:          iam.RootUserName,
+		MFAAuthenticated:        creds.MFAAuthenticated,
+		CreationDate:            creds.CreatedAt,
+	}
+}
+
+// userSessionInfo reports the IAM-user (or root) issuer of a User or
+// FederatedUser temporary credential: GetSessionToken and GetFederationToken
+// sessions are issued by the permanent identity that called the STS API.
+func (a *Authorizer) userSessionInfo(reqCtx *request.RequestContext, creds *auth.SessionCredentials, userName string) *request.SessionInfo {
+	info := &request.SessionInfo{
+		CredentialPrincipalType: creds.PrincipalType,
+		SessionName:             creds.PrincipalName,
+		IssuerType:              "IAMUser",
+		IssuerAccountID:         reqCtx.GetAccountID(),
+		IssuerUserName:          userName,
+		MFAAuthenticated:        creds.MFAAuthenticated,
+		CreationDate:            creds.CreatedAt,
+	}
+	if creds.PrincipalName == iam.RootUserName {
+		info.IssuerType = "Root"
+		info.IssuerPrincipalID = reqCtx.GetAccountID()
+		info.IssuerARN = arnutil.NewARNBuilder(reqCtx.GetAccountID(), "").IAM().Root()
+		return info
+	}
+	if user, err := a.iamStore.Users().Get(userName); err == nil && user != nil {
+		info.IssuerPrincipalID = user.ID
+		info.IssuerARN = user.Arn
+	} else if err != nil && !common.IsNotFound(err) {
+		// A deleted issuer leaves the enrichment empty by contract; a
+		// store fault is the only lookup failure worth the log.
+		logs.Error("IAM user lookup failed during session issuer enrichment",
+			logs.String("user", userName), logs.Err(err))
+	}
+	return info
+}
+
+// roleSessionInfo reports the assumed-role issuer of a role temporary
+// credential (AssumeRole, SAML, web identity): the sessionIssuer is the role
+// whose policies the session intersects.
+func (a *Authorizer) roleSessionInfo(reqCtx *request.RequestContext, creds *auth.SessionCredentials) *request.SessionInfo {
+	info := &request.SessionInfo{
+		CredentialPrincipalType: creds.PrincipalType,
+		SessionName:             creds.RoleSessionName,
+		IssuerType:              "Role",
+		IssuerARN:               creds.RoleArn,
+		IssuerAccountID:         reqCtx.GetAccountID(),
+		IssuerUserName:          roleNameFromArn(creds.RoleArn),
+		MFAAuthenticated:        creds.MFAAuthenticated,
+		CreationDate:            creds.CreatedAt,
+	}
+	if info.IssuerUserName != "" {
+		if role, err := a.iamStore.Roles().Get(info.IssuerUserName); err == nil && role != nil {
+			info.IssuerPrincipalID = role.ID
+		} else if err != nil && !common.IsNotFound(err) {
+			// A deleted issuer leaves the enrichment empty by contract; a
+			// store fault is the only lookup failure worth the log.
+			logs.Error("IAM role lookup failed during session issuer enrichment",
+				logs.String("role", info.IssuerUserName), logs.Err(err))
+		}
+	}
+	return info
+}
+
+// roleNameFromArn returns the role name of an IAM role ARN, tolerating
+// path-qualified role names (the name is the final path segment).
+func roleNameFromArn(arn string) string {
+	const roleSuffix = ":role/"
+	if idx := strings.Index(arn, roleSuffix); idx >= 0 {
+		name := arn[idx+len(roleSuffix):]
+		if slash := strings.LastIndex(name, "/"); slash >= 0 {
+			return name[slash+1:]
+		}
+		return name
 	}
 	return ""
 }

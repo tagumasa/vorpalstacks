@@ -157,7 +157,8 @@ func (c *Classifier) detectProtocol(r *http.Request, bodyBytes []byte) Protocol 
 		strings.HasPrefix(r.URL.Path, "/service/GraniteServiceVersion20100801/") ||
 		isAppSyncPath(r.URL.Path) ||
 		request.IsNeptuneGraphPath(r.URL.Path) ||
-		isIoTPath(r.URL.Path) {
+		isIoTPath(r.URL.Path) ||
+		isCloudTrailDataPath(r.URL.Path) {
 		return ProtocolRESTJSON
 	}
 	return ProtocolUnknown
@@ -210,6 +211,10 @@ func (c *Classifier) serviceFromSigningService(r *http.Request, bodyBytes []byte
 		// iot-data-plane (Thing Shadows) signs as "iotdata" but its handlers
 		// are registered under the iot service.
 		"iotdata": "iot",
+		// The CloudTrail data-ingestion service signs as
+		// "cloudtraildataservice" (its SDK endpoints metadata signing name)
+		// but its handler is registered under the cloudtrail-data service.
+		"cloudtraildataservice": "cloudtrail-data",
 	}
 	if mapped, ok := mapping[signingService]; ok {
 		if signingService == "timestream" {
@@ -394,6 +399,9 @@ func isIPAddress(s string) bool {
 func (c *Classifier) determineOperation(r *http.Request, bodyBytes []byte, cr *ClassifiedRequest) string {
 	if op := rdsDataOperationFromPath(r.URL.Path); op != "" {
 		return op
+	}
+	if r.URL.Path == "/PutAuditEvents" {
+		return "PutAuditEvents"
 	}
 
 	xAmzTarget := r.Header.Get("X-Amz-Target")

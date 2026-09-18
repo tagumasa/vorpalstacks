@@ -6,14 +6,11 @@ import (
 	"vorpalstacks/internal/common/request"
 )
 
-// selectorTrailName resolves the trail selector shared by the event-selector
-// operations: TrailName first, then the TrailArn fallback.
+// selectorTrailName resolves the selector operations' single input member.
+// The four selector request shapes declare TrailName only; the value may
+// still be a trail name or a trail ARN (ResolveTrail accepts both).
 func selectorTrailName(req *request.ParsedRequest) string {
-	trailName := req.GetParam("TrailName")
-	if trailName == "" {
-		trailName = req.GetParam("TrailArn")
-	}
-	return trailName
+	return req.GetParam("TrailName")
 }
 
 // LookupEvents looks up events in CloudTrail based on the specified lookup attributes.
@@ -30,8 +27,6 @@ func (s *CloudTrailService) LookupEvents(ctx context.Context, reqCtx *request.Re
 		EndTimeRaw:       req.Parameters["EndTime"],
 		NextToken:        req.GetParam("NextToken"),
 		LookupAttributes: req.Parameters["LookupAttributes"],
-		EventNames:       req.Parameters["EventNames"],
-		Username:         req.GetParam("Username"),
 		EventCategory:    req.GetParam("EventCategory"),
 		MaxResults:       request.GetIntParam(req.Parameters, "MaxResults"),
 	})
@@ -66,7 +61,7 @@ func (s *CloudTrailService) GetEventSelectors(ctx context.Context, reqCtx *reque
 	}
 
 	resp := map[string]interface{}{
-		"TrailArn": trail.TrailARN,
+		"TrailARN": trail.TrailARN,
 	}
 	if len(trail.EventSelectors) > 0 {
 		resp["EventSelectors"] = formatEventSelectors(trail.EventSelectors)
@@ -103,15 +98,7 @@ func (s *CloudTrailService) GetInsightSelectors(ctx context.Context, reqCtx *req
 		return nil, s.mapStoreError(err)
 	}
 
-	trail, err := s.resolveTrailCore(store, selectorTrailName(req))
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"TrailArn":         trail.TrailARN,
-		"InsightSelectors": formatInsightSelectors(trail.InsightSelectors),
-	}, nil
+	return s.getInsightSelectorsCore(store, selectorTrailName(req))
 }
 
 // PutInsightSelectors configures insight selectors for a trail.
@@ -123,6 +110,8 @@ func (s *CloudTrailService) PutInsightSelectors(ctx context.Context, reqCtx *req
 
 	return s.putInsightSelectorsCore(store, PutInsightSelectorsInput{
 		TrailName:           selectorTrailName(req),
+		EventDataStore:      req.GetParam("EventDataStore"),
+		InsightsDestination: req.GetParam("InsightsDestination"),
 		InsightSelectorsRaw: req.Parameters["InsightSelectors"],
 	})
 }

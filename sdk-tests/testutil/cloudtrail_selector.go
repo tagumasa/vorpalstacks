@@ -26,6 +26,12 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 		if err != nil {
 			return err
 		}
+		// TrailARN is the model member spelling — a misspelt key is
+		// silently dropped by the SDK deserialiser, so its presence is the
+		// wire-casing pin.
+		if resp.TrailARN == nil || *resp.TrailARN == "" {
+			return fmt.Errorf("GetEventSelectors returned no TrailARN")
+		}
 		if len(resp.EventSelectors) != 1 {
 			return fmt.Errorf("expected exactly 1 default event selector, got %d", len(resp.EventSelectors))
 		}
@@ -120,6 +126,28 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 		return nil
 	}))
 
+	// Basic and advanced selectors are mutually exclusive in one request.
+	results = append(results, r.RunTest("cloudtrail", "PutEventSelectors_BothFormsRejected", func() error {
+		name := tc.uniqueName("both-forms")
+		defer tc.deleteTrail(name)
+
+		if _, err := tc.createTrail(name, "both-forms-bucket"); err != nil {
+			return err
+		}
+		_, err := tc.client.PutEventSelectors(tc.ctx, &cloudtrail.PutEventSelectorsInput{
+			TrailName: aws.String(name),
+			EventSelectors: []types.EventSelector{
+				{ReadWriteType: types.ReadWriteTypeAll, IncludeManagementEvents: aws.Bool(true)},
+			},
+			AdvancedEventSelectors: []types.AdvancedEventSelector{
+				{FieldSelectors: []types.AdvancedFieldSelector{
+					{Field: aws.String("eventCategory"), Equals: []string{"Management"}},
+				}},
+			},
+		})
+		return AssertErrorContains(err, "InvalidEventSelectorsException")
+	}))
+
 	results = append(results, r.RunTest("cloudtrail", "PutEventSelectors_ExcludeManagementEventSources", func() error {
 		name := tc.uniqueName("emes")
 		defer tc.deleteTrail(name)
@@ -188,7 +216,31 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 		if resp.InsightSelectors[0].InsightType != types.InsightTypeApiCallRateInsight {
 			return fmt.Errorf("insight type mismatch")
 		}
+
+		// A selector entry without an InsightType is rejected.
+		_, err = tc.client.PutInsightSelectors(tc.ctx, &cloudtrail.PutInsightSelectorsInput{
+			TrailName:        aws.String(name),
+			InsightSelectors: []types.InsightSelector{{}},
+		})
+		if err := AssertErrorContains(err, "InvalidInsightSelectorsException"); err != nil {
+			return err
+		}
 		return nil
+	}))
+
+	// A trail without insight selectors has Insights events not enabled:
+	// the operation answers with its declared exception, not an empty list.
+	results = append(results, r.RunTest("cloudtrail", "GetInsightSelectors_NotEnabled", func() error {
+		name := tc.uniqueName("ins-not-enabled")
+		defer tc.deleteTrail(name)
+
+		if _, err := tc.createTrail(name, "ins-not-enabled-bucket"); err != nil {
+			return err
+		}
+		_, err := tc.client.GetInsightSelectors(tc.ctx, &cloudtrail.GetInsightSelectorsInput{
+			TrailName: aws.String(name),
+		})
+		return AssertErrorContains(err, "InsightNotEnabledException")
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetInsightSelectors", func() error {
@@ -223,27 +275,6 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 		}
 		if resp.InsightSelectors[0].InsightType != types.InsightTypeApiErrorRateInsight {
 			return fmt.Errorf("expected ApiErrorRateInsight, got %s", resp.InsightSelectors[0].InsightType)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("cloudtrail", "GetInsightSelectors_Empty", func() error {
-		name := tc.uniqueName("empty-insight")
-		defer tc.deleteTrail(name)
-
-		_, err := tc.createTrail(name, "empty-insight-bucket")
-		if err != nil {
-			return err
-		}
-
-		resp, err := tc.client.GetInsightSelectors(tc.ctx, &cloudtrail.GetInsightSelectorsInput{
-			TrailName: aws.String(name),
-		})
-		if err != nil {
-			return fmt.Errorf("get: %v", err)
-		}
-		if len(resp.InsightSelectors) != 0 {
-			return fmt.Errorf("expected 0 insight selectors for new trail, got %d", len(resp.InsightSelectors))
 		}
 		return nil
 	}))

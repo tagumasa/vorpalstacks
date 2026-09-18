@@ -147,11 +147,13 @@ func (s *SessionStore) Create(params CreateSessionParams) (*Session, error) {
 		durationSeconds = 3600
 	}
 
+	now := time.Now().UTC()
 	session := &Session{
 		SessionToken:           sessionToken,
 		AccessKeyId:            accessKeyId,
 		SecretAccessKey:        secretAccessKey,
-		Expiration:             time.Now().UTC().Add(time.Duration(durationSeconds) * time.Second),
+		Expiration:             now.Add(time.Duration(durationSeconds) * time.Second),
+		CreatedAt:              now,
 		PrincipalArn:           params.PrincipalArn,
 		PrincipalType:          params.PrincipalType,
 		PrincipalName:          params.PrincipalName,
@@ -247,16 +249,20 @@ func (s *SessionStore) ResolveSession(accessKeyId string) (*auth.SessionCredenti
 		return nil, err
 	}
 	return &auth.SessionCredentials{
-		AccessKeyID:     session.AccessKeyId,
-		SecretAccessKey: session.SecretAccessKey,
-		SessionToken:    session.SessionToken,
-		PrincipalArn:    session.PrincipalArn,
-		PrincipalType:   session.PrincipalType,
-		PrincipalName:   session.PrincipalName,
-		Tags:            session.Tags,
-		SourceIdentity:  session.SourceIdentity,
-		Policy:          session.Policy,
-		PolicyArns:      session.PolicyArns,
+		AccessKeyID:      session.AccessKeyId,
+		SecretAccessKey:  session.SecretAccessKey,
+		SessionToken:     session.SessionToken,
+		PrincipalArn:     session.PrincipalArn,
+		PrincipalType:    session.PrincipalType,
+		PrincipalName:    session.PrincipalName,
+		RoleArn:          session.RoleArn,
+		RoleSessionName:  session.RoleSessionName,
+		MFAAuthenticated: session.MultiFactorAuthPresent,
+		CreatedAt:        session.CreatedAt,
+		Tags:             session.Tags,
+		SourceIdentity:   session.SourceIdentity,
+		Policy:           session.Policy,
+		PolicyArns:       session.PolicyArns,
 	}, nil
 }
 

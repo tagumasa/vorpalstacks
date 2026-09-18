@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"vorpalstacks/internal/client/mobyclient"
 	"vorpalstacks/internal/common/auth"
@@ -140,8 +141,40 @@ func (a *App) initAPIGateway(st *serviceState) error {
 func (a *App) initCloudTrail(st *serviceState) error {
 	st.cloudTrailService = svccloudtrail.NewCloudTrailService(st.accountID, st.region)
 	st.cloudTrailService.SetStorageManager(a.server.StorageManager())
+	if iamStore := a.server.IAMStore(); iamStore != nil {
+		st.cloudTrailService.SetRoleProvider(iamStore.Roles())
+	}
+	if eb := a.server.EventBus(); eb != nil {
+		// The registry is held, not a resolved invoker: CloudTrail
+		// initialises before S3 registers its invoker, and the delivery
+		// path resolves at call time.
+		st.cloudTrailService.SetInvokerRegistry(eb)
+	}
+	if err := st.cloudTrailService.StartEventHistoryPurger(); err != nil {
+		return fmt.Errorf("cloudtrail retention configuration: %w", err)
+	}
+	st.cloudTrailService.StartTrailDeliveryWorker()
 	st.cloudTrailService.RegisterHandlers(a.server.Dispatcher())
+	a.addShutdown("cloudtrail", func(ctx context.Context) error {
+		st.cloudTrailService.Stop()
+		return nil
+	})
 	return nil
+}
+
+// runTestModeBootPurge bounds the CloudTrail event history on TEST_MODE
+// boots: every entry older than 24 hours is removed synchronously before
+// the server starts serving, so regression traffic always begins from a
+// bounded history. Non-TEST_MODE boots never purge at startup; retention
+// there is the 90-day retention worker (AWS behaviour).
+func (a *App) runTestModeBootPurge(st *serviceState) {
+	if os.Getenv("TEST_MODE") != "true" {
+		return
+	}
+	if !a.cfg.CloudTrail || st.cloudTrailService == nil {
+		return
+	}
+	st.cloudTrailService.BootPurgeEventHistory()
 }
 
 // --- CloudWatch ---

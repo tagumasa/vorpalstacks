@@ -31,6 +31,16 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 		return nil
 	}))
 
+	results = append(results, r.RunTest("cloudtrail", "DeleteTrail_InvalidARN", func() error {
+		_, err := tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{
+			Name: aws.String("arn:aws:s3:::not-a-trail-arn"),
+		})
+		if err := AssertErrorContains(err, "CloudTrailARNInvalidException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("cloudtrail", "StartLogging_NonExistent", func() error {
 		_, err := tc.client.StartLogging(tc.ctx, &cloudtrail.StartLoggingInput{
 			Name: aws.String("nonexistent-trail-xyz"),
@@ -163,15 +173,15 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 		return nil
 	}))
 
-	results = append(results, r.RunTest("cloudtrail", "GetResourcePolicy_NonExistentTrail", func() error {
+	// The resource-policy operations serve event data stores, dashboards,
+	// and channels: a trail ARN addresses an unsupported resource type, not
+	// a missing trail.
+	results = append(results, r.RunTest("cloudtrail", "GetResourcePolicy_TrailARNRejected", func() error {
 		fakeARN := tc.trailARN("nonexistent-grp-xyz")
 		_, err := tc.client.GetResourcePolicy(tc.ctx, &cloudtrail.GetResourcePolicyInput{
 			ResourceArn: aws.String(fakeARN),
 		})
-		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		return AssertErrorContains(err, "ResourceTypeNotSupportedException")
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "LookupEvents_InvalidAttributeKey", func() error {
@@ -180,30 +190,35 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 				{AttributeKey: types.LookupAttributeKey("InvalidKey"), AttributeValue: aws.String("x")},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid AttributeKey")
-		}
-		return nil
+		return AssertErrorContains(err, "InvalidLookupAttributesException")
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "DeleteResourcePolicy_NonExistent", func() error {
-		fakeARN := tc.trailARN("nonexistent-drp-xyz")
+		fakeARN := fmt.Sprintf("arn:aws:cloudtrail:%s:%s:eventdatastore/nonexistent-drp-xyz", tc.region, tc.accountID)
 		_, err := tc.client.DeleteResourcePolicy(tc.ctx, &cloudtrail.DeleteResourcePolicyInput{
 			ResourceArn: aws.String(fakeARN),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for deleting policy on non-existent resource")
-		}
-		return nil
+		return AssertErrorContains(err, "EventDataStoreNotFoundException")
 	}))
 
+	// The trail-name rules: length, adjacency of periods/underscores/
+	// dashes, the letter-or-number anchors, and the IP-format exclusion.
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail_InvalidName", func() error {
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String("x"),
-			S3BucketName: aws.String("valid-bucket"),
-		})
-		if err == nil {
-			return fmt.Errorf("expected error for trail name too short")
+		for _, name := range []string{
+			"x",         // too short
+			"my--trail", // adjacent dashes
+			"my._trail", // adjacent separators
+			"trail-",    // trailing separator
+			"-trail",    // leading separator
+			"1.2.3.4",   // IP address format
+		} {
+			_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
+				Name:         aws.String(name),
+				S3BucketName: aws.String("valid-bucket"),
+			})
+			if err := AssertErrorContains(err, "InvalidTrailNameException"); err != nil {
+				return fmt.Errorf("name %q: %v", name, err)
+			}
 		}
 		return nil
 	}))

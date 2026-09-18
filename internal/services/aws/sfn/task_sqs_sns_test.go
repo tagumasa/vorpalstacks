@@ -47,6 +47,10 @@ func (s *stubSNSInvoker) GetTopic(_ context.Context, _ string) (string, error) {
 	return "", nil
 }
 
+func (s *stubSNSInvoker) GetTopicPolicy(_ context.Context, _ string) (string, error) {
+	return "", nil
+}
+
 func (s *stubSNSInvoker) ListSubscriptionsByTopic(_ context.Context, _ string) ([]invokers.SubscriptionInfo, error) {
 	return nil, nil
 }

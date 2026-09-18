@@ -1066,8 +1066,8 @@ func (a *App) initCloudTrailRecorderFactory(st *serviceState) {
 		if err != nil {
 			return nil
 		}
-		ctStore := st.cloudTrailService.GetEventStore(regionalStorage, region)
-		if ctStore == nil {
+		ctStore, err := st.cloudTrailService.GetEventStore(regionalStorage, region)
+		if err != nil {
 			return nil
 		}
 		return audit.NewCloudTrailRecorder(&cloudTrailStoreAdapter{store: ctStore})
@@ -1082,18 +1082,46 @@ type cloudTrailStoreAdapter struct {
 
 // RecordServiceEvent translates an audit UserIdentity to a cloudtrailstore UserIdentity and
 // delegates to the underlying CloudTrail store.
-func (a *cloudTrailStoreAdapter) RecordServiceEvent(eventName, eventSource string, userIdentity *audit.UserIdentity, sourceIP, accessKeyID string, requestParams, responseElements map[string]interface{}, resources []audit.ResourceEntry) error {
+func (a *cloudTrailStoreAdapter) RecordServiceEvent(eventName, eventSource string, userIdentity *audit.UserIdentity, sourceIP, accessKeyID, userAgent string, readOnly bool, errorCode, errorMessage string, requestParams, responseElements map[string]interface{}, resources []audit.ResourceEntry) error {
 	var storeResources []cloudtrailstore.Resource
 	for _, r := range resources {
 		storeResources = append(storeResources, cloudtrailstore.Resource{ResourceType: r.ResourceType, ResourceName: r.ResourceName})
 	}
 	return a.store.RecordServiceEvent(eventName, eventSource, &cloudtrailstore.UserIdentity{
-		Type:        userIdentity.Type,
-		PrincipalID: userIdentity.PrincipalID,
-		ARN:         userIdentity.ARN,
-		AccountID:   userIdentity.AccountID,
-		UserName:    userIdentity.UserName,
-	}, sourceIP, accessKeyID, requestParams, responseElements, storeResources)
+		Type:           userIdentity.Type,
+		PrincipalID:    userIdentity.PrincipalID,
+		ARN:            userIdentity.ARN,
+		AccountID:      userIdentity.AccountID,
+		AccessKeyID:    userIdentity.AccessKeyID,
+		UserName:       userIdentity.UserName,
+		SessionContext: convertAuditSessionContext(userIdentity.SessionContext),
+	}, sourceIP, accessKeyID, userAgent, readOnly, errorCode, errorMessage, requestParams, responseElements, storeResources)
+}
+
+// convertAuditSessionContext bridges the audit package's session-context
+// type to the store package's record-shaped type; the creation date is
+// truncated to whole seconds, the form the CloudTrail record carries.
+func convertAuditSessionContext(sc *audit.SessionContext) *cloudtrailstore.SessionContext {
+	if sc == nil {
+		return nil
+	}
+	converted := &cloudtrailstore.SessionContext{}
+	if sc.SessionIssuer != nil {
+		converted.SessionIssuer = &cloudtrailstore.SessionIssuer{
+			Type:        sc.SessionIssuer.Type,
+			PrincipalID: sc.SessionIssuer.PrincipalID,
+			ARN:         sc.SessionIssuer.ARN,
+			AccountID:   sc.SessionIssuer.AccountID,
+			UserName:    sc.SessionIssuer.UserName,
+		}
+	}
+	if sc.Attributes != nil {
+		converted.Attributes = &cloudtrailstore.SessionAttributes{
+			MFAAuthenticated: sc.Attributes.MFAAuthenticated,
+			CreationDate:     sc.Attributes.CreationDate.Truncate(time.Second),
+		}
+	}
+	return converted
 }
 
 func (a *App) initPrincipalResolver() {
@@ -1148,8 +1176,8 @@ func (a *App) injectS3AuditRecorder(st *serviceState) {
 	if err != nil {
 		return
 	}
-	ctStore := st.cloudTrailService.GetEventStore(regionalStorage, st.region)
-	if ctStore == nil {
+	ctStore, err := st.cloudTrailService.GetEventStore(regionalStorage, st.region)
+	if err != nil {
 		return
 	}
 	recorder := audit.NewCloudTrailRecorder(&cloudTrailStoreAdapter{store: ctStore})

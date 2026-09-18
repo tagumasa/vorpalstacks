@@ -2,34 +2,46 @@
 package cloudtrail
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/iam"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
-// StoreInterface is a type alias for the CloudTrail store interface. It
-// allows admin_handler.go to reference the store type without importing the
-// store package directly (store-import prohibition).
-type StoreInterface = cloudtrailstore.CloudTrailStoreInterface
-
 // CloudTrailService provides AWS CloudTrail operations.
 type CloudTrailService struct {
-	accountID      string
-	region         string
-	stores         sync.Map // region → cloudtrailstore.CloudTrailStoreInterface
-	storageManager *storage.RegionStorageManager
+	accountID       string
+	region          string
+	roleProvider    iam.RolePolicyProvider
+	invokerRegistry invokers.Registry
+	stores          sync.Map // region → cloudtrailstore.CloudTrailStoreInterface
+	storageManager  *storage.RegionStorageManager
+	retention       time.Duration
+	// queryDeadline overrides LakeQueryDeadline for the query executor.
+	// Zero keeps the documented one-hour deadline; unit tests shrink it to
+	// reach TIMED_OUT deterministically.
+	queryDeadline time.Duration
+	ctx           context.Context
+	cancel        context.CancelFunc
+	wg            sync.WaitGroup
 }
 
 // NewCloudTrailService creates a new CloudTrail service instance.
 func NewCloudTrailService(accountID, region string) *CloudTrailService {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &CloudTrailService{
 		accountID: accountID,
 		region:    region,
+		ctx:       ctx,
+		cancel:    cancel,
 	}
 }
 
@@ -38,14 +50,46 @@ func (s *CloudTrailService) SetStorageManager(sm *storage.RegionStorageManager) 
 	s.storageManager = sm
 }
 
+// SetRoleProvider injects the IAM role policy provider so that the admin
+// console handler can validate CloudWatchLogsRoleArn trust policies.
+func (s *CloudTrailService) SetRoleProvider(rp iam.RolePolicyProvider) {
+	s.roleProvider = rp
+}
+
+// SetInvokerRegistry injects the invoker registry the query delivery path
+// resolves the S3 invoker through at call time. CloudTrail initialises
+// before S3, so the registry is held rather than a resolved invoker: by
+// the time a query delivers, S3 has registered.
+func (s *CloudTrailService) SetInvokerRegistry(reg invokers.Registry) {
+	s.invokerRegistry = reg
+}
+
+// s3Invoker resolves the S3 invoker through the registry, or nil when no
+// registry is wired or S3 has not registered.
+func (s *CloudTrailService) s3Invoker() invokers.S3Invoker {
+	if s.invokerRegistry == nil {
+		return nil
+	}
+	return s.invokerRegistry.S3Invoker()
+}
+
+// RoleProvider returns the injected IAM role policy provider, or nil.
+func (s *CloudTrailService) RoleProvider() iam.RolePolicyProvider {
+	return s.roleProvider
+}
+
+// AccountID returns the account ID for this service.
+func (s *CloudTrailService) AccountID() string {
+	return s.accountID
+}
+
 // GetEventStore returns the shared CloudTrail event store for the given region.
 // This ensures a single store instance per region across the service, the audit
 // recorder factory, and the S3 audit recorder.
-func (s *CloudTrailService) GetEventStore(store storage.BasicStorage, region string) cloudtrailstore.CloudTrailStoreInterface {
-	st, _ := storecommon.GetOrCreateStoreE(&s.stores, region, func() (cloudtrailstore.CloudTrailStoreInterface, error) {
+func (s *CloudTrailService) GetEventStore(store storage.BasicStorage, region string) (cloudtrailstore.CloudTrailStoreInterface, error) {
+	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (cloudtrailstore.CloudTrailStoreInterface, error) {
 		return cloudtrailstore.NewCloudTrailStore(store, s.accountID, region), nil
 	})
-	return st
 }
 
 // GetStoreForRegion returns the cached CloudTrail store for the given region,
@@ -131,4 +175,8 @@ func (s *CloudTrailService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudtrail", "ListImportFailures", s.ListImportFailures)
 	d.RegisterHandlerForService("cloudtrail", "GenerateQuery", s.GenerateQuery)
 	d.RegisterHandlerForService("cloudtrail", "SearchSampleQueries", s.SearchSampleQueries)
+	// The cloudtrail-data service's ingestion endpoint shares this service's
+	// stores (channels and event data stores); its requests are classified
+	// by the cloudtrail-data signing name and the /PutAuditEvents path.
+	d.RegisterHandlerForService("cloudtrail-data", "PutAuditEvents", s.PutAuditEvents)
 }

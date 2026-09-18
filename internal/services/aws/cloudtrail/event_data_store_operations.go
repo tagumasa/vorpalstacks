@@ -8,8 +8,9 @@ import (
 	tags "vorpalstacks/internal/common/tags"
 )
 
-// parseBool handles bool values from request parameters which may be bool or
-// json.Number.
+// parseBool converts a wire value to a boolean, accepting the JSON-protocol
+// bool form and the query-protocol string form ("true"/"false",
+// case-insensitive); any other value is false.
 func parseBool(v interface{}) bool {
 	switch val := v.(type) {
 	case bool:
@@ -44,7 +45,6 @@ func (s *CloudTrailService) CreateEventDataStore(ctx context.Context, reqCtx *re
 		TerminationProtectionEnabled: boolParam(req.Parameters, "TerminationProtectionEnabled"),
 		MultiRegionEnabled:           boolParam(req.Parameters, "MultiRegionEnabled"),
 		OrganizationEnabled:          boolParam(req.Parameters, "OrganizationEnabled"),
-		IngestionEnabled:             boolParam(req.Parameters, "IngestionEnabled"),
 		StartIngestion:               boolParam(req.Parameters, "StartIngestion"),
 		KmsKeyId:                     request.GetStringParam(req.Parameters, "KmsKeyId"),
 		BillingMode:                  request.GetStringParam(req.Parameters, "BillingMode"),
@@ -101,7 +101,6 @@ func (s *CloudTrailService) UpdateEventDataStore(ctx context.Context, reqCtx *re
 		TerminationProtectionEnabled: boolParam(req.Parameters, "TerminationProtectionEnabled"),
 		MultiRegionEnabled:           boolParam(req.Parameters, "MultiRegionEnabled"),
 		OrganizationEnabled:          boolParam(req.Parameters, "OrganizationEnabled"),
-		IngestionEnabled:             boolParam(req.Parameters, "IngestionEnabled"),
 		KmsKeyId:                     request.GetStringParam(req.Parameters, "KmsKeyId"),
 		BillingMode:                  request.GetStringParam(req.Parameters, "BillingMode"),
 	}

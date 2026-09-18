@@ -106,6 +106,7 @@ func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serv
 	httpCtx := r.Context()
 	reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
 	reqCtx.SourceIP = requestSourceIP(r)
+	reqCtx.UserAgent = r.UserAgent()
 	reqCtx.SetIAMStore(d.iamStore, d.iamStore.Roles())
 	if graphDB := request.GraphDBOverride(httpCtx); graphDB != nil {
 		reqCtx.SetGraphDBManager(graphDB, graphDB)

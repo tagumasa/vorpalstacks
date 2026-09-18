@@ -332,6 +332,14 @@ func (s *stubItemReaderS3) PutObject(_ context.Context, _, bucket, key string, d
 	return nil
 }
 
+func (s *stubItemReaderS3) PutObjectWithMetadata(_ context.Context, _, bucket, key string, data []byte, _ string, _ map[string]string) error {
+	return s.PutObject(context.Background(), "", bucket, key, data, "")
+}
+
+func (s *stubItemReaderS3) GetBucketPolicy(_ context.Context, _ string, _ string) (string, error) {
+	return "", nil
+}
+
 func (s *stubItemReaderS3) ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error) {
 	entries, err := s.ListObjectEntries(ctx, region, bucket, prefix, maxKeys)
 	if err != nil {

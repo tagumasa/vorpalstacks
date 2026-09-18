@@ -1,9 +1,5 @@
 package audit
 
-import (
-	arnutil "vorpalstacks/internal/utils/aws/arn"
-)
-
 var _ Recorder = (*CloudTrailRecorder)(nil)
 
 // CloudTrailRecorder records audit events to CloudTrail.
@@ -16,25 +12,13 @@ func NewCloudTrailRecorder(store EventStore) *CloudTrailRecorder {
 	return &CloudTrailRecorder{store: store}
 }
 
-// RecordEvent records a CloudTrail audit event.
+// RecordEvent records a CloudTrail audit event. The userIdentity was
+// derived from the authenticated principal by the event builder; the
+// recorder persists it verbatim.
 func (r *CloudTrailRecorder) RecordEvent(event *AuditEvent) error {
-	userIdentity := &UserIdentity{
-		Type:      "AssumedRole",
-		AccountID: event.AccountID,
-		UserName:  event.PrincipalName,
-	}
-	accessKeyID := event.AccessKeyID
-
-	if accessKeyID != "" {
-		if len(accessKeyID) >= 16 {
-			userIdentity.PrincipalID = "AIDAI" + accessKeyID[:16]
-		} else {
-			userIdentity.PrincipalID = "AIDAI" + accessKeyID
-		}
-		userIdentity.ARN = arnutil.NewARNBuilder(event.AccountID, "").STS().AssumedRole("vorpalstacks", accessKeyID)
-	} else {
-		userIdentity.PrincipalID = "vorpalstacks:vorpalstacks"
-		userIdentity.ARN = arnutil.NewARNBuilder(event.AccountID, "").STS().AssumedRole("vorpalstacks", "vorpalstacks")
+	userIdentity := event.UserIdentity
+	if userIdentity == nil {
+		userIdentity = &UserIdentity{Type: "Unknown", AccountID: event.AccountID}
 	}
 
 	return r.store.RecordServiceEvent(
@@ -43,21 +27,14 @@ func (r *CloudTrailRecorder) RecordEvent(event *AuditEvent) error {
 		userIdentity,
 		event.SourceIP,
 		event.AccessKeyID,
+		event.UserAgent,
+		event.ReadOnly,
+		event.ErrorCode,
+		event.ErrorMessage,
 		event.RequestParameters,
 		event.ResponseElements,
-		buildResources(event),
+		event.Resources,
 	)
-}
-
-func buildResources(event *AuditEvent) []ResourceEntry {
-	if len(event.ResourceTypes) == 0 {
-		return nil
-	}
-	var entries []ResourceEntry
-	for name, typ := range event.ResourceTypes {
-		entries = append(entries, ResourceEntry{ResourceType: typ, ResourceName: name})
-	}
-	return entries
 }
 
 // Record records an audit event if it is an AuditEvent.

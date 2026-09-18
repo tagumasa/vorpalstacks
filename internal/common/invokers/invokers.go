@@ -98,6 +98,13 @@ type ReceivedSQSMessage struct {
 // SNS store.
 type SNSInvoker interface {
 	GetTopic(ctx context.Context, topicARN string) (string, error)
+	// GetTopicPolicy returns the topic's access-policy document JSON, or an
+	// empty string when the topic carries no policy. Consumers that must
+	// verify the topic grants a service principal publish access before
+	// accepting it as a notification destination (CloudTrail's
+	// InsufficientSnsTopicPolicyException) evaluate the document this
+	// returns.
+	GetTopicPolicy(ctx context.Context, topicARN string) (string, error)
 	ListSubscriptionsByTopic(ctx context.Context, topicARN string) ([]SubscriptionInfo, error)
 	PublishToTopic(ctx context.Context, topicARN string, message string, subject string, messageAttributes map[string]string) (messageID string, err error)
 	StoreMessage(ctx context.Context, key string, data any) error
@@ -318,6 +325,11 @@ type S3Invoker interface {
 	// S3 store's version-aware read.
 	GetObjectVersion(ctx context.Context, region, bucket, key, versionID string, maxBytes int64) ([]byte, error)
 	PutObject(ctx context.Context, region, bucket, key string, data []byte, contentType string) error
+	// PutObjectWithMetadata stores the object carrying S3 object metadata
+	// (x-amz-meta-*). Consumers delivering signed artifacts (CloudTrail
+	// digest files carry their signature as object metadata) use this
+	// instead of PutObject.
+	PutObjectWithMetadata(ctx context.Context, region, bucket, key string, data []byte, contentType string, metadata map[string]string) error
 	ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error)
 	// ListObjectEntries lists object metadata under a prefix, mirroring the
 	// ListObjectsV2 item shape Step Functions exposes to Distributed Map
@@ -329,6 +341,12 @@ type S3Invoker interface {
 	// Consumers use it to distinguish a missing source bucket from an
 	// empty one, which listing alone cannot do.
 	BucketExists(ctx context.Context, region, bucket string) (bool, error)
+	// GetBucketPolicy returns the bucket's policy document JSON, or an
+	// empty string when the bucket carries no policy. Consumers that must
+	// verify the bucket grants a service principal write access before
+	// accepting it as a destination (CloudTrail's InsufficientS3Bucket
+	// PolicyException) evaluate the document this returns.
+	GetBucketPolicy(ctx context.Context, region, bucket string) (string, error)
 	// EnsureBucket creates the named bucket when it does not exist yet.
 	// Consumers that own an internal service bucket (e.g. the Cognito
 	// user-import upload bucket) use it instead of requiring operators to
@@ -414,6 +432,19 @@ type LogsLogEntry struct {
 	Timestamp int64
 	Message   string
 }
+
+// PutLogEvents batch bounds from the operation's reference: "The maximum
+// batch size is 1,048,576 bytes. This size is calculated as the sum of all
+// event messages in UTF-8, plus 26 bytes for each log event", "The maximum
+// number of log events in a batch is 10,000", and "Each log event can be
+// no larger than 1 MB". A caller with more events than one batch holds
+// splits the delivery into multiple calls; the events within one batch are
+// in chronological order by timestamp.
+const (
+	PutLogEventsBatchMaxEvents = 10000
+	PutLogEventsBatchMaxBytes  = 1048576
+	PutLogEventsEventOverhead  = 26
+)
 
 // LogsInvoker provides CloudWatch Logs write operations for cross-service
 // consumers (e.g. Lambda function log delivery). Consumers call these methods

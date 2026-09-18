@@ -20,34 +20,95 @@ func TrailToProto(t *Trail) *pb.Trail {
 	if t.StoppedLoggingAt != nil {
 		stoppedAt = t.StoppedLoggingAt.UnixMilli()
 	}
+	var latestDeliveryTime, latestDeliveryAttemptTime, latestDigestTime, lastDigestEnd int64
+	if t.LatestDeliveryTime != nil {
+		latestDeliveryTime = t.LatestDeliveryTime.UnixMilli()
+	}
+	if t.LatestDeliveryAttemptTime != nil {
+		latestDeliveryAttemptTime = t.LatestDeliveryAttemptTime.UnixMilli()
+	}
+	if t.LatestDigestTime != nil {
+		latestDigestTime = t.LatestDigestTime.UnixMilli()
+	}
+	if t.LastDigestEnd != nil {
+		lastDigestEnd = t.LastDigestEnd.UnixMilli()
+	}
+	var latestNotificationTime, latestNotificationAttemptTime, latestCWLogsTime int64
+	if t.LatestNotificationTime != nil {
+		latestNotificationTime = t.LatestNotificationTime.UnixMilli()
+	}
+	if t.LatestNotificationAttemptTime != nil {
+		latestNotificationAttemptTime = t.LatestNotificationAttemptTime.UnixMilli()
+	}
+	if t.LatestCWLogsDeliveryTime != nil {
+		latestCWLogsTime = t.LatestCWLogsDeliveryTime.UnixMilli()
+	}
 
 	return &pb.Trail{
-		Name:                       t.Name,
-		TrailArn:                   t.TrailARN,
-		S3BucketName:               t.S3BucketName,
-		S3KeyPrefix:                t.S3KeyPrefix,
-		SnsTopicName:               t.SnsTopicName,
-		SnsTopicArn:                t.SnsTopicARN,
-		IncludeGlobalServiceEvents: t.IncludeGlobalServiceEvents,
-		IsMultiRegionTrail:         t.IsMultiRegionTrail,
-		HomeRegion:                 t.HomeRegion,
-		IsOrganizationTrail:        t.IsOrganizationTrail,
-		IsLogging:                  t.IsLogging,
-		LogFileValidationEnabled:   t.LogFileValidationEnabled,
-		CloudWatchLogsLogGroupArn:  t.CloudWatchLogsLogGroupARN,
-		CloudWatchLogsRoleArn:      t.CloudWatchLogsRoleARN,
-		KmsKeyId:                   t.KMSKeyID,
-		HasCustomEventSelectors:    t.HasCustomEventSelectors,
-		HasInsightSelectors:        t.HasInsightSelectors,
-		EventSelectors:             eventSelectorsToProto(t.EventSelectors),
-		AdvancedEventSelectors:     trailAdvancedSelectorsToProto(t.AdvancedEventSelectors),
-		InsightSelectors:           insightSelectorsToProto(t.InsightSelectors),
-		CreatedAt:                  t.CreatedAt.UnixMilli(),
-		LastUpdated:                t.LastUpdated.UnixMilli(),
-		StartedLoggingAt:           startedAt,
-		StoppedLoggingAt:           stoppedAt,
-		Tags:                       t.Tags,
+		Name:                               t.Name,
+		TrailArn:                           t.TrailARN,
+		S3BucketName:                       t.S3BucketName,
+		S3KeyPrefix:                        t.S3KeyPrefix,
+		SnsTopicName:                       t.SnsTopicName,
+		SnsTopicArn:                        t.SnsTopicARN,
+		IncludeGlobalServiceEvents:         t.IncludeGlobalServiceEvents,
+		IsMultiRegionTrail:                 t.IsMultiRegionTrail,
+		HomeRegion:                         t.HomeRegion,
+		IsOrganizationTrail:                t.IsOrganizationTrail,
+		IsLogging:                          t.IsLogging,
+		LogFileValidationEnabled:           t.LogFileValidationEnabled,
+		CloudWatchLogsLogGroupArn:          t.CloudWatchLogsLogGroupARN,
+		CloudWatchLogsRoleArn:              t.CloudWatchLogsRoleARN,
+		KmsKeyId:                           t.KMSKeyID,
+		HasCustomEventSelectors:            t.HasCustomEventSelectors,
+		HasInsightSelectors:                t.HasInsightSelectors,
+		EventSelectors:                     eventSelectorsToProto(t.EventSelectors),
+		AdvancedEventSelectors:             trailAdvancedSelectorsToProto(t.AdvancedEventSelectors),
+		InsightSelectors:                   insightSelectorsToProto(t.InsightSelectors),
+		CreatedAt:                          t.CreatedAt.UnixMilli(),
+		LastUpdated:                        t.LastUpdated.UnixMilli(),
+		StartedLoggingAt:                   startedAt,
+		StoppedLoggingAt:                   stoppedAt,
+		DeliveryWatermarksMs:               t.DeliveryWatermarks,
+		LatestDeliveryTimeMs:               latestDeliveryTime,
+		LatestDeliveryError:                t.LatestDeliveryError,
+		LatestDeliveryAttemptTimeMs:        latestDeliveryAttemptTime,
+		LatestDeliveryAttemptSucceeded:     t.LatestDeliveryAttemptSuccess,
+		LatestDigestTimeMs:                 latestDigestTime,
+		LatestDigestError:                  t.LatestDigestError,
+		PreviousDigestBucket:               t.PreviousDigestBucket,
+		PreviousDigestObject:               t.PreviousDigestObject,
+		PreviousDigestHash:                 t.PreviousDigestHash,
+		PreviousDigestSignature:            t.PreviousDigestSignature,
+		LastDigestEndMs:                    lastDigestEnd,
+		PendingDigestFiles:                 digestLogFilesToProto(t.PendingDigestFiles),
+		LatestNotificationTimeMs:           latestNotificationTime,
+		LatestNotificationError:            t.LatestNotificationError,
+		LatestNotificationAttemptTimeMs:    latestNotificationAttemptTime,
+		LatestNotificationAttemptSucceeded: t.LatestNotificationAttemptSuccess,
+		LatestCwLogsDeliveryTimeMs:         latestCWLogsTime,
+		LatestCwLogsDeliveryError:          t.LatestCWLogsDeliveryError,
+		RecursiveLogging:                   t.RecursiveLogging,
+		CwlogsWatermarksMs:                 t.CwlogsWatermarks,
 	}
+}
+
+func digestLogFilesToProto(files []DigestLogFile) []*pb.DigestLogFile {
+	if files == nil {
+		return nil
+	}
+	result := make([]*pb.DigestLogFile, len(files))
+	for i, f := range files {
+		result[i] = &pb.DigestLogFile{
+			Bucket:        f.Bucket,
+			ObjectKey:     f.ObjectKey,
+			HashHex:       f.HashHex,
+			NewestEventMs: f.NewestEventAt.UnixMilli(),
+			OldestEventMs: f.OldestEventAt.UnixMilli(),
+			SignatureHex:  f.SignatureHex,
+		}
+	}
+	return result
 }
 
 // ProtoToTrail converts a protobuf Trail to its internal representation.
@@ -64,34 +125,102 @@ func ProtoToTrail(p *pb.Trail) *Trail {
 		t := time.UnixMilli(p.StoppedLoggingAt)
 		stoppedAt = &t
 	}
+	var latestDeliveryTime, latestDeliveryAttemptTime, latestDigestTime, lastDigestEnd *time.Time
+	if p.LatestDeliveryTimeMs > 0 {
+		t := time.UnixMilli(p.LatestDeliveryTimeMs)
+		latestDeliveryTime = &t
+	}
+	if p.LatestDeliveryAttemptTimeMs > 0 {
+		t := time.UnixMilli(p.LatestDeliveryAttemptTimeMs)
+		latestDeliveryAttemptTime = &t
+	}
+	if p.LatestDigestTimeMs > 0 {
+		t := time.UnixMilli(p.LatestDigestTimeMs)
+		latestDigestTime = &t
+	}
+	if p.LastDigestEndMs > 0 {
+		t := time.UnixMilli(p.LastDigestEndMs)
+		lastDigestEnd = &t
+	}
+	var latestNotificationTime, latestNotificationAttemptTime, latestCWLogsTime *time.Time
+	if p.LatestNotificationTimeMs > 0 {
+		t := time.UnixMilli(p.LatestNotificationTimeMs)
+		latestNotificationTime = &t
+	}
+	if p.LatestNotificationAttemptTimeMs > 0 {
+		t := time.UnixMilli(p.LatestNotificationAttemptTimeMs)
+		latestNotificationAttemptTime = &t
+	}
+	if p.LatestCwLogsDeliveryTimeMs > 0 {
+		t := time.UnixMilli(p.LatestCwLogsDeliveryTimeMs)
+		latestCWLogsTime = &t
+	}
 
 	return &Trail{
-		Name:                       p.Name,
-		TrailARN:                   p.TrailArn,
-		S3BucketName:               p.S3BucketName,
-		S3KeyPrefix:                p.S3KeyPrefix,
-		SnsTopicName:               p.SnsTopicName,
-		SnsTopicARN:                p.SnsTopicArn,
-		IncludeGlobalServiceEvents: p.IncludeGlobalServiceEvents,
-		IsMultiRegionTrail:         p.IsMultiRegionTrail,
-		HomeRegion:                 p.HomeRegion,
-		IsOrganizationTrail:        p.IsOrganizationTrail,
-		IsLogging:                  p.IsLogging,
-		LogFileValidationEnabled:   p.LogFileValidationEnabled,
-		CloudWatchLogsLogGroupARN:  p.CloudWatchLogsLogGroupArn,
-		CloudWatchLogsRoleARN:      p.CloudWatchLogsRoleArn,
-		KMSKeyID:                   p.KmsKeyId,
-		HasCustomEventSelectors:    p.HasCustomEventSelectors,
-		HasInsightSelectors:        p.HasInsightSelectors,
-		EventSelectors:             protoToEventSelectors(p.EventSelectors),
-		AdvancedEventSelectors:     protoToTrailAdvancedSelectors(p.AdvancedEventSelectors),
-		InsightSelectors:           protoToInsightSelectors(p.InsightSelectors),
-		CreatedAt:                  time.UnixMilli(p.CreatedAt),
-		LastUpdated:                time.UnixMilli(p.LastUpdated),
-		StartedLoggingAt:           startedAt,
-		StoppedLoggingAt:           stoppedAt,
-		Tags:                       p.Tags,
+		Name:                             p.Name,
+		TrailARN:                         p.TrailArn,
+		S3BucketName:                     p.S3BucketName,
+		S3KeyPrefix:                      p.S3KeyPrefix,
+		SnsTopicName:                     p.SnsTopicName,
+		SnsTopicARN:                      p.SnsTopicArn,
+		IncludeGlobalServiceEvents:       p.IncludeGlobalServiceEvents,
+		IsMultiRegionTrail:               p.IsMultiRegionTrail,
+		HomeRegion:                       p.HomeRegion,
+		IsOrganizationTrail:              p.IsOrganizationTrail,
+		IsLogging:                        p.IsLogging,
+		LogFileValidationEnabled:         p.LogFileValidationEnabled,
+		CloudWatchLogsLogGroupARN:        p.CloudWatchLogsLogGroupArn,
+		CloudWatchLogsRoleARN:            p.CloudWatchLogsRoleArn,
+		KMSKeyID:                         p.KmsKeyId,
+		HasCustomEventSelectors:          p.HasCustomEventSelectors,
+		HasInsightSelectors:              p.HasInsightSelectors,
+		EventSelectors:                   protoToEventSelectors(p.EventSelectors),
+		AdvancedEventSelectors:           protoToTrailAdvancedSelectors(p.AdvancedEventSelectors),
+		InsightSelectors:                 protoToInsightSelectors(p.InsightSelectors),
+		CreatedAt:                        time.UnixMilli(p.CreatedAt),
+		LastUpdated:                      time.UnixMilli(p.LastUpdated),
+		StartedLoggingAt:                 startedAt,
+		StoppedLoggingAt:                 stoppedAt,
+		DeliveryWatermarks:               p.DeliveryWatermarksMs,
+		LatestDeliveryTime:               latestDeliveryTime,
+		LatestDeliveryError:              p.LatestDeliveryError,
+		LatestDeliveryAttemptTime:        latestDeliveryAttemptTime,
+		LatestDeliveryAttemptSuccess:     p.LatestDeliveryAttemptSucceeded,
+		LatestDigestTime:                 latestDigestTime,
+		LatestDigestError:                p.LatestDigestError,
+		PreviousDigestBucket:             p.PreviousDigestBucket,
+		PreviousDigestObject:             p.PreviousDigestObject,
+		PreviousDigestHash:               p.PreviousDigestHash,
+		PreviousDigestSignature:          p.PreviousDigestSignature,
+		LastDigestEnd:                    lastDigestEnd,
+		PendingDigestFiles:               protoToDigestLogFiles(p.PendingDigestFiles),
+		LatestNotificationTime:           latestNotificationTime,
+		LatestNotificationError:          p.LatestNotificationError,
+		LatestNotificationAttemptTime:    latestNotificationAttemptTime,
+		LatestNotificationAttemptSuccess: p.LatestNotificationAttemptSucceeded,
+		LatestCWLogsDeliveryTime:         latestCWLogsTime,
+		LatestCWLogsDeliveryError:        p.LatestCwLogsDeliveryError,
+		RecursiveLogging:                 p.RecursiveLogging,
+		CwlogsWatermarks:                 p.CwlogsWatermarksMs,
 	}
+}
+
+func protoToDigestLogFiles(files []*pb.DigestLogFile) []DigestLogFile {
+	if files == nil {
+		return nil
+	}
+	result := make([]DigestLogFile, len(files))
+	for i, f := range files {
+		result[i] = DigestLogFile{
+			Bucket:        f.Bucket,
+			ObjectKey:     f.ObjectKey,
+			HashHex:       f.HashHex,
+			NewestEventAt: time.UnixMilli(f.NewestEventMs),
+			OldestEventAt: time.UnixMilli(f.OldestEventMs),
+			SignatureHex:  f.SignatureHex,
+		}
+	}
+	return result
 }
 
 func eventSelectorsToProto(selectors []EventSelector) []*pb.EventSelector {
@@ -268,8 +397,8 @@ func EventToProto(e *Event) *pb.Event {
 		UserAgent:             e.UserAgent,
 		ErrorCode:             e.ErrorCode,
 		ErrorMessage:          e.ErrorMessage,
-		Tags:                  e.Tags,
 		EventCategory:         e.EventCategory,
+		AwsRegion:             e.AwsRegion,
 	}
 }
 
@@ -309,8 +438,8 @@ func ProtoToEvent(p *pb.Event) *Event {
 		UserAgent:         p.UserAgent,
 		ErrorCode:         p.ErrorCode,
 		ErrorMessage:      p.ErrorMessage,
-		Tags:              p.Tags,
 		EventCategory:     p.EventCategory,
+		AwsRegion:         p.AwsRegion,
 	}
 }
 
@@ -392,8 +521,14 @@ func sessionAttributesToProto(sa *SessionAttributes) *pb.SessionAttributes {
 	if sa == nil {
 		return nil
 	}
+	// A zero CreationDate must not cross the persistence boundary: it would
+	// serialise as a negative UnixMilli value and read back as year 1.
+	var creationDate int64
+	if !sa.CreationDate.IsZero() {
+		creationDate = sa.CreationDate.UnixMilli()
+	}
 	return &pb.SessionAttributes{
-		CreationDate:     sa.CreationDate.UnixMilli(),
+		CreationDate:     creationDate,
 		MfaAuthenticated: sa.MFAAuthenticated,
 	}
 }
@@ -402,8 +537,12 @@ func protoToSessionAttributes(p *pb.SessionAttributes) *SessionAttributes {
 	if p == nil {
 		return nil
 	}
+	var creationDate time.Time
+	if p.CreationDate > 0 {
+		creationDate = time.UnixMilli(p.CreationDate)
+	}
 	return &SessionAttributes{
-		CreationDate:     time.UnixMilli(p.CreationDate),
+		CreationDate:     creationDate,
 		MFAAuthenticated: p.MfaAuthenticated,
 	}
 }
@@ -417,7 +556,6 @@ func resourcesToProto(resources []Resource) []*pb.Resource {
 		result[i] = &pb.Resource{
 			ResourceType: r.ResourceType,
 			ResourceName: r.ResourceName,
-			Arn:          r.ARN,
 		}
 	}
 	return result
@@ -432,7 +570,6 @@ func protoToResources(resources []*pb.Resource) []Resource {
 		result[i] = Resource{
 			ResourceType: r.ResourceType,
 			ResourceName: r.ResourceName,
-			ARN:          r.Arn,
 		}
 	}
 	return result
@@ -471,6 +608,7 @@ func PublicKeyToProto(pk *PublicKey) *pb.PublicKey {
 		ValidityStartTime: pk.ValidityStartTime.UnixMilli(),
 		ValidityEndTime:   pk.ValidityEndTime.UnixMilli(),
 		TrailName:         pk.TrailName,
+		PrivateKeyDer:     pk.PrivateKeyDER,
 	}
 }
 
@@ -485,5 +623,6 @@ func ProtoToPublicKey(p *pb.PublicKey) *PublicKey {
 		ValidityStartTime: time.UnixMilli(p.ValidityStartTime),
 		ValidityEndTime:   time.UnixMilli(p.ValidityEndTime),
 		TrailName:         p.TrailName,
+		PrivateKeyDER:     p.PrivateKeyDer,
 	}
 }

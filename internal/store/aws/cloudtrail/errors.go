@@ -11,16 +11,8 @@ var (
 	// that already exists.
 	ErrTrailAlreadyExists = errors.New("trail already exists")
 
-	// ErrS3BucketNotFound is returned when the specified S3 bucket
-	// does not exist.
-	ErrS3BucketNotFound = errors.New("s3 bucket not found")
-
 	// ErrInvalidTrailName is returned when the trail name is not valid.
 	ErrInvalidTrailName = errors.New("invalid trail name")
-
-	// ErrInsufficientSnsTopicPolicy is returned when the SNS topic policy
-	// does not have the required permissions.
-	ErrInsufficientSnsTopicPolicy = errors.New("insufficient sns topic policy")
 
 	// ErrEventNotFound is returned when the specified CloudTrail event
 	// does not exist.
@@ -34,10 +26,6 @@ var (
 	// an event data store with a name that is already in use.
 	ErrEventDataStoreAlreadyExists = errors.New("event data store already exists")
 
-	// ErrInvalidEventDataStoreState is returned when an operation is
-	// attempted on an event data store in an invalid state.
-	ErrInvalidEventDataStoreState = errors.New("invalid event data store state")
-
 	// ErrEventDataStoreNotPendingDeletion is returned when attempting to
 	// restore an event data store that is not in PENDING_DELETION state.
 	ErrEventDataStoreNotPendingDeletion = errors.New("event data store is not pending deletion")
@@ -50,4 +38,22 @@ var (
 
 	// ErrChannelAlreadyExists is returned when a channel name already exists.
 	ErrChannelAlreadyExists = errors.New("channel already exists")
+
+	// ErrChannelSourceInUse is returned when a channel source is already
+	// carried by another channel: a maximum of one channel exists per
+	// source.
+	ErrChannelSourceInUse = errors.New("channel source already in use")
+
+	// ErrEventConfigurationNotFound is returned when no event configuration
+	// is stored for the requested trail or event data store.
+	ErrEventConfigurationNotFound = errors.New("event configuration not found")
+
+	// ErrInvalidNextToken is returned when a LookupEvents NextToken is not
+	// a token this store issued — undecodable, or from a different
+	// parameterisation.
+	ErrInvalidNextToken = errors.New("invalid next token")
+
+	// ErrMaxConcurrentQueries is returned when a query admission would
+	// exceed the store's bound on concurrently running queries.
+	ErrMaxConcurrentQueries = errors.New("maximum number of concurrent queries exceeded")
 )

@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"time"
 
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/iam"
@@ -36,9 +37,35 @@ const (
 	PrincipalTypeUser PrincipalType = "User"
 	// PrincipalTypeRole represents an IAM role.
 	PrincipalTypeRole PrincipalType = "Role"
+	// PrincipalTypeRoot represents the account root principal: the root
+	// user's permanent access key, a root STS session, or the platform's
+	// implicit account-caller on planes without per-user authentication.
+	PrincipalTypeRoot PrincipalType = "Root"
 	// PrincipalTypeAnonymous represents an unauthenticated request.
 	PrincipalTypeAnonymous PrincipalType = "Anonymous"
 )
+
+// SessionInfo carries the resolved identity of an STS temporary-credential
+// session so audit records can report the caller's sessionContext. The
+// authoriser populates it when it resolves an "ASIA"-prefixed access key.
+type SessionInfo struct {
+	// CredentialPrincipalType is the session store's own principal type
+	// ("AssumedRole", "SAML", "WebIdentity", "FederatedUser", "User",
+	// "Root"); it distinguishes federated sessions from plain user
+	// sessions that share the User request principal type.
+	CredentialPrincipalType string
+	// SessionName is the RoleSessionName (or federated user name) of the
+	// session; the CloudTrail principalId of a temporary credential
+	// appends it to the issuer's unique ID.
+	SessionName       string
+	IssuerType        string // sessionIssuer.type: Root, IAMUser, or Role
+	IssuerPrincipalID string
+	IssuerARN         string
+	IssuerAccountID   string
+	IssuerUserName    string
+	MFAAuthenticated  bool
+	CreationDate      time.Time
+}
 
 // RequestContext holds the context information for an AWS API request.
 type RequestContext struct {
@@ -52,6 +79,7 @@ type RequestContext struct {
 	Principal      string
 	PrincipalID    string
 	PrincipalType  PrincipalType
+	Session        *SessionInfo
 	SourceIP       string
 	UserAgent      string
 	auditRecorder  AuditRecorder

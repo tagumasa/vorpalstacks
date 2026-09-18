@@ -13,50 +13,109 @@ import (
 
 // GetObject implements the invokers.S3Invoker interface. It retrieves the
 // content of an object by region, bucket and key, returning the full byte
-// content.
+// content. The object store resolves to the bucket's owning region, so a
+// read addressed to a region that does not hold the bucket still finds
+// the objects the write path routed there. An object larger than maxBytes
+// errors rather than returning a silent prefix — every bounded consumer
+// parses the whole object, for which a truncated read is corruption.
 func (s *S3Service) GetObject(ctx context.Context, region, bucket, key string, maxBytes int64) ([]byte, error) {
-	objs := s.s3Store.Objects(region)
+	objs := s.objectStoreForBucket(region, bucket)
 	reader, _, err := objs.Get(ctx, bucket, key)
 	if err != nil {
 		return nil, fmt.Errorf("s3 GetObject %s/%s: %w", bucket, key, err)
 	}
 	defer reader.Close()
-	if maxBytes <= 0 {
-		maxBytes = maxSingleUploadSize
-	}
-	data, err := io.ReadAll(io.LimitReader(reader, maxBytes))
+	data, err := readBounded(reader, maxBytes)
 	if err != nil {
-		return nil, fmt.Errorf("s3 GetObject read %s/%s: %w", bucket, key, err)
+		return nil, fmt.Errorf("s3 GetObject %s/%s: %w", bucket, key, err)
 	}
 	return data, nil
 }
 
 // GetObjectVersion implements the invokers.S3Invoker interface. It
 // retrieves the content of a specific object version; an empty versionID
-// reads the latest version, matching the store's version-aware read.
+// reads the latest version, matching the store's version-aware read. As
+// with GetObject, an object larger than maxBytes errors rather than
+// returning a silent prefix.
 func (s *S3Service) GetObjectVersion(ctx context.Context, region, bucket, key, versionID string, maxBytes int64) ([]byte, error) {
-	objs := s.s3Store.Objects(region)
+	objs := s.objectStoreForBucket(region, bucket)
 	reader, _, err := objs.GetWithVersion(ctx, bucket, key, versionID)
 	if err != nil {
 		return nil, fmt.Errorf("s3 GetObjectVersion %s/%s@%s: %w", bucket, key, versionID, err)
 	}
 	defer reader.Close()
-	if maxBytes <= 0 {
-		maxBytes = maxSingleUploadSize
-	}
-	data, err := io.ReadAll(io.LimitReader(reader, maxBytes))
+	data, err := readBounded(reader, maxBytes)
 	if err != nil {
-		return nil, fmt.Errorf("s3 GetObjectVersion read %s/%s@%s: %w", bucket, key, versionID, err)
+		return nil, fmt.Errorf("s3 GetObjectVersion %s/%s@%s: %w", bucket, key, versionID, err)
 	}
 	return data, nil
 }
 
+// readBounded reads the whole object under the maxBytes bound (zero or
+// negative meaning the single-upload ceiling), erroring when the object
+// exceeds it instead of truncating: the bounded invoker reads are
+// whole-object parses, and a silent prefix would surface as a corrupt
+// parse far from its cause.
+func readBounded(reader io.Reader, maxBytes int64) ([]byte, error) {
+	if maxBytes <= 0 {
+		maxBytes = maxSingleUploadSize
+	}
+	data, err := io.ReadAll(io.LimitReader(reader, maxBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, fmt.Errorf("object exceeds the %d-byte read bound", maxBytes)
+	}
+	return data, nil
+}
+
+// objectStoreForBucket resolves the object store that owns the named
+// bucket. Bucket names are unique across the platform's regions
+// (CreateBucket rejects a name another region already owns), so an
+// operation addressed to a region that does not hold the bucket — a
+// multi-region CloudTrail trail delivering or reading another region's
+// files from its one bucket, for example — lands in the bucket's own
+// region, where the bucket's readers and writers meet. A bucket no
+// initialised region knows keeps the addressed region's store, preserving
+// the plain per-region behaviour.
+func (s *S3Service) objectStoreForBucket(region, bucket string) s3store.ObjectStoreInterface {
+	if _, owner := s.s3Store.FindBucket(bucket); owner != "" && owner != region {
+		return s.s3Store.Objects(owner)
+	}
+	return s.s3Store.Objects(region)
+}
+
+// bucketStoreForBucket resolves the bucket-record store that owns the
+// named bucket, mirroring objectStoreForBucket for the bucket-level reads
+// (existence, policy): a foreign-region bucket's records live in its
+// owner's store, so a policy read addressed elsewhere must follow them or
+// the bucket looks nonexistent.
+func (s *S3Service) bucketStoreForBucket(region, bucket string) s3store.BucketStoreInterface {
+	if _, owner := s.s3Store.FindBucket(bucket); owner != "" && owner != region {
+		return s.s3Store.Buckets(owner)
+	}
+	return s.s3Store.Buckets(region)
+}
+
 // PutObject stores an object in S3 via the cross-service invoker.
 func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, data []byte, contentType string) error {
-	objs := s.s3Store.Objects(region)
+	objs := s.objectStoreForBucket(region, bucket)
 	_, err := objs.Put(ctx, bucket, key, bytes.NewReader(data), contentType, nil)
 	if err != nil {
 		return fmt.Errorf("s3 PutObject %s/%s: %w", bucket, key, err)
+	}
+	return nil
+}
+
+// PutObjectWithMetadata stores an object carrying S3 object metadata
+// (x-amz-meta-*), e.g. CloudTrail digest files whose signature travels as
+// object metadata.
+func (s *S3Service) PutObjectWithMetadata(ctx context.Context, region, bucket, key string, data []byte, contentType string, metadata map[string]string) error {
+	objs := s.objectStoreForBucket(region, bucket)
+	_, err := objs.Put(ctx, bucket, key, bytes.NewReader(data), contentType, metadata)
+	if err != nil {
+		return fmt.Errorf("s3 PutObjectWithMetadata %s/%s: %w", bucket, key, err)
 	}
 	return nil
 }
@@ -69,9 +128,23 @@ const maxListAllKeys = 100000
 
 // BucketExists implements the invokers.S3Invoker interface. It reports
 // whether the bucket exists so cross-service consumers can tell a missing
-// source bucket apart from an empty one.
+// source bucket apart from an empty one. Existence follows the bucket's
+// owning region — a foreign-region address still finds the bucket.
 func (s *S3Service) BucketExists(ctx context.Context, region, bucket string) (bool, error) {
-	return s.s3Store.Buckets(region).Exists(bucket), nil
+	return s.bucketStoreForBucket(region, bucket).Exists(bucket), nil
+}
+
+// GetBucketPolicy implements the invokers.S3Invoker interface. It returns
+// the bucket's policy document JSON, or an empty string when the bucket
+// carries no policy. The bucket-record store follows the owning region,
+// so a policy read addressed to a foreign region still reaches the
+// bucket's records.
+func (s *S3Service) GetBucketPolicy(ctx context.Context, region, bucket string) (string, error) {
+	b, err := s.bucketStoreForBucket(region, bucket).Get(bucket)
+	if err != nil {
+		return "", fmt.Errorf("s3 GetBucketPolicy %s: %w", bucket, err)
+	}
+	return b.Policy, nil
 }
 
 // EnsureBucket implements the invokers.S3Invoker interface. It creates the
@@ -93,9 +166,10 @@ func (s *S3Service) EnsureBucket(ctx context.Context, region, bucket string) err
 }
 
 // DeleteObject implements the invokers.S3Invoker interface. It removes the
-// object so transient payloads can be purged after use.
+// object so transient payloads can be purged after use, following the
+// bucket's owning region like the writes it undoes.
 func (s *S3Service) DeleteObject(ctx context.Context, region, bucket, key string) error {
-	if err := s.s3Store.Objects(region).Delete(ctx, bucket, key); err != nil {
+	if err := s.objectStoreForBucket(region, bucket).Delete(ctx, bucket, key); err != nil {
 		return fmt.Errorf("s3 DeleteObject %s/%s: %w", bucket, key, err)
 	}
 	return nil
@@ -104,9 +178,11 @@ func (s *S3Service) DeleteObject(ctx context.Context, region, bucket, key string
 // ListObjects lists objects in an S3 bucket via the cross-service invoker.
 // When maxKeys <= 0, all objects are returned by paginating through the
 // full result set, up to maxListAllKeys. When maxKeys > 0, at most maxKeys
-// objects are returned from a single page.
+// objects are returned from a single page. The object store follows the
+// bucket's owning region, so a foreign-region address still lists the
+// bucket's objects.
 func (s *S3Service) ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error) {
-	objs := s.s3Store.Objects(region)
+	objs := s.objectStoreForBucket(region, bucket)
 
 	if maxKeys <= 0 {
 		var allKeys []string
@@ -146,7 +222,7 @@ func (s *S3Service) ListObjects(ctx context.Context, region, bucket, prefix stri
 // full metadata records the ListObjectsV2 item shape exposes (Step Functions
 // Distributed Map ItemReader datasets).
 func (s *S3Service) ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]invokers.S3ObjectEntry, error) {
-	objs := s.s3Store.Objects(region)
+	objs := s.objectStoreForBucket(region, bucket)
 
 	collect := func(listResult *s3store.ObjectListResult) []invokers.S3ObjectEntry {
 		entries := make([]invokers.S3ObjectEntry, 0, len(listResult.Objects))

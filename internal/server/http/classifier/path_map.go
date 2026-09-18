@@ -119,6 +119,9 @@ func lookupServiceByPath(path string) string {
 	if isRDSDataPath(path) {
 		return "rdsdata"
 	}
+	if isCloudTrailDataPath(path) {
+		return "cloudtrail-data"
+	}
 	if request.IsNeptuneGraphPath(path) {
 		return "neptunegraph"
 	}
@@ -155,6 +158,13 @@ func rdsDataOperationFromPath(path string) string {
 	default:
 		return ""
 	}
+}
+
+// isCloudTrailDataPath reports whether the path belongs to the CloudTrail
+// data-ingestion service (cloudtrail-data), whose single PutAuditEvents
+// operation is REST-JSON at the fixed /PutAuditEvents URI.
+func isCloudTrailDataPath(path string) bool {
+	return path == "/PutAuditEvents"
 }
 
 // iotPathPrefixes lists the URL path prefixes used by the AWS IoT Core

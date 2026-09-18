@@ -53,9 +53,10 @@ func (b *ARNBuilder) CloudTrail() *CloudTrailBuilder { return &CloudTrailBuilder
 func (b *CloudTrailBuilder) Trail(name string) string { return b.Build("cloudtrail", "trail/"+name) }
 
 // EventDataStore constructs an ARN for a CloudTrail event data store. The
-// resource path is "eventdata-store/" per the CloudTrail ARN reference.
+// resource word is "eventdatastore/" per the AWS event data store ARN
+// format: arn:aws:cloudtrail:region:account:eventdatastore/uuid.
 func (b *CloudTrailBuilder) EventDataStore(id string) string {
-	return b.Build("cloudtrail", "eventdata-store/"+id)
+	return b.Build("cloudtrail", "eventdatastore/"+id)
 }
 
 // Channel constructs an ARN for a CloudTrail channel.

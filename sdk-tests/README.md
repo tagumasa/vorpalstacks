@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,659 test cases (3,562 SDK + 79 cross-service integration + 18 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,667 test cases (3,569 SDK + 80 cross-service integration + 18 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -25,7 +25,7 @@ which are separate services in the SDK classification used by
 | AppSync | 185 | 100% | ✅ Perfect |
 | Athena | 73 | 100% | ✅ Perfect |
 | CloudFront | 99 | 100% | ✅ Perfect |
-| CloudTrail | 109 | 100% | ✅ Perfect |
+| CloudTrail | 164 | 100% | ✅ Perfect |
 | CloudWatch | 26 | 100% | ✅ Perfect |
 | CloudWatch Logs | 63 | 100% | ✅ Perfect |
 | Cognito | 123 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,659/3,659 tests passing (100%) — 3,562 SDK + 79 integration + 18 WebSocket** (confirmed 2026-09-16 on main; per-session deltas live in git history)
+**Overall: 3,715/3,715 tests passing (100%) — 3,617 SDK + 80 integration + 18 WebSocket** (confirmed 2026-09-18 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 
@@ -267,13 +267,14 @@ In addition to per-service SDK tests, cross-service integration tests verify end
 
 ### Verification Methods
 
-3 tests verify that CloudTrail captures audit events from cross-service operations. These require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`) at server startup; without it they are automatically skipped.
+4 tests verify that CloudTrail captures audit events from cross-service operations. These require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`) at server startup; without it they are automatically skipped.
 
 | Test | What It Verifies |
 |------|-----------------|
 | `CloudTrailAudit_CreateTrail_VerifyEvent` | CreateTrail generates a CloudTrail event findable by `EventName=CreateTrail` |
 | `CloudTrailAudit_S3_PutObject` | S3 PutObject generates a CloudTrail event findable by `EventSource=s3.amazonaws.com` |
 | `CloudTrailAudit_CrossService_EventSource` | Events from both `cloudtrail.amazonaws.com` and `s3.amazonaws.com` coexist in LookupEvents |
+| `CloudTrailAudit_RecordContent` | Read-only calls record `readOnly=true` with the caller's user agent, writes record `readOnly=false`, failed calls record the model error code and message |
 
 ### Running
 

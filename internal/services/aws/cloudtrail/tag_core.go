@@ -2,13 +2,57 @@ package cloudtrail
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 )
+
+// applyTags parses tags from the raw wire value — the JSON-protocol list
+// form or a JSON string holding the same list — into dst, initialising a nil
+// map. Entries with an empty key are ignored. It is the single tag-apply
+// path shared by every tag-bearing CloudTrail resource (trails, event data
+// stores, channels), whose stores all hold tags as map[string]string.
+func applyTags(dst *map[string]string, raw interface{}) {
+	if *dst == nil {
+		*dst = make(map[string]string)
+	}
+	var tagsList []interface{}
+	switch v := raw.(type) {
+	case []interface{}:
+		tagsList = v
+	case string:
+		if err := json.Unmarshal([]byte(v), &tagsList); err != nil {
+			return
+		}
+	default:
+		return
+	}
+	for _, item := range tagsList {
+		if m, ok := item.(map[string]interface{}); ok {
+			key, _ := m["Key"].(string)
+			val, _ := m["Value"].(string)
+			if key != "" {
+				(*dst)[key] = val
+			}
+		}
+	}
+}
+
+// formatTagsList renders a tag map as the TagsList wire shape (a list of
+// {Key, Value} maps).
+func formatTagsList(tags map[string]string) []interface{} {
+	tagsList := make([]interface{}, 0, len(tags))
+	for k, v := range tags {
+		tagsList = append(tagsList, map[string]interface{}{
+			"Key":   k,
+			"Value": v,
+		})
+	}
+	return tagsList
+}
 
 // cloudTrailTagLimits applies the standard AWS tag bounds with the aws:
 // reservation compared case-sensitively, preserving the established
@@ -27,17 +71,17 @@ var cloudTrailTagLimits = tagutil.TagLimits{
 func validateCloudTrailTags(tagList []tagutil.Tag) error {
 	switch v, _ := tagutil.CheckTags(tagList, cloudTrailTagLimits); v {
 	case tagutil.TooManyTags:
-		return awserrors.NewAWSError("TagsLimitExceededException",
-			fmt.Sprintf("Number of tags exceeds the limit of %d", tagutil.MaxTagsPerResource), 400)
+		return newTagsLimitExceededException(
+			fmt.Sprintf("Number of tags exceeds the limit of %d", tagutil.MaxTagsPerResource))
 	case tagutil.ReservedTagKey:
-		return awserrors.NewAWSError("InvalidTagKeyException",
-			"Tag keys starting with 'aws:' are reserved", 400)
+		return newInvalidTagParameterException(
+			"Tag keys starting with 'aws:' are reserved")
 	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
-		return awserrors.NewAWSError("InvalidTagKeyException",
-			fmt.Sprintf("Tag key length must be between 1 and %d", tagutil.MaxTagKeyLength), 400)
+		return newInvalidTagParameterException(
+			fmt.Sprintf("Tag key length must be between 1 and %d", tagutil.MaxTagKeyLength))
 	case tagutil.TagValueTooLong:
-		return awserrors.NewAWSError("InvalidTagValueException",
-			fmt.Sprintf("Tag value length must not exceed %d", tagutil.MaxTagValueLength), 400)
+		return newInvalidTagParameterException(
+			fmt.Sprintf("Tag value length must not exceed %d", tagutil.MaxTagValueLength))
 	}
 	return nil
 }

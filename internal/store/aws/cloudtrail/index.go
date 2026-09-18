@@ -3,6 +3,7 @@ package cloudtrail
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,19 +11,22 @@ import (
 	"vorpalstacks/internal/core/storage"
 )
 
-// indexCursorPrefix distinguishes encoded index cursors from plain scan-path
-// markers in EventQuery.NextToken. The LookupEvents switch chooses exactly
-// one path per call (determined by the query fields), so the token format
-// never mixes within a single pagination sequence; the prefix is a safety
-// net in case a caller accidentally passes the wrong token type.
+// indexCursorPrefix distinguishes encoded index cursors from any other
+// string in EventQuery.NextToken. Every LookupEvents response token is an
+// encoded index cursor — the scan path encodes its continuation marker the
+// same way — so a non-empty NextToken that does not carry the prefix (or
+// fails to decode) is rejected as invalid rather than silently restarting
+// the query from the beginning.
 const indexCursorPrefix = "idx1:"
 
 // IndexCursor encodes a pagination position for index queries. It is opaque
 // to callers — the store layer encodes/decodes it to/from the string
-// NextToken.
+// NextToken. Retrieval walks newest first, so the position is a LOWER
+// bound: iteration resumes strictly below Key.
 //
-// For single-bucket queries (Username, EventSource): Segment is empty and
-// Key is the last scanned storage key within the bucket.
+// For single-bucket queries (Username, EventSource, and the filterless
+// scan path): Segment is empty and Key is the last scanned storage key
+// within the bucket.
 //
 // For multi-bucket queries (Time, EventName): Segment identifies the
 // current segment being iterated (an hour string like "2024-02-25:10" for
@@ -47,12 +51,17 @@ func encodeIndexCursor(c IndexCursor) string {
 	return indexCursorPrefix + base64.StdEncoding.EncodeToString(b)
 }
 
-// decodeIndexCursor parses a string token back into an IndexCursor. Tokens
-// that do not carry the index-cursor prefix (e.g. plain scan-path markers)
-// yield an empty cursor, causing the query to start from the beginning.
+// decodeIndexCursor parses a string token back into an IndexCursor. The
+// empty token yields an empty cursor (start from the beginning); any other
+// token that does not carry the index-cursor prefix, or whose payload does
+// not decode, is an error — the caller surfaces it as an invalid token
+// instead of silently restarting the walk.
 func decodeIndexCursor(s string) (IndexCursor, error) {
-	if s == "" || !strings.HasPrefix(s, indexCursorPrefix) {
+	if s == "" {
 		return IndexCursor{}, nil
+	}
+	if !strings.HasPrefix(s, indexCursorPrefix) {
+		return IndexCursor{}, fmt.Errorf("token %q does not carry the index-cursor prefix", s)
 	}
 	data, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(s, indexCursorPrefix))
 	if err != nil {
@@ -110,13 +119,17 @@ func (k *EventIndexKey) EncodePrefix() string {
 	return fmt.Sprintf("%s:%s:%s", prefix, k.AccountID, k.Region)
 }
 
-// NewTimeIndexKey creates a new index key by time.
-func NewTimeIndexKey(accountID, region, dateHour, eventID string) *EventIndexKey {
+// NewTimeIndexKey creates a new index key by time. The timestamp keeps the
+// entries within an hour bucket in time order, which the descending
+// retrieval walk (most recent event first, per the LookupEvents contract)
+// depends on.
+func NewTimeIndexKey(accountID, region, dateHour string, timestamp int64, eventID string) *EventIndexKey {
 	return &EventIndexKey{
 		IndexType: IndexByTime,
 		AccountID: accountID,
 		Region:    region,
 		Segment1:  dateHour,
+		Segment2:  fmt.Sprintf("%d", timestamp),
 		EventID:   eventID,
 	}
 }
@@ -175,11 +188,14 @@ func NewEventIndexManager(s storage.BasicStorage, accountID, region string) *Eve
 
 // buildIndexKeys generates all index keys for the given event.
 func buildIndexKeys(accountID, region string, event *Event) []*EventIndexKey {
-	dateHour := event.EventTime.Format("2006-01-02:15")
+	// The bucket hour is derived from the UTC-normalised event time: the
+	// read side addresses buckets from UTC bounds, so a located event time
+	// would address the wrong wall-hour bucket.
+	dateHour := event.EventTime.UTC().Format("2006-01-02:15")
 	ts := event.EventTime.UnixNano()
 
 	var keys []*EventIndexKey
-	keys = append(keys, NewTimeIndexKey(accountID, region, dateHour, event.EventID))
+	keys = append(keys, NewTimeIndexKey(accountID, region, dateHour, ts, event.EventID))
 
 	if event.EventName != "" {
 		keys = append(keys, NewEventNameIndexKey(accountID, region, event.EventName, ts, event.EventID))
@@ -198,11 +214,6 @@ func (m *EventIndexManager) AddIndex(event *Event) error {
 	return m.applyIndexKeys(buildIndexKeys(m.accountID, m.region, event), m.putIndex)
 }
 
-// RemoveIndex removes an event from the index.
-func (m *EventIndexManager) RemoveIndex(event *Event) error {
-	return m.applyIndexKeys(buildIndexKeys(m.accountID, m.region, event), m.deleteIndex)
-}
-
 func (m *EventIndexManager) applyIndexKeys(keys []*EventIndexKey, fn func(*EventIndexKey) error) error {
 	for _, k := range keys {
 		if err := fn(k); err != nil {
@@ -217,75 +228,41 @@ func (m *EventIndexManager) putIndex(key *EventIndexKey) error {
 	return bucket.Put(indexStorageKey(key), []byte{1})
 }
 
-func (m *EventIndexManager) deleteIndex(key *EventIndexKey) error {
-	bucket := m.storage.Bucket(key.EncodePrefix())
-	return bucket.Delete(indexStorageKey(key))
-}
-
-// QueryByTime queries events by time range, iterating hour-by-hour through
-// the time index. The hour string format is "2006-01-02:15".
+// QueryByTime queries events by time range, iterating the hour buckets of
+// the time index NEWEST HOUR FIRST, and within each hour newest event
+// first — the LookupEvents contract ("The events list is sorted by time.
+// The most recent event is listed first."). The hour string format is
+// "2006-01-02:15"; bounds are normalised to UTC before the hours are
+// derived, because the buckets are addressed by UTC wall hours.
+//
+// Both bounds must be non-nil: an unbounded side is resolved against the
+// recorded event span by the caller (store.LookupEvents) before this
+// method runs, so a single-bound lookup covers every hour from its bound
+// to the newest (or from the oldest to its bound) recorded event instead
+// of a single hour.
 //
 // Pagination across multiple hour buckets is supported via the cursor:
 //   - cursor.Segment is the hour being partially scanned.
 //   - cursor.Key is the last scanned key within that hour's bucket.
 //
-// On resume, hours before cursor.Segment are skipped, the matching hour is
-// scanned from cursor.Key onwards, and subsequent hours are scanned from
-// the beginning. When maxResults is reached, the cursor records the current
-// hour and last key so the next call can resume exactly where this one
-// stopped.
+// On resume, hours newer than cursor.Segment are skipped (already served),
+// the matching hour is scanned from cursor.Key downwards, and older hours
+// are scanned from their newest key. When maxResults is reached, the
+// cursor records the current hour and last scanned key so the next call
+// can resume exactly where this one stopped.
 func (m *EventIndexManager) QueryByTime(startTime, endTime *time.Time, maxResults int32, cursor IndexCursor) ([]string, IndexCursor, error) {
+	if startTime == nil || endTime == nil {
+		return nil, IndexCursor{}, errors.New("cloudtrail index: QueryByTime requires resolved bounds")
+	}
+	startHour := startTime.UTC().Truncate(time.Hour)
+	endHour := endTime.UTC().Truncate(time.Hour)
+
 	var hours []string
-	if startTime != nil && endTime != nil {
-		startHour := startTime.Truncate(time.Hour)
-		endHour := endTime.Truncate(time.Hour)
-		for t := startHour; !t.After(endHour); t = t.Add(time.Hour) {
-			hours = append(hours, t.Format("2006-01-02:15"))
-		}
-	} else if startTime != nil {
-		hours = append(hours, startTime.Truncate(time.Hour).Format("2006-01-02:15"))
-	} else if endTime != nil {
-		hours = append(hours, endTime.Truncate(time.Hour).Format("2006-01-02:15"))
+	for t := endHour; !t.Before(startHour); t = t.Add(-time.Hour) {
+		hours = append(hours, t.Format("2006-01-02:15"))
 	}
 
-	var ids []string
-	var nextCursor IndexCursor
-	cursorActive := cursor.Segment != ""
-
-	for _, dateHour := range hours {
-		if cursorActive && dateHour != cursor.Segment {
-			continue
-		}
-
-		remaining := maxResults - int32(len(ids))
-		if remaining <= 0 {
-			nextCursor = IndexCursor{Segment: dateHour}
-			break
-		}
-
-		idxKey := &EventIndexKey{
-			IndexType: IndexByTime,
-			AccountID: m.accountID,
-			Region:    m.region,
-			Segment1:  dateHour,
-		}
-
-		var startAfterKey string
-		if cursorActive {
-			startAfterKey = cursor.Key
-			cursorActive = false
-		}
-
-		hourIDs, lastKey := m.scanIndex(idxKey, remaining, startAfterKey)
-		ids = append(ids, hourIDs...)
-
-		if int32(len(hourIDs)) >= remaining && lastKey != "" {
-			nextCursor = IndexCursor{Segment: dateHour, Key: lastKey}
-			break
-		}
-	}
-
-	return ids, nextCursor, nil
+	return m.querySegments(IndexByTime, hours, maxResults, cursor)
 }
 
 // QueryByEventName queries events by one or more event names, iterating
@@ -294,44 +271,7 @@ func (m *EventIndexManager) QueryByTime(startTime, endTime *time.Time, maxResult
 //   - cursor.Segment is the event name being partially scanned.
 //   - cursor.Key is the last scanned key within that bucket.
 func (m *EventIndexManager) QueryByEventName(eventNames []string, maxResults int32, cursor IndexCursor) ([]string, IndexCursor, error) {
-	var ids []string
-	var nextCursor IndexCursor
-	cursorActive := cursor.Segment != ""
-
-	for _, eventName := range eventNames {
-		if cursorActive && eventName != cursor.Segment {
-			continue
-		}
-
-		remaining := maxResults - int32(len(ids))
-		if remaining <= 0 {
-			nextCursor = IndexCursor{Segment: eventName}
-			break
-		}
-
-		idxKey := &EventIndexKey{
-			IndexType: IndexByEventName,
-			AccountID: m.accountID,
-			Region:    m.region,
-			Segment1:  eventName,
-		}
-
-		var startAfterKey string
-		if cursorActive {
-			startAfterKey = cursor.Key
-			cursorActive = false
-		}
-
-		eventIDs, lastKey := m.scanIndex(idxKey, remaining, startAfterKey)
-		ids = append(ids, eventIDs...)
-
-		if int32(len(eventIDs)) >= remaining && lastKey != "" {
-			nextCursor = IndexCursor{Segment: eventName, Key: lastKey}
-			break
-		}
-	}
-
-	return ids, nextCursor, nil
+	return m.querySegments(IndexByEventName, eventNames, maxResults, cursor)
 }
 
 // QueryByUsername queries events by username. The username index is a
@@ -339,30 +279,82 @@ func (m *EventIndexManager) QueryByEventName(eventNames []string, maxResults int
 // When the number of returned IDs reaches maxResults, a non-empty nextCursor
 // is returned so the caller can fetch the next page.
 func (m *EventIndexManager) QueryByUsername(username string, maxResults int32, cursor IndexCursor) ([]string, IndexCursor, error) {
-	idxKey := &EventIndexKey{
-		IndexType: IndexByUsername,
-		AccountID: m.accountID,
-		Region:    m.region,
-		Segment1:  username,
-	}
-	ids, lastKey := m.scanIndex(idxKey, maxResults, cursor.Key)
-	var nextCursor IndexCursor
-	if int32(len(ids)) >= maxResults && lastKey != "" {
-		nextCursor = IndexCursor{Key: lastKey}
-	}
-	return ids, nextCursor, nil
+	return m.querySingleBucket(IndexByUsername, username, maxResults, cursor)
 }
 
 // QueryByEventSource queries events by event source. Same single-bucket
 // pagination pattern as QueryByUsername.
 func (m *EventIndexManager) QueryByEventSource(eventSource string, maxResults int32, cursor IndexCursor) ([]string, IndexCursor, error) {
+	return m.querySingleBucket(IndexByEventSource, eventSource, maxResults, cursor)
+}
+
+// querySegments walks the multi-bucket cursor pagination shared by the Time
+// and EventName indexes, NEWEST FIRST within every segment bucket: segments
+// before the cursor's segment (in the caller's segment order — newest hour
+// first for Time) are skipped as already served, the cursor's segment
+// resumes strictly below cursor.Key, and each segment's bucket is scanned
+// downwards up to the remaining result budget. When the budget is reached
+// mid-walk the returned cursor carries the current segment and the last
+// scanned key so the next call resumes exactly where this one stopped.
+func (m *EventIndexManager) querySegments(indexType IndexType, segments []string, maxResults int32, cursor IndexCursor) ([]string, IndexCursor, error) {
+	var ids []string
+	var nextCursor IndexCursor
+	cursorActive := cursor.Segment != ""
+
+	for _, segment := range segments {
+		if cursorActive && segment != cursor.Segment {
+			continue
+		}
+
+		remaining := maxResults - int32(len(ids))
+		if remaining <= 0 {
+			nextCursor = IndexCursor{Segment: segment}
+			break
+		}
+
+		idxKey := &EventIndexKey{
+			IndexType: indexType,
+			AccountID: m.accountID,
+			Region:    m.region,
+			Segment1:  segment,
+		}
+
+		var beforeKey string
+		if cursorActive {
+			beforeKey = cursor.Key
+			cursorActive = false
+		}
+
+		segmentIDs, lastKey, err := m.scanIndexReverse(idxKey, remaining, beforeKey)
+		if err != nil {
+			return nil, IndexCursor{}, err
+		}
+		ids = append(ids, segmentIDs...)
+
+		if int32(len(segmentIDs)) >= remaining && lastKey != "" {
+			nextCursor = IndexCursor{Segment: segment, Key: lastKey}
+			break
+		}
+	}
+
+	return ids, nextCursor, nil
+}
+
+// querySingleBucket scans one index bucket addressed by the segment, the
+// cursor pagination shared by the Username and EventSource indexes: a
+// single bucket means the cursor only tracks the last scanned storage key.
+// The scan runs newest first, matching the multi-bucket walks.
+func (m *EventIndexManager) querySingleBucket(indexType IndexType, segment string, maxResults int32, cursor IndexCursor) ([]string, IndexCursor, error) {
 	idxKey := &EventIndexKey{
-		IndexType: IndexByEventSource,
+		IndexType: indexType,
 		AccountID: m.accountID,
 		Region:    m.region,
-		Segment1:  eventSource,
+		Segment1:  segment,
 	}
-	ids, lastKey := m.scanIndex(idxKey, maxResults, cursor.Key)
+	ids, lastKey, err := m.scanIndexReverse(idxKey, maxResults, cursor.Key)
+	if err != nil {
+		return nil, IndexCursor{}, err
+	}
 	var nextCursor IndexCursor
 	if int32(len(ids)) >= maxResults && lastKey != "" {
 		nextCursor = IndexCursor{Key: lastKey}
@@ -370,27 +362,28 @@ func (m *EventIndexManager) QueryByEventSource(eventSource string, maxResults in
 	return ids, nextCursor, nil
 }
 
-// scanIndex reads up to maxResults event IDs from the bucket addressed by
-// key.EncodePrefix(). When startAfterKey is non-empty, iteration resumes
-// strictly after that key (by appending \x00, the smallest byte value, to
-// obtain the smallest key greater than startAfterKey in lexicographic order).
+// scanIndexReverse reads up to maxResults event IDs from the bucket
+// addressed by key.EncodePrefix(), walking the storage keys DOWNWARDS
+// (newest first — every index bucket keys its entries
+// "<timestamp>:<eventID>"). When before is non-empty, iteration starts at
+// the largest key strictly less than before, resuming a previous page.
 //
 // The function returns the extracted event IDs and the raw storage key of
 // the last item read. Callers use lastKey to build the next IndexCursor for
-// subsequent pages.
-func (m *EventIndexManager) scanIndex(key *EventIndexKey, maxResults int32, startAfterKey string) (ids []string, lastKey string) {
+// subsequent pages. An iteration failure propagates — a partial page must
+// never masquerade as a complete result.
+func (m *EventIndexManager) scanIndexReverse(key *EventIndexKey, maxResults int32, before string) (ids []string, lastKey string, err error) {
 	if maxResults <= 0 {
-		return nil, ""
+		return nil, "", nil
 	}
 	prefix := key.EncodePrefix()
 	bucket := m.storage.Bucket(prefix)
 
 	var iter storage.Iterator
-	if startAfterKey != "" {
-		start := append([]byte(startAfterKey), 0x00)
-		iter = bucket.ScanRange(start, nil)
+	if before != "" {
+		iter = bucket.ScanPrefixReverse(nil, []byte(before))
 	} else {
-		iter = bucket.ScanPrefix(nil)
+		iter = bucket.ScanPrefixReverse(nil, nil)
 	}
 	defer iter.Close()
 
@@ -407,41 +400,9 @@ func (m *EventIndexManager) scanIndex(key *EventIndexKey, maxResults int32, star
 		}
 	}
 	if err := iter.Error(); err != nil {
-		return ids, ""
+		return nil, "", err
 	}
-	return ids, lastKey
-}
-
-// ClearIndexes clears all indexes for a given account and region.
-func (m *EventIndexManager) ClearIndexes(accountID, region string) error {
-	prefixes := []string{
-		"ct_idx_time:" + accountID + ":" + region,
-		"ct_idx_event:" + accountID + ":" + region,
-		"ct_idx_user:" + accountID + ":" + region,
-		"ct_idx_source:" + accountID + ":" + region,
-	}
-
-	for _, prefix := range prefixes {
-		bucket := m.storage.Bucket(prefix)
-		iter := bucket.ScanPrefix(nil)
-		var keys [][]byte
-		for iter.Next() {
-			keys = append(keys, iter.Key())
-		}
-		if err := iter.Error(); err != nil {
-			iter.Close()
-			return err
-		}
-		iter.Close()
-
-		for _, key := range keys {
-			if err := bucket.Delete(key); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return ids, lastKey, nil
 }
 
 // AddIndexInTxn adds an event to the index within a transaction.

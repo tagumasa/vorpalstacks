@@ -239,6 +239,10 @@ func (r *recordingUniversalSNSInvoker) GetTopic(context.Context, string) (string
 	return "", nil
 }
 
+func (r *recordingUniversalSNSInvoker) GetTopicPolicy(context.Context, string) (string, error) {
+	return "", nil
+}
+
 func (r *recordingUniversalSNSInvoker) ListSubscriptionsByTopic(context.Context, string) ([]invokers.SubscriptionInfo, error) {
 	return nil, nil
 }

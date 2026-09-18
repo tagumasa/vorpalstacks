@@ -9,10 +9,14 @@ import (
 
 // Session represents an STS temporary session with credentials.
 type Session struct { // #nosec G117
-	SessionToken           string            `json:"session_token"`
-	AccessKeyId            string            `json:"access_key_id"`
-	SecretAccessKey        string            `json:"secret_access_key"`
-	Expiration             time.Time         `json:"expiration"`
+	SessionToken    string    `json:"session_token"`
+	AccessKeyId     string    `json:"access_key_id"`
+	SecretAccessKey string    `json:"secret_access_key"`
+	Expiration      time.Time `json:"expiration"`
+	// CreatedAt is the session's issuance time; CloudTrail records it as
+	// the sessionContext attributes creationDate when the session's
+	// temporary credentials sign a request.
+	CreatedAt              time.Time         `json:"created_at,omitempty"`
 	PrincipalArn           string            `json:"principal_arn"`
 	PrincipalType          string            `json:"principal_type"`
 	PrincipalName          string            `json:"principal_name"`

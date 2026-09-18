@@ -1,9 +1,9 @@
 package cloudtrail
 
 import (
+	"encoding/json"
 	"strings"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -43,8 +43,7 @@ func (s *CloudTrailService) getResourcePolicyCore(store cloudtrailstore.CloudTra
 
 	policy, err := store.GetResourcePolicy(in.ResourceARN)
 	if err != nil {
-		return nil, awserrors.NewAWSError("ResourcePolicyNotFoundException",
-			"Resource policy not found", 404)
+		return nil, ErrResourcePolicyNotFound
 	}
 
 	return map[string]interface{}{
@@ -60,6 +59,10 @@ func (s *CloudTrailService) putResourcePolicyCore(store cloudtrailstore.CloudTra
 	}
 
 	if err := s.verifyPolicyResource(store, in.ResourceARN); err != nil {
+		return nil, err
+	}
+
+	if err := validateResourcePolicyDocument(in.Policy); err != nil {
 		return nil, err
 	}
 
@@ -86,8 +89,7 @@ func (s *CloudTrailService) deleteResourcePolicyCore(store cloudtrailstore.Cloud
 
 	// Verify the policy exists before deleting.
 	if _, err := store.GetResourcePolicy(in.ResourceARN); err != nil {
-		return awserrors.NewAWSError("ResourcePolicyNotFoundException",
-			"Resource policy not found", 404)
+		return ErrResourcePolicyNotFound
 	}
 
 	if err := store.DeleteResourcePolicy(in.ResourceARN); err != nil {
@@ -99,28 +101,76 @@ func (s *CloudTrailService) deleteResourcePolicyCore(store cloudtrailstore.Cloud
 
 // verifyPolicyResource confirms that the resource identified by resourceARN
 // exists before a resource-policy operation, dispatching on the ARN resource
-// field (trail/, eventdata-store/, channel/) to the matching store getter.
-// Any other ARN shape is rejected with ResourceARNNotValidException.
+// field. The documented ARN set is "the CloudTrail event data store,
+// dashboard, or channel" (GetResourcePolicy/PutResourcePolicy/
+// DeleteResourcePolicy ResourceArn): event data store and channel ARNs
+// resolve through the store, a dashboard ARN addresses a supported type the
+// platform does not serve yet and maps to the declared
+// ResourceNotFoundException, and every other ARN shape — trails included —
+// is rejected with ResourceTypeNotSupportedException.
 func (s *CloudTrailService) verifyPolicyResource(store cloudtrailstore.CloudTrailStoreInterface, resourceARN string) error {
-	_, _, _, _, resource := svcarn.SplitARN(resourceARN)
+	parsed, err := svcarn.ParseARN(resourceARN)
+	if err != nil {
+		return newResourceARNNotValidException(
+			"The resource ARN is not valid")
+	}
 	switch {
-	case strings.HasPrefix(resource, "trail/"):
-		if _, err := store.GetTrailByARN(resourceARN); err != nil {
+	case strings.HasPrefix(parsed.Resource, "eventdatastore/"):
+		if _, err := store.GetEventDataStore(resourceARN); err != nil {
 			return s.mapStoreError(err)
 		}
-	case strings.HasPrefix(resource, "eventdata-store/"):
-		if _, err := store.GetEventDataStore(resourceARN); err != nil {
-			return awserrors.NewAWSError("EventDataStoreNotFoundException",
-				"Event data store not found", 404)
-		}
-	case strings.HasPrefix(resource, "channel/"):
+	case strings.HasPrefix(parsed.Resource, "channel/"):
 		if _, err := store.GetChannel(resourceARN); err != nil {
-			return awserrors.NewAWSError("ChannelNotFoundException",
-				"Channel not found", 404)
+			return s.mapStoreError(err)
 		}
+	case strings.HasPrefix(parsed.Resource, "dashboard/"):
+		return newResourceNotFoundException(
+			"The specified resource was not found")
 	default:
-		return awserrors.NewAWSError("ResourceARNNotValidException",
-			"The resource ARN is not valid", 400)
+		return newResourceTypeNotSupportedException(
+			"The specified resource type is not supported by CloudTrail")
+	}
+	return nil
+}
+
+// validateResourcePolicyDocument checks a resource-based policy document
+// before it is stored: the document must be a JSON object whose Statement
+// entries each carry a Principal member. The operation declares
+// ResourcePolicyNotValidException for "syntax errors, or contains a
+// principal that is not valid".
+func validateResourcePolicyDocument(policy string) error {
+	var doc map[string]interface{}
+	if err := json.Unmarshal([]byte(policy), &doc); err != nil {
+		return newResourcePolicyNotValidException(
+			"The resource-based policy has syntax errors")
+	}
+	stmtRaw, ok := doc["Statement"]
+	if !ok {
+		return newResourcePolicyNotValidException(
+			"The resource-based policy must contain a Statement member")
+	}
+	statements, ok := stmtRaw.([]interface{})
+	if !ok {
+		// A single statement object is the documented shorthand for a
+		// one-element list.
+		if _, isMap := stmtRaw.(map[string]interface{}); !isMap {
+			return newResourcePolicyNotValidException(
+				"The resource-based policy Statement must be a list or an object")
+		}
+		statements = []interface{}{stmtRaw}
+	}
+	for _, stmt := range statements {
+		m, ok := stmt.(map[string]interface{})
+		if !ok {
+			return newResourcePolicyNotValidException(
+				"Each policy statement must be an object")
+		}
+		if _, hasPrincipal := m["Principal"]; !hasPrincipal {
+			if _, hasNotPrincipal := m["NotPrincipal"]; !hasNotPrincipal {
+				return newResourcePolicyNotValidException(
+					"Each policy statement must contain a Principal")
+			}
+		}
 	}
 	return nil
 }

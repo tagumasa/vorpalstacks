@@ -195,6 +195,16 @@ func (a *snsInvokerAdapter) GetTopic(_ context.Context, topicARN string) (string
 	return topic.Arn, nil
 }
 
+// GetTopicPolicy returns the topic's access-policy document JSON, or an
+// empty string when the topic carries no policy.
+func (a *snsInvokerAdapter) GetTopicPolicy(_ context.Context, topicARN string) (string, error) {
+	topic, err := a.store.GetTopic(topicARN)
+	if err != nil {
+		return "", err
+	}
+	return topic.GetPolicy(), nil
+}
+
 // ListSubscriptionsByTopic returns subscriptions for the given topic ARN.
 func (a *snsInvokerAdapter) ListSubscriptionsByTopic(_ context.Context, topicARN string) ([]invokers.SubscriptionInfo, error) {
 	result, err := a.store.ListSubscriptionsByTopic(topicARN, storecommon.ListOptions{})

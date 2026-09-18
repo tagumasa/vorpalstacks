@@ -2,7 +2,6 @@ package cloudtrail
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -15,25 +14,22 @@ func (s *CloudTrailService) StartImport(ctx context.Context, reqCtx *request.Req
 		return nil, s.mapStoreError(err)
 	}
 
+	// The time bounds keep both wire forms and parse strictly in the
+	// Core: an unparseable present value is an error, never a silently
+	// dropped bound.
 	in := StartImportInput{
-		ImportID:     request.GetStringParam(req.Parameters, "ImportId"),
-		Destinations: parseDestinationsList(req.Parameters["Destinations"]),
+		ImportID:          request.GetStringParam(req.Parameters, "ImportId"),
+		Destinations:      parseDestinationsList(req.Parameters["Destinations"]),
+		StartEventTimeStr: req.GetParam("StartEventTime"),
+		StartEventTimeRaw: req.Parameters["StartEventTime"],
+		EndEventTimeStr:   req.GetParam("EndEventTime"),
+		EndEventTimeRaw:   req.Parameters["EndEventTime"],
 	}
 	sourceRaw, hasSource := req.Parameters["ImportSource"]
 	in.ImportSourceRaw = sourceRaw
 	in.ImportSourceProvided = hasSource
-	if startStr := request.GetStringParam(req.Parameters, "StartEventTime"); startStr != "" {
-		if t, err := time.Parse(time.RFC3339, startStr); err == nil {
-			in.StartEventTime = &t
-		}
-	}
-	if endStr := request.GetStringParam(req.Parameters, "EndEventTime"); endStr != "" {
-		if t, err := time.Parse(time.RFC3339, endStr); err == nil {
-			in.EndEventTime = &t
-		}
-	}
 
-	return s.startImportCore(store, in)
+	return s.startImportCore(ctx, store, in)
 }
 
 // StopImport stops a specified import.

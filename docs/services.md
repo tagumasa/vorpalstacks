@@ -1,7 +1,7 @@
 # Implemented Services
 
-**Last Updated**: 2026-09-16
-**Total**: 35 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
+**Last Updated**: 2026-09-17
+**Total**: 36 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
 **SDK Tests**: over 3,000 passing (Go SDK, cross-service integration, and WebSocket suites; exact counts live in `sdk-tests/README.md`)
 
 ---
@@ -42,14 +42,15 @@
 | SSM | Selective | Parameter Store only |
 | STS | Full | |
 
-### Optional Services (14)
+### Optional Services (15)
 
 | Service | Coverage | Default | Notes |
 |---------|----------|---------|-------|
 | AppSync | Broad | enabled | GraphQL APIs, VTL resolvers, real-time subscriptions; no AMAZON_BEDROCK_RUNTIME data source type, Events API OpenID Connect authorisation, or provisioned appsyncDomainName |
 | Athena | Broad | enabled | No capacity reservations or notebook sessions |
 | CloudFront | Broad | enabled | Origin proxy, cache behaviours, TTL edge cache, invalidation, CNAME aliases, continuous deployment policies, viewer TLS, ViewerProtocolPolicy |
-| CloudTrail | Broad | **disabled** | No event data stores or SQL queries |
+| CloudTrail | Broad | **disabled** | No dashboards, ListInsightsData/ListInsightsMetricData, or event data store insight selectors |
+| CloudTrail Data | Selective | **disabled** | PutAuditEvents only |
 | EC2 | Selective | enabled | Instance management only |
 | IoT Core | Broad | enabled | Things, certificates, policies, rules engine, jobs, shadows, and device management |
 | Neptune | Full | enabled | Property graph + RDF, openCypher/Gremlin, bulk loader, management API |
@@ -103,6 +104,20 @@ Platform behaviour detail and restrictions, including where AWS leaves behaviour
 - **AWS IoT — managed job templates**: the platform ships no AWS-provided managed-job-template catalogue (the catalogue content is AWS's copyrighted material), so `DescribeManagedJobTemplate` resolves every template name to `ResourceNotFoundException` and `ListManagedJobTemplates` returns an empty list.
 
 - **CloudFront — viewer TLS serving**: SNI per distribution, from the attached ACM/IAM certificate.
+
+- **CloudTrail — event data stores as data boundaries**: each event data store holds its own copy of the recorded events. Every audit-recorded event is copied, inside the recording transaction, into each store whose advanced event selectors it matches; a store created without selectors materialises the documented "Default management events" default. Lake queries read only the statement's own store, so selector-excluded events never appear in another store's results. Channel-delivered events bypass the selectors and land directly in the channel's destination stores with the ActivityAuditLog category.
+
+- **CloudTrail — event data store retention**: RetentionPeriod is enforced by an hourly sweep. A deleted store keeps its events through the seven-day restore window and is then removed with them. The TEST_MODE boot purge bounds every store's events at 24 hours.
+
+- **CloudTrail — trail event imports**: StartImport copies trail events from a platform S3 source into one destination event data store. Only gzip-compressed log files carrying the `{"Records":[...]}` envelope are candidates; uncompressed files and other compressions are ignored. A bare bucket location walks only the keys under a CloudTrail path segment (the AWSLogs service folder); an S3LocationUri prefix names its own walk. Imported events land directly in the destination regardless of its event selectors, keep their own eventID and category, and records outside the destination's retention period are dropped. The StartEventTime/EndEventTime bounds apply at file-name granularity (the `<YYYYMMDDTHHmmZ>` delivery stamp).
+
+- **CloudTrail — import failures and completion**: each unreadable file or record becomes a ListImportFailures entry. An import with any failure finishes FAILED; one without finishes COMPLETED. A StopImport arriving mid-walk keeps the already-copied events, and the import settles STOPPED with no completion statistics.
+
+- **CloudTrail — import mutual exclusion**: a new import is refused while a previous one is still in progress (AccountHasOngoingImportException), as are updates and deletes on the destination store (EventDataStoreHasOngoingImportException).
+
+- **CloudTrail — organization delegated administration**: both delegated-admin operations answer OrganizationsNotInUseException — accounts on this platform never belong to an organization, the state the error documents.
+
+- **CloudTrail Data — PutAuditEvents**: the channel ingestion endpoint, routed under the CloudTrail enablement flag; the service signs as cloudtraildataservice, its SDK signing name. channelArn accepts the channel ARN or its ID suffix. Entries are validated individually — base64-SHA256 checksum and JSON record parse — with failures reported per entry through the documented errorCode vocabulary; duplicate entry IDs refuse the request. A destination store with ingestion stopped accepts nothing (InvalidRecipient per entry). externalId is accepted but has nothing to match: platform channel resource policies carry no external-ID condition.
 
 - **Cognito IDP — user-pool domains**: the four domain operations are implemented; domain entries resolve to the platform endpoint suffix (`<domain>.auth.<cognito_suffix>` with the region substituted) rather than AWS-hosted CloudFront domains, which cannot exist in an edge/on-premises deployment.
 

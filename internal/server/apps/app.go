@@ -283,6 +283,10 @@ func New(cfg *Config) (*App, error) {
 	a.initGRPCWebAdmin()
 	a.initEventBusPolicies()
 
+	// Bounded CloudTrail history on TEST_MODE boots: runs after the
+	// region storages are open and before any listener serves.
+	a.runTestModeBootPurge(a.state)
+
 	a.registerListeners()
 
 	return a, nil
@@ -345,6 +349,10 @@ func NewWithStorage(cfg *Config, sm *storage.RegionStorageManager) (*App, error)
 	}
 	a.initGRPCWebAdmin()
 	a.initEventBusPolicies()
+
+	// Bounded CloudTrail history on TEST_MODE boots: runs after the
+	// region storages are open and before any listener serves.
+	a.runTestModeBootPurge(a.state)
 
 	a.registerListeners()
 

@@ -37,6 +37,8 @@ func main() {
 		handleService(*dataPath, groupArgs)
 	case "backup":
 		vstackscli.RunBackup(groupArgs)
+	case "storage":
+		vstackscli.RunStorage(groupArgs)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown group: %s\n", group)
 		printUsage()
@@ -114,4 +116,5 @@ func printUsage() {
 	fmt.Println("  config   Application configuration (app_config)")
 	fmt.Println("  service  Service mode configuration (service_config)")
 	fmt.Println("  backup   Data backup and restore")
+	fmt.Println("  storage  Offline storage maintenance (vacuum)")
 }

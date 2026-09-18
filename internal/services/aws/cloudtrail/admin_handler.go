@@ -3,11 +3,12 @@ package cloudtrail
 import (
 	"context"
 	"net/http"
-	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
+	"vorpalstacks/internal/common/defaults"
 	svcerrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/iam"
 
 	pb "vorpalstacks/internal/pb/aws/cloudtrail"
 	cloudtrailconnect "vorpalstacks/internal/pb/aws/cloudtrail/cloudtrailconnect"
@@ -31,10 +32,9 @@ func NewAdminHandler(svc *CloudTrailService) *AdminHandler {
 	return &AdminHandler{service: svc}
 }
 
-func (h *AdminHandler) getStoreFromHeader(header http.Header) (StoreInterface, error) {
-	region := defaults.GetRegionFromHeader(header)
-	return h.service.GetStoreForRegion(region)
-}
+// adminListTrailsPageSize is the admin console's ListTrails page size — a
+// platform paging choice, not an AWS limit.
+const adminListTrailsPageSize = 100
 
 // ListTrails retrieves CloudTrail trails with pagination support.
 func (h *AdminHandler) ListTrails(ctx context.Context, req *connect.Request[pb.ListTrailsRequest]) (*connect.Response[pb.ListTrailsResponse], error) {
@@ -45,7 +45,7 @@ func (h *AdminHandler) ListTrails(ctx context.Context, req *connect.Request[pb.L
 
 	result, err := h.service.listTrailsCore(store, ListTrailsInput{
 		NextToken: req.Msg.GetNexttoken(),
-		MaxItems:  100,
+		MaxItems:  adminListTrailsPageSize,
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -73,6 +73,14 @@ func (h *AdminHandler) CreateTrail(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
+	// The CloudWatchLogsRoleArn trust validation runs inside the Core; the
+	// admin plane builds the same validator the HTTP request context
+	// provides.
+	var iamValidator *iam.IAMValidator
+	if rp := h.service.RoleProvider(); rp != nil {
+		iamValidator = iam.NewIAMValidator(rp, h.service.AccountID())
+	}
+
 	in := CreateTrailInput{
 		Name:                      req.Msg.GetName(),
 		S3BucketName:              req.Msg.GetS3Bucketname(),
@@ -82,6 +90,7 @@ func (h *AdminHandler) CreateTrail(ctx context.Context, req *connect.Request[pb.
 		CloudWatchLogsRoleARN:     req.Msg.GetCloudwatchlogsrolearn(),
 		KMSKeyID:                  req.Msg.GetKmskeyid(),
 		Region:                    defaults.GetRegionFromHeader(req.Header()),
+		IAMValidator:              iamValidator,
 	}
 	if v := req.Msg.Includeglobalserviceevents; v != nil {
 		in.IncludeGlobalServiceEvents = v
@@ -96,7 +105,7 @@ func (h *AdminHandler) CreateTrail(ctx context.Context, req *connect.Request[pb.
 		in.EnableLogFileValidation = v
 	}
 
-	created, err := h.service.createTrailCore(store, in)
+	created, err := h.service.createTrailCore(ctx, store, in)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

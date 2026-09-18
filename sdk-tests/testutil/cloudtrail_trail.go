@@ -5,6 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
 )
 
 func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestResult {
@@ -13,6 +15,9 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	var trailName string
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail", func() error {
 		trailName = tc.uniqueName("test-trail")
+		if err := tc.ensureTrailBucket("test-bucket"); err != nil {
+			return err
+		}
 		resp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:                       aws.String(trailName),
 			S3BucketName:               aws.String("test-bucket"),
@@ -97,6 +102,9 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "UpdateTrail", func() error {
+		if err := tc.ensureTrailBucket("updated-bucket"); err != nil {
+			return err
+		}
 		resp, err := tc.client.UpdateTrail(tc.ctx, &cloudtrail.UpdateTrailInput{
 			Name:         aws.String(trailName),
 			S3BucketName: aws.String("updated-bucket"),
@@ -138,6 +146,25 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 			return err
 		}
 		return nil
+	}))
+
+	// Deleting a trail that is currently logging succeeds: the DeleteTrail
+	// reference documents no StopLogging precondition ("Deleting a
+	// multi-Region trail will stop logging of events in all AWS Regions
+	// enabled in your AWS account").
+	results = append(results, r.RunTest("cloudtrail", "DeleteTrail_WhileLogging", func() error {
+		name := tc.uniqueName("del-logging")
+		if _, err := tc.createTrail(name, "del-logging-bucket"); err != nil {
+			return err
+		}
+		if _, err := tc.client.StartLogging(tc.ctx, &cloudtrail.StartLoggingInput{Name: aws.String(name)}); err != nil {
+			return fmt.Errorf("StartLogging failed: %w", err)
+		}
+		if _, err := tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)}); err != nil {
+			return fmt.Errorf("DeleteTrail on a logging trail failed: %w", err)
+		}
+		_, err := tc.client.GetTrail(tc.ctx, &cloudtrail.GetTrailInput{Name: aws.String(name)})
+		return AssertErrorContains(err, "TrailNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail_DefaultFields", func() error {
@@ -292,6 +319,9 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 		name := tc.uniqueName("lfv-create")
 		defer tc.deleteTrail(name)
 
+		if err := tc.ensureTrailBucket("lfv-create-bucket"); err != nil {
+			return err
+		}
 		resp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:                       aws.String(name),
 			S3BucketName:               aws.String("lfv-create-bucket"),
@@ -318,6 +348,9 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 		name := tc.uniqueName("verify-trail")
 		defer tc.deleteTrail(name)
 
+		if err := tc.ensureTrailBucket("verify-bucket"); err != nil {
+			return err
+		}
 		resp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:                       aws.String(name),
 			S3BucketName:               aws.String("verify-bucket"),
@@ -345,6 +378,9 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 			return fmt.Errorf("create: %v", err)
 		}
 
+		if err := tc.ensureTrailBucket("updated-verify-bucket"); err != nil {
+			return err
+		}
 		_, err = tc.client.UpdateTrail(tc.ctx, &cloudtrail.UpdateTrailInput{
 			Name:         aws.String(name),
 			S3BucketName: aws.String("updated-verify-bucket"),
@@ -352,7 +388,6 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 		if err != nil {
 			return fmt.Errorf("update: %v", err)
 		}
-
 		resp, err := tc.client.GetTrail(tc.ctx, &cloudtrail.GetTrailInput{
 			Name: aws.String(name),
 		})
@@ -364,6 +399,80 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 		}
 		if resp.Trail.S3BucketName == nil || *resp.Trail.S3BucketName != "updated-verify-bucket" {
 			return fmt.Errorf("S3 bucket name not updated, got %v", resp.Trail.S3BucketName)
+		}
+		return nil
+	}))
+
+	// CreateTrail verifies the delivery destinations before accepting the
+	// configuration: the bucket must exist, its policy must grant CloudTrail
+	// the documented write access, and a configured SNS topic must resolve
+	// to an existing, publish-permitted topic.
+	results = append(results, r.RunTest("cloudtrail", "CreateTrail_MissingBucket", func() error {
+		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
+			Name:         aws.String(tc.uniqueName("ct-missing-bucket")),
+			S3BucketName: aws.String(tc.uniqueName("ct-ghost-bucket")),
+		})
+		return AssertErrorContains(err, "S3BucketDoesNotExistException")
+	}))
+
+	results = append(results, r.RunTest("cloudtrail", "CreateTrail_InsufficientBucketPolicy", func() error {
+		// The bucket exists but carries no CloudTrail policy.
+		bucket := tc.uniqueName("ct-unprivileged-bucket")
+		if _, err := tc.s3Client.CreateBucket(tc.ctx, &s3.CreateBucketInput{Bucket: aws.String(bucket)}); err != nil {
+			return fmt.Errorf("create bucket: %v", err)
+		}
+		defer tc.s3Client.DeleteBucket(tc.ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+
+		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
+			Name:         aws.String(tc.uniqueName("ct-bad-policy")),
+			S3BucketName: aws.String(bucket),
+		})
+		return AssertErrorContains(err, "InsufficientS3BucketPolicyException")
+	}))
+
+	results = append(results, r.RunTest("cloudtrail", "CreateTrail_MissingSnsTopic", func() error {
+		if err := tc.ensureTrailBucket("topic-validation-bucket"); err != nil {
+			return err
+		}
+		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
+			Name:         aws.String(tc.uniqueName("ct-missing-topic")),
+			S3BucketName: aws.String("topic-validation-bucket"),
+			SnsTopicName: aws.String(tc.uniqueName("ct-ghost-topic")),
+		})
+		return AssertErrorContains(err, "InsufficientSnsTopicPolicyException")
+	}))
+
+	results = append(results, r.RunTest("cloudtrail", "CreateTrail_SnsTopicResolvesARN", func() error {
+		if err := tc.ensureTrailBucket("topic-validation-bucket"); err != nil {
+			return err
+		}
+		topic, err := tc.snsClient.CreateTopic(tc.ctx, &sns.CreateTopicInput{Name: aws.String(tc.uniqueName("ct-notify"))})
+		if err != nil {
+			return fmt.Errorf("create topic: %v", err)
+		}
+		defer tc.snsClient.DeleteTopic(tc.ctx, &sns.DeleteTopicInput{TopicArn: topic.TopicArn})
+		topicPolicy := fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Sid":"AWSCloudTrailSNSPolicy20131101","Effect":"Allow","Principal":{"Service":"cloudtrail.amazonaws.com"},"Action":"SNS:Publish","Resource":"%s"}]}`,
+			aws.ToString(topic.TopicArn))
+		if _, err := tc.snsClient.SetTopicAttributes(tc.ctx, &sns.SetTopicAttributesInput{
+			TopicArn: topic.TopicArn, AttributeName: aws.String("Policy"), AttributeValue: aws.String(topicPolicy),
+		}); err != nil {
+			return fmt.Errorf("set topic policy: %v", err)
+		}
+
+		name := tc.uniqueName("ct-topic-trail")
+		defer tc.deleteTrail(name)
+		resp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
+			Name:         aws.String(name),
+			S3BucketName: aws.String("topic-validation-bucket"),
+			SnsTopicName: topic.TopicArn,
+		})
+		if err != nil {
+			return err
+		}
+		// The member carries a name or an ARN; the ARN form echoes verbatim
+		// as the resolved destination.
+		if aws.ToString(resp.SnsTopicARN) != aws.ToString(topic.TopicArn) {
+			return fmt.Errorf("SnsTopicARN = %q, want %q", aws.ToString(resp.SnsTopicARN), aws.ToString(topic.TopicArn))
 		}
 		return nil
 	}))

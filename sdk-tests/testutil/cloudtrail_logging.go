@@ -38,8 +38,8 @@ func (r *TestRunner) runCloudTrailLoggingTests(tc *cloudTrailTestContext) []Test
 		if status.StartLoggingTime == nil {
 			return fmt.Errorf("expected StartLoggingTime to be set")
 		}
-		if status.LatestDeliveryTime == nil {
-			return fmt.Errorf("expected LatestDeliveryTime when logging is active")
+		if status.LatestDeliveryTime != nil {
+			return fmt.Errorf("expected LatestDeliveryTime to stay absent until a delivery has occurred")
 		}
 		return nil
 	}))

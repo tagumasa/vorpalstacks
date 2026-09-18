@@ -83,5 +83,31 @@ func (r *TestRunner) runCloudTrailQueryAITests(tc *cloudTrailTestContext) []Test
 		return nil
 	}))
 
+	// SearchSampleQueries validates the required phrase and the MaxResults
+	// bound instead of clamping; GenerateQuery takes exactly one event data
+	// store.
+	results = append(results, r.RunTest("cloudtrail", "QueryAI_Validation", func() error {
+		_, err := tc.client.SearchSampleQueries(tc.ctx, &cloudtrail.SearchSampleQueriesInput{
+			SearchPhrase: aws.String("x"),
+		})
+		if err := AssertErrorContains(err, "InvalidParameterException"); err != nil {
+			return err
+		}
+
+		_, err = tc.client.SearchSampleQueries(tc.ctx, &cloudtrail.SearchSampleQueriesInput{
+			SearchPhrase: aws.String("events"),
+			MaxResults:   aws.Int32(51),
+		})
+		if err := AssertErrorContains(err, "InvalidParameterException"); err != nil {
+			return err
+		}
+
+		_, err = tc.client.GenerateQuery(tc.ctx, &cloudtrail.GenerateQueryInput{
+			EventDataStores: []string{edsID, edsID},
+			Prompt:          aws.String("Show me all events"),
+		})
+		return AssertErrorContains(err, "InvalidParameterException")
+	}))
+
 	return results
 }

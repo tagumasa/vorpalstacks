@@ -2,8 +2,6 @@ package cloudtrail
 
 import (
 	"context"
-	"sort"
-	"strconv"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -79,17 +77,14 @@ func (s *CloudTrailService) GenerateQuery(ctx context.Context, reqCtx *request.R
 		return nil, s.mapStoreError(err)
 	}
 
-	// Parse EventDataStores (list of EDS ARNs or IDs).
+	// Parse EventDataStores (list of EDS ARNs or IDs); the Core normalises
+	// each entry to the storage key.
 	edsListRaw := req.Parameters["EventDataStores"]
 	var edsIDs []string
 	if arr, ok := edsListRaw.([]interface{}); ok {
 		for _, item := range arr {
 			if str, ok := item.(string); ok {
-				id := str
-				if idx := strings.LastIndex(id, "/"); idx >= 0 {
-					id = id[idx+1:]
-				}
-				edsIDs = append(edsIDs, id)
+				edsIDs = append(edsIDs, str)
 			}
 		}
 	}
@@ -103,69 +98,11 @@ func (s *CloudTrailService) GenerateQuery(ctx context.Context, reqCtx *request.R
 // SearchSampleQueries returns sample CloudTrail Lake queries matching the
 // search phrase.
 func (s *CloudTrailService) SearchSampleQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	searchPhrase := strings.ToLower(request.GetStringParam(req.Parameters, "SearchPhrase"))
-
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 {
-		maxResults = 10
-	}
-	if maxResults > 50 {
-		maxResults = 50
-	}
-
-	// Apply pagination offset from NextToken.
-	offset := 0
-	if nt := request.GetStringParam(req.Parameters, "NextToken"); nt != "" {
-		if n, err := strconv.Atoi(nt); err == nil && n > 0 {
-			offset = n
-		}
-	}
-
-	// Filter sample queries by search phrase. computeRelevance returns 1
-	// for all queries when searchPhrase is empty, so no special-casing needed.
-	var matched []map[string]interface{}
-	for _, sq := range cloudTrailSampleQueries {
-		relevance := computeRelevance(searchPhrase, sq)
-		if relevance > 0 {
-			matched = append(matched, map[string]interface{}{
-				"Name":        sq.Name,
-				"Description": sq.Description,
-				"SQL":         sq.SQL,
-				"Relevance":   relevance,
-			})
-		}
-	}
-
-	// Sort by relevance descending (highest relevance first).
-	sort.Slice(matched, func(i, j int) bool {
-		ri, _ := matched[i]["Relevance"].(int)
-		rj, _ := matched[j]["Relevance"].(int)
-		return ri > rj
+	return s.searchSampleQueriesCore(SearchSampleQueriesInput{
+		SearchPhrase: request.GetStringParam(req.Parameters, "SearchPhrase"),
+		MaxResults:   request.GetIntParam(req.Parameters, "MaxResults"),
+		NextToken:    request.GetStringParam(req.Parameters, "NextToken"),
 	})
-
-	// Apply offset.
-	if offset >= len(matched) {
-		matched = matched[:0]
-	} else if offset > 0 {
-		matched = matched[offset:]
-	}
-
-	// Paginate.
-	end := maxResults
-	if end > len(matched) {
-		end = len(matched)
-	}
-
-	resp := map[string]interface{}{
-		"SearchResults": matched[:end],
-	}
-
-	// Set NextToken if there are more results.
-	if end < len(matched) {
-		resp["NextToken"] = strconv.Itoa(offset + end)
-	}
-
-	return resp, nil
 }
 
 // computeRelevance scores a sample query against the search phrase.

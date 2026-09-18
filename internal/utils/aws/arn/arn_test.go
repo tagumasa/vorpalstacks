@@ -1030,6 +1030,27 @@ func TestRDSBuilderColonSeparator(t *testing.T) {
 	}
 }
 
+// TestCloudTrailBuilderResourceWords pins the CloudTrail resource words
+// against the AWS ARN reference: trail/, channel/ and eventdatastore/ —
+// the event data store word carries no hyphen
+// (arn:aws:cloudtrail:region:account:eventdatastore/uuid).
+func TestCloudTrailBuilderResourceWords(t *testing.T) {
+	b := NewARNBuilder("123456789012", "us-east-2").CloudTrail()
+	cases := []struct {
+		got  string
+		want string
+	}{
+		{b.Trail("my-trail"), "arn:aws:cloudtrail:us-east-2:123456789012:trail/my-trail"},
+		{b.EventDataStore("EXAMPLE-f852-4e8f-8bd1-bcf6cEXAMPLE"), "arn:aws:cloudtrail:us-east-2:123456789012:eventdatastore/EXAMPLE-f852-4e8f-8bd1-bcf6cEXAMPLE"},
+		{b.Channel("EXAMPLE-cc8f-48aa-a0ba-92334b2c0fd7"), "arn:aws:cloudtrail:us-east-2:123456789012:channel/EXAMPLE-cc8f-48aa-a0ba-92334b2c0fd7"},
+	}
+	for _, c := range cases {
+		if c.got != c.want {
+			t.Errorf("CloudTrail ARN = %s, want %s", c.got, c.want)
+		}
+	}
+}
+
 // TestIsARNServiceFieldMatching pins the service-field semantics of the
 // Is*ARN predicates: they compare the ARN service namespace field, so a
 // bare namespace-like substring outside a well-formed ARN never matches.

@@ -14,7 +14,7 @@ import (
 
 func TestEventIndexKey_EncodePrefix(t *testing.T) {
 	t.Run("Time index with all segments", func(t *testing.T) {
-		key := NewTimeIndexKey("acc123", "us-east-1", "2024-02-25:10", "evt456")
+		key := NewTimeIndexKey("acc123", "us-east-1", "2024-02-25:10", 1708867200000000000, "evt456")
 		prefix := key.EncodePrefix()
 		assert.Equal(t, "ct_idx_time:acc123:us-east-1:2024-02-25:10", prefix)
 	})
@@ -48,7 +48,7 @@ func TestEventIndexKey_EncodePrefix(t *testing.T) {
 	})
 }
 
-func TestEventIndexManager_AddAndRemoveIndex(t *testing.T) {
+func TestEventIndexManager_AddIndex(t *testing.T) {
 	tmpDir := "./tmp/cloudtrail-index-test"
 	defer os.RemoveAll(tmpDir)
 
@@ -85,15 +85,6 @@ func TestEventIndexManager_AddAndRemoveIndex(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, ids, "evt-001")
 	})
-
-	t.Run("Remove index deletes all index entries", func(t *testing.T) {
-		err := manager.RemoveIndex(event)
-		require.NoError(t, err)
-
-		ids, _, err := manager.QueryByEventName([]string{"CreateTrail"}, 10, IndexCursor{})
-		require.NoError(t, err)
-		assert.NotContains(t, ids, "evt-001")
-	})
 }
 
 func TestEventIndexManager_QueryByTime(t *testing.T) {
@@ -119,14 +110,23 @@ func TestEventIndexManager_QueryByTime(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	t.Run("Query with time range", func(t *testing.T) {
+	t.Run("Query newest first within the range", func(t *testing.T) {
 		start := baseTime
 		end := baseTime.Add(time.Hour)
 		ids, _, err := manager.QueryByTime(&start, &end, 10, IndexCursor{})
 		require.NoError(t, err)
-		assert.Len(t, ids, 2)
-		assert.Contains(t, ids, "evt-001")
-		assert.Contains(t, ids, "evt-002")
+		assert.Equal(t, []string{"evt-002", "evt-001"}, ids,
+			"the most recent event must be listed first")
+	})
+
+	t.Run("Query hour boundary walks the later hour first", func(t *testing.T) {
+		// evt-003 sits two hours after baseTime; a range covering both
+		// hours must serve the newer hour's event before the older's.
+		start := baseTime
+		end := baseTime.Add(2 * time.Hour)
+		ids, _, err := manager.QueryByTime(&start, &end, 10, IndexCursor{})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"evt-003", "evt-002", "evt-001"}, ids)
 	})
 
 	t.Run("Query with maxResults limit", func(t *testing.T) {
@@ -137,16 +137,37 @@ func TestEventIndexManager_QueryByTime(t *testing.T) {
 		assert.LessOrEqual(t, len(ids), 2)
 	})
 
-	t.Run("Query with startTime only", func(t *testing.T) {
-		ids, _, err := manager.QueryByTime(&baseTime, nil, 10, IndexCursor{})
+	t.Run("Query with an offset-located bound addresses UTC buckets", func(t *testing.T) {
+		// A caller bound expressed with a +09:00 offset must address the
+		// same buckets as its UTC instant: 19:30+09:00 is 10:30 UTC.
+		tokyo := time.FixedZone("tokyo", 9*60*60)
+		start := baseTime.In(tokyo)
+		end := baseTime.Add(time.Hour).In(tokyo)
+		ids, _, err := manager.QueryByTime(&start, &end, 10, IndexCursor{})
 		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(ids), 1)
+		assert.Contains(t, ids, "evt-001")
+		assert.Contains(t, ids, "evt-002")
 	})
 
-	t.Run("Query with endTime only", func(t *testing.T) {
-		ids, _, err := manager.QueryByTime(nil, &baseTime, 10, IndexCursor{})
+	t.Run("Query with unresolved bounds is refused", func(t *testing.T) {
+		// The caller resolves unbounded sides against the recorded event
+		// span; the manager itself refuses nil bounds.
+		_, _, err := manager.QueryByTime(&baseTime, nil, 10, IndexCursor{})
+		assert.Error(t, err)
+		_, _, err = manager.QueryByTime(nil, &baseTime, 10, IndexCursor{})
+		assert.Error(t, err)
+	})
+
+	t.Run("Query with a full span covers single-bound semantics", func(t *testing.T) {
+		// A StartTime-only lookup resolves its end from the newest
+		// recorded event; the equivalent resolved span walks every bucket
+		// from the bound's hour downwards. The within-hour start bound is
+		// applied by the store's post-filter, not by the bucket walk.
+		start := baseTime.Add(15 * time.Minute)
+		end := baseTime.Add(2 * time.Hour)
+		ids, _, err := manager.QueryByTime(&start, &end, 10, IndexCursor{})
 		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(ids), 1)
+		assert.Equal(t, []string{"evt-003", "evt-002", "evt-001"}, ids)
 	})
 }
 
@@ -259,42 +280,6 @@ func TestEventIndexManager_QueryByEventSource(t *testing.T) {
 
 	t.Run("Query non-existent source returns empty", func(t *testing.T) {
 		ids, _, err := manager.QueryByEventSource("lambda.amazonaws.com", 10, IndexCursor{})
-		require.NoError(t, err)
-		assert.Empty(t, ids)
-	})
-}
-
-func TestEventIndexManager_ClearIndexes(t *testing.T) {
-	tmpDir := "./tmp/cloudtrail-clear-test"
-	defer os.RemoveAll(tmpDir)
-
-	s, err := storage.Open(tmpDir)
-	require.NoError(t, err)
-	defer s.Close()
-
-	manager := NewEventIndexManager(s, "acc123", "us-east-1")
-
-	now := time.Now()
-
-	events := []*Event{
-		{EventID: "evt-001", EventName: "CreateTrail", EventSource: "cloudtrail.amazonaws.com", EventTime: now, UserIdentity: &UserIdentity{Type: "IAMUser", UserName: "testuser"}},
-		{EventID: "evt-002", EventName: "DeleteTrail", EventSource: "cloudtrail.amazonaws.com", EventTime: now.Add(time.Second), UserIdentity: &UserIdentity{Type: "IAMUser", UserName: "testuser"}},
-	}
-
-	for _, e := range events {
-		err := manager.AddIndex(e)
-		require.NoError(t, err)
-	}
-
-	t.Run("ClearIndexes removes all indexes", func(t *testing.T) {
-		err := manager.ClearIndexes("acc123", "us-east-1")
-		require.NoError(t, err)
-
-		ids, _, err := manager.QueryByEventName([]string{"CreateTrail"}, 10, IndexCursor{})
-		require.NoError(t, err)
-		assert.Empty(t, ids)
-
-		ids, _, err = manager.QueryByUsername("testuser", 10, IndexCursor{})
 		require.NoError(t, err)
 		assert.Empty(t, ids)
 	})
