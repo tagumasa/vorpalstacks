@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -37,6 +38,82 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 		}
 		if shard.SequenceNumberRange == nil {
 			return fmt.Errorf("SequenceNumberRange is nil")
+		}
+
+		// The SDKs serialise Timestamp members as epoch-second JSON
+		// numbers, so the shard filter and the stream-generation member
+		// must both read the numeric wire form end to end. A future
+		// moment keeps the open set: the shard started before it and
+		// remains open.
+		filtered, err := client.ListShards(ctx, &kinesis.ListShardsInput{
+			StreamName: aws.String(sn),
+			ShardFilter: &types.ShardFilter{
+				Type:      types.ShardFilterTypeAtTimestamp,
+				Timestamp: aws.Time(time.Now().Add(time.Minute)),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("AT_TIMESTAMP shard filter: %v", err)
+		}
+		if len(filtered.Shards) != 1 {
+			return fmt.Errorf("filtered shards: expected 1, got %d", len(filtered.Shards))
+		}
+		desc, err := client.DescribeStreamSummary(ctx, &kinesis.DescribeStreamSummaryInput{StreamName: aws.String(sn)})
+		if err != nil {
+			return fmt.Errorf("describe summary: %v", err)
+		}
+		if _, err := client.ListShards(ctx, &kinesis.ListShardsInput{
+			StreamName:              aws.String(sn),
+			StreamCreationTimestamp: desc.StreamDescriptionSummary.StreamCreationTimestamp,
+		}); err != nil {
+			return fmt.Errorf("StreamCreationTimestamp round trip: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("kinesis", "DescribeStream_LimitPages", func() error {
+		sn := kinesisStream(ts, "dsplim")
+		const shardCount = 3
+		cleanup, err := kinesisCreateStream(ctx, client, sn, shardCount, 1*time.Second)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		resp, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+			StreamName: aws.String(sn),
+			Limit:      aws.Int32(2),
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.StreamDescription.Shards) != 2 || !aws.ToBool(resp.StreamDescription.HasMoreShards) {
+			return fmt.Errorf("page 1: %d shards, HasMoreShards %v", len(resp.StreamDescription.Shards), aws.ToBool(resp.StreamDescription.HasMoreShards))
+		}
+
+		resp, err = client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+			StreamName:            aws.String(sn),
+			Limit:                 aws.Int32(2),
+			ExclusiveStartShardId: resp.StreamDescription.Shards[1].ShardId,
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.StreamDescription.Shards) != 1 || aws.ToBool(resp.StreamDescription.HasMoreShards) {
+			return fmt.Errorf("page 2: %d shards, HasMoreShards %v", len(resp.StreamDescription.Shards), aws.ToBool(resp.StreamDescription.HasMoreShards))
+		}
+
+		// A Limit above the documented hundred caps to a full page rather
+		// than rejecting — the member's range trait accepts the value.
+		resp, err = client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+			StreamName: aws.String(sn),
+			Limit:      aws.Int32(150),
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.StreamDescription.Shards) != shardCount || aws.ToBool(resp.StreamDescription.HasMoreShards) {
+			return fmt.Errorf("limit 150: %d shards, HasMoreShards %v", len(resp.StreamDescription.Shards), aws.ToBool(resp.StreamDescription.HasMoreShards))
 		}
 		return nil
 	}))
@@ -125,8 +202,78 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 		if resp.CurrentShardCount == nil {
 			return fmt.Errorf("CurrentShardCount is nil")
 		}
+		// CurrentShardCount reports the count at request time, before the
+		// reshaping runs — the documented example answers the pre-update
+		// count alongside the target (a three-shard stream scaled to six
+		// returns CurrentShardCount 3).
+		if aws.ToInt32(resp.CurrentShardCount) != 1 {
+			return fmt.Errorf("CurrentShardCount: got %d, want the pre-update count 1", aws.ToInt32(resp.CurrentShardCount))
+		}
 		if aws.ToInt32(resp.TargetShardCount) != 2 {
 			return fmt.Errorf("TargetShardCount: got %d, want 2", aws.ToInt32(resp.TargetShardCount))
+		}
+		post, err := client.ListShards(ctx, &kinesis.ListShardsInput{StreamName: aws.String(sn)})
+		if err != nil {
+			return fmt.Errorf("post-update list shards: %v", err)
+		}
+		if n := len(kinesisOpenShards(post.Shards)); n != 2 {
+			return fmt.Errorf("open shards after 1 to 2: got %d, want 2", n)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("kinesis", "UpdateShardCount_ScaleDownConverges", func() error {
+		sn := kinesisStream(ts, "uscsd")
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 4, 1*time.Second)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		resp, err := client.UpdateShardCount(ctx, &kinesis.UpdateShardCountInput{
+			StreamName:       aws.String(sn),
+			TargetShardCount: aws.Int32(2),
+			ScalingType:      types.ScalingTypeUniformScaling,
+		})
+		if err != nil {
+			return err
+		}
+		if aws.ToInt32(resp.CurrentShardCount) != 4 {
+			return fmt.Errorf("CurrentShardCount: got %d, want the pre-update count 4", aws.ToInt32(resp.CurrentShardCount))
+		}
+		post, err := client.ListShards(ctx, &kinesis.ListShardsInput{StreamName: aws.String(sn)})
+		if err != nil {
+			return fmt.Errorf("post-scale-down list shards: %v", err)
+		}
+		open := kinesisOpenShards(post.Shards)
+		if len(open) != 2 {
+			return fmt.Errorf("open shards after 4 to 2: got %d, want 2 — the scaling must converge, not no-op", len(open))
+		}
+		// The survivors tile the hash key space contiguously: the lowest
+		// starts at 0, the highest ends at the maximum key, and each
+		// boundary is adjacent.
+		ordered := make([]types.Shard, len(open))
+		copy(ordered, open)
+		for i := 1; i < len(ordered); i++ {
+			for j := i; j > 0 && aws.ToString(ordered[j].HashKeyRange.StartingHashKey) < aws.ToString(ordered[j-1].HashKeyRange.StartingHashKey); j-- {
+				ordered[j], ordered[j-1] = ordered[j-1], ordered[j]
+			}
+		}
+		if aws.ToString(ordered[0].HashKeyRange.StartingHashKey) != "0" {
+			return fmt.Errorf("key space tiling: lowest open shard starts at %s, want 0", aws.ToString(ordered[0].HashKeyRange.StartingHashKey))
+		}
+		for i := 1; i < len(ordered); i++ {
+			prevEnd := new(big.Int)
+			if _, ok := prevEnd.SetString(aws.ToString(ordered[i-1].HashKeyRange.EndingHashKey), 10); !ok {
+				return fmt.Errorf("unparseable ending hash key %s", aws.ToString(ordered[i-1].HashKeyRange.EndingHashKey))
+			}
+			start := new(big.Int)
+			if _, ok := start.SetString(aws.ToString(ordered[i].HashKeyRange.StartingHashKey), 10); !ok {
+				return fmt.Errorf("unparseable starting hash key %s", aws.ToString(ordered[i].HashKeyRange.StartingHashKey))
+			}
+			if new(big.Int).Sub(start, prevEnd).Cmp(big.NewInt(1)) != 0 {
+				return fmt.Errorf("key space tiling: gap between %s and %s", aws.ToString(ordered[i-1].ShardId), aws.ToString(ordered[i].ShardId))
+			}
 		}
 		return nil
 	}))

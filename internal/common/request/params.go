@@ -7,14 +7,18 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// HasParam checks whether a parameter key exists in the params map.
+// HasParam checks whether a parameter key exists in the params map. A
+// present null reads as absent — the awsJson1_1 protocol's own conformance
+// model drops null structure values ("Null structure values are dropped"),
+// so a member the server must treat as not provided never reports present.
 func HasParam(params map[string]interface{}, key string) bool {
-	if _, ok := params[key]; ok {
+	if v, ok := params[key]; ok && v != nil {
 		return true
 	}
-	if _, ok := params[strings.ToLower(key)]; ok {
+	if v, ok := params[strings.ToLower(key)]; ok && v != nil {
 		return true
 	}
 	return false
@@ -85,6 +89,9 @@ var ErrNonIntegerParameter = errors.New("parameter value is not an integer")
 // (0, true, ErrNonIntegerParameter) when it is present but unparseable.
 // Typed request members must reject the last state rather than falling
 // back to a default: only an omitted member means "use the default".
+// A present null reads as absent — the awsJson1_1 conformance model drops
+// null structure values, the same reading the timestamp strict getter and
+// HasParam take.
 // Both wire forms carry the int32 domain: JSON numbers arrive as float64,
 // where a fractional value is not an integer, and query-wire integers
 // arrive as strings parsed here. On either form a magnitude beyond the
@@ -94,6 +101,9 @@ var ErrNonIntegerParameter = errors.New("parameter value is not an integer")
 func GetIntParamStrictCaseInsensitive(params map[string]interface{}, key string) (int, bool, error) {
 	for _, k := range []string{key, LowerFirst(key), strings.ToLower(key)} {
 		if v, ok := params[k]; ok {
+			if v == nil {
+				return 0, false, nil
+			}
 			if n, ok := asInt(v); ok {
 				if f, isFloat := v.(float64); isFloat {
 					if f != math.Trunc(f) || f > math.MaxInt32 || f < math.MinInt32 {
@@ -109,6 +119,99 @@ func GetIntParamStrictCaseInsensitive(params map[string]interface{}, key string)
 		}
 	}
 	return 0, false, nil
+}
+
+// ErrNonTimestampParameter reports a Timestamp-member value that is present
+// on the wire but cannot be read as a timestamp — a wire-type violation the
+// caller must reject instead of silently treating the member as omitted.
+var ErrNonTimestampParameter = errors.New("parameter value is not a timestamp")
+
+// unixNanoBoundMin and unixNanoBoundMax bracket the range time.UnixNano
+// carries without wrapping (roughly 1678-2262). The RFC 3339 arm of
+// NormalizeTimestampValue converts through UnixNano, so a parseable
+// timestamp beyond the bounds is not a convertible value.
+var (
+	unixNanoBoundMin = time.Unix(0, math.MinInt64)
+	unixNanoBoundMax = time.Unix(0, math.MaxInt64)
+)
+
+// NormalizeTimestampValue converts one wire value of a Timestamp member to
+// the canonical epoch-seconds decimal string the service layer consumes.
+// JSON protocols serialise timestamps as numbers — the AWS SDKs emit
+// epoch-second doubles — so a float64 is the primary form; a string is
+// accepted in either documented value form (epoch seconds, or the RFC 3339
+// notation the Timestamp members' documentation shows). Unsigned integers
+// arrive from the CBOR request path, which decodes positive integers as
+// uint64 while asInt already accepts them. Non-finite numbers ("NaN",
+// "Inf" and their float forms) and RFC 3339 instants outside the
+// nanosecond-representable range are wire-type violations. A nil value is
+// rejected here as a violation too: the explicitly-null-reading ("unset")
+// is settled by the strict getter one layer up, before this function runs.
+func NormalizeTimestampValue(v interface{}) (string, error) {
+	switch t := v.(type) {
+	case nil:
+		return "", ErrNonTimestampParameter
+	case float64:
+		if math.IsNaN(t) || math.IsInf(t, 0) {
+			return "", ErrNonTimestampParameter
+		}
+		return strconv.FormatFloat(t, 'f', -1, 64), nil
+	case int:
+		return strconv.Itoa(t), nil
+	case int32:
+		return strconv.FormatInt(int64(t), 10), nil
+	case int64:
+		return strconv.FormatInt(t, 10), nil
+	case uint32:
+		return strconv.FormatUint(uint64(t), 10), nil
+	case uint64:
+		return strconv.FormatUint(t, 10), nil
+	case string:
+		f, err := strconv.ParseFloat(t, 64)
+		if err == nil {
+			if math.IsNaN(f) || math.IsInf(f, 0) {
+				return "", ErrNonTimestampParameter
+			}
+			// The formatted decimal, not the input spelling: ParseFloat
+			// accepts a wider grammar than the canonical form (hex
+			// floats, exponent spellings), and the other arms already
+			// emit the formatted decimal.
+			return strconv.FormatFloat(f, 'f', -1, 64), nil
+		}
+		if parsed, err := time.Parse(time.RFC3339, t); err == nil {
+			if parsed.Before(unixNanoBoundMin) || parsed.After(unixNanoBoundMax) {
+				return "", ErrNonTimestampParameter
+			}
+			return strconv.FormatFloat(float64(parsed.UnixNano())/1e9, 'f', -1, 64), nil
+		}
+	}
+	return "", ErrNonTimestampParameter
+}
+
+// GetTimestampParamStrict extracts a Timestamp member with the same
+// case-insensitive key matching as GetIntParamStrictCaseInsensitive and the
+// same three states: (value, false, nil) when the member is absent, (value,
+// true, nil) when present and readable, and ("", true, ErrNonTimestampParameter)
+// when present but unreadable. Typed request members must reject the last
+// state rather than falling back to a default: a member the SDK serialises
+// as a number is dropped by the string-only readers, so reading it as absent
+// silently disables the member's semantics. A present null reads as absent
+// — the awsJson1_1 conformance model drops null structure values, the
+// reading every strict getter and HasParam share.
+func GetTimestampParamStrict(params map[string]interface{}, key string) (string, bool, error) {
+	for _, k := range []string{key, LowerFirst(key), strings.ToLower(key)} {
+		if v, ok := params[k]; ok {
+			if v == nil {
+				return "", false, nil
+			}
+			s, err := NormalizeTimestampValue(v)
+			if err != nil {
+				return "", true, fmt.Errorf("%w: %s", ErrNonTimestampParameter, k)
+			}
+			return s, true, nil
+		}
+	}
+	return "", false, nil
 }
 
 func asInt(v interface{}) (int, bool) {

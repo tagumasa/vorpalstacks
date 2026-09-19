@@ -90,7 +90,7 @@ func NewCognitoIdentityStore(store storage.BasicStorage, accountID, region strin
 		identitiesStore:   common.NewBaseStore(store.Bucket(identityBucketName(region)), "cognito-identities"),
 		developerIdStore:  common.NewBaseStore(store.Bucket(developerIdBucketName(region)), "cognito-developerids"),
 		principalTagStore: common.NewBaseStore(store.Bucket(principalTagBucketName(region)), "cognito-principaltags"),
-		TagStore:          common.NewTagStoreWithRegion(store, "cognito-identity", region),
+		TagStore:          common.NewTagStoreWithRegion(store, "cognito-identity", region, common.StandardTagBudget("InvalidParameterException")),
 		keyLocker:         common.KeyLocker{},
 		arnBuilder:        svcarn.NewARNBuilder(accountID, region),
 		accountID:         accountID,

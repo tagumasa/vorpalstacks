@@ -48,7 +48,7 @@ func NewStepFunctionStore(store storage.BasicStorage, accountID, region string) 
 		versionsStore:         common.NewBaseStore(store.Bucket("stepfunction-versions-"+region), "stepfunction-versions"),
 		aliasesStore:          common.NewBaseStore(store.Bucket("stepfunction-aliases-"+region), "stepfunction-aliases"),
 		mapRunsStore:          common.NewBaseStore(store.Bucket("stepfunction-mapruns-"+region), "stepfunction-mapruns"),
-		TagStore:              common.NewTagStoreWithRegion(store, "stepfunction", region),
+		TagStore:              common.NewTagStoreWithRegion(store, "stepfunction", region, common.StandardTagBudget("TooManyTags")),
 		arnBuilder:            svcarn.NewARNBuilder(accountID, region),
 		accountID:             accountID,
 		region:                region,

@@ -84,7 +84,11 @@ func (s *AppSyncService) createApiCacheCore(store *appsyncstore.AppSyncStore, in
 	// goroutine works on a value copy so the record handed to the caller is
 	// never mutated after the response has been serialised.
 	go func() {
-		defer func() { resilience.RecoverPanic("appsync cache creation async") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("appsync cache creation async", r)
+			}
+		}()
 		time.Sleep(2 * time.Second)
 		available := *cache
 		available.Status = "AVAILABLE"

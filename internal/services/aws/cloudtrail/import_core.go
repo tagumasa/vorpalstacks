@@ -356,7 +356,8 @@ func (s *CloudTrailService) listImportFailuresCore(store cloudtrailstore.CloudTr
 // overwrites that verdict.
 func (s *CloudTrailService) runImport(store cloudtrailstore.CloudTrailStoreInterface, importID string) {
 	defer func() {
-		if r := resilience.RecoverPanic("cloudtrail.runImport"); r != nil {
+		if r := recover(); r != nil {
+			resilience.LogPanic("cloudtrail.runImport", r)
 			_, _ = store.MutateImport(importID, func(imp *cloudtrailstore.Import) error {
 				if importTerminalStatus(imp.ImportStatus) {
 					return cloudtrailstore.ErrUnchanged

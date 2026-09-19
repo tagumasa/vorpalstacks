@@ -88,7 +88,11 @@ func (s *NeptuneService) endpointAddressFor(resourceID, engineType string) strin
 
 // cleanupOldEvents periodically purges events older than the retention period.
 func (s *NeptuneService) cleanupOldEvents(ctx context.Context) {
-	defer func() { resilience.RecoverPanic("Neptune cleanupOldEvents") }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.LogPanic("Neptune cleanupOldEvents", r)
+		}
+	}()
 	ticker := time.NewTicker(10 * time.Minute)
 	defer ticker.Stop()
 	for {
@@ -213,7 +217,11 @@ func (s *NeptuneService) IsSubnetInUse(ctx context.Context, region, subnetId str
 // terminal failure state (e.g. "failed") when all retries are exhausted.
 func (s *NeptuneService) scheduleTransition(region string, delay time.Duration, fn func(store neptunestore.NeptuneStoreInterface) error) {
 	go func() {
-		defer func() { resilience.RecoverPanic("Neptune state transition") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("Neptune state transition", r)
+			}
+		}()
 		select {
 		case <-s.transitionCtx.Done():
 			return

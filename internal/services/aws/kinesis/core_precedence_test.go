@@ -41,7 +41,7 @@ func parsedRequest(params map[string]interface{}) *request.ParsedRequest {
 // a request that is simultaneously invalid and undeliverable to storage
 // must fail with InvalidArgumentException, never with the storage error.
 func TestValidationPrecedesStoreAcquisition(t *testing.T) {
-	svc := NewKinesisService("000000000000", "us-east-1")
+	svc := NewKinesisService("000000000000")
 	reqCtx := failingStorageReqCtx(t)
 	ctx := context.Background()
 
@@ -76,7 +76,9 @@ func TestValidationPrecedesStoreAcquisition(t *testing.T) {
 			return err
 		}},
 		{"UpdateStreamWarmThroughput", func() error {
-			_, err := svc.UpdateStreamWarmThroughput(ctx, reqCtx, parsedRequest(nil))
+			_, err := svc.UpdateStreamWarmThroughput(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"WarmThroughputMiBps": float64(-1),
+			}))
 			return err
 		}},
 		{"RegisterStreamConsumer", func() error {
@@ -103,6 +105,99 @@ func TestValidationPrecedesStoreAcquisition(t *testing.T) {
 			_, err := svc.GetRecords(ctx, reqCtx, parsedRequest(map[string]interface{}{
 				"ShardIterator": "iterator",
 				"Limit":         float64(0),
+			}))
+			return err
+		}},
+		// The migrated store-parameter cores: each validates its members
+		// before the store acquisition, so the same precedence guarantee
+		// now holds for the whole operation set.
+		{"CreateStream", func() error {
+			_, err := svc.CreateStream(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"StreamName": "invalid stream name!",
+			}))
+			return err
+		}},
+		{"ListStreams", func() error {
+			_, err := svc.ListStreams(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"Limit": float64(0),
+			}))
+			return err
+		}},
+		{"ListShards", func() error {
+			_, err := svc.ListShards(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"MaxResults": float64(0),
+			}))
+			return err
+		}},
+		{"SplitShard", func() error {
+			_, err := svc.SplitShard(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"StreamName": "split",
+			}))
+			return err
+		}},
+		{"MergeShards", func() error {
+			_, err := svc.MergeShards(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"StreamName":   "merge",
+				"ShardToMerge": "shardId-000000000000",
+			}))
+			return err
+		}},
+		{"UpdateShardCount", func() error {
+			_, err := svc.UpdateShardCount(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"StreamName": "reshape",
+			}))
+			return err
+		}},
+		{"PutRecord", func() error {
+			_, err := svc.PutRecord(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"StreamName":   "put",
+				"PartitionKey": "",
+			}))
+			return err
+		}},
+		{"PutRecords", func() error {
+			_, err := svc.PutRecords(ctx, reqCtx, parsedRequest(map[string]interface{}{}))
+			return err
+		}},
+		{"GetShardIterator", func() error {
+			_, err := svc.GetShardIterator(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"StreamName":        "read",
+				"ShardIteratorType": "LATEST",
+			}))
+			return err
+		}},
+		{"IncreaseStreamRetentionPeriod", func() error {
+			_, err := svc.IncreaseStreamRetentionPeriod(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"RetentionPeriodHours": float64(0),
+			}))
+			return err
+		}},
+		{"DecreaseStreamRetentionPeriod", func() error {
+			_, err := svc.DecreaseStreamRetentionPeriod(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"RetentionPeriodHours": float64(0),
+			}))
+			return err
+		}},
+		{"StartStreamEncryption", func() error {
+			_, err := svc.StartStreamEncryption(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"EncryptionType": "NONE",
+			}))
+			return err
+		}},
+		{"StopStreamEncryption", func() error {
+			_, err := svc.StopStreamEncryption(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"StreamName": "stop-enc",
+			}))
+			return err
+		}},
+		{"UpdateAccountSettings", func() error {
+			_, err := svc.UpdateAccountSettings(ctx, reqCtx, parsedRequest(map[string]interface{}{}))
+			return err
+		}},
+		{"EnableEnhancedMonitoring", func() error {
+			_, err := svc.EnableEnhancedMonitoring(ctx, reqCtx, parsedRequest(map[string]interface{}{
+				"StreamName":        "monitor",
+				"ShardLevelMetrics": []interface{}{"NotAMetric"},
 			}))
 			return err
 		}},

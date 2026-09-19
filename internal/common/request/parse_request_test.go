@@ -483,11 +483,16 @@ func TestGetArrayParamLowerFirst(t *testing.T) {
 // TestGetIntParamStrictCaseInsensitive pins the three states of the strict
 // integer lookup: absent, present-and-parseable, and present-but-unparseable.
 // Typed request members must reject the last state instead of treating the
-// member as omitted.
+// member as omitted. A present null reads as absent — the awsJson1_1
+// conformance model drops null structure values.
 func TestGetIntParamStrictCaseInsensitive(t *testing.T) {
 	params := map[string]interface{}{}
 	if v, present, err := GetIntParamStrictCaseInsensitive(params, "Absent"); present || err != nil || v != 0 {
 		t.Fatalf("absent member: got (%d, %v, %v)", v, present, err)
+	}
+	if v, present, err := GetIntParamStrictCaseInsensitive(
+		map[string]interface{}{"MaxNumberOfMessages": nil}, "MaxNumberOfMessages"); present || err != nil || v != 0 {
+		t.Fatalf("null member: got (%d, %v, %v), want dropped", v, present, err)
 	}
 
 	params["MaxNumberOfMessages"] = "10"
@@ -504,6 +509,24 @@ func TestGetIntParamStrictCaseInsensitive(t *testing.T) {
 	params = map[string]interface{}{"visibilitytimeout": "5"}
 	if v, present, err := GetIntParamStrictCaseInsensitive(params, "VisibilityTimeout"); !present || err != nil || v != 5 {
 		t.Fatalf("lower-case fallback: got (%d, %v, %v)", v, present, err)
+	}
+}
+
+// TestHasParamDropsNull pins the protocol's null-dropped rule on the
+// existence probe: a member the awsJson1_1 conformance model says the
+// server drops never reports present, in either probed key casing, while a
+// present non-null value still does.
+func TestHasParamDropsNull(t *testing.T) {
+	params := map[string]interface{}{"Data": nil, "limit": nil}
+	if HasParam(params, "Data") {
+		t.Fatal("null member: reported present, want dropped")
+	}
+	if HasParam(params, "Limit") {
+		t.Fatal("null lower-cased member: reported present, want dropped")
+	}
+	params["Data"] = "x"
+	if !HasParam(params, "Data") {
+		t.Fatal("non-null member: reported absent")
 	}
 }
 

@@ -27,42 +27,24 @@ const (
 
 // Stream represents a Kinesis stream.
 type Stream struct {
-	StreamName           string                `json:"streamName"`
-	StreamARN            string                `json:"streamArn"`
-	StreamStatus         StreamStatus          `json:"streamStatus"`
-	StreamModeDetails    *StreamModeDetails    `json:"streamModeDetails,omitempty"`
-	ShardCount           int32                 `json:"shardCount"`
-	RetentionPeriodHours int32                 `json:"retentionPeriodHours"`
-	EnhancedMonitoring   []EnhancedMonitoring  `json:"enhancedMonitoring,omitempty"`
-	EncryptionType       string                `json:"encryptionType,omitempty"`
-	KeyID                string                `json:"keyId,omitempty"`
-	ConsumerCount        int32                 `json:"consumerCount"`
-	CreatedAt            time.Time             `json:"createdAt"`
-	LastModifiedAt       time.Time             `json:"lastModifiedAt"`
-	MaxRecordSizeInKiB   int32                 `json:"maxRecordSizeInKiB,omitempty"`
-	WarmThroughputMiBps  int32                 `json:"warmThroughputMiBps,omitempty"`
-	OnDemandStreamConfig *OnDemandStreamConfig `json:"onDemandStreamConfig,omitempty"`
-}
-
-// OnDemandStreamConfig represents on-demand stream configuration.
-type OnDemandStreamConfig struct {
-	ShardCount    int32 `json:"shardCount,omitempty"`
-	MaxShardCount int32 `json:"maxShardCount,omitempty"`
-	OnDemandMode  bool  `json:"onDemandMode,omitempty"`
+	StreamName           string               `json:"streamName"`
+	StreamARN            string               `json:"streamArn"`
+	StreamStatus         StreamStatus         `json:"streamStatus"`
+	StreamModeDetails    *StreamModeDetails   `json:"streamModeDetails,omitempty"`
+	ShardCount           int32                `json:"shardCount"`
+	RetentionPeriodHours int32                `json:"retentionPeriodHours"`
+	EnhancedMonitoring   []EnhancedMonitoring `json:"enhancedMonitoring,omitempty"`
+	EncryptionType       string               `json:"encryptionType,omitempty"`
+	KeyID                string               `json:"keyId,omitempty"`
+	ConsumerCount        int32                `json:"consumerCount"`
+	CreatedAt            time.Time            `json:"createdAt"`
+	MaxRecordSizeInKiB   int32                `json:"maxRecordSizeInKiB,omitempty"`
+	WarmThroughputMiBps  int32                `json:"warmThroughputMiBps,omitempty"`
 }
 
 // StreamModeDetails represents the mode details of a Kinesis stream.
 type StreamModeDetails struct {
 	StreamMode StreamMode `json:"streamMode"`
-}
-
-// StreamSummary represents a summary of a Kinesis stream.
-type StreamSummary struct {
-	StreamName        string             `json:"streamName"`
-	StreamARN         string             `json:"streamArn"`
-	StreamStatus      StreamStatus       `json:"streamStatus"`
-	StreamModeDetails *StreamModeDetails `json:"streamModeDetails,omitempty"`
-	ConsumerCount     int32              `json:"consumerCount"`
 }
 
 // Shard represents a Kinesis shard.
@@ -95,7 +77,6 @@ type Record struct {
 	ApproximateArrivalTimestamp time.Time `json:"approximateArrivalTimestamp"`
 	Data                        string    `json:"data"`
 	PartitionKey                string    `json:"partitionKey"`
-	EncryptionType              string    `json:"encryptionType,omitempty"`
 }
 
 // Consumer represents a Kinesis consumer.
@@ -107,25 +88,14 @@ type Consumer struct {
 	ConsumerCreationTimestamp time.Time `json:"consumerCreationTimestamp"`
 }
 
-// ConsumerSummary represents a summary of a Kinesis consumer.
-type ConsumerSummary struct {
-	ConsumerName              string    `json:"consumerName"`
-	ConsumerARN               string    `json:"consumerArn"`
-	StreamARN                 string    `json:"streamArn"`
-	ConsumerStatus            string    `json:"consumerStatus"`
-	ConsumerCreationTimestamp time.Time `json:"consumerCreationTimestamp"`
-}
-
 // ShardIterator represents a Kinesis shard iterator.
 type ShardIterator struct {
-	IteratorID     string     `json:"iteratorId"`
-	StreamName     string     `json:"streamName"`
-	ShardID        string     `json:"shardId"`
-	IteratorType   string     `json:"iteratorType"`
-	SequenceNumber string     `json:"sequenceNumber,omitempty"`
-	Timestamp      *time.Time `json:"timestamp,omitempty"`
-	CreatedAt      time.Time  `json:"createdAt"`
-	ExpiresAt      time.Time  `json:"expiresAt"`
+	IteratorID     string    `json:"iteratorId"`
+	StreamName     string    `json:"streamName"`
+	ShardID        string    `json:"shardId"`
+	IteratorType   string    `json:"iteratorType"`
+	SequenceNumber string    `json:"sequenceNumber,omitempty"`
+	ExpiresAt      time.Time `json:"expiresAt"`
 }
 
 // EnhancedMonitoring represents enhanced monitoring settings for Kinesis.
@@ -146,19 +116,18 @@ type ShardFilter struct {
 func NewStream(name string, shardCount int32, streamMode StreamMode, maxRecordSizeInKiB int32, warmThroughputMiBps int32) *Stream {
 	now := time.Now().UTC()
 	if maxRecordSizeInKiB == 0 {
-		maxRecordSizeInKiB = 1024
+		maxRecordSizeInKiB = DefaultMaxRecordSizeInKiB
 	}
 	return &Stream{
 		StreamName:           name,
 		StreamStatus:         StreamStatusActive,
 		StreamModeDetails:    &StreamModeDetails{StreamMode: streamMode},
 		ShardCount:           shardCount,
-		RetentionPeriodHours: 24,
+		RetentionPeriodHours: MinRetentionPeriodHours,
 		EnhancedMonitoring:   []EnhancedMonitoring{{ShardLevelMetrics: []string{}}},
 		MaxRecordSizeInKiB:   maxRecordSizeInKiB,
 		WarmThroughputMiBps:  warmThroughputMiBps,
 		CreatedAt:            now,
-		LastModifiedAt:       now,
 	}
 }
 

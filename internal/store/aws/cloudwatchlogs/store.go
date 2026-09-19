@@ -42,7 +42,7 @@ func NewStore(store storage.BasicStorage, bucket storage.Bucket, accountID, regi
 
 	return &Store{
 		BaseStore:  baseStore,
-		tagStore:   common.NewTagStoreWithRegion(store, "cloudwatchlogs", region),
+		tagStore:   common.NewTagStoreWithRegion(store, "cloudwatchlogs", region, common.StandardTagBudget("InvalidParameterException")),
 		ts:         ts,
 		arnBuilder: svcarn.NewARNBuilder(accountID, region),
 		region:     region,

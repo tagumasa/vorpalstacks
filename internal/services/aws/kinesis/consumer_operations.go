@@ -68,22 +68,28 @@ func (s *KinesisService) DescribeStreamConsumer(ctx context.Context, reqCtx *req
 	}
 
 	return map[string]interface{}{
-		"ConsumerDescription": formatConsumer(result.Consumer),
+		"ConsumerDescription": formatConsumerDescription(result.Consumer),
 	}, nil
 }
 
 // ListStreamConsumers lists consumers of a Kinesis stream.
 func (s *KinesisService) ListStreamConsumers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxResults := 0
-	hasMaxResults := false
-	if _, ok := req.Parameters["MaxResults"]; ok {
-		maxResults = request.GetIntParam(req.Parameters, "MaxResults")
-		hasMaxResults = true
+	maxResults, hasMaxResults, err := strictIntParam(req.Parameters, "MaxResults")
+	if err != nil {
+		return nil, err
+	}
+
+	// The SDKs serialise StreamCreationTimestamp as an epoch-second JSON
+	// number; the strict reader carries both that form and the documented
+	// string notations, so the Core's generation check actually operates.
+	streamCreationTimestamp, _, err := strictTimestampParam(req.Parameters, "StreamCreationTimestamp")
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := s.listStreamConsumersCore(reqCtx, ListStreamConsumersInput{
 		StreamARN:               request.GetParamLowerFirst(req.Parameters, "StreamARN"),
-		StreamCreationTimestamp: request.GetParamLowerFirst(req.Parameters, "StreamCreationTimestamp"),
+		StreamCreationTimestamp: streamCreationTimestamp,
 		MaxResults:              maxResults,
 		HasMaxResults:           hasMaxResults,
 		NextToken:               request.GetStringParam(req.Parameters, "NextToken"),
@@ -97,11 +103,15 @@ func (s *KinesisService) ListStreamConsumers(ctx context.Context, reqCtx *reques
 		formattedConsumers[i] = formatConsumer(c)
 	}
 
-	return map[string]interface{}{
-		"Consumers":        formattedConsumers,
-		"HasMoreConsumers": result.HasMore,
-		"NextToken":        result.NextToken,
-	}, nil
+	resp := map[string]interface{}{
+		"Consumers": formattedConsumers,
+	}
+	// The output shape carries Consumers and NextToken only; the
+	// continuation token is present when a page follows.
+	if result.NextToken != nil {
+		resp["NextToken"] = *result.NextToken
+	}
+	return resp, nil
 }
 
 // SubscribeToShard subscribes a consumer to receive records from a Kinesis shard.
@@ -112,7 +122,16 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 	if sp := request.GetMapParam(req.Parameters, "StartingPosition"); sp != nil {
 		startingPosition = request.GetStringParam(sp, "Type")
 		seqNum = request.GetStringParam(sp, "SequenceNumber")
-		tsStr = request.GetStringParam(sp, "Timestamp")
+		// The SDKs serialise the position's Timestamp as an epoch-second
+		// JSON number; the normaliser keeps it from being dropped the way
+		// a string-only read would.
+		if raw, ok := sp["Timestamp"]; ok && raw != nil {
+			s, err := request.NormalizeTimestampValue(raw)
+			if err != nil {
+				return nil, ErrInvalidArgument
+			}
+			tsStr = s
+		}
 	}
 
 	return s.subscribeToShardCore(ctx, reqCtx, SubscribeToShardInput{
@@ -121,5 +140,6 @@ func (s *KinesisService) SubscribeToShard(ctx context.Context, reqCtx *request.R
 		StartingPositionType:   startingPosition,
 		StartingSequenceNumber: seqNum,
 		Timestamp:              tsStr,
+		DryRun:                 request.GetBoolParam(req.Parameters, "DryRun"),
 	})
 }

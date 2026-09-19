@@ -74,7 +74,11 @@ func (s *AppSyncService) startSchemaCreationCore(store *appsyncstore.AppSyncStor
 	s.schemaWg.Add(1)
 	go func() {
 		defer s.schemaWg.Done()
-		defer func() { resilience.RecoverPanic("appsync schema creation") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("appsync schema creation", r)
+			}
+		}()
 
 		_, parseErr := gqlparser.LoadSchema(&ast.Source{
 			Name:  "schema.graphql",

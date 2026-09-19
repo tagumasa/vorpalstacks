@@ -108,7 +108,7 @@ func (s *WAFv2Service) GetStoresForRegion(region string) (*wafv2Stores, error) {
 			associations:     wafstore.NewWebACLAssociationStore(st),
 			loggingConfigs:   wafstore.NewLoggingStore(st),
 			samples:          wafstore.NewSamplingStore(st),
-			tags:             storecommon.NewTagStoreWithRegion(st, "wafv2", region),
+			tags:             storecommon.NewTagStoreWithRegion(st, "wafv2", region, storecommon.StandardTagBudget("WAFInvalidParameterException")),
 			arnBuilder:       wafstore.NewARNBuilder(s.accountID, region),
 		}, nil
 	})
@@ -135,7 +135,7 @@ func (s *WAFv2Service) GetWebACLStoreForRegion(region string) (*wafstore.WebACLS
 		associations:     wafstore.NewWebACLAssociationStore(st),
 		loggingConfigs:   wafstore.NewLoggingStore(st),
 		samples:          wafstore.NewSamplingStore(st),
-		tags:             storecommon.NewTagStoreWithRegion(st, "wafv2", region),
+		tags:             storecommon.NewTagStoreWithRegion(st, "wafv2", region, storecommon.StandardTagBudget("WAFInvalidParameterException")),
 		arnBuilder:       wafstore.NewARNBuilder(s.accountID, region),
 	}
 	actual, _ := s.stores.LoadOrStore(region, stores)
@@ -156,7 +156,7 @@ func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, erro
 			associations:     wafstore.NewWebACLAssociationStore(storage),
 			loggingConfigs:   wafstore.NewLoggingStore(storage),
 			samples:          wafstore.NewSamplingStore(storage),
-			tags:             storecommon.NewTagStoreWithRegion(storage, "wafv2", reqCtx.GetRegion()),
+			tags:             storecommon.NewTagStoreWithRegion(storage, "wafv2", reqCtx.GetRegion(), storecommon.StandardTagBudget("WAFInvalidParameterException")),
 			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()),
 		}, nil
 	})

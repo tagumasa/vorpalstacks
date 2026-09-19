@@ -3,6 +3,7 @@ package eventstream
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -15,10 +16,19 @@ const (
 	HeaderMessageType = ":message-type"
 	// HeaderEventType is the header name for event type.
 	HeaderEventType = ":event-type"
+	// HeaderExceptionType is the header name carrying the modelled
+	// exception shape name on an exception-classified message.
+	HeaderExceptionType = ":exception-type"
 	// ContentTypeOctetStream is the content type for binary data.
 	ContentTypeOctetStream = "application/octet-stream"
 	// MessageTypeEvent is the message type for events.
 	MessageTypeEvent = "event"
+	// MessageTypeException is the message type for modelled operation
+	// exceptions. The AWS SDKs' typed exception dispatch runs only on
+	// this classification; an "error"-classified frame is read through
+	// the transport error branch, which consults only :error-code and
+	// :error-message.
+	MessageTypeException = "exception"
 	// preludeSize is the size of the event stream prelude header (total length + headers length).
 	preludeSize = 8
 )
@@ -39,8 +49,10 @@ func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w: w}
 }
 
-// Encode encodes an event with the given type, payload and headers.
-func (e *Encoder) Encode(eventType string, payload []byte, headers []Header) error {
+// Encode writes a frame with the given payload and headers. The event or
+// exception type travels in the headers the caller builds — the Write*
+// helpers construct them — so the frame carries no type outside them.
+func (e *Encoder) Encode(payload []byte, headers []Header) error {
 	var headerBuf bytes.Buffer
 	for _, h := range headers {
 		if err := e.encodeHeader(&headerBuf, h.Name, h.Value); err != nil {
@@ -114,7 +126,7 @@ func (e *Encoder) WriteEvent(eventType, contentType string, payload []byte) erro
 	if contentType != "" {
 		headers = append(headers, Header{HeaderContentType, contentType})
 	}
-	return e.Encode(eventType, payload, headers)
+	return e.Encode(payload, headers)
 }
 
 // WriteEndEvent writes an end event to the stream.
@@ -123,7 +135,7 @@ func (e *Encoder) WriteEndEvent() error {
 		{HeaderMessageType, MessageTypeEvent},
 		{HeaderEventType, "End"},
 	}
-	return e.Encode("End", nil, headers)
+	return e.Encode(nil, headers)
 }
 
 // WriteInitialResponse writes an initial-response event to the stream.
@@ -132,16 +144,32 @@ func (e *Encoder) WriteInitialResponse(payload []byte) error {
 		{HeaderMessageType, MessageTypeEvent},
 		{HeaderEventType, "initial-response"},
 	}
-	return e.Encode("initial-response", payload, headers)
+	return e.Encode(payload, headers)
 }
 
-// WriteErrorEvent writes an error event to the stream.
+// WriteErrorEvent writes a modelled-exception frame. The AWS SDKs' typed
+// exception dispatch runs only on a message-type of "exception": the frame
+// names the modelled shape in :exception-type and carries a marshalled
+// {"message": ...} payload the shape's document decodes — the Kinesis
+// exception shapes carry a message member. An error-classified frame is
+// never read this way: that branch consults only :error-code and
+// :error-message and reports an error named under :exception-type as an
+// unclassified UnknownError. A frame that identifies the error under
+// :event-type, or omits :exception-type, is a deserialisation error at the
+// client, not a typed exception. The payload is marshalled, never
+// formatted: an error message carrying quotes, backslashes or control
+// bytes must still decode as JSON at the client.
 func (e *Encoder) WriteErrorEvent(errorCode, errorMessage string) error {
-	payload := fmt.Sprintf(`{"errorCode":"%s","errorMessage":"%s"}`, errorCode, errorMessage)
+	payload, err := json.Marshal(struct {
+		Message string `json:"message"`
+	}{errorMessage})
+	if err != nil {
+		return err
+	}
 	headers := []Header{
-		{HeaderMessageType, "error"},
-		{HeaderEventType, "error"},
+		{HeaderMessageType, MessageTypeException},
+		{HeaderExceptionType, errorCode},
 		{HeaderContentType, "application/json"},
 	}
-	return e.Encode("error", []byte(payload), headers)
+	return e.Encode(payload, headers)
 }

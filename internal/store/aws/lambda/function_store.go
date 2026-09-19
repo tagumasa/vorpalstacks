@@ -27,7 +27,7 @@ func NewFunctionStore(store storage.BasicStorage, accountId, region string) *Fun
 	bucket := store.Bucket("lambda-functions-" + region)
 	return &FunctionStore{
 		BaseStore:  common.NewBaseStore(bucket, "lambda-functions"),
-		TagStore:   common.NewTagStoreWithRegion(store, "lambda", region),
+		TagStore:   common.NewTagStoreWithRegion(store, "lambda", region, common.StandardTagBudget("InvalidParameterValueException")),
 		arnBuilder: NewARNBuilder(accountId, region),
 		region:     region,
 	}

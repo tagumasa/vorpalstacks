@@ -1,16 +1,22 @@
 package kinesis
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
 func TestKinesisErrors(t *testing.T) {
+	// The HTTP statuses follow the AWS Kinesis API reference's per-
+	// operation error tables: awsJson1_1 carries every modelled client
+	// error at 400, identity travelling in __type.
 	t.Run("ErrResourceNotFound", func(t *testing.T) {
 		assert.Equal(t, "ResourceNotFoundException: Requested resource not found.", ErrResourceNotFound.Error())
-		assert.Equal(t, http.StatusNotFound, ErrResourceNotFound.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusBadRequest, ErrResourceNotFound.GetHTTPStatusCode())
 	})
 
 	t.Run("ErrResourceInUse", func(t *testing.T) {
@@ -30,7 +36,7 @@ func TestKinesisErrors(t *testing.T) {
 
 	t.Run("ErrProvisionedThroughputExceeded", func(t *testing.T) {
 		assert.Equal(t, "ProvisionedThroughputExceededException: Rate exceeded for this shard.", ErrProvisionedThroughputExceeded.Error())
-		assert.Equal(t, http.StatusTooManyRequests, ErrProvisionedThroughputExceeded.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusBadRequest, ErrProvisionedThroughputExceeded.GetHTTPStatusCode())
 	})
 
 	t.Run("ErrExpiredIterator", func(t *testing.T) {
@@ -48,38 +54,36 @@ func TestKinesisErrors(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, ErrShardClosed.GetHTTPStatusCode())
 	})
 
-	t.Run("ErrAccessDenied", func(t *testing.T) {
-		assert.Equal(t, "AccessDeniedException: Access denied.", ErrAccessDenied.Error())
-		assert.Equal(t, http.StatusForbidden, ErrAccessDenied.GetHTTPStatusCode())
+	t.Run("ErrExpiredNextToken", func(t *testing.T) {
+		assert.Equal(t, "ExpiredNextTokenException: The pagination token passed to the operation is expired.", ErrExpiredNextToken.Error())
+		assert.Equal(t, http.StatusBadRequest, ErrExpiredNextToken.GetHTTPStatusCode())
 	})
 
-	t.Run("ErrResourceAlreadyExists", func(t *testing.T) {
-		assert.Equal(t, "ResourceAlreadyExistsException: Resource already exists.", ErrResourceAlreadyExists.Error())
-		assert.Equal(t, http.StatusConflict, ErrResourceAlreadyExists.GetHTTPStatusCode())
+	t.Run("ErrInternalFailure", func(t *testing.T) {
+		assert.Equal(t, "InternalFailureException: The processing of the request failed because of an unknown error, exception, or failure.", ErrInternalFailure.Error())
+		assert.Equal(t, http.StatusInternalServerError, ErrInternalFailure.GetHTTPStatusCode())
 	})
+}
 
-	t.Run("ErrKMSAccessDenied", func(t *testing.T) {
-		assert.Equal(t, "KMSAccessDeniedException: KMS access denied.", ErrKMSAccessDenied.Error())
-		assert.Equal(t, http.StatusForbidden, ErrKMSAccessDenied.GetHTTPStatusCode())
-	})
+// TestMapStoreErrorFallback pins the three outcomes of the single
+// store-error mapping site: a table-mapped sentinel answers its declared
+// AWS identity (a duplicate consumer is ResourceInUseException, the shape
+// RegisterStreamConsumer declares), an already wire-shaped error passes
+// through unchanged, and an unmapped wrapped storage failure answers
+// InternalFailureException — never a client-fault 400.
+func TestMapStoreErrorFallback(t *testing.T) {
+	svc := NewKinesisService("000000000000")
 
-	t.Run("ErrKMSDisabled", func(t *testing.T) {
-		assert.Equal(t, "KMSDisabledException: KMS key is disabled.", ErrKMSDisabled.Error())
-		assert.Equal(t, http.StatusBadRequest, ErrKMSDisabled.GetHTTPStatusCode())
-	})
+	if err := svc.mapStoreError(kinesisstore.ErrConsumerAlreadyExists); !errors.Is(err, ErrResourceInUse) {
+		t.Fatalf("duplicate consumer: want ResourceInUseException, got: %v", err)
+	}
 
-	t.Run("ErrKMSNotFound", func(t *testing.T) {
-		assert.Equal(t, "KMSNotFoundException: KMS key not found.", ErrKMSNotFound.Error())
-		assert.Equal(t, http.StatusNotFound, ErrKMSNotFound.GetHTTPStatusCode())
-	})
+	if err := svc.mapStoreError(ErrResourceNotFound); !errors.Is(err, ErrResourceNotFound) {
+		t.Fatalf("wire-shaped error must pass through, got: %v", err)
+	}
 
-	t.Run("ErrKMSThrottling", func(t *testing.T) {
-		assert.Equal(t, "KMSThrottlingException: KMS request throttled.", ErrKMSThrottling.Error())
-		assert.Equal(t, http.StatusTooManyRequests, ErrKMSThrottling.GetHTTPStatusCode())
-	})
-
-	t.Run("ErrValidation", func(t *testing.T) {
-		assert.Equal(t, "ValidationException: Validation error.", ErrValidation.Error())
-		assert.Equal(t, http.StatusBadRequest, ErrValidation.GetHTTPStatusCode())
-	})
+	wrapped := fmt.Errorf("failed to delete records for shard %s: %w", "shardId-000000000000", errors.New("pebble: closed"))
+	if err := svc.mapStoreError(wrapped); !errors.Is(err, ErrInternalFailure) {
+		t.Fatalf("unmapped infrastructure error: want InternalFailureException, got: %v", err)
+	}
 }

@@ -22,7 +22,7 @@ type streamRecordingInvoker struct {
 	stream []string
 }
 
-func (r *streamRecordingInvoker) PutRecord(ctx context.Context, region, streamName, partitionKey string, data []byte) (string, error) {
+func (r *streamRecordingInvoker) PutRecord(ctx context.Context, region, streamName, partitionKey string, data []byte) (string, string, error) {
 	r.mu.Lock()
 	r.stream = append(r.stream, streamName)
 	r.mu.Unlock()

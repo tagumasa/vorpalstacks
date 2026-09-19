@@ -33,18 +33,6 @@ func ProtoToStreamMode(p pb.StreamMode) StreamMode {
 	}
 }
 
-// StreamStatus conversion
-
-// StreamStatusToProto converts a StreamStatus to its protobuf representation.
-func StreamStatusToProto(s StreamStatus) string {
-	return string(s)
-}
-
-// ProtoToStreamStatus converts a protobuf StreamStatus to its internal representation.
-func ProtoToStreamStatus(p string) StreamStatus {
-	return StreamStatus(p)
-}
-
 // HashKeyRange conversion
 
 // HashKeyRangeToProto converts a HashKeyRange to its protobuf representation.
@@ -153,7 +141,7 @@ func StreamToProto(s *Stream) *pb.Stream {
 	return &pb.Stream{
 		StreamName:           s.StreamName,
 		StreamArn:            s.StreamARN,
-		StreamStatus:         StreamStatusToProto(s.StreamStatus),
+		StreamStatus:         string(s.StreamStatus),
 		StreamModeDetails:    StreamModeDetailsToProto(s.StreamModeDetails),
 		ShardCount:           s.ShardCount,
 		RetentionPeriodHours: s.RetentionPeriodHours,
@@ -164,7 +152,6 @@ func StreamToProto(s *Stream) *pb.Stream {
 		MaxRecordSizeInKib:   s.MaxRecordSizeInKiB,
 		WarmThroughputMibps:  s.WarmThroughputMiBps,
 		CreatedAt:            timestamppb.New(s.CreatedAt),
-		LastModifiedAt:       timestamppb.New(s.LastModifiedAt),
 	}
 }
 
@@ -176,7 +163,7 @@ func ProtoToStream(p *pb.Stream) *Stream {
 	return &Stream{
 		StreamName:           p.StreamName,
 		StreamARN:            p.StreamArn,
-		StreamStatus:         ProtoToStreamStatus(p.StreamStatus),
+		StreamStatus:         StreamStatus(p.StreamStatus),
 		StreamModeDetails:    ProtoToStreamModeDetails(p.StreamModeDetails),
 		ShardCount:           p.ShardCount,
 		RetentionPeriodHours: p.RetentionPeriodHours,
@@ -187,37 +174,6 @@ func ProtoToStream(p *pb.Stream) *Stream {
 		MaxRecordSizeInKiB:   p.MaxRecordSizeInKib,
 		WarmThroughputMiBps:  p.WarmThroughputMibps,
 		CreatedAt:            p.CreatedAt.AsTime(),
-		LastModifiedAt:       p.LastModifiedAt.AsTime(),
-	}
-}
-
-// StreamSummary conversion
-
-// StreamSummaryToProto converts a StreamSummary to its protobuf representation.
-func StreamSummaryToProto(s *StreamSummary) *pb.StreamSummary {
-	if s == nil {
-		return nil
-	}
-	return &pb.StreamSummary{
-		StreamName:        s.StreamName,
-		StreamArn:         s.StreamARN,
-		StreamStatus:      StreamStatusToProto(s.StreamStatus),
-		StreamModeDetails: StreamModeDetailsToProto(s.StreamModeDetails),
-		ConsumerCount:     s.ConsumerCount,
-	}
-}
-
-// ProtoToStreamSummary converts a protobuf StreamSummary to its internal representation.
-func ProtoToStreamSummary(p *pb.StreamSummary) *StreamSummary {
-	if p == nil {
-		return nil
-	}
-	return &StreamSummary{
-		StreamName:        p.StreamName,
-		StreamARN:         p.StreamArn,
-		StreamStatus:      ProtoToStreamStatus(p.StreamStatus),
-		StreamModeDetails: ProtoToStreamModeDetails(p.StreamModeDetails),
-		ConsumerCount:     p.ConsumerCount,
 	}
 }
 
@@ -269,7 +225,6 @@ func RecordToProto(r *Record) *pb.Record {
 		ApproximateArrivalTimestamp: timestamppb.New(r.ApproximateArrivalTimestamp),
 		Data:                        r.Data,
 		PartitionKey:                r.PartitionKey,
-		EncryptionType:              r.EncryptionType,
 	}
 }
 
@@ -287,7 +242,6 @@ func ProtoToRecord(p *pb.Record) *Record {
 		ApproximateArrivalTimestamp: arrivalTime,
 		Data:                        p.Data,
 		PartitionKey:                p.PartitionKey,
-		EncryptionType:              p.EncryptionType,
 	}
 }
 
@@ -313,36 +267,6 @@ func ProtoToConsumer(p *pb.Consumer) *Consumer {
 		return nil
 	}
 	return &Consumer{
-		ConsumerName:              p.ConsumerName,
-		ConsumerARN:               p.ConsumerArn,
-		StreamARN:                 p.StreamArn,
-		ConsumerStatus:            p.ConsumerStatus,
-		ConsumerCreationTimestamp: p.ConsumerCreationTimestamp.AsTime(),
-	}
-}
-
-// ConsumerSummary conversion
-
-// ConsumerSummaryToProto converts a ConsumerSummary to its protobuf representation.
-func ConsumerSummaryToProto(c *ConsumerSummary) *pb.ConsumerSummary {
-	if c == nil {
-		return nil
-	}
-	return &pb.ConsumerSummary{
-		ConsumerName:              c.ConsumerName,
-		ConsumerArn:               c.ConsumerARN,
-		StreamArn:                 c.StreamARN,
-		ConsumerStatus:            c.ConsumerStatus,
-		ConsumerCreationTimestamp: timestamppb.New(c.ConsumerCreationTimestamp),
-	}
-}
-
-// ProtoToConsumerSummary converts a protobuf ConsumerSummary to its internal representation.
-func ProtoToConsumerSummary(p *pb.ConsumerSummary) *ConsumerSummary {
-	if p == nil {
-		return nil
-	}
-	return &ConsumerSummary{
 		ConsumerName:              p.ConsumerName,
 		ConsumerARN:               p.ConsumerArn,
 		StreamARN:                 p.StreamArn,

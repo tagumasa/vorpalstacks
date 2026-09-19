@@ -175,7 +175,11 @@ func (s *DynamoDBService) ensureIdempotencySweeper() {
 	s.idempotencySweepOnce.Do(func() {
 		s.bgWg.Add(1)
 		go func() {
-			defer func() { resilience.RecoverPanic("dynamodb idempotency sweep") }()
+			defer func() {
+				if r := recover(); r != nil {
+					resilience.LogPanic("dynamodb idempotency sweep", r)
+				}
+			}()
 			defer s.bgWg.Done()
 			ticker := time.NewTicker(idempotencySweepInterval)
 			defer ticker.Stop()

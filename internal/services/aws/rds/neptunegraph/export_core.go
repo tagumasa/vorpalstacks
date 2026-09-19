@@ -195,7 +195,11 @@ func (s *NeptuneGraphService) cancelExportTaskCore(store *ngstore.NeptuneGraphSt
 
 func (s *NeptuneGraphService) advanceExportTask(store *ngstore.NeptuneGraphStore, taskID string) {
 	defer s.taskWg.Done()
-	defer func() { resilience.RecoverPanic("NeptuneGraph advanceExportTask") }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.LogPanic("NeptuneGraph advanceExportTask", r)
+		}
+	}()
 
 	task, err := store.GetExportTask(taskID)
 	if err != nil {

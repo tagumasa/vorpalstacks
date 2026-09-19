@@ -30,7 +30,7 @@ func NewSecretStore(store storage.BasicStorage, accountID, region string) *Secre
 	return &SecretStore{
 		BaseStore:     common.NewBaseStore(store.Bucket("secretsmanager-secrets-"+region), "secretsmanager-secrets"),
 		versionsStore: common.NewBaseStore(store.Bucket("secretsmanager-versions-"+region), "secretsmanager-versions"),
-		TagStore:      common.NewTagStoreWithRegion(store, "secretsmanager", region),
+		TagStore:      common.NewTagStoreWithRegion(store, "secretsmanager", region, common.StandardTagBudget("InvalidParameterException")),
 		arnBuilder:    svcarn.NewARNBuilder(accountID, region),
 		accountID:     accountID,
 		region:        region,

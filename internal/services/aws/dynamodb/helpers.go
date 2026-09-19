@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -31,22 +32,45 @@ func (s *DynamoDBService) validateAndGetActiveTableWithErr(reqCtx *request.Reque
 	return table, nil
 }
 
-// backfillVectorIndex scans all existing items in a table and creates vector
-// index entries for the specified index only, mirroring backfillGSI for
-// vector indexes added via UpdateTable.
-func (s *DynamoDBService) backfillVectorIndex(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName, indexName string) {
-	defer func() { resilience.RecoverPanic("dynamodb vector index backfill") }()
-	err := store.Items().Scan(tableName, func(item *dbstore.Item) error {
+// backfillIndexEntries scans a table's existing items and stages the named
+// index's entry for each through the per-item function the index family
+// supplies. The helper runs on the request's goroutine: a panic converts
+// to the returned error so the operation fails over the half-built index
+// instead of succeeding silently, while a scan-level failure stays a
+// logged warning — the table record carrying the index has already
+// committed, and a re-run does not retry the population: UpdateTable
+// skips an index name already present before the request, so recovering
+// an unpopulated index means removing and re-adding it. Re-running the
+// population itself would be safe — both families' entries are keyed
+// upserts — the skip keeps a re-declared create from redoing the scan.
+func (s *DynamoDBService) backfillIndexEntries(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName, indexName, family string, stageEntry func(txn *dbstore.DynamoDBTxn, item *dbstore.Item) error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.LogPanic(fmt.Sprintf("dynamodb %s backfill", family), r)
+			err = fmt.Errorf("%s backfill panicked: %v", family, r)
+		}
+	}()
+	if scanErr := store.Items().Scan(tableName, func(item *dbstore.Item) error {
 		return store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-			return txn.PutVectorEntriesForIndex(tableName, indexName, item)
+			return stageEntry(txn, item)
 		})
-	})
-	if err != nil {
-		logs.Warn("failed to backfill vector index entries",
+	}); scanErr != nil {
+		logs.Warn("failed to backfill index entries",
 			logs.String("table", tableName),
 			logs.String("index", indexName),
-			logs.Err(err))
+			logs.String("family", family),
+			logs.Err(scanErr))
 	}
+	return nil
+}
+
+// backfillVectorIndex populates a vector index's entries for existing
+// items, added via UpdateTable — the vector family's staging of the shared
+// backfill lifecycle.
+func (s *DynamoDBService) backfillVectorIndex(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName, indexName string) error {
+	return s.backfillIndexEntries(ctx, store, tableName, indexName, "vector index", func(txn *dbstore.DynamoDBTxn, item *dbstore.Item) error {
+		return txn.PutVectorEntriesForIndex(tableName, indexName, item)
+	})
 }
 
 // applyRestoredVectorIndexes attaches vector index metadata to a restored
@@ -79,21 +103,12 @@ func validateIndexExists(table *dbstore.Table, indexName string) bool {
 	return false
 }
 
-// backfillGSI scans all existing items in a table and creates index entries
-// for the specified GSI only. This is called when a new GSI is added via
+// backfillGSI populates a GSI's entries for existing items, added via
 // UpdateTable, matching AWS behaviour where newly created GSIs are
-// automatically populated with existing items.
-func (s *DynamoDBService) backfillGSI(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName, gsiName string) {
-	defer func() { resilience.RecoverPanic("dynamodb GSI backfill") }()
-	err := store.Items().Scan(tableName, func(item *dbstore.Item) error {
-		return store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-			return txn.PutGSIEntriesForIndex(tableName, gsiName, item)
-		})
+// automatically populated — the GSI family's staging of the shared
+// backfill lifecycle.
+func (s *DynamoDBService) backfillGSI(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName, gsiName string) error {
+	return s.backfillIndexEntries(ctx, store, tableName, gsiName, "GSI", func(txn *dbstore.DynamoDBTxn, item *dbstore.Item) error {
+		return txn.PutGSIEntriesForIndex(tableName, gsiName, item)
 	})
-	if err != nil {
-		logs.Warn("failed to backfill GSI index entries",
-			logs.String("table", tableName),
-			logs.String("index", gsiName),
-			logs.Err(err))
-	}
 }

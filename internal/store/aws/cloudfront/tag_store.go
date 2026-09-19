@@ -14,7 +14,7 @@ type TagStore struct {
 // NewTagStore creates a new TagStore instance for CloudFront resources.
 func NewTagStore(store storage.BasicStorage) *TagStore {
 	return &TagStore{
-		TagStore: common.NewTagStore(store, "cloudfront"),
+		TagStore: common.NewTagStore(store, "cloudfront", common.StandardTagBudget("InvalidArgument")),
 	}
 }
 

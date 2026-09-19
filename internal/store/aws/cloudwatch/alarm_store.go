@@ -29,7 +29,7 @@ type AlarmStore struct {
 func NewAlarmStore(store storage.BasicStorage, accountID, region string) *AlarmStore {
 	return &AlarmStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(alarmBucketName(region)), "cloudwatch"),
-		TagStore:   common.NewTagStoreWithRegion(store, "cloudwatch", region),
+		TagStore:   common.NewTagStoreWithRegion(store, "cloudwatch", region, common.StandardTagBudget("InvalidParameterValue")),
 		arnBuilder: svcarn.NewARNBuilder(accountID, region),
 		accountID:  accountID,
 		region:     region,

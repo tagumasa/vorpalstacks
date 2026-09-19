@@ -449,7 +449,7 @@ func (e *Engine) deliverUniversalKinesis(ctx context.Context, schedule *schedule
 		logs.String("schedule", schedule.Name),
 		logs.String("stream", streamName))
 
-	if _, err := kinesisInvoker.PutRecord(ctx, region, streamName, partitionKey, []byte(dataB64)); err != nil {
+	if _, _, err := kinesisInvoker.PutRecord(ctx, region, streamName, partitionKey, []byte(dataB64)); err != nil {
 		return err
 	}
 	return nil

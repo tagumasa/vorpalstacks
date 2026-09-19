@@ -334,27 +334,23 @@ func (a *kinesisInvokerAdapter) ListShards(_ context.Context, region, streamName
 	return out, nil
 }
 
-// PutRecord puts a record into the given Kinesis stream on an open shard,
-// resolving the regional store from the caller's region (empty = the
-// adapter's default region, for callers with no region information).
-func (a *kinesisInvokerAdapter) PutRecord(_ context.Context, region, streamName, partitionKey string, data []byte) (string, error) {
+// PutRecord puts a record into the given Kinesis stream, resolving the
+// regional store from the caller's region (empty = the adapter's default
+// region, for callers with no region information). Shard placement hashes
+// the partition key exactly as the public PutRecord does, so the contract
+// every producer is written against holds on this seam too: the same
+// partition key lands on the same shard, and a retry of the same write
+// keeps its placement.
+func (a *kinesisInvokerAdapter) PutRecord(_ context.Context, region, streamName, partitionKey string, data []byte) (string, string, error) {
 	store, err := a.getStore(region)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	shards, err := store.ListShards(streamName, nil, "", 0)
+	record, shardID, err := store.PutRecordWithShardSelection(streamName, partitionKey, string(data), "")
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	openShard := selectOpenShard(shards)
-	if openShard == nil {
-		return "", fmt.Errorf("kinesis: no open shard in stream %s", streamName)
-	}
-	record, err := store.PutRecord(streamName, openShard.ShardID, partitionKey, string(data))
-	if err != nil {
-		return "", err
-	}
-	return record.SequenceNumber, nil
+	return record.SequenceNumber, shardID, nil
 }
 
 // CreateShardIterator creates a shard iterator for the given stream and
@@ -386,7 +382,15 @@ func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, region, streamName
 	if err != nil {
 		return nil, "", err
 	}
-	records, nextSeq, err := store.GetRecords(streamName, shardID, startingSequenceNumber, limit, includeStart)
+	// The poller reads under the stream's retention window like every
+	// other read transport, and a stream that vanished mid-poll surfaces
+	// as an error instead of a silently empty shard.
+	stream, err := store.GetStream(streamName)
+	if err != nil {
+		return nil, "", err
+	}
+	retentionCutoff := storekinesis.RetentionCutoff(stream.RetentionPeriodHours)
+	records, nextSeq, err := store.GetRecords(streamName, shardID, startingSequenceNumber, limit, includeStart, retentionCutoff)
 	if err != nil {
 		return nil, "", err
 	}
@@ -431,17 +435,6 @@ func convertFromSQSMessageAttributes(attrs map[string]*storesqs.MessageAttribute
 		}
 	}
 	return out
-}
-
-// selectOpenShard returns the first open shard (no ending sequence number)
-// from the list, or nil if all shards are closed.
-func selectOpenShard(shards []*storekinesis.Shard) *storekinesis.Shard {
-	for _, s := range shards {
-		if s.SequenceNumberRange != nil && s.SequenceNumberRange.EndingSequenceNumber == "" {
-			return s
-		}
-	}
-	return nil
 }
 
 // dynamoDBStoreProvider is a minimal interface for obtaining a DynamoDB store

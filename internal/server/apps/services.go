@@ -104,6 +104,8 @@ func (a *App) initAlwaysOnServices() error {
 		}
 	}
 
+	wireKMSCheckers(st)
+
 	a.state = st
 	return nil
 }
@@ -112,6 +114,25 @@ func (a *App) newServiceState() *serviceState {
 	return &serviceState{
 		accountID: a.cfg.AccountID,
 		region:    a.cfg.Region,
+	}
+}
+
+// wireKMSCheckers injects KMS key checkers into every constructed service
+// that validates key identifiers against KMS. It runs after the whole
+// initialiser list so the wiring depends only on which services are
+// enabled — never on another service's initialiser having run — and each
+// target is guarded individually, so every enable/disable combination
+// boots and each service's key validation stays armed whenever both of
+// its services are constructed.
+func wireKMSCheckers(st *serviceState) {
+	if st.kmsService == nil {
+		return
+	}
+	if st.sqsService != nil {
+		st.sqsService.SetKMSChecker(st.kmsService.NewKeyChecker())
+	}
+	if st.kinesisService != nil {
+		st.kinesisService.SetKMSChecker(st.kmsService.NewKeyChecker())
 	}
 }
 
@@ -314,7 +335,7 @@ func (a *App) initKinesis(st *serviceState) error {
 		return fmt.Errorf("failed to get Kinesis regional storage: %w", err)
 	}
 	st.kinesisStoreInstance = storekinesis.NewKinesisStore(kinesisRegionalStorage, st.accountID, st.region)
-	st.kinesisService = svckinesis.NewKinesisService(st.accountID, st.region)
+	st.kinesisService = svckinesis.NewKinesisService(st.accountID)
 	st.kinesisService.SetStorageManager(a.server.StorageManager())
 	if st.kinesisStoreInstance != nil {
 		st.kinesisService.SetKinesisStore(st.region, st.kinesisStoreInstance)
@@ -485,9 +506,6 @@ func (a *App) initSQS(st *serviceState) error {
 	st.sqsStoreInstance = storesqs.NewSQSStore(regionalStorage, st.accountID, st.region, appconfig.BaseURL())
 	st.sqsService = svcsqs.NewSQSServiceWithStore(st.sqsStoreInstance)
 	st.sqsService.SetStorageManager(a.server.StorageManager())
-	if st.kmsService != nil {
-		st.sqsService.SetKMSChecker(st.kmsService.NewKeyChecker())
-	}
 	st.sqsService.RegisterHandlers(a.server.Dispatcher())
 	a.addShutdown("sqs", func(ctx context.Context) error {
 		st.sqsStoreInstance.Close()

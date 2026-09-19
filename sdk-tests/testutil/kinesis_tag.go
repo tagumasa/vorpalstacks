@@ -96,6 +96,7 @@ func (r *TestRunner) kinesisTagTests(ctx context.Context, client *kinesis.Client
 
 	results = append(results, r.kinesisARNTagTests(ctx, client, ts)...)
 	results = append(results, r.kinesisTagVerifyTests(ctx, client, ts)...)
+	results = append(results, r.kinesisConsumerTagTests(ctx, client, ts)...)
 
 	_, _ = client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
 
@@ -241,5 +242,138 @@ func (r *TestRunner) kinesisTagVerifyTests(ctx context.Context, client *kinesis.
 		return nil
 	}))
 
+	return results
+}
+
+// kinesisConsumerTagTests pins the consumer half of the tag resource
+// space: create-time tags reach ListTagsForResource, TagResource and
+// UntagResource address the consumer by ARN, and the request-level tag
+// bounds (TagMap size on AddTagsToStream, TagKeyList size on
+// RemoveTagsFromStream, the Limit range on ListTagsForStream) answer
+// InvalidArgumentException.
+func (r *TestRunner) kinesisConsumerTagTests(ctx context.Context, client *kinesis.Client, ts string) []TestResult {
+	var results []TestResult
+
+	streamName := kinesisStream(ts, "ctagc")
+	consumerName := fmt.Sprintf("ctagc-reader-%s", ts)
+	var consumerARN string
+
+	results = append(results, r.RunTest("kinesis", "RegisterStreamConsumer_CreateTimeTags", func() error {
+		if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
+			StreamName: aws.String(streamName),
+			ShardCount: aws.Int32(1),
+		}); err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		descResp, err := kinesisDescribeWhenReady(ctx, client, streamName, 10*time.Second)
+		if err != nil {
+			return fmt.Errorf("describe: %v", err)
+		}
+		streamARN := aws.ToString(descResp.StreamDescription.StreamARN)
+
+		resp, err := client.RegisterStreamConsumer(ctx, &kinesis.RegisterStreamConsumerInput{
+			StreamARN:    aws.String(streamARN),
+			ConsumerName: aws.String(consumerName),
+			Tags:         map[string]string{"Origin": "register"},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Consumer == nil {
+			return fmt.Errorf("consumer is nil")
+		}
+		consumerARN = aws.ToString(resp.Consumer.ConsumerARN)
+
+		tagResp, err := client.ListTagsForResource(ctx, &kinesis.ListTagsForResourceInput{
+			ResourceARN: aws.String(consumerARN),
+		})
+		if err != nil {
+			return fmt.Errorf("list tags after register: %v", err)
+		}
+		if got := kinesisTagMap(tagResp.Tags)["Origin"]; got != "register" {
+			return fmt.Errorf("create-time tag Origin: got %q, want %q", got, "register")
+		}
+		return nil
+	}))
+
+	if consumerARN != "" {
+		results = append(results, r.RunTest("kinesis", "TagResource_ConsumerARN", func() error {
+			if _, err := client.TagResource(ctx, &kinesis.TagResourceInput{
+				ResourceARN: aws.String(consumerARN),
+				Tags:        map[string]string{"Stage": "api"},
+			}); err != nil {
+				return err
+			}
+			tagResp, err := client.ListTagsForResource(ctx, &kinesis.ListTagsForResourceInput{
+				ResourceARN: aws.String(consumerARN),
+			})
+			if err != nil {
+				return err
+			}
+			tagMap := kinesisTagMap(tagResp.Tags)
+			if len(tagMap) != 2 || tagMap["Origin"] != "register" || tagMap["Stage"] != "api" {
+				return fmt.Errorf("consumer tags after TagResource: %v", tagMap)
+			}
+
+			if _, err := client.UntagResource(ctx, &kinesis.UntagResourceInput{
+				ResourceARN: aws.String(consumerARN),
+				TagKeys:     []string{"Origin"},
+			}); err != nil {
+				return err
+			}
+			tagResp, err = client.ListTagsForResource(ctx, &kinesis.ListTagsForResourceInput{
+				ResourceARN: aws.String(consumerARN),
+			})
+			if err != nil {
+				return err
+			}
+			tagMap = kinesisTagMap(tagResp.Tags)
+			if len(tagMap) != 1 || tagMap["Stage"] != "api" {
+				return fmt.Errorf("consumer tags after UntagResource: %v", tagMap)
+			}
+			return nil
+		}))
+	} else {
+		results = append(results, TestResult{Service: "kinesis", TestName: "TagResource_ConsumerARN", Status: "SKIP", Error: "consumerARN not available"})
+	}
+
+	results = append(results, r.RunTest("kinesis", "AddTagsToStream_TagCountLimit", func() error {
+		tooMany := make(map[string]string, 51)
+		for i := 0; i < 51; i++ {
+			tooMany[fmt.Sprintf("k%d", i)] = "v"
+		}
+		_, err := client.AddTagsToStream(ctx, &kinesis.AddTagsToStreamInput{
+			StreamName: aws.String(streamName),
+			Tags:       tooMany,
+		})
+		return expectAWSErrorCode(err, "InvalidArgumentException")
+	}))
+
+	results = append(results, r.RunTest("kinesis", "RemoveTagsFromStream_TagKeyCountLimit", func() error {
+		tagKeys := make([]string, 51)
+		for i := range tagKeys {
+			tagKeys[i] = fmt.Sprintf("k%d", i)
+		}
+		_, err := client.RemoveTagsFromStream(ctx, &kinesis.RemoveTagsFromStreamInput{
+			StreamName: aws.String(streamName),
+			TagKeys:    tagKeys,
+		})
+		return expectAWSErrorCode(err, "InvalidArgumentException")
+	}))
+
+	results = append(results, r.RunTest("kinesis", "ListTagsForStream_LimitRange", func() error {
+		_, err := client.ListTagsForStream(ctx, &kinesis.ListTagsForStreamInput{
+			StreamName: aws.String(streamName),
+			Limit:      aws.Int32(51),
+		})
+		return expectAWSErrorCode(err, "InvalidArgumentException")
+	}))
+
+	if consumerARN != "" {
+		_, _ = client.DeregisterStreamConsumer(ctx, &kinesis.DeregisterStreamConsumerInput{
+			ConsumerARN: aws.String(consumerARN),
+		})
+	}
+	_, _ = client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
 	return results
 }

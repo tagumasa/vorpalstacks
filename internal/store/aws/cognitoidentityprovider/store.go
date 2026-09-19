@@ -72,7 +72,7 @@ func NewCognitoStore(store storage.BasicStorage, accountID, region string) *Cogn
 		authEventsStore:        common.NewBaseStore(store.Bucket(authEventBucketName(region)), "cognito-authevents"),
 		userImportJobsStore:    common.NewBaseStore(store.Bucket(userImportJobBucketName(region)), "cognito-userimportjobs"),
 		webauthnStore:          common.NewBaseStore(store.Bucket(webauthnCredentialBucketName(region)), "cognito-webauthn"),
-		TagStore:               common.NewTagStoreWithRegion(store, "cognito", region),
+		TagStore:               common.NewTagStoreWithRegion(store, "cognito", region, common.StandardTagBudget("InvalidParameterException")),
 		arnBuilder:             svcarn.NewARNBuilder(accountID, region),
 		accountID:              accountID,
 		region:                 region,

@@ -49,6 +49,15 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 				return nil, nil, ErrInvalidParameter
 			}
 			idxName := request.GetStringParam(create, "IndexName")
+			// The added index's name must be unique among the table's
+			// indexes (the GSI guide) — recreating an existing index is
+			// the recreate-an-existing-resource conflict, the same
+			// refusal the vector twin applies. A same-request
+			// Delete-then-Create still passes: the Delete has already
+			// removed the name.
+			if _, exists := gsiMap[idxName]; exists {
+				return nil, nil, ErrIndexAlreadyExists
+			}
 			keySchema := parseKeySchema(create)
 			proj, err := parseProjection(create)
 			if err != nil {

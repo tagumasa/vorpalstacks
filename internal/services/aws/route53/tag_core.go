@@ -1,6 +1,7 @@
 package route53
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -45,7 +46,8 @@ type ListTagsForResourceResult struct {
 // maxTagsPerRoute53Resource is the ChangeTagsForResource API tag quota: the
 // API and CLI accept at most 10 tags per hosted zone or health check (the
 // newer console allows 50, but the API this server implements does not).
-const maxTagsPerRoute53Resource = 10
+// The store package owns the definition the tag store's budget shares.
+const maxTagsPerRoute53Resource = route53store.MaxTagsPerResource
 
 // route53TagLimits applies the API tag count quota on top of the standard
 // key and value length bounds.
@@ -92,7 +94,7 @@ func verifyResourceExists(st *route53store.Route53Stores, resourceType, resource
 // changeTagsForResourceCore is the single entry point applying tag changes
 // to a hosted zone or health check. It validates the resource identity,
 // verifies the resource exists, enforces the per-request tag count quota and
-// the resulting 50-tag ceiling, then applies the additions and removals.
+// the resulting ten-tag ceiling, then applies the additions and removals.
 func changeTagsForResourceCore(st *route53store.Route53Stores, input ChangeTagsForResourceInput) error {
 	normalizedType, resourceId, resourceKey, err := parseResourceParamsCore(input.ResourceType, input.ResourceId)
 	if err != nil {
@@ -116,8 +118,11 @@ func changeTagsForResourceCore(st *route53store.Route53Stores, input ChangeTagsF
 		}
 	}
 
-	// Enforce 50-tag limit — compute the resulting key set
-	// after applying both AddTags and RemoveTagKeys.
+	// Enforce the resulting tag total — compute the resulting key set
+	// after applying both AddTags and RemoveTagKeys and bound it by the
+	// same quota the request check applies. The store's tag budget
+	// re-enforces the bound under its lock; this pre-check answers with
+	// the operation's declared InvalidInput instead of a server error.
 	existingTags, _ := st.Tags().ListTagsForResource(resourceKey)
 	keySet := make(map[string]bool)
 	for _, t := range existingTags {
@@ -129,19 +134,20 @@ func changeTagsForResourceCore(st *route53store.Route53Stores, input ChangeTagsF
 	for _, t := range input.AddTags {
 		keySet[t.Key] = true
 	}
-	if len(keySet) > 50 {
-		return awserrors.NewAWSError("InvalidInput", "Maximum of 50 tags allowed per resource", 400)
+	if len(keySet) > maxTagsPerRoute53Resource {
+		return awserrors.NewAWSError("InvalidInput",
+			fmt.Sprintf("Number of tags must not exceed %d", maxTagsPerRoute53Resource), 400)
 	}
 
 	if len(input.AddTags) > 0 {
 		if err := st.Tags().Tag(resourceKey, input.AddTags); err != nil {
-			return awserrors.NewAWSError("TagResource", err.Error(), 500)
+			return mapTagStoreError(err, "apply tags")
 		}
 	}
 
 	if len(input.RemoveTagKeys) > 0 {
 		if err := st.Tags().Raw().Untag(resourceKey, input.RemoveTagKeys); err != nil {
-			return awserrors.NewAWSError("UntagResource", err.Error(), 500)
+			return mapTagStoreError(err, "remove tags")
 		}
 	}
 
@@ -163,7 +169,7 @@ func listTagsForResourceCore(st *route53store.Route53Stores, input ListTagsForRe
 
 	tagList, err := st.Tags().ListTagsForResource(resourceKey)
 	if err != nil {
-		return nil, awserrors.NewAWSError("ListTags", err.Error(), 500)
+		return nil, mapTagStoreError(err, "list tags")
 	}
 
 	return &ListTagsForResourceResult{
@@ -171,4 +177,17 @@ func listTagsForResourceCore(st *route53store.Route53Stores, input ListTagsForRe
 		ResourceId:   resourceId,
 		Tags:         tagList,
 	}, nil
+}
+
+// mapTagStoreError carries a tag-store failure to the wire with the
+// operation's declared identity: a store error that is already wire-shaped
+// (the tag budget answers quota overflow as InvalidInput) passes through
+// unchanged, and a raw storage failure answers the storage-failure wrap
+// the route53 cores use — InvalidInput-coded with a server status.
+func mapTagStoreError(err error, action string) error {
+	var awsErr *awserrors.AWSError
+	if errors.As(err, &awsErr) {
+		return awsErr
+	}
+	return awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Failed to %s: %v", action, err), 500)
 }

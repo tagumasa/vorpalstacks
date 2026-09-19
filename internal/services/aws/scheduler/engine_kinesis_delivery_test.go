@@ -21,13 +21,13 @@ func (r *recordingKinesisInvoker) ListShards(context.Context, string, string) ([
 	return nil, nil
 }
 
-func (r *recordingKinesisInvoker) PutRecord(_ context.Context, region, streamName, _ string, _ []byte) (string, error) {
+func (r *recordingKinesisInvoker) PutRecord(_ context.Context, region, streamName, _ string, _ []byte) (string, string, error) {
 	r.calls++
 	if r.putRegions == nil {
 		r.putRegions = make(map[string]string)
 	}
 	r.putRegions[streamName] = region
-	return "seq-1", nil
+	return "seq-1", "", nil
 }
 
 func (r *recordingKinesisInvoker) CreateShardIterator(context.Context, string, string, string, string, string, *time.Time) (string, error) {

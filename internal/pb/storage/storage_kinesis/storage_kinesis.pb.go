@@ -72,51 +72,6 @@ func (StreamMode) EnumDescriptor() ([]byte, []int) {
 	return file_storage_kinesis_proto_rawDescGZIP(), []int{0}
 }
 
-// StreamStatus represents the status of a Kinesis stream.
-type StreamStatus struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StreamStatus) Reset() {
-	*x = StreamStatus{}
-	mi := &file_storage_kinesis_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StreamStatus) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StreamStatus) ProtoMessage() {}
-
-func (x *StreamStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StreamStatus.ProtoReflect.Descriptor instead.
-func (*StreamStatus) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *StreamStatus) GetStatus() string {
-	if x != nil {
-		return x.Status
-	}
-	return ""
-}
-
 // HashKeyRange represents the hash key range for a Kinesis shard.
 type HashKeyRange struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
@@ -128,7 +83,7 @@ type HashKeyRange struct {
 
 func (x *HashKeyRange) Reset() {
 	*x = HashKeyRange{}
-	mi := &file_storage_kinesis_proto_msgTypes[1]
+	mi := &file_storage_kinesis_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -140,7 +95,7 @@ func (x *HashKeyRange) String() string {
 func (*HashKeyRange) ProtoMessage() {}
 
 func (x *HashKeyRange) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[1]
+	mi := &file_storage_kinesis_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -153,7 +108,7 @@ func (x *HashKeyRange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HashKeyRange.ProtoReflect.Descriptor instead.
 func (*HashKeyRange) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{1}
+	return file_storage_kinesis_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *HashKeyRange) GetStartingHashKey() string {
@@ -181,7 +136,7 @@ type SequenceNumberRange struct {
 
 func (x *SequenceNumberRange) Reset() {
 	*x = SequenceNumberRange{}
-	mi := &file_storage_kinesis_proto_msgTypes[2]
+	mi := &file_storage_kinesis_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +148,7 @@ func (x *SequenceNumberRange) String() string {
 func (*SequenceNumberRange) ProtoMessage() {}
 
 func (x *SequenceNumberRange) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[2]
+	mi := &file_storage_kinesis_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +161,7 @@ func (x *SequenceNumberRange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SequenceNumberRange.ProtoReflect.Descriptor instead.
 func (*SequenceNumberRange) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{2}
+	return file_storage_kinesis_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SequenceNumberRange) GetStartingSequenceNumber() string {
@@ -233,7 +188,7 @@ type StreamModeDetails struct {
 
 func (x *StreamModeDetails) Reset() {
 	*x = StreamModeDetails{}
-	mi := &file_storage_kinesis_proto_msgTypes[3]
+	mi := &file_storage_kinesis_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -245,7 +200,7 @@ func (x *StreamModeDetails) String() string {
 func (*StreamModeDetails) ProtoMessage() {}
 
 func (x *StreamModeDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[3]
+	mi := &file_storage_kinesis_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -258,7 +213,7 @@ func (x *StreamModeDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamModeDetails.ProtoReflect.Descriptor instead.
 func (*StreamModeDetails) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{3}
+	return file_storage_kinesis_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *StreamModeDetails) GetStreamMode() StreamMode {
@@ -278,7 +233,7 @@ type EnhancedMonitoring struct {
 
 func (x *EnhancedMonitoring) Reset() {
 	*x = EnhancedMonitoring{}
-	mi := &file_storage_kinesis_proto_msgTypes[4]
+	mi := &file_storage_kinesis_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -290,7 +245,7 @@ func (x *EnhancedMonitoring) String() string {
 func (*EnhancedMonitoring) ProtoMessage() {}
 
 func (x *EnhancedMonitoring) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[4]
+	mi := &file_storage_kinesis_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -303,7 +258,7 @@ func (x *EnhancedMonitoring) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnhancedMonitoring.ProtoReflect.Descriptor instead.
 func (*EnhancedMonitoring) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{4}
+	return file_storage_kinesis_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *EnhancedMonitoring) GetShardLevelMetrics() []string {
@@ -313,30 +268,36 @@ func (x *EnhancedMonitoring) GetShardLevelMetrics() []string {
 	return nil
 }
 
-// Stream represents a Kinesis stream.
+// Stream represents a Kinesis stream. Members are grouped identity,
+// configuration, live state, timestamps — in that order, with dense
+// numbering; the persisted format is regenerated wholesale on storage-format
+// changes and carries no compatibility numbering forward.
 type Stream struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	StreamName           string                 `protobuf:"bytes,1,opt,name=stream_name,json=streamName,proto3" json:"stream_name,omitempty"`
-	StreamArn            string                 `protobuf:"bytes,2,opt,name=stream_arn,json=streamArn,proto3" json:"stream_arn,omitempty"`
-	StreamStatus         string                 `protobuf:"bytes,3,opt,name=stream_status,json=streamStatus,proto3" json:"stream_status,omitempty"`
-	StreamModeDetails    *StreamModeDetails     `protobuf:"bytes,4,opt,name=stream_mode_details,json=streamModeDetails,proto3" json:"stream_mode_details,omitempty"`
-	ShardCount           int32                  `protobuf:"varint,5,opt,name=shard_count,json=shardCount,proto3" json:"shard_count,omitempty"`
-	RetentionPeriodHours int32                  `protobuf:"varint,6,opt,name=retention_period_hours,json=retentionPeriodHours,proto3" json:"retention_period_hours,omitempty"`
-	EnhancedMonitoring   []*EnhancedMonitoring  `protobuf:"bytes,7,rep,name=enhanced_monitoring,json=enhancedMonitoring,proto3" json:"enhanced_monitoring,omitempty"`
-	EncryptionType       string                 `protobuf:"bytes,8,opt,name=encryption_type,json=encryptionType,proto3" json:"encryption_type,omitempty"`
-	KeyId                string                 `protobuf:"bytes,9,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
-	ConsumerCount        int32                  `protobuf:"varint,10,opt,name=consumer_count,json=consumerCount,proto3" json:"consumer_count,omitempty"`
-	CreatedAt            *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastModifiedAt       *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=last_modified_at,json=lastModifiedAt,proto3" json:"last_modified_at,omitempty"`
-	MaxRecordSizeInKib   int32                  `protobuf:"varint,13,opt,name=max_record_size_in_kib,json=maxRecordSizeInKib,proto3" json:"max_record_size_in_kib,omitempty"`
-	WarmThroughputMibps  int32                  `protobuf:"varint,14,opt,name=warm_throughput_mibps,json=warmThroughputMibps,proto3" json:"warm_throughput_mibps,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Identity.
+	StreamName string `protobuf:"bytes,1,opt,name=stream_name,json=streamName,proto3" json:"stream_name,omitempty"`
+	StreamArn  string `protobuf:"bytes,2,opt,name=stream_arn,json=streamArn,proto3" json:"stream_arn,omitempty"`
+	// Configuration.
+	StreamModeDetails    *StreamModeDetails    `protobuf:"bytes,3,opt,name=stream_mode_details,json=streamModeDetails,proto3" json:"stream_mode_details,omitempty"`
+	ShardCount           int32                 `protobuf:"varint,4,opt,name=shard_count,json=shardCount,proto3" json:"shard_count,omitempty"`
+	RetentionPeriodHours int32                 `protobuf:"varint,5,opt,name=retention_period_hours,json=retentionPeriodHours,proto3" json:"retention_period_hours,omitempty"`
+	EnhancedMonitoring   []*EnhancedMonitoring `protobuf:"bytes,6,rep,name=enhanced_monitoring,json=enhancedMonitoring,proto3" json:"enhanced_monitoring,omitempty"`
+	EncryptionType       string                `protobuf:"bytes,7,opt,name=encryption_type,json=encryptionType,proto3" json:"encryption_type,omitempty"`
+	KeyId                string                `protobuf:"bytes,8,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
+	MaxRecordSizeInKib   int32                 `protobuf:"varint,9,opt,name=max_record_size_in_kib,json=maxRecordSizeInKib,proto3" json:"max_record_size_in_kib,omitempty"`
+	WarmThroughputMibps  int32                 `protobuf:"varint,10,opt,name=warm_throughput_mibps,json=warmThroughputMibps,proto3" json:"warm_throughput_mibps,omitempty"`
+	// Live state.
+	StreamStatus  string `protobuf:"bytes,11,opt,name=stream_status,json=streamStatus,proto3" json:"stream_status,omitempty"`
+	ConsumerCount int32  `protobuf:"varint,12,opt,name=consumer_count,json=consumerCount,proto3" json:"consumer_count,omitempty"`
+	// Timestamps.
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Stream) Reset() {
 	*x = Stream{}
-	mi := &file_storage_kinesis_proto_msgTypes[5]
+	mi := &file_storage_kinesis_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -348,7 +309,7 @@ func (x *Stream) String() string {
 func (*Stream) ProtoMessage() {}
 
 func (x *Stream) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[5]
+	mi := &file_storage_kinesis_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -361,7 +322,7 @@ func (x *Stream) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Stream.ProtoReflect.Descriptor instead.
 func (*Stream) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{5}
+	return file_storage_kinesis_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Stream) GetStreamName() string {
@@ -374,13 +335,6 @@ func (x *Stream) GetStreamName() string {
 func (x *Stream) GetStreamArn() string {
 	if x != nil {
 		return x.StreamArn
-	}
-	return ""
-}
-
-func (x *Stream) GetStreamStatus() string {
-	if x != nil {
-		return x.StreamStatus
 	}
 	return ""
 }
@@ -427,27 +381,6 @@ func (x *Stream) GetKeyId() string {
 	return ""
 }
 
-func (x *Stream) GetConsumerCount() int32 {
-	if x != nil {
-		return x.ConsumerCount
-	}
-	return 0
-}
-
-func (x *Stream) GetCreatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return nil
-}
-
-func (x *Stream) GetLastModifiedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.LastModifiedAt
-	}
-	return nil
-}
-
 func (x *Stream) GetMaxRecordSizeInKib() int32 {
 	if x != nil {
 		return x.MaxRecordSizeInKib
@@ -462,81 +395,25 @@ func (x *Stream) GetWarmThroughputMibps() int32 {
 	return 0
 }
 
-// StreamSummary represents a summary of a Kinesis stream.
-type StreamSummary struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	StreamName        string                 `protobuf:"bytes,1,opt,name=stream_name,json=streamName,proto3" json:"stream_name,omitempty"`
-	StreamArn         string                 `protobuf:"bytes,2,opt,name=stream_arn,json=streamArn,proto3" json:"stream_arn,omitempty"`
-	StreamStatus      string                 `protobuf:"bytes,3,opt,name=stream_status,json=streamStatus,proto3" json:"stream_status,omitempty"`
-	StreamModeDetails *StreamModeDetails     `protobuf:"bytes,4,opt,name=stream_mode_details,json=streamModeDetails,proto3" json:"stream_mode_details,omitempty"`
-	ConsumerCount     int32                  `protobuf:"varint,5,opt,name=consumer_count,json=consumerCount,proto3" json:"consumer_count,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
-}
-
-func (x *StreamSummary) Reset() {
-	*x = StreamSummary{}
-	mi := &file_storage_kinesis_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StreamSummary) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StreamSummary) ProtoMessage() {}
-
-func (x *StreamSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StreamSummary.ProtoReflect.Descriptor instead.
-func (*StreamSummary) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *StreamSummary) GetStreamName() string {
-	if x != nil {
-		return x.StreamName
-	}
-	return ""
-}
-
-func (x *StreamSummary) GetStreamArn() string {
-	if x != nil {
-		return x.StreamArn
-	}
-	return ""
-}
-
-func (x *StreamSummary) GetStreamStatus() string {
+func (x *Stream) GetStreamStatus() string {
 	if x != nil {
 		return x.StreamStatus
 	}
 	return ""
 }
 
-func (x *StreamSummary) GetStreamModeDetails() *StreamModeDetails {
-	if x != nil {
-		return x.StreamModeDetails
-	}
-	return nil
-}
-
-func (x *StreamSummary) GetConsumerCount() int32 {
+func (x *Stream) GetConsumerCount() int32 {
 	if x != nil {
 		return x.ConsumerCount
 	}
 	return 0
+}
+
+func (x *Stream) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
 }
 
 // Shard represents a Kinesis shard.
@@ -556,7 +433,7 @@ type Shard struct {
 
 func (x *Shard) Reset() {
 	*x = Shard{}
-	mi := &file_storage_kinesis_proto_msgTypes[7]
+	mi := &file_storage_kinesis_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -568,7 +445,7 @@ func (x *Shard) String() string {
 func (*Shard) ProtoMessage() {}
 
 func (x *Shard) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[7]
+	mi := &file_storage_kinesis_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -581,7 +458,7 @@ func (x *Shard) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Shard.ProtoReflect.Descriptor instead.
 func (*Shard) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{7}
+	return file_storage_kinesis_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Shard) GetShardId() string {
@@ -640,21 +517,21 @@ func (x *Shard) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-// Record represents a Kinesis record.
+// Record represents a Kinesis record: identity and body first, the arrival
+// timestamp last.
 type Record struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	SequenceNumber              string                 `protobuf:"bytes,1,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
-	ApproximateArrivalTimestamp *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=approximate_arrival_timestamp,json=approximateArrivalTimestamp,proto3" json:"approximate_arrival_timestamp,omitempty"`
-	Data                        string                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
-	PartitionKey                string                 `protobuf:"bytes,4,opt,name=partition_key,json=partitionKey,proto3" json:"partition_key,omitempty"`
-	EncryptionType              string                 `protobuf:"bytes,5,opt,name=encryption_type,json=encryptionType,proto3" json:"encryption_type,omitempty"`
+	Data                        string                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	PartitionKey                string                 `protobuf:"bytes,3,opt,name=partition_key,json=partitionKey,proto3" json:"partition_key,omitempty"`
+	ApproximateArrivalTimestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=approximate_arrival_timestamp,json=approximateArrivalTimestamp,proto3" json:"approximate_arrival_timestamp,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *Record) Reset() {
 	*x = Record{}
-	mi := &file_storage_kinesis_proto_msgTypes[8]
+	mi := &file_storage_kinesis_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +543,7 @@ func (x *Record) String() string {
 func (*Record) ProtoMessage() {}
 
 func (x *Record) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[8]
+	mi := &file_storage_kinesis_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,7 +556,7 @@ func (x *Record) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Record.ProtoReflect.Descriptor instead.
 func (*Record) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{8}
+	return file_storage_kinesis_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Record) GetSequenceNumber() string {
@@ -687,13 +564,6 @@ func (x *Record) GetSequenceNumber() string {
 		return x.SequenceNumber
 	}
 	return ""
-}
-
-func (x *Record) GetApproximateArrivalTimestamp() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ApproximateArrivalTimestamp
-	}
-	return nil
 }
 
 func (x *Record) GetData() string {
@@ -710,11 +580,11 @@ func (x *Record) GetPartitionKey() string {
 	return ""
 }
 
-func (x *Record) GetEncryptionType() string {
+func (x *Record) GetApproximateArrivalTimestamp() *timestamppb.Timestamp {
 	if x != nil {
-		return x.EncryptionType
+		return x.ApproximateArrivalTimestamp
 	}
-	return ""
+	return nil
 }
 
 // Consumer represents a Kinesis consumer.
@@ -731,7 +601,7 @@ type Consumer struct {
 
 func (x *Consumer) Reset() {
 	*x = Consumer{}
-	mi := &file_storage_kinesis_proto_msgTypes[9]
+	mi := &file_storage_kinesis_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -743,7 +613,7 @@ func (x *Consumer) String() string {
 func (*Consumer) ProtoMessage() {}
 
 func (x *Consumer) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[9]
+	mi := &file_storage_kinesis_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -756,7 +626,7 @@ func (x *Consumer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Consumer.ProtoReflect.Descriptor instead.
 func (*Consumer) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{9}
+	return file_storage_kinesis_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Consumer) GetConsumerName() string {
@@ -794,90 +664,11 @@ func (x *Consumer) GetConsumerCreationTimestamp() *timestamppb.Timestamp {
 	return nil
 }
 
-// ConsumerSummary represents a summary of a Kinesis consumer.
-type ConsumerSummary struct {
-	state                     protoimpl.MessageState `protogen:"open.v1"`
-	ConsumerName              string                 `protobuf:"bytes,1,opt,name=consumer_name,json=consumerName,proto3" json:"consumer_name,omitempty"`
-	ConsumerArn               string                 `protobuf:"bytes,2,opt,name=consumer_arn,json=consumerArn,proto3" json:"consumer_arn,omitempty"`
-	StreamArn                 string                 `protobuf:"bytes,3,opt,name=stream_arn,json=streamArn,proto3" json:"stream_arn,omitempty"`
-	ConsumerStatus            string                 `protobuf:"bytes,4,opt,name=consumer_status,json=consumerStatus,proto3" json:"consumer_status,omitempty"`
-	ConsumerCreationTimestamp *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=consumer_creation_timestamp,json=consumerCreationTimestamp,proto3" json:"consumer_creation_timestamp,omitempty"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
-}
-
-func (x *ConsumerSummary) Reset() {
-	*x = ConsumerSummary{}
-	mi := &file_storage_kinesis_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ConsumerSummary) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ConsumerSummary) ProtoMessage() {}
-
-func (x *ConsumerSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_kinesis_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ConsumerSummary.ProtoReflect.Descriptor instead.
-func (*ConsumerSummary) Descriptor() ([]byte, []int) {
-	return file_storage_kinesis_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *ConsumerSummary) GetConsumerName() string {
-	if x != nil {
-		return x.ConsumerName
-	}
-	return ""
-}
-
-func (x *ConsumerSummary) GetConsumerArn() string {
-	if x != nil {
-		return x.ConsumerArn
-	}
-	return ""
-}
-
-func (x *ConsumerSummary) GetStreamArn() string {
-	if x != nil {
-		return x.StreamArn
-	}
-	return ""
-}
-
-func (x *ConsumerSummary) GetConsumerStatus() string {
-	if x != nil {
-		return x.ConsumerStatus
-	}
-	return ""
-}
-
-func (x *ConsumerSummary) GetConsumerCreationTimestamp() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ConsumerCreationTimestamp
-	}
-	return nil
-}
-
 var File_storage_kinesis_proto protoreflect.FileDescriptor
 
 const file_storage_kinesis_proto_rawDesc = "" +
 	"\n" +
-	"\x15storage_kinesis.proto\x12\x0fstorage.kinesis\x1a\x1fgoogle/protobuf/timestamp.proto\"&\n" +
-	"\fStreamStatus\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status\"b\n" +
+	"\x15storage_kinesis.proto\x12\x0fstorage.kinesis\x1a\x1fgoogle/protobuf/timestamp.proto\"b\n" +
 	"\fHashKeyRange\x12*\n" +
 	"\x11starting_hash_key\x18\x01 \x01(\tR\x0fstartingHashKey\x12&\n" +
 	"\x0fending_hash_key\x18\x02 \x01(\tR\rendingHashKey\"\x85\x01\n" +
@@ -888,35 +679,26 @@ const file_storage_kinesis_proto_rawDesc = "" +
 	"\vstream_mode\x18\x01 \x01(\x0e2\x1b.storage.kinesis.StreamModeR\n" +
 	"streamMode\"D\n" +
 	"\x12EnhancedMonitoring\x12.\n" +
-	"\x13shard_level_metrics\x18\x01 \x03(\tR\x11shardLevelMetrics\"\xbe\x05\n" +
+	"\x13shard_level_metrics\x18\x01 \x03(\tR\x11shardLevelMetrics\"\xf8\x04\n" +
 	"\x06Stream\x12\x1f\n" +
 	"\vstream_name\x18\x01 \x01(\tR\n" +
 	"streamName\x12\x1d\n" +
 	"\n" +
-	"stream_arn\x18\x02 \x01(\tR\tstreamArn\x12#\n" +
-	"\rstream_status\x18\x03 \x01(\tR\fstreamStatus\x12R\n" +
-	"\x13stream_mode_details\x18\x04 \x01(\v2\".storage.kinesis.StreamModeDetailsR\x11streamModeDetails\x12\x1f\n" +
-	"\vshard_count\x18\x05 \x01(\x05R\n" +
+	"stream_arn\x18\x02 \x01(\tR\tstreamArn\x12R\n" +
+	"\x13stream_mode_details\x18\x03 \x01(\v2\".storage.kinesis.StreamModeDetailsR\x11streamModeDetails\x12\x1f\n" +
+	"\vshard_count\x18\x04 \x01(\x05R\n" +
 	"shardCount\x124\n" +
-	"\x16retention_period_hours\x18\x06 \x01(\x05R\x14retentionPeriodHours\x12T\n" +
-	"\x13enhanced_monitoring\x18\a \x03(\v2#.storage.kinesis.EnhancedMonitoringR\x12enhancedMonitoring\x12'\n" +
-	"\x0fencryption_type\x18\b \x01(\tR\x0eencryptionType\x12\x15\n" +
-	"\x06key_id\x18\t \x01(\tR\x05keyId\x12%\n" +
-	"\x0econsumer_count\x18\n" +
-	" \x01(\x05R\rconsumerCount\x129\n" +
+	"\x16retention_period_hours\x18\x05 \x01(\x05R\x14retentionPeriodHours\x12T\n" +
+	"\x13enhanced_monitoring\x18\x06 \x03(\v2#.storage.kinesis.EnhancedMonitoringR\x12enhancedMonitoring\x12'\n" +
+	"\x0fencryption_type\x18\a \x01(\tR\x0eencryptionType\x12\x15\n" +
+	"\x06key_id\x18\b \x01(\tR\x05keyId\x122\n" +
+	"\x16max_record_size_in_kib\x18\t \x01(\x05R\x12maxRecordSizeInKib\x122\n" +
+	"\x15warm_throughput_mibps\x18\n" +
+	" \x01(\x05R\x13warmThroughputMibps\x12#\n" +
+	"\rstream_status\x18\v \x01(\tR\fstreamStatus\x12%\n" +
+	"\x0econsumer_count\x18\f \x01(\x05R\rconsumerCount\x129\n" +
 	"\n" +
-	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12D\n" +
-	"\x10last_modified_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x0elastModifiedAt\x122\n" +
-	"\x16max_record_size_in_kib\x18\r \x01(\x05R\x12maxRecordSizeInKib\x122\n" +
-	"\x15warm_throughput_mibps\x18\x0e \x01(\x05R\x13warmThroughputMibps\"\xef\x01\n" +
-	"\rStreamSummary\x12\x1f\n" +
-	"\vstream_name\x18\x01 \x01(\tR\n" +
-	"streamName\x12\x1d\n" +
-	"\n" +
-	"stream_arn\x18\x02 \x01(\tR\tstreamArn\x12#\n" +
-	"\rstream_status\x18\x03 \x01(\tR\fstreamStatus\x12R\n" +
-	"\x13stream_mode_details\x18\x04 \x01(\v2\".storage.kinesis.StreamModeDetailsR\x11streamModeDetails\x12%\n" +
-	"\x0econsumer_count\x18\x05 \x01(\x05R\rconsumerCount\"\xb4\x03\n" +
+	"created_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xb4\x03\n" +
 	"\x05Shard\x12\x19\n" +
 	"\bshard_id\x18\x01 \x01(\tR\ashardId\x12\x1f\n" +
 	"\vstream_name\x18\x02 \x01(\tR\n" +
@@ -927,21 +709,13 @@ const file_storage_kinesis_proto_rawDesc = "" +
 	"\x15sequence_number_range\x18\x06 \x01(\v2$.storage.kinesis.SequenceNumberRangeR\x13sequenceNumberRange\x124\n" +
 	"\x16latest_sequence_number\x18\a \x01(\tR\x14latestSequenceNumber\x129\n" +
 	"\n" +
-	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xf3\x01\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xca\x01\n" +
 	"\x06Record\x12'\n" +
-	"\x0fsequence_number\x18\x01 \x01(\tR\x0esequenceNumber\x12^\n" +
-	"\x1dapproximate_arrival_timestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x1bapproximateArrivalTimestamp\x12\x12\n" +
-	"\x04data\x18\x03 \x01(\tR\x04data\x12#\n" +
-	"\rpartition_key\x18\x04 \x01(\tR\fpartitionKey\x12'\n" +
-	"\x0fencryption_type\x18\x05 \x01(\tR\x0eencryptionType\"\xf6\x01\n" +
+	"\x0fsequence_number\x18\x01 \x01(\tR\x0esequenceNumber\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\tR\x04data\x12#\n" +
+	"\rpartition_key\x18\x03 \x01(\tR\fpartitionKey\x12^\n" +
+	"\x1dapproximate_arrival_timestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x1bapproximateArrivalTimestamp\"\xf6\x01\n" +
 	"\bConsumer\x12#\n" +
-	"\rconsumer_name\x18\x01 \x01(\tR\fconsumerName\x12!\n" +
-	"\fconsumer_arn\x18\x02 \x01(\tR\vconsumerArn\x12\x1d\n" +
-	"\n" +
-	"stream_arn\x18\x03 \x01(\tR\tstreamArn\x12'\n" +
-	"\x0fconsumer_status\x18\x04 \x01(\tR\x0econsumerStatus\x12Z\n" +
-	"\x1bconsumer_creation_timestamp\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x19consumerCreationTimestamp\"\xfd\x01\n" +
-	"\x0fConsumerSummary\x12#\n" +
 	"\rconsumer_name\x18\x01 \x01(\tR\fconsumerName\x12!\n" +
 	"\fconsumer_arn\x18\x02 \x01(\tR\vconsumerArn\x12\x1d\n" +
 	"\n" +
@@ -967,40 +741,34 @@ func file_storage_kinesis_proto_rawDescGZIP() []byte {
 }
 
 var file_storage_kinesis_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_storage_kinesis_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_storage_kinesis_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_storage_kinesis_proto_goTypes = []any{
 	(StreamMode)(0),               // 0: storage.kinesis.StreamMode
-	(*StreamStatus)(nil),          // 1: storage.kinesis.StreamStatus
-	(*HashKeyRange)(nil),          // 2: storage.kinesis.HashKeyRange
-	(*SequenceNumberRange)(nil),   // 3: storage.kinesis.SequenceNumberRange
-	(*StreamModeDetails)(nil),     // 4: storage.kinesis.StreamModeDetails
-	(*EnhancedMonitoring)(nil),    // 5: storage.kinesis.EnhancedMonitoring
-	(*Stream)(nil),                // 6: storage.kinesis.Stream
-	(*StreamSummary)(nil),         // 7: storage.kinesis.StreamSummary
-	(*Shard)(nil),                 // 8: storage.kinesis.Shard
-	(*Record)(nil),                // 9: storage.kinesis.Record
-	(*Consumer)(nil),              // 10: storage.kinesis.Consumer
-	(*ConsumerSummary)(nil),       // 11: storage.kinesis.ConsumerSummary
-	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
+	(*HashKeyRange)(nil),          // 1: storage.kinesis.HashKeyRange
+	(*SequenceNumberRange)(nil),   // 2: storage.kinesis.SequenceNumberRange
+	(*StreamModeDetails)(nil),     // 3: storage.kinesis.StreamModeDetails
+	(*EnhancedMonitoring)(nil),    // 4: storage.kinesis.EnhancedMonitoring
+	(*Stream)(nil),                // 5: storage.kinesis.Stream
+	(*Shard)(nil),                 // 6: storage.kinesis.Shard
+	(*Record)(nil),                // 7: storage.kinesis.Record
+	(*Consumer)(nil),              // 8: storage.kinesis.Consumer
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_storage_kinesis_proto_depIdxs = []int32{
-	0,  // 0: storage.kinesis.StreamModeDetails.stream_mode:type_name -> storage.kinesis.StreamMode
-	4,  // 1: storage.kinesis.Stream.stream_mode_details:type_name -> storage.kinesis.StreamModeDetails
-	5,  // 2: storage.kinesis.Stream.enhanced_monitoring:type_name -> storage.kinesis.EnhancedMonitoring
-	12, // 3: storage.kinesis.Stream.created_at:type_name -> google.protobuf.Timestamp
-	12, // 4: storage.kinesis.Stream.last_modified_at:type_name -> google.protobuf.Timestamp
-	4,  // 5: storage.kinesis.StreamSummary.stream_mode_details:type_name -> storage.kinesis.StreamModeDetails
-	2,  // 6: storage.kinesis.Shard.hash_key_range:type_name -> storage.kinesis.HashKeyRange
-	3,  // 7: storage.kinesis.Shard.sequence_number_range:type_name -> storage.kinesis.SequenceNumberRange
-	12, // 8: storage.kinesis.Shard.created_at:type_name -> google.protobuf.Timestamp
-	12, // 9: storage.kinesis.Record.approximate_arrival_timestamp:type_name -> google.protobuf.Timestamp
-	12, // 10: storage.kinesis.Consumer.consumer_creation_timestamp:type_name -> google.protobuf.Timestamp
-	12, // 11: storage.kinesis.ConsumerSummary.consumer_creation_timestamp:type_name -> google.protobuf.Timestamp
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	0, // 0: storage.kinesis.StreamModeDetails.stream_mode:type_name -> storage.kinesis.StreamMode
+	3, // 1: storage.kinesis.Stream.stream_mode_details:type_name -> storage.kinesis.StreamModeDetails
+	4, // 2: storage.kinesis.Stream.enhanced_monitoring:type_name -> storage.kinesis.EnhancedMonitoring
+	9, // 3: storage.kinesis.Stream.created_at:type_name -> google.protobuf.Timestamp
+	1, // 4: storage.kinesis.Shard.hash_key_range:type_name -> storage.kinesis.HashKeyRange
+	2, // 5: storage.kinesis.Shard.sequence_number_range:type_name -> storage.kinesis.SequenceNumberRange
+	9, // 6: storage.kinesis.Shard.created_at:type_name -> google.protobuf.Timestamp
+	9, // 7: storage.kinesis.Record.approximate_arrival_timestamp:type_name -> google.protobuf.Timestamp
+	9, // 8: storage.kinesis.Consumer.consumer_creation_timestamp:type_name -> google.protobuf.Timestamp
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_storage_kinesis_proto_init() }
@@ -1014,7 +782,7 @@ func file_storage_kinesis_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_kinesis_proto_rawDesc), len(file_storage_kinesis_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

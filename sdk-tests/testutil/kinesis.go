@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"vorpalstacks-sdk-tests/config"
 )
@@ -28,6 +29,7 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 	}
 
 	client := kinesis.NewFromConfig(cfg)
+	kmsClient := kms.NewFromConfig(cfg)
 	ctx := context.Background()
 	ts := fmt.Sprintf("%d", time.Now().UnixNano())
 
@@ -35,7 +37,7 @@ func (r *TestRunner) RunKinesisTests() []TestResult {
 	results = append(results, r.kinesisRecordTests(ctx, client, ts)...)
 	results = append(results, r.kinesisShardTests(ctx, client, ts)...)
 	results = append(results, r.kinesisConsumerTests(ctx, client, ts)...)
-	results = append(results, r.kinesisConfigTests(ctx, client, ts)...)
+	results = append(results, r.kinesisConfigTests(ctx, client, kmsClient, ts)...)
 	results = append(results, r.kinesisTagTests(ctx, client, ts)...)
 	results = append(results, r.kinesisEdgeTests(ctx, client, ts)...)
 

@@ -35,7 +35,7 @@ which are separate services in the SDK classification used by
 | EventBridge | 81 | 100% | ✅ Perfect |
 | IAM | 232 | 100% | ✅ Perfect |
 | IoT | 411 | 100% | ✅ Perfect |
-| Kinesis | 55 | 100% | ✅ Perfect |
+| Kinesis | 66 | 100% | ✅ Perfect |
 | KMS | 100 | 100% | ✅ Perfect |
 | Lambda | 134 | 100% | ✅ Perfect |
 | Neptune | 103 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,715/3,715 tests passing (100%) — 3,617 SDK + 80 integration + 18 WebSocket** (confirmed 2026-09-18 on main; per-session deltas live in git history)
+**Overall: 3,726/3,726 tests passing (100%) — 3,628 SDK + 80 integration + 18 WebSocket** (confirmed 2026-09-19 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

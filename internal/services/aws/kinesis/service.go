@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/kmsutil"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -17,10 +18,22 @@ type KinesisService struct {
 	accountID      string
 	storageManager *storage.RegionStorageManager
 	stores         sync.Map // region → *kinesisstore.KinesisStore
+	subscriptions  subscriptionRegistry
+	kmsChecker     kmsutil.Checker
 }
 
-// NewKinesisService creates a new Kinesis service instance.
-func NewKinesisService(accountID, region string) *KinesisService {
+// SetKMSChecker injects the KMS key checker StartStreamEncryption validates
+// its KeyId through — the same cross-service contract SQS's KmsMasterKeyId
+// uses; a nil checker (KMS not constructed) leaves the member shape-checked
+// alone.
+func (s *KinesisService) SetKMSChecker(checker kmsutil.Checker) {
+	s.kmsChecker = checker
+}
+
+// NewKinesisService creates a new Kinesis service instance. The service
+// is account-scoped: per-region state lives in the store cache, resolved
+// from each request's context or the invoker's region argument.
+func NewKinesisService(accountID string) *KinesisService {
 	return &KinesisService{
 		accountID: accountID,
 	}

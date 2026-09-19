@@ -88,7 +88,8 @@ func (s *CloudFrontService) createInvalidationCore(stores *cloudfrontStores, in 
 // InProgress to Completed, simulating the real CloudFront edge propagation.
 func (s *CloudFrontService) transitionInvalidation(stores *cloudfrontStores, inv *cloudfrontstore.Invalidation) {
 	defer func() {
-		if r := resilience.RecoverPanic("cloudfront invalidation status transition"); r != nil {
+		if r := recover(); r != nil {
+			resilience.LogPanic("cloudfront invalidation status transition", r)
 			slog.Error("panic during invalidation status transition",
 				"invalidationId", inv.ID, "distributionId", inv.DistributionID, "panic", r)
 		}

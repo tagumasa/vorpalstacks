@@ -174,7 +174,11 @@ func (hc *HealthChecker) Stop() {
 }
 
 func (hc *HealthChecker) runCheck(ctx context.Context, config *HealthCheckConfig) {
-	defer func() { RecoverPanic("health check") }()
+	defer func() {
+		if r := recover(); r != nil {
+			LogPanic("health check", r)
+		}
+	}()
 	ticker := time.NewTicker(config.Interval)
 	defer ticker.Stop()
 

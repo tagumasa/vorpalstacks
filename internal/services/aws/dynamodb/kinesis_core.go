@@ -105,7 +105,11 @@ type kinesisDestinationApply func(d *dbstore.KinesisDataStreamDestination) (remo
 func (s *DynamoDBService) scheduleKinesisDestinationTransition(store dbstore.DynamoDBStoreInterface, tableName, streamArn string, apply kinesisDestinationApply) {
 	s.bgWg.Add(1)
 	go func() {
-		defer func() { resilience.RecoverPanic("dynamodb Kinesis destination transition") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("dynamodb Kinesis destination transition", r)
+			}
+		}()
 		defer s.bgWg.Done()
 		select {
 		case <-time.After(kinesisDestinationTransitionDelay):

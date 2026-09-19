@@ -135,7 +135,11 @@ func (e *Engine) Stop() error {
 
 func (e *Engine) run() {
 	defer e.wg.Done()
-	defer func() { resilience.RecoverAndRestart("scheduler engine", &e.wg, e.run) }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("scheduler engine", r, &e.wg, e.run)
+		}
+	}()
 
 	ticker := time.NewTicker(schedulerTickerInterval)
 	defer ticker.Stop()

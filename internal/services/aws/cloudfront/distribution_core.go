@@ -695,7 +695,8 @@ func (s *CloudFrontService) deleteDistributionCore(ctx context.Context, stores *
 // from InProgress to Deployed, simulating real CloudFront deployment.
 func (s *CloudFrontService) transitionDistributionDeployed(stores *cloudfrontStores, distID string) {
 	defer func() {
-		if r := resilience.RecoverPanic("cloudfront distribution deploy transition"); r != nil {
+		if r := recover(); r != nil {
+			resilience.LogPanic("cloudfront distribution deploy transition", r)
 			slog.Error("panic during distribution status transition",
 				"distributionId", distID, "panic", r)
 		}

@@ -157,7 +157,11 @@ func (s *TimestreamWriteService) createBatchLoadTaskCore(st *tsWriteStores, in C
 		ctx, cancel := context.WithTimeout(s.batchCtx, 5*time.Minute)
 		defer cancel()
 		defer s.batchWg.Done()
-		defer func() { resilience.RecoverPanic("timestreamwrite batch load") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("timestreamwrite batch load", r)
+			}
+		}()
 		s.executeBatchLoad(ctx, st, taskId, in.Region)
 	}()
 
@@ -245,7 +249,11 @@ func (s *TimestreamWriteService) resumeBatchLoadTaskCore(st *tsWriteStores, in R
 		ctx, cancel := context.WithTimeout(s.batchCtx, 5*time.Minute)
 		defer cancel()
 		defer s.batchWg.Done()
-		defer func() { resilience.RecoverPanic("timestreamwrite batch load resume") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("timestreamwrite batch load resume", r)
+			}
+		}()
 		s.executeBatchLoad(ctx, st, taskId, in.Region)
 	}()
 

@@ -3,6 +3,7 @@ package apigateway
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sort"
 	"sync"
 	"time"
@@ -212,7 +213,22 @@ func (s *RestApiStore) List(opts common.ListOptions) (*common.ListResult[RestApi
 	return common.List[RestApi](s.BaseStore, opts, nil)
 }
 
-// TagResource adds tags to a REST API.
+// boundMergedTags enforces the documented per-resource tag total on a
+// merged set: a write whose merged result passes the bound answers the
+// service's BadRequestException identity. Every taggable family's merge
+// goes through here — one rule, one definition site.
+func boundMergedTags(merged []tags.Tag) error {
+	if len(merged) > common.MaxTagsPerResource {
+		return common.NewAWSError("BadRequestException", "Too many tags.", http.StatusBadRequest)
+	}
+	return nil
+}
+
+// TagResource adds tags to a REST API. The merged set is bounded by API
+// Gateway's documented per-resource total — "Each resource can have a
+// maximum of 50 tags" (developer guide, API Gateway resources that can be
+// tagged) — and an overflow answers the service's BadRequestException
+// identity directly, so no per-path mapping is needed on the way out.
 func (s *RestApiStore) Tag(apiId string, inputTags map[string]string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -226,7 +242,11 @@ func (s *RestApiStore) Tag(apiId string, inputTags map[string]string) error {
 		api.Tags = []tags.Tag{}
 	}
 
-	api.Tags = tags.Apply(api.Tags, tags.MapToTags(inputTags))
+	merged := tags.Apply(api.Tags, tags.MapToTags(inputTags))
+	if err := boundMergedTags(merged); err != nil {
+		return err
+	}
+	api.Tags = merged
 
 	return s.updateLocked(api)
 }
@@ -265,7 +285,11 @@ func (s *RestApiStore) TagStage(apiId, stageName string, inputTags map[string]st
 		stage.Tags = []tags.Tag{}
 	}
 
-	stage.Tags = tags.Apply(stage.Tags, tags.MapToTags(inputTags))
+	merged := tags.Apply(stage.Tags, tags.MapToTags(inputTags))
+	if err := boundMergedTags(merged); err != nil {
+		return err
+	}
+	stage.Tags = merged
 
 	return s.updateLocked(api)
 }

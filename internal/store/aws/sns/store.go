@@ -78,7 +78,7 @@ func NewSNSStore(store storage.BasicStorage, accountID, region string) *SNSStore
 		platformEndpointsStore:    common.NewBaseStore(store.Bucket("sns-platform-endpoints-"+region), "sns-platform-endpoints"),
 		platformAppEndpointsIndex: store.Bucket("sns-app-endpoints-index-" + region),
 		endpointTokenIndex:        store.Bucket("sns-endpoint-token-index-" + region),
-		TagStore:                  common.NewTagStoreWithRegion(store, "sns", region),
+		TagStore:                  common.NewTagStoreWithRegion(store, "sns", region, common.StandardTagBudget("TagLimitExceeded")),
 		arnBuilder:                svcarn.NewARNBuilder(accountID, region),
 		accountID:                 accountID,
 		region:                    region,

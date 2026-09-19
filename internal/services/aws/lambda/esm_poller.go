@@ -129,7 +129,11 @@ func (p *esmPoller) Stop() {
 // and dispatches each SQS mapping to a worker goroutine for polling.
 func (p *esmPoller) pollLoop(ctx context.Context) {
 	defer p.wg.Done()
-	defer func() { resilience.RecoverAndRestart("ESM pollLoop", &p.wg, func() { p.pollLoop(ctx) }) }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("ESM pollLoop", r, &p.wg, func() { p.pollLoop(ctx) })
+		}
+	}()
 	ticker := time.NewTicker(p.interval)
 	defer ticker.Stop()
 	for {
@@ -238,7 +242,11 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) (map[string]s
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			defer func() { resilience.RecoverPanic("lambda esm worker") }()
+			defer func() {
+				if r := recover(); r != nil {
+					resilience.LogPanic("lambda esm worker", r)
+				}
+			}()
 			for job := range jobs {
 				select {
 				case <-ctx.Done():

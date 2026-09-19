@@ -133,6 +133,21 @@ func (r *TestRunner) kinesisRecordTests(ctx context.Context, client *kinesis.Cli
 		if resp.ShardIterator == nil || *resp.ShardIterator == "" {
 			return fmt.Errorf("ShardIterator is nil or empty")
 		}
+
+		// The SDKs serialise Timestamp as an epoch-second JSON number;
+		// the AT_TIMESTAMP position must read that wire form end to end.
+		tsResp, err := client.GetShardIterator(ctx, &kinesis.GetShardIteratorInput{
+			StreamName:        aws.String(sn),
+			ShardId:           shardID,
+			ShardIteratorType: types.ShardIteratorTypeAtTimestamp,
+			Timestamp:         aws.Time(time.Now().Add(-time.Minute)),
+		})
+		if err != nil {
+			return fmt.Errorf("AT_TIMESTAMP iterator: %v", err)
+		}
+		if tsResp.ShardIterator == nil || *tsResp.ShardIterator == "" {
+			return fmt.Errorf("AT_TIMESTAMP ShardIterator is nil or empty")
+		}
 		return nil
 	}))
 

@@ -267,7 +267,7 @@ func (e *Engine) sendToKinesis(ctx context.Context, schedule *schedulerstore.Sch
 		logs.String("schedule", schedule.Name),
 		logs.String("stream", streamName))
 
-	if _, err := kinesisInvoker.PutRecord(ctx, kRegion, streamName, partitionKey, data); err != nil {
+	if _, _, err := kinesisInvoker.PutRecord(ctx, kRegion, streamName, partitionKey, data); err != nil {
 		logs.Debug("Failed to send to Kinesis",
 			logs.String("schedule", schedule.Name),
 			logs.String("stream", streamName),

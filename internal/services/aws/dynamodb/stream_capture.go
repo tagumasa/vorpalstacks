@@ -165,10 +165,14 @@ func (s *DynamoDBService) sendToKinesisDestinations(table *dbstore.Table, eventN
 		_, _, destRegion, _, _ := arn.SplitARN(dest.StreamArn)
 
 		go func(sn, region, pk, payload string) {
-			defer func() { resilience.RecoverPanic("dynamodb Kinesis destination emit") }()
+			defer func() {
+				if r := recover(); r != nil {
+					resilience.LogPanic("dynamodb Kinesis destination emit", r)
+				}
+			}()
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if _, err := kinesisInvoker.PutRecord(ctx, region, sn, pk, []byte(payload)); err != nil {
+			if _, _, err := kinesisInvoker.PutRecord(ctx, region, sn, pk, []byte(payload)); err != nil {
 				logs.Warn("failed to send record to Kinesis destination",
 					logs.String("stream", sn), logs.Err(err))
 			}
@@ -214,7 +218,11 @@ func (s *DynamoDBService) replicateToGlobalTableReplicas(sourceStore dbstore.Dyn
 	}
 
 	go func() {
-		defer func() { resilience.RecoverPanic("dynamodb global table replication") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("dynamodb global table replication", r)
+			}
+		}()
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		for _, replica := range globalTable.ReplicationGroup {

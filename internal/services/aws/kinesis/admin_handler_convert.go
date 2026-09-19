@@ -1,12 +1,10 @@
 package kinesis
 
 import (
-	"net/http"
-	"vorpalstacks/internal/common/defaults"
-
 	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/utils/timeutils"
 
+	"vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/kinesis"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
@@ -17,23 +15,18 @@ import (
 // helpers (toPb* functions) that translate store types to proto types for
 // response marshalling.
 
-// getStores returns the KinesisStore for the region specified in the
-// request headers.
-func (h *AdminHandler) getStores(headers http.Header) (*kinesisstore.KinesisStore, error) {
-	region := defaults.GetRegionFromHeader(headers)
-	return h.service.GetStoreForRegion(region)
-}
-
 // toPbStreamDescription converts store Stream and Shard objects to a proto
-// StreamDescription for the admin console DescribeStream response.
-func toPbStreamDescription(stream *kinesisstore.Stream, shards []*kinesisstore.Shard) *pb.StreamDescription {
+// StreamDescription for the admin console DescribeStream response. The
+// core's pagination truth travels through: HasMoreShards states whether a
+// further shard page follows, exactly as the HTTP plane's member does.
+func toPbStreamDescription(stream *kinesisstore.Stream, shards []*kinesisstore.Shard, hasMoreShards bool) *pb.StreamDescription {
 	sd := &pb.StreamDescription{
 		Streamname:              stream.StreamName,
 		Streamarn:               stream.StreamARN,
 		Streamstatus:            toPbStreamStatus(stream.StreamStatus),
 		Retentionperiodhours:    stream.RetentionPeriodHours,
 		Streamcreationtimestamp: stream.CreatedAt.Format(timeutils.ISO8601UTCFormat),
-		Hasmoreshards:           proto.Bool(false),
+		Hasmoreshards:           proto.Bool(hasMoreShards),
 	}
 
 	if stream.StreamModeDetails != nil {
@@ -135,6 +128,28 @@ func toPbStreamMode(mode kinesisstore.StreamMode) pb.StreamMode {
 	default:
 		return pb.StreamMode_STREAM_MODE_PROVISIONED
 	}
+}
+
+// fromPbStreamMode converts a proto StreamMode back to the store form the
+// Core input carries.
+func fromPbStreamMode(mode pb.StreamMode) kinesisstore.StreamMode {
+	if mode == pb.StreamMode_STREAM_MODE_ON_DEMAND {
+		return kinesisstore.StreamModeOnDemand
+	}
+	return kinesisstore.StreamModeProvisioned
+}
+
+// toTags converts the console plane's tag map to the shared tag pairs the
+// Core input carries.
+func toTags(m map[string]string) []tags.Tag {
+	if len(m) == 0 {
+		return nil
+	}
+	pairs := make([]tags.Tag, 0, len(m))
+	for k, v := range m {
+		pairs = append(pairs, tags.Tag{Key: k, Value: v})
+	}
+	return pairs
 }
 
 // toPbEncryptionType converts an encryption type string to a proto EncryptionType.

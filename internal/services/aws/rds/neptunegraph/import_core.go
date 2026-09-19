@@ -370,7 +370,11 @@ func (s *NeptuneGraphService) startImportTaskCore(store *ngstore.NeptuneGraphSto
 
 func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore, taskID, graphID string) {
 	defer s.taskWg.Done()
-	defer func() { resilience.RecoverPanic("NeptuneGraph advanceImportTask") }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.LogPanic("NeptuneGraph advanceImportTask", r)
+		}
+	}()
 
 	task, err := store.GetImportTask(taskID)
 	if err != nil {

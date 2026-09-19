@@ -26,16 +26,16 @@ func (r *recordingKinesisInvoker) ListShards(ctx context.Context, region, stream
 	return nil, nil
 }
 
-func (r *recordingKinesisInvoker) PutRecord(ctx context.Context, region, streamName, partitionKey string, data []byte) (string, error) {
+func (r *recordingKinesisInvoker) PutRecord(ctx context.Context, region, streamName, partitionKey string, data []byte) (string, string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.putKeys = append(r.putKeys, partitionKey)
 	r.putData = append(r.putData, append([]byte(nil), data...))
 	if r.failNext > 0 {
 		r.failNext--
-		return "", errors.New("kinesis unavailable")
+		return "", "", errors.New("kinesis unavailable")
 	}
-	return "seq-1", nil
+	return "seq-1", "shardId-000000000000", nil
 }
 
 func (r *recordingKinesisInvoker) CreateShardIterator(ctx context.Context, region, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (string, error) {

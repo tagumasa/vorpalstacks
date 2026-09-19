@@ -87,7 +87,11 @@ func (rc *rotationChecker) stop() {
 // loop ticks at rotationCheckInterval and checks for secrets due for rotation.
 func (rc *rotationChecker) loop(ctx context.Context) {
 	defer rc.wg.Done()
-	defer func() { resilience.RecoverAndRestart("secret rotation checker", &rc.wg, func() { rc.loop(ctx) }) }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("secret rotation checker", r, &rc.wg, func() { rc.loop(ctx) })
+		}
+	}()
 	ticker := time.NewTicker(rotationCheckInterval)
 	defer ticker.Stop()
 

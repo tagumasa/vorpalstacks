@@ -13,7 +13,7 @@ func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.Cloud
 	if arn.IsLambdaARN(evt.DestinationArn) {
 		s.invokeLambda(evt.DestinationArn, evt.Payload)
 	} else if arn.IsKinesisARN(evt.DestinationArn) {
-		s.putToKinesis(evt.DestinationArn, evt.Payload)
+		s.putToKinesis(evt.DestinationArn, evt.LogGroup, evt.LogStream, evt.Payload)
 	}
 	return eventbus.HandlerResult{}
 }

@@ -13,7 +13,7 @@ func (s *KinesisService) AddTagsToStream(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	return tags.HandleTag(ctx, req, s.kinesisTagConfig(store, req))
+	return tags.HandleTag(ctx, req, s.kinesisTagConfig(store, req, false))
 }
 
 // RemoveTagsFromStream removes the specified tags from a Kinesis data stream.
@@ -22,7 +22,7 @@ func (s *KinesisService) RemoveTagsFromStream(ctx context.Context, reqCtx *reque
 	if err != nil {
 		return nil, err
 	}
-	return tags.HandleUntag(ctx, req, s.kinesisTagConfig(store, req))
+	return tags.HandleUntag(ctx, req, s.kinesisTagConfig(store, req, false))
 }
 
 // ListTagsForStream lists all tags assigned to a Kinesis data stream.
@@ -31,7 +31,7 @@ func (s *KinesisService) ListTagsForStream(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	return tags.HandleList(ctx, req, s.kinesisTagConfig(store, req))
+	return tags.HandleList(ctx, req, s.kinesisTagConfig(store, req, true))
 }
 
 // TagResource adds or overwrites tags on a Kinesis resource identified by ARN.
@@ -40,7 +40,7 @@ func (s *KinesisService) TagResource(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
-	return tags.HandleTag(ctx, req, s.kinesisTagConfig(store, req))
+	return tags.HandleTag(ctx, req, s.kinesisTagConfig(store, req, false))
 }
 
 // UntagResource removes the specified tags from a Kinesis resource identified by ARN.
@@ -49,7 +49,7 @@ func (s *KinesisService) UntagResource(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	return tags.HandleUntag(ctx, req, s.kinesisTagConfig(store, req))
+	return tags.HandleUntag(ctx, req, s.kinesisTagConfig(store, req, false))
 }
 
 // ListTagsForResource lists all tags assigned to a Kinesis resource identified by ARN.
@@ -58,5 +58,5 @@ func (s *KinesisService) ListTagsForResource(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	return tags.HandleList(ctx, req, s.kinesisTagConfig(store, req))
+	return tags.HandleList(ctx, req, s.kinesisTagConfig(store, req, false))
 }

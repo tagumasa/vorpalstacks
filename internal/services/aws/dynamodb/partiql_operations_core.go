@@ -220,7 +220,8 @@ func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *requ
 
 func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (ret interface{}, err error) {
 	defer func() {
-		if r := resilience.RecoverPanic("dynamodb partiql update"); r != nil {
+		if r := recover(); r != nil {
+			resilience.LogPanic("dynamodb partiql update", r)
 			err = fmt.Errorf("panic in executePartiQLUpdate: %v", r)
 		}
 	}()
@@ -351,7 +352,8 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 
 func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (ret interface{}, err error) {
 	defer func() {
-		if r := resilience.RecoverPanic("dynamodb partiql delete"); r != nil {
+		if r := recover(); r != nil {
+			resilience.LogPanic("dynamodb partiql delete", r)
 			err = fmt.Errorf("panic in executePartiQLDelete: %v", r)
 		}
 	}()

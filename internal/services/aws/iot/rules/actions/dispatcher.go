@@ -4,6 +4,7 @@ package actions
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -382,8 +383,13 @@ func (d *Dispatcher) dispatchKinesis(ctx context.Context, config *ActionConfig, 
 	if partitionKey == "" {
 		partitionKey = fmt.Sprintf("%d", time.Now().UnixNano())
 	}
-	_, err := invoker.PutRecord(ctx, streamRegion, streamName, partitionKey, p.JSONBytes)
-	if err != nil {
+	// The platform's Kinesis Data member carries the base64 form —
+	// GetRecords returns it as-is and SDK clients expect base64 — so the
+	// payload is pre-encoded exactly as every other cross-service producer
+	// sends it; a raw JSON payload would decode differently from every
+	// other record on the same stream.
+	encoded := base64.StdEncoding.EncodeToString(p.JSONBytes)
+	if _, _, err := invoker.PutRecord(ctx, streamRegion, streamName, partitionKey, []byte(encoded)); err != nil {
 		return fmt.Errorf("kinesis put record failed: %w", err)
 	}
 	return nil

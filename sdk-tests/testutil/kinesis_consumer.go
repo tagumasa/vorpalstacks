@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -56,6 +57,16 @@ func (r *TestRunner) kinesisConsumerTests(ctx context.Context, client *kinesis.C
 			return fmt.Errorf("ConsumerStatus: expected ACTIVE, got %s", resp.Consumer.ConsumerStatus)
 		}
 		return nil
+	}))
+
+	// Consumer names are unique within a stream (the model's ConsumerName
+	// documentation): a duplicate registration answers ResourceInUseException.
+	results = append(results, r.RunTest("kinesis", "RegisterStreamConsumer_DuplicateName", func() error {
+		_, err := client.RegisterStreamConsumer(ctx, &kinesis.RegisterStreamConsumerInput{
+			StreamARN:    aws.String(streamARN),
+			ConsumerName: aws.String(consumerName),
+		})
+		return expectAWSErrorCode(err, "ResourceInUseException")
 	}))
 
 	results = append(results, r.RunTest("kinesis", "DescribeStreamConsumer", func() error {
@@ -185,6 +196,87 @@ func (r *TestRunner) kinesisConsumerTests(ctx context.Context, client *kinesis.C
 				return r.err
 			case <-time.After(15 * time.Second):
 				return fmt.Errorf("SubscribeToShard test timed out (server event stream may not be closing connection)")
+			}
+		}))
+
+		// The documented re-subscription rule: a repeat call with the same
+		// ConsumerARN and ShardId within five seconds of a successful
+		// subscription answers ResourceInUseException.
+		results = append(results, r.RunTest("kinesis", "SubscribeToShard_TakeoverWindow", func() error {
+			_, err := client.SubscribeToShard(ctx, &kinesis.SubscribeToShardInput{
+				ConsumerARN: aws.String(consumerARN),
+				ShardId:     aws.String(shardID),
+				StartingPosition: &types.StartingPosition{
+					Type: types.ShardIteratorTypeTrimHorizon,
+				},
+			})
+			return expectAWSErrorCode(err, "ResourceInUseException")
+		}))
+
+		// A subscription whose stream is deleted mid-delivery ends with a
+		// typed modelled exception: the error frame is exception-classified,
+		// so the SDK decodes ResourceNotFoundException instead of reporting
+		// an unclassified UnknownError.
+		results = append(results, r.RunTest("kinesis", "SubscribeToShard_StreamDeletedMidSubscription", func() error {
+			errStream := kinesisStream(ts, "suberr")
+			if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
+				StreamName: aws.String(errStream),
+				ShardCount: aws.Int32(1),
+			}); err != nil {
+				return fmt.Errorf("create: %v", err)
+			}
+			descResp, descErr := kinesisDescribeWhenReady(ctx, client, errStream, 10*time.Second)
+			if descErr != nil {
+				return fmt.Errorf("describe: %v", descErr)
+			}
+			errShardID := aws.ToString(descResp.StreamDescription.Shards[0].ShardId)
+
+			regResp, err := client.RegisterStreamConsumer(ctx, &kinesis.RegisterStreamConsumerInput{
+				StreamARN:    aws.String(aws.ToString(descResp.StreamDescription.StreamARN)),
+				ConsumerName: aws.String(fmt.Sprintf("consumer-%s-suberr", ts)),
+			})
+			if err != nil {
+				return err
+			}
+
+			subCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			resp, err := client.SubscribeToShard(subCtx, &kinesis.SubscribeToShardInput{
+				ConsumerARN: regResp.Consumer.ConsumerARN,
+				ShardId:     aws.String(errShardID),
+				StartingPosition: &types.StartingPosition{
+					Type: types.ShardIteratorTypeTrimHorizon,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("SubscribeToShard failed: %v", err)
+			}
+			defer resp.GetStream().Close()
+
+			if _, err := client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
+				StreamName: aws.String(errStream),
+			}); err != nil {
+				return fmt.Errorf("delete: %v", err)
+			}
+
+			// The pump polls about once a second; the error frame follows
+			// the deletion within that cadence.
+			eventCh := resp.GetStream().Events()
+			timeout := time.After(15 * time.Second)
+			for {
+				select {
+				case <-timeout:
+					return fmt.Errorf("timed out waiting for the stream to end")
+				case _, ok := <-eventCh:
+					if !ok {
+						var notFound *types.ResourceNotFoundException
+						streamErr := resp.GetStream().Err()
+						if errors.As(streamErr, &notFound) {
+							return nil
+						}
+						return fmt.Errorf("stream ended with %v, want ResourceNotFoundException", streamErr)
+					}
+				}
 			}
 		}))
 	} else {

@@ -21,7 +21,11 @@ func (s *DynamoDBService) ensureJournalSweeper() {
 	s.journalSweepOnce.Do(func() {
 		s.bgWg.Add(1)
 		go func() {
-			defer func() { resilience.RecoverPanic("dynamodb journal sweep") }()
+			defer func() {
+				if r := recover(); r != nil {
+					resilience.LogPanic("dynamodb journal sweep", r)
+				}
+			}()
 			defer s.bgWg.Done()
 			ticker := time.NewTicker(journalSweepInterval)
 			defer ticker.Stop()

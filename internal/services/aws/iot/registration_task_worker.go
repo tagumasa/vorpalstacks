@@ -97,7 +97,11 @@ func (s *IoTService) startThingRegistrationWorker(store iotstore.IotStoreInterfa
 	registrationTaskWg.Add(1)
 	go func() {
 		defer registrationTaskWg.Done()
-		defer resilience.RecoverPanic("iot thing registration task")
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("iot thing registration task", r)
+			}
+		}()
 		s.runThingRegistrationTask(store, region, taskID, bucket, key, tpl, authority)
 	}()
 }

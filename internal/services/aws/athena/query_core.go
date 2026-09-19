@@ -213,7 +213,11 @@ func (s *AthenaService) startQueryExecutionCore(reqCtx *request.RequestContext, 
 	s.asyncWg.Add(1)
 	go func() {
 		defer s.asyncWg.Done()
-		defer func() { resilience.RecoverPanic("athena async query") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("athena async query", r)
+			}
+		}()
 		defer cancel()
 		defer s.getAndRemoveCancelFunc(queryExecution.QueryExecutionId)
 		s.executeQueryAsync(reqCtx, ctx, queryExecution, bytesScannedCutoff)

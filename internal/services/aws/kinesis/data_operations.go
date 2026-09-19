@@ -2,7 +2,6 @@ package kinesis
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -11,17 +10,24 @@ import (
 
 // PutRecord writes a single data record into a Kinesis stream.
 func (s *KinesisService) PutRecord(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
+	// Data is a required blob member — the wire form is a base64 string, so
+	// the strict string read rejects a non-string value here instead of
+	// letting the lenient coercion degrade it to an empty payload; its
+	// present flag is the required-member presence (a JSON null reads as
+	// absent, the protocol's dropped-null rule).
+	data, hasData, err := strictStringParam(req.Parameters, "Data")
 	if err != nil {
 		return nil, err
 	}
-
-	result, err := s.putRecordCore(store, PutRecordInput{
-		StreamName:      request.GetParamLowerFirst(req.Parameters, "StreamName"),
-		StreamARN:       request.GetParamLowerFirst(req.Parameters, "StreamARN"),
-		Data:            request.GetParamLowerFirst(req.Parameters, "Data"),
-		PartitionKey:    request.GetParamLowerFirst(req.Parameters, "PartitionKey"),
-		ExplicitHashKey: request.GetParamLowerFirst(req.Parameters, "ExplicitHashKey"),
+	result, err := s.putRecordCore(reqCtx, PutRecordInput{
+		StreamName:                request.GetParamLowerFirst(req.Parameters, "StreamName"),
+		StreamARN:                 request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+		Data:                      data,
+		HasData:                   hasData,
+		PartitionKey:              request.GetParamLowerFirst(req.Parameters, "PartitionKey"),
+		ExplicitHashKey:           request.GetParamLowerFirst(req.Parameters, "ExplicitHashKey"),
+		SequenceNumberForOrdering: request.GetParamLowerFirst(req.Parameters, "SequenceNumberForOrdering"),
+		DryRun:                    request.GetBoolParam(req.Parameters, "DryRun"),
 	})
 	if err != nil {
 		return nil, err
@@ -36,15 +42,11 @@ func (s *KinesisService) PutRecord(ctx context.Context, reqCtx *request.RequestC
 
 // PutRecords writes multiple data records into a Kinesis stream.
 func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := s.putRecordsCore(store, PutRecordsInput{
+	result, err := s.putRecordsCore(reqCtx, PutRecordsInput{
 		StreamName: request.GetParamLowerFirst(req.Parameters, "StreamName"),
 		StreamARN:  request.GetParamLowerFirst(req.Parameters, "StreamARN"),
 		Records:    req.Parameters["Records"],
+		DryRun:     request.GetBoolParam(req.Parameters, "DryRun"),
 	})
 	if err != nil {
 		return nil, err
@@ -53,15 +55,22 @@ func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.Request
 	var failedCount int32
 	formattedResults := make([]map[string]interface{}, len(result.Results))
 	for i, r := range result.Results {
-		entry := map[string]interface{}{
-			"SequenceNumber": r.SequenceNumber,
-			"ShardId":        r.ShardID,
-			"EncryptionType": result.EncryptionType,
-		}
+		// The result-entry shape carries the write receipt and the failure
+		// identity only — encryption reports at the batch level. The model's
+		// own form: a successful record includes SequenceNumber and ShardId,
+		// a failed one includes ErrorCode and ErrorMessage.
+		var entry map[string]interface{}
 		if r.ErrorCode != "" {
 			failedCount++
-			entry["ErrorCode"] = r.ErrorCode
-			entry["ErrorMessage"] = r.ErrorMessage
+			entry = map[string]interface{}{
+				"ErrorCode":    r.ErrorCode,
+				"ErrorMessage": r.ErrorMessage,
+			}
+		} else {
+			entry = map[string]interface{}{
+				"SequenceNumber": r.SequenceNumber,
+				"ShardId":        r.ShardID,
+			}
 		}
 		formattedResults[i] = entry
 	}
@@ -75,14 +84,19 @@ func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.Request
 
 // GetRecords retrieves records from a Kinesis stream shard.
 func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit := int32(10000)
-	if _, ok := req.Parameters["Limit"]; ok {
-		limit = int32(request.GetIntParam(req.Parameters, "Limit"))
+	limit := int32(kinesisstore.DefaultGetRecordsLimit)
+	limitValue, hasLimit, err := strictIntParam(req.Parameters, "Limit")
+	if err != nil {
+		return nil, err
+	}
+	if hasLimit {
+		limit = int32(limitValue)
 	}
 
 	result, err := s.getRecordsCore(reqCtx, GetRecordsInput{
 		ShardIterator: request.GetParamLowerFirst(req.Parameters, "ShardIterator"),
 		Limit:         limit,
+		DryRun:        request.GetBoolParam(req.Parameters, "DryRun"),
 	})
 	if err != nil {
 		return nil, err
@@ -92,7 +106,7 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 	for i, r := range result.Records {
 		formattedRecords[i] = map[string]interface{}{
 			"SequenceNumber":              r.SequenceNumber,
-			"ApproximateArrivalTimestamp": r.ApproximateArrivalTimestamp.Unix(),
+			"ApproximateArrivalTimestamp": formatEpochSeconds(r.ApproximateArrivalTimestamp),
 			"Data":                        r.Data,
 			"PartitionKey":                r.PartitionKey,
 			"EncryptionType":              result.EncryptionType,
@@ -116,26 +130,25 @@ func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.Request
 
 // GetShardIterator gets a shard iterator for reading from a Kinesis stream shard.
 func (s *KinesisService) GetShardIterator(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	var timestamp *time.Time
-	if ts := request.GetParamLowerFirst(req.Parameters, "Timestamp"); ts != "" {
-		if unixTs, err := strconv.ParseInt(ts, 10, 64); err == nil {
-			t := time.Unix(unixTs, 0).UTC()
-			timestamp = &t
+	if ts, present, err := strictTimestampParam(req.Parameters, "Timestamp"); err != nil {
+		return nil, err
+	} else if present {
+		t, err := parseTimestampMember(ts)
+		if err != nil {
+			return nil, err
 		}
+		timestamp = &t
 	}
 
-	iteratorID, err := s.getShardIteratorCore(store, GetShardIteratorInput{
+	iteratorID, err := s.getShardIteratorCore(reqCtx, GetShardIteratorInput{
 		StreamName:             request.GetParamLowerFirst(req.Parameters, "StreamName"),
 		StreamARN:              request.GetParamLowerFirst(req.Parameters, "StreamARN"),
 		ShardId:                request.GetParamLowerFirst(req.Parameters, "ShardId"),
 		ShardIteratorType:      request.GetParamLowerFirst(req.Parameters, "ShardIteratorType"),
 		StartingSequenceNumber: request.GetParamLowerFirst(req.Parameters, "StartingSequenceNumber"),
 		Timestamp:              timestamp,
+		DryRun:                 request.GetBoolParam(req.Parameters, "DryRun"),
 	})
 	if err != nil {
 		return nil, err
@@ -148,7 +161,10 @@ func (s *KinesisService) GetShardIterator(ctx context.Context, reqCtx *request.R
 
 // formatChildShards formats child shards for GetRecords and SubscribeToShard
 // responses. Each ChildShard contains ShardId, ParentShards (list), and
-// HashKeyRange.
+// HashKeyRange — a required output member, so a shard record without its
+// hash-key submessage formats with empty-string bounds instead of panicking,
+// the same absent-submessage reading the twin formatter and the store's own
+// guards take.
 func formatChildShards(shards []*kinesisstore.Shard) []interface{} {
 	result := make([]interface{}, 0, len(shards))
 	for _, shard := range shards {
@@ -159,12 +175,16 @@ func formatChildShards(shards []*kinesisstore.Shard) []interface{} {
 		if shard.AdjacentParentShardID != "" {
 			parentShards = append(parentShards, shard.AdjacentParentShardID)
 		}
+		startHash, endHash := "", ""
+		if shard.HashKeyRange != nil {
+			startHash, endHash = shard.HashKeyRange.StartingHashKey, shard.HashKeyRange.EndingHashKey
+		}
 		m := map[string]interface{}{
 			"ShardId":      shard.ShardID,
 			"ParentShards": parentShards,
 			"HashKeyRange": map[string]interface{}{
-				"StartingHashKey": shard.HashKeyRange.StartingHashKey,
-				"EndingHashKey":   shard.HashKeyRange.EndingHashKey,
+				"StartingHashKey": startHash,
+				"EndingHashKey":   endHash,
 			},
 		}
 		result = append(result, m)

@@ -1,6 +1,8 @@
 // Package arn provides utilities for parsing and constructing Amazon Resource Names (ARNs).
 package arn
 
+import "strconv"
+
 // SQSBuilder provides methods for constructing SQS (Simple Queue Service) ARNs.
 type SQSBuilder struct{ *ARNBuilder }
 
@@ -93,9 +95,13 @@ func (b *ARNBuilder) Kinesis() *KinesisBuilder { return &KinesisBuilder{b} }
 // Stream constructs an ARN for a Kinesis stream.
 func (b *KinesisBuilder) Stream(name string) string { return b.Build("kinesis", "stream/"+name) }
 
-// Consumer constructs an ARN for a Kinesis stream consumer.
-func (b *KinesisBuilder) Consumer(stream, name string) string {
-	return b.Build("kinesis", "stream/"+stream+"/consumer/"+name)
+// Consumer constructs an ARN for a Kinesis stream consumer. The consumer
+// ARN family's pattern ends in the creation timestamp as epoch seconds —
+// the model's documentation example is consumer/test-consumer:1525898737 —
+// so a name re-registered after a deregistration is a different consumer
+// with a different ARN.
+func (b *KinesisBuilder) Consumer(stream, name string, createdEpochSeconds int64) string {
+	return b.Build("kinesis", "stream/"+stream+"/consumer/"+name+":"+strconv.FormatInt(createdEpochSeconds, 10))
 }
 
 // ParseStreamName extracts the stream name from a Kinesis stream ARN.

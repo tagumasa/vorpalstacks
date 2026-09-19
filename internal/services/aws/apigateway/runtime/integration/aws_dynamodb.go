@@ -573,7 +573,7 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 		// kinesis:action/PutRecord) does carry a region partition, but the
 		// integration resolves the stream by name only and does not extract
 		// it — the empty region routes to the server default.
-		sequenceNumber, err := e.bus.KinesisInvoker().PutRecord(ctx, "", streamName, partitionKey, data)
+		sequenceNumber, shardID, err := e.bus.KinesisInvoker().PutRecord(ctx, "", streamName, partitionKey, data)
 		if err != nil {
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Kinesis PutRecord failed: %v", err),
@@ -582,11 +582,14 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 			}
 		}
 
+		// PutRecordOutput carries SequenceNumber and ShardId; the shard is
+		// the one the record actually landed on, which hash-based placement
+		// can move off shard zero with any resharding history.
 		responseJSON, _ := json.Marshal(map[string]interface{}{
 			"PutRecordResponse": map[string]interface{}{
 				"PutRecordResult": map[string]string{
 					"SequenceNumber": sequenceNumber,
-					"ShardId":        "shardId-000000000000",
+					"ShardId":        shardID,
 				},
 				"ResponseMetadata": map[string]string{
 					"RequestId": fmt.Sprintf("%x", time.Now().UnixNano()),

@@ -21,15 +21,18 @@ func NewSubscribeToShardEventStreamWriter(w io.Writer) *SubscribeToShardEventStr
 }
 
 // WriteSubscribeToShardEvent writes a SubscribeToShardEvent to the stream.
-func (s *SubscribeToShardEventStreamWriter) WriteSubscribeToShardEvent(records []*kinesisstore.Record, continuationSeqNum string, millisBehindLatest int64, childShards []interface{}) error {
+// Every record reports the stream's encryption type — the same value the
+// GetRecords path derives, so a KMS-encrypted stream never reports NONE
+// over the subscribe transport.
+func (s *SubscribeToShardEventStreamWriter) WriteSubscribeToShardEvent(records []*kinesisstore.Record, continuationSeqNum string, millisBehindLatest int64, childShards []interface{}, encryptionType string) error {
 	formattedRecords := make([]map[string]interface{}, 0)
 	for _, r := range records {
 		formattedRecords = append(formattedRecords, map[string]interface{}{
 			"SequenceNumber":              r.SequenceNumber,
-			"ApproximateArrivalTimestamp": r.ApproximateArrivalTimestamp.Unix(),
+			"ApproximateArrivalTimestamp": formatEpochSeconds(r.ApproximateArrivalTimestamp),
 			"Data":                        r.Data,
 			"PartitionKey":                r.PartitionKey,
-			"EncryptionType":              "NONE",
+			"EncryptionType":              encryptionType,
 		})
 	}
 
@@ -37,7 +40,11 @@ func (s *SubscribeToShardEventStreamWriter) WriteSubscribeToShardEvent(records [
 		"Records":                    formattedRecords,
 		"ContinuationSequenceNumber": continuationSeqNum,
 		"MillisBehindLatest":         millisBehindLatest,
-		"ChildShards":                childShards,
+	}
+	// ChildShards is present when the shard closes with children; idle
+	// events carry no null member.
+	if len(childShards) > 0 {
+		eventPayload["ChildShards"] = childShards
 	}
 
 	payload, err := json.Marshal(eventPayload)
@@ -48,14 +55,11 @@ func (s *SubscribeToShardEventStreamWriter) WriteSubscribeToShardEvent(records [
 	return s.encoder.WriteEvent("SubscribeToShardEvent", "application/json", payload)
 }
 
-// WriteResourceNotFoundException writes a ResourceNotFoundException error to the stream.
-func (s *SubscribeToShardEventStreamWriter) WriteResourceNotFoundException(message string) error {
-	return s.encoder.WriteErrorEvent("ResourceNotFoundException", message)
-}
-
-// WriteInvalidArgumentException writes an InvalidArgumentException error to the stream.
-func (s *SubscribeToShardEventStreamWriter) WriteInvalidArgumentException(message string) error {
-	return s.encoder.WriteErrorEvent("InvalidArgumentException", message)
+// WriteErrorEvent writes a modelled-exception frame carrying a service
+// error code — the mapped identity of the failure that ended the stream,
+// typed-decodable at the client.
+func (s *SubscribeToShardEventStreamWriter) WriteErrorEvent(code, message string) error {
+	return s.encoder.WriteErrorEvent(code, message)
 }
 
 // WriteEndEvent writes an end event to the stream to signal completion.

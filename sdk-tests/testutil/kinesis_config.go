@@ -8,11 +8,27 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 )
 
-func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Client, ts string) []TestResult {
+func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Client, kmsClient *kms.Client, ts string) []TestResult {
 	var results []TestResult
+
+	// Stream encryption resolves its key through the platform's KMS, so
+	// the encryption tests adopt a real created key.
+	keyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
+		Description: aws.String("kinesis stream-encryption test key"),
+	})
+	if err != nil {
+		return []TestResult{SetupFailResult("kinesis", "CreateKey setup failed: %v", err)}
+	}
+	keyARN := aws.ToString(keyResp.KeyMetadata.Arn)
+	defer func() {
+		_, _ = kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
+			KeyId: aws.String(keyARN), PendingWindowInDays: aws.Int32(7),
+		})
+	}()
 
 	streamName := kinesisStream(ts, "cfg")
 	if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
@@ -109,7 +125,7 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 		_, err := client.StartStreamEncryption(ctx, &kinesis.StartStreamEncryptionInput{
 			StreamName:     aws.String(streamName),
 			EncryptionType: types.EncryptionTypeKms,
-			KeyId:          aws.String(r.kinesisKMSKeyARN("12345678-1234-1234-1234-123456789012")),
+			KeyId:          aws.String(keyARN),
 		})
 		if err != nil {
 			return err
@@ -123,14 +139,22 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 		if descResp.StreamDescription.EncryptionType != types.EncryptionTypeKms {
 			return fmt.Errorf("EncryptionType: expected KMS, got %s", descResp.StreamDescription.EncryptionType)
 		}
-		return nil
+
+		// The key must exist: a key ARN that resolves to nothing answers
+		// the modelled KMS identity.
+		_, err = client.StartStreamEncryption(ctx, &kinesis.StartStreamEncryptionInput{
+			StreamName:     aws.String(streamName),
+			EncryptionType: types.EncryptionTypeKms,
+			KeyId:          aws.String(r.kinesisKMSKeyARN("00000000-0000-0000-0000-000000000000")),
+		})
+		return expectAWSErrorCode(err, "KMSNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("kinesis", "StopStreamEncryption", func() error {
 		_, err := client.StopStreamEncryption(ctx, &kinesis.StopStreamEncryptionInput{
 			StreamName:     aws.String(streamName),
 			EncryptionType: types.EncryptionTypeKms,
-			KeyId:          aws.String(r.kinesisKMSKeyARN("12345678-1234-1234-1234-123456789012")),
+			KeyId:          aws.String(keyARN),
 		})
 		if err != nil {
 			return err
@@ -158,7 +182,7 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 		_, err = client.StartStreamEncryption(ctx, &kinesis.StartStreamEncryptionInput{
 			StreamName:     aws.String(sn),
 			EncryptionType: types.EncryptionTypeKms,
-			KeyId:          aws.String(r.kinesisKMSKeyARN("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")),
+			KeyId:          aws.String(keyARN),
 		})
 		if err != nil {
 			return fmt.Errorf("start encryption: %v", err)
@@ -228,7 +252,7 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 	results = append(results, r.RunTest("kinesis", "UpdateAccountSettings", func() error {
 		resp, err := client.UpdateAccountSettings(ctx, &kinesis.UpdateAccountSettingsInput{
 			MinimumThroughputBillingCommitment: &types.MinimumThroughputBillingCommitmentInput{
-				Status: types.MinimumThroughputBillingCommitmentInputStatusDisabled,
+				Status: types.MinimumThroughputBillingCommitmentInputStatusEnabled,
 			},
 		})
 		if err != nil {
@@ -236,6 +260,31 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 		}
 		if resp.MinimumThroughputBillingCommitment == nil {
 			return fmt.Errorf("MinimumThroughputBillingCommitment is nil in response")
+		}
+		if resp.MinimumThroughputBillingCommitment.Status != types.MinimumThroughputBillingCommitmentOutputStatusEnabled {
+			return fmt.Errorf("response status: got %s, want ENABLED", resp.MinimumThroughputBillingCommitment.Status)
+		}
+		return nil
+	}))
+
+	// The persistence contract: Describe reports what Update answered —
+	// the write round-trips instead of vanishing into an echo stub. The
+	// setting resets to DISABLED so later runs describe a fresh account.
+	results = append(results, r.RunTest("kinesis", "DescribeAccountSettings_RoundTrip", func() error {
+		resp, err := client.DescribeAccountSettings(ctx, &kinesis.DescribeAccountSettingsInput{})
+		if err != nil {
+			return err
+		}
+		if resp.MinimumThroughputBillingCommitment == nil || resp.MinimumThroughputBillingCommitment.Status != types.MinimumThroughputBillingCommitmentOutputStatusEnabled {
+			return fmt.Errorf("describe after update: got %v, want ENABLED", resp.MinimumThroughputBillingCommitment)
+		}
+		_, err = client.UpdateAccountSettings(ctx, &kinesis.UpdateAccountSettingsInput{
+			MinimumThroughputBillingCommitment: &types.MinimumThroughputBillingCommitmentInput{
+				Status: types.MinimumThroughputBillingCommitmentInputStatusDisabled,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("reset to DISABLED: %v", err)
 		}
 		return nil
 	}))
@@ -306,17 +355,16 @@ func (r *TestRunner) kinesisResourcePolicyTests(ctx context.Context, client *kin
 			if err != nil {
 				return err
 			}
+			// A resource whose policy was deleted answers the
+			// operation's declared ResourceNotFoundException — the
+			// missing-policy case, never an empty-string success.
 			resp, err := client.GetResourcePolicy(ctx, &kinesis.GetResourcePolicyInput{
 				ResourceARN: aws.String(policyStreamARN),
 			})
 			if err != nil {
-				return err
+				return expectAWSErrorCode(err, "ResourceNotFoundException")
 			}
-			policy := aws.ToString(resp.Policy)
-			if policy != "" {
-				return fmt.Errorf("expected empty policy after delete, got: %s", policy)
-			}
-			return nil
+			return fmt.Errorf("expected ResourceNotFoundException after delete, got policy %q", aws.ToString(resp.Policy))
 		}))
 	} else {
 		results = append(results, TestResult{Service: "kinesis", TestName: "PutResourcePolicy", Status: "SKIP", Error: "policyStreamARN not available"})
@@ -371,6 +419,15 @@ func (r *TestRunner) kinesisAdvancedConfigTests(ctx context.Context, client *kin
 		return []TestResult{SetupFailResult("kinesis", "DescribeStream (warm) setup failed: %v", err)}
 	}
 
+	// UpdateStreamWarmThroughput is documented for on-demand data streams:
+	// switch the fixture's mode before the call under test.
+	if _, err := client.UpdateStreamMode(ctx, &kinesis.UpdateStreamModeInput{
+		StreamARN:         warmDesc.StreamDescription.StreamARN,
+		StreamModeDetails: &types.StreamModeDetails{StreamMode: types.StreamModeOnDemand},
+	}); err != nil {
+		return []TestResult{SetupFailResult("kinesis", "UpdateStreamMode (warm) setup failed: %v", err)}
+	}
+
 	if warmDesc != nil && warmDesc.StreamDescription != nil {
 		results = append(results, r.RunTest("kinesis", "UpdateStreamWarmThroughput", func() error {
 			resp, err := client.UpdateStreamWarmThroughput(ctx, &kinesis.UpdateStreamWarmThroughputInput{
@@ -382,6 +439,12 @@ func (r *TestRunner) kinesisAdvancedConfigTests(ctx context.Context, client *kin
 			}
 			if resp.WarmThroughput == nil {
 				return fmt.Errorf("WarmThroughput is nil")
+			}
+			if resp.WarmThroughput.TargetMiBps == nil {
+				return fmt.Errorf("WarmThroughput.TargetMiBps is nil")
+			}
+			if got := *resp.WarmThroughput.TargetMiBps; got != 256 {
+				return fmt.Errorf("WarmThroughput.TargetMiBps: expected 256, got %d", got)
 			}
 			return nil
 		}))

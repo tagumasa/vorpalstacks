@@ -233,7 +233,11 @@ func (s *DomainStore) TagDomainName(domainName string, inputTags map[string]stri
 	if domain.Tags == nil {
 		domain.Tags = []tags.Tag{}
 	}
-	domain.Tags = tags.Apply(domain.Tags, tags.MapToTags(inputTags))
+	merged := tags.Apply(domain.Tags, tags.MapToTags(inputTags))
+	if err := boundMergedTags(merged); err != nil {
+		return err
+	}
+	domain.Tags = merged
 	return s.Put("domain#"+domainName, domain)
 }
 

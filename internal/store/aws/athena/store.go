@@ -39,7 +39,7 @@ type Store struct {
 func NewStore(store storage.BasicStorage, accountID, region string) *Store {
 	return &Store{
 		BaseStore:  common.NewBaseStore(store.Bucket(workGroupBucketName(region)), "athena"),
-		TagStore:   common.NewTagStoreWithRegion(store, "athena", region),
+		TagStore:   common.NewTagStoreWithRegion(store, "athena", region, common.StandardTagBudget("InvalidRequestException")),
 		arnBuilder: svcarn.NewARNBuilder(accountID, region),
 		accountID:  accountID,
 		region:     region,
@@ -66,7 +66,7 @@ type WorkGroupStore struct {
 func NewWorkGroupStore(store storage.BasicStorage, accountID, region string) *WorkGroupStore {
 	s := &WorkGroupStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(workGroupBucketName(region)), "athena-workgroup"),
-		TagStore:   common.NewTagStoreWithRegion(store, "athena-workgroup", region),
+		TagStore:   common.NewTagStoreWithRegion(store, "athena-workgroup", region, common.StandardTagBudget("InvalidRequestException")),
 		arnBuilder: svcarn.NewARNBuilder(accountID, region),
 		accountID:  accountID,
 		region:     region,
@@ -783,7 +783,7 @@ type DataCatalogStore struct {
 func NewDataCatalogStore(store storage.BasicStorage, accountID, region string) *DataCatalogStore {
 	return &DataCatalogStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(dataCatalogBucketName(region)), "athena-data-catalog"),
-		TagStore:   common.NewTagStoreWithRegion(store, "athena-data-catalog", region),
+		TagStore:   common.NewTagStoreWithRegion(store, "athena-data-catalog", region, common.StandardTagBudget("InvalidRequestException")),
 		arnBuilder: svcarn.NewARNBuilder(accountID, region),
 	}
 }
@@ -1117,7 +1117,7 @@ type CapacityReservationStore struct {
 func NewCapacityReservationStore(store storage.BasicStorage, accountID, region string) *CapacityReservationStore {
 	return &CapacityReservationStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(capacityReservationBucketName(region)), "athena-capacity-reservation"),
-		TagStore:   common.NewTagStoreWithRegion(store, "athena-capacity-reservation", region),
+		TagStore:   common.NewTagStoreWithRegion(store, "athena-capacity-reservation", region, common.StandardTagBudget("InvalidRequestException")),
 		arnBuilder: svcarn.NewARNBuilder(accountID, region),
 		accountID:  accountID,
 		region:     region,

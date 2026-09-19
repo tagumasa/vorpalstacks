@@ -463,7 +463,10 @@ func (s *DynamoDBService) updateTableCore(ctx context.Context, store dbstore.Dyn
 	// read-committed, so folding it into the table write would not close
 	// the stale-reader window either. Item writes between the two commits
 	// write no entries for the deleted index: the table record they read no
-	// longer lists it.
+	// longer lists it. Both deletion sweeps — this one and the vector twin
+	// below — run ahead of the backfills: the metadata deletions have
+	// already committed and a re-sent request carries no deletion to
+	// re-run, so a backfill failure must not be able to strand the sweeps.
 	if len(deletedGSINames) > 0 {
 		err := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
 			for _, name := range deletedGSINames {
@@ -478,21 +481,14 @@ func (s *DynamoDBService) updateTableCore(ctx context.Context, store dbstore.Dyn
 		}
 	}
 
-	for _, g := range table.GlobalSecondaryIndexes {
-		if existingGSINames[g.IndexName] {
-			continue
-		}
-		s.backfillGSI(ctx, store, table.Name, g.IndexName)
-	}
-
-	// A deleted vector index's entries must not outlive it, and a newly
-	// created one is populated from the existing items — the same lifecycle
-	// the GSI block above applies, through the vector twin helpers.
+	// A deleted vector index's entries must not outlive it — the same
+	// lifecycle the GSI sweep above applies, through the vector twin
+	// helper, and under the same ordering rule: ahead of every backfill.
 	if len(vectorDeletedNames) > 0 {
 		err := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
 			for _, name := range vectorDeletedNames {
 				if err := txn.DeleteVectorEntriesForIndex(table.Name, name); err != nil {
-					return fmt.Errorf("delete vector index entries for %s: %w", name, err)
+					return fmt.Errorf("delete vector entries for %s: %w", name, err)
 				}
 			}
 			return nil
@@ -502,8 +498,21 @@ func (s *DynamoDBService) updateTableCore(ctx context.Context, store dbstore.Dyn
 		}
 	}
 
+	for _, g := range table.GlobalSecondaryIndexes {
+		if existingGSINames[g.IndexName] {
+			continue
+		}
+		if err := s.backfillGSI(ctx, store, table.Name, g.IndexName); err != nil {
+			return nil, err
+		}
+	}
+
+	// A newly created vector index is populated from the existing items —
+	// the vector twin of the GSI backfill above, through the same helper.
 	for _, name := range vectorCreatedNames {
-		s.backfillVectorIndex(ctx, store, table.Name, name)
+		if err := s.backfillVectorIndex(ctx, store, table.Name, name); err != nil {
+			return nil, err
+		}
 	}
 
 	return table, nil

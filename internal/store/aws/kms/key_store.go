@@ -29,7 +29,7 @@ func keyBucketName(region string) string {
 func NewKeyStore(store storage.BasicStorage, accountId, region string) *KeyStore {
 	return &KeyStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(keyBucketName(region)), "kms"),
-		TagStore:   common.NewTagStoreWithRegion(store, "kms", region),
+		TagStore:   common.NewTagStoreWithRegion(store, "kms", region, common.StandardTagBudget("ValidationException")),
 		arnBuilder: NewARNBuilder(accountId, region),
 	}
 }

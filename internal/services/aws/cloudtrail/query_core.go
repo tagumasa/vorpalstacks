@@ -174,7 +174,8 @@ func (s *CloudTrailService) startQueryCore(ctx context.Context, store cloudtrail
 	}
 	go func() {
 		defer func() {
-			if r := resilience.RecoverPanic("cloudtrail.StartQuery"); r != nil {
+			if r := recover(); r != nil {
+				resilience.LogPanic("cloudtrail.StartQuery", r)
 				s.finaliseQueryExecution(store, queryID, nil, nil, false,
 					fmt.Errorf("internal error: panic recovered: %v", r))
 			}

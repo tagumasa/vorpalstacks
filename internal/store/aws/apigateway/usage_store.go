@@ -459,7 +459,11 @@ func (s *UsageStore) TagApiKey(apiKeyId string, inputTags map[string]string) err
 	if apiKey.Tags == nil {
 		apiKey.Tags = []tags.Tag{}
 	}
-	apiKey.Tags = tags.Apply(apiKey.Tags, tags.MapToTags(inputTags))
+	merged := tags.Apply(apiKey.Tags, tags.MapToTags(inputTags))
+	if err := boundMergedTags(merged); err != nil {
+		return err
+	}
+	apiKey.Tags = merged
 	return s.Put("apikey#"+apiKeyId, apiKey)
 }
 
@@ -497,7 +501,11 @@ func (s *UsageStore) TagUsagePlan(usagePlanId string, inputTags map[string]strin
 	if usagePlan.Tags == nil {
 		usagePlan.Tags = []tags.Tag{}
 	}
-	usagePlan.Tags = tags.Apply(usagePlan.Tags, tags.MapToTags(inputTags))
+	merged := tags.Apply(usagePlan.Tags, tags.MapToTags(inputTags))
+	if err := boundMergedTags(merged); err != nil {
+		return err
+	}
+	usagePlan.Tags = merged
 	return s.Put("usageplan#"+usagePlanId, usagePlan)
 }
 

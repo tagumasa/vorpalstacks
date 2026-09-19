@@ -446,7 +446,7 @@ func (r *recordingUniversalKinesisInvoker) ListShards(context.Context, string, s
 	return nil, nil
 }
 
-func (r *recordingUniversalKinesisInvoker) PutRecord(_ context.Context, region, streamName, partitionKey string, data []byte) (string, error) {
+func (r *recordingUniversalKinesisInvoker) PutRecord(_ context.Context, region, streamName, partitionKey string, data []byte) (string, string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.putRegions == nil {
@@ -455,7 +455,7 @@ func (r *recordingUniversalKinesisInvoker) PutRecord(_ context.Context, region, 
 	r.putRegions[streamName] = region
 	r.partitionKey = partitionKey
 	r.data = data
-	return "seq-1", nil
+	return "seq-1", "", nil
 }
 
 func (r *recordingUniversalKinesisInvoker) CreateShardIterator(context.Context, string, string, string, string, string, *time.Time) (string, error) {

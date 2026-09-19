@@ -192,7 +192,7 @@ func NewSQSStore(store storage.BasicStorage, accountID, region, baseURL string) 
 		BaseStore:           common.NewBaseStore(store.Bucket(auxiliaryBucketName("sqs-queues", region)), "sqs-queues"),
 		messagesStore:       common.NewBaseStore(store.Bucket(auxiliaryBucketName("sqs-messages", region)), "sqs-messages"),
 		tasksStore:          common.NewBaseStore(store.Bucket(auxiliaryBucketName("sqs-move-tasks", region)), "sqs-move-tasks"),
-		TagStore:            common.NewTagStoreWithRegion(store, "sqs", region),
+		TagStore:            common.NewTagStoreWithRegion(store, "sqs", region, common.TagBudget{MaxKeys: common.MaxTagsPerResource, Exceeded: ErrTooManyTags}),
 		arnBuilder:          svcarn.NewARNBuilder(accountID, region),
 		accountID:           accountID,
 		region:              region,

@@ -138,7 +138,11 @@ func (b *EventBus) recover(ctx context.Context) error {
 
 func (b *EventBus) asyncWorker() {
 	defer b.wg.Done()
-	defer func() { resilience.RecoverAndRestart("eventbus asyncWorker", &b.wg, b.asyncWorker) }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("eventbus asyncWorker", r, &b.wg, b.asyncWorker)
+		}
+	}()
 	for {
 		select {
 		case <-b.stopCh:
@@ -154,7 +158,11 @@ func (b *EventBus) asyncWorker() {
 
 func (b *EventBus) directWorker() {
 	defer b.wg.Done()
-	defer func() { resilience.RecoverAndRestart("eventbus directWorker", &b.wg, b.directWorker) }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("eventbus directWorker", r, &b.wg, b.directWorker)
+		}
+	}()
 	for {
 		select {
 		case <-b.stopCh:
@@ -299,7 +307,11 @@ func (b *EventBus) deserializeEntry(entry *OutboxEntry) (Event, error) {
 
 func (b *EventBus) cleanupLoop() {
 	defer b.wg.Done()
-	defer func() { resilience.RecoverAndRestart("eventbus cleanupLoop", &b.wg, b.cleanupLoop) }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("eventbus cleanupLoop", r, &b.wg, b.cleanupLoop)
+		}
+	}()
 	ticker := time.NewTicker(CleanupInterval)
 	defer ticker.Stop()
 
@@ -337,7 +349,11 @@ func (b *EventBus) cleanupLoop() {
 // full interval remains the idle backstop.
 func (b *EventBus) requeuePendingLoop() {
 	defer b.wg.Done()
-	defer func() { resilience.RecoverAndRestart("eventbus requeuePendingLoop", &b.wg, b.requeuePendingLoop) }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("eventbus requeuePendingLoop", r, &b.wg, b.requeuePendingLoop)
+		}
+	}()
 	armed := PendingRequeueInterval
 	timer := time.NewTimer(armed)
 	defer timer.Stop()

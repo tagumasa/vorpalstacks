@@ -420,7 +420,11 @@ func (s *DynamoDBService) exportTableCore(ctx context.Context, reqCtx *request.R
 	s.bgWg.Add(1)
 	go func() {
 		defer s.bgWg.Done()
-		defer resilience.RecoverPanic("dynamodb export job")
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("dynamodb export job", r)
+			}
+		}()
 		s.runExportJob(store, job, export.ExportArn)
 	}()
 	return &exportTableResult{Export: export, ExportTime: exportTime}, nil
@@ -886,7 +890,11 @@ func (s *DynamoDBService) importTableCore(ctx context.Context, reqCtx *request.R
 	s.bgWg.Add(1)
 	go func() {
 		defer s.bgWg.Done()
-		defer resilience.RecoverPanic("dynamodb import job")
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("dynamodb import job", r)
+			}
+		}()
 		s.runImportJob(store, reqCtx.GetRegion(), job, imp.ImportArn)
 	}()
 	return &importTableResult{

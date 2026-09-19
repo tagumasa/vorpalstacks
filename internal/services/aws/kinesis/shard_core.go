@@ -1,8 +1,13 @@
 package kinesis
 
 import (
+	"encoding/base64"
+	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
+	"vorpalstacks/internal/common/request"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
 
@@ -15,15 +20,19 @@ const (
 	MaxListShardsResults     = 1000
 )
 
-// ListShardsResult carries a page of shards plus the effective page size
-// the Core applied, so the transport can emit the resumption token.
+// ListShardsResult carries a page of shards and its continuation state:
+// NextToken is the opaque envelope carrying the stream identification and
+// the page's last shard for the follow-up call; a following page exists
+// exactly when it is non-empty.
 type ListShardsResult struct {
-	Shards         []*kinesisstore.Shard
-	EffectiveLimit int
+	Shards    []*kinesisstore.Shard
+	NextToken string
 }
 
-// ListShardsInput is the transport-agnostic input for ListShards. The stream
-// identification is optional; NextToken is the decoded resumption shard ID.
+// ListShardsInput is the transport-agnostic input for ListShards. NextToken
+// is the raw wire member — the envelope parses in the Core so both planes
+// share one token definition; ExclusiveStartShardId is the model's explicit
+// resumption member.
 type ListShardsInput struct {
 	StreamName              string
 	StreamARN               string
@@ -32,6 +41,7 @@ type ListShardsInput struct {
 	MaxResults              int
 	HasMaxResults           bool
 	NextToken               string
+	ExclusiveStartShardId   string
 }
 
 // SplitShardInput is the transport-agnostic input for SplitShard.
@@ -66,10 +76,59 @@ type UpdateShardCountResult struct {
 	StreamARN         string
 }
 
-// listShardsCore validates the MaxResults window, resolves the optional
-// stream, verifies the creation timestamp when provided, and lists the
-// shards through the store filter.
-func (s *KinesisService) listShardsCore(store *kinesisstore.KinesisStore, input ListShardsInput) (ListShardsResult, error) {
+// ensureReshapableStream pins the documented preconditions the reshaping
+// trio shares: the operations are supported on provisioned-capacity streams
+// alone (an on-demand stream rejects), and the model declares
+// ResourceInUseException for any stream status other than ACTIVE.
+func ensureReshapableStream(stream *kinesisstore.Stream) error {
+	if stream.StreamModeDetails != nil && stream.StreamModeDetails.StreamMode == kinesisstore.StreamModeOnDemand {
+		return ErrInvalidArgument
+	}
+	if stream.StreamStatus != kinesisstore.StreamStatusActive {
+		return ErrResourceInUse
+	}
+	return nil
+}
+
+// encodeListShardsToken packs the continuation state into the opaque
+// envelope the model documents: the token "unambiguously identifies" the
+// stream — its name and creation timestamp disambiguate a deleted and
+// recreated stream — and carries the resumption position together with its
+// own issuance time, the field the documented 300-second validity window
+// is measured against.
+func encodeListShardsToken(streamName string, createdAt, issuedAtNanos int64, lastShardID string) string {
+	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s#%d#%s#%d", streamName, createdAt, lastShardID, issuedAtNanos)))
+}
+
+// decodeListShardsToken unpacks the continuation envelope. Anything that
+// does not carry the four fields is not one of this service's tokens.
+func decodeListShardsToken(token string) (streamName string, createdAt, issuedAtNanos int64, lastShardID string, ok bool) {
+	raw, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return "", 0, 0, "", false
+	}
+	parts := strings.Split(string(raw), "#")
+	if len(parts) != 4 {
+		return "", 0, 0, "", false
+	}
+	created, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return "", 0, 0, "", false
+	}
+	issued, err := strconv.ParseInt(parts[3], 10, 64)
+	if err != nil {
+		return "", 0, 0, "", false
+	}
+	return parts[0], created, issued, parts[2], true
+}
+
+// listShardsCore validates the MaxResults window, resolves the stream — by
+// name or ARN, or through the continuation envelope that carries the
+// identification itself — verifies the creation timestamp when provided,
+// validates the shard filter against the model's enum and its member
+// pairings, and pages with one over-fetch so the exact final page carries
+// no continuation token.
+func (s *KinesisService) listShardsCore(reqCtx *request.RequestContext, input ListShardsInput) (ListShardsResult, error) {
 	// The range trait window is enforced on the provided value, then the
 	// effective page applies the documented cap.
 	limit := input.MaxResults
@@ -84,45 +143,153 @@ func (s *KinesisService) listShardsCore(store *kinesisstore.KinesisStore, input 
 		limit = DefaultListShardsResults
 	}
 
-	streamName, err := s.resolveStreamNameOptionalCore(store, input.StreamName, input.StreamARN)
+	// The creation timestamp parses before storage is acquired; the value
+	// is compared against the resolved stream below.
+	if input.StreamCreationTimestamp != "" {
+		if _, err := parseTimestampMember(input.StreamCreationTimestamp); err != nil {
+			return ListShardsResult{}, err
+		}
+	}
+
+	// The resumption member is mutually exclusive with the request's own
+	// identification and positioning members: the model's NextToken
+	// documentation states StreamName and StreamCreationTimestamp cannot
+	// travel with it ("the latter unambiguously identifies the stream"),
+	// and ExclusiveStartShardId's own documentation states the same — an
+	// agreeing value is still a member the contract forbids.
+	if input.NextToken != "" && (input.StreamName != "" || input.StreamCreationTimestamp != "" || input.ExclusiveStartShardId != "") {
+		return ListShardsResult{}, ErrInvalidArgument
+	}
+
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return ListShardsResult{}, err
 	}
 
-	if streamName != "" {
-		stream, err := store.GetStream(streamName)
+	// The token carries the stream identification; a StreamARN travelling
+	// with it is addressing, not identification, so it must agree with the
+	// stream the token names.
+	resumeShardID := ""
+	var stream *kinesisstore.Stream
+	if input.NextToken != "" {
+		tokenStream, tokenCreated, tokenIssued, tokenShardID, ok := decodeListShardsToken(input.NextToken)
+		if !ok {
+			return ListShardsResult{}, ErrExpiredNextToken
+		}
+		// The documented validity window: a token older than it answers
+		// ExpiredNextTokenException whatever it names.
+		if time.Since(time.Unix(0, tokenIssued)) > kinesisstore.NextTokenValidity {
+			return ListShardsResult{}, ErrExpiredNextToken
+		}
+		if input.StreamARN != "" {
+			arnStream, err := store.GetStreamByARN(input.StreamARN)
+			if err != nil {
+				return ListShardsResult{}, s.mapStoreError(err)
+			}
+			if arnStream.StreamName != tokenStream {
+				return ListShardsResult{}, ErrInvalidArgument
+			}
+		}
+		resumeShardID = tokenShardID
+		stream, err = store.GetStream(tokenStream)
 		if err != nil {
 			return ListShardsResult{}, s.mapStoreError(err)
 		}
-		// Verify StreamCreationTimestamp matches when provided
-		// (used to disambiguate deleted+recreated streams)
-		if input.StreamCreationTimestamp != "" {
-			if unixTs, err := strconv.ParseFloat(input.StreamCreationTimestamp, 64); err == nil {
-				// Compare at second precision: stream.CreatedAt has nanosecond
-				// resolution but the client timestamp is epoch seconds.
-				if stream.CreatedAt.Unix() != int64(unixTs) {
-					return ListShardsResult{}, s.mapStoreError(kinesisstore.ErrStreamNotFound)
-				}
-			}
+		// A stream deleted and recreated under the same name is a
+		// different stream: the token's creation timestamp identifies its
+		// own, now-expired, generation.
+		if stream.CreatedAt.Unix() != tokenCreated {
+			return ListShardsResult{}, ErrExpiredNextToken
 		}
+	} else {
+		streamName, err := s.resolveStreamNameCore(store, input.StreamName, input.StreamARN)
+		if err != nil {
+			return ListShardsResult{}, err
+		}
+		stream, err = store.GetStream(streamName)
+		if err != nil {
+			return ListShardsResult{}, s.mapStoreError(err)
+		}
+		resumeShardID = input.ExclusiveStartShardId
 	}
 
-	shards, err := store.ListShards(streamName, input.ShardFilter, input.NextToken, limit)
+	// Verify StreamCreationTimestamp matches when provided (used to
+	// disambiguate deleted+recreated streams); the parse already happened
+	// before storage was acquired, and the identity check itself is the
+	// shared generation rule.
+	if err := s.verifyStreamGeneration(input.StreamCreationTimestamp, stream); err != nil {
+		return ListShardsResult{}, err
+	}
+
+	// The filter's Type is a required property of the ShardFilter and takes
+	// the model's enum; the paired members travel only with their types and
+	// their types require them. An absent ShardFilter member is the
+	// documented default type.
+	filter := input.ShardFilter
+	if filter == nil {
+		filter = &kinesisstore.ShardFilter{Type: "FROM_TRIM_HORIZON"}
+	} else if err := validateShardFilter(filter); err != nil {
+		return ListShardsResult{}, err
+	}
+
+	// One over-fetch past the effective page: a full result set answers
+	// hasMore exactly, so the final page — even one that fills the page
+	// exactly — carries no continuation token.
+	shards, err := store.ListShards(stream.StreamName, filter, resumeShardID, limit+1)
 	if err != nil {
 		return ListShardsResult{}, s.mapStoreError(err)
 	}
+	hasMore := len(shards) > limit
+	if hasMore {
+		shards = shards[:limit]
+	}
+	nextToken := ""
+	if hasMore && len(shards) > 0 {
+		nextToken = encodeListShardsToken(stream.StreamName, stream.CreatedAt.Unix(), time.Now().UnixNano(), shards[len(shards)-1].ShardID)
+	}
 
-	return ListShardsResult{Shards: shards, EffectiveLimit: limit}, nil
+	return ListShardsResult{Shards: shards, NextToken: nextToken}, nil
 }
 
 // splitShardCore splits a shard at the given starting hash key.
-func (s *KinesisService) splitShardCore(store *kinesisstore.KinesisStore, input SplitShardInput) (string, error) {
+func (s *KinesisService) splitShardCore(reqCtx *request.RequestContext, input SplitShardInput) (string, error) {
+	// NewStartingHashKey is a required member; the shared validator treats
+	// an empty member as unset, so the presence check comes first.
+	if input.ShardToSplit == "" || !validateShardId(input.ShardToSplit) || input.NewStartingHashKey == "" {
+		return "", ErrInvalidArgument
+	}
+	if !validateExplicitHashKey(input.NewStartingHashKey) {
+		return "", ErrInvalidArgument
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return "", err
+	}
+
 	streamName, err := s.resolveStreamNameCore(store, input.StreamName, input.StreamARN)
 	if err != nil {
 		return "", err
 	}
 
-	if input.ShardToSplit == "" {
+	stream, err := store.GetStream(streamName)
+	if err != nil {
+		return "", s.mapStoreError(err)
+	}
+	if err := ensureReshapableStream(stream); err != nil {
+		return "", err
+	}
+
+	// The new key must fall inside the parent shard's hash key range: the
+	// member documentation requires it, and the store lays the children out
+	// as [start, key-1] and [key, end] — a key at the starting boundary
+	// inverts the lower child. A shard's hash key range is fixed at
+	// creation, so this check cannot race a concurrent reshape.
+	parent, err := store.GetShard(streamName, input.ShardToSplit)
+	if err != nil {
+		return "", s.mapStoreError(err)
+	}
+	if parent.HashKeyRange == nil || !hashKeyWithinRange(input.NewStartingHashKey, parent.HashKeyRange) {
 		return "", ErrInvalidArgument
 	}
 
@@ -134,14 +301,27 @@ func (s *KinesisService) splitShardCore(store *kinesisstore.KinesisStore, input 
 }
 
 // mergeShardsCore merges two adjacent shards.
-func (s *KinesisService) mergeShardsCore(store *kinesisstore.KinesisStore, input MergeShardsInput) (string, error) {
+func (s *KinesisService) mergeShardsCore(reqCtx *request.RequestContext, input MergeShardsInput) (string, error) {
+	if input.ShardToMerge == "" || input.AdjacentShardToMerge == "" || !validateShardId(input.ShardToMerge) || !validateShardId(input.AdjacentShardToMerge) {
+		return "", ErrInvalidArgument
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return "", err
+	}
+
 	streamName, err := s.resolveStreamNameCore(store, input.StreamName, input.StreamARN)
 	if err != nil {
 		return "", err
 	}
 
-	if input.ShardToMerge == "" || input.AdjacentShardToMerge == "" {
-		return "", ErrInvalidArgument
+	stream, err := store.GetStream(streamName)
+	if err != nil {
+		return "", s.mapStoreError(err)
+	}
+	if err := ensureReshapableStream(stream); err != nil {
+		return "", err
 	}
 
 	if err := store.MergeShards(streamName, input.ShardToMerge, input.AdjacentShardToMerge); err != nil {
@@ -152,18 +332,39 @@ func (s *KinesisService) mergeShardsCore(store *kinesisstore.KinesisStore, input
 }
 
 // updateShardCountCore reshapes the stream to the target shard count.
-func (s *KinesisService) updateShardCountCore(store *kinesisstore.KinesisStore, input UpdateShardCountInput) (UpdateShardCountResult, error) {
+func (s *KinesisService) updateShardCountCore(reqCtx *request.RequestContext, input UpdateShardCountInput) (UpdateShardCountResult, error) {
+	if !validateShardCount(input.TargetShardCount) {
+		return UpdateShardCountResult{}, ErrInvalidArgument
+	}
+
+	// ScalingType is a required member whose enum carries the single value
+	// UNIFORM_SCALING — the SDK's own required-member validation masks this
+	// for typed clients, so the empty member reaches the Core only through
+	// untyped transports.
+	if input.ScalingType != "UNIFORM_SCALING" {
+		return UpdateShardCountResult{}, ErrInvalidArgument
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return UpdateShardCountResult{}, err
+	}
+
 	streamName, err := s.resolveStreamNameCore(store, input.StreamName, input.StreamARN)
 	if err != nil {
 		return UpdateShardCountResult{}, err
 	}
 
-	if !validateShardCount(input.TargetShardCount) {
-		return UpdateShardCountResult{}, ErrInvalidArgument
+	// CurrentShardCount reports the count at request time, before the
+	// reshaping runs — the documented example answers the pre-update count
+	// alongside the target (scaling a three-shard stream to six returns
+	// CurrentShardCount 3, TargetShardCount 6).
+	pre, err := store.GetStream(streamName)
+	if err != nil {
+		return UpdateShardCountResult{}, s.mapStoreError(err)
 	}
-
-	if input.ScalingType != "" && input.ScalingType != "UNIFORM_SCALING" {
-		return UpdateShardCountResult{}, ErrInvalidArgument
+	if err := ensureReshapableStream(pre); err != nil {
+		return UpdateShardCountResult{}, err
 	}
 
 	if err := store.UpdateShardCount(streamName, input.TargetShardCount); err != nil {
@@ -177,7 +378,7 @@ func (s *KinesisService) updateShardCountCore(store *kinesisstore.KinesisStore, 
 
 	return UpdateShardCountResult{
 		StreamName:        streamName,
-		CurrentShardCount: stream.ShardCount,
+		CurrentShardCount: pre.ShardCount,
 		TargetShardCount:  input.TargetShardCount,
 		StreamARN:         stream.StreamARN,
 	}, nil

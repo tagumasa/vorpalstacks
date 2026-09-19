@@ -35,7 +35,7 @@ var scheduledQueryRecordWriteMu sync.Mutex
 func NewScheduledQueryStore(store storage.BasicStorage, accountID, region string) *ScheduledQueryStore {
 	return &ScheduledQueryStore{
 		BaseStore:  common.NewBaseStore(store.Bucket(scheduledQueryBucketName(region)), "timestream-scheduled-query"),
-		TagStore:   common.NewTagStoreWithRegion(store, "timestream-scheduled-query", region),
+		TagStore:   common.NewTagStoreWithRegion(store, "timestream-scheduled-query", region, common.StandardTagBudget("ValidationException")),
 		arnBuilder: svcarn.NewARNBuilder(accountID, region),
 		accountID:  accountID,
 		region:     region,

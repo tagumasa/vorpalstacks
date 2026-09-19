@@ -111,7 +111,11 @@ func (s *CognitoService) startUserImportWorker(region string, job *cognitostore.
 	go func() {
 		defer s.bgWg.Done()
 		defer s.ensureTerminalImportState(region, job.UserPoolID, job.JobID)
-		defer resilience.RecoverPanic("cognito user import job")
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("cognito user import job", r)
+			}
+		}()
 		s.runUserImportJob(region, job.UserPoolID, job.JobID)
 	}()
 }

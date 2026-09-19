@@ -19,7 +19,7 @@ func newTestTagStore(t *testing.T) (*TagStore, func()) {
 	s, err := storage.Open(tmpDir)
 	require.NoError(t, err)
 
-	ts := NewTagStore(s, "test")
+	ts := NewTagStore(s, "test", TagBudget{})
 	cleanup := func() {
 		s.Close()
 		os.RemoveAll(tmpDir)
@@ -45,7 +45,7 @@ func TestNewTagStoreWithRegion(t *testing.T) {
 	require.NoError(t, err)
 	defer s.Close()
 
-	ts := NewTagStoreWithRegion(s, "svc", "us-east-1")
+	ts := NewTagStoreWithRegion(s, "svc", "us-east-1", StandardTagBudget("ValidationException"))
 	assert.NotNil(t, ts)
 }
 

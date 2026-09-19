@@ -133,7 +133,7 @@ func NewIotStore(store storage.BasicStorage, accountID, region string, onAction 
 		domainConfigsBase:      common.NewBaseStore(store.Bucket(bucketDomainConfigs+bp), bucketDomainConfigs),
 		violationEventsBase:    common.NewBaseStore(store.Bucket(bucketViolationEvents+bp), bucketViolationEvents),
 		indexingConfigBase:     common.NewBaseStore(store.Bucket(bucketIndexingConfig+bp), bucketIndexingConfig),
-		TagStore:               common.NewTagStoreWithRegion(store, "iot", region),
+		TagStore:               common.NewTagStoreWithRegion(store, "iot", region, common.StandardTagBudget("InvalidRequestException")),
 		storage:                store,
 		arnBuilder:             svcarn.NewARNBuilder(accountID, region),
 		accountID:              accountID,

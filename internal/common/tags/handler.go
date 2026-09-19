@@ -63,6 +63,13 @@ type TagHandlerConfig struct {
 	// aws: prefix, key/value length).
 	ValidateTagsFunc func(tags []Tag) error
 
+	// ValidateTagKeysFunc validates parsed tag keys before the removal is
+	// applied. If nil, no tag-key validation is performed. Services whose
+	// untag inputs carry a TagKeyList length bound (a request-level cap on
+	// the number of removable keys) check it here, mirroring
+	// ValidateTagsFunc on the add path.
+	ValidateTagKeysFunc func(tagKeys []string) error
+
 	// MapError maps handler errors to service-specific errors.
 	// Called on any non-nil error returned by the handler.
 	MapError func(error) error
@@ -156,6 +163,12 @@ func HandleUntag(ctx context.Context, req *request.ParsedRequest, cfg TagHandler
 
 	if cfg.Param.RequireTagKeys && len(tagKeys) == 0 {
 		return nil, applyMapError(cfg, &MissingTagKeysError{Param: cfg.Param.TagKeysParam})
+	}
+
+	if cfg.ValidateTagKeysFunc != nil && len(tagKeys) > 0 {
+		if err := cfg.ValidateTagKeysFunc(tagKeys); err != nil {
+			return nil, applyMapError(cfg, err)
+		}
 	}
 
 	if len(tagKeys) > 0 && cfg.UntagFunc != nil {

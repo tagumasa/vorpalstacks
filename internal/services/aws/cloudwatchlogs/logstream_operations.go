@@ -5,7 +5,9 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -349,7 +351,7 @@ func (s *LogsService) deliverSubscriptionEvents(store *logsstore.Store, region, 
 				logs.Warn("Failed to publish log delivery event", logs.Err(err))
 			}
 		} else {
-			s.deliverDirect(filter.DestinationArn, compressed)
+			s.deliverDirect(filter.DestinationArn, logGroupName, logStreamName, compressed)
 		}
 	}
 }
@@ -393,11 +395,11 @@ func (s *LogsService) buildSubscriptionPayload(
 // --- Direct delivery (non-bus fallback) ---
 
 // deliverDirect sends compressed subscription payload to Lambda or Kinesis.
-func (s *LogsService) deliverDirect(destArn string, compressed []byte) {
+func (s *LogsService) deliverDirect(destArn, logGroup, logStream string, compressed []byte) {
 	if arn.IsLambdaARN(destArn) {
 		s.invokeLambda(destArn, compressed)
 	} else if arn.IsKinesisARN(destArn) {
-		s.putToKinesis(destArn, compressed)
+		s.putToKinesis(destArn, logGroup, logStream, compressed)
 	}
 }
 
@@ -423,7 +425,7 @@ func (s *LogsService) invokeLambda(destArn string, compressed []byte) {
 }
 
 // putToKinesis delivers compressed log data to a Kinesis stream.
-func (s *LogsService) putToKinesis(destArn string, compressed []byte) {
+func (s *LogsService) putToKinesis(destArn, logGroup, logStream string, compressed []byte) {
 	if s.bus == nil {
 		return
 	}
@@ -445,6 +447,7 @@ func (s *LogsService) putToKinesis(destArn string, compressed []byte) {
 			logs.Err(err))
 		return
 	}
+
 	if len(shards) == 0 {
 		logs.Warn("Subscription filter Kinesis destination has no shards",
 			logs.String("stream", streamName),
@@ -452,15 +455,18 @@ func (s *LogsService) putToKinesis(destArn string, compressed []byte) {
 		return
 	}
 
-	var activeShardID string
+	// The probe guards writability: the destination must expose an open
+	// shard before the write is attempted. Hash placement, not the probe,
+	// chooses the shard the record lands on.
+	openShard := false
 	for _, shard := range shards {
 		if shard.SequenceNumberRangeEnd == "" {
-			activeShardID = shard.ShardID
+			openShard = true
 			break
 		}
 	}
 
-	if activeShardID == "" {
+	if !openShard {
 		logs.Warn("Subscription filter Kinesis destination has no open shard",
 			logs.String("stream", streamName),
 			logs.String("region", destRegion))
@@ -475,9 +481,23 @@ func (s *LogsService) putToKinesis(destArn string, compressed []byte) {
 	}
 
 	b64Envelope := base64.StdEncoding.EncodeToString(envelope)
-	if _, err := s.bus.KinesisInvoker().PutRecord(ctx, destRegion, streamName, activeShardID, []byte(b64Envelope)); err != nil {
+	if _, _, err := s.bus.KinesisInvoker().PutRecord(ctx, destRegion, streamName, subscriptionPartitionKey(logGroup, logStream), []byte(b64Envelope)); err != nil {
 		logs.Warn("Failed to deliver subscription filter log events to Kinesis", logs.Err(err))
 	}
+}
+
+// subscriptionPartitionKey derives the delivery's partition key from its
+// log-group/log-stream identity. AWS documents no partition key for the
+// subscription delivery, only the distribution default — "By default, the
+// stream filter distribution is by log stream" — so the key is data-derived
+// and stable: the SHA-256 hex digest of the group and stream names, bounded
+// well inside the partition-key length limit (a log stream name alone may
+// run to 512 characters). A retry of the same delivery therefore keeps its
+// shard, and distinct log streams spread across the destination's shards as
+// the documented distribution describes.
+func subscriptionPartitionKey(logGroup, logStream string) string {
+	digest := sha256.Sum256([]byte(logGroup + "\x00" + logStream))
+	return hex.EncodeToString(digest[:])
 }
 
 // --- GetLogEvents / FilterLogEvents ---

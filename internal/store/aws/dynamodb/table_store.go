@@ -29,7 +29,7 @@ type TableStore struct {
 func NewTableStore(store storage.BasicStorage, accountId, region string) *TableStore {
 	return &TableStore{
 		BaseStore:        common.NewBaseStore(store.Bucket(tableBucketName(region)), "dynamodb"),
-		TagStore:         common.NewTagStoreWithRegion(store, "dynamodb", region),
+		TagStore:         common.NewTagStoreWithRegion(store, "dynamodb", region, common.StandardTagBudget("com.amazon.coral.validate#ValidationException")),
 		arnBuilder:       svcarn.NewARNBuilder(accountId, region).DynamoDB(),
 		region:           region,
 		autoScalingStore: common.NewBaseStore(store.Bucket("dynamodb_autoscaling-"+region), "dynamodb"),

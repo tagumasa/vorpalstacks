@@ -186,8 +186,8 @@ func (s *scriptedKinesisStream) ListShards(_ context.Context, region, _ string) 
 	return s.shards, nil
 }
 
-func (s *scriptedKinesisStream) PutRecord(context.Context, string, string, string, []byte) (string, error) {
-	return "", fmt.Errorf("not implemented in test")
+func (s *scriptedKinesisStream) PutRecord(context.Context, string, string, string, []byte) (string, string, error) {
+	return "", "", fmt.Errorf("not implemented in test")
 }
 
 func (s *scriptedKinesisStream) latest() string {

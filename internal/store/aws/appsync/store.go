@@ -174,7 +174,7 @@ func NewAppSyncStore(store storage.BasicStorage, accountId, region string) *AppS
 		apiAssociationsStore:       common.NewBaseStore(store.Bucket(apiAssociationBucketName(region)), "appsync-api-associations"),
 		mergedApiAssociationsStore: common.NewBaseStore(store.Bucket(mergedApiAssociationBucketName(region)), "appsync-merged-api-associations"),
 		mergedApiAssocIndexStore:   common.NewBaseStore(store.Bucket(mergedApiAssocIndexBucketName(region)), "appsync-merged-api-assoc-index"),
-		TagStore:                   common.NewTagStoreWithRegion(store, "appsync", region),
+		TagStore:                   common.NewTagStoreWithRegion(store, "appsync", region, common.StandardTagBudget("BadRequestException")),
 		arnBuilder:                 b,
 		accountId:                  accountId,
 		region:                     region,

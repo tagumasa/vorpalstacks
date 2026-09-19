@@ -133,8 +133,11 @@ type KinesisInvoker interface {
 	// PutRecord writes to the stream in the given region — callers address a
 	// stream by its ARN and must pass the ARN's region so cross-region
 	// delivery reaches the correct regional store. An empty region addresses
-	// the server default region (callers with no region information at all).
-	PutRecord(ctx context.Context, region, streamName, partitionKey string, data []byte) (sequenceNumber string, err error)
+	// the server default region (callers with no region information at
+	// all). The return is the record's receipt: the sequence number and the
+	// shard the record landed on — the model's PutRecordOutput members,
+	// which consumers surface in their own responses.
+	PutRecord(ctx context.Context, region, streamName, partitionKey string, data []byte) (sequenceNumber, shardID string, err error)
 	// CreateShardIterator creates a shard iterator for the stream in the
 	// given region (empty = the server default region). The timestamp is used
 	// when iteratorType is AT_TIMESTAMP and may be nil otherwise.

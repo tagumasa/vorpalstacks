@@ -38,7 +38,7 @@ func NewSESv2Store(store storage.BasicStorage, accountID, region string) *SESv2S
 	bucketName := "sesv2-identities-" + region
 	return &SESv2Store{
 		BaseStore:        common.NewBaseStore(store.Bucket(bucketName), "sesv2-identities"),
-		TagStore:         common.NewTagStoreWithRegion(store, "sesv2", region),
+		TagStore:         common.NewTagStoreWithRegion(store, "sesv2", region, common.StandardTagBudget("BadRequestException")),
 		arnBuilder:       svcarn.NewARNBuilder(accountID, region),
 		accountID:        accountID,
 		region:           region,

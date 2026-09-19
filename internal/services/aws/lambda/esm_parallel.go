@@ -85,7 +85,11 @@ func runOrderedBatches(ctx context.Context, count int, keys []map[string]struct{
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			defer resilience.RecoverPanic("lambda esm parallel batch")
+			defer func() {
+				if r := recover(); r != nil {
+					resilience.LogPanic("lambda esm parallel batch", r)
+				}
+			}()
 			defer close(dones[i])
 			for j := 0; j < i; j++ {
 				if sharesAnyKey(keys[i], keys[j]) {

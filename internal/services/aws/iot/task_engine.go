@@ -81,7 +81,9 @@ func (e *taskEngine) Stop() {
 func (e *taskEngine) taskLoop(ctx context.Context) {
 	defer e.wg.Done()
 	defer func() {
-		resilience.RecoverAndRestart("iot taskEngine", &e.wg, func() { e.taskLoop(ctx) })
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("iot taskEngine", r, &e.wg, func() { e.taskLoop(ctx) })
+		}
 	}()
 
 	ticker := time.NewTicker(e.interval)

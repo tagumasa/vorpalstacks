@@ -13,11 +13,6 @@ enum StreamMode {
   STREAM_MODE_ON_DEMAND = 2;
 }
 
-// StreamStatus represents the status of a Kinesis stream.
-message StreamStatus {
-  string status = 1;
-}
-
 // HashKeyRange represents the hash key range for a Kinesis shard.
 message HashKeyRange {
   string starting_hash_key = 1;
@@ -40,31 +35,28 @@ message EnhancedMonitoring {
   repeated string shard_level_metrics = 1;
 }
 
-// Stream represents a Kinesis stream.
+// Stream represents a Kinesis stream. Members are grouped identity,
+// configuration, live state, timestamps — in that order, with dense
+// numbering; the persisted format is regenerated wholesale on storage-format
+// changes and carries no compatibility numbering forward.
 message Stream {
+  // Identity.
   string stream_name = 1;
   string stream_arn = 2;
-  string stream_status = 3;
-  StreamModeDetails stream_mode_details = 4;
-  int32 shard_count = 5;
-  int32 retention_period_hours = 6;
-  repeated EnhancedMonitoring enhanced_monitoring = 7;
-  string encryption_type = 8;
-  string key_id = 9;
-  int32 consumer_count = 10;
-  google.protobuf.Timestamp created_at = 11;
-  google.protobuf.Timestamp last_modified_at = 12;
-  int32 max_record_size_in_kib = 13;
-  int32 warm_throughput_mibps = 14;
-}
-
-// StreamSummary represents a summary of a Kinesis stream.
-message StreamSummary {
-  string stream_name = 1;
-  string stream_arn = 2;
-  string stream_status = 3;
-  StreamModeDetails stream_mode_details = 4;
-  int32 consumer_count = 5;
+  // Configuration.
+  StreamModeDetails stream_mode_details = 3;
+  int32 shard_count = 4;
+  int32 retention_period_hours = 5;
+  repeated EnhancedMonitoring enhanced_monitoring = 6;
+  string encryption_type = 7;
+  string key_id = 8;
+  int32 max_record_size_in_kib = 9;
+  int32 warm_throughput_mibps = 10;
+  // Live state.
+  string stream_status = 11;
+  int32 consumer_count = 12;
+  // Timestamps.
+  google.protobuf.Timestamp created_at = 13;
 }
 
 // Shard represents a Kinesis shard.
@@ -79,26 +71,17 @@ message Shard {
   google.protobuf.Timestamp created_at = 8;
 }
 
-// Record represents a Kinesis record.
+// Record represents a Kinesis record: identity and body first, the arrival
+// timestamp last.
 message Record {
   string sequence_number = 1;
-  google.protobuf.Timestamp approximate_arrival_timestamp = 2;
-  string data = 3;
-  string partition_key = 4;
-  string encryption_type = 5;
+  string data = 2;
+  string partition_key = 3;
+  google.protobuf.Timestamp approximate_arrival_timestamp = 4;
 }
 
 // Consumer represents a Kinesis consumer.
 message Consumer {
-  string consumer_name = 1;
-  string consumer_arn = 2;
-  string stream_arn = 3;
-  string consumer_status = 4;
-  google.protobuf.Timestamp consumer_creation_timestamp = 5;
-}
-
-// ConsumerSummary represents a summary of a Kinesis consumer.
-message ConsumerSummary {
   string consumer_name = 1;
   string consumer_arn = 2;
   string stream_arn = 3;

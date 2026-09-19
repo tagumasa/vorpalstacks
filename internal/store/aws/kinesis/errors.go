@@ -7,6 +7,12 @@ import (
 )
 
 var (
+	// InternalFailureEntryMessage is the fixed message the model assigns
+	// a PutRecords entry whose ErrorCode is InternalFailure: "An ErrorCode
+	// value of InternalFailure has the error message \"Internal Service
+	// Failure\"."
+	InternalFailureEntryMessage = "Internal Service Failure"
+
 	// ErrStreamNotFound is returned when the specified Kinesis stream
 	// does not exist.
 	ErrStreamNotFound = errors.New("stream not found")
@@ -52,6 +58,11 @@ var (
 	// ErrConsumerAlreadyExists is returned when attempting to create a consumer
 	// that already exists.
 	ErrConsumerAlreadyExists = errors.New("consumer already exists")
+
+	// ErrConsumerQuotaExceeded is returned when a stream already carries its
+	// full per-stream consumer quota; enforced inside the locked
+	// registration path so concurrent registrations cannot both pass.
+	ErrConsumerQuotaExceeded = errors.New("consumer quota exceeded")
 
 	// ErrInvalidParameter is returned when a parameter is not valid.
 	ErrInvalidParameter = common.ErrInvalidParameter

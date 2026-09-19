@@ -81,7 +81,11 @@ func (e *ScheduledQueryEngine) Stop() {
 
 func (e *ScheduledQueryEngine) run() {
 	defer e.wg.Done()
-	defer func() { resilience.RecoverAndRestart("timestream-scheduled-query engine", &e.wg, e.run) }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("timestream-scheduled-query engine", r, &e.wg, e.run)
+		}
+	}()
 
 	ticker := time.NewTicker(tsqTickerInterval)
 	defer ticker.Stop()

@@ -1,9 +1,10 @@
 package kinesis
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
-	"math"
-	"time"
+	"math/big"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
@@ -13,7 +14,19 @@ import (
 )
 
 // CreateStream creates a new Kinesis stream with the specified parameters.
-func (s *KinesisStore) CreateStream(streamName string, shardCount int32, streamMode StreamMode, maxRecordSizeInKiB int32, warmThroughputMiBps int32) (*Stream, error) {
+// The stream record, its ARN-index entry, every initial shard and the
+// create-time tag set are one transaction: a mid-creation failure leaves
+// no half-created stream behind for a retry to collide with, and no
+// tagless stream either — the tags commit with the resource or not at
+// all.
+func (s *KinesisStore) CreateStream(streamName string, shardCount int32, streamMode StreamMode, maxRecordSizeInKiB int32, warmThroughputMiBps int32, tags map[string]string) (*Stream, error) {
+	// The initial layout divides the hash-key space by the shard count
+	// below; a count below one is a caller programming error that must
+	// surface as an error, never reach the division.
+	if shardCount < 1 {
+		return nil, ErrInvalidShardCount
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -26,33 +39,68 @@ func (s *KinesisStore) CreateStream(streamName string, shardCount int32, streamM
 	stream.StreamARN = s.buildStreamARN(streamName)
 
 	if stream.StreamModeDetails.StreamMode == StreamModeOnDemand {
-		shardCount = 4
+		shardCount = DefaultOnDemandShardCount
 	}
 	stream.ShardCount = shardCount
 
-	if err := s.PutProto(key, StreamToProto(stream)); err != nil {
+	streamData, err := proto.Marshal(StreamToProto(stream))
+	if err != nil {
 		return nil, err
 	}
 
-	arnBucket := s.storage.Bucket("kinesis-streams-arn-" + s.region)
-	_ = arnBucket.Put([]byte("arn#"+stream.StreamARN), []byte(stream.StreamName))
-
+	shardData := make([][]byte, shardCount)
+	shardIDs := make([]string, shardCount)
+	// The hash-key space is the model's 128-bit domain: shards tile
+	// [0, 2^128-1] with inclusive ranges, evenly for power-of-two counts
+	// (AWS's own single-shard streams report [0, 2^128-1]), and the last
+	// shard's end is pinned to the space top so no value is unroutable.
+	space := MaxShardHashKeyInt()
+	width := new(big.Int).Add(space, big.NewInt(1))
+	width.Div(width, big.NewInt(int64(shardCount)))
 	for i := 0; i < int(shardCount); i++ {
 		shardID := fmt.Sprintf("shardId-%012d", i)
-		startingHashKey := uint64(i) * (math.MaxUint64 / uint64(shardCount))
-		endingHashKey := uint64(i+1)*(math.MaxUint64/uint64(shardCount)) - 1
+		startingHashKey := new(big.Int).Mul(width, big.NewInt(int64(i)))
+		endingHashKey := new(big.Int).Mul(width, big.NewInt(int64(i+1)))
+		endingHashKey.Sub(endingHashKey, big.NewInt(1))
 		if i == int(shardCount)-1 {
-			endingHashKey = math.MaxUint64
+			endingHashKey = space
 		}
 
-		shard := NewShard(shardID, streamName, fmt.Sprintf("%d", startingHashKey), fmt.Sprintf("%d", endingHashKey))
+		shard := NewShard(shardID, streamName, startingHashKey.String(), endingHashKey.String())
 		shard.SequenceNumberRange = &SequenceNumberRange{
 			StartingSequenceNumber: s.generateSequenceNumber(shardID),
 		}
-
-		if err := s.PutShard(shard); err != nil {
+		data, err := proto.Marshal(ShardToProto(shard))
+		if err != nil {
 			return nil, err
 		}
+		shardData[i] = data
+		shardIDs[i] = shardID
+	}
+
+	err = s.storage.Update(context.Background(), func(txn storage.Transaction) error {
+		streamsBucket := txn.Bucket(s.streamsBucketName())
+		if err := streamsBucket.Put([]byte(stream.StreamName), streamData); err != nil {
+			return err
+		}
+		arnBucket := txn.Bucket(s.arnIndexBucketName())
+		if err := arnBucket.Put([]byte("arn#"+stream.StreamARN), []byte(stream.StreamName)); err != nil {
+			return err
+		}
+		shardsBucket := txn.Bucket(s.shardsBucketName())
+		for i, data := range shardData {
+			key := fmt.Sprintf("%s#%s", stream.StreamName, shardIDs[i])
+			if err := shardsBucket.Put([]byte(key), data); err != nil {
+				return err
+			}
+		}
+		// The initial tag set commits with the stream itself: a tag
+		// failure leaves no half-created stream for a retry to collide
+		// with, and the create-time cap is the fresh set's own size.
+		return s.TagStore.TagInTxn(txn, streamName, tags, MaxTagsPerResource)
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return stream, nil
@@ -68,7 +116,7 @@ func (s *KinesisStore) GetStream(streamName string) (*Stream, error) {
 }
 
 func (s *KinesisStore) getStreamInTxn(txn storage.Transaction, streamName string) (*Stream, error) {
-	bucket := txn.Bucket("kinesis-streams-" + s.region)
+	bucket := txn.Bucket(s.streamsBucketName())
 	data, err := bucket.Get([]byte(streamName))
 	if err != nil {
 		return nil, err
@@ -84,8 +132,7 @@ func (s *KinesisStore) getStreamInTxn(txn storage.Transaction, streamName string
 }
 
 func (s *KinesisStore) updateStreamInTxn(txn storage.Transaction, stream *Stream) error {
-	stream.LastModifiedAt = time.Now().UTC()
-	bucket := txn.Bucket("kinesis-streams-" + s.region)
+	bucket := txn.Bucket(s.streamsBucketName())
 	data, err := proto.Marshal(StreamToProto(stream))
 	if err != nil {
 		return err
@@ -93,40 +140,54 @@ func (s *KinesisStore) updateStreamInTxn(txn storage.Transaction, stream *Stream
 	return bucket.Put([]byte(stream.StreamName), data)
 }
 
-// GetStreamByARN retrieves a Kinesis stream by its ARN.
+// GetStreamByARN retrieves a Kinesis stream by its ARN through the ARN
+// index — the single lookup path. The index is written by CreateStream
+// and removed by DeleteStream, so a miss is a not-found.
 func (s *KinesisStore) GetStreamByARN(streamARN string) (*Stream, error) {
-	normalizedARN := normalizeARN(streamARN, s.accountID)
+	normalizedARN := s.normalizeARN(streamARN)
 
-	arnBucket := s.storage.Bucket("kinesis-streams-arn-" + s.region)
-	arnKey := []byte("arn#" + normalizedARN)
-	if data, err := arnBucket.Get(arnKey); err == nil && data != nil {
-		streamName := string(data)
-		stream, err := s.GetStream(streamName)
-		if err == nil {
-			return stream, nil
-		}
-	}
-
-	streams, err := common.ListMatching[Stream](s.BaseStore, "", func(stream *Stream) bool {
-		return normalizeARN(stream.StreamARN, s.accountID) == normalizedARN
-	})
+	data, err := s.arnIndexBucket.Get([]byte("arn#" + normalizedARN))
 	if err != nil {
 		return nil, err
 	}
-	if len(streams) > 0 {
-		_ = arnBucket.Put(arnKey, []byte(streams[0].StreamName))
-		return streams[0], nil
+	if data == nil {
+		return nil, ErrStreamNotFound
 	}
-	return nil, ErrStreamNotFound
+	return s.GetStream(string(data))
 }
 
-// UpdateStream updates an existing Kinesis stream.
-func (s *KinesisStore) UpdateStream(stream *Stream) error {
-	stream.LastModifiedAt = time.Now().UTC()
+// UpdateStreamFields applies fn to the stream record under the store
+// mutex: the read, the mutation and the write are one critical section, so
+// a configuration change can neither write a concurrently deleted stream
+// back into existence nor revert a counter another mutation advanced. fn
+// returning an error aborts without writing.
+func (s *KinesisStore) UpdateStreamFields(streamName string, fn func(*Stream) error) (*Stream, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	stream, err := s.GetStream(streamName)
+	if err != nil {
+		return nil, err
+	}
+	if err := fn(stream); err != nil {
+		return nil, err
+	}
+	if err := s.updateStreamLocked(stream); err != nil {
+		return nil, err
+	}
+	return stream, nil
+}
+
+// updateStreamLocked persists the stream record; the caller must hold s.mu.
+func (s *KinesisStore) updateStreamLocked(stream *Stream) error {
 	return s.PutProto(stream.StreamName, StreamToProto(stream))
 }
 
-// DeleteStream deletes a Kinesis stream by its name.
+// DeleteStream deletes a Kinesis stream by its name. Deleting a stream
+// dissociates everything attached to it: the model states shards and tags
+// go with the stream, and the platform extends the same completeness to the
+// registered consumers and their tags, the attached resource policy, and
+// the stream's shard iterators — a recreated stream inherits nothing.
 func (s *KinesisStore) DeleteStream(streamName string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -161,6 +222,9 @@ func (s *KinesisStore) DeleteStream(streamName string) error {
 		return err
 	}
 	for _, consumer := range consumers {
+		if err := s.TagStore.Delete(consumer.ConsumerARN); err != nil {
+			return fmt.Errorf("failed to delete tags for consumer %s: %w", consumer.ConsumerARN, err)
+		}
 		if err := s.consumersStore.Delete(consumer.ConsumerARN); err != nil {
 			return fmt.Errorf("failed to delete consumer %s: %w", consumer.ConsumerARN, err)
 		}
@@ -170,8 +234,29 @@ func (s *KinesisStore) DeleteStream(streamName string) error {
 		return fmt.Errorf("failed to delete tags: %w", err)
 	}
 
-	arnBucket := s.storage.Bucket("kinesis-streams-arn-" + s.region)
-	_ = arnBucket.Delete([]byte("arn#" + normalizeARN(stream.StreamARN, s.accountID)))
+	if err := s.deleteResourcePolicyLocked(stream.StreamARN); err != nil {
+		return fmt.Errorf("failed to delete the resource policy: %w", err)
+	}
+
+	// Shard iterators are server-side read cursors the stream invalidates;
+	// they are keyed by ID, so the sweep walks the bucket and matches on the
+	// owning stream.
+	if err := s.iteratorsStore.ForEach(func(key string, value []byte) error {
+		var it ShardIterator
+		if err := json.Unmarshal(value, &it); err != nil {
+			return nil
+		}
+		if it.StreamName == streamName {
+			return s.iteratorsStore.Delete(key)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to sweep shard iterators: %w", err)
+	}
+
+	if err := s.arnIndexBucket.Delete([]byte("arn#" + s.normalizeARN(stream.StreamARN))); err != nil {
+		return fmt.Errorf("failed to delete the stream ARN index: %w", err)
+	}
 
 	return s.BaseStore.Delete(streamName)
 }

@@ -40,7 +40,7 @@ func NewStore(store storage.BasicStorage, accountID, region string) *Store {
 	return &Store{
 		BaseStore:    common.NewBaseStore(store.Bucket(parameterBucketName(region)), "ssm-parameters"),
 		historyStore: common.NewBaseStore(store.Bucket(historyBucketName(region)), "ssm-history"),
-		TagStore:     common.NewTagStoreWithRegion(store, "ssm", region),
+		TagStore:     common.NewTagStoreWithRegion(store, "ssm", region, common.StandardTagBudget("InvalidParameter")),
 		arnBuilder:   svcarn.NewARNBuilder(accountID, region),
 		accountID:    accountID,
 		region:       region,

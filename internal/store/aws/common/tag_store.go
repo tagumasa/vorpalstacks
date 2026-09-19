@@ -2,7 +2,9 @@ package common
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 
@@ -12,33 +14,126 @@ import (
 
 const indexSeparator = "\x00"
 
+// MaxTagsPerResource is the AWS-wide per-resource tag total most services
+// document ("at most 50 user-defined tags per resource"); stores whose
+// service documents the standard total pass it in their TagBudget.
+// A service documenting a different total passes its own constant instead —
+// Route 53's API reference, for one, caps a hosted zone or health check at
+// ten tags.
+const MaxTagsPerResource = types.MaxTagsPerResource
+
+// StandardTagBudget builds the budget of a service documenting the
+// AWS-wide fifty, answering an overflow with a wire error of the given
+// code — the service's own invalid-input identity, so the error needs no
+// per-path mapping on its way to the transport.
+func StandardTagBudget(code string) TagBudget {
+	return TagBudget{
+		MaxKeys:  MaxTagsPerResource,
+		Exceeded: NewAWSError(code, "Too many tags.", http.StatusBadRequest),
+	}
+}
+
+// ErrTagQuotaExceeded reports a tag write whose merged result would carry
+// more keys than the calling service's documented per-resource limit; the
+// check runs under the store's lock, so the bound holds against concurrent
+// writers. A TagBudget whose Exceeded member is set replaces this sentinel
+// with the service's own wire identity.
+var ErrTagQuotaExceeded = fmt.Errorf("tagstore: merged tag count exceeds the resource's tag limit")
+
+// TagBudget states a service's documented per-resource tag total and the
+// wire identity a write past that total answers with.
+type TagBudget struct {
+	// MaxKeys caps the merged tag count of one resource; zero leaves the
+	// merge path unbounded, for services that document no total.
+	MaxKeys int
+	// Exceeded is returned when a write passes MaxKeys — the service's own
+	// invalid-input identity, injected at construction so every write path
+	// (tag handler, resource creation, any future caller) answers with it
+	// without per-path mapping. Nil falls back to ErrTagQuotaExceeded.
+	Exceeded error
+}
+
 // TagStore manages resource tags using a Loki-style inverted index.
 // The main store holds tag maps keyed by resource key, while the index store
-// enables efficient lookup of resources by tag key or tag key-value pair.
+// enables efficient lookup of resources by tag key or key-value pair.
 type TagStore struct {
 	main  *BaseStore
 	index *BaseStore
-	mu    sync.Mutex
+	// mainName/indexName resolve the same buckets inside a caller's
+	// transaction for TagInTxn.
+	mainName  string
+	indexName string
+	// budget is the service's documented tag total and overflow identity,
+	// set at construction. Read under mu.
+	budget TagBudget
+	mu     sync.Mutex
 }
 
-// NewTagStore creates a TagStore with region-agnostic bucket names.
-func NewTagStore(store storage.BasicStorage, serviceName string) *TagStore {
+// NewTagStore creates a TagStore with region-agnostic bucket names and the
+// service's documented tag budget.
+func NewTagStore(store storage.BasicStorage, serviceName string, budget TagBudget) *TagStore {
 	mainName := serviceName + "-tags"
 	indexName := serviceName + "-tag-idx"
 	return &TagStore{
-		main:  NewBaseStore(store.Bucket(mainName), mainName),
-		index: NewBaseStore(store.Bucket(indexName), indexName),
+		main:      NewBaseStore(store.Bucket(mainName), mainName),
+		index:     NewBaseStore(store.Bucket(indexName), indexName),
+		mainName:  mainName,
+		indexName: indexName,
+		budget:    budget,
 	}
 }
 
-// NewTagStoreWithRegion creates a TagStore with region-scoped bucket names.
-func NewTagStoreWithRegion(store storage.BasicStorage, serviceName, region string) *TagStore {
+// NewTagStoreWithRegion creates a TagStore with region-scoped bucket names
+// and the service's documented tag budget.
+func NewTagStoreWithRegion(store storage.BasicStorage, serviceName, region string, budget TagBudget) *TagStore {
 	mainName := serviceName + "-tags-" + region
 	indexName := serviceName + "-tag-idx-" + region
 	return &TagStore{
-		main:  NewBaseStore(store.Bucket(mainName), mainName),
-		index: NewBaseStore(store.Bucket(indexName), indexName),
+		main:      NewBaseStore(store.Bucket(mainName), mainName),
+		index:     NewBaseStore(store.Bucket(indexName), indexName),
+		mainName:  mainName,
+		indexName: indexName,
+		budget:    budget,
 	}
+}
+
+// TagInTxn stages a FRESH resource's initial tag set on the caller's
+// transaction: the main entry plus the inverted-index segments for every
+// key. It exists so a resource's creation and its initial tags commit as
+// one unit — a tag failure then leaves no half-created resource for a
+// retry to collide with. The store's own mutex is deliberately not taken:
+// the calling path holds its resource-level lock and the resource does not
+// exist yet, so no concurrent tagger can interleave; stale index cleanup
+// is unnecessary for the same reason (a fresh key has no prior segments).
+// The merged-count bound TagWithLimit enforces applies to the initial set
+// alone here — a fresh resource has nothing to merge with.
+func (t *TagStore) TagInTxn(txn storage.Transaction, resourceKey string, tags map[string]string, maxKeys int) error {
+	if len(tags) == 0 {
+		return nil
+	}
+	if err := t.ValidateTags(tags); err != nil {
+		return err
+	}
+	if len(tags) > maxKeys {
+		return ErrTagQuotaExceeded
+	}
+	// The main entry is JSON-encoded, the same form BaseStore.Put writes,
+	// so List decodes it identically.
+	entryBytes, err := json.Marshal(tags)
+	if err != nil {
+		return err
+	}
+	if err := txn.Bucket(t.mainName).Put([]byte(resourceKey), entryBytes); err != nil {
+		return err
+	}
+	idxBucket := txn.Bucket(t.indexName)
+	for k, v := range tags {
+		idxKey := k + "=" + v + indexSeparator + resourceKey
+		if err := idxBucket.Put([]byte(idxKey), []byte{0x01}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // List returns all tags for the given resource as a key-value map.
@@ -104,6 +199,50 @@ func (t *TagStore) Tag(resourceKey string, newTags map[string]string) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	exceeded, err := t.enforceLimitLocked(resourceKey, newTags, t.budget.MaxKeys)
+	if err != nil {
+		return err
+	}
+	if exceeded {
+		return t.quotaExceeded()
+	}
+	return t.mergeLocked(resourceKey, newTags)
+}
+
+// enforceLimitLocked reports whether merging newTags onto the resource's
+// live set would carry more keys than maxKeys: existing keys the write
+// overwrites cost nothing. maxKeys zero or below disables the check. The
+// caller must hold t.mu.
+func (t *TagStore) enforceLimitLocked(resourceKey string, newTags map[string]string, maxKeys int) (bool, error) {
+	if maxKeys <= 0 {
+		return false, nil
+	}
+	existing, err := t.listUnlocked(resourceKey)
+	if err != nil {
+		return false, err
+	}
+	merged := len(existing)
+	for k := range newTags {
+		if _, ok := existing[k]; !ok {
+			merged++
+		}
+	}
+	return merged > maxKeys, nil
+}
+
+// quotaExceeded is the error a write past the documented total answers
+// with: the service-injected identity from the construction budget, or the
+// generic sentinel when the budget carries none.
+func (t *TagStore) quotaExceeded() error {
+	if t.budget.Exceeded != nil {
+		return t.budget.Exceeded
+	}
+	return ErrTagQuotaExceeded
+}
+
+// mergeLocked merges newTags into the resource's live set and rewrites the
+// main entry plus the touched index segments; the caller must hold t.mu.
+func (t *TagStore) mergeLocked(resourceKey string, newTags map[string]string) error {
 	existing, err := t.listUnlocked(resourceKey)
 	if err != nil {
 		return err
@@ -133,6 +272,8 @@ func (t *TagStore) Tag(resourceKey string, newTags map[string]string) error {
 // the inverted index are rewritten under one lock with a single main write.
 // Callers whose input is the desired end state use this instead of an
 // Untag/Tag pair, which needs a rollback path when the second write fails.
+// The input set is itself bounded by the store's documented cap: an
+// end-state write past the cap is a quota violation like any merge.
 func (t *TagStore) Replace(resourceKey string, tags map[string]string) error {
 	if err := t.ValidateTags(tags); err != nil {
 		return err
@@ -140,6 +281,10 @@ func (t *TagStore) Replace(resourceKey string, tags map[string]string) error {
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
+
+	if t.budget.MaxKeys > 0 && len(tags) > t.budget.MaxKeys {
+		return t.quotaExceeded()
+	}
 
 	existing, err := t.listUnlocked(resourceKey)
 	if err != nil {

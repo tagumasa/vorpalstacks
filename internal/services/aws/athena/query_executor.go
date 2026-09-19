@@ -15,7 +15,8 @@ import (
 
 func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, ctx context.Context, qe *athenastore.QueryExecution, bytesScannedCutoff int64) {
 	defer func() {
-		if r := resilience.RecoverPanic("executeQueryAsync"); r != nil {
+		if r := recover(); r != nil {
+			resilience.LogPanic("executeQueryAsync", r)
 			qe.Status.State = athenastore.QueryExecutionStateFailed
 			qe.Status.StateChangeReason = fmt.Sprintf("internal panic: %v", r)
 			qe.Status.CompletionDateTime = time.Now().UTC()

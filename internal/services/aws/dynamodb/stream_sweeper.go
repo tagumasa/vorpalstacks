@@ -21,7 +21,11 @@ func (s *DynamoDBService) ensureRetentionSweeper() {
 	s.streamSweepOnce.Do(func() {
 		s.bgWg.Add(1)
 		go func() {
-			defer func() { resilience.RecoverPanic("dynamodb retention sweep") }()
+			defer func() {
+				if r := recover(); r != nil {
+					resilience.LogPanic("dynamodb retention sweep", r)
+				}
+			}()
 			defer s.bgWg.Done()
 			ticker := time.NewTicker(retentionSweepInterval)
 			defer ticker.Stop()

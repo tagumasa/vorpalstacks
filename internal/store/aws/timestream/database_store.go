@@ -52,7 +52,7 @@ type Store struct {
 func NewStore(store storage.BasicStorage, accountID, region string) *Store {
 	return &Store{
 		BaseStore:  common.NewBaseStore(store.Bucket(databaseBucketName(region)), "timestream"),
-		TagStore:   common.NewTagStoreWithRegion(store, "timestream", region),
+		TagStore:   common.NewTagStoreWithRegion(store, "timestream", region, common.StandardTagBudget("ValidationException")),
 		storage:    store,
 		arnBuilder: svcarn.NewARNBuilder(accountID, region),
 		accountID:  accountID,

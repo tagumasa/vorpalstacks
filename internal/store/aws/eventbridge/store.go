@@ -82,7 +82,7 @@ func NewEventsStore(store storage.BasicStorage, accountID, region string) *Event
 		replaysStore:         common.NewBaseStore(store.Bucket("events-replays-"+region), "events-replays"),
 		connectionsStore:     common.NewBaseStore(store.Bucket("events-connections-"+region), "events-connections"),
 		apiDestinationsStore: common.NewBaseStore(store.Bucket("events-apidestinations-"+region), "events-apidestinations"),
-		TagStore:             common.NewTagStoreWithRegion(store, "events", region),
+		TagStore:             common.NewTagStoreWithRegion(store, "events", region, common.StandardTagBudget("ValidationException")),
 		arnBuilder:           svcarn.NewARNBuilder(accountID, region),
 		accountID:            accountID,
 		region:               region,

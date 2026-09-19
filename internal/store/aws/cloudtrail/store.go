@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -116,7 +117,7 @@ func NewCloudTrailStore(store storage.BasicStorage, accountID, region string) *C
 		BaseStore:           common.NewBaseStore(store.Bucket(trailBucketName(region)), "cloudtrail-trails"),
 		eventsStore:         common.NewBaseStore(store.Bucket(eventBucketName(region)), "cloudtrail-events"),
 		eventIDIndexStore:   common.NewBaseStore(store.Bucket(eventIDIndexBucketName(region)), "cloudtrail-event-id-index"),
-		TagStore:            common.NewTagStoreWithRegion(store, "cloudtrail", region),
+		TagStore:            common.NewTagStoreWithRegion(store, "cloudtrail", region, common.TagBudget{MaxKeys: common.MaxTagsPerResource, Exceeded: common.NewAWSError("TagsLimitExceededException", "Too many tags.", http.StatusBadRequest).SetQueryErrorCode("TagsLimitExceeded")}),
 		arnBuilder:          svcarn.NewARNBuilder(accountID, region),
 		accountID:           accountID,
 		region:              region,

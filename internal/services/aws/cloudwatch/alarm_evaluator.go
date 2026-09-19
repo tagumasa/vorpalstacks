@@ -124,7 +124,11 @@ func (e *alarmEvaluator) Stop() {
 // but do not halt the loop.
 func (e *alarmEvaluator) evalLoop(ctx context.Context, s *CloudWatchService) {
 	defer e.wg.Done()
-	defer func() { resilience.RecoverAndRestart("alarm evalLoop", &e.wg, func() { e.evalLoop(ctx, s) }) }()
+	defer func() {
+		if r := recover(); r != nil {
+			resilience.RestartAfterPanic("alarm evalLoop", r, &e.wg, func() { e.evalLoop(ctx, s) })
+		}
+	}()
 	ticker := time.NewTicker(e.interval)
 	defer ticker.Stop()
 
@@ -198,7 +202,11 @@ func (e *alarmEvaluator) evaluateMetricAlarms(ctx context.Context, s *CloudWatch
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			defer func() { resilience.RecoverPanic("cloudwatch alarm evaluator worker") }()
+			defer func() {
+				if r := recover(); r != nil {
+					resilience.LogPanic("cloudwatch alarm evaluator worker", r)
+				}
+			}()
 			for job := range jobs {
 				result := e.evaluateAlarmJob(region, job.alarm, metricStore)
 				if result == nil {

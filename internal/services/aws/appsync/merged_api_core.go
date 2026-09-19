@@ -149,7 +149,11 @@ func (s *AppSyncService) scheduleAssociationDeletion(store *appsyncstore.AppSync
 	}
 
 	go func() {
-		defer func() { resilience.RecoverPanic("appsync association async cleanup") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("appsync association async cleanup", r)
+			}
+		}()
 		time.Sleep(5 * time.Second)
 		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
 			// The failure marker is written through a value copy so the
@@ -237,7 +241,11 @@ func (s *AppSyncService) startSchemaMergeCore(store *appsyncstore.AppSyncStore, 
 	// MERGE_SUCCESS, writing through a value copy so the record handed to
 	// the caller is never mutated after the response has been serialised.
 	go func() {
-		defer func() { resilience.RecoverPanic("appsync schema merge async") }()
+		defer func() {
+			if r := recover(); r != nil {
+				resilience.LogPanic("appsync schema merge async", r)
+			}
+		}()
 		time.Sleep(2 * time.Second)
 		merged := *assoc
 		merged.SourceApiAssociationStatus = assocStatusMergeSuccess

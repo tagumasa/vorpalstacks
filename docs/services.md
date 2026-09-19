@@ -29,7 +29,7 @@
 | DynamoDB | Broad | No ION import/export |
 | EventBridge | Broad | No global endpoints or partner event sources; no ECS task or SSM Run Command targets |
 | IAM | Broad | No policy-simulator family beyond `SimulatePrincipalPolicy` and `ListPoliciesGrantingServiceAccess`; no organisations integration, GetHumanReadableSummary, or delegation request APIs |
-| Kinesis | Full | |
+| Kinesis | Full | No Channel API family (CreateChannel, DeleteChannel, DescribeChannel, ListChannels, UpdateChannel) |
 | KMS | Full | |
 | Lambda | Broad | No durable functions, code signing, capacity providers, recursive loop detection, function scaling, managed runtime updates, or resource-policy public-access rejection |
 | S3 | Broad | No analytics/intelligent-tiering configurations, object annotations, bucket ABAC, S3 Express, S3 Metadata tables, GetObjectTorrent, WriteGetObjectResponse, S3 Select (SelectObjectContent), or hardware-bound storage classes |
