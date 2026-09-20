@@ -235,17 +235,26 @@ type pageIterator struct {
 	hasMore bool
 }
 
-// newPageIterator creates a pageIterator with clamped MaxItems.
-func newPageIterator(store *BaseStore, opts ListOptions) *pageIterator {
+// NormalizeListOptions applies the shared page-size clamp: an unset or
+// non-positive MaxItems defaults to DefaultMaxItems and values above
+// AbsoluteMaxItems are capped. List/ListProto apply it through the page
+// iterator; index-backed list methods that page manually call it directly
+// so the clamp has one definition.
+func NormalizeListOptions(opts ListOptions) ListOptions {
 	if opts.MaxItems <= 0 {
 		opts.MaxItems = DefaultMaxItems
 	}
 	if opts.MaxItems > AbsoluteMaxItems {
 		opts.MaxItems = AbsoluteMaxItems
 	}
+	return opts
+}
+
+// newPageIterator creates a pageIterator with clamped MaxItems.
+func newPageIterator(store *BaseStore, opts ListOptions) *pageIterator {
 	return &pageIterator{
 		store:   store,
-		opts:    opts,
+		opts:    NormalizeListOptions(opts),
 		started: opts.Marker == "",
 	}
 }

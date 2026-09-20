@@ -1,6 +1,10 @@
 package sns
 
-import "testing"
+import (
+	"testing"
+
+	snsstore "vorpalstacks/internal/store/aws/sns"
+)
 
 func TestValidateDataProtectionPolicy(t *testing.T) {
 	valid := []string{
@@ -18,7 +22,7 @@ func TestValidateDataProtectionPolicy(t *testing.T) {
 		`{"Statement":`,
 		// Exceeds the 30,720-byte cap (31 one-character keys are enough
 		// once wrapped in JSON syntax overhead).
-		`{"pad":"` + string(make([]byte, maxTopicAttributeValueLength)) + `"}`,
+		`{"pad":"` + string(make([]byte, snsstore.MaxTopicAttributeValueLength)) + `"}`,
 	}
 	for _, policy := range invalid {
 		if err := validateDataProtectionPolicy(policy); err == nil {

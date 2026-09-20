@@ -1,19 +1,11 @@
 package sns
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"time"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	snsstore "vorpalstacks/internal/store/aws/sns"
-
-	"github.com/google/uuid"
 )
 
 // Subscribe creates a subscription to an SNS topic.
@@ -82,7 +74,7 @@ func (s *SNSService) SetSubscriptionAttributes(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	return s.setSubscriptionAttributesCore(store, SetSubscriptionAttributesInput{
+	return s.setSubscriptionAttributesCore(store, reqCtx, SetSubscriptionAttributesInput{
 		SubscriptionArn: request.GetParamLowerFirst(req.Parameters, "SubscriptionArn"),
 		AttributeName:   request.GetParamLowerFirst(req.Parameters, "AttributeName"),
 		AttributeValue:  request.GetParamLowerFirst(req.Parameters, "AttributeValue"),
@@ -116,67 +108,12 @@ func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *reque
 	})
 }
 
-// sendSubscriptionConfirmation sends a SubscriptionConfirmation message
-// to an HTTP/HTTPS endpoint. This is best-effort: if the endpoint is
-// unreachable the subscription simply stays in pending state until the
-// subscriber retries.
-func (s *SNSService) sendSubscriptionConfirmation(sub *snsstore.Subscription, region string) {
-	if region == "" {
-		region = "us-east-1"
-	}
-
-	payload := map[string]interface{}{
-		"Type":         "SubscriptionConfirmation",
-		"MessageId":    uuid.New().String(),
-		"Token":        sub.ConfirmationToken,
-		"TopicArn":     sub.TopicArn,
-		"Message":      fmt.Sprintf("You have chosen to subscribe to the topic %s.\nTo confirm the subscription, visit the SubscribeURL included in this message.", sub.TopicArn),
-		"SubscribeURL": fmt.Sprintf("https://sns.%s.amazonaws.com/?Action=ConfirmSubscription&TopicArn=%s&Token=%s", region, sub.TopicArn, sub.ConfirmationToken),
-		"Timestamp":    time.Now().UTC().Format(time.RFC3339),
-	}
-
-	body, err := json.Marshal(payload)
-	if err != nil {
-		logs.Warn("SNS: failed to marshal subscription confirmation",
-			logs.String("subscriptionArn", sub.SubscriptionArn),
-			logs.Err(err))
-		return
-	}
-
-	req, err := http.NewRequest("POST", sub.Endpoint, bytes.NewReader(body))
-	if err != nil {
-		logs.Warn("SNS: failed to create confirmation request",
-			logs.String("endpoint", sub.Endpoint),
-			logs.Err(err))
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-amz-sns-message-type", "SubscriptionConfirmation")
-	req.Header.Set("x-amz-sns-message-id", payload["MessageId"].(string))
-	req.Header.Set("x-amz-sns-topic-arn", sub.TopicArn)
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		logs.Warn("SNS: failed to send subscription confirmation",
-			logs.String("endpoint", sub.Endpoint),
-			logs.String("subscriptionArn", sub.SubscriptionArn),
-			logs.Err(err))
-		return
-	}
-	defer resp.Body.Close()
-
-	logs.Debug("SNS: subscription confirmation sent",
-		logs.String("endpoint", sub.Endpoint),
-		logs.Int("status", resp.StatusCode))
-}
-
 func buildSubscriptionList(items []*snsstore.Subscription) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(items))
 	for _, sub := range items {
 		subArn := sub.SubscriptionArn
 		if sub.PendingConfirmation {
-			subArn = "pending confirmation"
+			subArn = pendingConfirmationARN
 		}
 		result = append(result, map[string]interface{}{
 			"SubscriptionArn": subArn,

@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sns/types"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"vorpalstacks-sdk-tests/config"
 )
 
@@ -20,6 +21,8 @@ type snsTestContext struct {
 	ctx       context.Context
 	region    string
 	accountID string
+	endpoint  string
+	sqs       *sqs.Client
 }
 
 func (r *TestRunner) initSNS() (*snsTestContext, error) {
@@ -35,7 +38,25 @@ func (r *TestRunner) initSNS() (*snsTestContext, error) {
 		ctx:       context.Background(),
 		region:    r.region,
 		accountID: r.accountID,
+		endpoint:  r.endpoint,
 	}, nil
+}
+
+// sqsClient returns an SQS client on the same endpoint and region as the
+// SNS tests, for delivery-target fixtures.
+func (tc *snsTestContext) sqsClient() (*sqs.Client, error) {
+	if tc.sqs != nil {
+		return tc.sqs, nil
+	}
+	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+		Endpoint: tc.endpoint,
+		Region:   tc.region,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load SQS config: %w", err)
+	}
+	tc.sqs = sqs.NewFromConfig(cfg)
+	return tc.sqs, nil
 }
 
 func (tc *snsTestContext) uniqueName(prefix string) string {

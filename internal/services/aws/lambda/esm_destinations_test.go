@@ -52,7 +52,7 @@ type fakeSNSDestination struct {
 	messages []string
 }
 
-func (f *fakeSNSDestination) PublishToTopic(ctx context.Context, topicARN, message, subject string, attributes map[string]string) (string, error) {
+func (f *fakeSNSDestination) PublishToTopic(ctx context.Context, topicARN, message, subject string, messageAttributes map[string]invokers.SQSMessageAttribute) (string, error) {
 	f.messages = append(f.messages, message)
 	return "id", nil
 }

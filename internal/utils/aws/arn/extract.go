@@ -65,6 +65,22 @@ func ExtractTopicNameFromARN(arn string) string {
 	return resource
 }
 
+// ExtractPlatformApplicationFromARN extracts the platform and application
+// name from an SNS platform application ARN (resource form
+// app/<platform>/<name>). Either return is empty when the ARN is not an
+// SNS platform application ARN of exactly that shape.
+func ExtractPlatformApplicationFromARN(arn string) (platform, name string) {
+	_, service, _, _, resource := SplitARN(arn)
+	if service != "sns" || !strings.HasPrefix(resource, "app/") {
+		return "", ""
+	}
+	parts := strings.Split(strings.TrimPrefix(resource, "app/"), "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", ""
+	}
+	return parts[0], parts[1]
+}
+
 // ExtractLogGroupNameFromARN extracts the CloudWatch Logs log group name from an ARN.
 func ExtractLogGroupNameFromARN(arn string) string {
 	_, _, _, _, resource := SplitARN(arn)

@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+// AccountIDLength is the digit count of an AWS account ID: account IDs
+// are exactly twelve digits, the form every account-scoped principal
+// (and the ARN account field) is checked against.
+const AccountIDLength = 12
+
 // ParseARN parses an Amazon Resource Name string and returns a ParsedARN structure.
 // Returns an error if the ARN format is invalid.
 func ParseARN(arn string) (*ParsedARN, error) {
@@ -59,7 +64,7 @@ func IsValidRoleARN(arn string) bool {
 	if err != nil {
 		return false
 	}
-	if len(parsed.AccountID) != 12 {
+	if len(parsed.AccountID) != AccountIDLength {
 		return false
 	}
 	for _, r := range parsed.AccountID {

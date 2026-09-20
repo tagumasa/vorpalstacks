@@ -106,9 +106,13 @@ type SNSInvoker interface {
 	// returns.
 	GetTopicPolicy(ctx context.Context, topicARN string) (string, error)
 	ListSubscriptionsByTopic(ctx context.Context, topicARN string) ([]SubscriptionInfo, error)
-	PublishToTopic(ctx context.Context, topicARN string, message string, subject string, messageAttributes map[string]string) (messageID string, err error)
-	StoreMessage(ctx context.Context, key string, data any) error
-	DeleteStoredMessage(ctx context.Context, key string) error
+	// PublishToTopic publishes through the service's publish path, so
+	// cross-service publishes carry the same validation and delivery as the
+	// Publish API. messageAttributes carries typed attributes: the
+	// SQSMessageAttribute type is the invokers' protocol-neutral
+	// typed-attribute carrier (DataType plus StringValue or the decoded
+	// BinaryValue), named for its first consumer.
+	PublishToTopic(ctx context.Context, topicARN string, message string, subject string, messageAttributes map[string]SQSMessageAttribute) (messageID string, err error)
 }
 
 // SubscriptionInfo carries the fields of an SNS subscription that

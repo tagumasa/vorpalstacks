@@ -1,28 +1,18 @@
 package sns
 
 import (
+	"errors"
 	"fmt"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	snsstore "vorpalstacks/internal/store/aws/sns"
 )
 
 var (
-	// ErrInvalidParameter is returned when a parameter is invalid.
-	ErrInvalidParameter = awserrors.NewAWSError("InvalidParameter", "Invalid parameter", 400)
-	// ErrNotFound is returned when the requested resource is not found.
-	ErrNotFound = awserrors.NewAWSError("NotFound", "Resource not found", 404)
 	// ErrAuthorizationError is returned when the request is not authorized.
 	ErrAuthorizationError = awserrors.NewAWSError("AuthorizationError", "Authorization error", 403)
-	// ErrInternalError is returned when an internal server error occurs.
-	ErrInternalError = awserrors.NewAWSError("InternalError", "Internal server error", 500)
-	// ErrEndpointDisabled is returned when the endpoint is disabled.
-	ErrEndpointDisabled = awserrors.NewAWSError("EndpointDisabled", "Endpoint is disabled", 400)
 	// ErrFilterLimitExceeded is returned when the filter limit is exceeded.
 	ErrFilterLimitExceeded = awserrors.NewAWSError("FilterPolicyLimitExceeded", "Filter policy limit exceeded", 403)
-	// ErrThrottled is returned when the request is throttled.
-	ErrThrottled = awserrors.NewAWSError("Throttled", "Request was throttled", 429)
-	// ErrValidation is returned when validation fails.
-	ErrValidation = awserrors.NewAWSError("ValidationException", "Validation error", 400)
 	// ErrTopicNotFound is returned when the topic does not exist.
 	ErrTopicNotFound = awserrors.NewAWSError("NotFound", "Topic does not exist", 404)
 	// ErrSubscriptionNotFound is returned when the subscription does not exist.
@@ -31,20 +21,72 @@ var (
 	ErrPlatformAppNotFound = awserrors.NewAWSError("NotFound", "Platform application does not exist", 404)
 	// ErrEndpointNotFound is returned when the endpoint does not exist.
 	ErrEndpointNotFound = awserrors.NewAWSError("NotFound", "Endpoint does not exist", 404)
-	// ErrTagLimitExceeded is returned when the tag limit is exceeded.
-	ErrTagLimitExceeded = awserrors.NewAWSError("TagLimitExceeded", "Tag limit exceeded", 400)
-	// ErrTagPolicy is returned when there is a tag policy violation.
-	ErrTagPolicy = awserrors.NewAWSError("TagPolicy", "Tag policy violation", 400)
+	// ErrResourceNotFound is returned by the tag family when the resource
+	// ARN addresses no existing topic. The tag operations declare the
+	// model's ResourceNotFoundException shape, whose awsQueryError wire
+	// code is "ResourceNotFound" — a different code from the
+	// NotFoundException "NotFound" the rest of the API reports.
+	ErrResourceNotFound = awserrors.NewAWSError("ResourceNotFound", "Topic does not exist", 404)
+	// ErrTagLimitExceeded is returned when the tag limit is exceeded. The
+	// message is the model's own TagLimitExceededException documentation.
+	ErrTagLimitExceeded = awserrors.NewAWSError("TagLimitExceeded", "Can't add more than 50 tags to a topic.", 400)
+	// ErrTopicLimitExceeded is returned when the account already owns the
+	// maximum allowed number of topics for the type being created. The
+	// code and message are the model's TopicLimitExceededException
+	// (awsQueryError "TopicLimitExceeded", HTTP 403).
+	ErrTopicLimitExceeded = awserrors.NewAWSError("TopicLimitExceeded", "Indicates that the customer already owns the maximum allowed number of topics.", 403)
+	// ErrSubscriptionLimitExceeded is returned when the topic already
+	// carries the maximum allowed number of subscriptions. The code and
+	// message are the model's SubscriptionLimitExceededException
+	// (awsQueryError "SubscriptionLimitExceeded", HTTP 403).
+	ErrSubscriptionLimitExceeded = awserrors.NewAWSError("SubscriptionLimitExceeded", "Indicates that the customer already owns the maximum allowed number of subscriptions.", 403)
 	// ErrBatchEntryIdsNotDistinct is returned when two or more batch entries have the same ID.
 	ErrBatchEntryIdsNotDistinct = awserrors.NewAWSError("BatchEntryIdsNotDistinct", "Two or more batch entries have the same ID", 400)
+	// ErrEmptyBatchRequest is returned when a batch request carries no entries.
+	ErrEmptyBatchRequest = awserrors.NewAWSError("EmptyBatchRequest", "Batch request does not contain any entries", 400)
 	// ErrTooManyEntriesInBatch is returned when the batch request exceeds the
 	// entry limit.
-	ErrTooManyEntriesInBatch = awserrors.NewAWSError("TooManyEntriesInBatchRequest", fmt.Sprintf("Maximum number of entries per request are %d", maxBatchEntries), 400)
+	ErrTooManyEntriesInBatch = awserrors.NewAWSError("TooManyEntriesInBatchRequest", fmt.Sprintf("Maximum number of entries per request are %d", snsstore.MaxBatchEntries), 400)
+	// ErrBatchRequestTooLong is returned when the batch request's total size
+	// exceeds the platform's batch size ceiling.
+	ErrBatchRequestTooLong = awserrors.NewAWSError("BatchRequestTooLong", fmt.Sprintf("Total batch request size exceeds the maximum of %d", snsstore.MaxBatchTotalSize), 400)
 )
 
-// NewNotFoundException creates a new AWSError for not found errors.
-func NewNotFoundException(resource string) *awserrors.AWSError {
-	return awserrors.NewAWSError("NotFound", resource+" not found", 404)
+// mapStoreError is the single store→service error-translation seam: every
+// Core funnels its store errors through this table, so the wire identity
+// each store sentinel maps to is decided once, here, against the model's
+// awsQueryError traits — not per call site. The not-found family reports
+// the NotFoundException code "NotFound"; the platform already-exists
+// refusal and the token/label constraint violations report
+// "InvalidParameter" (the InvalidParameterException trait code); errors
+// the table does not know (storage failures) pass through unchanged.
+func mapStoreError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, snsstore.ErrTopicNotFound):
+		return ErrTopicNotFound
+	case errors.Is(err, snsstore.ErrSubscriptionNotFound):
+		return ErrSubscriptionNotFound
+	case errors.Is(err, snsstore.ErrPlatformApplicationNotFound):
+		return ErrPlatformAppNotFound
+	case errors.Is(err, snsstore.ErrEndpointNotFound):
+		return ErrEndpointNotFound
+	case errors.Is(err, snsstore.ErrPlatformApplicationAlreadyExists):
+		return NewInvalidParameter("Platform application already exists with the same name")
+	case errors.Is(err, snsstore.ErrTopicLimitExceeded):
+		return ErrTopicLimitExceeded
+	case errors.Is(err, snsstore.ErrSubscriptionLimitExceeded):
+		return ErrSubscriptionLimitExceeded
+	case errors.Is(err, snsstore.ErrFilterPolicyLimitExceeded):
+		return ErrFilterLimitExceeded
+	case errors.Is(err, snsstore.ErrPermissionLabelExists):
+		return NewInvalidParameter("Invalid parameter: Label already exists on the topic's policy")
+	case errors.Is(err, snsstore.ErrInvalidToken):
+		return NewInvalidParameter("Invalid parameter: Token")
+	default:
+		return err
+	}
 }
 
 // NewInvalidParameter creates an InvalidParameterException error carrying

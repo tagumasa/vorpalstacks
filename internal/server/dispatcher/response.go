@@ -200,6 +200,25 @@ func (d *Dispatcher) handleError(w http.ResponseWriter, r *http.Request, operati
 	awserrors.WriteAWSError(w, awserrors.ErrInternal, contentType)
 }
 
+// internalErrorCodes maps services whose models declare an internal-error
+// shape whose wire code differs from the dispatcher's generic
+// InternalFailure fallback. SNS's InternalErrorException carries the
+// awsQueryError code "InternalError" on every operation; services not
+// listed keep the fallback.
+var internalErrorCodes = map[string]string{
+	"sns": "InternalError",
+}
+
+// internalErrorForService returns the internal-error identity the named
+// service's own model declares, for the unhandled errors the generic
+// fallback would otherwise answer with InternalFailure.
+func internalErrorForService(serviceName string) *awserrors.AWSError {
+	if code, ok := internalErrorCodes[serviceName]; ok {
+		return awserrors.NewAWSError(code, "Internal server error", http.StatusInternalServerError)
+	}
+	return awserrors.ErrInternal
+}
+
 // handleErrorForService writes an error response for a request dispatched to
 // the named service. EC2 uses the EC2 Query protocol error envelope, whose
 // shape differs from the standard ErrorResponse the AWS SDKs' EC2
@@ -212,6 +231,16 @@ func (d *Dispatcher) handleErrorForService(w http.ResponseWriter, r *http.Reques
 		}
 		awserrors.WriteEC2QueryAWSError(w, awserrors.ErrInternal)
 		return
+	}
+	if err != nil && d.extractAWSError(err) == nil {
+		if _, custom := err.(awserrors.CustomJSONMarshaler); !custom {
+			// The request-level fallback below would log this as an
+			// unhandled error and answer the generic InternalFailure; keep
+			// the trace, then carry the service's own declared internal
+			// error identity to the wire.
+			logs.Error("Unhandled error", logs.String("type", fmt.Sprintf("%T", err)), logs.Err(err))
+			err = internalErrorForService(serviceName)
+		}
 	}
 	d.handleErrorForRequest(w, r, err)
 }

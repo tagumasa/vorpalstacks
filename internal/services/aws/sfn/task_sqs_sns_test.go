@@ -8,6 +8,7 @@ import (
 
 	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/utils/aws/queueurl"
 )
 
 // stubSQSInvoker records the SendMessage calls the integrations make.
@@ -38,9 +39,17 @@ func (s *stubSQSInvoker) ReceiveMessage(_ context.Context, _, _ string, _ int32,
 
 func (s *stubSQSInvoker) DeleteMessage(_ context.Context, _, _, _ string) error { return nil }
 
-// stubSNSInvoker records the stored messages the SNS integration writes.
+// stubSNSInvoker records the publishes the SNS integration makes.
 type stubSNSInvoker struct {
-	stored []map[string]interface{}
+	published []stubSNSPublish
+}
+
+// stubSNSPublish captures one PublishToTopic call.
+type stubSNSPublish struct {
+	topicArn   string
+	message    string
+	subject    string
+	attributes map[string]invokers.SQSMessageAttribute
 }
 
 func (s *stubSNSInvoker) GetTopic(_ context.Context, _ string) (string, error) {
@@ -55,17 +64,10 @@ func (s *stubSNSInvoker) ListSubscriptionsByTopic(_ context.Context, _ string) (
 	return nil, nil
 }
 
-func (s *stubSNSInvoker) PublishToTopic(_ context.Context, _, _, _ string, _ map[string]string) (string, error) {
+func (s *stubSNSInvoker) PublishToTopic(_ context.Context, topicArn, message, subject string, messageAttributes map[string]invokers.SQSMessageAttribute) (string, error) {
+	s.published = append(s.published, stubSNSPublish{topicArn: topicArn, message: message, subject: subject, attributes: messageAttributes})
 	return "msg-1", nil
 }
-
-func (s *stubSNSInvoker) StoreMessage(_ context.Context, _ string, data any) error {
-	m, _ := data.(map[string]interface{})
-	s.stored = append(s.stored, m)
-	return nil
-}
-
-func (s *stubSNSInvoker) DeleteStoredMessage(_ context.Context, _ string) error { return nil }
 
 func newSQSTestExecutor(t *testing.T, sqs *stubSQSInvoker) *Executor {
 	t.Helper()
@@ -123,6 +125,25 @@ func TestSQSSendMessageBodyAndTypedAttributes(t *testing.T) {
 	}
 }
 
+// TestSQSSendMessageRejectsInvalidBinaryAttribute pins that a BinaryValue
+// which is not valid base64 fails the invocation instead of degrading into
+// an empty attribute — the API plane rejects the same input, so the
+// integration must not deliver a valueless Binary attribute.
+func TestSQSSendMessageRejectsInvalidBinaryAttribute(t *testing.T) {
+	sqs := &stubSQSInvoker{}
+	e := newSQSTestExecutor(t, sqs)
+
+	input := `{"QueueUrl":"https://sqs.us-east-1.amazonaws.com/000000000000/q",` +
+		`"MessageBody":"x","MessageAttributes":{"blob":{"DataType":"Binary","BinaryValue":"not base64!"}}}`
+	_, err := e.executeSQSTask(context.Background(), "arn:aws:states:::sqs:sendMessage", input, nil)
+	if err == nil {
+		t.Fatal("invalid base64 BinaryValue must fail the invocation")
+	}
+	if len(sqs.sentBodies) != 0 {
+		t.Fatalf("nothing may be sent: %v", sqs.sentBodies)
+	}
+}
+
 // TestSNSPublishRequiresMessage pins that a parameter set without Message
 // is an invocation failure: Publish's Message is a required member, so
 // the topic never receives the serialised parameter object as the
@@ -139,15 +160,15 @@ func TestSNSPublishRequiresMessage(t *testing.T) {
 	if err == nil {
 		t.Fatal("Publish without Message must fail")
 	}
-	if len(sns.stored) != 0 {
-		t.Fatalf("nothing may be stored: %v", sns.stored)
+	if len(sns.published) != 0 {
+		t.Fatalf("nothing may be published: %v", sns.published)
 	}
 }
 
 // TestSNSPublishMessageAndTypedAttributes pins the message and attribute
 // contract: a structured Message serialises that value alone, and the
-// stored message carries the typed attributes (DataType with the value,
-// not a flattened string map).
+// publish carries the typed attributes (DataType with the value, not a
+// flattened string map).
 func TestSNSPublishMessageAndTypedAttributes(t *testing.T) {
 	bus := eventbus.NewEventBus()
 	sns := &stubSNSInvoker{}
@@ -162,13 +183,12 @@ func TestSNSPublishMessageAndTypedAttributes(t *testing.T) {
 		t.Fatalf("publish failed: %v", err)
 	}
 
-	if len(sns.stored) != 1 || sns.stored[0]["Message"] != `{"alert":"high"}` {
-		t.Fatalf("stored message = %v, want the structured Message alone", sns.stored)
+	if len(sns.published) != 1 || sns.published[0].message != `{"alert":"high"}` {
+		t.Fatalf("published message = %v, want the structured Message alone", sns.published)
 	}
-	attrs, _ := sns.stored[0]["MessageAttributes"].(map[string]interface{})
-	priority, _ := attrs["priority"].(snsAttributeTransport)
-	if priority.Type != "Number" || priority.StringValue != "1" {
-		t.Errorf("priority attribute = %+v, want the typed Number attribute", attrs["priority"])
+	priority, ok := sns.published[0].attributes["priority"]
+	if !ok || priority.DataType != "Number" || priority.StringValue != "1" {
+		t.Errorf("priority attribute = %+v, want the typed Number attribute", sns.published[0].attributes["priority"])
 	}
 }
 
@@ -279,11 +299,11 @@ func TestActivityResourceAnyPartition(t *testing.T) {
 // resource is a region-less states pseudo-ARN — so a queue in another
 // region is addressed, not silently run against the default region.
 func TestSQSRegionFollowsQueueURL(t *testing.T) {
-	if got := regionFromQueueURL("https://sqs.eu-west-2.amazonaws.com/000000000000/q"); got != "eu-west-2" {
-		t.Errorf("regionFromQueueURL = %q, want eu-west-2", got)
+	if got := queueurl.RegionFromQueueURL("https://sqs.eu-west-2.amazonaws.com/000000000000/q"); got != "eu-west-2" {
+		t.Errorf("RegionFromQueueURL = %q, want eu-west-2", got)
 	}
-	if got := regionFromQueueURL("not a url"); got != "" {
-		t.Errorf("regionFromQueueURL(garbage) = %q, want empty", got)
+	if got := queueurl.RegionFromQueueURL("not a url"); got != "" {
+		t.Errorf("RegionFromQueueURL(garbage) = %q, want empty", got)
 	}
 
 	sqs := &stubSQSInvoker{}

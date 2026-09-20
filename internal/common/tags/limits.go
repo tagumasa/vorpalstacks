@@ -102,6 +102,28 @@ func CheckTags(tagList []Tag, limits TagLimits) (Violation, string) {
 	return OK, ""
 }
 
+// CheckTagKeys validates a bare key list (the UntagResource removal form)
+// against the limits' key-side constraints alone: reserved prefix, then key
+// length, in CheckTags's canonical order. The count bound deliberately does
+// not apply — it budgets the tags stored on one resource, not the size of a
+// removal request — and values do not exist in this form. Alongside the
+// violation it returns the offending key, or the empty string when the list
+// passes.
+func CheckTagKeys(keys []string, limits TagLimits) (Violation, string) {
+	for _, key := range keys {
+		if violatesReservedPrefix(key, limits) {
+			return ReservedTagKey, key
+		}
+		if limits.MinKeyLength > 0 && utf8.RuneCountInString(key) < limits.MinKeyLength {
+			return TagKeyTooShort, key
+		}
+		if limits.MaxKeyLength > 0 && utf8.RuneCountInString(key) > limits.MaxKeyLength {
+			return TagKeyTooLong, key
+		}
+	}
+	return OK, ""
+}
+
 // CheckStringTags validates a string-map tag form against the limits,
 // using the same canonical order as CheckTags. Map iteration order is
 // normalised by walking the keys in sorted order so the reported

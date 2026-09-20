@@ -1197,3 +1197,16 @@ func TestExtractAPIGatewayFunctionRef(t *testing.T) {
 		})
 	}
 }
+
+// TestSNSBuilderSubscription pins the SNS subscription ARN form: the
+// subscription's ARN is the topic's ARN extended with the subscription's
+// identifier, not a standalone sns resource.
+func TestSNSBuilderSubscription(t *testing.T) {
+	b := NewARNBuilder("123456789012", "us-east-1")
+	topic := b.SNS().Topic("orders")
+	got := b.SNS().Subscription(topic, "11111111-2222-3333-4444-555555555555")
+	want := topic + ":11111111-2222-3333-4444-555555555555"
+	if got != want {
+		t.Fatalf("SNSBuilder.Subscription = %q, want %q", got, want)
+	}
+}

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
+
 	"strconv"
 	"strings"
 	"time"
@@ -14,10 +14,10 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common/invokers"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/queueurl"
 )
 
 func (e *Executor) executeLambdaTask(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.TaskState, input string) (string, error) {
@@ -64,20 +64,6 @@ func lambdaFunctionError(payload []byte) (string, string) {
 		}
 	}
 	return "Lambda.Unknown", cause
-}
-
-// regionFromQueueURL extracts the region from an SQS queue URL host
-// (https://sqs.<region>.amazonaws.com/<account>/<name>).
-func regionFromQueueURL(queueURL string) string {
-	u, err := url.Parse(queueURL)
-	if err != nil {
-		return ""
-	}
-	parts := strings.Split(u.Hostname(), ".")
-	if len(parts) >= 2 && parts[0] == "sqs" {
-		return parts[1]
-	}
-	return ""
 }
 
 // integrationAction extracts the API action segment from an integration
@@ -130,7 +116,7 @@ func (r *resolvedInvocation) sqsQueueParams(ctx context.Context, e *Executor, pa
 // cannot drift from the sent one.
 func (e *Executor) resolveSqsQueueURL(ctx context.Context, params map[string]interface{}) (queueURL, region string, err error) {
 	queueURL = getStr(params, "QueueUrl")
-	region = regionFromQueueURL(queueURL)
+	region = queueurl.RegionFromQueueURL(queueURL)
 	if region == "" {
 		region = e.region
 	}
@@ -237,11 +223,15 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, input string, reso
 		return "", fmt.Errorf("SQS SendMessage requires a MessageBody")
 	}
 
+	typedAttrs, err := extractTypedAttrs(inputData["MessageAttributes"])
+	if err != nil {
+		return "", err
+	}
 	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, messageBody, invokers.SQSSendOptions{
 		DelaySeconds:           getInt64FromInput(inputData, "DelaySeconds"),
 		MessageGroupID:         getStr(inputData, "MessageGroupId"),
 		MessageDeduplicationID: getStr(inputData, "MessageDeduplicationId"),
-		TypedMessageAttributes: extractTypedAttrs(inputData["MessageAttributes"]),
+		TypedMessageAttributes: typedAttrs,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to send SQS message: %w", err)
@@ -306,51 +296,23 @@ func (e *Executor) executeSNSPublish(ctx context.Context, resource, input string
 	}
 
 	// Message attributes keep their typed form: DataType plus
-	// StringValue or the Base64-decoded BinaryValue. The delivery event
-	// carries them as raw JSON in the SNS attribute transport shape.
-	typedAttrs := extractTypedAttrs(inputData["MessageAttributes"])
-	attrTransport := make(map[string]json.RawMessage, len(typedAttrs))
-	storedAttrs := make(map[string]interface{}, len(typedAttrs))
-	for k, v := range typedAttrs {
-		transport := snsAttributeTransport{Type: v.DataType, StringValue: v.StringValue, BinaryValue: v.BinaryValue}
-		raw, terr := json.Marshal(transport)
-		if terr != nil {
-			continue
-		}
-		attrTransport[k] = raw
-		storedAttrs[k] = transport
+	// StringValue or the Base64-decoded BinaryValue — the publish path
+	// validates and delivers them like API message attributes.
+	typedAttrs, err := extractTypedAttrs(inputData["MessageAttributes"])
+	if err != nil {
+		return "", err
 	}
 
-	msgID := uuid.New().String()
-	msg := map[string]interface{}{
-		"MessageId":         msgID,
-		"TopicArn":          topicArn,
-		"Subject":           subject,
-		"Message":           message,
-		"MessageAttributes": storedAttrs,
-	}
-
-	if err := e.bus.SNSInvoker().StoreMessage(ctx, topicArn+":messages:"+msgID, msg); err != nil {
-		return "", fmt.Errorf("failed to store SNS message: %w", err)
-	}
-
-	// The bus was nil-checked by the caller (executeSNSTask); publishing
-	// is fire-and-forget — a delivery failure logs, it does not fail the
-	// state, the message is already stored.
-	snsEvt := &eventbus.SNSDeliveryEvent{
-		TopicARN:          topicArn,
-		MessageID:         msgID,
-		Message:           message,
-		Subject:           subject,
-		MessageAttributes: attrTransport,
-	}
-	snsEvt.Region = e.regionOfARN(topicArn)
-	if err := e.bus.Publish(context.Background(), snsEvt); err != nil {
-		logs.Warn("failed to publish SNS event from Step Functions", logs.Err(err))
+	// The publish rides the SNS invoker's publish path: the message gains
+	// the same validation, message ID scheme, envelope and fan-out as a
+	// Publish API call.
+	messageID, err := e.bus.SNSInvoker().PublishToTopic(ctx, topicArn, message, subject, typedAttrs)
+	if err != nil {
+		return "", fmt.Errorf("failed to publish to SNS topic: %w", err)
 	}
 
 	result := map[string]interface{}{
-		"MessageId": msgID,
+		"MessageId": messageID,
 	}
 
 	resultJSON, err := json.Marshal(result)
@@ -1227,26 +1189,20 @@ func isActivityResource(resource string) bool {
 	return err == nil && parsed.Service == "states" && strings.HasPrefix(parsed.Resource, "activity:")
 }
 
-// snsAttributeTransport is the raw-JSON attribute shape the SNS delivery
-// event carries on the bus (the SNS store's attribute serialisation).
-type snsAttributeTransport struct {
-	Type        string `json:"type"`
-	StringValue string `json:"string_value,omitempty"`
-	BinaryValue []byte `json:"binary_value,omitempty"`
-}
-
 // extractTypedAttrs renders integration MessageAttributes parameters to
 // the typed attribute value: DataType ("String", "Number" or "Binary"),
 // StringValue for the value types, and BinaryValue decoded from the
 // Base64 transport the APIs define. A plain string value is the String
-// shorthand.
-func extractTypedAttrs(raw interface{}) map[string]invokers.SQSMessageAttribute {
+// shorthand. A BinaryValue that is not valid base64 is an error — the
+// API plane rejects the same input, so the integration must not degrade
+// it into an empty attribute.
+func extractTypedAttrs(raw interface{}) (map[string]invokers.SQSMessageAttribute, error) {
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
 	m, ok := raw.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	result := make(map[string]invokers.SQSMessageAttribute, len(m))
 	for k, v := range m {
@@ -1260,9 +1216,11 @@ func extractTypedAttrs(raw interface{}) map[string]invokers.SQSMessageAttribute 
 				typed.StringValue = sv
 			}
 			if bv, ok := attr["BinaryValue"].(string); ok && bv != "" {
-				if decoded, derr := base64.StdEncoding.DecodeString(bv); derr == nil {
-					typed.BinaryValue = decoded
+				decoded, err := base64.StdEncoding.DecodeString(bv)
+				if err != nil {
+					return nil, fmt.Errorf("MessageAttributes.%s.BinaryValue is not valid base64: %w", k, err)
 				}
+				typed.BinaryValue = decoded
 			}
 			result[k] = typed
 		case string:
@@ -1270,9 +1228,9 @@ func extractTypedAttrs(raw interface{}) map[string]invokers.SQSMessageAttribute 
 		}
 	}
 	if len(result) == 0 {
-		return nil
+		return nil, nil
 	}
-	return result
+	return result, nil
 }
 
 func getInt64FromInput(m map[string]interface{}, key string) int64 {

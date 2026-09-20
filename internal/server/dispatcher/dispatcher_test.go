@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/api"
@@ -369,4 +370,29 @@ func TestCloudFrontPayloadOperations(t *testing.T) {
 
 func strPtr(s string) *string {
 	return &s
+}
+
+// TestPerServiceErrorCodes pins the service-specific wire identities the
+// dispatcher's fallbacks carry: SNS's denial reports the model's
+// AuthorizationError and its unhandled errors the model's InternalError,
+// while an unlisted service keeps the generic AccessDeniedException /
+// InternalFailure fallbacks.
+func TestPerServiceErrorCodes(t *testing.T) {
+	denied := accessDeniedErrorForService("sns")
+	if denied.Code != "AuthorizationError" || denied.HTTPStatus != http.StatusForbidden {
+		t.Fatalf("sns denial = (%q, %d), want AuthorizationError/403", denied.Code, denied.HTTPStatus)
+	}
+	generic := accessDeniedErrorForService("not-a-service")
+	if generic.Code != "AccessDeniedException" {
+		t.Fatalf("unlisted denial = %q, want the generic AccessDeniedException", generic.Code)
+	}
+
+	internal := internalErrorForService("sns")
+	if internal.Code != "InternalError" || internal.HTTPStatus != http.StatusInternalServerError {
+		t.Fatalf("sns internal = (%q, %d), want InternalError/500", internal.Code, internal.HTTPStatus)
+	}
+	fallback := internalErrorForService("sqs")
+	if fallback != awserrors.ErrInternal {
+		t.Fatalf("unlisted internal = %v, want the generic ErrInternal fallback", fallback)
+	}
 }

@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"strings"
 
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/invokers"
@@ -14,6 +12,7 @@ import (
 	"vorpalstacks/internal/eventbus"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/internal/utils/aws/queueurl"
 )
 
 // Universal-target delivery. A universal target's Arn carries the form
@@ -88,26 +87,6 @@ func scheduleDeliveryRegion(schedule *schedulerstore.Schedule) string {
 		return schedule.Region
 	}
 	return defaults.DefaultRegion
-}
-
-// regionFromQueueURL extracts the region an AWS-form SQS queue URL embeds
-// in its host (https://sqs.<region>.amazonaws.com/...). Platform queue
-// URLs are host-local and embed none; the caller then falls back to the
-// schedule's region.
-func regionFromQueueURL(queueURL string) string {
-	u, err := url.Parse(queueURL)
-	if err != nil {
-		return ""
-	}
-	host := u.Hostname()
-	if !strings.HasPrefix(host, "sqs.") {
-		return ""
-	}
-	rest := strings.TrimSuffix(strings.TrimPrefix(host, "sqs."), ".amazonaws.com")
-	if rest == "" || strings.Contains(rest, ".") {
-		return ""
-	}
-	return rest
 }
 
 // universalRequest unmarshals the universal target's Input into the
@@ -285,7 +264,7 @@ func (e *Engine) deliverUniversalSQS(ctx context.Context, schedule *schedulersto
 		sendOpts.TypedMessageAttributes = attrs
 	}
 
-	region := regionFromQueueURL(queueURL)
+	region := queueurl.RegionFromQueueURL(queueURL)
 	if region == "" {
 		region = scheduleDeliveryRegion(schedule)
 	}
@@ -355,7 +334,7 @@ func (e *Engine) deliverUniversalSNS(ctx context.Context, schedule *schedulersto
 		return err
 	}
 
-	var attributes map[string]string
+	var attributes map[string]invokers.SQSMessageAttribute
 	if raw, ok := req["MessageAttributes"]; ok {
 		attributes, err = universalSNSMessageAttributes(raw)
 		if err != nil {
@@ -375,24 +354,30 @@ func (e *Engine) deliverUniversalSNS(ctx context.Context, schedule *schedulersto
 }
 
 // universalSNSMessageAttributes translates the Publish wire form of
-// MessageAttributes for the string-valued invoker seam: String and Number
-// types translate, a Binary attribute fails the delivery with a cause
-// rather than being dropped silently (the seam carries no binary form).
-func universalSNSMessageAttributes(raw json.RawMessage) (map[string]string, error) {
+// MessageAttributes (name → {DataType, StringValue | BinaryValue}) into the
+// typed invoker attribute form; the Binary value is base64 on the wire —
+// the same translation the SQS universal deliverer applies, extended with
+// the String.Array type the SNS vocabulary carries and SQS's does not.
+func universalSNSMessageAttributes(raw json.RawMessage) (map[string]invokers.SQSMessageAttribute, error) {
 	var wire map[string]struct {
 		DataType    string `json:"DataType"`
 		StringValue string `json:"StringValue"`
+		BinaryValue string `json:"BinaryValue"`
 	}
 	if err := json.Unmarshal(raw, &wire); err != nil {
 		return nil, fmt.Errorf("sns:publish request member MessageAttributes must be a map of message attributes: %w", err)
 	}
-	attrs := make(map[string]string, len(wire))
+	attrs := make(map[string]invokers.SQSMessageAttribute, len(wire))
 	for name, attr := range wire {
 		switch attr.DataType {
-		case "String", "Number":
-			attrs[name] = attr.StringValue
+		case "String", "Number", "String.Array":
+			attrs[name] = invokers.SQSMessageAttribute{DataType: attr.DataType, StringValue: attr.StringValue}
 		case "Binary":
-			return nil, fmt.Errorf("sns:publish MessageAttributes[%s] uses the Binary data type, which this platform's publish path does not carry", name)
+			decoded, err := base64.StdEncoding.DecodeString(attr.BinaryValue)
+			if err != nil {
+				return nil, fmt.Errorf("sns:publish MessageAttributes[%s].BinaryValue must be base64-encoded: %w", name, err)
+			}
+			attrs[name] = invokers.SQSMessageAttribute{DataType: attr.DataType, BinaryValue: decoded}
 		default:
 			return nil, fmt.Errorf("sns:publish MessageAttributes[%s].DataType %q is not valid", name, attr.DataType)
 		}

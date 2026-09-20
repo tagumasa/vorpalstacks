@@ -231,7 +231,7 @@ type recordingUniversalSNSInvoker struct {
 	topic      string
 	message    string
 	subject    string
-	attributes map[string]string
+	attributes map[string]invokers.SQSMessageAttribute
 	publishErr error
 }
 
@@ -247,7 +247,7 @@ func (r *recordingUniversalSNSInvoker) ListSubscriptionsByTopic(context.Context,
 	return nil, nil
 }
 
-func (r *recordingUniversalSNSInvoker) PublishToTopic(_ context.Context, topicArn, message, subject string, messageAttributes map[string]string) (string, error) {
+func (r *recordingUniversalSNSInvoker) PublishToTopic(_ context.Context, topicArn, message, subject string, messageAttributes map[string]invokers.SQSMessageAttribute) (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.publishErr != nil {
@@ -260,10 +260,6 @@ func (r *recordingUniversalSNSInvoker) PublishToTopic(_ context.Context, topicAr
 	r.attributes = messageAttributes
 	return "msg-id", nil
 }
-
-func (r *recordingUniversalSNSInvoker) StoreMessage(context.Context, string, any) error { return nil }
-
-func (r *recordingUniversalSNSInvoker) DeleteStoredMessage(context.Context, string) error { return nil }
 
 // universalDeliveryEngine wires a fresh engine over a real bus with the
 // given invokers and the synchronous captures for the bus-event families.
@@ -399,9 +395,9 @@ func TestUniversalSQSDeliveryPins(t *testing.T) {
 	}
 }
 
-// TestUniversalSNSDeliveryPins translates the Publish request members; a
-// Binary message attribute fails the delivery with a cause instead of
-// being dropped silently.
+// TestUniversalSNSDeliveryPins translates the Publish request members;
+// message attributes keep their typed form, with the Binary value decoded
+// from its base64 wire form.
 func TestUniversalSNSDeliveryPins(t *testing.T) {
 	invoker := &recordingUniversalSNSInvoker{}
 	engine, _ := universalDeliveryEngine(t, nil, nil, invoker, nil)
@@ -418,8 +414,8 @@ func TestUniversalSNSDeliveryPins(t *testing.T) {
 	if invoker.topic != topicArn || invoker.message != "msg" || invoker.subject != "subj" {
 		t.Fatalf("PublishToTopic = %s/%s/%s, want topic/message/subj", invoker.topic, invoker.message, invoker.subject)
 	}
-	if invoker.attributes["k"] != "v" {
-		t.Fatalf("MessageAttributes = %v, want k=v", invoker.attributes)
+	if attr := invoker.attributes["k"]; attr.DataType != "String" || attr.StringValue != "v" {
+		t.Fatalf("MessageAttributes = %v, want the typed String attribute k=v", invoker.attributes)
 	}
 
 	binaryTarget := &schedulerstore.Target{
@@ -427,9 +423,23 @@ func TestUniversalSNSDeliveryPins(t *testing.T) {
 		RoleArn: "arn:aws:iam::000000000000:role/universal-pin",
 		Input:   fmt.Sprintf(`{"TopicArn":%q,"Message":"msg","MessageAttributes":{"k":{"DataType":"Binary","BinaryValue":"dg=="}}}`, topicArn),
 	}
-	if err := engine.deliverUniversalSNS(t.Context(), universalSchedule(binaryTarget), binaryTarget); err == nil ||
-		!strings.Contains(err.Error(), "Binary") {
-		t.Fatalf("a Binary message attribute must fail naming the member, got %v", err)
+	if err := engine.deliverUniversalSNS(t.Context(), universalSchedule(binaryTarget), binaryTarget); err != nil {
+		t.Fatalf("a Binary message attribute rides the typed seam: %v", err)
+	}
+	if attr := invoker.attributes["k"]; attr.DataType != "Binary" || string(attr.BinaryValue) != "v" {
+		t.Fatalf("Binary attribute = %+v, want the base64-decoded bytes", invoker.attributes["k"])
+	}
+
+	arrayTarget := &schedulerstore.Target{
+		Arn:     "arn:aws:scheduler:::aws-sdk:sns:publish",
+		RoleArn: "arn:aws:iam::000000000000:role/universal-pin",
+		Input:   fmt.Sprintf(`{"TopicArn":%q,"Message":"msg","MessageAttributes":{"k":{"DataType":"String.Array","StringValue":"[\"a\",\"b\"]"}}}`, topicArn),
+	}
+	if err := engine.deliverUniversalSNS(t.Context(), universalSchedule(arrayTarget), arrayTarget); err != nil {
+		t.Fatalf("a String.Array message attribute rides the typed seam: %v", err)
+	}
+	if attr := invoker.attributes["k"]; attr.DataType != "String.Array" || attr.StringValue != `["a","b"]` {
+		t.Fatalf("String.Array attribute = %+v, want the typed array attribute with its JSON value", invoker.attributes["k"])
 	}
 }
 

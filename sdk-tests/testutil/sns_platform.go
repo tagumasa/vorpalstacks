@@ -3,6 +3,7 @@ package testutil
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -46,20 +47,20 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 		if platformAppArn == "" {
 			return fmt.Errorf("platformAppArn not set from previous test")
 		}
-		appName := tc.uniqueName("TestApp")
-		dupResp, err := tc.client.CreatePlatformApplication(tc.ctx, &sns.CreatePlatformApplicationInput{
+		// The refusal under test: the SAME name on the same platform as
+		// the application the previous test created (its ARN's resource
+		// tail is app/<platform>/<name>).
+		appName := platformAppArn[strings.LastIndex(platformAppArn, "/")+1:]
+		_, err := tc.client.CreatePlatformApplication(tc.ctx, &sns.CreatePlatformApplicationInput{
 			Name:     aws.String(appName),
 			Platform: aws.String("GCM"),
 			Attributes: map[string]string{
 				"PlatformCredential": "fake-credential",
 			},
 		})
-		if err != nil {
-			return fmt.Errorf("create with unique name should succeed: %v", err)
+		if codeErr := expectAWSErrorCode(err, "InvalidParameter"); codeErr != nil {
+			return fmt.Errorf("duplicate-name create: %v", codeErr)
 		}
-		tc.client.DeletePlatformApplication(tc.ctx, &sns.DeletePlatformApplicationInput{
-			PlatformApplicationArn: dupResp.PlatformApplicationArn,
-		})
 		return nil
 	}))
 
@@ -125,6 +126,9 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 		}
 		if getResp.Attributes["Enabled"] != "true" {
 			return fmt.Errorf("enabled should be true by default, got %q", getResp.Attributes["Enabled"])
+		}
+		if getResp.Attributes["CustomUserData"] != "user-data-123" {
+			return fmt.Errorf("CustomUserData set at create not returned by GetEndpointAttributes: got %q", getResp.Attributes["CustomUserData"])
 		}
 		return nil
 	}))

@@ -47,7 +47,7 @@ which are separate services in the SDK classification used by
 | Scheduler | 65 | 100% | ✅ Perfect |
 | SecretsManager | 53 | 100% | ✅ Perfect |
 | SESv2 | 86 | 100% | ✅ Perfect |
-| SNS | 73 | 100% | ✅ Perfect |
+| SNS | 92 | 100% | ✅ Perfect |
 | SQS | 102 | 100% | ✅ Perfect |
 | SSM | 53 | 100% | ✅ Perfect |
 | STS | 57 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,726/3,726 tests passing (100%) — 3,628 SDK + 80 integration + 18 WebSocket** (confirmed 2026-09-19 on main; per-session deltas live in git history)
+**Overall: 3,745/3,745 tests passing (100%) — 3,647 SDK + 80 integration + 18 WebSocket** (confirmed 2026-09-19 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

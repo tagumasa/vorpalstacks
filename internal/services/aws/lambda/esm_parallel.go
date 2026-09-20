@@ -95,6 +95,17 @@ func runOrderedBatches(ctx context.Context, count int, keys []map[string]struct{
 				if sharesAnyKey(keys[i], keys[j]) {
 					select {
 					case <-dones[j]:
+						// The dependency completed, but a context that
+						// closed while this batch waited means the batch
+						// never meaningfully starts: a select tie between
+						// the done channel and the cancellation (both ready
+						// in the shutdown window) would otherwise run the
+						// body under the cancelled context and fold its
+						// outcome into the consumed prefix.
+						if ctx.Err() != nil {
+							outcomes[i] = batchOutcome{err: ctx.Err()}
+							return
+						}
 					case <-ctx.Done():
 						// A batch that never started must not fold into the
 						// consumed prefix as a silent success: failing it

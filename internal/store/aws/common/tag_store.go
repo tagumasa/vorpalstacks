@@ -396,6 +396,38 @@ func (t *TagStore) Delete(resourceKey string) error {
 	})
 }
 
+// DeleteInTxn removes all tags and index entries for a resource inside the
+// caller's transaction, so a resource deletion that also removes its tags
+// commits or aborts as one unit — a tag removal outside the transaction
+// leaves a half-deleted resource when the record deletion fails after it.
+// The index walk mirrors Delete's suffix scan, collected before deleting so
+// the iterator is not mutated mid-walk.
+func (t *TagStore) DeleteInTxn(txn storage.Transaction, resourceKey string) error {
+	if err := txn.Bucket(t.mainName).Delete([]byte(resourceKey)); err != nil {
+		return err
+	}
+	idxBucket := txn.Bucket(t.indexName)
+	suffix := indexSeparator + resourceKey
+	var keys [][]byte
+	iter := idxBucket.ScanPrefix(nil)
+	for iter.Next() {
+		if key := iter.Key(); strings.HasSuffix(string(key), suffix) {
+			keys = append(keys, append([]byte(nil), key...))
+		}
+	}
+	err := iter.Error()
+	iter.Close()
+	if err != nil {
+		return err
+	}
+	for _, key := range keys {
+		if err := idxBucket.Delete(key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // FindByTag returns all resource keys that have a tag with the given key (any value).
 func (t *TagStore) FindByTag(tagKey string) ([]string, error) {
 	t.mu.Lock()

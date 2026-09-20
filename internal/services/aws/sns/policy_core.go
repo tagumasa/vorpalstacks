@@ -5,6 +5,7 @@ import (
 
 	"vorpalstacks/internal/common/response"
 	snsstore "vorpalstacks/internal/store/aws/sns"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // validActionNames lists the SNS action names accepted by AddPermission.
@@ -57,10 +58,7 @@ func (s *SNSService) getDataProtectionPolicyCore(store snsstore.SNSStoreInterfac
 
 	policy, err := store.GetDataProtectionPolicy(in.TopicArn)
 	if err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -84,10 +82,7 @@ func (s *SNSService) putDataProtectionPolicyCore(store snsstore.SNSStoreInterfac
 	}
 
 	if err := store.PutDataProtectionPolicy(in.TopicArn, in.Policy); err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -112,7 +107,7 @@ func (s *SNSService) addPermissionCore(store snsstore.SNSStoreInterface, in AddP
 	}
 
 	for _, id := range in.AWSAccountIds {
-		if len(id) != 12 {
+		if len(id) != svcarn.AccountIDLength {
 			return nil, NewInvalidParameter(fmt.Sprintf("Invalid AWS account ID %q: must be 12 digits", id))
 		}
 		for _, c := range id {
@@ -125,8 +120,8 @@ func (s *SNSService) addPermissionCore(store snsstore.SNSStoreInterface, in AddP
 	for _, action := range in.ActionNames {
 		if !validActionNames[action] {
 			return nil, NewInvalidParameter(fmt.Sprintf(
-				"Invalid action name %q. Valid values: GetTopicAttributes, SetTopicAttributes, AddPermission, RemovePermission, DeleteTopic, Subscribe, ListSubscriptionsByTopic, Publish, Receive",
-				action))
+				"Invalid action name %q. Valid values: %s",
+				action, sortedVocabulary(validActionNames)))
 		}
 	}
 
@@ -137,10 +132,7 @@ func (s *SNSService) addPermissionCore(store snsstore.SNSStoreInterface, in AddP
 	}
 
 	if err := store.AddPermission(in.TopicArn, permission); err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -158,10 +150,7 @@ func (s *SNSService) removePermissionCore(store snsstore.SNSStoreInterface, in R
 	}
 
 	if err := store.RemovePermission(in.TopicArn, in.Label); err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil

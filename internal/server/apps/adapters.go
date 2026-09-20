@@ -18,7 +18,6 @@ import (
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 	storekinesis "vorpalstacks/internal/store/aws/kinesis"
 	storesns "vorpalstacks/internal/store/aws/sns"
@@ -157,38 +156,45 @@ func (a *sqsInvokerAdapter) DeleteMessage(_ context.Context, region, queueURL, r
 	return store.DeleteMessage(queueURL, receiptHandle)
 }
 
-// snsStoreForInvoker is the minimal store interface needed by the SNS invoker
-// adapter. It intentionally includes Put (from BaseStore) because the event
-// bus needs to persist delivery metadata — this does not belong on the public
-// SNSStoreInterface.
-type snsStoreForInvoker interface {
-	GetTopic(topicArn string) (*storesns.Topic, error)
-	ListSubscriptionsByTopic(topicArn string, opts storecommon.ListOptions) (*storecommon.ListResult[storesns.Subscription], error)
-	Put(key string, data interface{}) error
+// snsStoreProvider resolves the per-region SNS store owned by the SNS
+// service. The adapter must not hold one concrete store: subscriptions and
+// topics live in regional stores, and a single default-region instance
+// would read the wrong region for every cross-region topic ARN.
+type snsStoreProvider interface {
+	GetSNSStoreForRegion(region string) (storesns.SNSStoreInterface, error)
 }
 
-// snsInvokerAdapter adapts the SNS concrete store and publisher to the
-// invokers.SNSInvoker interface.
+// snsInvokerAdapter adapts the SNS service to the invokers.SNSInvoker
+// interface.
 type snsInvokerAdapter struct {
-	store     snsStoreForInvoker
-	kvStore   kvDeleter
-	publisher snsPublisher
-}
-
-// kvDeleter provides raw key-value deletion for message cleanup.
-type kvDeleter interface {
-	Delete(key string) error
+	provider      snsStoreProvider
+	publisher     snsPublisher
+	defaultRegion string
 }
 
 // snsPublisher publishes a message to an SNS topic by ARN and returns the
 // generated message ID.
 type snsPublisher interface {
-	PublishToTopic(ctx context.Context, accountID, region, topicArn, message, subject string, messageAttributes map[string]string) (string, error)
+	PublishToTopic(ctx context.Context, region, topicArn, message, subject string, messageAttributes map[string]invokers.SQSMessageAttribute) (string, error)
+}
+
+// storeForARN resolves the store of the region the topic ARN names; an ARN
+// without a region addresses the server default region.
+func (a *snsInvokerAdapter) storeForARN(topicARN string) (storesns.SNSStoreInterface, error) {
+	_, _, region, _, _ := arn.SplitARN(topicARN)
+	if region == "" {
+		region = a.defaultRegion
+	}
+	return a.provider.GetSNSStoreForRegion(region)
 }
 
 // GetTopic retrieves the topic ARN for the given topic ARN.
 func (a *snsInvokerAdapter) GetTopic(_ context.Context, topicARN string) (string, error) {
-	topic, err := a.store.GetTopic(topicARN)
+	store, err := a.storeForARN(topicARN)
+	if err != nil {
+		return "", err
+	}
+	topic, err := store.GetTopic(topicARN)
 	if err != nil {
 		return "", err
 	}
@@ -198,59 +204,53 @@ func (a *snsInvokerAdapter) GetTopic(_ context.Context, topicARN string) (string
 // GetTopicPolicy returns the topic's access-policy document JSON, or an
 // empty string when the topic carries no policy.
 func (a *snsInvokerAdapter) GetTopicPolicy(_ context.Context, topicARN string) (string, error) {
-	topic, err := a.store.GetTopic(topicARN)
+	store, err := a.storeForARN(topicARN)
+	if err != nil {
+		return "", err
+	}
+	topic, err := store.GetTopic(topicARN)
 	if err != nil {
 		return "", err
 	}
 	return topic.GetPolicy(), nil
 }
 
-// ListSubscriptionsByTopic returns subscriptions for the given topic ARN.
+// ListSubscriptionsByTopic returns every subscription of the given topic
+// ARN through the store's all-pages walk — a consumer inspecting a topic's
+// subscriptions must see the complete set, not one capped page.
 func (a *snsInvokerAdapter) ListSubscriptionsByTopic(_ context.Context, topicARN string) ([]invokers.SubscriptionInfo, error) {
-	result, err := a.store.ListSubscriptionsByTopic(topicARN, storecommon.ListOptions{})
+	store, err := a.storeForARN(topicARN)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]invokers.SubscriptionInfo, len(result.Items))
-	for i, sub := range result.Items {
-		out[i] = invokers.SubscriptionInfo{
+	subs, err := store.ListAllSubscriptionsByTopic(topicARN)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]invokers.SubscriptionInfo, 0, len(subs))
+	for _, sub := range subs {
+		out = append(out, invokers.SubscriptionInfo{
 			SubscriptionARN:     sub.SubscriptionArn,
 			Protocol:            sub.Protocol,
 			Endpoint:            sub.Endpoint,
 			TopicARN:            sub.TopicArn,
 			PendingConfirmation: sub.PendingConfirmation,
-		}
+		})
 	}
 	return out, nil
 }
 
-// PublishToTopic publishes a message to the given SNS topic ARN.
-func (a *snsInvokerAdapter) PublishToTopic(ctx context.Context, topicARN string, message string, subject string, messageAttributes map[string]string) (string, error) {
+// PublishToTopic publishes a message to the given SNS topic ARN through the
+// service's publish path.
+func (a *snsInvokerAdapter) PublishToTopic(ctx context.Context, topicARN string, message string, subject string, messageAttributes map[string]invokers.SQSMessageAttribute) (string, error) {
 	if a.publisher == nil {
 		return "", fmt.Errorf("sns: publisher not configured")
 	}
-	parts := strings.Split(topicARN, ":")
-	if len(parts) < 5 {
-		return "", fmt.Errorf("sns: invalid topic ARN: %s", topicARN)
+	_, _, region, _, _ := arn.SplitARN(topicARN)
+	if region == "" {
+		region = a.defaultRegion
 	}
-	accountID := parts[4]
-	region := parts[3]
-	msgID, err := a.publisher.PublishToTopic(ctx, accountID, region, topicARN, message, subject, messageAttributes)
-	if err != nil {
-		return "", err
-	}
-	return msgID, nil
-}
-
-// StoreMessage persists arbitrary data keyed by the given key.
-func (a *snsInvokerAdapter) StoreMessage(_ context.Context, key string, data any) error {
-	return a.store.Put(key, data)
-}
-
-// DeleteStoredMessage removes a previously stored message by key, used for
-// cleanup when delivery fails after persistence.
-func (a *snsInvokerAdapter) DeleteStoredMessage(_ context.Context, key string) error {
-	return a.kvStore.Delete(key)
+	return a.publisher.PublishToTopic(ctx, region, topicARN, message, subject, messageAttributes)
 }
 
 // kinesisStoreProvider resolves the per-region Kinesis store owned by the

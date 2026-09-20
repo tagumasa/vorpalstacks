@@ -2,14 +2,12 @@ package sns
 
 import (
 	"context"
-	"encoding/json"
 	"strconv"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	snsstore "vorpalstacks/internal/store/aws/sns"
 )
 
 // CreateTopic creates a new SNS topic.
@@ -140,39 +138,4 @@ func parseAttributes(params map[string]interface{}) map[string]string {
 	}
 
 	return result
-}
-
-// injectPermissionsIntoPolicy merges AddPermission entries into the topic's
-// resource policy JSON, returning the updated policy string.
-func injectPermissionsIntoPolicy(policyJSON, topicArn string, permissions []snsstore.Permission) string {
-	var policyMap struct {
-		Version   string                   `json:"Version"`
-		Id        string                   `json:"Id"`
-		Statement []map[string]interface{} `json:"Statement"`
-	}
-	if err := json.Unmarshal([]byte(policyJSON), &policyMap); err != nil {
-		return policyJSON
-	}
-
-	for _, perm := range permissions {
-		principals := make([]string, len(perm.Principals))
-		for i, p := range perm.Principals {
-			principals[i] = "arn:aws:iam::" + p + ":root"
-		}
-		actions := make([]string, len(perm.Actions))
-		copy(actions, perm.Actions)
-		policyMap.Statement = append(policyMap.Statement, map[string]interface{}{
-			"Sid":       perm.Label,
-			"Effect":    "Allow",
-			"Principal": map[string]interface{}{"AWS": principals},
-			"Action":    actions,
-			"Resource":  topicArn,
-		})
-	}
-
-	updated, err := json.Marshal(policyMap)
-	if err != nil {
-		return policyJSON
-	}
-	return string(updated)
 }

@@ -40,6 +40,42 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 		return nil
 	}))
 
+	// Label is "A unique identifier for the new policy statement" — a
+	// duplicate label is refused rather than overwriting the live
+	// statement.
+	results = append(results, r.RunTest("sns", "AddPermission_DuplicateLabelRejected", func() error {
+		topicArn, err := tc.createTopic(tc.uniqueName("DupLabelTopic"))
+		if err != nil {
+			return err
+		}
+		defer tc.deleteTopic(topicArn)
+
+		addInput := &sns.AddPermissionInput{
+			TopicArn:     aws.String(topicArn),
+			Label:        aws.String("UniqueLabel"),
+			AWSAccountId: []string{acct},
+			ActionName:   []string{"Publish"},
+		}
+		if _, err := tc.client.AddPermission(tc.ctx, addInput); err != nil {
+			return fmt.Errorf("first AddPermission: %v", err)
+		}
+		_, err = tc.client.AddPermission(tc.ctx, addInput)
+		if codeErr := expectAWSErrorCode(err, "InvalidParameter"); codeErr != nil {
+			return fmt.Errorf("duplicate label: %v", codeErr)
+		}
+
+		// The refused duplicate left the original statement intact.
+		getResp, err := tc.getTopicAttributes(topicArn)
+		if err != nil {
+			return fmt.Errorf("get attrs: %v", err)
+		}
+		policy := getResp.Attributes["Policy"]
+		if len(policy) == 0 {
+			return fmt.Errorf("Policy missing after the refused duplicate")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sns", "RemovePermission", func() error {
 		topicArn, err := tc.createTopic(tc.uniqueName("RemPermTopic"))
 		if err != nil {

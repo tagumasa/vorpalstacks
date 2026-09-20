@@ -10,9 +10,11 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// admin_handler_convert.go — the sole file in the SNS service package that
-// imports store packages and performs proto↔DTO conversion. This enforces
-// Store-import prohibition: admin handlers must not import store packages directly.
+// admin_handler_convert.go — the sole ADMIN-plane file of this service
+// permitted to import store packages (the admin-handler exception to the
+// store-import prohibition); it owns the proto↔DTO conversion and the
+// store resolution the admin handlers need, so those handlers stay thin
+// transport adapters over the shared Cores.
 // ---------------------------------------------------------------------------
 
 // getSNSStore returns the SNS store for the region extracted from the

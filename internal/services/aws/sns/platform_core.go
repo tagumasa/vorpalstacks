@@ -1,6 +1,7 @@
 package sns
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -97,9 +98,19 @@ func (s *SNSService) createPlatformApplicationCore(store snsstore.SNSStoreInterf
 	if in.Platform == "" {
 		return nil, NewInvalidParameter("Platform is required")
 	}
+	// The model marks CreatePlatformApplicationInput.Attributes
+	// smithy.api#required. On the query wire an empty map serialises to
+	// no entries, which is indistinguishable from an absent member, so
+	// the check is the zero-length form the sibling attribute-set cores
+	// use — the SDK's own required-member validation makes the negative
+	// path unreachable through typed clients, leaving unit tests as the
+	// pin.
+	if len(in.Attributes) == 0 {
+		return nil, NewInvalidParameter("Attributes is required")
+	}
 	normalisedPlatform := strings.ToUpper(in.Platform)
 	if !validPlatforms[normalisedPlatform] {
-		return nil, NewInvalidParameter(fmt.Sprintf("Invalid Platform: %s. Valid values: APNS, APNS_SANDBOX, GCM, ADM, BAIDU, WNS, MPNS", in.Platform))
+		return nil, NewInvalidParameter(fmt.Sprintf("Invalid Platform: %s. Valid values: %s", in.Platform, sortedVocabulary(validPlatforms)))
 	}
 
 	for attrName, value := range in.Attributes {
@@ -116,10 +127,7 @@ func (s *SNSService) createPlatformApplicationCore(store snsstore.SNSStoreInterf
 
 	created, err := store.CreatePlatformApplication(app)
 	if err != nil {
-		if err == snsstore.ErrPlatformApplicationAlreadyExists {
-			return nil, NewInvalidParameter("Platform application already exists with the same name")
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -135,10 +143,18 @@ func (s *SNSService) deletePlatformApplicationCore(store snsstore.SNSStoreInterf
 	}
 
 	if err := store.DeletePlatformApplication(in.PlatformApplicationArn); err != nil {
-		if err == snsstore.ErrPlatformApplicationNotFound {
-			return nil, ErrPlatformAppNotFound
+		if errors.Is(err, snsstore.ErrPlatformApplicationNotFound) {
+			// The model's DeletePlatformApplication error set declares no
+			// NotFoundException (AuthorizationError, InternalError and
+			// InvalidParameter alone), so the missing-resource refusal
+			// reports the operation's InvalidParameter error — the NotFound
+			// code the store sentinel maps to belongs to the operations
+			// that declare it (the Get/Set/List family and
+			// CreatePlatformEndpoint).
+			return nil, NewInvalidParameter(fmt.Sprintf(
+				"Invalid parameter: PlatformApplicationArn does not refer to an existing platform application: %s", in.PlatformApplicationArn))
 		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -153,10 +169,7 @@ func (s *SNSService) getPlatformApplicationAttributesCore(store snsstore.SNSStor
 
 	attrs, err := store.GetPlatformApplicationAttributes(in.PlatformApplicationArn)
 	if err != nil {
-		if err == snsstore.ErrPlatformApplicationNotFound {
-			return nil, ErrPlatformAppNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -183,10 +196,7 @@ func (s *SNSService) setPlatformApplicationAttributesCore(store snsstore.SNSStor
 	}
 
 	if err := store.SetPlatformApplicationAttributes(in.PlatformApplicationArn, in.Attributes); err != nil {
-		if err == snsstore.ErrPlatformApplicationNotFound {
-			return nil, ErrPlatformAppNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -197,7 +207,7 @@ func (s *SNSService) setPlatformApplicationAttributesCore(store snsstore.SNSStor
 func (s *SNSService) listPlatformApplicationsCore(store snsstore.SNSStoreInterface, in ListPlatformApplicationsInput) (interface{}, error) {
 	result, err := store.ListPlatformApplications(common.ListOptions{Marker: in.NextToken})
 	if err != nil {
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	apps := make([]map[string]interface{}, 0, len(result.Items))
@@ -225,11 +235,11 @@ func (s *SNSService) createPlatformEndpointCore(store snsstore.SNSStoreInterface
 	if in.Token == "" {
 		return nil, NewInvalidParameter("Token is required")
 	}
-	if len(in.Token) > 2048 {
-		return nil, NewInvalidParameter(fmt.Sprintf("Token too long: %d bytes (maximum 2048)", len(in.Token)))
+	if len(in.Token) > snsstore.MaxPlatformTokenLength {
+		return nil, NewInvalidParameter(fmt.Sprintf("Token too long: %d bytes (maximum %d)", len(in.Token), snsstore.MaxPlatformTokenLength))
 	}
-	if len(in.CustomUserData) > 2048 {
-		return nil, NewInvalidParameter(fmt.Sprintf("CustomUserData too long: %d bytes (maximum 2048)", len(in.CustomUserData)))
+	if len(in.CustomUserData) > snsstore.MaxCustomUserDataLength {
+		return nil, NewInvalidParameter(fmt.Sprintf("CustomUserData too long: %d bytes (maximum %d)", len(in.CustomUserData), snsstore.MaxCustomUserDataLength))
 	}
 
 	for attrName, value := range in.Attributes {
@@ -247,10 +257,7 @@ func (s *SNSService) createPlatformEndpointCore(store snsstore.SNSStoreInterface
 
 	created, err := store.CreatePlatformEndpoint(endpoint)
 	if err != nil {
-		if err == snsstore.ErrPlatformApplicationNotFound {
-			return nil, ErrPlatformAppNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -266,10 +273,14 @@ func (s *SNSService) deleteEndpointCore(store snsstore.SNSStoreInterface, in Del
 	}
 
 	if err := store.DeleteEndpoint(in.EndpointArn); err != nil {
-		if err == snsstore.ErrEndpointNotFound {
-			return nil, ErrEndpointNotFound
+		if errors.Is(err, snsstore.ErrEndpointNotFound) {
+			// DeleteEndpoint declares the same error set as
+			// DeletePlatformApplication — no NotFoundException — so the
+			// missing-resource refusal reports InvalidParameter here too.
+			return nil, NewInvalidParameter(fmt.Sprintf(
+				"Invalid parameter: EndpointArn does not refer to an existing platform endpoint: %s", in.EndpointArn))
 		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -284,10 +295,7 @@ func (s *SNSService) getEndpointAttributesCore(store snsstore.SNSStoreInterface,
 
 	attrs, err := store.GetEndpointAttributes(in.EndpointArn)
 	if err != nil {
-		if err == snsstore.ErrEndpointNotFound {
-			return nil, ErrEndpointNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return map[string]interface{}{
@@ -314,10 +322,7 @@ func (s *SNSService) setEndpointAttributesCore(store snsstore.SNSStoreInterface,
 	}
 
 	if err := store.SetEndpointAttributes(in.EndpointArn, in.Attributes); err != nil {
-		if err == snsstore.ErrEndpointNotFound {
-			return nil, ErrEndpointNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -332,17 +337,14 @@ func (s *SNSService) listEndpointsByPlatformApplicationCore(store snsstore.SNSSt
 
 	// Verify platform application existence before listing endpoints.
 	// Without this check, a non-existent ARN returns an empty result instead
-	// of NotFoundException.
+	// of the not-found error.
 	if _, err := store.GetPlatformApplication(in.PlatformApplicationArn); err != nil {
-		if err == snsstore.ErrPlatformApplicationNotFound {
-			return nil, ErrPlatformAppNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	result, err := store.ListEndpointsByPlatformApplication(in.PlatformApplicationArn, common.ListOptions{Marker: in.NextToken})
 	if err != nil {
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	endpoints := make([]map[string]interface{}, 0, len(result.Items))

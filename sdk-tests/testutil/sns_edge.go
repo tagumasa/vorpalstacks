@@ -99,12 +99,22 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 		return expectAWSErrorCode(err, "InvalidParameter")
 	}))
 
-	// Reserved AWS prefix must be rejected.
-	results = append(results, r.RunTest("sns", "CreateTopic_ReservedPrefix", func() error {
-		_, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String("aws-reserved-test-topic"),
+	// aws-/amazon-prefixed topic names are legal: the CreateTopic
+	// documentation constrains the name to letters, digits, underscores
+	// and hyphens (1-256) and states no reserved prefix, so a prefix rule
+	// would wrongly reject legal names.
+	results = append(results, r.RunTest("sns", "CreateTopic_AwsPrefixAccepted", func() error {
+		resp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
+			Name: aws.String(tc.uniqueName("aws-events")),
 		})
-		return expectAWSErrorCode(err, "InvalidParameter")
+		if err != nil {
+			return fmt.Errorf("aws-prefixed topic name is legal (no reserved prefix exists): %v", err)
+		}
+		defer tc.deleteTopic(*resp.TopicArn)
+		if *resp.TopicArn == "" {
+			return fmt.Errorf("CreateTopic returned an empty TopicArn")
+		}
+		return nil
 	}))
 
 	// FifoTopic=true with non-.fifo name must be rejected.

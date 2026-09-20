@@ -57,17 +57,13 @@ func (f *fakeSNSInvoker) ListSubscriptionsByTopic(_ context.Context, _ string) (
 	return nil, nil
 }
 
-func (f *fakeSNSInvoker) PublishToTopic(_ context.Context, topicARN, message, subject string, _ map[string]string) (string, error) {
+func (f *fakeSNSInvoker) PublishToTopic(_ context.Context, topicARN, message, subject string, _ map[string]invokers.SQSMessageAttribute) (string, error) {
 	if _, ok := f.topics[topicARN]; !ok {
 		return "", fmt.Errorf("topic %s not found", topicARN)
 	}
 	f.published = append(f.published, fakeSNSPublish{topicARN: topicARN, message: message, subject: subject})
 	return "msg-1", nil
 }
-
-func (f *fakeSNSInvoker) StoreMessage(_ context.Context, _ string, _ any) error { return nil }
-
-func (f *fakeSNSInvoker) DeleteStoredMessage(_ context.Context, _ string) error { return nil }
 
 // sufficientTopicPolicy is the AWS-documented SNS topic policy for
 // CloudTrail notifications.

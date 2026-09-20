@@ -3,48 +3,20 @@ package sns
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
-	awserrors "vorpalstacks/internal/common/errors"
+	snsstore "vorpalstacks/internal/store/aws/sns"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-// ---------------------------------------------------------------------------
-// AWS-documented constants
-// ---------------------------------------------------------------------------
-
-// SNS message and batch size limits (AWS documented constants). The
-// Publish member documentation states subjects must be "less than 100
-// characters long", so the longest legal subject is 99 characters.
-const (
-	maxMessageSize    = 256 * 1024 // 256 KB
-	maxSubjectLength  = 99
-	maxBatchTotalSize = 256 * 1024 // 256 KB total for all entries
-	maxBatchEntries   = 10
-)
-
-// AWS-documented attribute value caps (DoS protection).
-// Topic Policy and DeliveryPolicy are documented at 30,720 bytes.
-// Platform application and endpoint attributes use a generous cap.
-const (
-	maxTopicAttributeValueLength    = 30720
-	maxPlatformAttributeValueLength = 8192
-)
-
-// SNS message attribute limits per AWS docs.
-const (
-	maxMessageAttributes      = 10
-	maxMessageAttrStringValue = 256 // chars
-	maxMessageAttrBinaryValue = 256 // bytes
-)
-
-// maxPlatformApplicationNameLength is the documented platform application
-// name ceiling: names "must be between 1 and 256 characters long"
-// (CreatePlatformApplication member documentation).
-const maxPlatformApplicationNameLength = 256
+// Numeric limits and attribute-value caps live in the store package's
+// limits.go — the single definition site for every documented bound. Only
+// patterns and vocabularies that already have one definition site live
+// here.
 
 // platformApplicationNamePattern is the documented platform application
 // name charset: "Application names must be made up of only uppercase and
@@ -52,54 +24,22 @@ const maxPlatformApplicationNameLength = 256
 // (CreatePlatformApplication member documentation).
 var platformApplicationNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
 
-// validatePlatformApplicationName enforces the non-empty requirement, the
-// documented charset, and the 256-character ceiling on
-// CreatePlatformApplication names, counted in Unicode characters.
-func validatePlatformApplicationName(name string) error {
-	if name == "" {
-		return NewInvalidParameter("Name is required")
-	}
-	if n := utf8.RuneCountInString(name); n > maxPlatformApplicationNameLength {
-		return NewInvalidParameter(fmt.Sprintf("Name too long: %d characters (maximum %d)", n, maxPlatformApplicationNameLength))
-	}
-	if !platformApplicationNamePattern.MatchString(name) {
-		return NewInvalidParameter("Invalid parameter: Name must contain only letters, numbers, underscores, hyphens, and periods")
-	}
-	return nil
-}
-
-// Endpoint URL length cap for http/https protocols.
-const maxEndpointURLLength = 2048
-
-// ---------------------------------------------------------------------------
-// Regex patterns
-// ---------------------------------------------------------------------------
-
 // kmsKeyIDRegex validates a bare KMS key ID in UUID hex format
 // (8-4-4-4-12 lowercase hex digits, case-insensitive).
 var kmsKeyIDRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 // messageAttrNamePattern validates message attribute names per AWS docs:
-// alphanumeric, underscore, hyphen, and period; 1-256 characters.
-var messageAttrNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,256}$`)
+// alphanumeric, underscore, hyphen, and period; 1-256 characters (the
+// length bound is the limits file's MaxMessageAttributeNameLength).
+var messageAttrNamePattern = regexp.MustCompile(fmt.Sprintf(`^[a-zA-Z0-9_.-]{1,%d}$`, snsstore.MaxMessageAttributeNameLength))
 
-// ---------------------------------------------------------------------------
-// Enum maps
-// ---------------------------------------------------------------------------
-
-// validProtocols lists the nine AWS-supported subscription protocols.
-// Any protocol not in this map is rejected at Subscribe time.
-var validProtocols = map[string]bool{
-	"http":        true,
-	"https":       true,
-	"email":       true,
-	"email-json":  true,
-	"sms":         true,
-	"sqs":         true,
-	"application": true,
-	"lambda":      true,
-	"firehose":    true,
-}
+// fifoIdentifierPattern validates MessageGroupId and MessageDeduplicationId
+// values, whose documented charset is "up to 128 alphanumeric characters
+// (a-z, A-Z, 0-9) and punctuation (!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~)"
+// (API_Publish, both members). The punctuation run is the printable ASCII
+// set minus space and the alphanumerics, expressed as the four ranges
+// !-/ :;-@ [–` {|-~.
+var fifoIdentifierPattern = regexp.MustCompile(`^[a-zA-Z0-9!-/:-@\[-` + "`" + `{-~]+$`)
 
 // validMessageAttributeDataTypes is the complete set of DataType values
 // accepted by SNS message attributes.
@@ -114,77 +54,15 @@ var validMessageAttributeDataTypes = map[string]bool{
 // Protocol validators
 // ---------------------------------------------------------------------------
 
-// validateProtocol returns an error when the protocol is not one of the nine
-// AWS-supported values.
+// validateProtocol returns an error when the protocol is not in the
+// registry. The accepted-values list in the message is generated from the
+// registry itself, so it can never disagree with the acceptance check.
 func validateProtocol(protocol string) error {
-	if !validProtocols[protocol] {
+	if _, ok := protocolRegistry[protocol]; !ok {
 		return NewInvalidParameter(fmt.Sprintf(
-			"Invalid protocol: %s. Valid values: http, https, email, email-json, sms, sqs, application, lambda, firehose",
-			protocol))
+			"Invalid protocol: %s. Valid values: %s",
+			protocol, sortedVocabulary(protocolRegistry)))
 	}
-	return nil
-}
-
-// validateEndpointForProtocol validates the endpoint format against the
-// protocol-specific requirements. This catches grossly invalid endpoints at
-// Subscribe time rather than silently failing at delivery time.
-func validateEndpointForProtocol(protocol, endpoint string) error {
-	switch protocol {
-	case "http":
-		if !strings.HasPrefix(endpoint, "http://") {
-			return NewInvalidParameter("Endpoint must be a valid HTTP URL starting with http://")
-		}
-		if len(endpoint) > maxEndpointURLLength {
-			return NewInvalidParameter(fmt.Sprintf("Endpoint URL too long: %d characters (maximum %d)", len(endpoint), maxEndpointURLLength))
-		}
-		if _, err := url.Parse(endpoint); err != nil {
-			return NewInvalidParameter(fmt.Sprintf("Invalid endpoint URL: %s", err.Error()))
-		}
-
-	case "https":
-		if !strings.HasPrefix(endpoint, "https://") {
-			return NewInvalidParameter("Endpoint must be a valid HTTPS URL starting with https://")
-		}
-		if len(endpoint) > maxEndpointURLLength {
-			return NewInvalidParameter(fmt.Sprintf("Endpoint URL too long: %d characters (maximum %d)", len(endpoint), maxEndpointURLLength))
-		}
-		if _, err := url.Parse(endpoint); err != nil {
-			return NewInvalidParameter(fmt.Sprintf("Invalid endpoint URL: %s", err.Error()))
-		}
-
-	case "sqs":
-		if !strings.HasPrefix(endpoint, "http") && !strings.HasPrefix(endpoint, "arn:") {
-			return NewInvalidParameter("Endpoint must be a valid SQS queue URL or ARN for protocol sqs")
-		}
-
-	case "lambda":
-		if !strings.HasPrefix(endpoint, "arn:") {
-			if endpoint == "" {
-				return NewInvalidParameter("Endpoint must be a valid Lambda function ARN or name")
-			}
-			for _, c := range endpoint {
-				if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
-					return NewInvalidParameter("Endpoint must be a valid Lambda function ARN or name")
-				}
-			}
-		}
-
-	case "email", "email-json":
-		if !strings.Contains(endpoint, "@") {
-			return NewInvalidParameter("Endpoint must be a valid email address for protocol " + protocol)
-		}
-
-	case "application":
-		if !strings.HasPrefix(endpoint, "arn:") {
-			return NewInvalidParameter("Endpoint must be a valid platform endpoint ARN for protocol application")
-		}
-
-	case "firehose":
-		if !strings.HasPrefix(endpoint, "arn:") {
-			return NewInvalidParameter("Endpoint must be a valid Firehose delivery stream ARN for protocol firehose")
-		}
-	}
-
 	return nil
 }
 
@@ -192,21 +70,27 @@ func validateEndpointForProtocol(protocol, endpoint string) error {
 // Topic validators
 // ---------------------------------------------------------------------------
 
+// isAlnumHyphenUnderscore reports whether r is drawn from the
+// alphanumeric-plus-hyphen-underscore charset the topic-name member and the
+// Lambda function-name endpoint share — the single definition of the class
+// both validators enforce.
+func isAlnumHyphenUnderscore(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_'
+}
+
 // validateTopicName validates the full set of SNS topic name constraints:
-// non-empty, max 256 chars, alphanumeric + hyphen + underscore, no reserved
-// AWS prefixes, .fifo suffix handled for FIFO topics.
+// non-empty, max 256 chars, alphanumeric + hyphen + underscore, .fifo
+// suffix handled for FIFO topics. The CreateTopic documentation states no
+// reserved-prefix rule ("Topic names must be made up of only uppercase and
+// lowercase ASCII letters, numbers, underscores, and hyphens, and must be
+// between 1 and 256 characters long"), so aws-/amazon-prefixed names are
+// legal and accepted.
 func validateTopicName(name string) error {
 	if name == "" {
 		return NewInvalidParameter("Topic name is required")
 	}
-	if len(name) > 256 {
-		return NewInvalidParameter("Topic name must not exceed 256 characters")
-	}
-
-	// Reject AWS-reserved prefixes (case-insensitive).
-	lower := strings.ToLower(name)
-	if strings.HasPrefix(lower, "aws") || strings.HasPrefix(lower, "amazon") {
-		return NewInvalidParameter(fmt.Sprintf("Topic name %q starts with a reserved prefix (aws/amazon)", name))
+	if len(name) > snsstore.MaxTopicNameLength {
+		return NewInvalidParameter(fmt.Sprintf("Topic name must not exceed %d characters", snsstore.MaxTopicNameLength))
 	}
 
 	// Character validation (allow .fifo suffix).
@@ -215,7 +99,7 @@ func validateTopicName(name string) error {
 		baseName = strings.TrimSuffix(name, ".fifo")
 	}
 	for _, c := range baseName {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+		if !isAlnumHyphenUnderscore(c) {
 			return NewInvalidParameter("Topic name can only contain alphanumeric characters, hyphens, and underscores")
 		}
 	}
@@ -227,8 +111,8 @@ func validateTopicName(name string) error {
 // accepted by PutDataProtectionPolicy and inline by CreateTopic. AWS caps the
 // policy at 30,720 bytes and requires a valid JSON document.
 func validateDataProtectionPolicy(policy string) error {
-	if len(policy) > maxTopicAttributeValueLength {
-		return NewInvalidParameter(fmt.Sprintf("DataProtectionPolicy value too long: %d characters (maximum %d)", len(policy), maxTopicAttributeValueLength))
+	if len(policy) > snsstore.MaxTopicAttributeValueLength {
+		return NewInvalidParameter(fmt.Sprintf("DataProtectionPolicy value too long: %d characters (maximum %d)", len(policy), snsstore.MaxTopicAttributeValueLength))
 	}
 	var policyCheck interface{}
 	if err := json.Unmarshal([]byte(policy), &policyCheck); err != nil {
@@ -237,38 +121,103 @@ func validateDataProtectionPolicy(policy string) error {
 	return nil
 }
 
-// validateTopicAttribute validates well-known topic attributes that have
-// structured values. Unknown attributes pass through without validation
-// (forward-compatible with future AWS additions). All attribute values are
-// capped at maxTopicAttributeValueLength for DoS protection.
-func validateTopicAttribute(name, value string) error {
+// validateTopicAttribute validates well-known topic attributes against
+// their documented value constraints; unknown attributes pass through
+// without validation (forward-compatible with future AWS additions). All
+// attribute values are capped at the documented topic-attribute ceiling for
+// DoS protection. isFifo gates the FIFO-only attributes
+// ("The following attributes apply only to FIFO topics").
+func validateTopicAttribute(name, value string, isFifo bool) error {
 	// The DataProtectionPolicy attribute key is reserved: the policy is set
 	// through the CreateTopic input parameter or PutDataProtectionPolicy
 	// only, never through the generic attribute map (SetTopicAttributes or
 	// CreateTopic Attributes), matching the documented attribute sets of
 	// those APIs.
-	if name == "DataProtectionPolicy" {
+	if name == snsstore.AttrDataProtectionPolicy {
 		return NewInvalidParameter("DataProtectionPolicy cannot be set via topic attributes; use the DataProtectionPolicy parameter of CreateTopic or the PutDataProtectionPolicy API")
 	}
 
 	// General DoS cap for all topic attribute values.
-	if len(value) > maxTopicAttributeValueLength {
-		return NewInvalidParameter(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), maxTopicAttributeValueLength))
+	if len(value) > snsstore.MaxTopicAttributeValueLength {
+		return NewInvalidParameter(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), snsstore.MaxTopicAttributeValueLength))
 	}
 
 	switch name {
-	case "DeliveryPolicy":
+	case snsstore.AttrDeliveryPolicy:
+		// The topic-level document wraps the policies under "http" with
+		// default-prefixed names; the parser validates every documented
+		// field and constraint.
+		_, err := parseTopicDeliveryPolicy(value)
+		return err
+	case snsstore.AttrPolicy:
 		return validateJSONAttribute(name, value)
-	case "Policy":
-		return validateJSONAttribute(name, value)
-	case "DisplayName":
-		if len(value) > 100 {
-			return NewInvalidParameter(fmt.Sprintf("DisplayName too long: %d characters (maximum 100)", len(value)))
+	case snsstore.AttrDisplayName:
+		if len(value) > snsstore.MaxDisplayNameLength {
+			return NewInvalidParameter(fmt.Sprintf("DisplayName too long: %d characters (maximum %d)", len(value), snsstore.MaxDisplayNameLength))
 		}
-	case "KmsMasterKeyId":
+	case snsstore.AttrKmsMasterKeyId:
 		if value != "" && !strings.HasPrefix(value, "arn:") && !isValidKmsKeyId(value) {
 			return NewInvalidParameter(fmt.Sprintf("Invalid KmsMasterKeyId: %s", value))
 		}
+	case snsstore.AttrSignatureVersion:
+		// "By default, SignatureVersion is set to 1"; version 2 switches the
+		// signature to SHA256withRSA. No other version exists.
+		if value != "1" && value != "2" {
+			return NewInvalidParameter(fmt.Sprintf("Invalid SignatureVersion: %s. Valid values: 1, 2", value))
+		}
+	case snsstore.AttrMaximumMessageSize:
+		// Documented range 1024..1048576; the platform honours the
+		// attribute up to its flat transport ceiling — values above it are
+		// rejected as a recorded platform bound rather than accepted and
+		// unenforced (limits.go, MinTopicMessageSize comment).
+		size, err := strconv.Atoi(value)
+		if err != nil {
+			return NewInvalidParameter(fmt.Sprintf("Invalid MaximumMessageSize: %s", value))
+		}
+		if size < snsstore.MinTopicMessageSize || size > snsstore.MaxMessageSize {
+			return NewInvalidParameter(fmt.Sprintf(
+				"Invalid MaximumMessageSize: %d (this platform accepts %d to %d)",
+				size, snsstore.MinTopicMessageSize, snsstore.MaxMessageSize))
+		}
+	case snsstore.AttrContentBasedDedup:
+		if !isFifo {
+			return NewInvalidParameter("ContentBasedDeduplication applies only to FIFO topics")
+		}
+		if value != "true" && value != "false" {
+			return NewInvalidParameter(fmt.Sprintf("Invalid ContentBasedDeduplication: %s. Valid values: true, false", value))
+		}
+	case snsstore.AttrFifoThroughputScope:
+		if !isFifo {
+			return NewInvalidParameter("FifoThroughputScope applies only to FIFO topics")
+		}
+		if value != "Topic" && value != "MessageGroup" {
+			return NewInvalidParameter(fmt.Sprintf("Invalid FifoThroughputScope: %s. Valid values: Topic, MessageGroup", value))
+		}
+	case snsstore.AttrArchivePolicy:
+		if !isFifo {
+			return NewInvalidParameter("ArchivePolicy applies only to FIFO topics")
+		}
+		return validateJSONAttribute(name, value)
+	}
+	return nil
+}
+
+// rejectNonSettableTopicAttribute rejects the topic-plane keys
+// SetTopicAttributes must refuse: FifoTopic is create-only (the topic type
+// is fixed by the name at creation — a .fifo name makes a FIFO topic, any
+// other name a standard topic, and no later write may contradict the
+// predicate), and the synthesised or derived keys (EffectiveDeliveryPolicy,
+// TopicArn, Owner, the Subscriptions* counters) are read-only members of
+// GetTopicAttributes, not writable state.
+func rejectNonSettableTopicAttribute(name string) error {
+	switch name {
+	case snsstore.AttrFifoTopic:
+		return NewInvalidParameter("FifoTopic cannot be set via SetTopicAttributes; the topic type is fixed at creation by the topic name")
+	case snsstore.AttrEffectiveDelivery:
+		return NewInvalidParameter("EffectiveDeliveryPolicy is a read-only attribute synthesised from DeliveryPolicy and the system defaults")
+	case snsstore.AttrTopicArn, snsstore.AttrOwner,
+		snsstore.AttrSubscriptionsConfirmed, snsstore.AttrSubscriptionsDeleted, snsstore.AttrSubscriptionsPending:
+		return NewInvalidParameter(fmt.Sprintf("%s is a read-only topic attribute", name))
 	}
 	return nil
 }
@@ -290,92 +239,90 @@ func validateJSONAttribute(name, value string) error {
 // ---------------------------------------------------------------------------
 
 // validateSubscriptionAttribute validates well-known subscription attributes
-// that have structured values. Unknown attributes pass through without
-// validation (forward-compatible with future AWS additions), except for the
-// reserved internal keys below.
-func validateSubscriptionAttribute(name, value string) error {
+// against their documented value constraints, and rejects the read-only
+// keys of the documented GetSubscriptionAttributes set. protocol gates the
+// per-protocol attributes (RawMessageDelivery). FilterPolicy is validated
+// separately by validateFilterPolicyScopePair — its grammar depends on the
+// scope it will match under, which the per-attribute switch cannot see.
+// Unknown attribute names pass through (forward-compatible with future
+// AWS additions) under the plane-wide value cap; the reserved internal
+// keys below are refused.
+func validateSubscriptionAttribute(name, value, protocol string) error {
 	switch name {
 	// AuthenticateOnUnsubscribe is set exclusively through the
 	// ConfirmSubscription input parameter; it is not a writable attribute.
-	case "AuthenticateOnUnsubscribe":
+	case snsstore.AttrAuthenticateOnUnsubscribe:
 		return NewInvalidParameter("AuthenticateOnUnsubscribe cannot be set via SetSubscriptionAttributes; it is set when confirming the subscription")
-	case "FilterPolicy":
-		return validateFilterPolicy(value)
-	case "FilterPolicyScope":
+	case snsstore.AttrFilterPolicyScope:
 		return validateFilterPolicyScope(value)
-	case "RedrivePolicy":
+	case snsstore.AttrRedrivePolicy:
 		return validateRedrivePolicy(value)
+	case snsstore.AttrDeliveryPolicy:
+		// The subscription-level document names the three policies without
+		// the "http" wrapper; the parser validates every documented field
+		// and constraint.
+		_, err := parseSubscriptionDeliveryPolicy(value)
+		return err
+	case snsstore.AttrRawMessageDelivery:
+		// "When set to true, enables raw message delivery to Amazon SQS or
+		// HTTP/S endpoints" (SetSubscriptionAttributes, Subscribe) — the
+		// value is a boolean literal and the attribute exists only on the
+		// protocols that sentence names.
+		if value != "true" && value != "false" {
+			return NewInvalidParameter(fmt.Sprintf("Invalid RawMessageDelivery: %s. Valid values: true, false", value))
+		}
+		if !protocolSupportsRawDelivery(protocol) {
+			return NewInvalidParameter(fmt.Sprintf(
+				"RawMessageDelivery applies only to Amazon SQS and HTTP/S endpoints, not protocol %s", protocol))
+		}
+	case snsstore.AttrPendingConfirmation, snsstore.AttrConfirmationWasAuthenticated,
+		snsstore.AttrSubscriptionArn, snsstore.AttrTopicArn, snsstore.AttrOwner,
+		snsstore.AttrProtocol, snsstore.AttrEndpoint, snsstore.AttrReplayStatus:
+		return NewInvalidParameter(fmt.Sprintf("%s is a read-only subscription attribute", name))
+	}
+	// No AWS-documented value bound exists for subscription attributes;
+	// the platform caps every value — known and unknown names alike — at
+	// the topic plane's bound so the two attribute planes carry the same
+	// storage-exposure ceiling.
+	if len(value) > snsstore.MaxSubscriptionAttributeValueLength {
+		return NewInvalidParameter(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), snsstore.MaxSubscriptionAttributeValueLength))
 	}
 	return nil
 }
 
-// validateFilterPolicy validates the JSON structure of a subscription filter
-// policy. AWS allows at most 100 attribute names in a single policy.
-func validateFilterPolicy(value string) error {
-	if value == "" {
-		return nil
-	}
-
-	var policy map[string]interface{}
-	if err := json.Unmarshal([]byte(value), &policy); err != nil {
-		return NewInvalidParameter(fmt.Sprintf("Invalid filter policy: %s", err.Error()))
-	}
-
-	if len(policy) > 100 {
-		return ErrFilterLimitExceeded
-	}
-
-	for attrName, raw := range policy {
-		if attrName == "" {
-			return NewInvalidParameter("Invalid filter policy: attribute name must not be empty")
-		}
-		if err := validateFilterPolicyValue(raw); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// validateFilterPolicy validates the filter policy document against the
+// scope it will match under: its size, leaf-key count, total combination,
+// wildcard complexity and every operator operand against the documented
+// constraints, plus the scope's nesting rule — a nested policy is
+// payload-based filtering alone. The grammar and its matcher share
+// filter_policy.go, so a policy is accepted only when delivery-time
+// matching can evaluate it.
+func validateFilterPolicy(value, scope string) error {
+	return validateFilterPolicyDocument(value, scope)
 }
 
-// validateFilterPolicyValue validates the value array for one attribute in
-// the filter policy. Values must be an array of strings, numbers, booleans,
-// or condition objects.
-func validateFilterPolicyValue(raw interface{}) error {
-	values, ok := raw.([]interface{})
-	if !ok {
-		return NewInvalidParameter("Invalid filter policy: value must be an array")
+// validateFilterPolicyScopePair validates the FilterPolicy and
+// FilterPolicyScope a subscription will carry together. The two attributes
+// are coupled: "Amazon SNS accepts a nested filter policy for
+// payload-based filtering" while attribute-based filtering "doesn't accept
+// a nested filter policy", so the policy document is validated against the
+// scope that will apply once the request lands — an absent scope is the
+// documented default, MessageAttributes. Both cores call this with the
+// request's paired values resolved against the stored subscription, which
+// covers both directions: a FilterPolicy write under the effective scope,
+// and a FilterPolicyScope write re-validated against the stored policy.
+func validateFilterPolicyScopePair(policy, scope string) error {
+	if scope == "" {
+		scope = snsstore.FilterPolicyScopeAttributes
 	}
-
-	for _, v := range values {
-		switch cond := v.(type) {
-		case string, float64, bool:
-			continue
-		case map[string]interface{}:
-			if len(cond) != 1 {
-				return NewInvalidParameter(
-					"Invalid filter policy: a condition object must have exactly one operator")
-			}
-			for operator := range cond {
-				switch operator {
-				case "prefix", "anything-but", "numeric", "exists":
-				default:
-					return NewInvalidParameter(
-						fmt.Sprintf("Invalid filter policy: unknown operator %q", operator))
-				}
-			}
-		default:
-			return NewInvalidParameter("Invalid filter policy: unsupported value type")
-		}
-	}
-
-	return nil
+	return validateFilterPolicy(policy, scope)
 }
 
 // validateFilterPolicyScope validates the FilterPolicyScope attribute.
 // AWS accepts only "MessageAttributes" (default) or "MessageBody".
 func validateFilterPolicyScope(value string) error {
 	switch value {
-	case "MessageAttributes", "MessageBody":
+	case snsstore.FilterPolicyScopeAttributes, snsstore.FilterPolicyScopeBody:
 		return nil
 	default:
 		return NewInvalidParameter(
@@ -384,15 +331,14 @@ func validateFilterPolicyScope(value string) error {
 }
 
 // validateRedrivePolicy validates the JSON structure of a subscription
-// redrive policy. AWS requires deadLetterTargetArn.
+// redrive policy, parsing into the store's single RedrivePolicy type. AWS
+// requires deadLetterTargetArn.
 func validateRedrivePolicy(value string) error {
 	if value == "" {
 		return nil
 	}
 
-	var rp struct {
-		DeadLetterTargetArn string `json:"deadLetterTargetArn"`
-	}
+	var rp snsstore.RedrivePolicy
 	if err := json.Unmarshal([]byte(value), &rp); err != nil {
 		return NewInvalidParameter(fmt.Sprintf("Invalid redrive policy: %s", err.Error()))
 	}
@@ -410,16 +356,29 @@ func validateRedrivePolicy(value string) error {
 
 // validatePublishParams validates all top-level Publish parameters that have
 // AWS-documented constraints. The FIFO state is passed as primitives to keep
-// this validator free of store-layer dependencies.
-func validatePublishParams(isFifo, isContentBasedDedup bool, message, subject, messageStructure, messageGroupId, messageDeduplicationId string) error {
-	if len(message) > maxMessageSize {
-		return awserrors.NewAWSError("InvalidParameter", fmt.Sprintf("Message too long: %d bytes (maximum %d)", len(message), maxMessageSize), 400)
+// this validator free of store-layer dependencies; maxMessageBytes is the
+// topic's effective size ceiling — the MaximumMessageSize attribute when the
+// topic sets one, the platform's flat cap otherwise — and the ceiling counts
+// "the combined size of the message body and message attributes against this
+// value" (Publish), so the parsed attributes ride along for the measure.
+func validatePublishParams(isFifo, isContentBasedDedup bool, maxMessageBytes int, message, subject, messageStructure, messageGroupId, messageDeduplicationId string, attrs map[string]*snsstore.MessageAttribute) error {
+	if size := len(message) + attributeBytes(attrs); size > maxMessageBytes {
+		return NewInvalidParameter(fmt.Sprintf("Message and message attributes too long: %d bytes (maximum %d)", size, maxMessageBytes))
 	}
 
 	// Subject is documented as "UTF-8 text … less than 100 characters
 	// long", so the ceiling counts Unicode characters.
-	if n := utf8.RuneCountInString(subject); n > maxSubjectLength {
-		return NewInvalidParameter(fmt.Sprintf("Subject too long: %d characters (maximum %d)", n, maxSubjectLength))
+	if n := utf8.RuneCountInString(subject); n > snsstore.MaxSubjectLength {
+		return NewInvalidParameter(fmt.Sprintf("Subject too long: %d characters (maximum %d)", n, snsstore.MaxSubjectLength))
+	}
+	// "Subjects must be UTF-8 text with no line breaks or control
+	// characters" (Publish) — line breaks are themselves control
+	// characters, so one sweep over Unicode's control category covers
+	// both.
+	for _, r := range subject {
+		if unicode.IsControl(r) {
+			return NewInvalidParameter(fmt.Sprintf("Invalid Subject: control character U+%04X is not allowed (Subjects must be UTF-8 text with no line breaks or control characters)", r))
+		}
 	}
 
 	if messageStructure != "" && messageStructure != "json" {
@@ -436,6 +395,21 @@ func validatePublishParams(isFifo, isContentBasedDedup bool, message, subject, m
 		}
 	}
 
+	// Both FIFO identifiers carry the documented charset and length
+	// constraints on every topic type — for standard topics the Publish
+	// documentation states the same validation rules apply to a forwarded
+	// MessageGroupId.
+	if messageGroupId != "" {
+		if err := validateFifoIdentifier("MessageGroupId", messageGroupId); err != nil {
+			return err
+		}
+	}
+	if messageDeduplicationId != "" {
+		if err := validateFifoIdentifier("MessageDeduplicationId", messageDeduplicationId); err != nil {
+			return err
+		}
+	}
+
 	if isFifo {
 		if messageGroupId == "" {
 			return NewInvalidParameter("MessageGroupId is required for FIFO topics")
@@ -447,14 +421,29 @@ func validatePublishParams(isFifo, isContentBasedDedup bool, message, subject, m
 			return NewInvalidParameter("MessageDeduplicationId is required when ContentBasedDeduplication is false")
 		}
 	} else {
-		if messageGroupId != "" {
-			return NewInvalidParameter("MessageGroupId is only valid for FIFO topics")
-		}
+		// MessageGroupId is optional on standard topics: it "is forwarded
+		// only to Amazon SQS standard subscriptions to activate fair
+		// queues" (API_Publish) and reaches no other endpoint type.
+		// MessageDeduplicationId "applies only to FIFO topics".
 		if messageDeduplicationId != "" {
 			return NewInvalidParameter("MessageDeduplicationId is only valid for FIFO topics")
 		}
 	}
 
+	return nil
+}
+
+// validateFifoIdentifier enforces the documented MessageGroupId and
+// MessageDeduplicationId constraints — at most 128 characters drawn from
+// the alphanumeric-plus-punctuation set (the charset is ASCII, so byte
+// length is character length).
+func validateFifoIdentifier(name, value string) error {
+	if len(value) > snsstore.MaxFifoIdentifierLength {
+		return NewInvalidParameter(fmt.Sprintf("%s too long: %d characters (maximum %d)", name, len(value), snsstore.MaxFifoIdentifierLength))
+	}
+	if !fifoIdentifierPattern.MatchString(value) {
+		return NewInvalidParameter(fmt.Sprintf("Invalid %s %q: must contain up to 128 alphanumeric characters (a-z, A-Z, 0-9) and punctuation", name, value))
+	}
 	return nil
 }
 
@@ -471,11 +460,11 @@ func validateMessageAttributeName(name string) error {
 // attributes: maximum 10 attributes, String values up to 256 chars, Binary
 // values up to 256 bytes.
 func validateMessageAttributeLimits(name, stringValue string, binaryValue []byte) error {
-	if len(stringValue) > maxMessageAttrStringValue {
-		return NewInvalidParameter(fmt.Sprintf("Message attribute %q StringValue too long: %d characters (maximum %d)", name, len(stringValue), maxMessageAttrStringValue))
+	if len(stringValue) > snsstore.MaxMessageAttributeStringValue {
+		return NewInvalidParameter(fmt.Sprintf("Message attribute %q StringValue too long: %d characters (maximum %d)", name, len(stringValue), snsstore.MaxMessageAttributeStringValue))
 	}
-	if len(binaryValue) > maxMessageAttrBinaryValue {
-		return NewInvalidParameter(fmt.Sprintf("Message attribute %q BinaryValue too long: %d bytes (maximum %d)", name, len(binaryValue), maxMessageAttrBinaryValue))
+	if len(binaryValue) > snsstore.MaxMessageAttributeBinaryValue {
+		return NewInvalidParameter(fmt.Sprintf("Message attribute %q BinaryValue too long: %d bytes (maximum %d)", name, len(binaryValue), snsstore.MaxMessageAttributeBinaryValue))
 	}
 	return nil
 }
@@ -484,9 +473,27 @@ func validateMessageAttributeLimits(name, stringValue string, binaryValue []byte
 // Platform validators
 // ---------------------------------------------------------------------------
 
+// validatePlatformApplicationName enforces the non-empty requirement, the
+// documented charset, and the 256-character ceiling on
+// CreatePlatformApplication names, counted in Unicode characters.
+func validatePlatformApplicationName(name string) error {
+	if name == "" {
+		return NewInvalidParameter("Name is required")
+	}
+	if n := utf8.RuneCountInString(name); n > snsstore.MaxPlatformApplicationNameLength {
+		return NewInvalidParameter(fmt.Sprintf("Name too long: %d characters (maximum %d)", n, snsstore.MaxPlatformApplicationNameLength))
+	}
+	if !platformApplicationNamePattern.MatchString(name) {
+		return NewInvalidParameter("Invalid parameter: Name must contain only letters, numbers, underscores, hyphens, and periods")
+	}
+	return nil
+}
+
 // validatePlatformApplicationArn validates the structure of a platform
-// application ARN. The ARN must start with "arn:", use the "sns" service,
-// and have at least six colon-separated parts.
+// application ARN: the "arn:" prefix, the "sns" service namespace, and the
+// platform-application resource form app/<platform>/<name> — the form the
+// store's endpoint-ARN construction extracts, checked here so the store
+// side carries no ARN-format validation of its own.
 func validatePlatformApplicationArn(arn string) error {
 	if arn == "" {
 		return NewInvalidParameter("PlatformApplicationArn is required")
@@ -501,14 +508,18 @@ func validatePlatformApplicationArn(arn string) error {
 	if service != "sns" {
 		return NewInvalidParameter(fmt.Sprintf("PlatformApplicationArn must be an SNS ARN: %s", arn))
 	}
+	if platform, _ := svcarn.ExtractPlatformApplicationFromARN(arn); platform == "" {
+		return NewInvalidParameter(fmt.Sprintf(
+			"Invalid PlatformApplicationArn: the resource must name a platform application as app/<platform>/<name>: %s", arn))
+	}
 	return nil
 }
 
 // validatePlatformAttributeValue enforces a length cap on platform application
 // and endpoint attribute values for DoS protection.
 func validatePlatformAttributeValue(name, value string) error {
-	if len(value) > maxPlatformAttributeValueLength {
-		return NewInvalidParameter(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), maxPlatformAttributeValueLength))
+	if len(value) > snsstore.MaxPlatformAttributeValueLength {
+		return NewInvalidParameter(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), snsstore.MaxPlatformAttributeValueLength))
 	}
 	return nil
 }

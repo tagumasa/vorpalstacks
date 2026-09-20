@@ -34,8 +34,10 @@ func (b *SNSBuilder) PlatformEndpoint(platform, name, id string) string {
 	return b.Build("sns", "endpoint/"+platform+"/"+name+"/"+id)
 }
 
-// Subscription constructs an ARN for an SNS subscription.
-func (b *SNSBuilder) Subscription(topicArn, id string) string { return b.Build("sns", id) }
+// Subscription constructs an SNS subscription ARN: the documented form is
+// the topic's own ARN extended with the subscription's identifier
+// (TOPIC_ARN:SUBSCRIPTION_ID), not a standalone sns resource.
+func (b *SNSBuilder) Subscription(topicArn, id string) string { return topicArn + ":" + id }
 
 // ParseTopicName extracts the topic name from an SNS topic ARN.
 func (b *SNSBuilder) ParseTopicName(arn string) string { return ExtractTopicNameFromARN(arn) }

@@ -42,6 +42,7 @@ import (
 	"vorpalstacks/internal/services/aws/iot/broker"
 	"vorpalstacks/internal/services/aws/iot/ca"
 	"vorpalstacks/internal/services/aws/iot/rules/actions"
+	storesns "vorpalstacks/internal/store/aws/sns"
 
 	svckinesis "vorpalstacks/internal/services/aws/kinesis"
 
@@ -921,7 +922,7 @@ func (a *App) initEventBusPolicies() {
 	if st.snsStoreInstance != nil {
 		eb.SetResourcePolicyFunc("sns", eventbus.SNSTopicResourcePolicyFn(
 			func(ctx context.Context, topicARN string) (string, error) {
-				topic, err := st.snsStoreInstance.GetTopic(topicARN)
+				topic, err := resolveSNSTopicPolicyStore(st.snsStoreInstance, st.snsService, topicARN).GetTopic(topicARN)
 				if err != nil {
 					return "", err
 				}
@@ -1184,4 +1185,27 @@ func (a *App) injectS3AuditRecorder(st *serviceState) {
 	if handler, ok := a.server.S3Handler().(*svcs3.S3Handler); ok {
 		handler.SetAuditRecorder(recorder)
 	}
+}
+
+// snsRegionResolver is the SNS service's region-resolving surface the
+// topic-policy store resolution needs — narrow so the wiring stays
+// testable against a fake.
+type snsRegionResolver interface {
+	GetSNSStoreForRegion(region string) (storesns.SNSStoreInterface, error)
+}
+
+// resolveSNSTopicPolicyStore resolves the regional store an SNS topic
+// policy evaluation reads from: the topic ARN names its region, and the
+// service's region resolver serves that region's store — so a cross-region
+// topic evaluates its own policy instead of an empty lookup in the default
+// region's store. Without the service (or when the region resolves to no
+// store) the fixed default-region instance is the best available store.
+func resolveSNSTopicPolicyStore(fallback *storesns.SNSStore, service snsRegionResolver, topicARN string) storesns.SNSStoreInterface {
+	if service != nil {
+		_, _, region, _, _ := svcarn.SplitARN(topicARN)
+		if resolved, err := service.GetSNSStoreForRegion(region); err == nil {
+			return resolved
+		}
+	}
+	return fallback
 }

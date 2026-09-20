@@ -1,21 +1,15 @@
 package sns
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
 
@@ -43,13 +37,11 @@ type PublishBatchInput struct {
 	Entries  []map[string]interface{}
 }
 
-// messageEntrySize estimates the serialised wire size of a single Publish or
-// PublishBatch entry: message body + subject + all message attributes
-// (name + DataType + StringValue or BinaryValue).  AWS counts the full
-// serialised request toward the 256 KB batch limit, so excluding attributes
-// under-estimates and allows oversized batches through.
-func messageEntrySize(message, subject string, attrs map[string]*snsstore.MessageAttribute) int {
-	size := len(message) + len(subject)
+// attributeBytes measures the serialised wire size of a message's
+// attributes: each entry contributes its name, DataType and StringValue or
+// base64-encoded BinaryValue.
+func attributeBytes(attrs map[string]*snsstore.MessageAttribute) int {
+	size := 0
 	for name, attr := range attrs {
 		size += len(name)
 		size += len(attr.Type)
@@ -59,6 +51,15 @@ func messageEntrySize(message, subject string, attrs map[string]*snsstore.Messag
 		}
 	}
 	return size
+}
+
+// messageEntrySize estimates the serialised wire size of a single Publish or
+// PublishBatch entry: message body + subject + all message attributes
+// (name + DataType + StringValue or BinaryValue).  AWS counts the full
+// serialised request toward the 256 KB batch limit, so excluding attributes
+// under-estimates and allows oversized batches through.
+func messageEntrySize(message, subject string, attrs map[string]*snsstore.MessageAttribute) int {
+	return len(message) + len(subject) + attributeBytes(attrs)
 }
 
 // parseMessageAttributes extracts SNS message attributes from a request params
@@ -88,7 +89,11 @@ func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message
 	// them manually.
 	if attrs == nil {
 		attrs = make(map[string]interface{})
-		for i := 1; i <= 30; i++ {
+		// The Query flat-key entries are numbered contiguously from 1; the
+		// walk ends at the first gap. There is no parse-side entry cap to
+		// drift from the documented limit — the count check below is the
+		// single enforcement of MaxMessageAttributes.
+		for i := 1; ; i++ {
 			name := request.GetStringParam(params, fmt.Sprintf("MessageAttributes.entry.%d.Name", i))
 			if name == "" {
 				break
@@ -109,8 +114,8 @@ func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message
 	}
 
 	// Maximum 10 message attributes per AWS spec.
-	if len(attrs) > maxMessageAttributes {
-		return NewInvalidParameter(fmt.Sprintf("Too many message attributes: %d (maximum %d)", len(attrs), maxMessageAttributes))
+	if len(attrs) > snsstore.MaxMessageAttributes {
+		return NewInvalidParameter(fmt.Sprintf("Too many message attributes: %d (maximum %d)", len(attrs), snsstore.MaxMessageAttributes))
 	}
 
 	msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute, len(attrs))
@@ -172,18 +177,18 @@ func firstString(m map[string]interface{}, keys ...string) string {
 // ContentBasedDeduplication.
 func generateContentBasedDeduplicationId(message string) string {
 	hash := sha256.Sum256([]byte(message))
-	return hex.EncodeToString(hash[:32])
+	return hex.EncodeToString(hash[:])
 }
 
-// publishCore is the single validation and persistence path for Publish. It
-// needs the request context for the delivery region.
-func (s *SNSService) publishCore(store snsstore.SNSStoreInterface, reqCtx *request.RequestContext, in PublishInput) (interface{}, error) {
+// publishCore is the single validation and persistence path for Publish.
+// region is the delivery region the request context carries.
+func (s *SNSService) publishCore(store snsstore.SNSStoreInterface, region string, in PublishInput) (interface{}, error) {
 	// TargetArn is an AWS-supported alternative to TopicArn. PhoneNumber
 	// is silently accepted by AWS but SMS sending is out-of-scope here —
 	// reject it explicitly so callers get a clear error instead of silent
 	// success.
 	if in.PhoneNumber != "" {
-		return nil, awserrors.NewAWSError("InvalidParameter", "PhoneNumber is not supported (SMS sending is not available)", 400)
+		return nil, NewInvalidParameter("PhoneNumber is not supported (SMS sending is not available)")
 	}
 
 	if in.TopicArn == "" && in.TargetArn == "" {
@@ -198,24 +203,11 @@ func (s *SNSService) publishCore(store snsstore.SNSStoreInterface, reqCtx *reque
 
 	topic, err := store.GetTopic(in.TopicArn)
 	if err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
-
-	if err := validatePublishParams(topic.IsFifoTopic(), topic.IsContentBasedDeduplication(), in.Message, in.Subject, in.MessageStructure, in.MessageGroupId, in.MessageDeduplicationId); err != nil {
-		return nil, err
-	}
-
-	if topic.IsFifoTopic() && in.MessageDeduplicationId == "" {
-		in.MessageDeduplicationId = generateContentBasedDeduplicationId(in.Message)
-	}
-
-	messageId := uuid.New().String()
 
 	msg := &snsstore.Message{
-		MessageId:              messageId,
+		MessageId:              uuid.New().String(),
 		TopicArn:               topic.Arn,
 		Subject:                in.Subject,
 		Message:                in.Message,
@@ -224,76 +216,97 @@ func (s *SNSService) publishCore(store snsstore.SNSStoreInterface, reqCtx *reque
 		MessageDeduplicationId: in.MessageDeduplicationId,
 	}
 
+	// Attributes parse ahead of validation: the size ceiling counts the
+	// combined body and attributes (Publish), so the validator needs the
+	// parsed set.
 	if err := parseMessageAttributes(in.Parameters, msg); err != nil {
 		return nil, err
 	}
 
-	// Atomically check for duplicates and record the dedup ID. This runs
-	// after all validation to prevent cache leaks when validation fails,
-	// and is atomic to eliminate the TOCTOU race between separate
-	// check (RLock) and record (Lock) operations.
-	if topic.IsFifoTopic() && in.MessageDeduplicationId != "" {
-		if existingMsgID, isDuplicate := store.CheckAndRecordDeduplication(in.TopicArn, in.MessageDeduplicationId, messageId); isDuplicate {
-			return map[string]interface{}{
-				"MessageId": existingMsgID,
-			}, nil
-		}
+	if err := validatePublishParams(topic.IsFifoTopic(), topic.IsContentBasedDeduplication(), topic.MaximumMessageSizeBytes(), in.Message, in.Subject, in.MessageStructure, in.MessageGroupId, in.MessageDeduplicationId, msg.MessageAttributes); err != nil {
+		return nil, err
+	}
+
+	if topic.IsFifoTopic() && in.MessageDeduplicationId == "" {
+		in.MessageDeduplicationId = generateContentBasedDeduplicationId(in.Message)
+		msg.MessageDeduplicationId = in.MessageDeduplicationId
 	}
 
 	msg.PublishedTimestamp = time.Now().UTC()
-	msg.ReceivedTimestamp = time.Now().UTC()
 
-	subscriptions, err := store.ListSubscriptionsByTopic(in.TopicArn, common.ListOptions{})
-	if err == nil && len(subscriptions.Items) > 0 {
-		msgCopy := *msg
-		subsCopy := make([]*snsstore.Subscription, len(subscriptions.Items))
-		for i, sub := range subscriptions.Items {
-			subCopy := *sub
-			subsCopy[i] = &subCopy
-		}
-		region := reqCtx.GetRegion()
-
-		if s.bus != nil {
-			// Serialise message attributes to raw JSON for transport through
-			// the event bus (which must not depend on store-layer types).
-			var msgAttrs map[string]json.RawMessage
-			if len(msg.MessageAttributes) > 0 {
-				msgAttrs = make(map[string]json.RawMessage, len(msg.MessageAttributes))
-				for k, v := range msg.MessageAttributes {
-					raw, err := json.Marshal(v)
-					if err == nil {
-						msgAttrs[k] = raw
-					}
-				}
-			}
-			snsEvt := &eventbus.SNSDeliveryEvent{
-				TopicARN:          topic.Arn,
-				MessageID:         msg.MessageId,
-				Message:           in.Message,
-				Subject:           in.Subject,
-				MessageStructure:  in.MessageStructure,
-				MessageGroupId:    in.MessageGroupId,
-				MessageAttributes: msgAttrs,
-			}
-			snsEvt.Region = region
-			if err := s.bus.Publish(context.Background(), snsEvt); err != nil {
-				logs.Warn("Failed to publish SNS delivery event to event bus; message is stored but subscribers may not be notified",
-					logs.String("topicArn", in.TopicArn),
-					logs.String("messageId", messageId),
-					logs.Err(err))
-			}
-		} else {
-			s.deliverAsync(&msgCopy, subsCopy, region)
-		}
+	subscriptions, err := store.ListAllSubscriptionsByTopic(in.TopicArn)
+	if err != nil {
+		return nil, mapStoreError(err)
 	}
 
-	result := map[string]interface{}{
-		"MessageId": messageId,
-	}
 	if topic.IsFifoTopic() {
-		result["SequenceNumber"] = store.GetNextSequenceNumber(in.TopicArn, in.MessageGroupId)
+		result, err := s.publishFifoOrdered(store, msg, subscriptions, region, topic.PerGroupDeduplication())
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
 	}
-	return result, nil
+
+	if len(subscriptions) > 0 {
+		if err := s.dispatchPublish(msg, subscriptions, region); err != nil {
+			return nil, fmt.Errorf("dispatch publish: %w", err)
+		}
+	}
+
+	return map[string]interface{}{
+		"MessageId": msg.MessageId,
+	}, nil
+}
+
+// publishFifoOrdered runs one FIFO publish: deduplication, sequence
+// allocation and delivery execute inside the store's per-(topic, message
+// group) critical section, so the sequence order the responses report is
+// the delivery order every endpoint observes. Delivery is synchronous —
+// the async fan-out seam cannot preserve a per-group order across its
+// worker pool — and per-subscription failures route to the DLQ exactly as
+// the async path routes them. A dedup hit is accepted but not delivered
+// and answers with the original publish's MessageId and SequenceNumber
+// (the sequence number is assigned to each message; a dedup hit IS the
+// original message, which is also why no new number is allocated for it).
+// perGroupDedup scopes the deduplication window to the message group when
+// the topic's FifoThroughputScope is MessageGroup.
+func (s *SNSService) publishFifoOrdered(store snsstore.SNSStoreInterface, msg *snsstore.Message, subscriptions []*snsstore.Subscription, region string, perGroupDedup bool) (map[string]interface{}, error) {
+	release := store.AcquireFifoGroupLock(msg.TopicArn, msg.MessageGroupId)
+	defer release()
+
+	if messageID, sequenceNumber, hit, err := store.CheckFifoDeduplication(msg.TopicArn, msg.MessageGroupId, msg.MessageDeduplicationId, perGroupDedup); err != nil {
+		return nil, mapStoreError(err)
+	} else if hit {
+		return map[string]interface{}{
+			"MessageId":      messageID,
+			"SequenceNumber": sequenceNumber,
+		}, nil
+	}
+
+	sequenceNumber, err := store.AllocateFifoSequence(msg.TopicArn, msg.MessageGroupId)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	if messageID, existingSeq, hit, err := store.CheckAndRecordFifoDeduplication(msg.TopicArn, msg.MessageGroupId, msg.MessageDeduplicationId, msg.MessageId, sequenceNumber, perGroupDedup); err != nil {
+		return nil, mapStoreError(err)
+	} else if hit {
+		// A publish recording the same dedup ID between the pre-check and
+		// here — the window admits only one copy at the topic's dedup
+		// scope, so this publish is accepted but not delivered and answers
+		// with that publish's identifiers.
+		return map[string]interface{}{
+			"MessageId":      messageID,
+			"SequenceNumber": existingSeq,
+		}, nil
+	}
+
+	s.deliverWithRecover(msg, subscriptions, region)
+
+	return map[string]interface{}{
+		"MessageId":      msg.MessageId,
+		"SequenceNumber": sequenceNumber,
+	}, nil
 }
 
 // batchValidatedEntry holds a single PublishBatch entry that has passed all
@@ -311,6 +324,7 @@ type batchValidatedEntry struct {
 	msgAttrs               map[string]*snsstore.MessageAttribute
 	isDuplicate            bool
 	existingMsgID          string
+	existingSeq            string
 }
 
 // publishBatchCore is the single validation and persistence path for
@@ -332,17 +346,14 @@ func (s *SNSService) publishBatchCore(store snsstore.SNSStoreInterface, reqCtx *
 
 	topic, err := store.GetTopic(in.TopicArn)
 	if err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	entryMaps := in.Entries
 	if len(entryMaps) == 0 {
-		return nil, awserrors.NewAWSError("EmptyBatchRequest", "Batch request does not contain any entries", 400)
+		return nil, ErrEmptyBatchRequest
 	}
-	if len(entryMaps) > maxBatchEntries {
+	if len(entryMaps) > snsstore.MaxBatchEntries {
 		return nil, ErrTooManyEntriesInBatch
 	}
 
@@ -352,9 +363,9 @@ func (s *SNSService) publishBatchCore(store snsstore.SNSStoreInterface, reqCtx *
 	validated := make([]batchValidatedEntry, 0, len(entryMaps))
 	batchTotalSize := 0
 
-	subscriptions, err := store.ListSubscriptionsByTopic(in.TopicArn, common.ListOptions{})
+	subscriptions, err := store.ListAllSubscriptionsByTopic(in.TopicArn)
 	if err != nil {
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 	region := reqCtx.GetRegion()
 
@@ -393,7 +404,12 @@ func (s *SNSService) publishBatchCore(store snsstore.SNSStoreInterface, reqCtx *
 		messageDeduplicationId, _ := entryMap["MessageDeduplicationId"].(string)
 		messageStructure, _ := entryMap["MessageStructure"].(string)
 
-		if err := validatePublishParams(topic.IsFifoTopic(), topic.IsContentBasedDeduplication(), message, subject, messageStructure, messageGroupId, messageDeduplicationId); err != nil {
+		// Attributes parse ahead of validation on every entry: the size
+		// ceiling counts the combined body and attributes (Publish), and
+		// the batch total counts every entry's wire size — duplicates
+		// included, their bytes crossed the wire like any other's.
+		msg := &snsstore.Message{}
+		if err := parseMessageAttributes(entryMap, msg); err != nil {
 			failed = append(failed, map[string]interface{}{
 				"Id":          id,
 				"Code":        "InvalidParameter",
@@ -402,6 +418,18 @@ func (s *SNSService) publishBatchCore(store snsstore.SNSStoreInterface, reqCtx *
 			})
 			continue
 		}
+
+		if err := validatePublishParams(topic.IsFifoTopic(), topic.IsContentBasedDeduplication(), topic.MaximumMessageSizeBytes(), message, subject, messageStructure, messageGroupId, messageDeduplicationId, msg.MessageAttributes); err != nil {
+			failed = append(failed, map[string]interface{}{
+				"Id":          id,
+				"Code":        "InvalidParameter",
+				"Message":     err.Error(),
+				"SenderFault": true,
+			})
+			continue
+		}
+
+		batchTotalSize += messageEntrySize(message, subject, msg.MessageAttributes)
 
 		entry := batchValidatedEntry{
 			id:               id,
@@ -416,60 +444,41 @@ func (s *SNSService) publishBatchCore(store snsstore.SNSStoreInterface, reqCtx *
 				messageDeduplicationId = generateContentBasedDeduplicationId(message)
 			}
 			entry.messageDeduplicationId = messageDeduplicationId
-			if existingMsgID, isDuplicate := store.CheckDeduplication(in.TopicArn, messageDeduplicationId); isDuplicate {
+			existingMsgID, existingSeq, isDuplicate, err := store.CheckFifoDeduplication(in.TopicArn, messageGroupId, messageDeduplicationId, topic.PerGroupDeduplication())
+			if err != nil {
+				return nil, mapStoreError(err)
+			}
+			if isDuplicate {
 				entry.isDuplicate = true
 				entry.existingMsgID = existingMsgID
+				entry.existingSeq = existingSeq
 			}
 		}
 
 		if !entry.isDuplicate {
-			msg := &snsstore.Message{}
-			if err := parseMessageAttributes(entryMap, msg); err != nil {
-				failed = append(failed, map[string]interface{}{
-					"Id":          id,
-					"Code":        "InvalidParameter",
-					"Message":     err.Error(),
-					"SenderFault": true,
-				})
-				continue
-			}
 			entry.msgAttrs = msg.MessageAttributes
-			batchTotalSize += messageEntrySize(message, subject, entry.msgAttrs)
 		}
 
 		validated = append(validated, entry)
 	}
 
 	// Batch-level size check: reject the entire batch before any delivery.
-	if batchTotalSize > maxBatchTotalSize {
-		return nil, awserrors.NewAWSError("BatchRequestTooLong", fmt.Sprintf("Total batch request size %d exceeds maximum %d", batchTotalSize, maxBatchTotalSize), 400)
+	if batchTotalSize > snsstore.MaxBatchTotalSize {
+		return nil, ErrBatchRequestTooLong
 	}
 
 	// --- Pass 2: deliver validated entries ---
 	for _, entry := range validated {
 		if entry.isDuplicate {
 			successful = append(successful, map[string]interface{}{
-				"Id":        entry.id,
-				"MessageId": entry.existingMsgID,
+				"Id":             entry.id,
+				"MessageId":      entry.existingMsgID,
+				"SequenceNumber": entry.existingSeq,
 			})
 			continue
 		}
 
 		messageId := uuid.New().String()
-
-		if topic.IsFifoTopic() && entry.messageDeduplicationId != "" {
-			existingMsgID, isDuplicate := store.CheckAndRecordDeduplication(in.TopicArn, entry.messageDeduplicationId, messageId)
-			if isDuplicate {
-				// A concurrent publish with the same dedup ID won the
-				// race between Pass 1 and Pass 2. Return the existing
-				// message ID without delivering.
-				successful = append(successful, map[string]interface{}{
-					"Id":        entry.id,
-					"MessageId": existingMsgID,
-				})
-				continue
-			}
-		}
 
 		msg := &snsstore.Message{
 			MessageId:              messageId,
@@ -482,55 +491,45 @@ func (s *SNSService) publishBatchCore(store snsstore.SNSStoreInterface, reqCtx *
 			MessageAttributes:      entry.msgAttrs,
 		}
 		msg.PublishedTimestamp = time.Now().UTC()
-		msg.ReceivedTimestamp = time.Now().UTC()
-
-		if len(subscriptions.Items) > 0 {
-			msgCopy := *msg
-			subsCopy := make([]*snsstore.Subscription, len(subscriptions.Items))
-			for j, sub := range subscriptions.Items {
-				subCopy := *sub
-				subsCopy[j] = &subCopy
-			}
-
-			if s.bus != nil {
-				var msgAttrs map[string]json.RawMessage
-				if len(msg.MessageAttributes) > 0 {
-					msgAttrs = make(map[string]json.RawMessage, len(msg.MessageAttributes))
-					for k, v := range msg.MessageAttributes {
-						raw, err := json.Marshal(v)
-						if err == nil {
-							msgAttrs[k] = raw
-						}
-					}
-				}
-				snsEvt := &eventbus.SNSDeliveryEvent{
-					TopicARN:          in.TopicArn,
-					MessageID:         messageId,
-					Message:           entry.message,
-					Subject:           entry.subject,
-					MessageStructure:  entry.messageStructure,
-					MessageGroupId:    entry.messageGroupId,
-					MessageAttributes: msgAttrs,
-				}
-				snsEvt.Region = region
-				if err := s.bus.Publish(context.Background(), snsEvt); err != nil {
-					logs.Warn("Failed to publish SNS event", logs.Err(err))
-				}
-			} else {
-				s.deliverAsync(&msgCopy, subsCopy, region)
-			}
-		}
-
-		result := map[string]interface{}{
-			"Id":        entry.id,
-			"MessageId": messageId,
-		}
 
 		if topic.IsFifoTopic() {
-			result["SequenceNumber"] = store.GetNextSequenceNumber(in.TopicArn, entry.messageGroupId)
+			// The ordered path owns deduplication, sequence allocation and
+			// synchronous delivery per entry; its result already carries
+			// the batch's Id column.
+			result, err := s.publishFifoOrdered(store, msg, subscriptions, region, topic.PerGroupDeduplication())
+			if err != nil {
+				failed = append(failed, map[string]interface{}{
+					"Id":          entry.id,
+					"Code":        "InternalError",
+					"Message":     err.Error(),
+					"SenderFault": false,
+				})
+				continue
+			}
+			result["Id"] = entry.id
+			successful = append(successful, result)
+			continue
 		}
 
-		successful = append(successful, result)
+		if len(subscriptions) > 0 {
+			if err := s.dispatchPublish(msg, subscriptions, region); err != nil {
+				// A dispatch failure is surfaced per entry — the batch's
+				// Failed list is the batch's own error channel; entries
+				// already dispatched keep their Successful rows.
+				failed = append(failed, map[string]interface{}{
+					"Id":          entry.id,
+					"Code":        "InternalError",
+					"Message":     err.Error(),
+					"SenderFault": false,
+				})
+				continue
+			}
+		}
+
+		successful = append(successful, map[string]interface{}{
+			"Id":        entry.id,
+			"MessageId": messageId,
+		})
 	}
 
 	return map[string]interface{}{

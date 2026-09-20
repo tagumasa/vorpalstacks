@@ -22,34 +22,28 @@ func parsePermissionList(items []map[string]interface{}, member string) []string
 }
 
 // GetDataProtectionPolicy retrieves the data protection policy for the specified SNS topic.
+// The wire member is the model's ResourceArn — no undocumented fallback key.
 func (s *SNSService) GetDataProtectionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	topicArn := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
-	if topicArn == "" {
-		topicArn = request.GetParamLowerFirst(req.Parameters, "TopicArn")
-	}
-
-	return s.getDataProtectionPolicyCore(store, GetDataProtectionPolicyInput{TopicArn: topicArn})
+	return s.getDataProtectionPolicyCore(store, GetDataProtectionPolicyInput{
+		TopicArn: request.GetParamLowerFirst(req.Parameters, "ResourceArn"),
+	})
 }
 
 // PutDataProtectionPolicy sets the data protection policy for the specified SNS topic.
+// The wire member is the model's ResourceArn — no undocumented fallback key.
 func (s *SNSService) PutDataProtectionPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	topicArn := request.GetParamLowerFirst(req.Parameters, "ResourceArn")
-	if topicArn == "" {
-		topicArn = request.GetParamLowerFirst(req.Parameters, "TopicArn")
-	}
-
 	return s.putDataProtectionPolicyCore(store, PutDataProtectionPolicyInput{
-		TopicArn: topicArn,
+		TopicArn: request.GetParamLowerFirst(req.Parameters, "ResourceArn"),
 		Policy:   request.GetParamLowerFirst(req.Parameters, "DataProtectionPolicy"),
 	})
 }

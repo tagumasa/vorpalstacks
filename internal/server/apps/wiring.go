@@ -48,12 +48,12 @@ func (a *App) wireCrossServiceDeps() error {
 	if st.lambdaService != nil {
 		eb.SetLambdaInvoker(st.lambdaService)
 	}
-	if st.snsStoreInstance != nil {
-		var pub snsPublisher
-		if st.snsService != nil {
-			pub = st.snsService
-		}
-		eb.SetSNSInvoker(&snsInvokerAdapter{store: st.snsStoreInstance, kvStore: st.snsStoreInstance.BaseStore, publisher: pub})
+	if st.snsService != nil {
+		eb.SetSNSInvoker(&snsInvokerAdapter{
+			provider:      st.snsService,
+			publisher:     st.snsService,
+			defaultRegion: st.region,
+		})
 	}
 	if st.kinesisService != nil {
 		eb.SetKinesisInvoker(&kinesisInvokerAdapter{

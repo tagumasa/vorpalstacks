@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/invokers"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/apigateway/endpoint"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -291,14 +292,6 @@ func parseFormData(data string) map[string]string {
 	return result
 }
 
-type snsNotification struct {
-	MessageId          string    `json:"messageId"`
-	TopicArn           string    `json:"topicArn"`
-	Subject            string    `json:"subject,omitempty"`
-	Message            string    `json:"message"`
-	PublishedTimestamp time.Time `json:"publishedTimestamp"`
-}
-
 var (
 	snsPathRegex   = regexp.MustCompile(`sns:path/[^/]+/([^/]+)`)
 	snsActionRegex = regexp.MustCompile(`sns:action/[^/]+/([^/]+)`)
@@ -353,61 +346,28 @@ func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (
 }
 
 func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, req *IntegrationRequest) (*IntegrationResponse, error) {
-	_, err := e.bus.SNSInvoker().GetTopic(ctx, topicArn)
-	if err != nil {
-		return nil, &IntegrationError{
-			Message:  fmt.Sprintf("SNS topic not found: %s", topicArn),
-			Type:     "NotFoundException",
-			HTTPCode: http.StatusNotFound,
-		}
-	}
-
 	message := string(req.Body)
 	if message == "" {
 		message = req.Headers["Message"]
 	}
 
-	messageID := fmt.Sprintf("%x", time.Now().UnixNano())
-
-	now := time.Now().UTC()
-	notification := &snsNotification{
-		MessageId:          messageID,
-		TopicArn:           topicArn,
-		Subject:            req.Headers["Subject"],
-		Message:            message,
-		PublishedTimestamp: now,
-	}
-
-	if err := e.bus.SNSInvoker().StoreMessage(ctx, topicArn+":messages:"+messageID, notification); err != nil {
+	// The publish rides the SNS invoker's publish path: the message gains
+	// the same validation, message ID scheme, envelope and fan-out as a
+	// Publish API call, instead of this integration's own construction.
+	messageID, err := e.bus.SNSInvoker().PublishToTopic(ctx, topicArn, message, req.Headers["Subject"], nil)
+	if err != nil {
+		var awsErr *awserrors.AWSError
+		if errors.As(err, &awsErr) {
+			return nil, &IntegrationError{
+				Message:  awsErr.Message,
+				Type:     awsErr.Code,
+				HTTPCode: awsErr.HTTPStatus,
+			}
+		}
 		return nil, &IntegrationError{
-			Message:  fmt.Sprintf("Failed to store SNS message: %v", err),
+			Message:  fmt.Sprintf("Failed to publish to SNS topic: %v", err),
 			Type:     "InternalServerError",
 			HTTPCode: http.StatusInternalServerError,
-		}
-	}
-
-	if e.bus != nil {
-		_, _, snsRegion, _, _ := arnutil.SplitARN(topicArn)
-		if snsRegion == "" {
-			snsRegion = e.region
-		}
-		snsEvt := &eventbus.SNSDeliveryEvent{
-			TopicARN:  topicArn,
-			MessageID: messageID,
-			Message:   message,
-			Subject:   req.Headers["Subject"],
-		}
-		snsEvt.Region = snsRegion
-		if err := e.bus.Publish(ctx, snsEvt); err != nil {
-			// Clean up the stored message to prevent state divergence:
-			// the message was persisted but delivery failed, and there
-			// is no retry mechanism to recover it.
-			_ = e.bus.SNSInvoker().DeleteStoredMessage(ctx, topicArn+":messages:"+messageID)
-			return nil, &IntegrationError{
-				Message:  fmt.Sprintf("Failed to publish SNS delivery event: %v", err),
-				Type:     "InternalServerError",
-				HTTPCode: http.StatusInternalServerError,
-			}
 		}
 	}
 

@@ -1,6 +1,7 @@
 package sns
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -26,24 +27,9 @@ func newTestSNSStore(t *testing.T) *SNSStore {
 func TestConfirmSubscription_AuthenticateOnUnsubscribeSemantics(t *testing.T) {
 	store := newTestSNSStore(t)
 
-	topic, err := store.CreateTopic(&Topic{Name: "semantics-topic"})
+	topic, err := store.CreateTopic(&Topic{Name: "semantics-topic"}, nil)
 	if err != nil {
 		t.Fatalf("create topic: %v", err)
-	}
-
-	sub, err := store.CreateSubscription(&Subscription{
-		TopicArn:            topic.Arn,
-		Protocol:            "email",
-		Endpoint:            "user@example.com",
-		Owner:               "123456789012",
-		PendingConfirmation: true,
-	})
-	if err != nil {
-		t.Fatalf("create subscription: %v", err)
-	}
-	token := sub.ConfirmationToken
-	if token == "" {
-		t.Fatal("subscription has no confirmation token")
 	}
 
 	cases := []struct {
@@ -57,16 +43,24 @@ func TestConfirmSubscription_AuthenticateOnUnsubscribeSemantics(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Reset the subscription to pending with a fresh token.
-			sub.PendingConfirmation = true
-			sub.ConfirmationToken = fmt.Sprintf("token-%s", tc.name)
-			sub.ConfirmationWasAuthenticated = false
-			sub.Attributes = nil
-			if err := store.UpdateSubscription(sub); err != nil {
-				t.Fatalf("reset subscription: %v", err)
+			// Each case confirms a freshly created pending subscription —
+			// production has no re-pend path, so the fixture is a new
+			// natural key (a distinct endpoint) carrying its own token.
+			sub, _, err := store.CreateSubscription(&Subscription{
+				TopicArn: topic.Arn,
+				Protocol: "email",
+				Endpoint: fmt.Sprintf("user+%s@example.com", tc.name),
+				Owner:    "123456789012",
+			})
+			if err != nil {
+				t.Fatalf("create subscription: %v", err)
+			}
+			token := sub.ConfirmationToken
+			if token == "" {
+				t.Fatal("subscription has no confirmation token")
 			}
 
-			confirmed, err := store.ConfirmSubscription(sub.SubscriptionArn, sub.ConfirmationToken, tc.flag)
+			confirmed, err := store.ConfirmSubscription(sub.SubscriptionArn, token, tc.flag)
 			if err != nil {
 				t.Fatalf("confirm: %v", err)
 			}
@@ -94,3 +88,59 @@ func TestConfirmSubscription_AuthenticateOnUnsubscribeSemantics(t *testing.T) {
 }
 
 func boolPtr(b bool) *bool { return &b }
+
+// TestFindSubscriptionByTokenDistinguishesStorageFailure pins the token
+// scan's error identity: a miss is the not-found sentinel, while a record
+// the scanner cannot decode is a storage failure that must surface as
+// itself — ConfirmSubscription's core answers only the miss with
+// InvalidParameter and passes storage failures to the internal plane.
+func TestFindSubscriptionByTokenDistinguishesStorageFailure(t *testing.T) {
+	st := newTestSNSStore(t)
+	topicArn := "arn:aws:sns:us-east-1:123456789012:token-scan"
+
+	if _, err := st.FindSubscriptionByToken(topicArn, "token-x"); !errors.Is(err, ErrSubscriptionNotFound) {
+		t.Fatalf("empty scan: err = %v, want ErrSubscriptionNotFound", err)
+	}
+
+	if err := st.topicSubscriptionsStore.PutRaw("corrupt-subscription-record", []byte("{not json")); err != nil {
+		t.Fatalf("seed corrupt record: %v", err)
+	}
+	if _, err := st.FindSubscriptionByToken(topicArn, "token-x"); err == nil || errors.Is(err, ErrSubscriptionNotFound) {
+		t.Fatalf("scan over a corrupt record: err = %v, want a storage failure distinct from the not-found sentinel", err)
+	}
+}
+
+// TestConfirmSubscriptionTokenSurvivesConfirmation pins the token's
+// documented lifetime: "Confirmation tokens are valid for two days"
+// (Subscribe) — a repeated ConfirmSubscription with the same token within
+// the window succeeds instead of failing InvalidParameter, so confirmation
+// is idempotent.
+func TestConfirmSubscriptionTokenSurvivesConfirmation(t *testing.T) {
+	store := newTestSNSStore(t)
+
+	topic, err := store.CreateTopic(&Topic{Name: "token-lifetime-topic"}, nil)
+	if err != nil {
+		t.Fatalf("create topic: %v", err)
+	}
+	created, _, err := store.CreateSubscription(&Subscription{
+		TopicArn: topic.Arn,
+		Protocol: "http",
+		Endpoint: "https://example.test/subscribe",
+		Owner:    "123456789012",
+	})
+	if err != nil {
+		t.Fatalf("create subscription: %v", err)
+	}
+	token := created.ConfirmationToken
+
+	if _, err := store.ConfirmSubscription(created.SubscriptionArn, token, nil); err != nil {
+		t.Fatalf("first confirmation: %v", err)
+	}
+	again, err := store.ConfirmSubscription(created.SubscriptionArn, token, nil)
+	if err != nil {
+		t.Fatalf("re-confirmation with the live token: %v", err)
+	}
+	if again.PendingConfirmation {
+		t.Fatal("re-confirmation left the subscription pending")
+	}
+}

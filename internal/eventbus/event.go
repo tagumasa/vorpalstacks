@@ -78,13 +78,14 @@ func (e *EventBase) EventCaller() CallerContext { return e.Caller }
 // avoid coupling the eventbus package to store-layer types.
 type SNSDeliveryEvent struct {
 	EventBase
-	TopicARN          string                     `json:"topic_arn"`
-	MessageID         string                     `json:"message_id"`
-	Message           string                     `json:"message"`
-	Subject           string                     `json:"subject,omitempty"`
-	MessageStructure  string                     `json:"message_structure,omitempty"`
-	MessageGroupId    string                     `json:"message_group_id,omitempty"`
-	MessageAttributes map[string]json.RawMessage `json:"message_attributes,omitempty"`
+	TopicARN               string                     `json:"topic_arn"`
+	MessageID              string                     `json:"message_id"`
+	Message                string                     `json:"message"`
+	Subject                string                     `json:"subject,omitempty"`
+	MessageStructure       string                     `json:"message_structure,omitempty"`
+	MessageGroupId         string                     `json:"message_group_id,omitempty"`
+	MessageDeduplicationID string                     `json:"message_deduplication_id,omitempty"`
+	MessageAttributes      map[string]json.RawMessage `json:"message_attributes,omitempty"`
 }
 
 // EventType returns "sns:deliver" for this event type.

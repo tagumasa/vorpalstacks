@@ -18,7 +18,6 @@ var accessDeniedCodes = map[string]string{
 	// REST-XML / Query protocol — "AccessDenied" (no suffix)
 	"s3":         "AccessDenied",
 	"sqs":        "AccessDenied",
-	"sns":        "AccessDenied",
 	"iam":        "AccessDenied",
 	"sts":        "AccessDenied",
 	"monitoring": "AccessDenied", // CloudWatch
@@ -28,6 +27,13 @@ var accessDeniedCodes = map[string]string{
 
 	// Bespoke error codes
 	"cognito-identity": "NotAuthorizedException",
+	// SNS models no AccessDenied shape at all: its
+	// AuthorizationErrorException carries the awsQueryError code
+	// "AuthorizationError" ("Indicates that the user has been denied access
+	// to the requested resource", 403), so a denial must report that code —
+	// an unmodelled "AccessDenied" would surface as an unknown error in
+	// SDK clients.
+	"sns": "AuthorizationError",
 }
 
 // accessDeniedErrorForService returns the service-specific access denied

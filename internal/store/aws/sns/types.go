@@ -5,11 +5,14 @@ package sns
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 )
 
-// Topic represents an SNS topic.
+// Topic represents an SNS topic. Tags are owned by the TagStore and never
+// ride this record; the create-time tag set travels on the CreateTopic
+// input instead.
 type Topic struct {
 	Name                   string            `json:"name"`
 	Arn                    string            `json:"arn"`
@@ -17,10 +20,7 @@ type Topic struct {
 	SubscriptionsConfirmed int32             `json:"subscriptions_confirmed"`
 	SubscriptionsDeleted   int32             `json:"subscriptions_deleted"`
 	SubscriptionsPending   int32             `json:"subscriptions_pending"`
-	CreatedDate            time.Time         `json:"created_date"`
-	LastModifiedTime       time.Time         `json:"last_modified_time"`
 	Attributes             map[string]string `json:"attributes,omitempty"`
-	Tags                   map[string]string `json:"tags,omitempty"`
 	Permissions            []Permission      `json:"permissions,omitempty"`
 }
 
@@ -31,32 +31,40 @@ func (t *Topic) IsFifoTopic() bool {
 
 // IsContentBasedDeduplication returns whether content-based deduplication is enabled.
 func (t *Topic) IsContentBasedDeduplication() bool {
-	return strings.EqualFold(t.Attributes["ContentBasedDeduplication"], "true")
+	return strings.EqualFold(t.Attributes[AttrContentBasedDedup], "true")
 }
 
-// GetDisplayName returns the topic's display name.
-func (t *Topic) GetDisplayName() string {
-	return t.Attributes["DisplayName"]
+// PerGroupDeduplication reports whether FIFO deduplication is scoped to
+// each individual message group: "Message deduplication applies to an
+// entire Amazon SNS FIFO topic when the topic attribute FifoThroughputScope
+// is set to Topic. When the topic attribute FifoThroughputScope is set to
+// MessageGroup, message deduplication applies to each individual message
+// group" (message deduplication for FIFO topics).
+func (t *Topic) PerGroupDeduplication() bool {
+	return t.Attributes[AttrFifoThroughputScope] == "MessageGroup"
+}
+
+// MaximumMessageSizeBytes returns the topic's effective message-size
+// ceiling: the MaximumMessageSize attribute when the topic sets one, the
+// platform's flat cap otherwise (the attribute's documented default is
+// 262144 — the flat cap — so an unset attribute is the flat cap).
+func (t *Topic) MaximumMessageSizeBytes() int {
+	if v, ok := t.Attributes[AttrMaximumMessageSize]; ok {
+		if size, err := strconv.Atoi(v); err == nil && size > 0 {
+			return size
+		}
+	}
+	return MaxMessageSize
 }
 
 // GetPolicy returns the topic's access policy JSON.
 func (t *Topic) GetPolicy() string {
-	return t.Attributes["Policy"]
-}
-
-// GetDeliveryPolicy returns the topic's delivery policy JSON.
-func (t *Topic) GetDeliveryPolicy() string {
-	return t.Attributes["DeliveryPolicy"]
-}
-
-// GetKmsMasterKeyId returns the topic's KMS master key ID.
-func (t *Topic) GetKmsMasterKeyId() string {
-	return t.Attributes["KmsMasterKeyId"]
+	return t.Attributes[AttrPolicy]
 }
 
 // GetDataProtectionPolicy returns the topic's data protection policy.
 func (t *Topic) GetDataProtectionPolicy() string {
-	return t.Attributes["DataProtectionPolicy"]
+	return t.Attributes[AttrDataProtectionPolicy]
 }
 
 // Subscription represents an SNS subscription.
@@ -74,25 +82,24 @@ type Subscription struct {
 	PendingConfirmation          bool              `json:"pending_confirmation"`
 	ConfirmationToken            string            `json:"confirmation_token,omitempty"`
 	Attributes                   map[string]string `json:"attributes,omitempty"`
-	CreatedDate                  time.Time         `json:"created_date"`
 }
 
 // IsRawMessageDelivery returns whether raw message delivery is enabled.
 func (s *Subscription) IsRawMessageDelivery() bool {
-	return strings.EqualFold(s.Attributes["RawMessageDelivery"], "true")
+	return strings.EqualFold(s.Attributes[AttrRawMessageDelivery], "true")
 }
 
 // GetFilterPolicy returns the subscription's filter policy JSON string.
 func (s *Subscription) GetFilterPolicy() string {
-	return s.Attributes["FilterPolicy"]
+	return s.Attributes[AttrFilterPolicy]
 }
 
 // GetFilterPolicyScope returns the filter policy scope, defaulting to
 // "MessageAttributes" when unset (matching AWS behaviour).
 func (s *Subscription) GetFilterPolicyScope() string {
-	scope := s.Attributes["FilterPolicyScope"]
+	scope := s.Attributes[AttrFilterPolicyScope]
 	if scope == "" {
-		return "MessageAttributes"
+		return FilterPolicyScopeAttributes
 	}
 	return scope
 }
@@ -100,7 +107,7 @@ func (s *Subscription) GetFilterPolicyScope() string {
 // GetRedrivePolicy parses the subscription's redrive policy from the
 // Attributes map. Returns nil when no redrive policy is set.
 func (s *Subscription) GetRedrivePolicy() (*RedrivePolicy, error) {
-	raw := s.Attributes["RedrivePolicy"]
+	raw := s.Attributes[AttrRedrivePolicy]
 	if raw == "" {
 		return nil, nil
 	}
@@ -118,7 +125,9 @@ type RedrivePolicy struct {
 	DeadLetterTargetArn string `json:"deadLetterTargetArn"`
 }
 
-// Message represents an SNS message.
+// Message represents an SNS message in flight through the delivery
+// engine; messages are not persisted (the S3-era StoreMessage keyspace is
+// gone), so the record carries exactly the fields a delivery consumes.
 type Message struct {
 	MessageId              string                       `json:"message_id"`
 	TopicArn               string                       `json:"topic_arn"`
@@ -126,7 +135,6 @@ type Message struct {
 	Message                string                       `json:"message"`
 	MessageStructure       string                       `json:"message_structure,omitempty"`
 	MessageAttributes      map[string]*MessageAttribute `json:"message_attributes,omitempty"`
-	ReceivedTimestamp      time.Time                    `json:"received_timestamp"`
 	PublishedTimestamp     time.Time                    `json:"published_timestamp"`
 	MessageGroupId         string                       `json:"message_group_id,omitempty"`
 	MessageDeduplicationId string                       `json:"message_deduplication_id,omitempty"`
@@ -161,35 +169,4 @@ type PlatformEndpoint struct {
 	Token                  string            `json:"token,omitempty"`
 	CustomUserData         string            `json:"custom_user_data,omitempty"`
 	Attributes             map[string]string `json:"attributes,omitempty"`
-}
-
-// NewTopic creates a new Topic with the specified name and ARN.
-func NewTopic(name, arn string) *Topic {
-	return &Topic{
-		Name:       name,
-		Arn:        arn,
-		Attributes: make(map[string]string),
-	}
-}
-
-// NewSubscription creates a new Subscription with the specified parameters.
-func NewSubscription(subscriptionArn, topicArn, protocol, endpoint string) *Subscription {
-	return &Subscription{
-		SubscriptionArn:     subscriptionArn,
-		TopicArn:            topicArn,
-		Protocol:            protocol,
-		Endpoint:            endpoint,
-		Attributes:          make(map[string]string),
-		PendingConfirmation: true,
-	}
-}
-
-// NewMessage creates a new Message with the specified message ID, topic ARN, and message body.
-func NewMessage(messageId, topicArn, message string) *Message {
-	return &Message{
-		MessageId:         messageId,
-		TopicArn:          topicArn,
-		Message:           message,
-		MessageAttributes: make(map[string]*MessageAttribute),
-	}
 }

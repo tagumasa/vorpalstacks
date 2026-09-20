@@ -15,8 +15,8 @@ func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *requ
 	}
 
 	return s.createPlatformApplicationCore(store, CreatePlatformApplicationInput{
-		Name:       request.GetStringParam(req.Parameters, "Name"),
-		Platform:   request.GetStringParam(req.Parameters, "Platform"),
+		Name:       request.GetParamLowerFirst(req.Parameters, "Name"),
+		Platform:   request.GetParamLowerFirst(req.Parameters, "Platform"),
 		Attributes: parseAttributes(req.Parameters),
 	})
 }
@@ -29,7 +29,7 @@ func (s *SNSService) DeletePlatformApplication(ctx context.Context, reqCtx *requ
 	}
 
 	return s.deletePlatformApplicationCore(store, DeletePlatformApplicationInput{
-		PlatformApplicationArn: request.GetStringParam(req.Parameters, "PlatformApplicationArn"),
+		PlatformApplicationArn: request.GetParamLowerFirst(req.Parameters, "PlatformApplicationArn"),
 	})
 }
 
@@ -41,7 +41,7 @@ func (s *SNSService) GetPlatformApplicationAttributes(ctx context.Context, reqCt
 	}
 
 	return s.getPlatformApplicationAttributesCore(store, GetPlatformApplicationAttributesInput{
-		PlatformApplicationArn: request.GetStringParam(req.Parameters, "PlatformApplicationArn"),
+		PlatformApplicationArn: request.GetParamLowerFirst(req.Parameters, "PlatformApplicationArn"),
 	})
 }
 
@@ -53,7 +53,7 @@ func (s *SNSService) SetPlatformApplicationAttributes(ctx context.Context, reqCt
 	}
 
 	return s.setPlatformApplicationAttributesCore(store, SetPlatformApplicationAttributesInput{
-		PlatformApplicationArn: request.GetStringParam(req.Parameters, "PlatformApplicationArn"),
+		PlatformApplicationArn: request.GetParamLowerFirst(req.Parameters, "PlatformApplicationArn"),
 		Attributes:             parseAttributes(req.Parameters),
 	})
 }
@@ -78,9 +78,9 @@ func (s *SNSService) CreatePlatformEndpoint(ctx context.Context, reqCtx *request
 	}
 
 	return s.createPlatformEndpointCore(store, CreatePlatformEndpointInput{
-		PlatformApplicationArn: request.GetStringParam(req.Parameters, "PlatformApplicationArn"),
-		Token:                  request.GetStringParam(req.Parameters, "Token"),
-		CustomUserData:         request.GetStringParam(req.Parameters, "CustomUserData"),
+		PlatformApplicationArn: request.GetParamLowerFirst(req.Parameters, "PlatformApplicationArn"),
+		Token:                  request.GetParamLowerFirst(req.Parameters, "Token"),
+		CustomUserData:         request.GetParamLowerFirst(req.Parameters, "CustomUserData"),
 		Attributes:             parseAttributes(req.Parameters),
 	})
 }
@@ -93,7 +93,7 @@ func (s *SNSService) DeleteEndpoint(ctx context.Context, reqCtx *request.Request
 	}
 
 	return s.deleteEndpointCore(store, DeleteEndpointInput{
-		EndpointArn: request.GetStringParam(req.Parameters, "EndpointArn"),
+		EndpointArn: request.GetParamLowerFirst(req.Parameters, "EndpointArn"),
 	})
 }
 
@@ -105,7 +105,7 @@ func (s *SNSService) GetEndpointAttributes(ctx context.Context, reqCtx *request.
 	}
 
 	return s.getEndpointAttributesCore(store, GetEndpointAttributesInput{
-		EndpointArn: request.GetStringParam(req.Parameters, "EndpointArn"),
+		EndpointArn: request.GetParamLowerFirst(req.Parameters, "EndpointArn"),
 	})
 }
 
@@ -117,7 +117,7 @@ func (s *SNSService) SetEndpointAttributes(ctx context.Context, reqCtx *request.
 	}
 
 	return s.setEndpointAttributesCore(store, SetEndpointAttributesInput{
-		EndpointArn: request.GetStringParam(req.Parameters, "EndpointArn"),
+		EndpointArn: request.GetParamLowerFirst(req.Parameters, "EndpointArn"),
 		Attributes:  parseAttributes(req.Parameters),
 	})
 }
@@ -130,7 +130,7 @@ func (s *SNSService) ListEndpointsByPlatformApplication(ctx context.Context, req
 	}
 
 	return s.listEndpointsByPlatformApplicationCore(store, ListEndpointsByPlatformApplicationInput{
-		PlatformApplicationArn: request.GetStringParam(req.Parameters, "PlatformApplicationArn"),
-		NextToken:              request.GetStringParam(req.Parameters, "NextToken"),
+		PlatformApplicationArn: request.GetParamLowerFirst(req.Parameters, "PlatformApplicationArn"),
+		NextToken:              pagination.GetMarker(req.Parameters, "NextToken"),
 	})
 }

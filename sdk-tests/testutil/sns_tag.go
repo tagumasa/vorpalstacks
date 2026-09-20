@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -148,6 +149,48 @@ func (r *TestRunner) runSNSTagTests(tc *snsTestContext) []TestResult {
 		}
 		if len(tags) < 3 {
 			return fmt.Errorf("expected at least 3 tags, got %d", len(tags))
+		}
+		return nil
+	}))
+
+	// The tag framework's constraints are wired: the fifty-tag cap answers
+	// with the model's TagLimitExceeded error, and the reserved aws:
+	// prefix and the key/value length bounds answer with
+	// InvalidParameter.
+	results = append(results, r.RunTest("sns", "TagResource_TagConstraints", func() error {
+		quotaTopicArn, err := tc.createTopic(tc.uniqueName("QuotaTagTopic"))
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.deleteTopic(quotaTopicArn)
+
+		fiftyOne := make([]types.Tag, 0, 51)
+		for i := 0; i < 51; i++ {
+			fiftyOne = append(fiftyOne, types.Tag{
+				Key:   aws.String(fmt.Sprintf("quota-key-%02d", i)),
+				Value: aws.String("value"),
+			})
+		}
+		_, err = tc.client.TagResource(tc.ctx, &sns.TagResourceInput{
+			ResourceArn: aws.String(quotaTopicArn),
+			Tags:        fiftyOne,
+		})
+		if codeErr := expectAWSErrorCode(err, "TagLimitExceeded"); codeErr != nil {
+			return fmt.Errorf("51 tags in one request: %v", codeErr)
+		}
+
+		for _, bad := range []types.Tag{
+			{Key: aws.String("aws:reserved"), Value: aws.String("v")},
+			{Key: aws.String(strings.Repeat("k", 129)), Value: aws.String("v")},
+			{Key: aws.String("valid"), Value: aws.String(strings.Repeat("v", 257))},
+		} {
+			_, err := tc.client.TagResource(tc.ctx, &sns.TagResourceInput{
+				ResourceArn: aws.String(quotaTopicArn),
+				Tags:        []types.Tag{bad},
+			})
+			if codeErr := expectAWSErrorCode(err, "InvalidParameter"); codeErr != nil {
+				return fmt.Errorf("invalid tag key %q: %v", aws.ToString(bad.Key), codeErr)
+			}
 		}
 		return nil
 	}))
