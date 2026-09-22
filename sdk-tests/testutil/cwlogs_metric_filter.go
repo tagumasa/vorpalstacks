@@ -18,13 +18,13 @@ func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
 	var results []TestResult
 
 	results = append(results, tc.runner.RunTest("logs", "PutMetricFilter_VerifyFields", func() error {
-		mfName := tc.uniquePrefix("MFGroup")
-		if err := tc.createLogGroup(mfName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		mfName, cleanupGroup, err := tc.newLogGroupFixture("MFGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(mfName)
+		defer cleanupGroup()
 
-		_, err := tc.client.PutMetricFilter(tc.ctx, &cloudwatchlogs.PutMetricFilterInput{
+		_, err = tc.client.PutMetricFilter(tc.ctx, &cloudwatchlogs.PutMetricFilterInput{
 			LogGroupName:  aws.String(mfName),
 			FilterName:    aws.String("ErrorFilter"),
 			FilterPattern: aws.String("[ip, user, timestamp, request, status_code=*, bytes=*]"),
@@ -41,16 +41,14 @@ func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
 			return fmt.Errorf("put metric filter: %v", err)
 		}
 
-		resp, err := tc.client.DescribeMetricFilters(tc.ctx, &cloudwatchlogs.DescribeMetricFiltersInput{
-			LogGroupName: aws.String(mfName),
-		})
+		resp, err := tc.collectAllMetricFilters(mfName, "")
 		if err != nil {
 			return fmt.Errorf("describe: %v", err)
 		}
-		if len(resp.MetricFilters) != 1 {
-			return fmt.Errorf("expected 1 filter, got %d", len(resp.MetricFilters))
+		if len(resp) != 1 {
+			return fmt.Errorf("expected 1 filter, got %d", len(resp))
 		}
-		mf := resp.MetricFilters[0]
+		mf := resp[0]
 		if mf.FilterName == nil || *mf.FilterName != "ErrorFilter" {
 			return fmt.Errorf("filterName mismatch: got %q", aws.ToString(mf.FilterName))
 		}
@@ -77,73 +75,74 @@ func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("logs", "DescribeMetricFilters_Basic", func() error {
-		dmfName := tc.uniquePrefix("DMFGroup")
-		if err := tc.createLogGroup(dmfName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		dmfName, cleanupGroup, err := tc.newLogGroupFixture("DMFGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(dmfName)
+		defer cleanupGroup()
 
 		if err := tc.putMetricFilter(dmfName, "TestFilter", "ERROR", "ErrorCount", "vorpalstacks/test"); err != nil {
 			return fmt.Errorf("put metric filter: %v", err)
 		}
 
-		resp, err := tc.client.DescribeMetricFilters(tc.ctx, &cloudwatchlogs.DescribeMetricFiltersInput{
-			LogGroupName: aws.String(dmfName),
-		})
+		resp, err := tc.collectAllMetricFilters(dmfName, "")
 		if err != nil {
 			return fmt.Errorf("describe: %v", err)
 		}
-		if len(resp.MetricFilters) != 1 {
-			return fmt.Errorf("expected 1 filter, got %d", len(resp.MetricFilters))
+		if len(resp) != 1 {
+			return fmt.Errorf("expected 1 filter, got %d", len(resp))
 		}
-		if *resp.MetricFilters[0].FilterName != "TestFilter" {
-			return fmt.Errorf("filter name mismatch: got %q", *resp.MetricFilters[0].FilterName)
+		if *resp[0].FilterName != "TestFilter" {
+			return fmt.Errorf("filter name mismatch: got %q", *resp[0].FilterName)
 		}
-		if *resp.MetricFilters[0].FilterPattern != "ERROR" {
-			return fmt.Errorf("filter pattern mismatch: got %q", *resp.MetricFilters[0].FilterPattern)
+		if *resp[0].FilterPattern != "ERROR" {
+			return fmt.Errorf("filter pattern mismatch: got %q", *resp[0].FilterPattern)
 		}
-		if len(resp.MetricFilters[0].MetricTransformations) != 1 {
-			return fmt.Errorf("expected 1 transformation, got %d", len(resp.MetricFilters[0].MetricTransformations))
+		if len(resp[0].MetricTransformations) != 1 {
+			return fmt.Errorf("expected 1 transformation, got %d", len(resp[0].MetricTransformations))
 		}
 		return nil
 	}))
 
 	results = append(results, tc.runner.RunTest("logs", "DescribeMetricFilters_FilterNamePrefix", func() error {
-		fpfName := tc.uniquePrefix("FPFGroup")
-		if err := tc.createLogGroup(fpfName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		fpfName, cleanupGroup, err := tc.newLogGroupFixture("FPFGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(fpfName)
+		defer cleanupGroup()
 
-		tc.putMetricFilter(fpfName, "PrefixFilterA", "ERROR", "ErrorA", "test")
-		tc.putMetricFilter(fpfName, "PrefixFilterB", "WARN", "WarnB", "test")
+		if err := tc.putMetricFilter(fpfName, "PrefixFilterA", "ERROR", "ErrorA", "test"); err != nil {
+			return fmt.Errorf("put filter A: %v", err)
+		}
+		if err := tc.putMetricFilter(fpfName, "PrefixFilterB", "WARN", "WarnB", "test"); err != nil {
+			return fmt.Errorf("put filter B: %v", err)
+		}
 
-		resp, err := tc.client.DescribeMetricFilters(tc.ctx, &cloudwatchlogs.DescribeMetricFiltersInput{
-			LogGroupName:     aws.String(fpfName),
-			FilterNamePrefix: aws.String("PrefixFilterA"),
-		})
+		resp, err := tc.collectAllMetricFilters(fpfName, "PrefixFilterA")
 		if err != nil {
 			return fmt.Errorf("describe: %v", err)
 		}
-		if len(resp.MetricFilters) != 1 {
-			return fmt.Errorf("expected 1 filter with prefix 'PrefixFilterA', got %d", len(resp.MetricFilters))
+		if len(resp) != 1 {
+			return fmt.Errorf("expected 1 filter with prefix 'PrefixFilterA', got %d", len(resp))
 		}
-		if *resp.MetricFilters[0].FilterName != "PrefixFilterA" {
-			return fmt.Errorf("filter name mismatch: got %q", *resp.MetricFilters[0].FilterName)
+		if *resp[0].FilterName != "PrefixFilterA" {
+			return fmt.Errorf("filter name mismatch: got %q", *resp[0].FilterName)
 		}
 		return nil
 	}))
 
 	results = append(results, tc.runner.RunTest("logs", "DeleteMetricFilter_Basic", func() error {
-		dmfDelName := tc.uniquePrefix("DMFDelGroup")
-		if err := tc.createLogGroup(dmfDelName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		dmfDelName, cleanupGroup, err := tc.newLogGroupFixture("DMFDelGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(dmfDelName)
+		defer cleanupGroup()
 
-		tc.putMetricFilter(dmfDelName, "TempFilter", "ERROR", "Err", "test")
+		if err := tc.putMetricFilter(dmfDelName, "TempFilter", "ERROR", "Err", "test"); err != nil {
+			return fmt.Errorf("put metric filter: %v", err)
+		}
 
-		_, err := tc.client.DeleteMetricFilter(tc.ctx, &cloudwatchlogs.DeleteMetricFilterInput{
+		_, err = tc.client.DeleteMetricFilter(tc.ctx, &cloudwatchlogs.DeleteMetricFilterInput{
 			LogGroupName: aws.String(dmfDelName),
 			FilterName:   aws.String("TempFilter"),
 		})
@@ -151,14 +150,12 @@ func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
 			return fmt.Errorf("delete metric filter: %v", err)
 		}
 
-		resp, err := tc.client.DescribeMetricFilters(tc.ctx, &cloudwatchlogs.DescribeMetricFiltersInput{
-			LogGroupName: aws.String(dmfDelName),
-		})
+		resp, err := tc.collectAllMetricFilters(dmfDelName, "")
 		if err != nil {
 			return fmt.Errorf("describe: %v", err)
 		}
-		if len(resp.MetricFilters) != 0 {
-			return fmt.Errorf("expected 0 filters after delete, got %d", len(resp.MetricFilters))
+		if len(resp) != 0 {
+			return fmt.Errorf("expected 0 filters after delete, got %d", len(resp))
 		}
 		return nil
 	}))
@@ -186,6 +183,20 @@ func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
 				return fmt.Errorf("unexpected match: %q", aws.ToString(m.EventMessage))
 			}
 		}
+
+		// The pattern's shape allows the empty string (the requiredness
+		// PutMetricFilter already implements): a present empty pattern
+		// matches every message.
+		resp, err = tc.client.TestMetricFilter(tc.ctx, &cloudwatchlogs.TestMetricFilterInput{
+			FilterPattern:    aws.String(""),
+			LogEventMessages: []string{"anything", "at all"},
+		})
+		if err != nil {
+			return fmt.Errorf("empty pattern: %v", err)
+		}
+		if len(resp.Matches) != 2 {
+			return fmt.Errorf("empty pattern matches all, got %d matches", len(resp.Matches))
+		}
 		return nil
 	}))
 
@@ -194,14 +205,11 @@ func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
 	// evaluation → CloudWatch metric invoker → metric store → API read
 	// plane) with immediate visibility.
 	results = append(results, tc.runner.RunTest("logs", "MetricFilter_PublishesMetric", func() error {
-		groupName := tc.uniquePrefix("MFDeliver")
-		if err := tc.createLogGroup(groupName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		groupName, cleanupGroup, err := tc.newGroupStreamFixture("MFDeliver", "stream")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(groupName)
-		if err := tc.createLogStream(groupName, "stream"); err != nil {
-			return fmt.Errorf("create stream: %v", err)
-		}
+		defer cleanupGroup()
 
 		metricName := tc.uniquePrefix("ErrorCount")
 		if err := tc.putMetricFilter(groupName, "ErrorFilter", "ERROR", metricName, "vorpalstacks/test"); err != nil {
@@ -252,6 +260,58 @@ func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
 			}
 		}
 		return fmt.Errorf("metric %s not visible via GetMetricStatistics after 10s", metricName)
+	}))
+
+	// Log-group names may contain '#': the filters of a group whose name
+	// extends another with '#' must stay invisible to the shorter group's
+	// listing, in both directions.
+	results = append(results, tc.runner.RunTest("logs", "DescribeMetricFilters_HashGroupNameIsolation", func() error {
+		base := tc.uniquePrefix("HashGroup")
+		nested := base + "#inner"
+		if err := tc.createLogGroup(base); err != nil {
+			return fmt.Errorf("create base: %v", err)
+		}
+		defer tc.deleteLogGroup(base)
+		if err := tc.createLogGroup(nested); err != nil {
+			return fmt.Errorf("create nested: %v", err)
+		}
+		defer tc.deleteLogGroup(nested)
+
+		if err := tc.putMetricFilter(base, "RootFilter", "ERROR", "HashRoot", "test"); err != nil {
+			return fmt.Errorf("put base filter: %v", err)
+		}
+		defer func() {
+			_, _ = tc.client.DeleteMetricFilter(tc.ctx, &cloudwatchlogs.DeleteMetricFilterInput{
+				LogGroupName: aws.String(base),
+				FilterName:   aws.String("RootFilter"),
+			})
+		}()
+		if err := tc.putMetricFilter(nested, "InnerFilter", "WARN", "HashInner", "test"); err != nil {
+			return fmt.Errorf("put nested filter: %v", err)
+		}
+		defer func() {
+			_, _ = tc.client.DeleteMetricFilter(tc.ctx, &cloudwatchlogs.DeleteMetricFilterInput{
+				LogGroupName: aws.String(nested),
+				FilterName:   aws.String("InnerFilter"),
+			})
+		}()
+
+		baseResp, err := tc.collectAllMetricFilters(base, "")
+		if err != nil {
+			return fmt.Errorf("describe base: %v", err)
+		}
+		if len(baseResp) != 1 || aws.ToString(baseResp[0].FilterName) != "RootFilter" {
+			return fmt.Errorf("base listing expected only RootFilter, got %d filters", len(baseResp))
+		}
+
+		nestedResp, err := tc.collectAllMetricFilters(nested, "")
+		if err != nil {
+			return fmt.Errorf("describe nested: %v", err)
+		}
+		if len(nestedResp) != 1 || aws.ToString(nestedResp[0].FilterName) != "InnerFilter" {
+			return fmt.Errorf("nested listing expected only InnerFilter, got %d filters", len(nestedResp))
+		}
+		return nil
 	}))
 
 	return results

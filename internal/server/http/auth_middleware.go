@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/common/auth"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/server/http/classifier"
+	svclogs "vorpalstacks/internal/services/aws/cloudwatchlogs"
 )
 
 // SignatureMiddleware returns an HTTP middleware that verifies AWS Signature
@@ -36,6 +37,29 @@ func SignatureMiddleware(cfg SignatureConfig, c *classifier.Classifier, sessionR
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodOptions {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// The plain-HTTP log ingestion endpoints carry their own
+			// authentication contract: an ACWL bearer token is validated
+			// by the endpoint handler itself (401s there), while a SigV4
+			// request verifies against the logs service — the endpoints'
+			// documented host form — without the classifier, which knows
+			// no service for these paths. Anything without a bearer token
+			// must therefore carry a verifiable SigV4 signature.
+			if svclogs.IsIngestionEndpointPath(r.URL.Path) {
+				if svclogs.HasBearerScheme(r.Header.Get("Authorization")) {
+					next.ServeHTTP(w, r)
+					return
+				}
+				if err := staticVerifier.VerifyRequest(r, "logs", cfg.Region); err != nil {
+					if trySessionCredentials(sessionResolver, cfg, "logs", r, w, next) {
+						return
+					}
+					http.Error(w, "Forbidden: Invalid signature", http.StatusForbidden)
+					return
+				}
 				next.ServeHTTP(w, r)
 				return
 			}

@@ -282,6 +282,9 @@ func comparePatternWindows(ctx *execContext, rows []queryResultRow, winStart, wi
 
 	prevRows, err := ctx.runPrecedingOnWindow(winStart, winEnd)
 	if err != nil {
+		// A comparison window that cannot be queried fails the query —
+		// diffing against nothing would report every pattern as new.
+		ctx.sourceError = err
 		prevRows = nil
 	}
 	prevPatterns := patternCounts(prevRows)

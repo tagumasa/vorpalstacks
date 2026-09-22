@@ -373,6 +373,18 @@ func GetParamLowerFirst(params map[string]interface{}, key string) string {
 	return GetStringParam(params, LowerFirst(key))
 }
 
+// HasParamLowerFirst reports whether a parameter key exists, checking the
+// same key forms GetParamLowerFirst reads (exact and lower-first). It is
+// the required-member presence test for shapes whose minimum length is
+// zero, where an empty value is legal but absence is not.
+func HasParamLowerFirst(params map[string]interface{}, key string) bool {
+	if HasParam(params, key) {
+		return true
+	}
+	_, ok := params[LowerFirst(key)]
+	return ok
+}
+
 // LowerFirst converts the first character of a string to lowercase.
 func LowerFirst(s string) string {
 	if len(s) == 0 {
@@ -460,9 +472,46 @@ func GetStringList(params map[string]interface{}, key string) []string {
 	return result
 }
 
+// HasListParam reports whether the params map carries the list member in
+// its JSON array form, walking the same three key spellings GetStringList
+// tries: an explicitly empty JSON array is a present list, distinguishable
+// from an omitted member. The query-protocol member and index fallbacks
+// cannot express an empty list (they terminate on the first absent
+// member), so presence is a JSON-plane question alone. Callers enforcing
+// a list member's @length(min 1) trait ("Array Members: Minimum number of
+// 1 item.") read the distinction through this probe and mark the parsed
+// slice present-but-empty.
+func HasListParam(params map[string]interface{}, key string) bool {
+	if key == "" {
+		return false
+	}
+	if _, ok := params[key]; ok {
+		return true
+	}
+	if _, ok := params[strings.ToLower(key)]; ok {
+		return true
+	}
+	lowerFirst := strings.ToLower(string(key[0])) + key[1:]
+	_, ok := params[lowerFirst]
+	return ok
+}
+
 // GetMapParamCaseInsensitive extracts a map parameter from the params map using case-insensitive key matching.
 func GetMapParamCaseInsensitive(params map[string]interface{}, key string) map[string]interface{} {
 	if m := GetMapParam(params, key); m != nil {
+		return m
+	}
+	return GetMapParam(params, strings.ToLower(key))
+}
+
+// GetMapParamLowerFirst extracts a map parameter trying original key,
+// LowerFirst, and lowercase variants — the awsJson1_1 wire form is the
+// lower-first (camelCase) variant of the Smithy member name.
+func GetMapParamLowerFirst(params map[string]interface{}, key string) map[string]interface{} {
+	if m := GetMapParam(params, key); m != nil {
+		return m
+	}
+	if m := GetMapParam(params, LowerFirst(key)); m != nil {
 		return m
 	}
 	return GetMapParam(params, strings.ToLower(key))

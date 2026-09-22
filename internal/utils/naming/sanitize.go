@@ -25,16 +25,28 @@ func SanitizePathComponent(name string) string {
 	return safe
 }
 
-// ValidatePathWithinDir checks that joining baseDir with relPath does not
-// escape baseDir via path traversal (e.g. "../").
+// ValidatePathWithinDir checks that the path stays within baseDir via
+// path traversal (e.g. "../").
 //
-// Returns the cleaned absolute path, or an error if the result escapes baseDir.
+// baseDir is resolved to its absolute form first, so the containment
+// comparison is independent of the process working directory. relPath
+// may itself be absolute — the form path-persisting writers record —
+// and is then validated in place rather than re-rooted under baseDir:
+// a join would absorb the leading separator and silently name a
+// different file. Returns the cleaned absolute path, or an error if
+// the result escapes baseDir.
 func ValidatePathWithinDir(baseDir, relPath string) (string, error) {
-	cleanBase := filepath.Clean(baseDir)
-	target := filepath.Clean(filepath.Join(cleanBase, relPath))
+	base := filepath.Clean(baseDir)
+	if abs, err := filepath.Abs(base); err == nil {
+		base = abs
+	}
+	target := filepath.Clean(relPath)
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(base, target)
+	}
 
-	if !strings.HasPrefix(target, cleanBase+string(filepath.Separator)) && target != cleanBase {
-		return "", &PathTraversalError{Base: cleanBase, Path: relPath}
+	if target != base && !strings.HasPrefix(target, base+string(filepath.Separator)) {
+		return "", &PathTraversalError{Base: base, Path: relPath}
 	}
 	return target, nil
 }

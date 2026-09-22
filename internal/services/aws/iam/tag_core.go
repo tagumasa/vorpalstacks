@@ -6,6 +6,7 @@
 package iam
 
 import (
+	"sort"
 	"strconv"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -101,7 +102,13 @@ func listResourceTagsCore[T any](store *iamstore.IAMStore, ops tagOps[T], input 
 	if err != nil {
 		return nil, storeReadError(err, ops.notFound, ops.notFoundFn(input.ResourceName))
 	}
-	paged := pagination.PaginateSlice(*ops.tagsFn(res), input.Marker, input.MaxItems, func(tag tags.Tag) string {
+	// Marker pagination walks the slice in ascending key order — the
+	// stored order is not a contract, so the listing imposes it.
+	storedTags := *ops.tagsFn(res)
+	sorted := make([]tags.Tag, len(storedTags))
+	copy(sorted, storedTags)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Key < sorted[j].Key })
+	paged := pagination.PaginateSlice(sorted, input.Marker, input.MaxItems, func(tag tags.Tag) string {
 		return tag.Key
 	})
 	return &ListResourceTagsResult{

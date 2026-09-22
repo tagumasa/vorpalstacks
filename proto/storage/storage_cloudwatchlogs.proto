@@ -4,79 +4,127 @@ package storage.cloudwatchlogs;
 
 option go_package = "vorpalstacks/internal/pb/storage/storage_cloudwatchlogs";
 
+// Storage records for the CloudWatch Logs store. Members are grouped
+// identity, configuration, live state, timestamps — in that order, with
+// dense numbering; the persisted format is regenerated wholesale on
+// storage-format changes and carries no compatibility numbering forward
+// (the house convention; see storage_kinesis.proto). Identity members
+// lead in a fixed order — the record's own name, then its owning log
+// group where it is scoped to one, then its arn; a record without a
+// member goes straight to the next. The two filter records are parallel
+// member-for-member through their shared configuration (filter_pattern,
+// apply_on_transformed_logs, field_selection_criteria at 3-5), and
+// created_at closes every record that carries one. MetricTransformation
+// is a nested value type, not a stored record: it numbers within its
+// own scope.
+
 message LogGroup {
+  // Identity.
   string name = 1;
   string arn = 2;
   string region = 3;
   string account_id = 4;
-  int64 created_at = 5;
-  int32 retention_in_days = 6;
-  int32 metric_filter_count = 7;
-  int64 stored_bytes = 8;
-  map<string, string> tags = 9;
-  string log_group_class = 10;
-  string kms_key_id = 11;
-  bool deletion_protection_enabled = 12;
+  // Configuration.
+  int32 retention_in_days = 5;
+  string log_group_class = 6;
+  string kms_key_id = 7;
+  bool deletion_protection_enabled = 8;
+  bool bearer_token_authentication_enabled = 9;
+  map<string, string> tags = 10;
+  // Live state.
+  int32 metric_filter_count = 11;
+  int64 stored_bytes = 12;
+  string data_protection_status = 13;
+  // Timestamps.
+  int64 created_at = 14;
 }
 
 message LogStream {
+  // Identity.
   string name = 1;
   string log_group_name = 2;
   string arn = 3;
-  int64 created_at = 4;
+  // Live state.
+  string upload_sequence_token = 4;
   int64 first_event_ts = 5;
   int64 last_event_ts = 6;
   int64 last_ingestion_ts = 7;
-  string upload_sequence_token = 8;
+  // Timestamps.
+  int64 created_at = 8;
 }
 
 message ChunkMeta {
+  // Identity.
   string chunk_id = 1;
-  string log_group = 2;
+  string log_group_name = 2;
   string log_stream = 3;
-  int64 min_ts = 4;
-  int64 max_ts = 5;
-  int32 entry_count = 6;
-  string chunk_path = 7;
+  // Placement.
+  string chunk_path = 4;
+  // Live state.
+  int64 min_ts = 5;
+  int64 max_ts = 6;
+  int32 entry_count = 7;
+  // Sum of the entry message lengths ingested into this chunk — the exact
+  // quantity PutLogEvents added to LogGroup.StoredBytes, so every removal
+  // path (stream delete, retention purge) decrements on the same basis the
+  // ingestion path incremented. The chunk file on disk is compressed, so
+  // its size cannot stand in for this number.
+  int64 byte_size = 8;
+  // Greatest ingestion time among the chunk's entries — the index-level
+  // bound the delivery engine's late window selects chunks by.
+  int64 max_ingestion_ts = 9;
 }
 
 message MetricFilter {
+  // Identity.
   string name = 1;
   string log_group_name = 2;
+  // Configuration.
   string filter_pattern = 3;
-  repeated MetricTransformation metric_transformations = 4;
-  int64 created_at = 5;
+  bool apply_on_transformed_logs = 4;
+  string field_selection_criteria = 5;
+  repeated MetricTransformation metric_transformations = 6;
+  repeated string emit_system_field_dimensions = 7;
+  // Timestamps.
+  int64 created_at = 8;
 }
 
 message MetricTransformation {
+  // A nested value type, not a stored record.
   string metric_name = 1;
   string metric_namespace = 2;
   string metric_value = 3;
   double default_value = 4;
   bool default_value_set = 5;
+  map<string, string> dimensions = 6;
+  string unit = 7;
 }
 
 message SubscriptionFilter {
-  string log_group_name = 1;
-  string filter_name = 2;
+  // Identity.
+  string name = 1;
+  string log_group_name = 2;
+  // Configuration.
   string filter_pattern = 3;
-  string destination_arn = 4;
-  string role_arn = 5;
-  string distribution = 6;
-  int64 created_at = 7;
-}
-
-message LogEntry {
-  int64 timestamp = 1;
-  string message = 2;
+  bool apply_on_transformed_logs = 4;
+  string field_selection_criteria = 5;
+  string destination_arn = 6;
+  string role_arn = 7;
+  string distribution = 8;
+  repeated string emit_system_fields = 9;
+  // Timestamps.
+  int64 created_at = 10;
 }
 
 message Destination {
+  // Identity.
   string name = 1;
   string arn = 2;
+  // Configuration.
   string role_arn = 3;
   string target_arn = 4;
   string access_policy = 5;
-  int64 creation_time = 6;
-  map<string, string> tags = 7;
+  map<string, string> tags = 6;
+  // Timestamps.
+  int64 created_at = 7;
 }

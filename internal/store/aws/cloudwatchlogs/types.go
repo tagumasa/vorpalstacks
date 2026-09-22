@@ -5,44 +5,10 @@ import (
 	"time"
 )
 
-const (
-	// MaxChunkSize is the maximum number of log entries per chunk.
-	MaxChunkSize = 10000
-	// MaxRetentionDays is the maximum retention period in days.
-	MaxRetentionDays = 3653
-	// DefaultRetentionDays is the default retention period in days.
-	DefaultRetentionDays = 30
-	// MaxLookupTables is the documented per-account, per-Region quota of
-	// lookup tables.
-	MaxLookupTables = 100
-	// DefaultDescribeLookupTablesResults is the documented default of the
-	// maxResults parameter of DescribeLookupTables.
-	DefaultDescribeLookupTablesResults = 50
-	// MaxDescribeLookupTablesResults is the documented maximum of the
-	// maxResults parameter of DescribeLookupTables.
-	MaxDescribeLookupTablesResults = 100
-	// MaxLookupTableBodyBytes is the documented size ceiling of a lookup
-	// table's CSV content (10 MB).
-	MaxLookupTableBodyBytes = 10485760
-	// MaxLookupTableNameLength is the documented maximum length of a lookup
-	// table name.
-	MaxLookupTableNameLength = 256
-	// MaxLookupTableDescriptionLength is the documented maximum length of a
-	// lookup table description.
-	MaxLookupTableDescriptionLength = 1024
-	// MaxKmsKeyIdLength is the documented maximum length of the kmsKeyId
-	// parameter of lookup table and scheduled-query destination operations
-	// (the shared KmsKeyId shape).
-	MaxKmsKeyIdLength = 256
-	// MaxLookupTableTags is the documented maximum number of tags attached
-	// to one lookup table resource.
-	MaxLookupTableTags = 50
-)
-
-// LookupTableNamePattern is the documented character set of lookup table
-// names: alphanumeric characters and underscores.
-const LookupTableNamePattern = `^[a-zA-Z0-9_]+$`
-
+// The log-plane substrate records: the group and stream records, the ingested
+// event forms and the chunk bookkeeping, with their constructors and the
+// retention vocabulary. Every feature family's record types ride their
+// operations files; the bounds register lives in limits.go.
 // validRetentionDays is the set of retention values accepted by AWS
 // CloudWatch Logs PutRetentionPolicy. Any value outside this set is
 // rejected with InvalidParameterException.
@@ -62,18 +28,30 @@ func IsValidRetentionDays(days int32) bool {
 
 // LogGroup represents a CloudWatch Logs log group.
 type LogGroup struct {
-	Name                      string            `json:"name"`
-	ARN                       string            `json:"arn"`
-	Region                    string            `json:"region"`
-	AccountID                 string            `json:"accountId"`
-	CreatedAt                 time.Time         `json:"createdAt"`
-	RetentionInDays           int32             `json:"retentionInDays,omitempty"`
-	MetricFilterCount         int32             `json:"metricFilterCount"`
-	StoredBytes               int64             `json:"storedBytes"`
-	LogGroupClass             string            `json:"logGroupClass,omitempty"`
-	KmsKeyId                  string            `json:"kmsKeyId,omitempty"`
-	DeletionProtectionEnabled bool              `json:"deletionProtectionEnabled"`
-	Tags                      map[string]string `json:"tags,omitempty"`
+	Name                      string    `json:"name"`
+	ARN                       string    `json:"arn"`
+	Region                    string    `json:"region"`
+	AccountID                 string    `json:"accountId"`
+	CreatedAt                 time.Time `json:"createdAt"`
+	RetentionInDays           int32     `json:"retentionInDays,omitempty"`
+	MetricFilterCount         int32     `json:"metricFilterCount"`
+	StoredBytes               int64     `json:"storedBytes"`
+	LogGroupClass             string    `json:"logGroupClass,omitempty"`
+	KmsKeyId                  string    `json:"kmsKeyId,omitempty"`
+	DeletionProtectionEnabled bool      `json:"deletionProtectionEnabled"`
+	// DataProtectionStatus is the DescribeLogGroups display member
+	// ("Displays whether this log group has a protection policy, or
+	// whether it had one in the past"): empty until the first policy
+	// write, ACTIVATED while one is stored, DELETED after its deletion.
+	// The archive and disable transitions have no platform path and are
+	// never produced.
+	DataProtectionStatus string `json:"dataProtectionStatus,omitempty"`
+	// BearerTokenAuthenticationEnabled mirrors the group's bearer token
+	// switch on the group record itself, so the read surfaces (the
+	// DescribeLogGroups member and the HTTP ingestion gate) observe it
+	// with the record they already hold.
+	BearerTokenAuthenticationEnabled bool              `json:"bearerTokenAuthenticationEnabled"`
+	Tags                             map[string]string `json:"tags,omitempty"`
 }
 
 // LogStream represents a CloudWatch Logs log stream.
@@ -101,218 +79,37 @@ type OutputLogEvent struct {
 	Message       string `json:"message"`
 	IngestionTime int64  `json:"ingestionTime"`
 	LogStreamName string `json:"logStreamName,omitempty"`
+	// Ordinal is the read engine's per-event disambiguator (the chunk
+	// identity plus the event's position inside the chunk). It carries
+	// no wire meaning of its own: readers use it to mint members that
+	// must stay unique across byte-identical duplicate events, whose
+	// content-derived identity alone would collide.
+	Ordinal string `json:"-"`
 }
 
 // ChunkMeta represents metadata for a log chunk.
 type ChunkMeta struct {
-	ChunkID    string `json:"chunkId"`
-	LogGroup   string `json:"logGroup"`
-	LogStream  string `json:"logStream"`
-	MinTs      int64  `json:"minTs"`
-	MaxTs      int64  `json:"maxTs"`
-	EntryCount int    `json:"entryCount"`
-	ChunkPath  string `json:"chunkPath"`
-}
-
-// MetricFilter represents a CloudWatch Logs metric filter.
-type MetricFilter struct {
-	Name                      string                 `json:"name"`
-	LogGroupName              string                 `json:"logGroupName"`
-	FilterPattern             string                 `json:"filterPattern"`
-	MetricTransformations     []MetricTransformation `json:"metricTransformations"`
-	ApplyOnTransformedLogs    bool                   `json:"applyOnTransformedLogs,omitempty"`
-	FieldSelectionCriteria    string                 `json:"fieldSelectionCriteria,omitempty"`
-	EmitSystemFieldDimensions []string               `json:"emitSystemFieldDimensions,omitempty"`
-	CreatedAt                 time.Time              `json:"createdAt"`
-}
-
-// MetricTransformation represents a metric transformation for a metric filter.
-type MetricTransformation struct {
-	MetricName      string  `json:"metricName"`
-	MetricNamespace string  `json:"metricNamespace"`
-	MetricValue     string  `json:"metricValue"`
-	DefaultValue    float64 `json:"defaultValue,omitempty"`
-	DefaultValueSet bool    `json:"defaultValueSet,omitempty"`
-}
-
-// SubscriptionFilter represents a CloudWatch Logs subscription filter.
-type SubscriptionFilter struct {
-	LogGroupName           string    `json:"logGroupName"`
-	FilterName             string    `json:"filterName"`
-	FilterPattern          string    `json:"filterPattern"`
-	DestinationArn         string    `json:"destinationArn"`
-	RoleArn                string    `json:"roleArn"`
-	Distribution           string    `json:"distribution"`
-	ApplyOnTransformedLogs bool      `json:"applyOnTransformedLogs,omitempty"`
-	FieldSelectionCriteria string    `json:"fieldSelectionCriteria,omitempty"`
-	EmitSystemFields       []string  `json:"emitSystemFields,omitempty"`
-	CreationTime           time.Time `json:"creationTime"`
-}
-
-// Destination represents a CloudWatch Logs destination (cross-account).
-type Destination struct {
-	Name         string            `json:"name"`
-	ARN          string            `json:"arn"`
-	RoleArn      string            `json:"roleArn"`
-	TargetArn    string            `json:"targetArn"`
-	AccessPolicy string            `json:"accessPolicy"`
-	CreationTime int64             `json:"creationTime"`
-	Tags         map[string]string `json:"tags,omitempty"`
-}
-
-// ResourcePolicy represents a CloudWatch Logs resource policy.
-type ResourcePolicy struct {
-	PolicyName      string `json:"policyName"`
-	PolicyDocument  string `json:"policyDocument"`
-	ResourceArn     string `json:"resourceArn,omitempty"`
-	PolicyScope     string `json:"policyScope,omitempty"`
-	RevisionId      string `json:"revisionId,omitempty"`
-	LastUpdatedTime int64  `json:"lastUpdatedTime"`
-}
-
-// AccountPolicy represents a CloudWatch Logs account-level policy.
-type AccountPolicy struct {
-	PolicyName        string `json:"policyName"`
-	PolicyDocument    string `json:"policyDocument"`
-	PolicyType        string `json:"policyType"`
-	Scope             string `json:"scope,omitempty"`
-	SelectionCriteria string `json:"selectionCriteria,omitempty"`
-	AccountId         string `json:"accountId,omitempty"`
-	LastUpdatedTime   int64  `json:"lastUpdatedTime"`
-}
-
-// DataProtectionPolicy represents a CloudWatch Logs data protection policy.
-type DataProtectionPolicy struct {
-	LogGroupIdentifier string `json:"logGroupIdentifier"`
-	PolicyDocument     string `json:"policyDocument"`
-	LastUpdatedTime    int64  `json:"lastUpdatedTime"`
-}
-
-// QueryDefinition represents a saved CloudWatch Logs Insights query definition.
-type QueryDefinition struct {
-	QueryDefinitionId string                 `json:"queryDefinitionId"`
-	Name              string                 `json:"name"`
-	QueryString       string                 `json:"queryString"`
-	LogGroupNames     []string               `json:"logGroupNames,omitempty"`
-	QueryLanguage     string                 `json:"queryLanguage,omitempty"`
-	Parameters        map[string]interface{} `json:"parameters,omitempty"`
-	LastModified      int64                  `json:"lastModified"`
-}
-
-// ExportTask represents a CloudWatch Logs export-to-S3 task.
-type ExportTask struct {
-	TaskId              string                 `json:"taskId"`
-	TaskName            string                 `json:"taskName"`
-	LogGroupName        string                 `json:"logGroupName"`
-	LogStreamNamePrefix string                 `json:"logStreamNamePrefix,omitempty"`
-	From                int64                  `json:"from"`
-	To                  int64                  `json:"to"`
-	Destination         string                 `json:"destination"`
-	DestinationPrefix   string                 `json:"destinationPrefix,omitempty"`
-	Status              string                 `json:"status"`
-	StatusMessage       string                 `json:"statusMessage,omitempty"`
-	ExecutionInfo       map[string]interface{} `json:"executionInfo,omitempty"`
-	CreationTime        int64                  `json:"creationTime"`
-}
-
-// ImportTask represents a CloudWatch Logs import-from-S3 task.
-type ImportTask struct {
-	ImportId             string                 `json:"importId"`
-	ImportSourceArn      string                 `json:"importSourceArn"`
-	ImportRoleArn        string                 `json:"importRoleArn,omitempty"`
-	LogGroupName         string                 `json:"logGroupName"`
-	ImportStatus         string                 `json:"importStatus"`
-	ImportDestinationArn string                 `json:"importDestinationArn,omitempty"`
-	ImportStatistics     map[string]interface{} `json:"importStatistics,omitempty"`
-	ImportFilter         map[string]interface{} `json:"importFilter,omitempty"`
-	ErrorMessage         string                 `json:"errorMessage,omitempty"`
-	CreationTime         int64                  `json:"creationTime"`
-	LastUpdatedTime      int64                  `json:"lastUpdatedTime"`
-}
-
-// ScheduledQuery represents a scheduled CloudWatch Logs Insights query.
-type ScheduledQuery struct {
-	Id                       string                 `json:"id"`
-	Name                     string                 `json:"name"`
-	Description              string                 `json:"description,omitempty"`
-	QueryString              string                 `json:"queryString"`
-	QueryLanguage            string                 `json:"queryLanguage,omitempty"`
-	LogGroupIdentifiers      []string               `json:"logGroupIdentifiers,omitempty"`
-	ScheduleExpression       string                 `json:"scheduleExpression"`
-	ScheduleType             string                 `json:"scheduleType,omitempty"`
-	State                    string                 `json:"state"`
-	ExecutionRoleArn         string                 `json:"executionRoleArn,omitempty"`
-	Timezone                 string                 `json:"timezone,omitempty"`
-	StartTimeOffset          int64                  `json:"startTimeOffset,omitempty"`
-	EndTimeOffset            int64                  `json:"endTimeOffset,omitempty"`
-	ScheduleStartTime        int64                  `json:"scheduleStartTime,omitempty"`
-	ScheduleEndTime          int64                  `json:"scheduleEndTime,omitempty"`
-	DestinationConfiguration map[string]interface{} `json:"destinationConfiguration,omitempty"`
-	// LastExecutionStatus carries the outcome of the most recent
-	// execution on the wire (Running, InvalidQuery, Complete, Failed,
-	// Timeout per the service model).
-	LastExecutionStatus string `json:"lastExecutionStatus,omitempty"`
-	CreationTime        int64  `json:"creationTime"`
-	LastUpdatedTime     int64  `json:"lastUpdatedTime"`
-	LastTriggeredTime   int64  `json:"lastTriggeredTime,omitempty"`
-	// LastExecutedBoundary is an internal marker holding the schedule
-	// boundary of the most recent executed occurrence. It is the
-	// deduplication truth across restarts and never surfaces on the
-	// wire; lastTriggeredTime remains the execution clock.
-	LastExecutedBoundary int64             `json:"lastExecutedBoundary,omitempty"`
-	Tags                 map[string]string `json:"tags,omitempty"`
-}
-
-// Wire values of the ExecutionStatus enum (Running, InvalidQuery,
-// Complete, Failed, Timeout) carried by the lastExecutionStatus member
-// of the scheduled query shapes.
-const (
-	ScheduledQueryStatusComplete = "Complete"
-	ScheduledQueryStatusFailed   = "Failed"
-)
-
-// ScheduledQueryDestination records the delivery outcome of one destination
-// of a scheduled query execution, reported through GetScheduledQueryHistory.
-type ScheduledQueryDestination struct {
-	DestinationType       string `json:"destinationType"`
-	DestinationIdentifier string `json:"destinationIdentifier"`
-	Status                string `json:"status"`
-	ProcessedIdentifier   string `json:"processedIdentifier,omitempty"`
-	ErrorMessage          string `json:"errorMessage,omitempty"`
-}
-
-// ScheduledQueryExecution represents a single execution of a scheduled query.
-type ScheduledQueryExecution struct {
-	ScheduledQueryId string                       `json:"scheduledQueryId"`
-	QueryId          string                       `json:"queryId"`
-	Destinations     []*ScheduledQueryDestination `json:"destinations,omitempty"`
-	TriggerTime      int64                        `json:"triggerTime"`
-	Status           string                       `json:"status"`
-	ErrorMessage     string                       `json:"errorMessage,omitempty"`
-	RecordsScanned   int64                        `json:"recordsScanned"`
-	RecordsMatched   int64                        `json:"recordsMatched"`
-}
-
-// LookupTable stores the reference data the lookup and cidrlookup query
-// commands enrich events with. TableBody holds the CSV content including
-// the header row; TableFields mirrors the header and RecordsCount counts
-// the data rows. When the table is encrypted with a customer-managed KMS
-// key, TableBody is empty and EncryptedBody, EncryptedDataKey and
-// ContentNonce hold the envelope-encrypted content instead.
-type LookupTable struct {
-	Name             string            `json:"name"`
-	Description      string            `json:"description,omitempty"`
-	TableBody        string            `json:"tableBody,omitempty"`
-	TableFields      []string          `json:"tableFields,omitempty"`
-	RecordsCount     int64             `json:"recordsCount"`
-	SizeBytes        int64             `json:"sizeBytes"`
-	KmsKeyId         string            `json:"kmsKeyId,omitempty"`
-	EncryptedBody    []byte            `json:"encryptedBody,omitempty"`
-	EncryptedDataKey []byte            `json:"encryptedDataKey,omitempty"`
-	ContentNonce     []byte            `json:"contentNonce,omitempty"`
-	Tags             map[string]string `json:"tags,omitempty"`
-	CreationTime     int64             `json:"creationTime"`
-	LastUpdatedTime  int64             `json:"lastUpdatedTime"`
+	ChunkID      string `json:"chunkId"`
+	LogGroupName string `json:"logGroupName"`
+	LogStream    string `json:"logStream"`
+	MinTs        int64  `json:"minTs"`
+	MaxTs        int64  `json:"maxTs"`
+	// MaxIngestionTs is the greatest ingestion time among the chunk's
+	// entries — the index-level bound the delivery engine's late window
+	// selects chunks by (events a backdated or mid-pass put landed below
+	// a cursor that had already passed their timestamps). A record from
+	// before the member existed decodes as zero and never qualifies,
+	// which is the correct answer: its entries predate every delivery
+	// cursor movement that matters.
+	MaxIngestionTs int64  `json:"maxIngestionTs,omitempty"`
+	EntryCount     int    `json:"entryCount"`
+	ChunkPath      string `json:"chunkPath"`
+	// ByteSize is the sum of the entry message lengths ingested into the
+	// chunk — the exact quantity PutLogEvents added to the parent
+	// LogGroup's StoredBytes — so removal paths decrement on the same
+	// basis ingestion incremented. The chunk file on disk is compressed;
+	// its size cannot stand in for this number.
+	ByteSize int64 `json:"byteSize"`
 }
 
 // NewLogGroup creates a new CloudWatch Logs log group.

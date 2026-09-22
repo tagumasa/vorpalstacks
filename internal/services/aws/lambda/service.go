@@ -61,6 +61,12 @@ type LambdaService struct {
 	// its batch is re-delivered on the next poll.
 	containerEnsureMu sync.Map // container name → *sync.Mutex
 	containerIDs      sync.Map // container name → container ID
+	// envLogStreams holds the log stream name of each zip-model execution
+	// environment, keyed by container ID. AWS binds one stream to one
+	// environment instance for the environment's whole life; the seed is
+	// derived from the container ID, so the binding survives a server
+	// restart that the container does.
+	envLogStreams sync.Map // container ID → log stream name
 
 	// sandboxes owns the persistent execution environments of
 	// image-package functions; zip-package functions stay on the
@@ -480,13 +486,15 @@ func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.Invocati
 	// The execution strategy: image-package functions run on the sandbox
 	// pool (the image's own ENTRYPOINT as PID1 speaking the Runtime API);
 	// zip-package functions stay on the container exec model. Everything
-	// past this point is shared.
+	// past this point is shared. Both strategies take the record by
+	// pointer: each assigns its execution environment's log stream, which
+	// the shared tail (handler context, log writes) consumes.
 	var outcome executionOutcome
 	var err error
 	if execCfg.ImageUri != "" {
-		outcome, err = s.runImageExecution(function, ver, execCfg, region, version, rec, eventJSON)
+		outcome, err = s.runImageExecution(function, ver, execCfg, region, version, &rec, eventJSON)
 	} else {
-		outcome, err = s.runZipExecution(function, ver, store, region, version, execCfg, rec, eventJSON)
+		outcome, err = s.runZipExecution(function, ver, store, region, version, execCfg, &rec, eventJSON)
 	}
 	if err != nil {
 		return nil, err
@@ -527,13 +535,19 @@ func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.Invocati
 // container per function version, one exec per invoke (the runtime wrapper
 // for the managed runtimes, /var/runtime/bootstrap for the provided
 // runtimes with a per-invocation host-side Runtime API server).
-func (s *LambdaService) runZipExecution(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region, version string, execCfg executionConfig, rec invocationRecord, eventJSON string) (executionOutcome, error) {
+func (s *LambdaService) runZipExecution(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region, version string, execCfg executionConfig, rec *invocationRecord, eventJSON string) (executionOutcome, error) {
 	ctx := context.Background()
 
 	containerID, err := s.ensureFunctionContainer(function, ver, store, region)
 	if err != nil {
 		return executionOutcome{}, err
 	}
+
+	// The container is this invocation's execution environment, and the
+	// environment's stream is the one this invocation writes to — the
+	// AWS contract of one stream per environment instance, shared by every
+	// invocation the environment runs.
+	rec.LogStreamName = s.containerLogStreamName(containerID, version)
 
 	code, err := s.loadCode(function.FunctionName, version, region)
 	if err != nil {
@@ -563,7 +577,7 @@ func (s *LambdaService) runZipExecution(function *lambdastore.Function, ver *lam
 		handlerFunc = handlerParts[1]
 	}
 
-	invokeCmd, resultMarker := s.buildInvokeCommand(execCfg.Runtime, moduleFile, handlerFunc, eventJSON, rec)
+	invokeCmd, resultMarker := s.buildInvokeCommand(execCfg.Runtime, moduleFile, handlerFunc, eventJSON, *rec)
 
 	// Bootstrap runtimes (the provided.* custom runtimes and the RIC-based
 	// managed images) receive the event over the Runtime API instead of a
@@ -572,10 +586,15 @@ func (s *LambdaService) runZipExecution(function *lambdastore.Function, ver *lam
 	// the bootstrap POSTs its answer back. The exec environment carries the
 	// server address; the image entrypoint's own emulator is bypassed
 	// because the exec goes straight to /var/runtime/bootstrap.
-	var execEnv []string
+	//
+	// The environment's log stream reaches the guest through the documented
+	// env var as well: AWS runtime interface clients read
+	// AWS_LAMBDA_LOG_STREAM_NAME from their execution environment, and the
+	// wrapper runtimes receive the same value through the context object.
+	execEnv := []string{"AWS_LAMBDA_LOG_STREAM_NAME=" + rec.LogStreamName}
 	var apiServer *runtimeAPIServer
 	if !usesRuntimeWrapper(execCfg.Runtime) {
-		apiServer, err = startRuntimeAPI(rec, []byte(eventJSON))
+		apiServer, err = startRuntimeAPI(*rec, []byte(eventJSON))
 		if err != nil {
 			return executionOutcome{}, fmt.Errorf("failed to start the runtime API: %w", err)
 		}

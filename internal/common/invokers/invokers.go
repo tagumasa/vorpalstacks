@@ -284,6 +284,12 @@ type KMSInvoker interface {
 	// ENCRYPT_DECRYPT) — the key class consumers such as EventBridge
 	// Scheduler validate at configuration time via kms:DescribeKey.
 	SymmetricEncryptionKeyExists(ctx context.Context, keyID string) bool
+	// SymmetricEncryptionKeyUsable reports whether the key exists, is
+	// enabled, and is a symmetric encryption key — the class and state
+	// consumers validate at association time when the operation documents
+	// an InvalidParameterException for a nonexistent, disabled or
+	// asymmetric key (CloudWatch Logs log-group associations).
+	SymmetricEncryptionKeyUsable(ctx context.Context, keyID string) bool
 }
 
 // KMSDataKeyResult carries the plaintext and encrypted data key returned by
@@ -394,6 +400,17 @@ type WAFInvoker interface {
 // CloudWatch metric store.
 type CloudWatchMetricInvoker interface {
 	PutMetricData(region, namespace string, metricName string, value float64, timestamp time.Time) error
+	// PutMetricDataWithDimensions publishes one datum whose metric
+	// carries dimensions (the AWS/Logs service metrics the logs
+	// service emits distinguish their dimension vocabulary).
+	PutMetricDataWithDimensions(region, namespace, metricName string, dimensions map[string]string, value float64, timestamp time.Time) error
+	// PutMetricDataWithDimensionsAndUnit publishes one datum carrying
+	// dimensions and a unit — the members a metric filter's
+	// transformation models ("The fields to use as dimensions for the
+	// metric"; "The unit to assign to the metric. If you omit this, the
+	// unit is set as None"). A nil dimension map publishes a datum whose
+	// metric carries no dimensions.
+	PutMetricDataWithDimensionsAndUnit(region, namespace, metricName string, dimensions map[string]string, unit string, value float64, timestamp time.Time) error
 }
 
 // CloudWatchAlarmInvoker provides CloudWatch alarm state operations for
@@ -418,6 +435,14 @@ type CloudTrailEventInfo struct {
 	Username    string
 }
 
+// CloudTrailEDSEvent is one CloudTrail Lake event data store record as a
+// cross-service consumer reads it: the record's own JSON payload (the
+// CloudTrailEvent member) and the event time the record is stored under.
+type CloudTrailEDSEvent struct {
+	EventTime time.Time
+	Payload   string
+}
+
 // CloudTrailInvoker provides CloudTrail event lookup for cross-service
 // consumers (e.g. IAM GenerateServiceLastAccessedDetails). Consumers call
 // these methods instead of holding a direct reference to the CloudTrail store.
@@ -432,6 +457,14 @@ type CloudTrailEventInfo struct {
 // be 1-50.
 type CloudTrailInvoker interface {
 	LookupEvents(ctx context.Context, region, username, nextToken string, startTime, endTime time.Time, maxResults int32) ([]CloudTrailEventInfo, string, error)
+	// LookupEDSEvents walks one event data store's records in ascending
+	// event-time order between the optional bounds (both inclusive),
+	// serving at most maxResults records; the returned token continues
+	// the walk and an empty token ends it. The edsArn addresses the walk
+	// on both axes: its region resolves the store and its
+	// eventdatastore resource the walked store — a consumer never holds
+	// the CloudTrail store's own addressing.
+	LookupEDSEvents(ctx context.Context, edsArn string, start, end *time.Time, maxResults int, nextToken string) ([]CloudTrailEDSEvent, string, error)
 }
 
 // LogsLogEntry carries a single log entry for cross-service delivery.

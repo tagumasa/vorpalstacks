@@ -2,6 +2,7 @@ package iam
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 	"strings"
@@ -114,6 +115,17 @@ func (s *ServiceSpecificCredentialStore) UpdateStatus(credentialId, status strin
 // ListByUserName returns all service-specific credentials for the given user.
 func (s *ServiceSpecificCredentialStore) ListByUserName(userName string) ([]*ServiceSpecificCredential, error) {
 	return s.uk.listByUserName(userName, "list_service_specific_credentials")
+}
+
+// FindByServiceAndSecret resolves a credential by its service name and
+// secret — the lookup the CloudWatch Logs HTTP ingestion endpoints'
+// bearer-token authentication needs (the token IS the credential's
+// ServiceCredentialSecret). The comparison is constant-time.
+func (s *ServiceSpecificCredentialStore) FindByServiceAndSecret(serviceName, secret string) (*ServiceSpecificCredential, error) {
+	return common.FindFirst[ServiceSpecificCredential](s.uk.BaseStore, func(c *ServiceSpecificCredential) bool {
+		return c.ServiceName == serviceName &&
+			subtle.ConstantTimeCompare([]byte(c.ServicePassword), []byte(secret)) == 1
+	})
 }
 
 // DeleteAllForUser removes all service-specific credentials belonging to the given user.

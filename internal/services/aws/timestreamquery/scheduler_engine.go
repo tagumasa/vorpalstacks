@@ -2,23 +2,16 @@ package timestreamquery
 
 import (
 	"context"
-	"os"
 	"sync"
 	"time"
 
 	"vorpalstacks/internal/common/scheduleexpr"
+	"vorpalstacks/internal/common/worker"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
 
-var tsqTickerInterval = 1 * time.Minute
-
-func init() {
-	if os.Getenv("TEST_MODE") == "true" {
-		tsqTickerInterval = 1 * time.Second
-	}
-}
+var tsqTickerInterval = worker.Cadence(1*time.Minute, time.Second)
 
 // ScheduledQueryEngine periodically evaluates schedule expressions for all
 // ENABLED scheduled queries and triggers execution when the next run time
@@ -56,8 +49,7 @@ func (e *ScheduledQueryEngine) Start() {
 	e.stopChan = make(chan struct{})
 	e.ctx, e.cancel = context.WithCancel(context.Background())
 
-	e.wg.Add(1)
-	go e.run()
+	worker.RunSupervised(e.ctx, &e.wg, "timestream scheduled-query engine", e.engineLoop)
 
 	logs.Debug("Timestream scheduled-query engine started")
 }
@@ -79,29 +71,17 @@ func (e *ScheduledQueryEngine) Stop() {
 	logs.Debug("Timestream scheduled-query engine stopped")
 }
 
-func (e *ScheduledQueryEngine) run() {
-	defer e.wg.Done()
-	defer func() {
-		if r := recover(); r != nil {
-			resilience.RestartAfterPanic("timestream-scheduled-query engine", r, &e.wg, e.run)
-		}
-	}()
-
-	ticker := time.NewTicker(tsqTickerInterval)
-	defer ticker.Stop()
-
+// engineLoop is the supervised engine body: an immediate first
+// evaluation pass, then one pass per cadence tick until Stop closes
+// the stop channel. The supervision — panic respawn with backoff, the
+// wait-group lifecycle — is the shared worker shell.
+func (e *ScheduledQueryEngine) engineLoop() {
 	e.checkScheduledQueries()
 	e.cleanupOldRuns()
-
-	for {
-		select {
-		case <-e.stopChan:
-			return
-		case <-ticker.C:
-			e.checkScheduledQueries()
-			e.cleanupOldRuns()
-		}
-	}
+	worker.TickerLoop(e.stopChan, tsqTickerInterval, func() {
+		e.checkScheduledQueries()
+		e.cleanupOldRuns()
+	})()
 }
 
 // shouldFireQuery resolves the latest elapsed execution boundary for the
@@ -136,11 +116,7 @@ func (e *ScheduledQueryEngine) shouldFireQuery(dedupKey, expr string, now, creat
 }
 
 func (e *ScheduledQueryEngine) checkScheduledQueries() {
-	if e.service.storageManager == nil {
-		return
-	}
-
-	regions := e.service.storageManager.GetActiveRegions()
+	regions := worker.ActiveRegions(e.service.storageManager)
 	now := time.Now().UTC()
 	allActiveKeys := make(map[string]bool)
 
@@ -225,14 +201,9 @@ func (e *ScheduledQueryEngine) checkScheduledQueries() {
 // cleanupOldRuns removes scheduled-query run records older than 48 hours
 // to prevent unbounded accumulation.
 func (e *ScheduledQueryEngine) cleanupOldRuns() {
-	if e.service.storageManager == nil {
-		return
-	}
-
 	cutoff := time.Now().UTC().Add(-48 * time.Hour)
-	regions := e.service.storageManager.GetActiveRegions()
 
-	for _, region := range regions {
+	for _, region := range worker.ActiveRegions(e.service.storageManager) {
 		stores, err := e.service.getStoresForRegion(region)
 		if err != nil {
 			continue

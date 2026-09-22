@@ -11,13 +11,13 @@ func (tc *cwlogsTestCtx) retentionTests() []TestResult {
 	var results []TestResult
 
 	results = append(results, tc.runner.RunTest("logs", "DeleteRetentionPolicy_Basic", func() error {
-		drName := tc.uniquePrefix("DelRetGroup")
-		if err := tc.createLogGroup(drName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		drName, cleanupGroup, err := tc.newLogGroupFixture("DelRetGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(drName)
+		defer cleanupGroup()
 
-		_, err := tc.client.PutRetentionPolicy(tc.ctx, &cloudwatchlogs.PutRetentionPolicyInput{
+		_, err = tc.client.PutRetentionPolicy(tc.ctx, &cloudwatchlogs.PutRetentionPolicyInput{
 			LogGroupName:    aws.String(drName),
 			RetentionInDays: aws.Int32(14),
 		})

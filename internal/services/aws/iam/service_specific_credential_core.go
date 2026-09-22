@@ -4,7 +4,9 @@
 package iam
 
 import (
+	"errors"
 	"fmt"
+	"time"
 
 	"vorpalstacks/internal/common/pagination"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -37,11 +39,15 @@ type ServiceSpecificCredentialListResult struct {
 }
 
 // supportedServiceSpecificCredentialServices lists the services that
-// support service-specific credentials: CodeCommit (Git HTTPS credentials)
-// and Amazon Keyspaces (Cassandra credentials).
+// support service-specific credentials: CodeCommit (Git HTTPS credentials),
+// Amazon Keyspaces (Cassandra credentials) and CloudWatch Logs (ACWL
+// bearer tokens for the HTTP ingestion endpoints — the developer guide's
+// "Setting up bearer token authentication" issues them with
+// --service-name logs.amazonaws.com).
 var supportedServiceSpecificCredentialServices = map[string]bool{
 	"codecommit.amazonaws.com": true,
 	"cassandra.amazonaws.com":  true,
+	"logs.amazonaws.com":       true,
 }
 
 func supportedServiceSpecificCredentialService(serviceName string) bool {
@@ -196,4 +202,32 @@ func (s *IAMService) updateServiceSpecificCredentialCore(store *iamstore.IAMStor
 	}
 
 	return store.ServiceSpecificCredentials().UpdateStatus(credentialId, status)
+}
+
+// LogIngestionServiceName is the service name of the CloudWatch Logs ACWL
+// bearer tokens: a service-specific credential of this service
+// authenticates the CloudWatch Logs HTTP ingestion endpoints.
+const LogIngestionServiceName = "logs.amazonaws.com"
+
+// AuthenticateLogIngestionToken validates an ACWL bearer token presented
+// to the CloudWatch Logs HTTP ingestion endpoints: the token must be the
+// ServiceCredentialSecret of an Active, unexpired service-specific
+// credential of service logs.amazonaws.com. A nil error authenticates;
+// every failure carries a short reason for the 401 response.
+func (s *IAMService) AuthenticateLogIngestionToken(token string) error {
+	store, err := s.GetStoreForRegion("")
+	if err != nil {
+		return fmt.Errorf("IAM store unavailable: %w", err)
+	}
+	cred, err := store.ServiceSpecificCredentials().FindByServiceAndSecret(LogIngestionServiceName, token)
+	if err != nil {
+		return errors.New("invalid bearer token")
+	}
+	if cred.Status != "Active" {
+		return errors.New("bearer token is inactive")
+	}
+	if cred.ExpirationDate != nil && time.Now().After(*cred.ExpirationDate) {
+		return errors.New("bearer token has expired")
+	}
+	return nil
 }

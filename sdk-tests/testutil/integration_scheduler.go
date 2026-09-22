@@ -367,7 +367,7 @@ func (r *TestRunner) runSchedulerToEventBridgeDLQ(ic *integClients, ts string) T
 	// A bus that was never created: the schedule is creatable (target
 	// validation is structural), but every delivery to it fails.
 	busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/missing-%s", ic.region, ts)
-	fireAt := time.Now().UTC().Add(20 * time.Second).Format("2006-01-02T15:04:05")
+	fireAt := time.Now().UTC().Add(3 * time.Second).Format("2006-01-02T15:04:05")
 
 	_, err = ic.scheduler.CreateSchedule(ic.ctx, &scheduler.CreateScheduleInput{
 		Name:                       aws.String(scheduleName),
@@ -475,7 +475,7 @@ func (r *TestRunner) runSchedulerToEventBridgeCustomBus(ic *integClients, ts str
 	}()
 
 	busARN := fmt.Sprintf("arn:aws:events:%s:000000000000:event-bus/%s", ic.region, busName)
-	fireAt := time.Now().UTC().Add(20 * time.Second).Format("2006-01-02T15:04:05")
+	fireAt := time.Now().UTC().Add(3 * time.Second).Format("2006-01-02T15:04:05")
 
 	_, err = ic.scheduler.CreateSchedule(ic.ctx, &scheduler.CreateScheduleInput{
 		Name:                       aws.String(scheduleName),
@@ -524,7 +524,7 @@ func (r *TestRunner) runSchedulerToEventBridgeCustomBus(ic *integClients, ts str
 // delivery into the dead-letter queue with the raw Input riding along.
 
 func (r *TestRunner) universalFireAt() string {
-	return "at(" + time.Now().UTC().Add(20*time.Second).Format("2006-01-02T15:04:05") + ")"
+	return "at(" + time.Now().UTC().Add(3*time.Second).Format("2006-01-02T15:04:05") + ")"
 }
 
 func (r *TestRunner) runSchedulerUniversalToLambda(ic *integClients, ts string) TestResult {

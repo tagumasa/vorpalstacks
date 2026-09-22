@@ -16,8 +16,11 @@ import (
 // fakeKMSInvoker is a test stand-in for the event bus KMS invoker: data keys
 // are 32 random bytes "wrapped" by XOR with a static test key.
 type fakeKMSInvoker struct {
-	keys    map[string]bool
-	wrapKey []byte
+	keys map[string]bool
+	// unusable marks keys that exist but fail the enabled-and-symmetric
+	// usability check (disabled or asymmetric keys).
+	unusable map[string]bool
+	wrapKey  []byte
 }
 
 func newFakeKMSInvoker(keyIDs ...string) *fakeKMSInvoker {
@@ -64,6 +67,19 @@ func (f *fakeKMSInvoker) KeyExists(_ context.Context, keyID string) bool {
 
 func (f *fakeKMSInvoker) SymmetricEncryptionKeyExists(ctx context.Context, keyID string) bool {
 	return f.KeyExists(ctx, keyID)
+}
+
+func (f *fakeKMSInvoker) SymmetricEncryptionKeyUsable(_ context.Context, keyID string) bool {
+	return f.keys[keyID] && !f.unusable[keyID]
+}
+
+// markUnusable flags a known key as disabled or asymmetric, the state the
+// log-group association check rejects.
+func (f *fakeKMSInvoker) markUnusable(keyID string) {
+	if f.unusable == nil {
+		f.unusable = make(map[string]bool)
+	}
+	f.unusable[keyID] = true
 }
 
 func newDeliveryTestService(keyIDs ...string) *LogsService {
@@ -303,7 +319,7 @@ func TestDeliverToS3WithoutBus(t *testing.T) {
 		"destinationIdentifier": "s3://results-bucket/prefix",
 		"roleArn":               "arn:aws:iam::000000000000:role/deliver",
 	}
-	dest := svc.deliverToS3("us-east-1", cfg, "sq-1", nil)
+	dest := svc.deliverToS3(context.Background(), "us-east-1", cfg, "sq-1", nil)
 	if dest.Status != destinationStatusFailed {
 		t.Fatalf("expected FAILED without S3 invoker, got %s", dest.Status)
 	}
@@ -349,7 +365,7 @@ func TestScheduledQueryTriggerDelivers(t *testing.T) {
 		StartTimeOffset: 60 * 60 * 1000,
 		CreationTime:    now,
 	}
-	svc.triggerScheduledQuery("us-east-1", store, sq, time.UnixMilli(now).UTC())
+	svc.triggerScheduledQuery(context.Background(), "us-east-1", store, sq, time.UnixMilli(now).UTC())
 
 	execs, err := store.ListScheduledQueryExecutions("sq-deliver", 0, time.Now().Add(time.Hour).UnixMilli())
 	if err != nil {

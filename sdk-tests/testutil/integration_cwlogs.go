@@ -1,7 +1,10 @@
 package testutil
 
 import (
+	"bytes"
 	"compress/gzip"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -25,9 +28,11 @@ func (r *TestRunner) runCWLogsToLambda(ic *integClients, ts string) TestResult {
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
 
-	fnARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", ic.region, fnName)
+	fnARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", ic.region, ic.accountID, fnName)
 
-	ic.cwl.CreateLogGroup(ic.ctx, &cloudwatchlogs.CreateLogGroupInput{LogGroupName: aws.String(logGroupName)})
+	if _, err := ic.cwl.CreateLogGroup(ic.ctx, &cloudwatchlogs.CreateLogGroupInput{LogGroupName: aws.String(logGroupName)}); err != nil {
+		return r.RunTest(integSvc, "CWLogs_Lambda", func() error { return fmt.Errorf("create log group: %w", err) })
+	}
 	defer func() {
 		ic.cwl.DeleteLogGroup(ic.ctx, &cloudwatchlogs.DeleteLogGroupInput{LogGroupName: aws.String(logGroupName)})
 	}()
@@ -42,22 +47,83 @@ func (r *TestRunner) runCWLogsToLambda(ic *integClients, ts string) TestResult {
 		return r.RunTest(integSvc, "CWLogs_Lambda", func() error { return fmt.Errorf("put subscription filter: %w", err) })
 	}
 
-	ic.cwl.CreateLogStream(ic.ctx, &cloudwatchlogs.CreateLogStreamInput{
+	if _, err := ic.cwl.CreateLogStream(ic.ctx, &cloudwatchlogs.CreateLogStreamInput{
 		LogGroupName:  aws.String(logGroupName),
 		LogStreamName: aws.String("test-stream"),
-	})
-
-	ic.cwl.PutLogEvents(ic.ctx, &cloudwatchlogs.PutLogEventsInput{
+	}); err != nil {
+		return r.RunTest(integSvc, "CWLogs_Lambda", func() error { return fmt.Errorf("create log stream: %w", err) })
+	}
+	if _, err := ic.cwl.PutLogEvents(ic.ctx, &cloudwatchlogs.PutLogEventsInput{
 		LogGroupName:  aws.String(logGroupName),
 		LogStreamName: aws.String("test-stream"),
 		LogEvents: []cwltypes.InputLogEvent{
 			{Message: aws.String("integration test log message"), Timestamp: aws.Int64(time.Now().UnixMilli())},
 		},
-	})
+	}); err != nil {
+		return r.RunTest(integSvc, "CWLogs_Lambda", func() error { return fmt.Errorf("put log events: %w", err) })
+	}
 
 	return r.pollVerify("CWLogs_Lambda", defaultPollTimeout, func() error {
-		return ic.verifyLambdaInvoked(fnName)
+		if err := ic.verifyLambdaInvoked(fnName); err != nil {
+			return err
+		}
+		return ic.verifyLambdaAwslogsPayload(fnName, "integration test log message")
 	})
+}
+
+// verifyLambdaAwslogsPayload decodes the subscription payload the function
+// received: the handler echoes its invocation event, whose awslogs.data
+// member is the base64-wrapped gzip of the DATA_MESSAGE record — the
+// documented Lambda invocation format for log-group-level subscription
+// filters. Asserting on the decoded record (not just the invocation)
+// verifies the delivered content. The scan reads every stream of the
+// function's log group so it holds under either stream layout: invocations
+// of one execution environment share its stream, and invocations across
+// separate environments land in separate streams.
+func (ic *integClients) verifyLambdaAwslogsPayload(fnName, message string) error {
+	found, err := ic.scanLambdaLogStreams(fnName, func(msg string) (bool, error) {
+		var envelope struct {
+			Awslogs struct {
+				Data string `json:"data"`
+			} `json:"awslogs"`
+		}
+		if err := json.Unmarshal([]byte(msg), &envelope); err != nil || envelope.Awslogs.Data == "" {
+			return false, nil
+		}
+		compressed, err := base64.StdEncoding.DecodeString(envelope.Awslogs.Data)
+		if err != nil {
+			return false, fmt.Errorf("awslogs.data is not base64: %w", err)
+		}
+		zr, err := gzip.NewReader(bytes.NewReader(compressed))
+		if err != nil {
+			return false, fmt.Errorf("awslogs.data does not carry gzip: %w", err)
+		}
+		payload, err := io.ReadAll(zr)
+		if err != nil {
+			return false, fmt.Errorf("read gzip: %w", err)
+		}
+		// The reachability probe CloudWatch Logs may send when the
+		// subscription is created echoes here too, ahead of any data
+		// record; it is a documented CONTROL_MESSAGE with no events, not
+		// the delivery under test — keep scanning for the DATA record.
+		if strings.Contains(string(payload), `"messageType":"CONTROL_MESSAGE"`) {
+			return false, nil
+		}
+		if !strings.Contains(string(payload), `"messageType":"DATA_MESSAGE"`) {
+			return false, nil
+		}
+		if !strings.Contains(string(payload), message) {
+			return false, fmt.Errorf("DATA_MESSAGE record does not carry the logged event: %s", string(payload))
+		}
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+	if !found {
+		return fmt.Errorf("lambda %s: no invocation log carried a DATA_MESSAGE awslogs envelope", fnName)
+	}
+	return nil
 }
 
 func (r *TestRunner) runCWLogsToKinesis(ic *integClients, ts string) TestResult {
@@ -74,17 +140,21 @@ func (r *TestRunner) runCWLogsToKinesis(ic *integClients, ts string) TestResult 
 		return r.RunTest(integSvc, "CWLogs_Kinesis", func() error { return fmt.Errorf("stream not active: %w", err) })
 	}
 
-	streamARN := fmt.Sprintf("arn:aws:kinesis:%s:000000000000:stream/%s", ic.region, streamName)
+	streamARN := fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/%s", ic.region, ic.accountID, streamName)
 
-	ic.cwl.CreateLogGroup(ic.ctx, &cloudwatchlogs.CreateLogGroupInput{LogGroupName: aws.String(logGroupName)})
+	if _, err := ic.cwl.CreateLogGroup(ic.ctx, &cloudwatchlogs.CreateLogGroupInput{LogGroupName: aws.String(logGroupName)}); err != nil {
+		return r.RunTest(integSvc, "CWLogs_Kinesis", func() error { return fmt.Errorf("create log group: %w", err) })
+	}
 	defer func() {
 		ic.cwl.DeleteLogGroup(ic.ctx, &cloudwatchlogs.DeleteLogGroupInput{LogGroupName: aws.String(logGroupName)})
 	}()
 
-	ic.cwl.CreateLogStream(ic.ctx, &cloudwatchlogs.CreateLogStreamInput{
+	if _, err := ic.cwl.CreateLogStream(ic.ctx, &cloudwatchlogs.CreateLogStreamInput{
 		LogGroupName:  aws.String(logGroupName),
 		LogStreamName: aws.String("test-stream"),
-	})
+	}); err != nil {
+		return r.RunTest(integSvc, "CWLogs_Kinesis", func() error { return fmt.Errorf("create log stream: %w", err) })
+	}
 
 	_, err = ic.cwl.PutSubscriptionFilter(ic.ctx, &cloudwatchlogs.PutSubscriptionFilterInput{
 		LogGroupName:   aws.String(logGroupName),
@@ -96,13 +166,15 @@ func (r *TestRunner) runCWLogsToKinesis(ic *integClients, ts string) TestResult 
 		return r.RunTest(integSvc, "CWLogs_Kinesis", func() error { return fmt.Errorf("put subscription filter: %w", err) })
 	}
 
-	ic.cwl.PutLogEvents(ic.ctx, &cloudwatchlogs.PutLogEventsInput{
+	if _, err := ic.cwl.PutLogEvents(ic.ctx, &cloudwatchlogs.PutLogEventsInput{
 		LogGroupName:  aws.String(logGroupName),
 		LogStreamName: aws.String("test-stream"),
 		LogEvents: []cwltypes.InputLogEvent{
 			{Message: aws.String("kinesis subscription test"), Timestamp: aws.Int64(time.Now().UnixMilli())},
 		},
-	})
+	}); err != nil {
+		return r.RunTest(integSvc, "CWLogs_Kinesis", func() error { return fmt.Errorf("put log events: %w", err) })
+	}
 
 	return r.pollVerify("CWLogs_Kinesis", defaultPollTimeout, func() error {
 		streamDesc, err := ic.describeStream(streamName)
@@ -124,8 +196,42 @@ func (r *TestRunner) runCWLogsToKinesis(ic *integClients, ts string) TestResult 
 		if len(records.Records) == 0 {
 			return fmt.Errorf("expected records from CW Logs subscription, got 0")
 		}
-		if !strings.Contains(string(records.Records[0].Data), "awslogs") {
-			return fmt.Errorf("expected awslogs envelope, got: %s", string(records.Records[0].Data))
+		// The stream may carry the CONTROL_MESSAGE reachability record the
+		// subscription's creation emits ("Sometimes CloudWatch Logs may
+		// emit Amazon Kinesis Data Streams records with a 'CONTROL_MESSAGE'
+		// type, mainly for checking if the destination is reachable"),
+		// ahead of the data batch — scan for both shapes. The record's data
+		// is the gzipped payload as-is — one gzip layer, no JSON envelope
+		// and no extra base64 wrap (the {"awslogs":{"data":...}} envelope
+		// is the Lambda invocation format; the CloudWatch Logs User Guide's
+		// Kinesis example reads the record with one base64-decode of the
+		// API presentation followed by zcat).
+		sawControl := false
+		sawData := false
+		for _, rec := range records.Records {
+			zr, err := gzip.NewReader(bytes.NewReader(rec.Data))
+			if err != nil {
+				return fmt.Errorf("record data must be a single gzip layer: %w", err)
+			}
+			payload, err := io.ReadAll(zr)
+			if err != nil {
+				return fmt.Errorf("read gzip: %w", err)
+			}
+			switch {
+			case strings.Contains(string(payload), `"CONTROL_MESSAGE"`):
+				sawControl = true
+				if !strings.Contains(string(payload), `"logEvents":[]`) {
+					return fmt.Errorf("control record must carry no log events, got: %s", string(payload))
+				}
+			case strings.Contains(string(payload), `"DATA_MESSAGE"`) && strings.Contains(string(payload), "kinesis subscription test"):
+				sawData = true
+			}
+		}
+		if !sawData {
+			return fmt.Errorf("records must include the DATA_MESSAGE payload carrying the logged event, got %d records", len(records.Records))
+		}
+		if !sawControl {
+			return fmt.Errorf("records must include the CONTROL_MESSAGE reachability probe, got %d records", len(records.Records))
 		}
 		return nil
 	})
@@ -202,8 +308,8 @@ func (r *TestRunner) runCWLogsLookupTableKMS(ic *integClients, ts string) TestRe
 		})
 
 		startResp, err := ic.cwl.StartQuery(ic.ctx, &cloudwatchlogs.StartQueryInput{
-			StartTime:     aws.Int64(now - 60000),
-			EndTime:       aws.Int64(now + 60000),
+			StartTime:     aws.Int64(now/1000 - 60),
+			EndTime:       aws.Int64(now/1000 + 60),
 			LogGroupNames: []string{logGroupName},
 			QueryString:   aws.String(fmt.Sprintf(`lookup %s id as uid OUTPUT name | fields uid, name`, tableName)),
 		})
@@ -277,13 +383,13 @@ func (r *TestRunner) runCWLogsScheduledQueryS3(ic *integClients, ts string) Test
 		QueryString:         aws.String("fields code"),
 		QueryLanguage:       cwltypes.QueryLanguageCwli,
 		LogGroupIdentifiers: []string{logGroupName},
-		ExecutionRoleArn:    aws.String("arn:aws:iam::123456789012:role/scheduled-query-role"),
+		ExecutionRoleArn:    aws.String(fmt.Sprintf("arn:aws:iam::%s:role/scheduled-query-role", ic.accountID)),
 		ScheduleExpression:  aws.String("rate(1 minute)"),
 		State:               cwltypes.ScheduledQueryStateEnabled,
 		DestinationConfiguration: &cwltypes.DestinationConfiguration{
 			S3Configuration: &cwltypes.S3Configuration{
 				DestinationIdentifier: aws.String(fmt.Sprintf("s3://%s/results/%s", bucket, ts)),
-				RoleArn:               aws.String("arn:aws:iam::123456789012:role/deliver"),
+				RoleArn:               aws.String(fmt.Sprintf("arn:aws:iam::%s:role/deliver", ic.accountID)),
 			},
 		},
 	})
@@ -294,10 +400,11 @@ func (r *TestRunner) runCWLogsScheduledQueryS3(ic *integClients, ts string) Test
 	defer ic.cwl.DeleteScheduledQuery(ic.ctx, &cloudwatchlogs.DeleteScheduledQueryInput{Identifier: aws.String(queryArn)})
 
 	// The AWS rate() contract runs the first query one full interval
-	// after creation; wait for the delivery to appear under the
-	// configured prefix.
+	// after creation; under the regression server's TEST_MODE the period
+	// compresses to seconds, so the delivery appears shortly after
+	// creation. Wait for it under the configured prefix.
 	var objectKey string
-	res := r.pollVerify(testName, 150*time.Second, func() error {
+	res := r.pollVerify(testName, 30*time.Second, func() error {
 		listResp, err := ic.s3.ListObjectsV2(ic.ctx, &s3.ListObjectsV2Input{
 			Bucket: aws.String(bucket),
 			Prefix: aws.String("results/" + ts + "/"),
@@ -366,4 +473,140 @@ func integResult(testName string, err error) TestResult {
 		res.Error = err.Error()
 	}
 	return res
+}
+
+// runCWLogsVendedDeliveryS3 pins the vended-logs delivery engine's S3
+// leg: a delivery source over a log group paired with an S3 delivery
+// destination delivers the group's events as one gzipped JSON-lines
+// object under the documented AWSLogs/<account-id>/ prefix.
+func (r *TestRunner) runCWLogsVendedDeliveryS3(ic *integClients, ts string) TestResult {
+	srcName := fmt.Sprintf("vended-s3-src-%s", ts)
+	bucket := fmt.Sprintf("vended-delivery-%s", ts)
+	srcGroup := fmt.Sprintf("/integ/vended-s3/%s", ts)
+	const stream = "s3-delivery/1"
+
+	_, err := ic.s3.CreateBucket(ic.ctx, &s3.CreateBucketInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		return r.RunTest(integSvc, "CWLogs_VendedDelivery_S3", func() error {
+			return fmt.Errorf("create bucket: %w", err)
+		})
+	}
+	defer func() {
+		list, _ := ic.s3.ListObjectsV2(ic.ctx, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
+		for _, o := range list.Contents {
+			ic.s3.DeleteObject(ic.ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: o.Key})
+		}
+		ic.s3.DeleteBucket(ic.ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+	}()
+
+	ic.cwl.CreateLogGroup(ic.ctx, &cloudwatchlogs.CreateLogGroupInput{LogGroupName: aws.String(srcGroup)})
+	defer ic.cwl.DeleteLogGroup(ic.ctx, &cloudwatchlogs.DeleteLogGroupInput{LogGroupName: aws.String(srcGroup)})
+	groups, err := ic.cwl.DescribeLogGroups(ic.ctx, &cloudwatchlogs.DescribeLogGroupsInput{
+		LogGroupNamePrefix: aws.String(srcGroup),
+	})
+	if err != nil || len(groups.LogGroups) == 0 || groups.LogGroups[0].Arn == nil {
+		return r.RunTest(integSvc, "CWLogs_VendedDelivery_S3", func() error {
+			return fmt.Errorf("resolve source group ARN: %v", err)
+		})
+	}
+	srcArn := groups.LogGroups[0].Arn
+
+	ic.cwl.CreateLogStream(ic.ctx, &cloudwatchlogs.CreateLogStreamInput{
+		LogGroupName: aws.String(srcGroup), LogStreamName: aws.String(stream),
+	})
+	now := time.Now().UnixMilli()
+	for i, msg := range []string{"vended-first", "vended-second"} {
+		_, err := ic.cwl.PutLogEvents(ic.ctx, &cloudwatchlogs.PutLogEventsInput{
+			LogGroupName: aws.String(srcGroup), LogStreamName: aws.String(stream),
+			LogEvents: []cwltypes.InputLogEvent{
+				{Message: aws.String(msg), Timestamp: aws.Int64(now - int64(2000-i*1000))},
+			},
+		})
+		if err != nil {
+			return r.RunTest(integSvc, "CWLogs_VendedDelivery_S3", func() error {
+				return fmt.Errorf("put source event %d: %w", i, err)
+			})
+		}
+	}
+
+	if _, err := ic.cwl.PutDeliverySource(ic.ctx, &cloudwatchlogs.PutDeliverySourceInput{
+		Name: aws.String(srcName), ResourceArn: srcArn, LogType: aws.String("APPLICATION_LOGS"),
+	}); err != nil {
+		return r.RunTest(integSvc, "CWLogs_VendedDelivery_S3", func() error {
+			return fmt.Errorf("put delivery source: %w", err)
+		})
+	}
+	defer ic.cwl.DeleteDeliverySource(ic.ctx, &cloudwatchlogs.DeleteDeliverySourceInput{Name: aws.String(srcName)})
+
+	dest, err := ic.cwl.PutDeliveryDestination(ic.ctx, &cloudwatchlogs.PutDeliveryDestinationInput{
+		Name: aws.String(srcName + "-dest"),
+		DeliveryDestinationConfiguration: &cwltypes.DeliveryDestinationConfiguration{
+			DestinationResourceArn: aws.String("arn:aws:s3:::" + bucket),
+		},
+		OutputFormat: cwltypes.OutputFormatJson,
+	})
+	if err != nil {
+		return r.RunTest(integSvc, "CWLogs_VendedDelivery_S3", func() error {
+			return fmt.Errorf("put delivery destination: %w", err)
+		})
+	}
+	defer ic.cwl.DeleteDeliveryDestination(ic.ctx, &cloudwatchlogs.DeleteDeliveryDestinationInput{
+		Name: aws.String(srcName + "-dest"),
+	})
+
+	created, err := ic.cwl.CreateDelivery(ic.ctx, &cloudwatchlogs.CreateDeliveryInput{
+		DeliverySourceName:     aws.String(srcName),
+		DeliveryDestinationArn: dest.DeliveryDestination.Arn,
+		RecordFields:           []string{"time", "message"},
+	})
+	if err != nil {
+		return r.RunTest(integSvc, "CWLogs_VendedDelivery_S3", func() error {
+			return fmt.Errorf("create delivery: %w", err)
+		})
+	}
+	defer ic.cwl.DeleteDelivery(ic.ctx, &cloudwatchlogs.DeleteDeliveryInput{Id: created.Delivery.Id})
+
+	prefix := fmt.Sprintf("AWSLogs/%s/%s/", ic.accountID, srcName)
+	return r.pollVerify("CWLogs_VendedDelivery_S3", defaultPollTimeout, func() error {
+		listed, err := ic.s3.ListObjectsV2(ic.ctx, &s3.ListObjectsV2Input{
+			Bucket: aws.String(bucket), Prefix: aws.String(prefix),
+		})
+		if err != nil {
+			return fmt.Errorf("list delivered objects: %w", err)
+		}
+		if len(listed.Contents) == 0 {
+			return fmt.Errorf("no delivered object under %s yet", prefix)
+		}
+		obj, err := ic.s3.GetObject(ic.ctx, &s3.GetObjectInput{
+			Bucket: aws.String(bucket), Key: listed.Contents[0].Key,
+		})
+		if err != nil {
+			return fmt.Errorf("get delivered object: %w", err)
+		}
+		defer obj.Body.Close()
+		zr, err := gzip.NewReader(obj.Body)
+		if err != nil {
+			return fmt.Errorf("delivered object is not gzip: %w", err)
+		}
+		defer zr.Close()
+		body, err := io.ReadAll(zr)
+		if err != nil {
+			return fmt.Errorf("read delivered object: %w", err)
+		}
+		lines := strings.Split(strings.TrimRight(string(body), "\n"), "\n")
+		if len(lines) < 2 {
+			return fmt.Errorf("delivered lines: %q", string(body))
+		}
+		var record map[string]interface{}
+		if err := json.Unmarshal([]byte(lines[0]), &record); err != nil {
+			return fmt.Errorf("delivered line is not JSON: %w", err)
+		}
+		if record["message"] != "vended-first" {
+			return fmt.Errorf("first delivered record: %v", record)
+		}
+		if _, ok := record["time"]; !ok {
+			return fmt.Errorf("delivered record missing time: %v", record)
+		}
+		return nil
+	})
 }

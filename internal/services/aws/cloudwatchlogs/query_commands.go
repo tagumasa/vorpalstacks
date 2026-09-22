@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
 // command is one stage of a parsed query pipeline.
@@ -68,6 +69,8 @@ func parseCommand(toks []token) (command, error) {
 		return parseLimitCommand(args, head)
 	case "parse":
 		return parseParseCommand(args, head)
+	case "json":
+		return parseJSONCommand(args, head)
 	case "dedup":
 		return parseDedupCommand(args, head)
 	case "filldown":
@@ -112,6 +115,8 @@ func parseCommand(toks []token) (command, error) {
 		return parseLookupCommand(args, head)
 	case "cidrlookup":
 		return parseCidrLookupCommand(args, head)
+	case "estimate":
+		return parseEstimateCommand(args, head)
 	}
 	return nil, newQueryCompileError(
 		fmt.Sprintf("Unknown command '%s' in query string", head.raw), head.start, head.end)
@@ -139,7 +144,6 @@ func readField(row queryResultRow, name string, ctx *execContext) string {
 
 type limitCommand struct {
 	n      int
-	any    bool
 	headTk token
 }
 
@@ -148,9 +152,12 @@ func (c *limitCommand) name() string { return "limit" }
 func parseLimitCommand(args []token, head token) (command, error) {
 	c := &limitCommand{headTk: head}
 	p := &exprParser{toks: args}
-	if p.acceptKeyword("any") {
-		c.any = true
-	}
+	// "Use limit any to stop scanning early once enough results are
+	// found": the documented keyword is accepted as a no-op — the early
+	// exit is a scan hint whose result set equals plain limit's, and the
+	// engine materialises the query window before the pipeline runs, so
+	// there is no scan left to stop.
+	p.acceptKeyword("any")
 	n, ok := p.next()
 	if !ok || n.kind != tokNumber {
 		return nil, newQueryCompileError("Syntax error: limit requires a number", head.start, head.end)
@@ -158,6 +165,10 @@ func parseLimitCommand(args []token, head token) (command, error) {
 	v, err := strconv.Atoi(n.text)
 	if err != nil || v <= 0 {
 		return nil, newQueryCompileError(fmt.Sprintf("Invalid limit '%s'", n.text), n.start, n.end)
+	}
+	if v > logsstore.MaxQueryLanguageLimit {
+		return nil, newQueryCompileError(fmt.Sprintf("Invalid limit '%s': the maximum is %d",
+			n.text, logsstore.MaxQueryLanguageLimit), n.start, n.end)
 	}
 	c.n = v
 	if _, ok := p.next(); ok {
@@ -171,6 +182,35 @@ func (c *limitCommand) apply(ctx *execContext, rows []queryResultRow) []queryRes
 		return rows
 	}
 	return rows[:c.n]
+}
+
+// --- estimate ---
+
+type estimateCommand struct{}
+
+func (c *estimateCommand) name() string { return "estimate" }
+
+func parseEstimateCommand(args []token, head token) (command, error) {
+	if len(args) != 0 {
+		return nil, newQueryCompileError(fmt.Sprintf("Syntax error at '%s'", args[0].raw), args[0].start, args[0].end)
+	}
+	return &estimateCommand{}, nil
+}
+
+// apply reports "the estimated bytes that the query would scan over the
+// selected log groups and time range, without running the query": the
+// sum of the source events' message byte counts — the context's events
+// are the fetched window set, so prior filters never shrink the scan
+// volume. The single result row labels its column with the command text,
+// the same expression-text labelling computed aggregations carry.
+func (c *estimateCommand) apply(ctx *execContext, rows []queryResultRow) []queryResultRow {
+	var scanned int64
+	for _, evt := range ctx.events {
+		scanned += int64(len(evt.message))
+	}
+	out := queryResultRow{}
+	out.set("estimate", strconv.FormatInt(scanned, 10))
+	return []queryResultRow{out}
 }
 
 // --- unmask ---

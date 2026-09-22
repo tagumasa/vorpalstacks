@@ -12,10 +12,12 @@ func NewLogsError(code, message string, statusCode int) *awserrors.AWSError {
 	return awserrors.NewAWSError(code, message, statusCode)
 }
 
-// CloudWatch Logs is an awsJson1_1 service and none of its client error
-// shapes carries an httpError trait, so every client error — including
-// ResourceNotFoundException and ResourceAlreadyExistsException — travels as
-// HTTP 400 with the error code in the response body.
+// CloudWatch Logs is an awsJson1_1 service, so its client errors travel
+// with the code in the response body and default to HTTP 400. The model's
+// httpError census is not empty, though: TooManyTagsException carries
+// httpError 400 and InternalServerException httpError 500 — any future
+// InternalServerException mapping must carry 500, never the family
+// default.
 var (
 	// ErrLogGroupNotFound is returned when a log group is not found.
 	ErrLogGroupNotFound = NewLogsError("ResourceNotFoundException", "Log group not found", http.StatusBadRequest)
@@ -29,37 +31,68 @@ var (
 	ErrMetricFilterNotFound = NewLogsError("ResourceNotFoundException", "Metric filter not found", http.StatusBadRequest)
 	// ErrInvalidParameter is returned when an invalid parameter is provided.
 	ErrInvalidParameter = NewLogsError("InvalidParameterException", "Invalid parameter", http.StatusBadRequest)
-	// ErrMissingParameter is returned when a required parameter is missing.
-	ErrMissingParameter = NewLogsError("MissingParameterException", "Missing required parameter", http.StatusBadRequest)
-	// ErrAccessDenied is returned when access is denied.
-	ErrAccessDenied = NewLogsError("AccessDeniedException", "Access denied", http.StatusBadRequest)
 	// ErrLimitExceeded is returned when a limit is exceeded.
 	ErrLimitExceeded = NewLogsError("LimitExceededException", "Limit exceeded", http.StatusBadRequest)
-	// ErrOperationAborted is returned when an operation is aborted.
-	ErrOperationAborted = NewLogsError("OperationAbortedException", "Operation aborted", http.StatusBadRequest)
 	// ErrDestinationNotFound is returned when a destination is not found.
+	// No destination-already-exists sentinel exists: PutDestination is the
+	// documented create-or-update, so the conflict identity never fires.
 	ErrDestinationNotFound = NewLogsError("ResourceNotFoundException", "Destination not found", http.StatusBadRequest)
-	// ErrDestinationAlreadyExists is returned when a destination already exists.
-	ErrDestinationAlreadyExists = NewLogsError("ResourceAlreadyExistsException", "Destination already exists", http.StatusBadRequest)
 )
 
+// errRequiredMember is the identity a missing required member rejects
+// with: InvalidParameterException, the parameter error every implemented
+// operation's declared list carries. The legacy tag operations omit it
+// from their lists; the least-contradictory-identity adjudication for
+// those raw-HTTP-only rows lives in the plan register.
+func errRequiredMember(member string) error {
+	return NewLogsError("InvalidParameterException",
+		"The "+member+" member is required", 400)
+}
+
+// errValidationMember is the identity the scheduled-query operation
+// family rejects a missing member with: their declared lists carry
+// ValidationException (with AccessDenied, Conflict, InternalServer,
+// ResourceNotFound, Throttling) — not InvalidParameterException.
+func errValidationMember(member string) error {
+	return NewLogsError("ValidationException",
+		"The "+member+" member is required", 400)
+}
+
 // storeErrorMappings maps store-level sentinel errors to CloudWatch Logs API errors.
+//
+// The two sentinel vocabularies are deliberate layering, not drift: the
+// store layer speaks storage-identity sentinels (no wire knowledge),
+// this layer owns the wire identities, and this table is the
+// hand-maintained bridge between them — the established per-service
+// pattern. The discipline the bridge imposes: every row's store sentinel
+// must have a producer somewhere in the store (a row whose store side
+// never fires is a dead pair — both sentinels and the row go), and every
+// wire identity the table names must be one this file declares.
 var storeErrorMappings = []awserrors.StoreErrorMapping{
 	{Store: logsstore.ErrLogGroupNotFound, AWS: ErrLogGroupNotFound},
 	{Store: logsstore.ErrLogGroupAlreadyExists, AWS: ErrLogGroupAlreadyExists},
 	{Store: logsstore.ErrLogStreamNotFound, AWS: ErrLogStreamNotFound},
 	{Store: logsstore.ErrLogStreamAlreadyExists, AWS: ErrLogStreamAlreadyExists},
 	{Store: logsstore.ErrMetricFilterNotFound, AWS: ErrMetricFilterNotFound},
-	{Store: logsstore.ErrMetricFilterAlreadyExists, AWS: awserrors.NewAWSError("ResourceAlreadyExistsException", "metric filter already exists", http.StatusBadRequest)},
 	{Store: logsstore.ErrResourceNotFound, AWS: awserrors.NewAWSError("ResourceNotFoundException", "resource not found", http.StatusBadRequest)},
-	{Store: logsstore.ErrResourceAlreadyExists, AWS: awserrors.NewAWSError("ResourceAlreadyExistsException", "resource already exists", http.StatusBadRequest)},
-	{Store: logsstore.ErrDataAlreadyAccepted, AWS: awserrors.NewAWSError("DataAlreadyAcceptedException", "data already accepted", http.StatusBadRequest)},
-	{Store: logsstore.ErrInvalidSequenceToken, AWS: awserrors.NewAWSError("InvalidSequenceTokenException", "invalid sequence token", http.StatusBadRequest)},
 	{Store: logsstore.ErrSubscriptionFilterNotFound, AWS: awserrors.NewAWSError("ResourceNotFoundException", "subscription filter not found", http.StatusBadRequest)},
 	{Store: logsstore.ErrDestinationNotFound, AWS: ErrDestinationNotFound},
-	{Store: logsstore.ErrDestinationAlreadyExists, AWS: ErrDestinationAlreadyExists},
 	{Store: logsstore.ErrLimitExceeded, AWS: ErrLimitExceeded},
 	{Store: logsstore.ErrInvalidPaginationToken, AWS: ErrInvalidParameter},
+	// The tag store's cumulative ceiling needs no row: its construction
+	// budget already carries the wire identity (TooManyTagsException,
+	// declared on TagResource alone), and MapStoreError passes the
+	// already-shaped error through unchanged. The legacy tag writers
+	// convert it at their Core — their declared lists carry only
+	// InvalidParameterException.
+	// "If you attempt to delete a log group with deletion protection
+	// enabled, you receive a ValidationException with the message:
+	// 'Cannot delete log group with deletion protection enabled. Disable
+	// deletion protection first.'" (user guide, protecting log groups
+	// from deletion) — OperationAbortedException is the unrelated
+	// concurrent-update conflict identity.
+	{Store: logsstore.ErrLogGroupDeletionProtected, AWS: NewLogsError("ValidationException",
+		"Cannot delete log group with deletion protection enabled. Disable deletion protection first.", http.StatusBadRequest)},
 }
 
 // mapStoreError converts a store error into an appropriate CloudWatch Logs API error.

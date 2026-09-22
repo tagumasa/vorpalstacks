@@ -3,57 +3,44 @@ package cloudwatchlogs
 import (
 	"context"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/internal/utils/aws/arn"
 )
 
 // handleBusDelivery handles CloudWatch Logs subscription filter matches,
-// delivering matched log events to Lambda or Kinesis destinations.
+// delivering matched payloads through the shared destination dispatch. A
+// failed dispatch rides the documented retry window instead of dropping.
 func (s *LogsService) handleBusDelivery(ctx context.Context, evt *eventbus.CloudWatchLogDeliveryEvent) eventbus.HandlerResult {
-	if arn.IsLambdaARN(evt.DestinationArn) {
-		s.invokeLambda(evt.DestinationArn, evt.Payload)
-	} else if arn.IsKinesisARN(evt.DestinationArn) {
-		s.putToKinesis(evt.DestinationArn, evt.LogGroup, evt.LogStream, evt.Payload)
+	if err := s.dispatchSubscriptionDelivery(evt.Region, evt.DestinationArn, evt.LogGroup, evt.LogStream, evt.Distribution, evt.Payload); err != nil {
+		if store, storeErr := s.getLogsStoreByRegion(evt.Region); storeErr == nil {
+			s.retryFailedDelivery(store, evt.Region, evt.DestinationArn, evt.LogGroup, evt.LogStream, evt.Distribution, evt.Payload, err)
+		} else {
+			logs.Warn("Failed to open store for subscription delivery retry",
+				logs.String("region", evt.Region), logs.Err(storeErr))
+		}
 	}
 	return eventbus.HandlerResult{}
 }
 
-// handleLambdaLogWrite ingests Lambda execution logs into CloudWatch Logs,
-// then applies metric filters and subscription filters.
+// handleLambdaLogWrite ingests Lambda execution logs through the shared
+// ingestion seam (validation + write + metric/subscription filter
+// fan-out), auto-creating the log group and stream.
 func (s *LogsService) handleLambdaLogWrite(ctx context.Context, evt *eventbus.LambdaLogWriteEvent) eventbus.HandlerResult {
-	logsStore := s.ensureLogGroupAndStream(evt.Region, evt.LogGroup, evt.LogStream, s.accountID)
-	if logsStore == nil {
-		return eventbus.HandlerResult{}
-	}
-
-	storeEvents := convertBusLogEntries(evt.LogEvents)
-	if !s.writeLogEvents(logsStore, evt.LogGroup, evt.LogStream, storeEvents) {
-		return eventbus.HandlerResult{}
-	}
-
-	s.applyMetricFiltersByRegion(evt.Region, evt.LogGroup, storeEvents)
-	s.applySubscriptionFiltersByRegion(evt.Region, evt.LogGroup, evt.LogStream, storeEvents)
-
+	s.ingestBusEvents("Lambda log write", evt.Region, evt.LogGroup, evt.LogStream, s.accountID, evt.LogEvents)
 	return eventbus.HandlerResult{}
 }
 
-// handleAPIGatewayAccessLog writes a single formatted access log entry from
-// API Gateway to the specified CloudWatch Logs log group/stream.
+// handleAPIGatewayAccessLog ingests a single formatted access log entry
+// from API Gateway through the shared ingestion seam.
 func (s *LogsService) handleAPIGatewayAccessLog(ctx context.Context, evt *eventbus.APIGatewayAccessLogEvent) eventbus.HandlerResult {
-	s.writeSingleLogMessage(evt.Region, evt.LogGroup, evt.LogStream, evt.AccountID, evt.FormattedLog)
+	s.ingestBusEvents("API Gateway access log", evt.Region, evt.LogGroup, evt.LogStream, evt.AccountID,
+		[]eventbus.LogEntry{busAccessLogEntry(evt.FormattedLog)})
 	return eventbus.HandlerResult{}
 }
 
-// handleDirectPutLogEvents writes log events from EventBridge/Scheduler/SFN
-// targets directly to a CloudWatch Logs log group/stream.
+// handleDirectPutLogEvents ingests log events from EventBridge/Scheduler/
+// SFN targets through the shared ingestion seam.
 func (s *LogsService) handleDirectPutLogEvents(ctx context.Context, evt *eventbus.CloudWatchLogsPutEvent) eventbus.HandlerResult {
-	logsStore := s.ensureLogGroupAndStream(evt.Region, evt.LogGroup, evt.LogStream, evt.AccountID)
-	if logsStore == nil {
-		return eventbus.HandlerResult{}
-	}
-
-	storeEvents := convertBusLogEntries(evt.LogEvents)
-	s.writeLogEvents(logsStore, evt.LogGroup, evt.LogStream, storeEvents)
-
+	s.ingestBusEvents("direct log events", evt.Region, evt.LogGroup, evt.LogStream, evt.AccountID, evt.LogEvents)
 	return eventbus.HandlerResult{}
 }

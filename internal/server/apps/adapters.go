@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1069,6 +1070,43 @@ func (a *cloudWatchMetricInvokerAdapter) PutMetricData(region, namespace string,
 	return store.PutMetricData(namespace, []cwstore.MetricDatum{datum})
 }
 
+// PutMetricDataWithDimensions writes a single dimensioned metric datum
+// to CloudWatch in the given region; the dimensions render in a stable
+// order so repeated puts address one metric.
+func (a *cloudWatchMetricInvokerAdapter) PutMetricDataWithDimensions(region, namespace, metricName string, dimensions map[string]string, value float64, timestamp time.Time) error {
+	return a.PutMetricDataWithDimensionsAndUnit(region, namespace, metricName, dimensions, "", value, timestamp)
+}
+
+// PutMetricDataWithDimensionsAndUnit writes one dimensioned metric datum
+// carrying the transformation's unit ("The unit to assign to the metric.
+// If you omit this, the unit is set as None" — an empty unit is the
+// omitted form); the dimensions render in a stable order so repeated
+// puts address one metric.
+func (a *cloudWatchMetricInvokerAdapter) PutMetricDataWithDimensionsAndUnit(region, namespace, metricName string, dimensions map[string]string, unit string, value float64, timestamp time.Time) error {
+	store, err := a.getStore(region)
+	if err != nil {
+		return err
+	}
+	names := make([]string, 0, len(dimensions))
+	for name := range dimensions {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	dims := make([]cwstore.Dimension, 0, len(names))
+	for _, name := range names {
+		dims = append(dims, cwstore.Dimension{Name: name, Value: dimensions[name]})
+	}
+	datum := cwstore.MetricDatum{
+		Namespace:  namespace,
+		MetricName: metricName,
+		Value:      value,
+		Timestamp:  timestamp,
+		Dimensions: dims,
+		Unit:       cwstore.StandardUnit(unit),
+	}
+	return store.PutMetricData(namespace, []cwstore.MetricDatum{datum})
+}
+
 // cloudTrailStoreProvider resolves the per-region CloudTrail store owned by
 // the CloudTrail service. The adapter must not construct its own store: the
 // service owns the store lifecycle, and a second instance would silently
@@ -1126,17 +1164,58 @@ func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, usern
 	return out, nextToken, nil
 }
 
-// logsStoreProvider resolves the per-region CloudWatch Logs store owned by
-// the CloudWatch Logs service. The adapter must not construct its own store:
+// LookupEDSEvents walks the event data store the ARN addresses: the ARN's
+// region resolves the store, its eventdatastore resource the walked store.
+func (a *cloudTrailInvokerAdapter) LookupEDSEvents(_ context.Context, edsArn string, start, end *time.Time, maxResults int, nextToken string) ([]invokers.CloudTrailEDSEvent, string, error) {
+	_, service, region, _, resource := arn.SplitARN(edsArn)
+	if service != "cloudtrail" {
+		return nil, "", fmt.Errorf("the event data store ARN addresses the %s service", service)
+	}
+	edsID, ok := strings.CutPrefix(resource, "eventdatastore/")
+	if !ok || edsID == "" {
+		return nil, "", fmt.Errorf("the ARN does not address an event data store: %s", edsArn)
+	}
+	ctStore, err := a.getStore(region)
+	if err != nil {
+		return nil, "", err
+	}
+	events, token, err := ctStore.LookupEDSEvents(edsID, cloudtrailstore.EDSQuery{
+		StartTime:  start,
+		EndTime:    end,
+		MaxResults: maxResults,
+		NextToken:  nextToken,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+	out := make([]invokers.CloudTrailEDSEvent, 0, len(events))
+	for _, e := range events {
+		if e == nil {
+			continue
+		}
+		out = append(out, invokers.CloudTrailEDSEvent{
+			EventTime: e.EventTime,
+			Payload:   e.CloudTrailEvent,
+		})
+	}
+	return out, token, nil
+}
+
+// logsServiceProvider exposes the CloudWatch Logs service's shared store and
+// ingestion seam to the adapter. The adapter must not construct its own store:
 // every writer and the API read plane must share the one store instance per
 // region, or the per-store chunk sequence and in-memory registry state would
-// silently diverge between instances.
-type logsStoreProvider interface {
+// silently diverge between instances. Likewise the adapter must not write to
+// the store directly: invoker-driven writes go through the service's single
+// ingestion entry so they carry the same validation and metric/subscription
+// filter fan-out as PutLogEvents API writes.
+type logsServiceProvider interface {
 	GetStoreForRegion(region string) (*logsstore.Store, error)
+	IngestLogEvents(region, logGroupName, logStreamName string, entries []logsstore.LogEntry) error
 }
 
 type logsInvokerAdapter struct {
-	provider logsStoreProvider
+	provider logsServiceProvider
 }
 
 // EnsureLogGroup creates the log group if it does not already exist.
@@ -1173,18 +1252,15 @@ func (a *logsInvokerAdapter) EnsureLogStream(_ context.Context, region, logGroup
 	return nil
 }
 
-// PutLogEvents writes log entries to the specified log stream.
+// PutLogEvents ingests log entries through the service's single ingestion
+// seam, so invoker-driven writes are validated and fan out to metric and
+// subscription filters exactly like PutLogEvents API writes.
 func (a *logsInvokerAdapter) PutLogEvents(_ context.Context, region, logGroupName, logStreamName string, entries []invokers.LogsLogEntry) error {
-	store, err := a.provider.GetStoreForRegion(region)
-	if err != nil {
-		return err
-	}
 	storeEvents := make([]logsstore.LogEntry, len(entries))
 	for i, e := range entries {
 		storeEvents[i] = logsstore.LogEntry{Timestamp: e.Timestamp, Message: e.Message}
 	}
-	_, err = store.PutLogEvents(logGroupName, logStreamName, storeEvents)
-	return err
+	return a.provider.IngestLogEvents(region, logGroupName, logStreamName, storeEvents)
 }
 
 // ExecuteQueryOnGraph runs a graph query (Cypher/Gremlin/openCypher) against the identified graph.

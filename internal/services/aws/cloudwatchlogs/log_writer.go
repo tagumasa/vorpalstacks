@@ -2,7 +2,6 @@ package cloudwatchlogs
 
 import (
 	"errors"
-	"time"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
@@ -34,6 +33,17 @@ func (s *LogsService) ensureLogGroupAndStream(region, logGroup, logStream, accou
 		}
 	}
 
+	if !createLogStreamIfAbsent(logsStore, logGroup, logStream) {
+		return nil
+	}
+
+	return logsStore
+}
+
+// createLogStreamIfAbsent creates the log stream in the resolved store when
+// it does not already exist. The boolean reports success; a stream that
+// already exists is success.
+func createLogStreamIfAbsent(logsStore *logsstore.Store, logGroup, logStream string) bool {
 	ls := logsstore.NewLogStream(logStream, logGroup)
 	if createErr := logsStore.CreateLogStream(ls); createErr != nil {
 		if !errors.Is(createErr, logsstore.ErrLogStreamAlreadyExists) {
@@ -41,22 +51,8 @@ func (s *LogsService) ensureLogGroupAndStream(region, logGroup, logStream, accou
 				logs.String("logGroup", logGroup),
 				logs.String("logStream", logStream),
 				logs.Err(createErr))
-			return nil
+			return false
 		}
-	}
-
-	return logsStore
-}
-
-// writeLogEvents converts bus LogEntry values to store LogEntry values and
-// writes them via PutLogEvents. Returns false on failure.
-func (s *LogsService) writeLogEvents(logsStore *logsstore.Store, logGroup, logStream string, entries []logsstore.LogEntry) bool {
-	if _, err := logsStore.PutLogEvents(logGroup, logStream, entries); err != nil {
-		logs.Error("Failed to write log events",
-			logs.String("logGroup", logGroup),
-			logs.String("logStream", logStream),
-			logs.Err(err))
-		return false
 	}
 	return true
 }
@@ -68,19 +64,4 @@ func convertBusLogEntries(events []eventbus.LogEntry) []logsstore.LogEntry {
 		storeEvents[i] = logsstore.LogEntry{Timestamp: e.Timestamp, Message: e.Message}
 	}
 	return storeEvents
-}
-
-// writeSingleLogMessage is a convenience wrapper that writes one log entry
-// with the current timestamp.
-func (s *LogsService) writeSingleLogMessage(region, logGroup, logStream, accountID, message string) {
-	logsStore := s.ensureLogGroupAndStream(region, logGroup, logStream, accountID)
-	if logsStore == nil {
-		return
-	}
-	if !s.writeLogEvents(logsStore, logGroup, logStream, []logsstore.LogEntry{
-		{Timestamp: time.Now().UnixMilli(), Message: message},
-	}) {
-		logs.Error("Failed to write log event",
-			logs.String("logGroup", logGroup), logs.String("logStream", logStream))
-	}
 }

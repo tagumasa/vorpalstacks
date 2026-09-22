@@ -5,6 +5,7 @@ package scheduleexpr
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -283,6 +284,45 @@ const (
 	RateFiresAtAnchor
 )
 
+// testModeBoundaryCompression carries the carryover-category-(d) mechanism
+// that keeps the scheduled-trigger boundary path test-accelerable: the
+// regression server runs with TEST_MODE=true, and under that flag alone the
+// boundary arithmetic ElapsedExecutionTime resolves is compressed so
+// integration tests observe scheduled deliveries in seconds instead of the
+// documented minutes. Production never sets TEST_MODE, so production
+// schedule semantics are unchanged. Read once at init, following the same
+// convention as the firing engines' ticker-interval variables.
+var testModeBoundaryCompression = false
+
+func init() {
+	testModeBoundaryCompression = os.Getenv("TEST_MODE") == "true"
+}
+
+const (
+	// testModeAtLead is how far ahead of now a future at() timestamp may
+	// lie and still count as elapsed under TEST_MODE. A timestamp further
+	// out keeps its real-time wait even in tests.
+	testModeAtLead = time.Minute
+	// testModeRateScale divides one rate() period under TEST_MODE; the
+	// floor keeps the scaled period from collapsing below the compressed
+	// one-second evaluation cadence the firing engines tick at.
+	testModeRateScale = 60
+	// testModeRateFloor is the smallest compressed rate() period.
+	testModeRateFloor = time.Second
+)
+
+// testModeRateDuration compresses one rate() period for due-boundary
+// arithmetic under TEST_MODE (rate(1 minute) behaves as rate(1 second)).
+// Validation and NextExecutionTime keep the real period: only the firing
+// decision is accelerated.
+func testModeRateDuration(d time.Duration) time.Duration {
+	scaled := d / testModeRateScale
+	if scaled < testModeRateFloor {
+		return testModeRateFloor
+	}
+	return scaled
+}
+
 // ElapsedExecutionTime resolves the latest execution instant of an AWS
 // schedule expression that lies at or before the reference time now — the
 // boundary a firing engine owes an invocation for. It reports false when
@@ -301,6 +341,10 @@ const (
 //     to fire). Boundaries older than cronRecoveryHorizon are not
 //     recovered; an evaluation that arrives late fires the pending
 //     boundary instead of skipping it silently.
+//
+// Under TEST_MODE (see testModeBoundaryCompression) the at() and rate()
+// arms compress their waiting time; cron() boundaries keep their real
+// minute grid because no test depends on accelerating them.
 func ElapsedExecutionTime(expr string, now time.Time, creationTime time.Time, startDate *time.Time, first RateFirstBoundary) (time.Time, bool) {
 	if IsAtExpression(expr) {
 		t, ok := parseAtTime(expr)
@@ -311,7 +355,13 @@ func ElapsedExecutionTime(expr string, now time.Time, creationTime time.Time, st
 		// evaluation timezone the caller resolved into now.
 		local := time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), 0, now.Location())
 		if local.After(now) {
-			return time.Time{}, false
+			// TEST_MODE compression: a near-future timestamp counts as
+			// elapsed so one-time at() schedules deliver in seconds. The
+			// returned boundary stays the timestamp itself, preserving
+			// once-per-boundary ordering for the callers' deduplication.
+			if !testModeBoundaryCompression || local.Sub(now) > testModeAtLead {
+				return time.Time{}, false
+			}
 		}
 		return local, true
 	}
@@ -320,6 +370,9 @@ func ElapsedExecutionTime(expr string, now time.Time, creationTime time.Time, st
 		duration, ok := ParseRateDuration(expr)
 		if !ok {
 			return time.Time{}, false
+		}
+		if testModeBoundaryCompression {
+			duration = testModeRateDuration(duration)
 		}
 		base := creationTime
 		if startDate != nil {

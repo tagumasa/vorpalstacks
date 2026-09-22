@@ -2,23 +2,28 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	"vorpalstacks/internal/common/pagination"
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
-// PutDestination creates a CloudWatch Logs destination.
+// PutDestination creates or updates a CloudWatch Logs destination. The
+// modelled input carries destinationName, targetArn, roleArn and tags
+// alone — the access policy is attached through PutDestinationPolicy,
+// never at creation, and an update preserves whatever that operation
+// installed.
 func (s *LogsService) PutDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "DestinationName")
 	roleArn := request.GetParamLowerFirst(req.Parameters, "RoleArn")
 	targetArn := request.GetParamLowerFirst(req.Parameters, "TargetArn")
-	accessPolicy := request.GetParamLowerFirst(req.Parameters, "AccessPolicy")
 	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
 
-	dest, err := s.putDestinationCore(name, roleArn, targetArn, accessPolicy, tags, reqCtx.GetRegion())
+	dest, err := s.putDestinationCore(name, roleArn, targetArn, tags, reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
@@ -28,11 +33,20 @@ func (s *LogsService) PutDestination(ctx context.Context, reqCtx *request.Reques
 	}, nil
 }
 
-func (s *LogsService) putDestinationCore(name, roleArn, targetArn, accessPolicy string, tags map[string]string, region string) (*logsstore.Destination, error) {
+func (s *LogsService) putDestinationCore(name, roleArn, targetArn string, tags map[string]string, region string) (*logsstore.Destination, error) {
 	if err := validateDestinationName(name); err != nil {
 		return nil, err
 	}
-	if err := validateKinesisOrFirehoseArn(targetArn); err != nil {
+	// targetArn and roleArn are required members of PutDestinationRequest;
+	// the ARN validators below are optional-tolerant parsers shared with
+	// members that may be absent, so presence is enforced here.
+	if targetArn == "" {
+		return nil, errRequiredMember("targetArn")
+	}
+	if roleArn == "" {
+		return nil, errRequiredMember("roleArn")
+	}
+	if err := validateKinesisStreamArn(targetArn); err != nil {
 		return nil, err
 	}
 	if err := validateIAMRoleArn(roleArn); err != nil {
@@ -46,17 +60,41 @@ func (s *LogsService) putDestinationCore(name, roleArn, targetArn, accessPolicy 
 
 	arn := store.ARNBuilder().CloudWatch().Destination(name)
 
+	// The tags member rides the same Tags target the tag operations
+	// validate against — entry traits, reserved prefix, the ceiling
+	// (TooManyTagsException is undeclared here) — and lives in the tag
+	// store alone: the response shape carries no tags member, and
+	// ListTagsForResource on the destination ARN is the read surface.
+	if len(tags) > tagutil.MaxTagsPerResource {
+		return nil, NewLogsError("InvalidParameterException",
+			fmt.Sprintf("A resource can have a maximum of %d tags", tagutil.MaxTagsPerResource), 400)
+	}
+	if err := validateTagEntries(tags); err != nil {
+		return nil, err
+	}
+
 	dest := &logsstore.Destination{
-		Name:         name,
-		ARN:          arn,
-		RoleArn:      roleArn,
-		TargetArn:    targetArn,
-		AccessPolicy: accessPolicy,
-		Tags:         tags,
+		Name:      name,
+		ARN:       arn,
+		RoleArn:   roleArn,
+		TargetArn: targetArn,
 	}
 
 	if err := store.PutDestination(dest); err != nil {
 		return nil, mapStoreError(err)
+	}
+	if len(tags) > 0 {
+		if err := store.Tags().Tag(arn, tags); err != nil {
+			// The store budget's TooManyTagsException identity is
+			// declared on TagResource alone; this operation's list
+			// carries InvalidParameterException only.
+			var tagCeiling *awserrors.AWSError
+			if errors.As(err, &tagCeiling) && tagCeiling.Code == "TooManyTagsException" {
+				return nil, NewLogsError("InvalidParameterException",
+					fmt.Sprintf("A resource can have a maximum of %d tags", tagutil.MaxTagsPerResource), 400)
+			}
+			return nil, mapStoreError(err)
+		}
 	}
 	return dest, nil
 }
@@ -115,7 +153,7 @@ func (s *LogsService) DescribeDestinations(ctx context.Context, reqCtx *request.
 }
 
 func (s *LogsService) describeDestinationsCore(prefix, nextToken, region string, limit int32) ([]*logsstore.Destination, string, error) {
-	l, err := validateListLimit(limit, 50, 50)
+	l, err := validateListLimit(limit, logsstore.DefaultDescribeLimit, logsstore.MaxDescribeLimit)
 	if err != nil {
 		return nil, "", err
 	}
@@ -130,10 +168,16 @@ func (s *LogsService) describeDestinationsCore(prefix, nextToken, region string,
 		return nil, "", mapStoreError(err)
 	}
 
-	result := pagination.PaginateSlice(destinations, nextToken, int(l), func(d *logsstore.Destination) string {
+	// The page marker rides the scoped listing vocabulary: the token
+	// carries the request identity and its documented expiry rather than
+	// a bare destination name.
+	scope := listingScope("destinations", prefix)
+	result, err := paginateScopedListing(scope, nextToken, destinations, int(l), func(d *logsstore.Destination) string {
 		return d.Name
 	})
-
+	if err != nil {
+		return nil, "", err
+	}
 	return result.Items, result.NextMarker, nil
 }
 
@@ -183,9 +227,6 @@ func formatDestination(d *logsstore.Destination) map[string]interface{} {
 	}
 	if d.AccessPolicy != "" {
 		result["accessPolicy"] = d.AccessPolicy
-	}
-	if len(d.Tags) > 0 {
-		result["tags"] = d.Tags
 	}
 	return result
 }

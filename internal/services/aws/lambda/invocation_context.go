@@ -1,11 +1,15 @@
 package lambda
 
-// This file carries the per-invocation context record: one request id, one
-// log stream and one deadline per execution. The runtime wrappers derive the
-// handler's second argument from it, the execution logs reuse the same
-// request id so context.awsRequestId matches the START/END/REPORT lines, and
-// the custom-runtime Runtime API emulation serves the same values as
-// Lambda-Runtime-* headers.
+// This file carries the per-invocation context record: one request id and
+// one deadline per execution. The runtime wrappers derive the handler's
+// second argument from it, the execution logs reuse the same request id so
+// context.awsRequestId matches the START/END/REPORT lines, and the
+// custom-runtime Runtime API emulation serves the same values as
+// Lambda-Runtime-* headers. The log stream is deliberately not per-request:
+// it belongs to the execution environment that runs the invocation (the
+// long-lived container of the zip model, the sandbox of the image model),
+// and the execution strategy assigns the environment's stream to the record
+// before the handler and the log writes see it.
 
 import (
 	"fmt"
@@ -40,15 +44,18 @@ func lambdaLogGroupName(functionName string) string {
 }
 
 // lambdaLogStreamName is the CloudWatch Logs stream convention the
-// platform writes: YYYY/MM/DD/[version]id[:8]. The id is the request id
-// for an invocation record and the environment id for a sandbox.
+// platform writes: YYYY/MM/DD/[version]id[:8]. The id is the execution
+// environment's identity — the container-derived seed of the zip model,
+// the sandbox's environment id of the image model — never the request id:
+// one stream serves every invocation its environment runs.
 func lambdaLogStreamName(now time.Time, version, id string) string {
 	return fmt.Sprintf("%d/%02d/%02d/[%s]%s", now.Year(), now.Month(), now.Day(), version, id[:8])
 }
 
-// newInvocationRecord builds the record for one execution. The log stream
-// name follows the CloudWatch Logs convention the platform writes:
-// YYYY/MM/DD/[version]requestID[:8].
+// newInvocationRecord builds the record for one execution. LogStreamName
+// stays empty here: the stream belongs to the execution environment, and
+// the execution strategy (zip container or image sandbox) assigns it once
+// the environment is known.
 func newInvocationRecord(functionName, version, invokedARN string, memorySize, timeoutSeconds int32, clientContextJSON string) invocationRecord {
 	// A stored configuration can carry a zero timeout (for example an
 	// image-package function); the effective deadline must still exist, so
@@ -61,7 +68,6 @@ func newInvocationRecord(functionName, version, invokedARN string, memorySize, t
 	return invocationRecord{
 		RequestID:         requestID,
 		LogGroupName:      lambdaLogGroupName(functionName),
-		LogStreamName:     lambdaLogStreamName(now, version, requestID),
 		InvokedARN:        invokedARN,
 		FunctionName:      functionName,
 		Version:           version,

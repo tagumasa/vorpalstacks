@@ -202,7 +202,10 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 			}
 			arns = append(arns, aws.ToString(resp.LookupTableArn))
 		}
-		_, err := client.CreateLookupTable(tc.ctx, &cloudwatchlogs.CreateLookupTableInput{
+		// The 101st table rejects with the quota identity; the no-retry
+		// client carries the call so the SDK's throttling-class retry
+		// ladder adds no wait before the assertion.
+		_, err := tc.noRetryClient.CreateLookupTable(tc.ctx, &cloudwatchlogs.CreateLookupTableInput{
 			LookupTableName: aws.String(prefix + "_overflow"),
 			TableBody:       aws.String("a\n1\n"),
 		})
@@ -278,14 +281,11 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 			LookupTableArn: createResp.LookupTableArn,
 		})
 
-		groupName := tc.uniquePrefix("lookup-query-group")
-		if err := tc.createLogGroup(groupName); err != nil {
-			return fmt.Errorf("create log group: %v", err)
+		groupName, cleanupGroup, err := tc.newGroupStreamFixture("lookup-query-group", "s1")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(groupName)
-		if err := tc.createLogStream(groupName, "s1"); err != nil {
-			return fmt.Errorf("create log stream: %v", err)
-		}
+		defer cleanupGroup()
 		now := time.Now().UnixMilli()
 		for i, msg := range []string{`{"user_id": "u1"}`, `{"user_id": "u3"}`} {
 			if err := tc.putLogEvent(groupName, "s1", msg, now-int64(i)*1000); err != nil {
@@ -294,31 +294,19 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 		}
 
 		startResp, err := client.StartQuery(tc.ctx, &cloudwatchlogs.StartQueryInput{
-			StartTime:     aws.Int64(now - 3600),
-			EndTime:       aws.Int64(now + 60000),
+			StartTime:     aws.Int64(now/1000 - 3600),
+			EndTime:       aws.Int64(now/1000 + 60),
 			LogGroupNames: []string{groupName},
 			QueryString:   aws.String(fmt.Sprintf(`lookup %s id as user_id OUTPUT name, department | fields user_id, name, department | sort user_id asc`, tableName)),
 		})
 		if err != nil {
 			return fmt.Errorf("start query: %v", err)
 		}
-		var all [][]types.ResultField
-		for i := 0; i < 20; i++ {
-			resResp, err := client.GetQueryResults(tc.ctx, &cloudwatchlogs.GetQueryResultsInput{
-				QueryId: startResp.QueryId,
-			})
-			if err != nil {
-				return fmt.Errorf("get results: %v", err)
-			}
-			if resResp.Status == types.QueryStatusComplete {
-				all = resResp.Results
-				break
-			}
-			if resResp.Status == types.QueryStatusFailed || resResp.Status == types.QueryStatusCancelled {
-				return fmt.Errorf("query finished with status %s", resResp.Status)
-			}
-			time.Sleep(200 * time.Millisecond)
+		resResp, err := tc.waitForQuery(startResp.QueryId, 20)
+		if err != nil {
+			return err
 		}
+		all := resResp.Results
 		if len(all) != 2 {
 			return fmt.Errorf("rows = %d, want 2", len(all))
 		}
@@ -361,14 +349,11 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 			LookupTableArn: aws.String(tableArn),
 		})
 
-		groupName := tc.uniquePrefix("cidr-query-group")
-		if err := tc.createLogGroup(groupName); err != nil {
-			return fmt.Errorf("create log group: %v", err)
+		groupName, cleanupGroup, err := tc.newGroupStreamFixture("cidr-query-group", "s1")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(groupName)
-		if err := tc.createLogStream(groupName, "s1"); err != nil {
-			return fmt.Errorf("create log stream: %v", err)
-		}
+		defer cleanupGroup()
 		now := time.Now().UnixMilli()
 		if err := tc.putLogEvent(groupName, "s1", `{"ip": "10.1.2.3"}`, now); err != nil {
 			return fmt.Errorf("put event: %v", err)
@@ -378,31 +363,19 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 		}
 
 		startResp, err := client.StartQuery(tc.ctx, &cloudwatchlogs.StartQueryInput{
-			StartTime:     aws.Int64(now - 3600),
-			EndTime:       aws.Int64(now + 60000),
+			StartTime:     aws.Int64(now/1000 - 3600),
+			EndTime:       aws.Int64(now/1000 + 60),
 			LogGroupNames: []string{groupName},
 			QueryString:   aws.String(fmt.Sprintf(`cidrlookup %s ip as cidr OUTPUT region, owner | fields ip, region | sort ip desc`, tableName)),
 		})
 		if err != nil {
 			return fmt.Errorf("start query: %v", err)
 		}
-		var all [][]types.ResultField
-		for i := 0; i < 20; i++ {
-			resResp, err := client.GetQueryResults(tc.ctx, &cloudwatchlogs.GetQueryResultsInput{
-				QueryId: startResp.QueryId,
-			})
-			if err != nil {
-				return fmt.Errorf("get results: %v", err)
-			}
-			if resResp.Status == types.QueryStatusComplete {
-				all = resResp.Results
-				break
-			}
-			if resResp.Status == types.QueryStatusFailed || resResp.Status == types.QueryStatusCancelled {
-				return fmt.Errorf("query finished with status %s", resResp.Status)
-			}
-			time.Sleep(200 * time.Millisecond)
+		resResp, err := tc.waitForQuery(startResp.QueryId, 20)
+		if err != nil {
+			return err
 		}
+		all := resResp.Results
 		if len(all) != 2 {
 			return fmt.Errorf("rows = %d, want 2", len(all))
 		}
@@ -434,13 +407,13 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 				Name:                     aws.String(tc.uniquePrefix("sched-dest")),
 				QueryString:              aws.String("fields @message"),
 				QueryLanguage:            types.QueryLanguageCwli,
-				ExecutionRoleArn:         aws.String("arn:aws:iam::123456789012:role/scheduled-query-role"),
+				ExecutionRoleArn:         aws.String(tc.roleARN("scheduled-query-role")),
 				ScheduleExpression:       aws.String("rate(1 hour)"),
 				State:                    types.ScheduledQueryStateDisabled,
 				DestinationConfiguration: dest,
 			}
 		}
-		role := aws.String("arn:aws:iam::123456789012:role/deliver")
+		role := aws.String(tc.roleARN("deliver"))
 
 		// The SDK enforces required members client-side, so the server-side
 		// requirement check is exercised through a non-IAM role ARN instead.
@@ -497,31 +470,42 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 	// delivery through GetScheduledQueryHistory.
 	results = append(results, tc.runner.RunTest("logs", "ScheduledQuery_LookupTableDestination", func() error {
 		tableName := uniqueTableName("dest_refresh")
-		groupName := tc.uniquePrefix("dest-group")
-		if err := tc.createLogGroup(groupName); err != nil {
-			return fmt.Errorf("create log group: %v", err)
+		groupName, cleanupGroup, err := tc.newGroupStreamFixture("dest-group", "s1")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(groupName)
-		if err := tc.createLogStream(groupName, "s1"); err != nil {
-			return fmt.Errorf("create log stream: %v", err)
-		}
+		defer cleanupGroup()
 		now := time.Now().UnixMilli()
 		if err := tc.putLogEvent(groupName, "s1", `{"user_id":"u7","code":200}`, now); err != nil {
 			return fmt.Errorf("put event: %v", err)
 		}
 
+		// The scheduled query addresses its source through the ARN form of
+		// the identifier member, so the delivery pins execution-plane
+		// resolution while the create response still echoes the raw list.
+		// The member's identifier alphabet excludes the log-stream
+		// namespace star DescribeLogGroups appends to the object ARN
+		// ("Don't include an * at the end" — the shared LogGroupIdentifier
+		// documentation), so the client obligation trims the suffix before
+		// passing the ARN here.
+		groupArn, err := tc.findLogGroupARN(groupName)
+		if err != nil {
+			return fmt.Errorf("find ARN: %v", err)
+		}
+		groupArn = aws.String(strings.TrimSuffix(aws.ToString(groupArn), ":*"))
+
 		createResp, err := client.CreateScheduledQuery(tc.ctx, &cloudwatchlogs.CreateScheduledQueryInput{
 			Name:                aws.String(tc.uniquePrefix("sched-lookup")),
 			QueryString:         aws.String("fields user_id, code"),
 			QueryLanguage:       types.QueryLanguageCwli,
-			LogGroupIdentifiers: []string{groupName},
-			ExecutionRoleArn:    aws.String("arn:aws:iam::123456789012:role/scheduled-query-role"),
+			LogGroupIdentifiers: []string{aws.ToString(groupArn)},
+			ExecutionRoleArn:    aws.String(tc.roleARN("scheduled-query-role")),
 			ScheduleExpression:  aws.String("rate(1 minute)"),
 			State:               types.ScheduledQueryStateEnabled,
 			DestinationConfiguration: &types.DestinationConfiguration{
 				LookupTableConfiguration: &types.LookupTableConfiguration{
 					TableName:   aws.String(tableName),
-					RoleArn:     aws.String("arn:aws:iam::123456789012:role/deliver"),
+					RoleArn:     aws.String(tc.roleARN("deliver")),
 					Description: aws.String("populated by scheduled query"),
 				},
 			},
@@ -544,9 +528,10 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 		}()
 
 		// The AWS rate() contract runs the first query one full interval
-		// after creation, so the first delivery arrives just past the
-		// one-minute mark.
-		deadline := time.Now().Add(150 * time.Second)
+		// after creation; under the regression server's TEST_MODE the
+		// period compresses to seconds, so the first delivery arrives
+		// shortly after creation.
+		deadline := time.Now().Add(30 * time.Second)
 		var table *cloudwatchlogs.GetLookupTableOutput
 		for time.Now().Before(deadline) {
 			getResp, err := client.GetLookupTable(tc.ctx, &cloudwatchlogs.GetLookupTableInput{

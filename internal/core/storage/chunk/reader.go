@@ -170,8 +170,21 @@ func readHeader(data []byte) (*Header, error) {
 	return header, nil
 }
 
-func parseEntries(r io.Reader, entryCount uint32, version uint8) ([]Entry, error) {
-	entries := make([]Entry, 0, entryCount)
+func parseEntries(r *bytes.Reader, entryCount uint32, version uint8) ([]Entry, error) {
+	// The entry count and every message length come from the file itself,
+	// so a corrupt or planted header can ask for gigabytes of allocation.
+	// Both are validated against the bytes the stream actually holds
+	// before anything is allocated: the reader must fail as corruption,
+	// not allocate until the process dies.
+	minEntryBytes := 12 // V1: timestamp + message length
+	if version >= VersionV2 {
+		minEntryBytes = 20 // timestamp + ingestion timestamp + message length
+	}
+	capacity := int64(entryCount)
+	if bound := int64(r.Len())/int64(minEntryBytes) + 1; capacity > bound {
+		capacity = bound
+	}
+	entries := make([]Entry, 0, capacity)
 
 	for i := uint32(0); i < entryCount; i++ {
 		var ts int64
@@ -191,6 +204,10 @@ func parseEntries(r io.Reader, entryCount uint32, version uint8) ([]Entry, error
 			return nil, fmt.Errorf("failed to read message length: %w", err)
 		}
 
+		if uint64(msgLen) > uint64(r.Len()) {
+			return nil, fmt.Errorf("message length %d exceeds the %d bytes remaining in the chunk", msgLen, r.Len())
+		}
+
 		msgBytes := make([]byte, msgLen)
 		if _, err := io.ReadFull(r, msgBytes); err != nil {
 			return nil, fmt.Errorf("failed to read message: %w", err)
@@ -206,6 +223,21 @@ func parseEntries(r io.Reader, entryCount uint32, version uint8) ([]Entry, error
 	return entries, nil
 }
 
+// readLimited reads the decompressed payload up to the decompressed-size
+// bound. A payload that expands beyond the bound is a decompression bomb:
+// the read stops there and reports corruption rather than materialising
+// the expanded size.
+func readLimited(r io.Reader) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(r, MaxDecompressedChunkBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > MaxDecompressedChunkBytes {
+		return nil, fmt.Errorf("decompressed size exceeds the %d-byte bound", MaxDecompressedChunkBytes)
+	}
+	return data, nil
+}
+
 func decompressGzip(data []byte) ([]byte, error) {
 	gzReader, err := gzip.NewReader(bytes.NewReader(data))
 	if err != nil {
@@ -213,25 +245,15 @@ func decompressGzip(data []byte) ([]byte, error) {
 	}
 	defer gzReader.Close()
 
-	decompressed, err := io.ReadAll(gzReader)
-	if err != nil {
-		return nil, err
-	}
-
-	return decompressed, nil
+	return readLimited(gzReader)
 }
 
 func decompressZstd(data []byte) ([]byte, error) {
-	decoder, err := zstd.NewReader(nil)
+	decoder, err := zstd.NewReader(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
 	defer decoder.Close()
 
-	decompressed, err := decoder.DecodeAll(data, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return decompressed, nil
+	return readLimited(decoder)
 }

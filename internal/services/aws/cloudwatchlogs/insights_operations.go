@@ -5,26 +5,84 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	corelogs "vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/core/logs"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
+// queryState is the lifecycle record of one query. Every field is guarded
+// by mu: the executing worker writes status/results/stats while the read
+// plane (GetQueryResults, DescribeQueries, StopQuery, lookup-table
+// resolution) inspects the same state concurrently. cancelled is the
+// cancellation flag StopQuery raises; the worker honours it at its stage
+// checkpoints and never overwrites a terminal status. region names the
+// store the state persists to, so every transition writes through to the
+// record that survives a restart.
 type queryState struct {
+	mu                  sync.RWMutex
 	queryId             string
 	logGroupNames       []string
 	logGroupIdentifiers []string
-	startTime           int64
-	endTime             int64
-	queryString         string
-	queryLanguage       string
-	status              string
-	errorMessage        string
-	results             []queryResultRow
-	stats               queryStats
-	createdAt           time.Time
+	// scannedGroups is the group set the query actually analyses — the
+	// explicit list at start, replaced by the SOURCE-resolved set once
+	// execution fixes it. ListLogGroupsForQuery serves it.
+	scannedGroups []string
+	startTime     int64
+	endTime       int64
+	queryString   string
+	queryLanguage string
+	status        string
+	cancelled     bool
+	results       []queryResultRow
+	stats         queryStats
+	createdAt     time.Time
+	region        string
+	// userIdentity is the ARN of the principal that started the query —
+	// the member DescribeQueries reports back; empty when the caller is
+	// anonymous. durationMs is the wall-clock duration stamped at the
+	// terminal transition; zero while the query runs.
+	userIdentity string
+	durationMs   int64
+}
+
+// markTerminal stamps the terminal status together with the duration the
+// query ran for, the value DescribeQueries keeps reporting after the
+// execution ends. Callers hold the write lock.
+func (qs *queryState) markTerminal(status string) {
+	qs.status = status
+	qs.durationMs = time.Since(qs.createdAt).Milliseconds()
+}
+
+// queryStatusRunning and its siblings are the QueryStatus vocabulary the
+// Smithy model enumerates for the status members. The platform produces
+// Running, Complete, Failed, Cancelled and Timeout; Scheduled is the
+// status of an in-progress scheduled-query execution (surfaced through
+// DescribeQueries), while Unknown stays unproduced — the platform has no
+// indeterminate states. Timeout is the sixty-minute runtime bound
+// ("Queries time out after 60 minutes of runtime").
+const (
+	queryStatusRunning   = "Running"
+	queryStatusComplete  = "Complete"
+	queryStatusFailed    = "Failed"
+	queryStatusCancelled = "Cancelled"
+	queryStatusScheduled = "Scheduled"
+	queryStatusTimeout   = "Timeout"
+)
+
+// queryRuntimeLimit is the documented outer bound: "Queries time out
+// after 60 minutes of runtime."
+const queryRuntimeLimit = 60 * time.Minute
+
+// isTerminalQueryStatus reports whether the status admits no further
+// transition. A terminal status always wins: neither the worker's
+// finalisation nor a failure path overwrites it.
+func isTerminalQueryStatus(status string) bool {
+	return status == queryStatusComplete || status == queryStatusFailed ||
+		status == queryStatusCancelled || status == queryStatusTimeout
 }
 
 // StartQuery initiates a CloudWatch Logs Insights query.
@@ -34,34 +92,41 @@ func (s *LogsService) StartQuery(ctx context.Context, reqCtx *request.RequestCon
 	startTime := int64(request.GetIntParam(req.Parameters, "StartTime"))
 	endTime := int64(request.GetIntParam(req.Parameters, "EndTime"))
 
-	var logGroupNames []string
-	if name := request.GetParamLowerFirst(req.Parameters, "LogGroupName"); name != "" {
-		logGroupNames = append(logGroupNames, name)
-	}
-	if names, ok := req.Parameters["logGroupNames"]; ok {
-		if arr, ok := names.([]interface{}); ok {
-			for _, item := range arr {
-				if n, ok := item.(string); ok {
-					logGroupNames = append(logGroupNames, n)
-				}
+	// The three required members' zero values are inside their
+	// documented domains, so the presence flags — derived over both wire
+	// key casings — carry requiredness and the values stay as read.
+	present := func(keys ...string) bool {
+		for _, key := range keys {
+			if _, ok := req.Parameters[key]; ok {
+				return true
 			}
 		}
+		return false
 	}
+	queryStringSet := present("QueryString", "queryString")
+	startTimeSet := present("StartTime", "startTime")
+	endTimeSet := present("EndTime", "endTime")
 
-	var logGroupIdentifiers []string
-	if idents, ok := req.Parameters["logGroupIdentifiers"]; ok {
-		if arr, ok := idents.([]interface{}); ok {
-			for _, item := range arr {
-				if id, ok := item.(string); ok {
-					logGroupIdentifiers = append(logGroupIdentifiers, id)
-				}
-			}
+	logGroupName := request.GetParamLowerFirst(req.Parameters, "LogGroupName")
+	logGroupNames := request.GetStringList(req.Parameters, "LogGroupNames")
+	logGroupIdentifiers := request.GetStringList(req.Parameters, "LogGroupIdentifiers")
+
+	// The query records the ARN of the principal that started it — the
+	// userIdentity DescribeQueries reports back. Anonymous requests carry
+	// no identity and the member stays absent.
+	caller := ""
+	builder := svcarn.NewARNBuilder(reqCtx.AccountID, reqCtx.GetRegion())
+	switch reqCtx.PrincipalType {
+	case request.PrincipalTypeUser:
+		if reqCtx.Principal != "" {
+			caller = builder.IAM().User(reqCtx.Principal)
 		}
-	}
-
-	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 10000, 100000)
-	if err != nil {
-		return nil, err
+	case request.PrincipalTypeRole:
+		if reqCtx.Principal != "" {
+			caller = builder.IAM().Role(reqCtx.Principal)
+		}
+	case request.PrincipalTypeRoot:
+		caller = builder.IAM().Root()
 	}
 
 	queryId, err := s.startQueryCore(&StartQueryInput{
@@ -69,10 +134,15 @@ func (s *LogsService) StartQuery(ctx context.Context, reqCtx *request.RequestCon
 		EndTime:             endTime,
 		QueryString:         queryString,
 		QueryLanguage:       queryLanguage,
+		StartTimeSet:        startTimeSet,
+		EndTimeSet:          endTimeSet,
+		QueryStringSet:      queryStringSet,
+		LogGroupName:        logGroupName,
 		LogGroupNames:       logGroupNames,
 		LogGroupIdentifiers: logGroupIdentifiers,
-		Limit:               int64(limit32),
+		Limit:               int64(request.GetIntParam(req.Parameters, "Limit")),
 		Region:              reqCtx.GetRegion(),
+		UserIdentity:        caller,
 	})
 	if err != nil {
 		return nil, err
@@ -83,7 +153,7 @@ func (s *LogsService) StartQuery(ctx context.Context, reqCtx *request.RequestCon
 	}, nil
 }
 
-func (s *LogsService) executeQuery(region, queryId, queryString string, logGroupNames []string, startTime, endTime, limit int64) {
+func (s *LogsService) executeQuery(ctx context.Context, region, queryId, queryString string, logGroupNames []string, startTime, endTime, limit int64) {
 	defer func() {
 		if r := recover(); r != nil {
 			s.failQuery(queryId, fmt.Sprintf("panic: %v", r))
@@ -95,44 +165,47 @@ func (s *LogsService) executeQuery(region, queryId, queryString string, logGroup
 		s.failQuery(queryId, fmt.Sprintf("store error: %v", err))
 		return
 	}
+	if s.queryCancelled(ctx, queryId) {
+		return
+	}
 
-	ctx := &execContext{
+	execCtx := &execContext{
 		startTime:     startTime,
 		endTime:       endTime,
 		accountID:     s.accountID,
 		defaultGroups: logGroupNames,
-		events:        fetchLogEvents(store, logGroupNames, startTime, endTime),
+		events:        fetchGroupEventsForQuery(store, logGroupNames, startTime, endTime),
 		fetchEvents: func(groups []string, start, end int64) ([]logEventWithContext, error) {
-			return fetchLogEvents(store, groups, start, end), nil
+			return fetchGroupEventsForQuery(store, groups, start, end), nil
 		},
 		listLogGroups: func() ([]sourceGroupInfo, error) {
 			return listSourceGroups(store), nil
 		},
 		getLookupTable: func(name string) (*parsedLookupTable, error) {
-			lt, err := store.GetLookupTable(name)
-			if err != nil {
-				return nil, fmt.Errorf("lookup table %s not found", name)
-			}
-			body, err := s.lookupTablePlainBody(lt, region)
-			if err != nil {
-				return nil, fmt.Errorf("lookup table %s is unavailable: %v", name, err)
-			}
-			columns, records, err := parseLookupCSV(body)
-			if err != nil {
-				return nil, fmt.Errorf("lookup table %s is invalid: %v", name, err)
-			}
-			return newParsedLookupTable(columns, records), nil
+			return s.loadParsedLookupTable(store, region, name)
 		},
 		subqueryCache: map[string][]interface{}{},
 	}
+	execCtx.startedMs = time.Now().UnixMilli()
+	execCtx.deadline = queryDeadlineNow().Add(queryRuntimeLimit)
 
-	rows, err := executeQueryContext(ctx, queryString)
+	// The error path is the failure path — compilation, validation and
+	// source errors all return through err — while a query that breached
+	// the sixty-minute bound returns without one and stamps the Timeout
+	// status, a sibling of Failed rather than a failure identity.
+	rows, err := executeQueryContext(execCtx, queryString)
 	if err != nil {
 		s.failQuery(queryId, err.Error())
 		return
 	}
-	if ctx.sourceError != nil {
-		s.failQuery(queryId, fmt.Sprintf("source error: %v", ctx.sourceError))
+	if execCtx.timedOut {
+		s.timeoutQuery(queryId)
+		return
+	}
+	// Cancellation checkpoint between the execution and result commit: a
+	// StopQuery that landed mid-run has already set Cancelled, and the
+	// terminal status wins over the completion write.
+	if s.queryCancelled(ctx, queryId) {
 		return
 	}
 	if int64(len(rows)) > limit {
@@ -140,75 +213,97 @@ func (s *LogsService) executeQuery(region, queryId, queryString string, logGroup
 	}
 
 	stats := queryStats{
-		recordsScanned: int64(len(ctx.events)),
+		recordsScanned: int64(len(execCtx.events)),
 	}
-	for _, e := range ctx.events {
+	for _, e := range execCtx.events {
 		stats.bytesScanned += int64(len(e.message))
 	}
-	stats.recordsMatched = int64(len(rows))
+	stats.recordsMatched = execCtx.recordsMatched
 
 	val, ok := s.queries.Load(queryId)
 	if !ok {
 		return
 	}
 	qs := val.(*queryState)
+	qs.mu.Lock()
+	if isTerminalQueryStatus(qs.status) {
+		qs.mu.Unlock()
+		return
+	}
+	// A SOURCE command replaced the default group set during execution;
+	// the scanned set the listing serves is the resolved one.
+	if execCtx.effectiveGroups != nil {
+		qs.scannedGroups = execCtx.effectiveGroups
+	}
 	qs.results = rows
 	qs.stats = stats
-	qs.status = "Complete"
-}
-
-// fetchLogEvents reads all events of the given log groups within the time
-// window. Stream listing and event reads surface their errors through the
-// server log; unresolvable groups yield no events, matching the documented
-// behaviour of querying a group without matching events.
-func fetchLogEvents(store *logsstore.Store, groups []string, startTime, endTime int64) []logEventWithContext {
-	var allEvents []logEventWithContext
-	for _, lgName := range groups {
-		streams, _, err := store.ListLogStreams(lgName, "", "", 1000)
-		if err != nil {
-			corelogs.Error("Failed to list log streams for query",
-				corelogs.String("logGroup", lgName), corelogs.Err(err))
-			continue
-		}
-		for _, ls := range streams {
-			events, _, _, err := store.GetLogEvents(lgName, ls.Name, startTime, endTime, 10000, true, "")
-			if err != nil {
-				corelogs.Error("Failed to read log events for query",
-					corelogs.String("logGroup", lgName), corelogs.String("logStream", ls.Name), corelogs.Err(err))
-				continue
-			}
-			for _, evt := range events {
-				allEvents = append(allEvents, logEventWithContext{
-					timestamp:     evt.Timestamp,
-					message:       evt.Message,
-					ingestionTime: evt.IngestionTime,
-					logGroup:      lgName,
-					logStream:     ls.Name,
-				})
-			}
-		}
+	qs.markTerminal(queryStatusComplete)
+	qs.mu.Unlock()
+	// The completed state writes through so GetQueryResults and
+	// DescribeQueries survive a restart; the map stays the live registry
+	// and a persistence failure degrades to the in-memory result, logged
+	// with the query id.
+	if err := s.persistQueryState(qs); err != nil {
+		logs.Error("Failed to persist completed query state",
+			logs.String("queryId", queryId), logs.Err(err))
 	}
-	return allEvents
 }
 
-// listSourceGroups returns the log group inventory for SOURCE selection.
+// queryCancelled reports whether the query should stop before its next
+// stage: the service context is done (shutdown drains the worker without a
+// spurious Failed status) or StopQuery raised the cancellation flag.
+func (s *LogsService) queryCancelled(ctx context.Context, queryId string) bool {
+	if ctx != nil && ctx.Err() != nil {
+		return true
+	}
+	val, ok := s.queries.Load(queryId)
+	if !ok {
+		return true
+	}
+	qs := val.(*queryState)
+	qs.mu.RLock()
+	defer qs.mu.RUnlock()
+	return qs.cancelled || isTerminalQueryStatus(qs.status)
+}
+
+// listSourceGroups returns the log group inventory for SOURCE selection:
+// the shared fetch-all walk plus the per-group tag enrichment.
 func listSourceGroups(store *logsstore.Store) []sourceGroupInfo {
-	var out []sourceGroupInfo
-	marker := ""
-	for {
-		groups, next, err := store.ListLogGroups("", marker, 50)
-		if err != nil {
-			return out
-		}
-		for _, g := range groups {
-			out = append(out, sourceGroupInfo{Name: g.Name, Class: g.LogGroupClass, Tags: g.Tags})
-		}
-		if next == "" || len(groups) == 0 {
-			break
-		}
-		marker = next
+	groups, err := fetchAllLogGroups(store)
+	if err != nil {
+		return nil
+	}
+	out := make([]sourceGroupInfo, 0, len(groups))
+	for _, g := range groups {
+		// SOURCE tag filters read the LIVE tags from the tag store —
+		// the stored record's copy is write-once and goes stale the
+		// moment a tag mutation lands.
+		tags, _ := store.Tags().List(g.ARN)
+		out = append(out, sourceGroupInfo{Name: g.Name, Class: g.LogGroupClass, Tags: tags})
 	}
 	return out
+}
+
+// timeoutQuery stamps the sixty-minute runtime breach: Timeout is the
+// status the vocabulary carries for it, a sibling of Failed rather than
+// a failure identity.
+func (s *LogsService) timeoutQuery(queryId string) {
+	val, ok := s.queries.Load(queryId)
+	if !ok {
+		return
+	}
+	qs := val.(*queryState)
+	qs.mu.Lock()
+	if isTerminalQueryStatus(qs.status) {
+		qs.mu.Unlock()
+		return
+	}
+	qs.markTerminal(queryStatusTimeout)
+	qs.mu.Unlock()
+	if err := s.persistQueryState(qs); err != nil {
+		logs.Error("Failed to persist timed-out query state",
+			logs.String("queryId", queryId), logs.Err(err))
+	}
 }
 
 func (s *LogsService) failQuery(queryId, message string) {
@@ -217,8 +312,19 @@ func (s *LogsService) failQuery(queryId, message string) {
 		return
 	}
 	qs := val.(*queryState)
-	qs.status = "Failed"
-	qs.errorMessage = message
+	qs.mu.Lock()
+	// Terminal status wins: a query StopQuery already cancelled (or that
+	// completed before the failure surfaced) keeps its status.
+	if isTerminalQueryStatus(qs.status) {
+		qs.mu.Unlock()
+		return
+	}
+	qs.markTerminal(queryStatusFailed)
+	qs.mu.Unlock()
+	if err := s.persistQueryState(qs); err != nil {
+		logs.Error("Failed to persist failed query state",
+			logs.String("queryId", queryId), logs.Err(err))
+	}
 }
 
 // StopQuery stops a running query.
@@ -235,16 +341,13 @@ func (s *LogsService) StopQuery(ctx context.Context, reqCtx *request.RequestCont
 
 // DescribeQueries lists queries.
 func (s *LogsService) DescribeQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxResults, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxResults")), 50, 1000)
-	if err != nil {
-		return nil, err
-	}
-
 	items, nextToken, err := s.describeQueriesCore(&DescribeQueriesInput{
 		StatusFilter: request.GetParamLowerFirst(req.Parameters, "Status"),
 		LogGroupName: request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
-		NextToken:    request.GetParamLowerFirst(req.Parameters, "NextToken"),
-		MaxResults:   maxResults,
+		QueryLanguage: request.GetParamLowerFirst(
+			req.Parameters, "QueryLanguage"),
+		NextToken:  request.GetParamLowerFirst(req.Parameters, "NextToken"),
+		MaxResults: int32(request.GetIntParam(req.Parameters, "MaxResults")),
 	})
 	if err != nil {
 		return nil, err
@@ -293,15 +396,10 @@ func parseResultTimestamp(s string) (int64, bool) {
 
 // GetQueryResults retrieves the results of a completed query.
 func (s *LogsService) GetQueryResults(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit32, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "MaxItems")), 10000, 10000)
-	if err != nil {
-		return nil, err
-	}
-
 	result, err := s.getQueryResultsCore(&GetQueryResultsInput{
 		QueryId:   request.GetParamLowerFirst(req.Parameters, "QueryId"),
 		NextToken: request.GetParamLowerFirst(req.Parameters, "NextToken"),
-		MaxItems:  limit32,
+		MaxItems:  int32(request.GetIntParam(req.Parameters, "MaxItems")),
 	})
 	if err != nil {
 		return nil, err
@@ -330,11 +428,11 @@ func (s *LogsService) GetQueryResults(ctx context.Context, reqCtx *request.Reque
 		"bytesScanned":            result.Stats.bytesScanned,
 		"estimatedRecordsSkipped": 0,
 		"estimatedBytesSkipped":   0,
-		"logGroupsScanned":        0,
+		"logGroupsScanned":        result.LogGroupsScanned,
+		"resultCount":             result.ResultCount,
 	}
 
 	resp := map[string]interface{}{
-		"queryId":    result.QueryId,
 		"status":     result.Status,
 		"results":    resultRows,
 		"statistics": statsMap,
@@ -350,33 +448,33 @@ func (s *LogsService) GetQueryResults(ctx context.Context, reqCtx *request.Reque
 }
 
 func formatQueryInfo(qs *queryState) map[string]interface{} {
+	qs.mu.RLock()
+	defer qs.mu.RUnlock()
 	logGroupName := ""
 	if len(qs.logGroupNames) > 0 {
 		logGroupName = qs.logGroupNames[0]
 	}
-	result := map[string]interface{}{
-		"queryId":      qs.queryId,
-		"queryString":  qs.queryString,
-		"status":       qs.status,
-		"createTime":   qs.createdAt.UnixMilli(),
-		"logGroupName": logGroupName,
+	// createTime is epoch seconds — the Timestamp shape's wire format,
+	// matching the documented example ("createTime": 1540923785). The
+	// duration carries the terminal stamp once execution has ended and
+	// the elapsed wall clock while the query runs (the worked example
+	// shows a Running query carrying its duration so far).
+	duration := qs.durationMs
+	if duration == 0 && qs.status == queryStatusRunning {
+		duration = time.Since(qs.createdAt).Milliseconds()
 	}
-	if qs.errorMessage != "" {
-		result["errorMessage"] = qs.errorMessage
+	entry := map[string]interface{}{
+		"queryId":       qs.queryId,
+		"queryString":   qs.queryString,
+		"status":        qs.status,
+		"createTime":    qs.createdAt.Unix(),
+		"logGroupName":  logGroupName,
+		"queryDuration": duration,
+		"bytesScanned":  qs.stats.bytesScanned,
+		"queryLanguage": qs.queryLanguage,
 	}
-	if qs.queryLanguage != "" {
-		result["queryLanguage"] = qs.queryLanguage
+	if qs.userIdentity != "" {
+		entry["userIdentity"] = qs.userIdentity
 	}
-	return result
-}
-
-func parseInt(s string) (int, error) {
-	var n int
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return 0, fmt.Errorf("not a number")
-		}
-		n = n*10 + int(c-'0')
-	}
-	return n, nil
+	return entry
 }

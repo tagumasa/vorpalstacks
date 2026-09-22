@@ -49,10 +49,13 @@ const (
 	pollInterval       = 300 * time.Millisecond
 	integTestTimeout   = 3 * time.Minute
 	defaultPollTimeout = 10 * time.Second
-	// The AWS rate() contract fires the first invocation one full
-	// interval after creation, so a rate(1 minute) schedule cannot
-	// deliver before ~60 seconds however fast the engine evaluates.
-	schedulerPollTimeout = 90 * time.Second
+	// The scheduler engines fire at their compressed TEST_MODE boundaries
+	// (near-future at() timestamps are due immediately; rate() periods are
+	// scaled to seconds), and the CloudWatch Logs scheduled-query worker
+	// keeps the AWS first-interval contract against the same compressed
+	// period — every delivery the integration family waits for lands
+	// within seconds of creation.
+	schedulerPollTimeout = 30 * time.Second
 )
 
 func intTimestamp() string {
@@ -235,31 +238,63 @@ func (ic *integClients) verifyLambdaInvoked(fnName string) error {
 	return nil
 }
 
-func (ic *integClients) verifyLambdaLogContains(fnName, substr string) error {
+// scanLambdaLogStreams reads every stream of the function's log group and
+// reports whether visit stopped on a message. Lambda writes invocation
+// logs to per-invocation streams on this platform and per execution
+// environment on AWS — either way the invocation under test does not
+// reliably land in the name-ordered first stream, so the walk paginates
+// DescribeLogStreams and reads each stream. visit returns stop=true when
+// its message is the one sought; a non-nil error aborts the walk.
+func (ic *integClients) scanLambdaLogStreams(fnName string, visit func(msg string) (stop bool, err error)) (bool, error) {
 	logGroupName := fmt.Sprintf("/aws/lambda/%s", fnName)
-	streams, err := ic.cwl.DescribeLogStreams(ic.ctx, &cloudwatchlogs.DescribeLogStreamsInput{
-		LogGroupName: aws.String(logGroupName),
-	})
-	if err != nil {
-		return fmt.Errorf("lambda %s: describe log streams: %w", fnName, err)
-	}
-	if len(streams.LogStreams) == 0 {
-		return fmt.Errorf("lambda %s: no log streams", fnName)
-	}
-	logs, err := ic.cwl.GetLogEvents(ic.ctx, &cloudwatchlogs.GetLogEventsInput{
-		LogGroupName:  aws.String(logGroupName),
-		LogStreamName: streams.LogStreams[0].LogStreamName,
-		Limit:         aws.Int32(50),
-	})
-	if err != nil {
-		return fmt.Errorf("lambda %s: get log events: %w", fnName, err)
-	}
-	for _, ev := range logs.Events {
-		if strings.Contains(aws.ToString(ev.Message), substr) {
-			return nil
+	var nextToken *string
+	for {
+		streams, err := ic.cwl.DescribeLogStreams(ic.ctx, &cloudwatchlogs.DescribeLogStreamsInput{
+			LogGroupName: aws.String(logGroupName),
+			NextToken:    nextToken,
+		})
+		if err != nil {
+			return false, fmt.Errorf("lambda %s: describe log streams: %w", fnName, err)
 		}
+		for _, stream := range streams.LogStreams {
+			logs, err := ic.cwl.GetLogEvents(ic.ctx, &cloudwatchlogs.GetLogEventsInput{
+				LogGroupName:  aws.String(logGroupName),
+				LogStreamName: stream.LogStreamName,
+				Limit:         aws.Int32(50),
+			})
+			if err != nil {
+				// A stream removed between the describe and the read is a
+				// concurrent cleanup, not a verify failure.
+				continue
+			}
+			for _, ev := range logs.Events {
+				stop, err := visit(aws.ToString(ev.Message))
+				if err != nil {
+					return false, err
+				}
+				if stop {
+					return true, nil
+				}
+			}
+		}
+		if streams.NextToken == nil || aws.ToString(streams.NextToken) == "" {
+			return false, nil
+		}
+		nextToken = streams.NextToken
 	}
-	return fmt.Errorf("lambda %s: log does not contain %q", fnName, substr)
+}
+
+func (ic *integClients) verifyLambdaLogContains(fnName, substr string) error {
+	found, err := ic.scanLambdaLogStreams(fnName, func(msg string) (bool, error) {
+		return strings.Contains(msg, substr), nil
+	})
+	if err != nil {
+		return err
+	}
+	if !found {
+		return fmt.Errorf("lambda %s: log does not contain %q", fnName, substr)
+	}
+	return nil
 }
 
 func (ic *integClients) verifyMessageContains(queueURL, substr string) error {
@@ -573,6 +608,9 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 	}))
 	results = append(results, r.runIntegWithTimeout("CWLogs_ScheduledQuery_S3", func() TestResult {
 		return r.runCWLogsScheduledQueryS3(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("CWLogs_VendedDelivery_S3", func() TestResult {
+		return r.runCWLogsVendedDeliveryS3(ic, ts)
 	}))
 
 	results = append(results, r.runIntegWithTimeout("SNS_SQS", func() TestResult {

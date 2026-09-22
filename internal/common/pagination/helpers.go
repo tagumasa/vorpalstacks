@@ -135,6 +135,11 @@ type KeyExtractor[T any] func(item T) string
 
 // PaginateSlice paginates a slice based on marker and maxItems.
 // The keyExtractor function is used to find the starting position and generate the next marker.
+// The slice must be ordered ascending by the extracted key — marker pagination
+// presupposes a stable order. A marker that no longer matches any item (the
+// record was deleted between pages) resumes the walk from the first item whose
+// key sorts after the marker rather than silently truncating the listing with
+// an empty final page.
 func PaginateSlice[T any](items []T, marker string, maxItems int, keyExtractor KeyExtractor[T]) SliceResult[T] {
 	if len(items) == 0 {
 		return SliceResult[T]{
@@ -146,19 +151,14 @@ func PaginateSlice[T any](items []T, marker string, maxItems int, keyExtractor K
 
 	startIdx := 0
 	if marker != "" {
-		found := false
+		// First key sorting after the marker: with unique keys this is
+		// the position after an exact match, and the resume position when
+		// the marker's own record is gone.
+		startIdx = len(items)
 		for i, item := range items {
-			if keyExtractor(item) == marker {
-				startIdx = i + 1
-				found = true
+			if keyExtractor(item) > marker {
+				startIdx = i
 				break
-			}
-		}
-		if !found {
-			return SliceResult[T]{
-				Items:       []T{},
-				NextMarker:  "",
-				IsTruncated: false,
 			}
 		}
 	}
@@ -193,8 +193,7 @@ func PaginateSlice[T any](items []T, marker string, maxItems int, keyExtractor K
 // walk resumes after it. Natural-key markers require unique keys — a list
 // whose items repeat their key rewinds the first-match marker search onto
 // already-served items, so such lists paginate positionally. An unusable
-// token yields an empty page, mirroring PaginateSlice's unknown-marker
-// behaviour.
+// token yields an empty page.
 func PaginateSliceByPosition[T any](items []T, marker string, maxItems int) SliceResult[T] {
 	if len(items) == 0 {
 		return SliceResult[T]{

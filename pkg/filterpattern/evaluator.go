@@ -54,19 +54,14 @@ func (m *Matcher) Matches(pattern, message string) bool {
 }
 
 // matchUnstructured handles plain text or keyword-based filter patterns.
-// It supports logical OR (space-separated), quoted phrases, optional terms (?prefix),
-// and exclusion terms (-prefix).
+// It supports quoted phrases, optional terms (?prefix), and exclusion
+// terms (-prefix). The space-separated terms combine with AND ("Match
+// terms in unstructured log events"); no keyword operator exists —
+// "You can't combine the question mark ("?") with other filter patterns"
+// is the grammar's only composition rule on this plane, and a word like
+// "or" is a literal term like any other.
 func (m *Matcher) matchUnstructured(pattern, message string) bool {
 	pattern = strings.TrimSpace(pattern)
-
-	if parts := SplitLogical(pattern, " or "); len(parts) > 1 {
-		for _, p := range parts {
-			if m.matchUnstructured(p, message) {
-				return true
-			}
-		}
-		return false
-	}
 
 	if len(pattern) >= 2 && ((pattern[0] == '"' && pattern[len(pattern)-1] == '"') ||
 		(pattern[0] == '\'' && pattern[len(pattern)-1] == '\'')) {
@@ -277,21 +272,16 @@ func (m *Matcher) evalJSONExpr(expr string, data map[string]any) bool {
 	}
 
 	upper := strings.ToUpper(expr)
+	// The documented IS variable: "The IS variable can match fields that
+	// contain the values NULL, TRUE, or FALSE". The IS NOT form is not a
+	// documented variable ("The variables IS NOT and EXISTS currently
+	// aren't supported"), so it never matches.
 	if idx := strings.Index(upper, " IS NULL"); idx > 0 {
 		after := idx + len(" IS NULL")
 		if after >= len(expr) || expr[after] == ' ' {
 			path := strings.TrimSpace(expr[:idx])
 			val, exists := getJSONValue(data, path)
 			return exists && val == nil
-		}
-	}
-
-	if idx := strings.Index(upper, " IS NOT NULL"); idx > 0 {
-		after := idx + len(" IS NOT NULL")
-		if after >= len(expr) || expr[after] == ' ' {
-			path := strings.TrimSpace(expr[:idx])
-			val, exists := getJSONValue(data, path)
-			return exists && val != nil
 		}
 	}
 
@@ -313,32 +303,86 @@ func (m *Matcher) evalJSONExpr(expr string, data map[string]any) bool {
 		left := strings.TrimSpace(expr[:idx])
 		right := strings.TrimSpace(expr[idx+opLen:])
 
-		leftVal, _ := getJSONValue(data, left)
+		// A wildcard selector selects several values ("You can use the
+		// JSON wildcard to select any array element or any JSON object
+		// field"), and the condition holds when any selected value
+		// satisfies the comparison.
+		leftVals, leftExists := getJSONValues(data, left)
 		rightVal := parseJSONValue(right)
-
-		return CompareValues(leftVal, rightVal, op)
+		if !leftExists {
+			return compareJSONValues(nil, false, rightVal, op)
+		}
+		for _, leftVal := range leftVals {
+			if compareJSONValues(leftVal, true, rightVal, op) {
+				return true
+			}
+		}
+		return false
 	}
 
 	return false
 }
 
+// compareJSONValues applies one JSON condition comparison. The
+// right-hand side may carry a documented pattern form — %regex%
+// ("You can use any conditional regular expression when creating filter
+// patterns to match terms in JSON log events") or a *-wildcard ("Use
+// the asterisk (*) as a wild card to match text") — which matches
+// against the field's value instead of comparing equal strings. A bare
+// * selects any present, non-null value: the metric filter guide's
+// "{ $.latency = * } metricValue: $.latency" form.
+func compareJSONValues(left any, leftExists bool, right any, op string) bool {
+	switch rv := right.(type) {
+	case *regexValue:
+		matched := false
+		if re, err := regexp.Compile(rv.pattern); err == nil {
+			matched = leftExists && left != nil && re.MatchString(toStringRaw(left))
+		}
+		switch op {
+		case "=", "==":
+			return matched
+		case "!=":
+			return !matched
+		}
+		return false
+	case *wildcardValue:
+		matched := leftExists && left != nil && wildcardMatchSimple(rv.pattern, toStringRaw(left))
+		switch op {
+		case "=", "==":
+			return matched
+		case "!=":
+			return !matched
+		}
+		return false
+	}
+	return CompareValues(left, right, op)
+}
+
 func getJSONValue(data map[string]any, path string) (any, bool) {
+	values, ok := getJSONValues(data, path)
+	if !ok || len(values) == 0 {
+		return nil, false
+	}
+	return values[0], true
+}
+
+// getJSONValues resolves a property selector to every value it selects:
+// the documented wildcard forms ("Wildcard selector — You can use the
+// JSON wildcard to select any array element or any JSON object field",
+// the $.arr[*] and $.* forms) widen the selection to each element or
+// field, while every other selector addresses the one value its path
+// names. A selector that addresses nothing exists not.
+func getJSONValues(data map[string]any, path string) ([]any, bool) {
 	path = strings.TrimSpace(path)
 	if !strings.HasPrefix(path, "$.") {
 		return nil, false
 	}
-	path = path[2:]
-
-	if path == "" {
-		return data, true
-	}
-
-	return getNestedValue(data, path)
+	return getNestedValues(data, path[2:])
 }
 
-func getNestedValue(data any, path string) (any, bool) {
+func getNestedValues(data any, path string) ([]any, bool) {
 	if path == "" {
-		return data, true
+		return []any{data}, true
 	}
 
 	if strings.HasPrefix(path, "['") || strings.HasPrefix(path, `["`) {
@@ -348,10 +392,9 @@ func getNestedValue(data any, path string) (any, bool) {
 		}
 		key := path[2 : 2+endQuote]
 		rest := path[2+endQuote+2:]
-
 		if m, ok := data.(map[string]any); ok {
 			if v, exists := m[key]; exists {
-				return getNestedValue(v, rest)
+				return getNestedValues(v, rest)
 			}
 		}
 		return nil, false
@@ -365,8 +408,23 @@ func getNestedValue(data any, path string) (any, bool) {
 		idxStr := path[1:endBracket]
 		rest := path[endBracket+1:]
 
+		// "[*]... selects every array element" — the wildcard widens the
+		// selection; a non-array selects nothing.
 		if idxStr == "*" {
-			return nil, false
+			arr, ok := data.([]any)
+			if !ok {
+				return nil, false
+			}
+			var out []any
+			for _, el := range arr {
+				if vals, ok := getNestedValues(el, rest); ok {
+					out = append(out, vals...)
+				}
+			}
+			if len(out) == 0 && len(arr) > 0 {
+				return nil, false
+			}
+			return out, true
 		}
 
 		if arr, ok := data.([]any); ok {
@@ -379,7 +437,7 @@ func getNestedValue(data any, path string) (any, bool) {
 				}
 			}
 			if idx < len(arr) {
-				return getNestedValue(arr[idx], rest)
+				return getNestedValues(arr[idx], rest)
 			}
 		}
 		return nil, false
@@ -411,8 +469,22 @@ func getNestedValue(data any, path string) (any, bool) {
 	}
 
 	if m, ok := data.(map[string]any); ok {
+		// ".* selects every JSON object field" — the wildcard widens the
+		// selection; a non-object selects nothing.
+		if key == "*" {
+			var out []any
+			for _, v := range m {
+				if vals, ok := getNestedValues(v, rest); ok {
+					out = append(out, vals...)
+				}
+			}
+			if len(out) == 0 && len(m) > 0 {
+				return nil, false
+			}
+			return out, true
+		}
 		if v, exists := m[key]; exists {
-			return getNestedValue(v, rest)
+			return getNestedValues(v, rest)
 		}
 	}
 	return nil, false
@@ -497,24 +569,44 @@ func (m *Matcher) matchDelimited(pattern, message string) bool {
 		fieldMap[fmt.Sprintf("w%d", i+1)] = f
 	}
 
-	namedFieldIdx := 0
+	// The conditions are positional — each entry addresses the event
+	// field at its column ("The following filter pattern parses seven
+	// fields", the ip/user/.../bytes worked example). Entries before the
+	// first ellipsis align from the first field forward; entries after
+	// the last ellipsis align from the last field backward ("If you
+	// don't know the number of fields that you're parsing in a
+	// space-delimited log event, you can use ellipsis (...) to reference
+	// any unnamed field"). A condition whose position falls outside the
+	// event's fields cannot match. Entries strictly between two
+	// ellipses have no documented alignment and keep matching any
+	// field.
+	firstEllipsis, lastEllipsis := -1, -1
+	for i, cond := range conditions {
+		if strings.TrimSpace(cond) == "..." {
+			if firstEllipsis < 0 {
+				firstEllipsis = i
+			}
+			lastEllipsis = i
+		}
+	}
 	for i, cond := range conditions {
 		cond = strings.TrimSpace(cond)
 		if cond == "..." {
 			continue
 		}
-
-		if strings.HasPrefix(cond, "...") {
-			cond = strings.TrimSpace(cond[3:])
-			if cond == "" {
-				continue
+		pos := i
+		if firstEllipsis >= 0 {
+			if i < firstEllipsis {
+				pos = i
+			} else if i > lastEllipsis {
+				pos = len(fields) - (len(conditions) - i)
+			} else {
+				pos = -1 // between two ellipses: any-field alignment
 			}
 		}
-
-		if !evalDelimitedConditionAt(cond, fields, fieldMap, i) {
+		if !evalDelimitedConditionAt(cond, fields, fieldMap, pos) {
 			return false
 		}
-		namedFieldIdx = i + 1
 	}
 
 	if afterBracket != "" {
@@ -530,7 +622,7 @@ func (m *Matcher) matchDelimited(pattern, message string) bool {
 					continue
 				}
 			}
-			if !evalDelimitedConditionAt(ac, fields, fieldMap, namedFieldIdx) {
+			if !evalDelimitedConditionAt(ac, fields, fieldMap, len(fields)-1) {
 				return false
 			}
 		}
@@ -578,6 +670,9 @@ func evalDelimitedConditionAt(cond string, fields []string, fieldMap map[string]
 		name = cond
 	}
 
+	// The positional w-indicators ("Use w1 to represent your first term
+	// and w2 and so on to represent the order of your subsequent terms")
+	// address their own column.
 	if strings.HasPrefix(name, "w") && len(name) > 1 {
 		if fieldVal, ok := fieldMap[name]; ok {
 			if op == "" {
@@ -587,7 +682,16 @@ func evalDelimitedConditionAt(cond string, fields []string, fieldMap map[string]
 		}
 	}
 
-	if op != "" {
+	// A named condition addresses its own column — the worked example's
+	// "request =*.html*" matches the request column alone, never any
+	// other field that happens to satisfy the comparison. A position
+	// outside the event's fields cannot match; a bare name is its
+	// column's placeholder and holds whenever the column exists. The
+	// undocumented between-ellipses alignment (-1) matches any field.
+	if pos < 0 {
+		if op == "" {
+			return true
+		}
 		for _, f := range fields {
 			if compareField(f, value, op) {
 				return true
@@ -595,8 +699,15 @@ func evalDelimitedConditionAt(cond string, fields []string, fieldMap map[string]
 		}
 		return false
 	}
-
-	return true
+	// pos is non-negative here: the block above returns on every
+	// negative-position path.
+	if pos >= len(fields) {
+		return false
+	}
+	if op == "" {
+		return true
+	}
+	return compareField(fields[pos], value, op)
 }
 
 func parseDelimitedFields(message string) []string {

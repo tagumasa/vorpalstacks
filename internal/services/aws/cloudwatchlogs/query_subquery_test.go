@@ -1,10 +1,13 @@
 package cloudwatchlogs
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
 // Tests for subqueries and the join / source command family.
@@ -40,6 +43,21 @@ func TestFilterInSubquery(t *testing.T) {
 	}
 	if len(rows) != 1 || rowField(t, rows, 0, "req") != "r1" {
 		t.Fatalf("subquery filter rows = %+v", rows)
+	}
+}
+
+// A flag assignment truncated after "=" must reject as a syntax error —
+// the value read is guarded, so a trailing `join type =` never indexes
+// past the slice end.
+func TestJoinTruncatedFlagRejected(t *testing.T) {
+	for _, q := range []string{
+		`fields @message | join type =`,
+		`fields @message | join left =`,
+		`fields @message | join right =`,
+	} {
+		if err := validateQueryPipeline(q); err == nil {
+			t.Fatalf("query %q must reject a truncated flag value", q)
+		}
 	}
 }
 
@@ -82,6 +100,68 @@ func TestAppendCols(t *testing.T) {
 	}
 	if _, ok := rows[0].fields["total"]; !ok {
 		t.Fatalf("appendcols should add total: %+v", rows[0].fields)
+	}
+}
+
+// The documented subquery and join limits: the join secondary source's
+// unique key values cap at the documented fifty thousand, and a breached
+// deadline stops the pipeline — the outer bound marks the context timed
+// out for the lifecycle's Timeout status, while the thirty-second inner
+// bound fails the enclosing query.
+func TestSubqueryAndJoinLimits(t *testing.T) {
+	events := testEvents(`{"requestId": "q1"}`)
+
+	right := make([]logEventWithContext, 0, logsstore.MaxJoinKeyValues+1)
+	for i := 0; i <= logsstore.MaxJoinKeyValues; i++ {
+		right = append(right, logEventWithContext{timestamp: 1, message: fmt.Sprintf(`{"requestId": "k%d"}`, i)})
+	}
+	joinCtx := newTestCtx(events)
+	joinCtx.fetchEvents = func(groups []string, start, end int64) ([]logEventWithContext, error) {
+		if len(groups) > 0 && groups[0] == "right-group" {
+			return right, nil
+		}
+		return events, nil
+	}
+	joinCtx.listLogGroups = func() ([]sourceGroupInfo, error) {
+		return []sourceGroupInfo{{Name: "right-group"}}, nil
+	}
+	if _, err := executeQueryContext(joinCtx,
+		`join type=inner left=api right=lambda where api.requestId=lambda.requestId (SOURCE logGroups(namePrefix: ['right']))`); err == nil {
+		t.Fatal("join beyond the unique-key cap accepted")
+	}
+
+	// A breached outer bound is not a failure: the pipeline stops, the
+	// context is marked timed out, and the caller (the execution
+	// lifecycle) stamps the Timeout status from that mark.
+	expired := newTestCtx(events)
+	expired.deadline = time.Now().Add(-time.Second)
+	if _, err := executeQueryContext(expired, `fields @message | limit 1`); err != nil {
+		t.Fatalf("breached outer bound returned an error: %v", err)
+	}
+	if !expired.timedOut {
+		t.Fatal("breached outer bound did not mark the context timed out")
+	}
+
+	// A breached inner bound is a failure: the subquery returns the
+	// deadline's wording as its error instead of a silently truncated
+	// row set. The deadline clock seam advances past the child's mint.
+	toks, err := lexQuery(`fields @message | limit 1`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restore := queryDeadlineNow
+	mints := 0
+	queryDeadlineNow = func() time.Time {
+		mints++
+		if mints == 1 {
+			return restore() // the child's deadline mint
+		}
+		return restore().Add(subqueryExecutionLimit + time.Minute) // past the inner bound
+	}
+	defer func() { queryDeadlineNow = restore }()
+	inner := newTestCtx(events)
+	if _, err := inner.runSubquery(toks); err == nil {
+		t.Fatal("breached inner bound accepted")
 	}
 }
 

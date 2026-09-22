@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,667 test cases (3,569 SDK + 80 cross-service integration + 18 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,798 test cases (3,699 SDK + 81 cross-service integration + 18 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -27,7 +27,7 @@ which are separate services in the SDK classification used by
 | CloudFront | 99 | 100% | ✅ Perfect |
 | CloudTrail | 164 | 100% | ✅ Perfect |
 | CloudWatch | 26 | 100% | ✅ Perfect |
-| CloudWatch Logs | 63 | 100% | ✅ Perfect |
+| CloudWatch Logs | 115 | 100% | ✅ Perfect |
 | Cognito | 123 | 100% | ✅ Perfect |
 | Cognito Identity | 54 | 100% | ✅ Perfect |
 | DynamoDB | 240 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,745/3,745 tests passing (100%) — 3,647 SDK + 80 integration + 18 WebSocket** (confirmed 2026-09-19 on main; per-session deltas live in git history)
+**Overall: 3,798/3,798 tests passing (100%) — 3,699 SDK + 81 integration + 18 WebSocket** (confirmed 2026-09-22 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

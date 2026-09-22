@@ -94,6 +94,56 @@ func ExtractLogGroupNameFromARN(arn string) string {
 	return ""
 }
 
+// ExtractScheduledQueryIdFromARN extracts the scheduled query id from a
+// CloudWatch Logs scheduled-query ARN.
+func ExtractScheduledQueryIdFromARN(arn string) string {
+	_, _, _, _, resource := SplitARN(arn)
+	if id, ok := strings.CutPrefix(resource, "scheduled-query:"); ok {
+		return id
+	}
+	return ""
+}
+
+// ExtractLookupTableNameFromARN extracts the lookup table name from a
+// CloudWatch Logs lookup-table ARN.
+func ExtractLookupTableNameFromARN(arn string) string {
+	_, _, _, _, resource := SplitARN(arn)
+	if name, ok := strings.CutPrefix(resource, "lookup-table:"); ok {
+		return name
+	}
+	return ""
+}
+
+// ExtractDeliverySourceNameFromARN extracts the delivery source name from
+// a CloudWatch Logs delivery-source ARN.
+func ExtractDeliverySourceNameFromARN(arn string) string {
+	_, _, _, _, resource := SplitARN(arn)
+	if name, ok := strings.CutPrefix(resource, "delivery-source:"); ok {
+		return name
+	}
+	return ""
+}
+
+// ExtractDeliveryDestinationNameFromARN extracts the delivery destination
+// name from a CloudWatch Logs delivery-destination ARN.
+func ExtractDeliveryDestinationNameFromARN(arn string) string {
+	_, _, _, _, resource := SplitARN(arn)
+	if name, ok := strings.CutPrefix(resource, "delivery-destination:"); ok {
+		return name
+	}
+	return ""
+}
+
+// ExtractDeliveryIdFromARN extracts the delivery id from a CloudWatch
+// Logs delivery ARN.
+func ExtractDeliveryIdFromARN(arn string) string {
+	_, _, _, _, resource := SplitARN(arn)
+	if id, ok := strings.CutPrefix(resource, "delivery:"); ok {
+		return id
+	}
+	return ""
+}
+
 // ExtractLogStreamNameFromARN extracts the CloudWatch Logs log stream name from an ARN.
 func ExtractLogStreamNameFromARN(arn string) string {
 	_, _, _, _, resource := SplitARN(arn)

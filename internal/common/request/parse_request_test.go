@@ -327,6 +327,17 @@ func TestGetStringList(t *testing.T) {
 	})
 }
 
+// HasListParam distinguishes the explicitly empty JSON array from the
+// omitted member across the accessor family's three key spellings — the
+// distinction a list member's @length(min 1) trait needs.
+func TestHasListParam(t *testing.T) {
+	assert.True(t, HasListParam(map[string]interface{}{"LogGroupIdentifiers": []interface{}{}}, "LogGroupIdentifiers"))
+	assert.True(t, HasListParam(map[string]interface{}{"logGroupIdentifiers": []interface{}{"a"}}, "LogGroupIdentifiers"))
+	assert.True(t, HasListParam(map[string]interface{}{"loggroupidentifiers": []interface{}{}}, "LogGroupIdentifiers"))
+	assert.False(t, HasListParam(map[string]interface{}{}, "LogGroupIdentifiers"))
+	assert.False(t, HasListParam(map[string]interface{}{"Other": []interface{}{}}, "LogGroupIdentifiers"))
+}
+
 func TestGetArrayParam(t *testing.T) {
 	t.Run("valid array", func(t *testing.T) {
 		params := map[string]interface{}{

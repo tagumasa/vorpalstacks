@@ -174,9 +174,10 @@ func parkNext(t *testing.T, sb *lambdaSandbox) {
 
 func testSpec() sandboxSpec {
 	return sandboxSpec{
-		imageURI:    "localhost/fake/image:1",
-		env:         map[string]string{"AWS_REGION": "us-east-1"},
-		memoryBytes: 128 * 1024 * 1024,
+		imageURI:      "localhost/fake/image:1",
+		env:           map[string]string{"AWS_REGION": "us-east-1"},
+		memoryBytes:   128 * 1024 * 1024,
+		logStreamName: "2026/01/02/[$LATEST]cafe1234",
 	}
 }
 
@@ -205,6 +206,11 @@ func TestSandboxPoolAcquireCreatesAndReusesIdle(t *testing.T) {
 	if sb1.containerID == "" || sb1.api == nil {
 		t.Fatalf("acquire must build the container and the runtime api server")
 	}
+	// The sandbox adopts the spec's environment stream: one stream per
+	// execution environment, the value the invocation records write to.
+	if sb1.logStreamName != testSpec().logStreamName {
+		t.Fatalf("acquire must carry the spec's log stream, got %q", sb1.logStreamName)
+	}
 	if f.countContainers() != 1 {
 		t.Fatalf("first acquire must create exactly one container, got %d", f.countContainers())
 	}
@@ -232,6 +238,9 @@ func TestSandboxPoolAcquireCreatesAndReusesIdle(t *testing.T) {
 	}
 	if sb3.id != sb1.id || sb3.containerID != sb1.containerID {
 		t.Fatalf("an idle parked sandbox must be reused, got a new one (%s vs %s)", sb3.id, sb1.id)
+	}
+	if sb3.logStreamName != sb1.logStreamName {
+		t.Fatalf("a reused environment must keep its stream, got %q then %q", sb1.logStreamName, sb3.logStreamName)
 	}
 	if f.countContainers() != 2 {
 		t.Fatalf("reuse must not create containers, got %d", f.countContainers())

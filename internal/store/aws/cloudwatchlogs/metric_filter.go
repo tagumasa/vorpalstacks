@@ -11,28 +11,34 @@ import (
 	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	arnutil "vorpalstacks/internal/utils/aws/arn"
 
 	pb "vorpalstacks/internal/pb/storage/storage_cloudwatchlogs"
 	"vorpalstacks/internal/store/aws/common"
 )
 
-const metricFilterPrefix = "metric-filter:"
-
 func (s *Store) metricFilterKey(logGroupName, filterName string) string {
-	return metricFilterPrefix + logGroupName + "#" + filterName
+	return keyPrefixMetricFilter + escapePath(logGroupName) + ":" + filterName
 }
 
 func (s *Store) metricFilterPrefixForGroup(logGroupName string) string {
-	return metricFilterPrefix + logGroupName + "#"
+	return keyPrefixMetricFilter + escapePath(logGroupName) + ":"
 }
 
-// PutMetricFilter creates or updates a metric filter. When the filter is
-// newly created, MetricFilterCount on the parent LogGroup is incremented
-// atomically within a storage transaction so concurrent PutLogEvents
-// operations observe a consistent count.
+// PutMetricFilter creates or updates a metric filter. An update preserves
+// the stored creation time (DescribeMetricFilters reports the filter's
+// original creation, not the last update). When the filter is newly
+// created, the per-log-group metric filter quota is enforced and
+// MetricFilterCount on the parent LogGroup is incremented atomically
+// within a storage transaction so concurrent PutLogEvents operations
+// observe a consistent count. The whole mutation holds the group's lock
+// so the count update cannot lose a concurrent configuration change to
+// the same record (and vice versa).
 func (s *Store) PutMetricFilter(filter *MetricFilter) error {
 	key := s.metricFilterKey(filter.LogGroupName, filter.Name)
+
+	gLock := s.groupLock(filter.LogGroupName)
+	gLock.Lock()
+	defer gLock.Unlock()
 
 	if s.ts != nil {
 		ctx := context.Background()
@@ -43,6 +49,33 @@ func (s *Store) PutMetricFilter(filter *MetricFilter) error {
 				return err
 			}
 			isNew := filterBytes == nil
+			if !isNew {
+				var old pb.MetricFilter
+				if err := proto.Unmarshal(filterBytes, &old); err != nil {
+					return err
+				}
+				if old.CreatedAt > 0 {
+					filter.CreatedAt = time.UnixMilli(old.CreatedAt).UTC()
+				}
+			}
+
+			var lgProto *pb.LogGroup
+			if isNew {
+				lgBytes, err := txn.Bucket(s.bucketName).Get([]byte(s.logGroupKey(filter.LogGroupName)))
+				if err != nil {
+					return err
+				}
+				if lgBytes == nil {
+					return ErrLogGroupNotFound
+				}
+				lgProto = new(pb.LogGroup)
+				if err := proto.Unmarshal(lgBytes, lgProto); err != nil {
+					return err
+				}
+				if int(lgProto.MetricFilterCount) >= MaxMetricFiltersPerGroup {
+					return ErrLimitExceeded
+				}
+			}
 
 			filterData, err := proto.Marshal(MetricFilterToProto(filter))
 			if err != nil {
@@ -53,16 +86,8 @@ func (s *Store) PutMetricFilter(filter *MetricFilter) error {
 			}
 
 			if isNew {
-				lgBytes, err := txn.Bucket(s.bucketName).Get([]byte(s.logGroupKey(filter.LogGroupName)))
-				if err != nil || lgBytes == nil {
-					return ErrLogGroupNotFound
-				}
-				var lgProto pb.LogGroup
-				if err := proto.Unmarshal(lgBytes, &lgProto); err != nil {
-					return err
-				}
 				lgProto.MetricFilterCount++
-				lgData, err := proto.Marshal(&lgProto)
+				lgData, err := proto.Marshal(lgProto)
 				if err != nil {
 					return err
 				}
@@ -73,7 +98,22 @@ func (s *Store) PutMetricFilter(filter *MetricFilter) error {
 	}
 
 	// Fallback: sequential writes with no cross-path atomicity guarantee.
-	isNew := !s.Exists(key)
+	oldFilter, err := s.GetMetricFilter(filter.LogGroupName, filter.Name)
+	if err != nil && !errors.Is(err, ErrMetricFilterNotFound) {
+		return err
+	}
+	isNew := oldFilter == nil
+	if isNew {
+		lg, err := s.GetLogGroup(filter.LogGroupName)
+		if err != nil {
+			return err
+		}
+		if int(lg.MetricFilterCount) >= MaxMetricFiltersPerGroup {
+			return ErrLimitExceeded
+		}
+	} else if !oldFilter.CreatedAt.IsZero() {
+		filter.CreatedAt = oldFilter.CreatedAt
+	}
 	if err := s.PutProto(key, MetricFilterToProto(filter)); err != nil {
 		return err
 	}
@@ -91,7 +131,7 @@ func (s *Store) PutMetricFilter(filter *MetricFilter) error {
 			return err
 		}
 		lg.MetricFilterCount++
-		if err := s.PutLogGroup(lg); err != nil {
+		if err := s.putLogGroupLocked(lg); err != nil {
 			if rmErr := s.Delete(key); rmErr != nil {
 				logs.Warn("Failed to rollback metric filter after LogGroup update failure",
 					logs.String("key", key), logs.Err(rmErr))
@@ -103,11 +143,16 @@ func (s *Store) PutMetricFilter(filter *MetricFilter) error {
 }
 
 // GetMetricFilter retrieves a metric filter by log group and filter name.
+// A missing record reports the not-found sentinel; any other storage
+// failure propagates as a storage error.
 func (s *Store) GetMetricFilter(logGroupName, filterName string) (*MetricFilter, error) {
 	key := s.metricFilterKey(logGroupName, filterName)
 	var p pb.MetricFilter
 	if err := s.GetProto(key, &p); err != nil {
-		return nil, ErrMetricFilterNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrMetricFilterNotFound
+		}
+		return nil, err
 	}
 	return ProtoToMetricFilter(&p), nil
 }
@@ -115,8 +160,13 @@ func (s *Store) GetMetricFilter(logGroupName, filterName string) (*MetricFilter,
 // DeleteMetricFilter deletes a metric filter and decrements
 // MetricFilterCount on the parent LogGroup atomically within a storage
 // transaction so concurrent readers always observe a consistent count.
+// Like PutMetricFilter it holds the group's lock for the whole mutation.
 func (s *Store) DeleteMetricFilter(logGroupName, filterName string) error {
 	key := s.metricFilterKey(logGroupName, filterName)
+
+	gLock := s.groupLock(logGroupName)
+	gLock.Lock()
+	defer gLock.Unlock()
 
 	if s.ts != nil {
 		ctx := context.Background()
@@ -157,25 +207,34 @@ func (s *Store) DeleteMetricFilter(logGroupName, filterName string) error {
 		})
 	}
 
-	// Fallback path used when no transactional store is configured:
-	// sequential writes with explicit error-type distinction so the caller
-	// still receives ErrMetricFilterNotFound vs. a generic storage error.
+	// Fallback path used when no transactional store is configured. The
+	// steps run in the order whose partial failure leaves the least
+	// drift: the parent LogGroup is read BEFORE the filter record is
+	// deleted (a read failure now changes nothing — retrying is clean),
+	// and the count decrement follows the successful delete. A failure
+	// of the final LogGroup write still leaves the count one high; that
+	// residual tear is unavoidable without transactions and is logged.
+	lg, err := s.GetLogGroup(logGroupName)
+	if err != nil && !errors.Is(err, ErrLogGroupNotFound) {
+		return err
+	}
 	if !s.Exists(key) {
 		return ErrMetricFilterNotFound
 	}
 	if err := s.Delete(key); err != nil {
 		return err
 	}
-	lg, err := s.GetLogGroup(logGroupName)
-	if err != nil {
-		if errors.Is(err, ErrLogGroupNotFound) {
-			return nil
-		}
-		return err
+	if lg == nil {
+		// The group is gone; its count went with it.
+		return nil
 	}
 	if lg.MetricFilterCount > 0 {
 		lg.MetricFilterCount--
-		return s.PutLogGroup(lg)
+		if err := s.putLogGroupLocked(lg); err != nil {
+			logs.Error("Metric filter count left high: LogGroup write failed after filter deletion",
+				logs.String("logGroupName", logGroupName), logs.Err(err))
+			return err
+		}
 	}
 	return nil
 }
@@ -224,7 +283,41 @@ func NewMetricFilter(logGroupName, filterName, filterPattern string, transformat
 	}
 }
 
-// ARN returns the ARN of the metric filter.
-func (f *MetricFilter) ARN(accountID, region string) string {
-	return arnutil.NewARNBuilder(accountID, region).CloudWatch().MetricFilter(f.LogGroupName, f.Name)
+// MetricFilter represents a CloudWatch Logs metric filter.
+type MetricFilter struct {
+	Name                      string                 `json:"name"`
+	LogGroupName              string                 `json:"logGroupName"`
+	FilterPattern             string                 `json:"filterPattern"`
+	MetricTransformations     []MetricTransformation `json:"metricTransformations"`
+	ApplyOnTransformedLogs    bool                   `json:"applyOnTransformedLogs,omitempty"`
+	FieldSelectionCriteria    string                 `json:"fieldSelectionCriteria,omitempty"`
+	EmitSystemFieldDimensions []string               `json:"emitSystemFieldDimensions,omitempty"`
+	CreatedAt                 time.Time              `json:"createdAt"`
+}
+
+// MetricTransformation represents a metric transformation for a metric filter.
+type MetricTransformation struct {
+	MetricName      string  `json:"metricName"`
+	MetricNamespace string  `json:"metricNamespace"`
+	MetricValue     string  `json:"metricValue"`
+	DefaultValue    float64 `json:"defaultValue,omitempty"`
+	DefaultValueSet bool    `json:"defaultValueSet,omitempty"`
+	// Dimensions is the transformation's dimensions member — "The fields
+	// to use as dimensions for the metric" — whose values are value
+	// references into the matched event (the operation documentation's
+	// own worked example runs "dimensions": {"Request": "$request"}).
+	Dimensions map[string]string `json:"dimensions,omitempty"`
+	// Unit is the transformation's unit member ("The unit to assign to
+	// the metric. If you omit this, the unit is set as None"; the empty
+	// string is the omitted, None form).
+	Unit string `json:"unit,omitempty"`
+
+	// Wire-presence flags for the required members whose shapes allow the
+	// empty string (minimum length zero): the members are required on
+	// MetricTransformation, so their absence rejects in the Core while a
+	// present empty value stays legal. Presence is a parse-time fact and
+	// never serialises.
+	MetricNameSet      bool `json:"-"`
+	MetricNamespaceSet bool `json:"-"`
+	MetricValueSet     bool `json:"-"`
 }

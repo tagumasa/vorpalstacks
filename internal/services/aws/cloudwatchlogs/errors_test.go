@@ -51,31 +51,10 @@ func TestLogsError(t *testing.T) {
 			wantHTTPCode: http.StatusBadRequest,
 		},
 		{
-			name:         "ErrMissingParameter",
-			err:          ErrMissingParameter,
-			wantCode:     "MissingParameterException",
-			wantMsg:      "Missing required parameter",
-			wantHTTPCode: http.StatusBadRequest,
-		},
-		{
-			name:         "ErrAccessDenied",
-			err:          ErrAccessDenied,
-			wantCode:     "AccessDeniedException",
-			wantMsg:      "Access denied",
-			wantHTTPCode: http.StatusBadRequest,
-		},
-		{
 			name:         "ErrLimitExceeded",
 			err:          ErrLimitExceeded,
 			wantCode:     "LimitExceededException",
 			wantMsg:      "Limit exceeded",
-			wantHTTPCode: http.StatusBadRequest,
-		},
-		{
-			name:         "ErrOperationAborted",
-			err:          ErrOperationAborted,
-			wantCode:     "OperationAbortedException",
-			wantMsg:      "Operation aborted",
 			wantHTTPCode: http.StatusBadRequest,
 		},
 	}
@@ -114,5 +93,27 @@ func TestLogsErrorImplementsError(t *testing.T) {
 
 	if err.Error() != "ResourceNotFoundException: Log group not found" {
 		t.Errorf("Error() = %v, want 'ResourceNotFoundException: Log group not found'", err.Error())
+	}
+}
+
+// The per-op identity helpers: a missing member rejects with the
+// operation family's declared validation error, and the scheduled-query
+// normaliser maps the shared validators' StartQuery vocabulary
+// (MalformedQueryException, InvalidParameterException) onto
+// ValidationException while letting every other identity pass through.
+func TestErrorIdentityHelpers(t *testing.T) {
+	if code := logsErrorCode(errRequiredMember("queryId")); code != "InvalidParameterException" {
+		t.Fatalf("errRequiredMember: code=%q", code)
+	}
+	if code := logsErrorCode(errValidationMember("identifier")); code != "ValidationException" {
+		t.Fatalf("errValidationMember: code=%q", code)
+	}
+	malformed := NewLogsError("MalformedQueryException", "the query is malformed", 400)
+	norm := asScheduledQueryValidation(malformed)
+	if code := logsErrorCode(norm); code != "ValidationException" {
+		t.Fatalf("normalised MalformedQuery: code=%q", code)
+	}
+	if code := logsErrorCode(asScheduledQueryValidation(ErrLogGroupNotFound)); code != "ResourceNotFoundException" {
+		t.Fatalf("pass-through identity changed: code=%q", code)
 	}
 }

@@ -65,6 +65,7 @@ type Server struct {
 	s3Handler         http.Handler
 	apiGatewayRuntime http.Handler
 	jwksHandler       http.Handler
+	httpLogIngestion  http.Handler
 	handlerMu         sync.RWMutex
 	classifier        *classifier.Classifier
 	serviceStore      *api.ServiceStore
@@ -251,6 +252,27 @@ func (s *Server) JWKSHandler() http.Handler {
 	s.handlerMu.RLock()
 	defer s.handlerMu.RUnlock()
 	return s.jwksHandler
+}
+
+// RegisterHTTPLogIngestionHandler registers the plain-HTTP log ingestion
+// endpoints (the CloudWatch Logs OTLP/HLC/ND-JSON/Structured-JSON paths).
+//
+// Parameters:
+//   - handler: The ingestion endpoints handler to register
+func (s *Server) RegisterHTTPLogIngestionHandler(handler http.Handler) {
+	s.handlerMu.Lock()
+	s.httpLogIngestion = handler
+	s.handlerMu.Unlock()
+}
+
+// HTTPLogIngestionHandler returns the plain-HTTP log ingestion handler.
+//
+// Returns:
+//   - http.Handler: The ingestion endpoints handler
+func (s *Server) HTTPLogIngestionHandler() http.Handler {
+	s.handlerMu.RLock()
+	defer s.handlerMu.RUnlock()
+	return s.httpLogIngestion
 }
 
 // RegisterShutdownHook adds a function to be called during graceful shutdown.

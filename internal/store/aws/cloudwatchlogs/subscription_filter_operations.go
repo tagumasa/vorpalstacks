@@ -9,8 +9,18 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_cloudwatchlogs"
 )
 
-// PutSubscriptionFilter creates or updates a subscription filter.
+// PutSubscriptionFilter creates or updates a subscription filter under
+// the family mutex: the creation-time preservation read and the limit
+// check's admission count serialise with every other family write.
 func (s *Store) PutSubscriptionFilter(filter *SubscriptionFilter) error {
+	s.subFilterMu.Lock()
+	defer s.subFilterMu.Unlock()
+	return s.putSubscriptionFilterLocked(filter)
+}
+
+// putSubscriptionFilterLocked is the lock-free write body for callers
+// already holding subFilterMu (the limit-checked admission).
+func (s *Store) putSubscriptionFilterLocked(filter *SubscriptionFilter) error {
 	key := s.subscriptionFilterKey(filter.LogGroupName, filter.FilterName)
 	var existing pb.SubscriptionFilter
 	if s.GetProto(key, &existing) == nil {
@@ -22,10 +32,23 @@ func (s *Store) PutSubscriptionFilter(filter *SubscriptionFilter) error {
 }
 
 // PutSubscriptionFilterWithLimitCheck atomically checks the per-log-group
-// subscription filter limit (max 2 distinct filter names) and creates or
-// updates the filter. This prevents race conditions where concurrent
-// PutSubscriptionFilter calls could exceed the limit.
+// subscription filter limit (the documented per-group quota, carried by
+// MaxSubscriptionFiltersPerLogGroup) and creates or updates the filter. This prevents race conditions where concurrent
+// PutSubscriptionFilter calls could exceed the limit. The admission also
+// holds the group's write lock — the DeleteLogGroup teardown lock — and
+// re-checks the group inside it: the service layer's earlier group check
+// runs outside any critical section, so without the re-check a teardown
+// interleaving this put would leave the filter permanently outliving its
+// deleted group (the metric-filter family's pattern).
 func (s *Store) PutSubscriptionFilterWithLimitCheck(filter *SubscriptionFilter, maxPerGroup int) error {
+	gLock := s.groupLock(filter.LogGroupName)
+	gLock.Lock()
+	defer gLock.Unlock()
+
+	if _, err := s.GetLogGroup(filter.LogGroupName); err != nil {
+		return err
+	}
+
 	s.subFilterMu.Lock()
 	defer s.subFilterMu.Unlock()
 
@@ -48,11 +71,16 @@ func (s *Store) PutSubscriptionFilterWithLimitCheck(filter *SubscriptionFilter, 
 		return ErrLimitExceeded
 	}
 
-	return s.PutSubscriptionFilter(filter)
+	return s.putSubscriptionFilterLocked(filter)
 }
 
-// DeleteSubscriptionFilter deletes a subscription filter.
+// DeleteSubscriptionFilter deletes a subscription filter under the same
+// mutex as the limit check, so a concurrent admission counts the live
+// filter set this delete is part of instead of a stale snapshot.
 func (s *Store) DeleteSubscriptionFilter(logGroupName, filterName string) error {
+	s.subFilterMu.Lock()
+	defer s.subFilterMu.Unlock()
+
 	key := s.subscriptionFilterKey(logGroupName, filterName)
 	if !s.Exists(key) {
 		return ErrSubscriptionFilterNotFound
@@ -60,33 +88,45 @@ func (s *Store) DeleteSubscriptionFilter(logGroupName, filterName string) error 
 	return s.Delete(key)
 }
 
-// GetSubscriptionFilter retrieves a subscription filter by name.
-func (s *Store) GetSubscriptionFilter(logGroupName, filterName string) (*SubscriptionFilter, error) {
-	key := s.subscriptionFilterKey(logGroupName, filterName)
-	var p pb.SubscriptionFilter
-	if err := s.GetProto(key, &p); err != nil {
-		return nil, ErrSubscriptionFilterNotFound
-	}
-	return ProtoToSubscriptionFilter(&p), nil
-}
-
-// ListSubscriptionFilters lists subscription filters for a log group.
+// ListSubscriptionFilters lists subscription filters for a log group. A
+// scan failure propagates: the per-group limit check counts from this
+// list, and a partial list could admit a filter beyond the limit.
 func (s *Store) ListSubscriptionFilters(logGroupName, filterNamePrefix string) ([]*SubscriptionFilter, error) {
 	prefix := s.subscriptionFilterKey(logGroupName, "")
 	var filters []*SubscriptionFilter
 
 	if err := s.ScanPrefix(prefix, func(key string, value []byte) error {
 		var p pb.SubscriptionFilter
-		if err := proto.Unmarshal(value, &p); err == nil {
-			filter := ProtoToSubscriptionFilter(&p)
-			if filterNamePrefix == "" || strings.HasPrefix(filter.FilterName, filterNamePrefix) {
-				filters = append(filters, filter)
-			}
+		if err := proto.Unmarshal(value, &p); err != nil {
+			// A record that fails to decode is invisible to the caller;
+			// log it so corruption is discoverable instead of silently
+			// shrinking the list.
+			logs.Warn("Corrupt subscription filter record",
+				logs.String("key", key), logs.Err(err))
+			return nil
+		}
+		filter := ProtoToSubscriptionFilter(&p)
+		if filterNamePrefix == "" || strings.HasPrefix(filter.FilterName, filterNamePrefix) {
+			filters = append(filters, filter)
 		}
 		return nil
 	}); err != nil {
-		logs.Error("Failed to scan subscription filters", logs.String("logGroup", logGroupName), logs.Err(err))
+		return nil, err
 	}
 
 	return filters, nil
+}
+
+// SubscriptionFilter represents a CloudWatch Logs subscription filter.
+type SubscriptionFilter struct {
+	LogGroupName           string    `json:"logGroupName"`
+	FilterName             string    `json:"filterName"`
+	FilterPattern          string    `json:"filterPattern"`
+	DestinationArn         string    `json:"destinationArn"`
+	RoleArn                string    `json:"roleArn"`
+	Distribution           string    `json:"distribution"`
+	ApplyOnTransformedLogs bool      `json:"applyOnTransformedLogs,omitempty"`
+	FieldSelectionCriteria string    `json:"fieldSelectionCriteria,omitempty"`
+	EmitSystemFields       []string  `json:"emitSystemFields,omitempty"`
+	CreationTime           time.Time `json:"creationTime"`
 }

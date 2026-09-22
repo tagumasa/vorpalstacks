@@ -26,6 +26,14 @@ const (
 	MaxChunkSize = 100000
 	// MaxMessageSize is the maximum size in bytes for a single message entry.
 	MaxMessageSize = 1024 * 1024
+
+	// MaxDecompressedChunkBytes bounds the decompressed size the reader
+	// may materialise from one chunk file. A legitimate chunk stays far
+	// below it (the ingestion envelope a batch carries is a few megabytes
+	// at most); a corrupt or planted file that expands beyond it is a
+	// decompression bomb, which the reader rejects as corruption instead
+	// of allocating the expanded size until the process dies.
+	MaxDecompressedChunkBytes = 64 << 20
 )
 
 // Header represents the header metadata for a chunk file.

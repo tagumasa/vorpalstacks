@@ -194,7 +194,11 @@ type CloudWatchLogDeliveryEvent struct {
 	LogGroup       string `json:"log_group"`
 	LogStream      string `json:"log_stream"`
 	DestinationArn string `json:"destination_arn"`
-	Payload        []byte `json:"payload"`
+	// Distribution is the matched filter's distribution (ByLogStream or
+	// Random); the delivery dispatch uses it to derive the Kinesis
+	// partition key.
+	Distribution string `json:"distribution"`
+	Payload      []byte `json:"payload"`
 }
 
 // EventType returns "logs:deliver" for this event type.

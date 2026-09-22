@@ -210,7 +210,10 @@ var exprKeywords = map[string]bool{
 // operators are matched longest-first.
 func (l *lexer) lexOperator() bool {
 	rest := l.src[l.pos:]
-	multi := []string{"!=", ">=", "<=", "=="}
+	// The equality operator is "=" alone — the query syntax documents
+	// no "==" alias, so a doubled equals lexes as two operators and the
+	// parser reports the syntax error AWS reports.
+	multi := []string{"!=", ">=", "<=", "=~"}
 	for _, op := range multi {
 		if strings.HasPrefix(rest, op) {
 			start := l.pos
@@ -224,15 +227,17 @@ func (l *lexer) lexOperator() bool {
 	if c == '/' {
 		// A forward slash is division when the previous token can end an
 		// expression (value or closing bracket) and is not a reserved word;
-		// otherwise it opens a regular expression literal.
+		// otherwise it opens a regular expression literal. A dotted
+		// identifier is a field reference and ends a value like any other
+		// identifier — treating it otherwise breaks division on nested
+		// fields (bytes.received / 2), core query syntax.
 		if n := len(l.toks); n > 0 {
 			prev := l.toks[n-1]
 			endsValue := prev.kind == tokNumber || prev.kind == tokString ||
 				prev.kind == tokRParen || prev.kind == tokRBracket ||
 				prev.kind == tokBacktickIdent ||
-				(prev.kind == tokIdent && !exprKeywords[strings.ToLower(prev.text)] &&
-					!strings.Contains(prev.text, "."))
-			if !endsValue {
+				(prev.kind == tokIdent && !exprKeywords[strings.ToLower(prev.text)])
+			if !endsValue || l.slashOpensRegexLiteral() {
 				return l.lexRegex()
 			}
 		} else {
@@ -261,7 +266,7 @@ func (l *lexer) lexOperator() bool {
 		l.push(tokColon, ":", ":", start)
 	case ';':
 		l.push(tokSemicolon, ";", ";", start)
-	case '=', '<', '>', '+', '-', '*', '%', '^', '!', '.':
+	case '=', '<', '>', '+', '-', '*', '%', '^', '!', '.', '/':
 		l.push(tokOp, string(c), string(c), start)
 	default:
 		l.pos = start
@@ -294,6 +299,53 @@ func (l *lexer) lexRegex() bool {
 	}
 	l.pos = start
 	return false
+}
+
+// slashOpensRegexLiteral reports whether the forward slash at l.pos opens
+// a regular expression literal even though the preceding token could end a
+// value, where a slash otherwise means division. This is the parse
+// command's regex mode, whose documented form places the literal directly
+// after the source field — parse {{fieldName}} /{{regex}}/ — and the
+// closing delimiter is followed by the end of the query, a pipe to the
+// next command, a comment, the as clause of the numbered-group form, or
+// the multi keyword. A division's right-hand side is a value, so none of
+// those continuations follows a division slash and the look-ahead
+// separates the two readings. The residual ambiguity — a division whose
+// scan happens to close on a later parse regex whose body begins with the
+// word as or multi — resolves as a regex literal and fails to compile;
+// it cannot silently mis-evaluate.
+func (l *lexer) slashOpensRegexLiteral() bool {
+	i := l.pos + 1 // past the opening slash
+	for i < len(l.src) {
+		c := l.src[i]
+		if c == '\\' && i+1 < len(l.src) {
+			// An escaped character keeps an escaped slash inside the body.
+			i += 2
+			continue
+		}
+		if c != '/' {
+			i++
+			continue
+		}
+		rest := strings.TrimLeft(l.src[i+1:], " \t\r\n")
+		if rest == "" || rest[0] == '|' || rest[0] == '#' {
+			return true
+		}
+		word := identWordLen(rest)
+		return strings.EqualFold(rest[:word], "as") || strings.EqualFold(rest[:word], "multi")
+	}
+	return false
+}
+
+// identWordLen returns the length of the leading identifier-shaped run of
+// s, so a look-ahead can compare whole keywords (as, multi) against a
+// word boundary instead of a prefix.
+func identWordLen(s string) int {
+	i := 0
+	for i < len(s) && isIdentPart(s[i]) {
+		i++
+	}
+	return i
 }
 
 func isDigit(c byte) bool { return c >= '0' && c <= '9' }

@@ -47,6 +47,10 @@ type lambdaSandbox struct {
 	containerName string
 	containerID   string
 	api           *runtimeAPIServer
+	// logStreamName is the sandbox's CloudWatch Logs stream, baked into the
+	// container env at creation: one stream per execution environment for
+	// the environment's whole life, shared by every invocation it runs.
+	logStreamName string
 
 	createdAt  time.Time
 	lastUsedAt time.Time
@@ -69,9 +73,10 @@ func (sb *lambdaSandbox) reusable() bool {
 // sandboxSpec is everything a sandbox bakes in at creation; configuration
 // changes drain the affected sandboxes instead of mutating them.
 type sandboxSpec struct {
-	imageURI    string
-	env         map[string]string // includes AWS_LAMBDA_RUNTIME_API
-	memoryBytes int64
+	imageURI      string
+	env           map[string]string // includes AWS_LAMBDA_RUNTIME_API
+	memoryBytes   int64
+	logStreamName string // the environment's CloudWatch Logs stream, baked into env
 	// ImageConfig overrides; zero values keep the image's own config.
 	entrypoint []string
 	cmd        []string
@@ -172,6 +177,7 @@ func (p *sandboxPool) acquire(ctx context.Context, functionArn, version string, 
 		functionArn:   functionArn,
 		version:       version,
 		containerName: "lambda-sb-" + id,
+		logStreamName: spec.logStreamName,
 		createdAt:     now,
 		lastUsedAt:    now,
 		busy:          true,
@@ -458,7 +464,7 @@ const sandboxExitPollInterval = 250 * time.Millisecond
 // sandbox from the pool, push this invocation as one Runtime API round,
 // and settle at the answer, the sandbox's death, or the deadline —
 // whichever comes first. The shared invoke tail consumes the outcome.
-func (s *LambdaService) runImageExecution(function *lambdastore.Function, ver *lambdastore.Version, execCfg executionConfig, region, version string, rec invocationRecord, eventJSON string) (executionOutcome, error) {
+func (s *LambdaService) runImageExecution(function *lambdastore.Function, ver *lambdastore.Version, execCfg executionConfig, region, version string, rec *invocationRecord, eventJSON string) (executionOutcome, error) {
 	ctx := context.Background()
 
 	spec := s.sandboxSpecFor(function, ver, execCfg, region, version)
@@ -467,8 +473,13 @@ func (s *LambdaService) runImageExecution(function *lambdastore.Function, ver *l
 		return executionOutcome{}, err
 	}
 
+	// The sandbox is this invocation's execution environment; every
+	// invocation it runs writes to the environment's stream — the value
+	// already baked into the sandbox container's env.
+	rec.LogStreamName = sb.logStreamName
+
 	execStart := time.Now()
-	round := s.driveSandboxRound(ctx, sb, rec, eventJSON)
+	round := s.driveSandboxRound(ctx, sb, *rec, eventJSON)
 	round.outcome.duration = time.Since(execStart)
 
 	// The log window is read before any destruction: docker keeps a stopped
@@ -596,6 +607,11 @@ func (s *LambdaService) watchSandboxExit(ctx context.Context, sb *lambdaSandbox)
 // the image's ENTRYPOINT/CMD/WORKDIR, unset fields keep them, the AWS
 // container-image contract.
 func (s *LambdaService) sandboxSpecFor(function *lambdastore.Function, ver *lambdastore.Version, execCfg executionConfig, region, version string) sandboxSpec {
+	// The environment's log stream is minted once at sandbox creation and
+	// serves every invocation the sandbox runs: one log stream per
+	// execution environment, the AWS contract the invocation records adopt.
+	streamName := lambdaLogStreamName(time.Now().UTC(), version, sbLogStreamSeed())
+
 	envVars := map[string]string{
 		"AWS_LAMBDA_FUNCTION_TIMEOUT":     fmt.Sprintf("%d", execCfg.Timeout),
 		"AWS_LAMBDA_FUNCTION_MEMORY_SIZE": fmt.Sprintf("%d", execCfg.MemorySize),
@@ -604,11 +620,9 @@ func (s *LambdaService) sandboxSpecFor(function *lambdastore.Function, ver *lamb
 		"AWS_LAMBDA_FUNCTION_VERSION":     version,
 		"AWS_REGION":                      region,
 		// The documented execution-environment members an AWS runtime
-		// interface client validates once its first /next answers: one log
-		// stream per execution environment, the naming convention the
-		// invocation records already use.
+		// interface client validates once its first /next answers.
 		"AWS_LAMBDA_LOG_GROUP_NAME":  lambdaLogGroupName(function.FunctionName),
-		"AWS_LAMBDA_LOG_STREAM_NAME": lambdaLogStreamName(time.Now().UTC(), version, sbLogStreamSeed()),
+		"AWS_LAMBDA_LOG_STREAM_NAME": streamName,
 	}
 	if execCfg.Environment != nil {
 		for k, v := range execCfg.Environment.Variables {
@@ -620,9 +634,10 @@ func (s *LambdaService) sandboxSpecFor(function *lambdastore.Function, ver *lamb
 	}
 
 	spec := sandboxSpec{
-		imageURI:    execCfg.ImageUri,
-		env:         envVars,
-		memoryBytes: int64(execCfg.MemorySize) * 1024 * 1024,
+		imageURI:      execCfg.ImageUri,
+		env:           envVars,
+		memoryBytes:   int64(execCfg.MemorySize) * 1024 * 1024,
+		logStreamName: streamName,
 	}
 
 	imageCfg := function.ImageConfig
@@ -637,8 +652,9 @@ func (s *LambdaService) sandboxSpecFor(function *lambdastore.Function, ver *lamb
 	return spec
 }
 
-// sbLogStreamSeed mints the per-environment id of a sandbox's log stream,
-// standing in for the request id an invocation record's stream uses.
+// sbLogStreamSeed mints the per-environment id of a sandbox's log stream:
+// a fresh environment identity, so a newly created sandbox's stream never
+// collides with the stream of the environment it replaces.
 func sbLogStreamSeed() string {
 	return uuid.New().String()
 }

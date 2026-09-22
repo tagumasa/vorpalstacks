@@ -122,6 +122,84 @@ func TestElapsedExecutionTimeAt(t *testing.T) {
 	}
 }
 
+// TestElapsedExecutionTimeTestModeCompression pins the carryover-category-(d)
+// acceleration: under TEST_MODE a near-future at() timestamp within the lead
+// counts as elapsed (the boundary value stays the timestamp), a future at()
+// beyond the lead keeps its real-time wait, rate() periods scale to seconds,
+// cron() keeps its real minute grid, and NextExecutionTime keeps the real
+// period — only the due-boundary decision is compressed.
+func TestElapsedExecutionTimeTestModeCompression(t *testing.T) {
+	testModeBoundaryCompression = true
+	t.Cleanup(func() { testModeBoundaryCompression = false })
+
+	creation := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	// at() within the lead: due immediately, boundary unchanged.
+	bound, ok := ElapsedExecutionTime("at(2026-01-01T12:00:30)", creation.Add(2*time.Second), creation, nil, RateFiresAfterFirstInterval)
+	if !ok || !bound.Equal(time.Date(2026, 1, 1, 12, 0, 30, 0, time.UTC)) {
+		t.Errorf("near-future at() = %v (%v), want 12:00:30 (true)", bound, ok)
+	}
+	// at() beyond the lead: still waiting.
+	if _, ok := ElapsedExecutionTime("at(2026-01-01T12:05:00)", creation.Add(2*time.Second), creation, nil, RateFiresAfterFirstInterval); ok {
+		t.Error("at() beyond the test-mode lead reported elapsed")
+	}
+	// at() in the past keeps firing.
+	if _, ok := ElapsedExecutionTime("at(2026-01-01T11:00:00)", creation, creation, nil, RateFiresAfterFirstInterval); !ok {
+		t.Error("past at() not elapsed under compression")
+	}
+
+	// rate(1 minute) behaves as rate(1 second): the first interval policy
+	// sees its first boundary one compressed period after the anchor.
+	bound, ok = ElapsedExecutionTime("rate(1 minute)", creation.Add(1500*time.Millisecond), creation, nil, RateFiresAfterFirstInterval)
+	if !ok || !bound.Equal(creation.Add(time.Second)) {
+		t.Errorf("rate(1 minute) compressed = %v (%v), want creation+1s (true)", bound, ok)
+	}
+	// rate(5 minutes) compresses to five seconds.
+	bound, ok = ElapsedExecutionTime("rate(5 minutes)", creation.Add(6*time.Second), creation, nil, RateFiresAfterFirstInterval)
+	if !ok || !bound.Equal(creation.Add(5*time.Second)) {
+		t.Errorf("rate(5 minutes) compressed = %v (%v), want creation+5s (true)", bound, ok)
+	}
+	// The anchor policy still fires on the anchor itself.
+	if _, ok := ElapsedExecutionTime("rate(1 minute)", creation.Add(500*time.Millisecond), creation, nil, RateFiresAtAnchor); !ok {
+		t.Error("rate(1 minute) anchor policy not elapsed on the anchor under compression")
+	}
+	// A compressed period not yet reached is still not due.
+	if _, ok := ElapsedExecutionTime("rate(30 minutes)", creation.Add(10*time.Second), creation, nil, RateFiresAfterFirstInterval); ok {
+		t.Error("rate(30 minutes) reported elapsed before its compressed 30s period")
+	}
+
+	// cron() keeps its real minute grid: 12:05:30 still resolves the 12:05
+	// boundary, and no future-anticipation is introduced.
+	bound, ok = ElapsedExecutionTime("cron(0/5 * * * ? *)", time.Date(2026, 1, 1, 12, 5, 30, 0, time.UTC), creation, nil, RateFiresAfterFirstInterval)
+	if !ok || !bound.Equal(time.Date(2026, 1, 1, 12, 5, 0, 0, time.UTC)) {
+		t.Errorf("cron under compression = %v (%v), want 12:05 (true)", bound, ok)
+	}
+
+	// NextExecutionTime keeps the real period: with the full minute intact
+	// the truncation lands on the anchor itself (zero elapsed periods),
+	// where a leaked one-second compression would advance past it.
+	next, err := NextExecutionTime("rate(1 minute)", creation.Add(2*time.Second), creation, nil)
+	if err != nil || !next.Equal(creation) {
+		t.Errorf("NextExecutionTime under compression = %v (%v), want the real-period anchor %v", next, err, creation)
+	}
+}
+
+// TestElapsedExecutionTimeTestModeDisabled pins the default shape: with the
+// compression flag off (every non-TEST_MODE process), a near-future at()
+// stays pending and rate() periods keep their documented length.
+func TestElapsedExecutionTimeTestModeDisabled(t *testing.T) {
+	testModeBoundaryCompression = false
+
+	creation := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	if _, ok := ElapsedExecutionTime("at(2026-01-01T12:00:30)", creation.Add(2*time.Second), creation, nil, RateFiresAfterFirstInterval); ok {
+		t.Error("future at() reported elapsed without compression")
+	}
+	if _, ok := ElapsedExecutionTime("rate(1 minute)", creation.Add(2*time.Second), creation, nil, RateFiresAfterFirstInterval); ok {
+		t.Error("rate(1 minute) reported elapsed before one full interval without compression")
+	}
+}
+
 // TestElapsedExecutionTimeCron pins the latest-elapsed-minute floor: the
 // current minute counts when it matches, a late evaluation recovers the
 // missed boundary, and boundaries older than the recovery horizon are

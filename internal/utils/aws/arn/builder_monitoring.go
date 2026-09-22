@@ -2,7 +2,6 @@
 package arn
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -15,11 +14,6 @@ func (b *ARNBuilder) CloudWatch() *CloudWatchBuilder { return &CloudWatchBuilder
 // LogGroup constructs an ARN for a CloudWatch Logs log group.
 func (b *CloudWatchBuilder) LogGroup(name string) string { return b.Build("logs", "log-group:"+name) }
 
-// MetricFilter constructs an ARN for a CloudWatch Logs metric filter.
-func (b *CloudWatchBuilder) MetricFilter(logGroup, name string) string {
-	return b.Build("logs", fmt.Sprintf("log-group:%s:metric-filter:%s", logGroup, name))
-}
-
 // LogStream constructs an ARN for a CloudWatch Logs log stream.
 func (b *CloudWatchBuilder) LogStream(group, stream string) string {
 	return b.Build("logs", "log-group:"+group+":log-stream:"+stream)
@@ -28,6 +22,37 @@ func (b *CloudWatchBuilder) LogStream(group, stream string) string {
 // Destination constructs an ARN for a CloudWatch Logs destination.
 func (b *CloudWatchBuilder) Destination(name string) string {
 	return b.Build("logs", "destination:"+name)
+}
+
+// ScheduledQuery constructs an ARN for a CloudWatch Logs scheduled query.
+func (b *CloudWatchBuilder) ScheduledQuery(id string) string {
+	return b.Build("logs", "scheduled-query:"+id)
+}
+
+// LookupTable constructs an ARN for a CloudWatch Logs lookup table.
+func (b *CloudWatchBuilder) LookupTable(name string) string {
+	return b.Build("logs", "lookup-table:"+name)
+}
+
+// DeliverySource constructs an ARN for a CloudWatch Logs vended-logs
+// delivery source (delivery-source:<name>, the resource form the
+// PutDeliveryDestinationPolicy documentation's example policy shows).
+func (b *CloudWatchBuilder) DeliverySource(name string) string {
+	return b.Build("logs", "delivery-source:"+name)
+}
+
+// DeliveryDestination constructs an ARN for a CloudWatch Logs vended-logs
+// delivery destination (delivery-destination:<name>, the resource form the
+// PutDeliveryDestinationPolicy documentation's example policy shows).
+func (b *CloudWatchBuilder) DeliveryDestination(name string) string {
+	return b.Build("logs", "delivery-destination:"+name)
+}
+
+// Delivery constructs an ARN for a CloudWatch Logs vended-logs delivery
+// (delivery:<id>, the resource form the PutDeliveryDestinationPolicy
+// documentation's example policy shows).
+func (b *CloudWatchBuilder) Delivery(id string) string {
+	return b.Build("logs", "delivery:"+id)
 }
 
 // Alarm constructs an ARN for a CloudWatch alarm.

@@ -50,6 +50,13 @@ type responseWriter struct {
 	headerWrote bool
 }
 
+// Unwrap exposes the wrapped writer so http.ResponseController reaches
+// the underlying connection's controls (deadline overrides for
+// streaming responses) through this middleware's wrapper.
+func (w *responseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
 // WriteHeader writes the header and captures the status code for logging.
 //
 // Parameters:

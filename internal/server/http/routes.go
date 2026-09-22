@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	waf "vorpalstacks/internal/common/invokers/waf"
+	svclogs "vorpalstacks/internal/services/aws/cloudwatchlogs"
 )
 
 // registerRoutes sets up the HTTP routing table, installing the classify
@@ -36,6 +37,17 @@ func (s *Server) registerRoutes(r chi.Router) {
 			// user pools API) direct their CAPTCHA and Challenge
 			// interstitials here.
 			if r.URL.Path == waf.ChallengeEndpointPath {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// The plain-HTTP log ingestion endpoints are platform
+			// endpoints too: they are not classified AWS API calls, so
+			// classification must not hand them to the S3 fallback.
+			// Authentication is theirs (ACWL bearer tokens) or the
+			// signature middleware's (SigV4, which pins these paths to
+			// the logs service for verification).
+			if svclogs.IsIngestionEndpointPath(r.URL.Path) {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -72,6 +84,12 @@ func (s *Server) registerRoutes(r chi.Router) {
 
 	r.HandleFunc(waf.ChallengeEndpointPath, s.serveWAFTokenExchange)
 
+	if ingestionHandler := s.HTTPLogIngestionHandler(); ingestionHandler != nil {
+		for _, path := range svclogs.IngestionEndpointPaths {
+			r.Handle(path, ingestionHandler)
+		}
+	}
+
 	services, err := s.dispatcher.ListServices()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to list services: %v\n", err)
@@ -100,6 +118,12 @@ func (s *Server) registerChainRoutes(r chi.Router) {
 	// The reserved aws-waf-token exchange path precedes the gateway's
 	// catch-all so the interstitial token exchange stays reachable.
 	r.HandleFunc(waf.ChallengeEndpointPath, s.serveWAFTokenExchange)
+
+	if ingestionHandler := s.HTTPLogIngestionHandler(); ingestionHandler != nil {
+		for _, path := range svclogs.IngestionEndpointPaths {
+			r.Handle(path, ingestionHandler)
+		}
+	}
 
 	if apiGatewayRuntime := s.APIGatewayRuntimeHandler(); apiGatewayRuntime != nil {
 		r.HandleFunc("/restapis/{restApiId}/{stageName}/_user_request_/*", func(w http.ResponseWriter, req *http.Request) {

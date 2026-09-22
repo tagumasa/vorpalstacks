@@ -8,6 +8,8 @@ package lambda
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
@@ -159,6 +161,26 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 	s.containerIDs.Store(containerName, result.ID)
 
 	return result.ID, nil
+}
+
+// containerLogStreamName returns the log stream of the zip-model execution
+// environment. The container is the environment instance, and AWS binds one
+// stream to one environment instance for the environment's whole life, so
+// the stream seed is derived deterministically from the container ID: a
+// recreated container (function update, crash recovery) is a new
+// environment and mints a new stream, while the same container keeps its
+// stream across server restarts. The date prefix is the stream's first-seen
+// date in this process — AWS uses the environment creation date, which can
+// only predate it when a container survives a server restart, a lifecycle
+// AWS itself does not define.
+func (s *LambdaService) containerLogStreamName(containerID, version string) string {
+	if v, ok := s.envLogStreams.Load(containerID); ok {
+		return v.(string)
+	}
+	seed := sha256.Sum256([]byte(containerID))
+	stream := lambdaLogStreamName(time.Now().UTC(), version, hex.EncodeToString(seed[:]))
+	actual, _ := s.envLogStreams.LoadOrStore(containerID, stream)
+	return actual.(string)
 }
 
 // persistContainerAssignment records the freshly started container on the

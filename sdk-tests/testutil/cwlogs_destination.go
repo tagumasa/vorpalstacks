@@ -36,7 +36,7 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 		if resp.Destination.Arn == nil || *resp.Destination.Arn == "" {
 			return fmt.Errorf("arn is nil or empty")
 		}
-		tc.client.DeleteDestination(tc.ctx, &cloudwatchlogs.DeleteDestinationInput{
+		defer tc.client.DeleteDestination(tc.ctx, &cloudwatchlogs.DeleteDestinationInput{
 			DestinationName: aws.String(destName),
 		})
 		return nil
@@ -56,19 +56,17 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 			DestinationName: aws.String(ddName),
 		})
 
-		resp, err := tc.client.DescribeDestinations(tc.ctx, &cloudwatchlogs.DescribeDestinationsInput{
-			DestinationNamePrefix: aws.String(ddName),
-		})
+		resp, err := tc.collectAllDestinations(ddName)
 		if err != nil {
 			return fmt.Errorf("describe: %v", err)
 		}
-		if len(resp.Destinations) != 1 {
-			return fmt.Errorf("expected 1 destination, got %d", len(resp.Destinations))
+		if len(resp) != 1 {
+			return fmt.Errorf("expected 1 destination, got %d", len(resp))
 		}
-		if *resp.Destinations[0].DestinationName != ddName {
-			return fmt.Errorf("name mismatch: got %q", *resp.Destinations[0].DestinationName)
+		if *resp[0].DestinationName != ddName {
+			return fmt.Errorf("name mismatch: got %q", *resp[0].DestinationName)
 		}
-		if resp.Destinations[0].Arn == nil || *resp.Destinations[0].Arn == "" {
+		if resp[0].Arn == nil || *resp[0].Arn == "" {
 			return fmt.Errorf("ARN is empty")
 		}
 		return nil
@@ -97,16 +95,14 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 			return fmt.Errorf("put policy: %v", err)
 		}
 
-		resp, err := tc.client.DescribeDestinations(tc.ctx, &cloudwatchlogs.DescribeDestinationsInput{
-			DestinationNamePrefix: aws.String(pdpName),
-		})
+		resp, err := tc.collectAllDestinations(pdpName)
 		if err != nil {
 			return fmt.Errorf("describe: %v", err)
 		}
-		if len(resp.Destinations) == 0 {
+		if len(resp) == 0 {
 			return fmt.Errorf("destination not found")
 		}
-		if resp.Destinations[0].AccessPolicy == nil || *resp.Destinations[0].AccessPolicy != policy {
+		if resp[0].AccessPolicy == nil || *resp[0].AccessPolicy != policy {
 			return fmt.Errorf("access policy mismatch")
 		}
 		return nil
@@ -135,20 +131,18 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 			return fmt.Errorf("update put: %v", err)
 		}
 
-		resp, err := tc.client.DescribeDestinations(tc.ctx, &cloudwatchlogs.DescribeDestinationsInput{
-			DestinationNamePrefix: aws.String(udpName),
-		})
+		resp, err := tc.collectAllDestinations(udpName)
 		if err != nil {
 			return fmt.Errorf("describe: %v", err)
 		}
-		if len(resp.Destinations) == 0 {
+		if len(resp) == 0 {
 			return fmt.Errorf("destination not found")
 		}
-		if *resp.Destinations[0].RoleArn != fmt.Sprintf("arn:aws:iam::%s:role/updated-role", acct) {
-			return fmt.Errorf("roleArn not updated: got %q", *resp.Destinations[0].RoleArn)
+		if *resp[0].RoleArn != fmt.Sprintf("arn:aws:iam::%s:role/updated-role", acct) {
+			return fmt.Errorf("roleArn not updated: got %q", *resp[0].RoleArn)
 		}
-		if *resp.Destinations[0].TargetArn != fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/updated", tc.region, acct) {
-			return fmt.Errorf("targetArn not updated: got %q", *resp.Destinations[0].TargetArn)
+		if *resp[0].TargetArn != fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/updated", tc.region, acct) {
+			return fmt.Errorf("targetArn not updated: got %q", *resp[0].TargetArn)
 		}
 		return nil
 	}))
@@ -171,14 +165,12 @@ func (tc *cwlogsTestCtx) destinationTests() []TestResult {
 			return fmt.Errorf("delete: %v", err)
 		}
 
-		resp, err := tc.client.DescribeDestinations(tc.ctx, &cloudwatchlogs.DescribeDestinationsInput{
-			DestinationNamePrefix: aws.String(ddelName),
-		})
+		resp, err := tc.collectAllDestinations(ddelName)
 		if err != nil {
 			return fmt.Errorf("describe: %v", err)
 		}
-		if len(resp.Destinations) != 0 {
-			return fmt.Errorf("expected 0 destinations after delete, got %d", len(resp.Destinations))
+		if len(resp) != 0 {
+			return fmt.Errorf("expected 0 destinations after delete, got %d", len(resp))
 		}
 		return nil
 	}))

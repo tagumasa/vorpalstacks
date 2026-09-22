@@ -45,19 +45,14 @@ func TestScheduledQueryDueOncePerBoundary(t *testing.T) {
 
 // TestScheduledQueryDueWaitsForFirstBoundary pins that a query that has
 // never run waits for its first reached boundary instead of running
-// immediately: cron() and at() forms run at their first matching time,
-// and rate() runs one full interval after creation.
+// immediately: the cron() form runs at its first matching time, and
+// rate() runs one full interval after creation.
 func TestScheduledQueryDueWaitsForFirstBoundary(t *testing.T) {
 	creation := time.Date(2027, 1, 1, 12, 0, 0, 0, time.UTC)
 
 	cron := dueQuery("cron(0 6 * * ? *)", creation, time.Time{})
 	if _, due := scheduledQueryDue(cron, creation.Add(time.Minute)); due {
 		t.Error("cron query ran before its first matching minute")
-	}
-
-	at := dueQuery("at(2030-01-01T00:00:00)", creation, time.Time{})
-	if _, due := scheduledQueryDue(at, creation.Add(time.Minute)); due {
-		t.Error("future at() query ran immediately")
 	}
 
 	rate := dueQuery("rate(1 hour)", creation, time.Time{})
@@ -152,5 +147,31 @@ func TestScheduledQueryDueLateExecutionClockDoesNotSkipBoundary(t *testing.T) {
 	}
 	if want := firstBoundary.Add(time.Minute); !boundary.Equal(want) {
 		t.Fatalf("evaluated boundary = %v, want %v", boundary, want)
+	}
+}
+
+// The ExecutionStatus enum the history plane reports defines exactly
+// {Running, InvalidQuery, Complete, Failed, Timeout}: every internal
+// status must render onto a member, and a cancelled execution (StopQuery
+// can cancel one) reports Failed there — the query plane's QueryStatus
+// enum is the surface that keeps a Cancelled member.
+func TestMapExecutionStatusStaysInEnum(t *testing.T) {
+	members := map[string]bool{
+		"Running": true, "InvalidQuery": true, "Complete": true,
+		"Failed": true, "Timeout": true,
+	}
+	for _, internal := range []string{
+		logsstore.ScheduledExecutionStatusRunning,
+		logsstore.ScheduledExecutionStatusSuccess,
+		logsstore.ScheduledExecutionStatusFailed,
+		logsstore.ScheduledExecutionStatusCancelled,
+		logsstore.ScheduledExecutionStatusTimeout,
+	} {
+		if got := mapExecutionStatus(internal); !members[got] {
+			t.Fatalf("mapExecutionStatus(%q) = %q, which is not an ExecutionStatus member", internal, got)
+		}
+	}
+	if got := mapExecutionStatus(logsstore.ScheduledExecutionStatusCancelled); got != logsstore.ScheduledQueryStatusFailed {
+		t.Fatalf("a cancelled execution must report Failed on the history plane, got %q", got)
 	}
 }

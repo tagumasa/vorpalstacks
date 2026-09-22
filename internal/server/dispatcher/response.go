@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
@@ -26,6 +27,18 @@ func (d *Dispatcher) writeResponse(w http.ResponseWriter, r *http.Request, opera
 			if code := sc.GetStreamStatusCode(); code > 0 {
 				statusCode = code
 			}
+		}
+		// Event-stream responses outlive the server's absolute
+		// WriteTimeout (a Live Tail session runs to its three-hour
+		// timeout, a Kinesis subscription to its five-minute one), so
+		// the deadline Go sets at request-head time is cleared here on
+		// both planes: the HTTP/1.1 connection deadline and HTTP/2's
+		// per-stream reset timer. The stream's own bounds — the session
+		// timeout, the client's close, the service shutdown — govern
+		// its lifetime.
+		rc := http.NewResponseController(w)
+		if err := rc.SetWriteDeadline(time.Time{}); err != nil {
+			logs.Error("Failed to clear the write deadline for a streaming response", logs.Err(err))
 		}
 		w.WriteHeader(statusCode)
 		if reader := streamable.GetStream(); reader != nil {

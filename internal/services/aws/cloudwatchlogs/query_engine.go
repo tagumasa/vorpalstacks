@@ -1,74 +1,14 @@
 package cloudwatchlogs
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"sort"
-	"strconv"
-	"strings"
+	"fmt"
 	"time"
 )
 
-// queryResultRow represents a single row in the query results. columns
-// records the order in which field names were first written so that output
-// field order and "first field" selection stay deterministic.
-type queryResultRow struct {
-	fields  map[string]string
-	columns []string
-}
+// The query execution engine's core: the execution context (the
+// per-query state the pipeline reads), the command pipeline's compile
+// and apply loop, and the compile-and-run entry the operations call.
 
-// set stores a field value, appending new field names to the column order.
-func (r *queryResultRow) set(k, v string) {
-	if r.fields == nil {
-		r.fields = make(map[string]string)
-	}
-	if _, ok := r.fields[k]; !ok {
-		r.columns = append(r.columns, k)
-	}
-	r.fields[k] = v
-}
-
-// ordered returns the row's field names in insertion order. Fields written
-// directly to the map without set are appended in sorted order as a
-// fallback so the result is always deterministic.
-func (r *queryResultRow) ordered() []string {
-	out := make([]string, 0, len(r.fields))
-	seen := make(map[string]bool, len(r.fields))
-	for _, k := range r.columns {
-		if _, ok := r.fields[k]; !ok || seen[k] {
-			continue
-		}
-		seen[k] = true
-		out = append(out, k)
-	}
-	var rest []string
-	for k := range r.fields {
-		if !seen[k] {
-			rest = append(rest, k)
-		}
-	}
-	sort.Strings(rest)
-	return append(out, rest...)
-}
-
-// cloneRow deep-copies a row including its column order.
-func cloneRow(src queryResultRow) queryResultRow {
-	fields := make(map[string]string, len(src.fields))
-	for k, v := range src.fields {
-		fields[k] = v
-	}
-	columns := make([]string, len(src.columns))
-	copy(columns, src.columns)
-	return queryResultRow{fields: fields, columns: columns}
-}
-
-// queryResultField represents a field-value pair in the output.
-type queryResultField struct {
-	Field string `json:"field"`
-	Value string `json:"value"`
-}
-
-// queryStats holds statistics about the query execution.
 type queryStats struct {
 	recordsScanned int64
 	recordsMatched int64
@@ -76,12 +16,17 @@ type queryStats struct {
 }
 
 // logEventWithContext carries a log event with its group/stream context.
+// transformed marks the message as a transformed copy (the query plane's
+// read of the ingestion-time transformation output) — the transformer's
+// @transformationError marker then surfaces as the single-@ system field
+// the documented query filters on.
 type logEventWithContext struct {
 	timestamp     int64
 	message       string
 	ingestionTime int64
 	logGroup      string
 	logStream     string
+	transformed   bool
 }
 
 // sourceGroupInfo is the log group metadata SOURCE selection needs.
@@ -122,10 +67,37 @@ type execContext struct {
 	// currentBinDur is the bin duration of the stats command currently
 	// emitting, which the time-series functions scale their window by.
 	currentBinDur int64
+	// recordsMatched counts the rows the event-plane retained — the
+	// documented QueryStatistics basis ("The number of log events that
+	// matched the query string"), recorded before aggregation collapses
+	// rows or limit truncates them. Subqueries execute on child contexts,
+	// so the outer query's count is never clobbered.
+	recordsMatched int64
 
 	subqueryCache map[string][]interface{}
 	lookupCache   map[string]*parsedLookupTable
 	sourceError   error
+
+	// deadline bounds the pipeline's execution — the sixty-minute outer
+	// runtime ("Queries time out after 60 minutes of runtime") or the
+	// thirty-second inner limit ("Inner query execution is limited to
+	// 30 seconds"); zero means unbounded. timedOut marks the breach: the
+	// outer lifecycle stamps the Timeout status from it, while the inner
+	// limit surfaces as a query failure carrying deadlineMsg's wording.
+	deadline    time.Time
+	deadlineMsg string
+	timedOut    bool
+
+	// startedMs stamps the query processing's start — the fixed point
+	// now() reports ("Returns the time that the query processing was
+	// started, in epoch seconds"), so the value does not drift as a
+	// long-running pipeline evaluates. Zero means unstamped (a test
+	// context); now() then falls back to the evaluation clock.
+	startedMs int64
+
+	// subqueryDepth counts nested query executions: the outer query runs
+	// at zero and each runSubquery call executes one level deeper.
+	subqueryDepth int
 }
 
 func (ctx *execContext) now() int64 {
@@ -152,7 +124,22 @@ func (ctx *execContext) runPrecedingOnWindow(start, end int64) ([]queryResultRow
 
 // runSubquery executes a nested query over its own SOURCE selection, or the
 // enclosing query's log groups when the subquery has no SOURCE.
+// subqueryExecutionLimit is the documented inner bound: "Inner query
+// execution is limited to 30 seconds."
+const subqueryExecutionLimit = 30 * time.Second
+
+// queryDeadlineNow is the clock the deadline sites read — the seam a test
+// uses to advance an execution past its bound without waiting out the
+// sixty-minute outer runtime.
+var queryDeadlineNow = time.Now
+
 func (ctx *execContext) runSubquery(toks []token) ([]queryResultRow, error) {
+	// "Nested subqueries are not supported." — a subquery executing
+	// inside another subquery's context rejects; the filter-in nesting
+	// form is additionally rejected at compile.
+	if ctx.subqueryDepth > 0 {
+		return nil, fmt.Errorf("nested subqueries are not supported")
+	}
 	cmds, err := compilePipeline(toks)
 	if err != nil {
 		return nil, err
@@ -170,6 +157,9 @@ func (ctx *execContext) runSubquery(toks []token) ([]queryResultRow, error) {
 		subqueryCache:   ctx.subqueryCache,
 		lookupCache:     ctx.lookupCache,
 	}
+	child.deadline = queryDeadlineNow().Add(subqueryExecutionLimit)
+	child.deadlineMsg = "Inner query execution is limited to 30 seconds"
+	child.subqueryDepth = ctx.subqueryDepth + 1
 	if len(cmds) > 0 {
 		if _, ok := cmds[0].cmd.(*sourceCommand); ok {
 			// The SOURCE command refetches events into the child context.
@@ -178,15 +168,66 @@ func (ctx *execContext) runSubquery(toks []token) ([]queryResultRow, error) {
 			child.events = ctx.events
 		}
 	}
-	rows := buildRows(child.events, child.accountID)
-	for _, c := range cmds {
-		rows = c.cmd.apply(child, rows)
-		child.preceding = append(child.preceding, c.cmd)
+	rows := applyPipelineCommands(child, cmds)
+	// The thirty-second inner limit is a query failure, unlike the
+	// sixty-minute outer bound: a subquery that breached its deadline
+	// fails the enclosing query rather than appending a silently
+	// truncated row set.
+	if child.timedOut {
+		return nil, fmt.Errorf("%s", child.deadlineMsg)
 	}
 	if child.sourceError != nil {
 		return nil, child.sourceError
 	}
 	return rows, nil
+}
+
+// applyPipelineCommands builds the source rows and applies the compiled
+// commands in order — the one execution loop the outer query and every
+// subquery ride. It records the matched-records count at the boundary
+// where rows stop corresponding to source events.
+func applyPipelineCommands(ctx *execContext, cmds []compiledCommand) []queryResultRow {
+	rows := buildRows(ctx.events, ctx.accountID)
+	counted := false
+	for _, c := range cmds {
+		// A breached deadline marks the context and stops the pipeline
+		// without seeding a failure: the outer bound's Timeout status is
+		// stamped from timedOut by the lifecycle, and only the inner
+		// bound (surfaced by runSubquery) fails the query.
+		if !ctx.deadline.IsZero() && queryDeadlineNow().After(ctx.deadline) {
+			ctx.timedOut = true
+			return rows
+		}
+		name := c.cmd.name()
+		// "These values reflect the full raw results of the query"
+		// (QueryStatistics, GetQueryResults): the count is taken as the
+		// first aggregating command is about to consume the event rows,
+		// or before limit truncates them, so a million matched events
+		// aggregating to one row still report the million and a limit
+		// never shrinks the count.
+		if !counted && (aggregatesRows(name) || name == "limit") {
+			ctx.recordsMatched = int64(len(rows))
+			counted = true
+		}
+		rows = c.cmd.apply(ctx, rows)
+		ctx.preceding = append(ctx.preceding, c.cmd)
+	}
+	if !counted {
+		ctx.recordsMatched = int64(len(rows))
+	}
+	return rows
+}
+
+// aggregatesRows reports whether a command consumes event rows into an
+// aggregate shape, after which the row count no longer counts matched
+// events.
+func aggregatesRows(name string) bool {
+	switch name {
+	case "stats", "pattern", "diff", "logcompare", "relevantfields",
+		"anomaly", "join", "countFrequent", "estimate":
+		return true
+	}
+	return false
 }
 
 // compiledCommand pairs a command with its head token for validation
@@ -225,180 +266,6 @@ func compilePipeline(toks []token) ([]compiledCommand, error) {
 // offsets; without this check an unknown command would be silently ignored
 // at execution time and the query would report success over unintended
 // results.
-func validateQueryPipeline(queryString string) error {
-	toks, err := lexQuery(queryString)
-	if err != nil {
-		return err
-	}
-	cmds, err := compilePipeline(toks)
-	if err != nil {
-		return err
-	}
-	if len(cmds) == 0 {
-		return nil
-	}
-	return validateCommandOrder(cmds)
-}
-
-// validateCommandOrder enforces the documented command placement rules.
-func validateCommandOrder(cmds []compiledCommand) error {
-	lastStats := -1
-	var statsHeads []token
-	var joinHeads []token
-	patternIdx := -1
-	sortIdx := -1
-	dedupIdx := -1
-	for i, c := range cmds {
-		switch c.cmd.name() {
-		case "stats":
-			statsHeads = append(statsHeads, c.head)
-			lastStats = i
-		case "join":
-			joinHeads = append(joinHeads, c.head)
-		case "pattern":
-			if patternIdx < 0 {
-				patternIdx = i
-			}
-		case "sort":
-			sortIdx = i
-		case "dedup":
-			if dedupIdx < 0 {
-				dedupIdx = i
-			}
-		}
-	}
-	if len(statsHeads) > 10 {
-		// The error points at the first command beyond the limit.
-		return newQueryCompileError("A query can have a maximum of 10 stats commands",
-			statsHeads[10].start, statsHeads[10].end)
-	}
-	if len(joinHeads) > 1 {
-		// The error points at the second join, which is the violation.
-		return newQueryCompileError("Only one join command is supported per query",
-			joinHeads[1].start, joinHeads[1].end)
-	}
-	if patternIdx >= 0 && sortIdx >= 0 && sortIdx < patternIdx {
-		return newQueryCompileError(
-			"A query is not valid if it includes a pattern command after a sort command", cmds[patternIdx].head.start, cmds[patternIdx].head.end)
-	}
-	// sort and limit must appear after the last stats command.
-	for i, c := range cmds {
-		n := c.cmd.name()
-		if (n == "sort" || n == "limit") && lastStats >= 0 && i < lastStats {
-			return newQueryCompileError(
-				"If you use a sort or limit command, it must appear after the last stats command", c.head.start, c.head.end)
-		}
-	}
-	// Only limit may follow dedup.
-	if dedupIdx >= 0 {
-		for i := dedupIdx + 1; i < len(cmds); i++ {
-			if cmds[i].cmd.name() != "limit" {
-				return newQueryCompileError(
-					"The only query command that you can use after the dedup command is limit", cmds[i].head.start, cmds[i].head.end)
-			}
-		}
-	}
-	// SOURCE is only valid as the first command.
-	for i, c := range cmds {
-		if c.cmd.name() == "SOURCE" && i > 0 {
-			return newQueryCompileError("SOURCE is only valid as the first command of a query", c.head.start, c.head.end)
-		}
-	}
-	return nil
-}
-
-// buildRows converts raw log events into the initial row set with the
-// discoverable fields. JSON log messages contribute their top-level keys as
-// discovered fields, matching the automatic field discovery of Logs
-// Insights; nested structures are kept as canonical JSON strings.
-// maxDiscoveredJSONFields is the documented ceiling on the number of fields
-// Logs Insights extracts from a JSON log event; further fields are ignored
-// and must be extracted with parse.
-const maxDiscoveredJSONFields = 200
-
-func buildRows(events []logEventWithContext, accountID string) []queryResultRow {
-	rows := make([]queryResultRow, 0, len(events))
-	for _, evt := range events {
-		row := queryResultRow{}
-		row.set("@timestamp", formatTimestampField(evt.timestamp))
-		row.set("@message", evt.message)
-		row.set("@logStream", evt.logStream)
-		// @log identifies the event's log group as account:group-name.
-		row.set("@log", accountID+":"+evt.logGroup)
-		row.set("@ingestionTime", formatTimestampField(evt.ingestionTime))
-		// @ptr addresses the event for GetLogRecord; aggregate rows built
-		// by later commands never carry it.
-		row.set("@ptr", eventPointer(evt.logGroup, evt.logStream, evt.timestamp, evt.message))
-		discoverJSONFields(evt.message, &row)
-		rows = append(rows, row)
-	}
-	return rows
-}
-
-// eventPointer encodes the logGroup|logStream|timestamp|message pointer
-// that GetLogRecord accepts, in base64.
-func eventPointer(group, stream string, ts int64, msg string) string {
-	return base64.StdEncoding.EncodeToString([]byte(group + "|" + stream + "|" + strconv.FormatInt(ts, 10) + "|" + msg))
-}
-
-// discoverJSONFields merges the top-level keys of a JSON object message
-// into the row fields. Discoverable @-fields are never overwritten; field
-// names starting with @ are displayed with an additional @ prefix, per the
-// documented discovery behaviour.
-func discoverJSONFields(message string, row *queryResultRow) {
-	trimmed := strings.TrimSpace(message)
-	if !strings.HasPrefix(trimmed, "{") {
-		return
-	}
-	var decoded map[string]interface{}
-	if err := json.Unmarshal([]byte(trimmed), &decoded); err != nil {
-		return
-	}
-	keys := make([]string, 0, len(decoded))
-	for k := range decoded {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	discovered := 0
-	for _, k := range keys {
-		name := k
-		if strings.HasPrefix(k, "@") {
-			name = "@" + k
-		}
-		if _, exists := row.fields[name]; exists {
-			continue
-		}
-		if discovered >= maxDiscoveredJSONFields {
-			return
-		}
-		row.set(name, storeValue(decoded[k]))
-		discovered++
-	}
-}
-
-// formatTimestampField renders epoch milliseconds; numeric formatting keeps
-// the value numeric for later comparisons.
-func formatTimestampField(ms int64) string {
-	return formatNumber(float64(ms))
-}
-
-// executeQuery runs a CloudWatch Logs Insights query against the given
-// events. Commands follow the documented Logs Insights QL grammar.
-func executeQuery(queryString string, events []logEventWithContext) ([]queryResultRow, queryStats) {
-	ctx := &execContext{events: events, subqueryCache: map[string][]interface{}{}}
-	rows, _ := executeQueryContext(ctx, queryString)
-	stats := queryStats{
-		recordsScanned: int64(len(events)),
-	}
-	for _, e := range events {
-		stats.bytesScanned += int64(len(e.message))
-	}
-	stats.recordsMatched = int64(len(rows))
-	return rows, stats
-}
-
-// executeQueryContext compiles and runs the query within an execution
-// context. It returns the result rows and any compile error.
 func executeQueryContext(ctx *execContext, queryString string) ([]queryResultRow, error) {
 	toks, err := lexQuery(queryString)
 	if err != nil {
@@ -413,11 +280,7 @@ func executeQueryContext(ctx *execContext, queryString string) ([]queryResultRow
 	}
 	ctx.effectiveGroups = ctx.defaultGroups
 
-	rows := buildRows(ctx.events, ctx.accountID)
-	for _, c := range cmds {
-		rows = c.cmd.apply(ctx, rows)
-		ctx.preceding = append(ctx.preceding, c.cmd)
-	}
+	rows := applyPipelineCommands(ctx, cmds)
 	if ctx.sourceError != nil {
 		// SOURCE resolution and refetch failures fail the query rather
 		// than silently returning the default groups' rows.

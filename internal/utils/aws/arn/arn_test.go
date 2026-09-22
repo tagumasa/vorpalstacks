@@ -600,6 +600,86 @@ func TestExtractLogGroupNameFromARN(t *testing.T) {
 	}
 }
 
+func TestExtractScheduledQueryIdFromARN(t *testing.T) {
+	tests := []struct {
+		name string
+		arn  string
+		want string
+	}{
+		{
+			name: "scheduled query ARN",
+			arn:  "arn:aws:logs:us-east-1:123456789012:scheduled-query:sq-1234567890",
+			want: "sq-1234567890",
+		},
+		{
+			name: "log group ARN is not a scheduled query",
+			arn:  "arn:aws:logs:us-east-1:123456789012:log-group:my-group",
+			want: "",
+		},
+		{
+			name: "bare name is not an ARN",
+			arn:  "sq-1234567890",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ExtractScheduledQueryIdFromARN(tt.arn); got != tt.want {
+				t.Errorf("ExtractScheduledQueryIdFromARN() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExtractLookupTableNameFromARN(t *testing.T) {
+	tests := []struct {
+		name string
+		arn  string
+		want string
+	}{
+		{
+			name: "lookup table ARN",
+			arn:  "arn:aws:logs:us-east-1:123456789012:lookup-table:my_table",
+			want: "my_table",
+		},
+		{
+			name: "destination ARN is not a lookup table",
+			arn:  "arn:aws:logs:us-east-1:123456789012:destination:my-dest",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ExtractLookupTableNameFromARN(tt.arn); got != tt.want {
+				t.Errorf("ExtractLookupTableNameFromARN() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCloudWatchBuilderLogsResources(t *testing.T) {
+	b := NewARNBuilder("123456789012", "us-east-1").CloudWatch()
+	cases := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"scheduled query", b.ScheduledQuery("sq-1"), "arn:aws:logs:us-east-1:123456789012:scheduled-query:sq-1"},
+		{"lookup table", b.LookupTable("my_table"), "arn:aws:logs:us-east-1:123456789012:lookup-table:my_table"},
+		{"log group", b.LogGroup("/aws/lambda/fn"), "arn:aws:logs:us-east-1:123456789012:log-group:/aws/lambda/fn"},
+		{"destination", b.Destination("d1"), "arn:aws:logs:us-east-1:123456789012:destination:d1"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.got != tc.want {
+				t.Errorf("got %s, want %s", tc.got, tc.want)
+			}
+		})
+	}
+}
+
 func TestExtractLogStreamNameFromARN(t *testing.T) {
 	tests := []struct {
 		name string

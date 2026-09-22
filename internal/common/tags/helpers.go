@@ -3,6 +3,7 @@ package tags
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -222,7 +223,10 @@ func ToResponseWithKeyNames(tags []Tag, keyName, valueName string) []map[string]
 	return result
 }
 
-// Apply merges new tags into existing tags.
+// Apply merges new tags into existing tags, returning the merged set in
+// ascending key order: map iteration order is randomised, and callers
+// paginate and echo the stored slice — an unordered merge would make
+// marker pagination and listing output nondeterministic.
 func Apply(existing []Tag, newTags []Tag) []Tag {
 	tagMap := make(map[string]string)
 	for _, tag := range existing {
@@ -231,9 +235,14 @@ func Apply(existing []Tag, newTags []Tag) []Tag {
 	for _, tag := range newTags {
 		tagMap[tag.Key] = tag.Value
 	}
-	result := make([]Tag, 0, len(tagMap))
-	for key, value := range tagMap {
-		result = append(result, Tag{Key: key, Value: value})
+	keys := make([]string, 0, len(tagMap))
+	for key := range tagMap {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	result := make([]Tag, 0, len(keys))
+	for _, key := range keys {
+		result = append(result, Tag{Key: key, Value: tagMap[key]})
 	}
 	return result
 }

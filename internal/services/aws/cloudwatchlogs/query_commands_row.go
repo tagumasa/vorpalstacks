@@ -3,6 +3,7 @@ package cloudwatchlogs
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -57,6 +58,11 @@ func parseProjectionCommand(cmd string, args []token, head token) (command, erro
 		if fn, ok := e.(*fieldNode); ok {
 			item.isRef = true
 			item.name = fieldPathDisplay(fn)
+		} else {
+			// An unaliased expression names its column with its written
+			// form — the label the results carry when the query gives no
+			// alias, never the empty string.
+			item.name = exprText(e)
 		}
 		if p.acceptKeyword("as") {
 			alias, ok := p.next()
@@ -82,13 +88,55 @@ func (c *projectionCommand) apply(ctx *execContext, rows []queryResultRow) []que
 	out := make([]queryResultRow, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
-		projected := queryResultRow{}
+		// Projection commands resolve their items against the unprojected
+		// source row: a second fields command unions into the visible set
+		// ("If your query contains multiple fields commands and doesn't
+		// include a display command, the results display all of the fields
+		// that are specified in the fields commands") and a chained display
+		// shows its own field from the full record ("the query results show
+		// the field specified in the last occurrence of display command").
+		var base *queryResultRow
+		if row.base != nil {
+			base = row.base
+		} else {
+			full := cloneRow(row)
+			base = &full
+		}
+		// The resolution view: the unprojected source overlaid with the
+		// fields the projection chain itself created, so an item may
+		// reference both record fields and earlier projections' aliases.
+		source := cloneRow(*base)
+		for _, k := range row.ordered() {
+			source.set(k, row.fields[k])
+		}
+		if len(row.structs) > 0 {
+			if source.structs == nil {
+				source.structs = make(map[string]interface{}, len(row.structs))
+			}
+			for k, v := range row.structs {
+				source.structs[k] = v
+			}
+		}
+		var projected queryResultRow
+		if c.cmd == "fields" && row.base != nil {
+			// The union rule: previously projected columns stay visible and
+			// the new items are resolved from the unprojected source.
+			projected = cloneRow(row)
+		} else {
+			projected = queryResultRow{base: base, structs: row.structs}
+		}
 		for _, it := range c.items {
-			v := it.expr.eval(&row, ctx)
+			v := it.expr.eval(&source, ctx)
 			if v == nil && it.isRef {
 				continue // absent fields are omitted from the projection
 			}
-			projected.set(it.name, storeValue(v))
+			if isStructure(v) {
+				// A projected structure (e.g. jsonParse(...) as jm) keeps
+				// its structural view, so later dot access traverses it.
+				projected.setStruct(it.name, v)
+			} else {
+				projected.set(it.name, storeValue(v))
+			}
 		}
 		// Event rows keep their @ptr through projection so that results
 		// remain addressable with GetLogRecord.
@@ -207,21 +255,122 @@ func (c *sortCommand) apply(ctx *execContext, rows []queryResultRow) []queryResu
 	return rows
 }
 
-// compareForSort returns -1/0/1 with numeric comparison when both values are
-// numeric and string comparison otherwise.
+// compareForSort returns -1/0/1 by the sort command's documented natural
+// ordering: "All non-number values come before all number values" — a
+// number value being a value that "include[s] only numbers, not a mix of
+// numbers and other characters" (typed numerics always qualify) — with
+// number values ordered numerically (ties keeping the raw lexical order,
+// as the worked example's 0, 01, 1 shows) and non-number values compared
+// chunk-wise.
 func compareForSort(a, b interface{}) int {
-	an, aok := asNumber(a)
-	bn, bok := asNumber(b)
-	if aok && bok {
+	aNum, bNum := isNumberValue(a), isNumberValue(b)
+	if aNum != bNum {
+		if aNum {
+			return 1 // numbers sort after every non-number value
+		}
+		return -1
+	}
+	as, bs := asString(a), asString(b)
+	if aNum {
+		if isDigitRun(as) && isDigitRun(bs) {
+			return compareDigitRuns(as, bs)
+		}
+		an, _ := asNumber(a)
+		bn, _ := asNumber(b)
 		switch {
 		case an < bn:
 			return -1
 		case an > bn:
 			return 1
 		}
-		return 0
+		return strings.Compare(as, bs)
 	}
-	return strings.Compare(asString(a), asString(b))
+	return compareNaturalChunks(as, bs)
+}
+
+// isNumberValue reports whether a value is a number value for the sort
+// ordering: a typed numeric, or a string composed solely of digits.
+func isNumberValue(v interface{}) bool {
+	switch x := v.(type) {
+	case int, int64, float64:
+		return true
+	case string:
+		return isDigitRun(x)
+	}
+	return false
+}
+
+func isDigitRun(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// compareDigitRuns orders numeric text by magnitude without parsing:
+// trimmed length first, then the trimmed digits, then the raw string —
+// the doc's "length first and then by their numerical value", with the
+// worked example's leading-zero tie (0, 01, 1) broken lexically.
+func compareDigitRuns(a, b string) int {
+	ta := strings.TrimLeft(a, "0")
+	tb := strings.TrimLeft(b, "0")
+	if len(ta) != len(tb) {
+		if len(ta) < len(tb) {
+			return -1
+		}
+		return 1
+	}
+	if c := strings.Compare(ta, tb); c != 0 {
+		return c
+	}
+	return strings.Compare(a, b)
+}
+
+// compareNaturalChunks orders non-number values chunk-wise: "the algorithm
+// groups consecutive numeric characters and consecutive alphabetic
+// characters into separate chunks for comparison. It orders non-numeric
+// portions by their Unicode values, and it orders numeric portions by
+// their length first and then by their numerical value." A numeric chunk
+// meeting a non-numeric chunk rides the Unicode order of their characters
+// (the worked example's 2345_ before @).
+func compareNaturalChunks(a, b string) int {
+	ia, ib := 0, 0
+	for ia < len(a) && ib < len(b) {
+		ea := naturalChunkEnd(a, ia)
+		eb := naturalChunkEnd(b, ib)
+		ca, cb := a[ia:ea], b[ib:eb]
+		if isDigitRun(ca) && isDigitRun(cb) {
+			if c := compareDigitRuns(ca, cb); c != 0 {
+				return c
+			}
+		} else if c := strings.Compare(ca, cb); c != 0 {
+			return c
+		}
+		ia, ib = ea, eb
+	}
+	switch {
+	case ia >= len(a) && ib >= len(b):
+		return 0
+	case ia >= len(a):
+		return -1
+	}
+	return 1
+}
+
+// naturalChunkEnd returns the end of the chunk starting at i: a run of
+// digits or a run of non-digits.
+func naturalChunkEnd(s string, i int) int {
+	digits := isDigit(s[i])
+	j := i + 1
+	for j < len(s) && isDigit(s[j]) == digits {
+		j++
+	}
+	return j
 }
 
 // --- dedup ---
@@ -236,8 +385,10 @@ func (c *dedupCommand) name() string { return "dedup" }
 func parseDedupCommand(args []token, head token) (command, error) {
 	c := &dedupCommand{headTk: head}
 	p := &exprParser{toks: args}
+	// "You can use dedup with one or more fields" — the field-less form
+	// is not part of the command's grammar and rejects at compile.
 	if len(args) == 0 {
-		return c, nil
+		return nil, newQueryCompileError("Syntax error: dedup requires one or more fields", head.start, head.end)
 	}
 	for {
 		e, err := p.parseOr()
@@ -283,12 +434,13 @@ func (c *dedupCommand) apply(ctx *execContext, rows []queryResultRow) []queryRes
 			continue
 		}
 		// Rows with a missing value for any dedup field are retained; null
-		// values are not considered duplicates.
+		// values are not considered duplicates. An empty string is a value,
+		// not null, so it participates in the key like any other value.
 		missing := false
 		var key strings.Builder
 		for _, f := range c.fields {
 			v := f.eval(&row, ctx)
-			if v == nil || asString(v) == "" {
+			if v == nil {
 				missing = true
 				break
 			}
@@ -332,7 +484,8 @@ func rowSignature(row queryResultRow) string {
 // --- filldown ---
 
 type filldownCommand struct {
-	patterns []string // empty means all fields
+	patterns []string         // empty means all fields
+	globs    []*regexp.Regexp // compiled at parse time, parallel to patterns
 	headTk   token
 }
 
@@ -345,6 +498,7 @@ func parseFilldownCommand(args []token, head token) (command, error) {
 			return nil, newQueryCompileError(fmt.Sprintf("Syntax error at '%s'", t.raw), t.start, t.end)
 		}
 		c.patterns = append(c.patterns, t.text)
+		c.globs = append(c.globs, compileGlob(t.text))
 	}
 	return c, nil
 }
@@ -353,8 +507,8 @@ func (c *filldownCommand) matches(field string) bool {
 	if len(c.patterns) == 0 {
 		return true
 	}
-	for _, p := range c.patterns {
-		if globMatch(p, field) || p == field {
+	for i, p := range c.patterns {
+		if c.globs[i] != nil && c.globs[i].MatchString(field) || p == field {
 			return true
 		}
 	}

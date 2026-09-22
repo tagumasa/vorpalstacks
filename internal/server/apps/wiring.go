@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"vorpalstacks/internal/core/logs"
+	svclogs "vorpalstacks/internal/services/aws/cloudwatchlogs"
 	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
 	"vorpalstacks/internal/services/aws/dynamodb"
 	stsstore "vorpalstacks/internal/store/aws/sts"
@@ -40,6 +41,19 @@ func (a *cognitoCredentialAdapter) IssueSession(roleArn, roleSessionName string,
 func (a *App) wireCrossServiceDeps() error {
 	st := a.state
 	eb := a.server.EventBus()
+
+	// The plain-HTTP log ingestion endpoints write through the logs
+	// service's single ingestion seam and authenticate ACWL bearer tokens
+	// through IAM (an ACWL token is a service-specific credential of
+	// logs.amazonaws.com). Registration rides no event bus: without IAM
+	// the endpoints stay up and fail every bearer token closed.
+	if st.logsService != nil {
+		var authenticator svclogs.IngestionTokenAuthenticator
+		if st.iamService != nil {
+			authenticator = st.iamService
+		}
+		a.server.RegisterHTTPLogIngestionHandler(svclogs.NewHTTPIngestionHandler(st.logsService, authenticator))
+	}
 
 	if eb == nil {
 		return nil

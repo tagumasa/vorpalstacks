@@ -19,16 +19,47 @@ func TestNewInvocationRecord(t *testing.T) {
 	if rec.LogGroupName != "/aws/lambda/fn-name" {
 		t.Fatalf("LogGroupName = %q, want /aws/lambda/fn-name", rec.LogGroupName)
 	}
-	wantPrefix := fmt.Sprintf("%04d/%02d/%02d/[$LATEST]", now.Year(), now.Month(), now.Day())
-	if !strings.HasPrefix(rec.LogStreamName, wantPrefix) {
-		t.Fatalf("LogStreamName = %q, want prefix %q", rec.LogStreamName, wantPrefix)
-	}
-	if !strings.HasSuffix(rec.LogStreamName, rec.RequestID[:8]) {
-		t.Fatalf("LogStreamName = %q, want it to end with the request id head %q", rec.LogStreamName, rec.RequestID[:8])
+	// The log stream belongs to the execution environment, not to the
+	// request: the record leaves it empty, and the execution strategy
+	// assigns the environment's stream — one stream per environment
+	// instance, shared by every invocation it runs.
+	if rec.LogStreamName != "" {
+		t.Fatalf("LogStreamName must stay empty until the execution strategy assigns the environment's stream, got %q", rec.LogStreamName)
 	}
 	remaining := rec.DeadlineUnixMS() - now.UnixMilli()
 	if remaining <= 0 || remaining > 10_000 {
 		t.Fatalf("deadline must be ~10s away, got %dms", remaining)
+	}
+}
+
+// The zip-model environment's stream is bound to its container: one
+// container keeps one stream across every invocation and across service
+// instances, a recreated container is a new environment with a new stream,
+// and the name follows the platform's stream convention with the function
+// version rendered in place.
+func TestContainerLogStreamName(t *testing.T) {
+	s := &LambdaService{}
+	now := time.Now().UTC()
+
+	a1 := s.containerLogStreamName("container-a", "$LATEST")
+	a2 := s.containerLogStreamName("container-a", "$LATEST")
+	if a1 == "" || a1 != a2 {
+		t.Fatalf("one environment must keep one stream, got %q then %q", a1, a2)
+	}
+	datePrefix := fmt.Sprintf("%04d/%02d/%02d", now.Year(), now.Month(), now.Day())
+	if !strings.HasPrefix(a1, datePrefix+"/[$LATEST]") {
+		t.Fatalf("stream %q must follow the YYYY/MM/DD/[version] convention with prefix %q", a1, datePrefix+"/[$LATEST]")
+	}
+	if b := s.containerLogStreamName("container-b", "$LATEST"); b == a1 {
+		t.Fatalf("distinct environments must not share a stream, both %q", a1)
+	}
+	if v := s.containerLogStreamName("container-c", "7"); !strings.HasPrefix(v, datePrefix+"/[7]") {
+		t.Fatalf("stream %q must carry its function version", v)
+	}
+	// A fresh service instance derives the same stream for the same
+	// container — the binding must not be a property of this process.
+	if s2 := (&LambdaService{}).containerLogStreamName("container-a", "$LATEST"); s2 != a1 {
+		t.Fatalf("the same container must keep its stream across service instances, got %q then %q", a1, s2)
 	}
 }
 

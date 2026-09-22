@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 	"vorpalstacks/internal/utils/aws/arn"
+	"vorpalstacks/pkg/filterpattern"
 )
 
 // PutSubscriptionFilter creates or updates a subscription filter for the specified CloudWatch Logs log group.
@@ -32,12 +31,14 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 		LogGroupName:           logGroupName,
 		FilterName:             filterName,
 		FilterPattern:          filterPattern,
+		FilterPatternSet:       request.HasParamLowerFirst(req.Parameters, "FilterPattern"),
 		DestinationArn:         destinationArn,
 		RoleArn:                roleArn,
 		Distribution:           distribution,
 		ApplyOnTransformedLogs: request.GetBoolParam(req.Parameters, "ApplyOnTransformedLogs"),
 		FieldSelectionCriteria: fieldSelectionCriteria,
 		EmitSystemFields:       request.GetStringList(req.Parameters, "EmitSystemFields"),
+		Region:                 reqCtx.GetRegion(),
 	}); err != nil {
 		return nil, err
 	}
@@ -47,15 +48,20 @@ func (s *LogsService) PutSubscriptionFilter(ctx context.Context, reqCtx *request
 
 // PutSubscriptionFilterInput holds parameters for PutSubscriptionFilter.
 type PutSubscriptionFilterInput struct {
-	LogGroupName           string
-	FilterName             string
-	FilterPattern          string
+	LogGroupName  string
+	FilterName    string
+	FilterPattern string
+	// FilterPatternSet is the wire-presence flag for the required
+	// filterPattern member, whose shape allows the empty string: a present
+	// empty pattern matches every event, an absent one rejects.
+	FilterPatternSet       bool
 	DestinationArn         string
 	RoleArn                string
 	Distribution           string
 	ApplyOnTransformedLogs bool
 	FieldSelectionCriteria string
 	EmitSystemFields       []string
+	Region                 string
 }
 
 // putSubscriptionFilterCore validates input and creates or updates a
@@ -68,30 +74,46 @@ func (s *LogsService) putSubscriptionFilterCore(ctx context.Context, store *logs
 		return err
 	}
 	if input.DestinationArn == "" {
-		return ErrMissingParameter
+		return errRequiredMember("destinationArn")
+	}
+	// filterPattern is a required member whose shape allows the empty
+	// string, so presence — not value — is the requiredness test.
+	if !input.FilterPatternSet {
+		return errRequiredMember("filterPattern")
 	}
 	if err := validateFilterPattern(input.FilterPattern); err != nil {
 		return err
 	}
 
-	if !arn.IsLambdaARN(input.DestinationArn) && !arn.IsKinesisARN(input.DestinationArn) &&
-		!isFirehoseARN(input.DestinationArn) {
+	// The accepted forms are the destinationArn member documentation's
+	// list: a Kinesis stream, a Lambda function, or a CloudWatch Logs
+	// destination (the logical-destination ARN the platform's own
+	// PutDestination mints). Firehose is a documented AWS form but the
+	// platform Firehose service does not exist yet, so its ARNs are
+	// rejected here rather than accepted into a filter that would discard
+	// every matched batch at delivery.
+	switch {
+	case arn.IsLambdaARN(input.DestinationArn), arn.IsKinesisARN(input.DestinationArn), isCloudWatchLogsDestinationARN(input.DestinationArn):
+	case isFirehoseARN(input.DestinationArn):
 		return NewLogsError("InvalidParameterException",
-			fmt.Sprintf("Invalid destinationArn: %s. Must be a Lambda, Kinesis, or Firehose ARN", input.DestinationArn), 400)
+			fmt.Sprintf("Invalid destinationArn: %s. Firehose delivery streams are not supported until the platform Firehose service exists", input.DestinationArn), 400)
+	default:
+		return NewLogsError("InvalidParameterException",
+			fmt.Sprintf("Invalid destinationArn: %s. Must be a Lambda, Kinesis, or CloudWatch Logs destination ARN", input.DestinationArn), 400)
 	}
 
 	if input.RoleArn != "" {
-		if s.bus == nil {
+		if s.eventBus() == nil {
 			return NewLogsError("InvalidParameterException",
 				"RoleArn validation is not available (event bus not configured)", 400)
 		}
-		rr := s.bus.RoleResolver()
+		rr := s.eventBus().RoleResolver()
 		if rr == nil {
 			return NewLogsError("InvalidParameterException",
 				"RoleArn validation is not available (role resolver not configured)", 400)
 		}
 		if err := rr.ValidateRole(ctx, input.RoleArn); err != nil {
-			return awserrors.NewAWSError("InvalidParameterException", fmt.Sprintf("Invalid role ARN: %s", input.RoleArn), 400)
+			return NewLogsError("InvalidParameterException", fmt.Sprintf("Invalid role ARN: %s", input.RoleArn), 400)
 		}
 	}
 
@@ -108,7 +130,22 @@ func (s *LogsService) putSubscriptionFilterCore(ctx context.Context, store *logs
 		return mapStoreError(err)
 	}
 
+	// The regex-pattern census spans both filter families (see
+	// refuseRegexPatternQuotaExceeded); the filter being replaced keeps
+	// its slot.
+	if filterpattern.PatternContainsRegex(input.FilterPattern) {
+		if err := refuseRegexPatternQuotaExceeded(store, input.LogGroupName, "", input.FilterName); err != nil {
+			return err
+		}
+	}
+
 	if err := validateFieldSelectionCriteria(input.FieldSelectionCriteria); err != nil {
+		return err
+	}
+	if err := validateFieldSelectionCriteriaSyntax(input.FieldSelectionCriteria); err != nil {
+		return err
+	}
+	if err := validateEmitSystemFields(input.EmitSystemFields); err != nil {
 		return err
 	}
 
@@ -124,9 +161,14 @@ func (s *LogsService) putSubscriptionFilterCore(ctx context.Context, store *logs
 		EmitSystemFields:       input.EmitSystemFields,
 	}
 
-	if err := store.PutSubscriptionFilterWithLimitCheck(filter, 2); err != nil {
+	if err := store.PutSubscriptionFilterWithLimitCheck(filter, logsstore.MaxSubscriptionFiltersPerLogGroup); err != nil {
 		return mapStoreError(err)
 	}
+
+	// The reachability probe a stored filter triggers: the documented
+	// CONTROL_MESSAGE record the destination receives "mainly for
+	// checking if the destination is reachable".
+	s.emitControlMessage(input.Region, input.DestinationArn, input.LogGroupName, input.FilterName, distribution)
 	return nil
 }
 
@@ -164,9 +206,16 @@ func (s *LogsService) describeSubscriptionFiltersCore(store *logsstore.Store, in
 		return nil, "", err
 	}
 
-	limit := input.Limit
-	if limit <= 0 {
-		limit = 50
+	limit, err := validateListLimit(input.Limit, logsstore.DefaultDescribeLimit, logsstore.MaxDescribeLimit)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// The operation declares ResourceNotFoundException: a listing against
+	// a group that does not exist fails rather than serving an empty
+	// page (the sibling stream listing carries the same check).
+	if _, err := store.GetLogGroup(input.LogGroupName); err != nil {
+		return nil, "", mapStoreError(err)
 	}
 
 	filters, err := store.ListSubscriptionFilters(input.LogGroupName, input.FilterNamePrefix)
@@ -174,9 +223,16 @@ func (s *LogsService) describeSubscriptionFiltersCore(store *logsstore.Store, in
 		return nil, "", mapStoreError(err)
 	}
 
-	result := pagination.PaginateSlice(filters, input.NextToken, int(limit), func(f *logsstore.SubscriptionFilter) string {
+	// The listing pages through the scoped token vocabulary: the group
+	// and prefix digest into the scope, so a group-A token replayed
+	// against group B rejects instead of repositioning its walk.
+	scope := listingScope("subscriptionfilters", input.LogGroupName, input.FilterNamePrefix)
+	result, err := paginateScopedListing(scope, input.NextToken, filters, int(limit), func(f *logsstore.SubscriptionFilter) string {
 		return f.FilterName
 	})
+	if err != nil {
+		return nil, "", err
+	}
 	return result.Items, result.NextMarker, nil
 }
 
@@ -199,39 +255,15 @@ func (s *LogsService) DeleteSubscriptionFilter(ctx context.Context, reqCtx *requ
 
 // DescribeSubscriptionFilters returns a list of subscription filters for the specified CloudWatch Logs log group.
 func (s *LogsService) DescribeSubscriptionFilters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit, err := validateListLimit(int32(request.GetIntParam(req.Parameters, "Limit")), 50, 50)
-	if err != nil {
-		return nil, err
-	}
-
-	store, err := s.getLogsStoreByRegion(reqCtx.GetRegion())
-	if err != nil {
-		return nil, err
-	}
-
-	items, nextMarker, err := s.describeSubscriptionFiltersCore(store, &DescribeSubscriptionFiltersInput{
-		LogGroupName:     request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
-		FilterNamePrefix: request.GetParamLowerFirst(req.Parameters, "FilterNamePrefix"),
-		NextToken:        request.GetParamLowerFirst(req.Parameters, "NextToken"),
-		Limit:            limit,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	subscriptionFilters := make([]map[string]interface{}, len(items))
-	for i, f := range items {
-		subscriptionFilters[i] = formatSubscriptionFilter(f)
-	}
-
-	resp := map[string]interface{}{
-		"subscriptionFilters": subscriptionFilters,
-	}
-	if nextMarker != "" {
-		resp["nextToken"] = nextMarker
-	}
-
-	return resp, nil
+	return describeStoreFamilyHandler(s, reqCtx, req, "subscriptionFilters",
+		func(store *logsstore.Store, nextToken string, limit int32) ([]*logsstore.SubscriptionFilter, string, error) {
+			return s.describeSubscriptionFiltersCore(store, &DescribeSubscriptionFiltersInput{
+				LogGroupName:     request.GetParamLowerFirst(req.Parameters, "LogGroupName"),
+				FilterNamePrefix: request.GetParamLowerFirst(req.Parameters, "FilterNamePrefix"),
+				NextToken:        nextToken,
+				Limit:            limit,
+			})
+		}, formatSubscriptionFilter)
 }
 
 func formatSubscriptionFilter(f *logsstore.SubscriptionFilter) map[string]interface{} {

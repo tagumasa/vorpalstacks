@@ -531,6 +531,24 @@ func (a *kmsBusAdapter) SymmetricEncryptionKeyExists(ctx context.Context, keyID 
 	return key.KeySpec == kmsstore.KeySpecSymmetricDefault && key.KeyUsage == kmsstore.KeyUsageEncryptDecrypt
 }
 
+// SymmetricEncryptionKeyUsable reports whether the key exists, is enabled,
+// and is a symmetric encryption key — the class and state consumers
+// validate at association time when the operation documents an
+// InvalidParameterException for a nonexistent, disabled or asymmetric key
+// (CloudWatch Logs log-group associations).
+func (a *kmsBusAdapter) SymmetricEncryptionKeyUsable(ctx context.Context, keyID string) bool {
+	stores, err := a.GetStoreForRegion(a.region)
+	if err != nil {
+		return false
+	}
+	key, err := stores.keys.Get(a.resolveCanonicalKeyID(keyID))
+	if err != nil {
+		return false
+	}
+	return key.Enabled &&
+		key.KeySpec == kmsstore.KeySpecSymmetricDefault && key.KeyUsage == kmsstore.KeyUsageEncryptDecrypt
+}
+
 // KMSBusInvoker returns an invokers.KMSInvoker backed by this service.
 func (s *KMSService) KMSBusInvoker() invokers.KMSInvoker {
 	return &kmsBusAdapter{s}

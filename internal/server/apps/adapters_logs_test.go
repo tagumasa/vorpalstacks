@@ -3,6 +3,7 @@ package apps
 import (
 	"context"
 	"testing"
+	"time"
 
 	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/storage"
@@ -23,7 +24,9 @@ func newLogsInvokerTestService(t *testing.T) *svclogs.LogsService {
 // TestLogsInvokerWritesVisibleToServingStore pins read-your-writes between
 // the LogsInvoker adapter and the store instance that serves CloudWatch Logs
 // API reads: the adapter resolves the LogsService-owned store, so writes are
-// immediately visible through the API read plane.
+// immediately visible through the API read plane. The adapter writes through
+// the service's ingestion seam, so the entries must carry valid (current)
+// timestamps like any PutLogEvents write.
 func TestLogsInvokerWritesVisibleToServingStore(t *testing.T) {
 	svc := newLogsInvokerTestService(t)
 	adapter := &logsInvokerAdapter{provider: svc}
@@ -34,9 +37,10 @@ func TestLogsInvokerWritesVisibleToServingStore(t *testing.T) {
 	if err := adapter.EnsureLogStream(ctx, "us-east-1", "group", "stream"); err != nil {
 		t.Fatalf("EnsureLogStream: %v", err)
 	}
+	now := time.Now().UnixMilli()
 	if err := adapter.PutLogEvents(ctx, "us-east-1", "group", "stream", []invokers.LogsLogEntry{
-		{Timestamp: 1000, Message: "first"},
-		{Timestamp: 2000, Message: "second"},
+		{Timestamp: now, Message: "first"},
+		{Timestamp: now + 1, Message: "second"},
 	}); err != nil {
 		t.Fatalf("PutLogEvents: %v", err)
 	}
@@ -54,6 +58,42 @@ func TestLogsInvokerWritesVisibleToServingStore(t *testing.T) {
 	}
 	if events[0].Message != "first" || events[1].Message != "second" {
 		t.Fatalf("unexpected event order: %q then %q", events[0].Message, events[1].Message)
+	}
+}
+
+// TestLogsInvokerPutLogEventsRejectsStaleTimestamps pins that invoker writes
+// no longer bypass the ingestion seam's validation: a batch whose timestamps
+// fall outside the PutLogEvents age window reports through the rejection
+// path and writes nothing (previously the adapter wrote store records
+// directly, unvalidated).
+func TestLogsInvokerPutLogEventsRejectsStaleTimestamps(t *testing.T) {
+	svc := newLogsInvokerTestService(t)
+	adapter := &logsInvokerAdapter{provider: svc}
+	ctx := context.Background()
+	if err := adapter.EnsureLogGroup(ctx, "us-east-1", "group", "000000000000"); err != nil {
+		t.Fatalf("EnsureLogGroup: %v", err)
+	}
+	if err := adapter.EnsureLogStream(ctx, "us-east-1", "group", "stream"); err != nil {
+		t.Fatalf("EnsureLogStream: %v", err)
+	}
+
+	stale := time.Now().Add(-30 * 24 * time.Hour).UnixMilli()
+	if err := adapter.PutLogEvents(ctx, "us-east-1", "group", "stream", []invokers.LogsLogEntry{
+		{Timestamp: stale, Message: "too old"},
+	}); err != nil {
+		t.Fatalf("stale batch reports through rejectedLogEventsInfo, not an error: %v", err)
+	}
+
+	serving, err := svc.GetStoreForRegion("us-east-1")
+	if err != nil {
+		t.Fatalf("serving store: %v", err)
+	}
+	events, _, _, err := serving.GetLogEvents("group", "stream", 0, 0, 0, true, "")
+	if err != nil {
+		t.Fatalf("GetLogEvents: %v", err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("stale invoker batch must not be written, got %d events", len(events))
 	}
 }
 

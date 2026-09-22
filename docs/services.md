@@ -1,6 +1,6 @@
 # Implemented Services
 
-**Last Updated**: 2026-09-17
+**Last Updated**: 2026-09-22
 **Total**: 36 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
 **SDK Tests**: over 3,000 passing (Go SDK, cross-service integration, and WebSocket suites; exact counts live in `sdk-tests/README.md`)
 
@@ -22,7 +22,7 @@
 |---------|----------|-------|
 | ACM | Broad | No ACME protocol |
 | API Gateway | Broad | No client certificates, documentation parts, GetSdk, VpcLink, or domain name access associations |
-| CloudWatch Logs | Selective | No Logs Insights queries or export |
+| CloudWatch Logs | Selective | No anomaly detection; HTTP ingestion without OTLP protobuf encoding; subscription filters without Firehose delivery-stream destinations |
 | CloudWatch Metrics | Broad | No metric streams or anomaly-detection evaluation |
 | Cognito Identity | Selective | Identity pools only; no external-IdP role-mapping claims |
 | Cognito IDP | Selective | No external IdP; no Firehose log-delivery export |
@@ -118,6 +118,28 @@ Platform behaviour detail and restrictions, including where AWS leaves behaviour
 - **CloudTrail — organization delegated administration**: both delegated-admin operations answer OrganizationsNotInUseException — accounts on this platform never belong to an organization, the state the error documents.
 
 - **CloudTrail Data — PutAuditEvents**: the channel ingestion endpoint, routed under the CloudTrail enablement flag; the service signs as cloudtraildataservice, its SDK signing name. channelArn accepts the channel ARN or its ID suffix. Entries are validated individually — base64-SHA256 checksum and JSON record parse — with failures reported per entry through the documented errorCode vocabulary; duplicate entry IDs refuse the request. A destination store with ingestion stopped accepts nothing (InvalidRecipient per entry). externalId is accepted but has nothing to match: platform channel resource policies carry no external-ID condition.
+
+- **CloudWatch Logs — HTTP log ingestion**: the plain-HTTP ingestion endpoints write through the same seam as PutLogEvents, so transformer and filter evaluation applies to them as well. SigV4 authentication is verified by the platform's signature middleware only when signature verification is enabled; the region comes from the `logs.<region>` host form, defaulting to the platform region. The OTLP protobuf encoding rejects rather than accepting and dropping, because serving it would require vendoring the OpenTelemetry proto definitions. The HLC entity association parameters are accepted and ignored; the Explore related-telemetry surface is not carried.
+
+- **CloudWatch Logs — Live Tail**: the tail carries no replay — events ingested before the session opened never stream — and each stream's scan advances by event timestamp, so an event ingested into an already-passed timestamp bucket does not surface; no source documents Live Tail's treatment of backdated ingests.
+
+- **CloudWatch Logs — storage tier**: the account-level storage tier policy persists through Put/Get with no observable effect — events read identically under either tier; the never-set account answers the getter's ResourceNotFoundException.
+
+- **CloudWatch Logs — ListLogGroupsForQuery**: the listing serves the group set a query actually analysed; a SOURCE command replaces the persisted list with the resolved set at execution.
+
+- **CloudWatch Logs — ListAggregateLogGroupSummaries**: every group passing the filters aggregates into one summary bucket; no log group carries a data source association, so a dataSources filter matches nothing and the two groupBy values produce the same single bucket.
+
+- **CloudWatch Logs — vended-logs delivery**: a delivery source is a CloudWatch Logs log group; a resource ARN of any other service rejects at PutDeliverySource. The CloudWatch Logs and S3 destination types deliver; the Firehose and X-Ray types reject at Put until their services exist, and the parquet output format rejects as an adjudicated scope exclusion (the columnar writer the platform's S3 inventory reports already use is not carried into the delivery family). Delivery persists its cursor, so it is at-least-once across restarts.
+
+- **CloudWatch Logs — excluded families**: anomaly detection is excluded; its pattern and anomaly semantics are AWS machine-learning internals with no documented behavioural contract. Subscription-filter destinations exclude Kinesis Data Firehose delivery streams because the platform Firehose service is not implemented; a Firehose destinationArn rejects at PutSubscriptionFilter with InvalidParameterException. The OpenSearch integration is defined against OpenSearch Service domains and the S3 table integration requires S3 Tables; the platform implements neither service. Syslog ingestion is excluded because it arrives through VPC endpoints, which the platform does not provide.
+
+- **CloudWatch Logs — policy application**: the account-policy families (data protection, subscription filter, field index, metric extraction) and per-group data protection policies round-trip through their CRUD without being applied at ingestion or query time. Group-level subscription filters and metric filters are applied; the transformer and field index policies are the applied exceptions.
+
+- **CloudWatch Logs — field indexes**: the account-level FIELD_INDEX_POLICY is applied; a group-level policy overrides the account policy whose LogGroupNamePrefix or account-wide scope selects the group, and deleting it falls back to the account-level one at once. DescribeFieldIndexes derives over the same event scan the query plane reads (the transformed form where one exists), carrying the DEFAULT category, the effective policy's CUSTOM fields and the INACTIVE trail of replaced or deleted group-level fields. The AUTO category is selectable and empty — the automatic query-pattern selection it describes has no platform substrate — and the DataSourceName/DataSourceType selection criteria reject at PutAccountPolicy because the platform carries no vended-logs data sources.
+
+- **CloudWatch Logs — log fields**: GetLogFields serves each discovered field's logFieldName and leaves the optional logFieldType unset; its DataType member is an open string in the model and no AWS reference page documents a value vocabulary or example for it.
+
+- **CloudWatch Logs — log transformer**: the documented processor families and built-in vended-format parsers are implemented; parseToOCSF rejects at Put because the AWS-to-OCSF field mapping it applies is published in neither the AWS documentation nor the service model. The effective transformer is the group-level record, else the TRANSFORMER_POLICY account policy whose LogGroupNamePrefix is the group's longest matching prefix. Original messages stay on the GetLogEvents/FilterLogEvents surface, while Insights queries and metric or subscription filters with applyOnTransformedLogs read and deliver the transformed records.
 
 - **Cognito IDP — user-pool domains**: the four domain operations are implemented; domain entries resolve to the platform endpoint suffix (`<domain>.auth.<cognito_suffix>` with the region substituted) rather than AWS-hosted CloudFront domains, which cannot exist in an edge/on-premises deployment.
 

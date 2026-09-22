@@ -12,18 +12,20 @@ func LogGroupToProto(lg *LogGroup) *pb.LogGroup {
 		return nil
 	}
 	return &pb.LogGroup{
-		Name:                      lg.Name,
-		Arn:                       lg.ARN,
-		Region:                    lg.Region,
-		AccountId:                 lg.AccountID,
-		CreatedAt:                 lg.CreatedAt.UnixMilli(),
-		RetentionInDays:           lg.RetentionInDays,
-		MetricFilterCount:         lg.MetricFilterCount,
-		StoredBytes:               lg.StoredBytes,
-		Tags:                      lg.Tags,
-		LogGroupClass:             lg.LogGroupClass,
-		KmsKeyId:                  lg.KmsKeyId,
-		DeletionProtectionEnabled: lg.DeletionProtectionEnabled,
+		Name:                             lg.Name,
+		Arn:                              lg.ARN,
+		Region:                           lg.Region,
+		AccountId:                        lg.AccountID,
+		CreatedAt:                        lg.CreatedAt.UnixMilli(),
+		RetentionInDays:                  lg.RetentionInDays,
+		MetricFilterCount:                lg.MetricFilterCount,
+		StoredBytes:                      lg.StoredBytes,
+		Tags:                             lg.Tags,
+		LogGroupClass:                    lg.LogGroupClass,
+		KmsKeyId:                         lg.KmsKeyId,
+		DeletionProtectionEnabled:        lg.DeletionProtectionEnabled,
+		DataProtectionStatus:             lg.DataProtectionStatus,
+		BearerTokenAuthenticationEnabled: lg.BearerTokenAuthenticationEnabled,
 	}
 }
 
@@ -33,18 +35,20 @@ func ProtoToLogGroup(p *pb.LogGroup) *LogGroup {
 		return nil
 	}
 	return &LogGroup{
-		Name:                      p.Name,
-		ARN:                       p.Arn,
-		Region:                    p.Region,
-		AccountID:                 p.AccountId,
-		CreatedAt:                 time.UnixMilli(p.CreatedAt),
-		RetentionInDays:           p.RetentionInDays,
-		MetricFilterCount:         p.MetricFilterCount,
-		StoredBytes:               p.StoredBytes,
-		Tags:                      p.Tags,
-		LogGroupClass:             p.LogGroupClass,
-		KmsKeyId:                  p.KmsKeyId,
-		DeletionProtectionEnabled: p.DeletionProtectionEnabled,
+		Name:                             p.Name,
+		ARN:                              p.Arn,
+		Region:                           p.Region,
+		AccountID:                        p.AccountId,
+		CreatedAt:                        time.UnixMilli(p.CreatedAt),
+		RetentionInDays:                  p.RetentionInDays,
+		MetricFilterCount:                p.MetricFilterCount,
+		StoredBytes:                      p.StoredBytes,
+		Tags:                             p.Tags,
+		LogGroupClass:                    p.LogGroupClass,
+		KmsKeyId:                         p.KmsKeyId,
+		DeletionProtectionEnabled:        p.DeletionProtectionEnabled,
+		DataProtectionStatus:             p.DataProtectionStatus,
+		BearerTokenAuthenticationEnabled: p.BearerTokenAuthenticationEnabled,
 	}
 }
 
@@ -88,13 +92,15 @@ func ChunkMetaToProto(cm *ChunkMeta) *pb.ChunkMeta {
 		return nil
 	}
 	return &pb.ChunkMeta{
-		ChunkId:    cm.ChunkID,
-		LogGroup:   cm.LogGroup,
-		LogStream:  cm.LogStream,
-		MinTs:      cm.MinTs,
-		MaxTs:      cm.MaxTs,
-		EntryCount: int32(cm.EntryCount),
-		ChunkPath:  cm.ChunkPath,
+		ChunkId:        cm.ChunkID,
+		LogGroupName:   cm.LogGroupName,
+		LogStream:      cm.LogStream,
+		MinTs:          cm.MinTs,
+		MaxTs:          cm.MaxTs,
+		MaxIngestionTs: cm.MaxIngestionTs,
+		EntryCount:     int32(cm.EntryCount),
+		ChunkPath:      cm.ChunkPath,
+		ByteSize:       cm.ByteSize,
 	}
 }
 
@@ -104,13 +110,15 @@ func ProtoToChunkMeta(p *pb.ChunkMeta) *ChunkMeta {
 		return nil
 	}
 	return &ChunkMeta{
-		ChunkID:    p.ChunkId,
-		LogGroup:   p.LogGroup,
-		LogStream:  p.LogStream,
-		MinTs:      p.MinTs,
-		MaxTs:      p.MaxTs,
-		EntryCount: int(p.EntryCount),
-		ChunkPath:  p.ChunkPath,
+		ChunkID:        p.ChunkId,
+		LogGroupName:   p.LogGroupName,
+		LogStream:      p.LogStream,
+		MinTs:          p.MinTs,
+		MaxTs:          p.MaxTs,
+		MaxIngestionTs: p.MaxIngestionTs,
+		EntryCount:     int(p.EntryCount),
+		ChunkPath:      p.ChunkPath,
+		ByteSize:       p.ByteSize,
 	}
 }
 
@@ -127,14 +135,19 @@ func MetricFilterToProto(mf *MetricFilter) *pb.MetricFilter {
 			MetricValue:     t.MetricValue,
 			DefaultValue:    t.DefaultValue,
 			DefaultValueSet: t.DefaultValueSet,
+			Dimensions:      t.Dimensions,
+			Unit:            t.Unit,
 		}
 	}
 	return &pb.MetricFilter{
-		Name:                  mf.Name,
-		LogGroupName:          mf.LogGroupName,
-		FilterPattern:         mf.FilterPattern,
-		MetricTransformations: transformations,
-		CreatedAt:             mf.CreatedAt.UnixMilli(),
+		Name:                      mf.Name,
+		LogGroupName:              mf.LogGroupName,
+		FilterPattern:             mf.FilterPattern,
+		MetricTransformations:     transformations,
+		CreatedAt:                 mf.CreatedAt.UnixMilli(),
+		ApplyOnTransformedLogs:    mf.ApplyOnTransformedLogs,
+		FieldSelectionCriteria:    mf.FieldSelectionCriteria,
+		EmitSystemFieldDimensions: mf.EmitSystemFieldDimensions,
 	}
 }
 
@@ -151,14 +164,19 @@ func ProtoToMetricFilter(p *pb.MetricFilter) *MetricFilter {
 			MetricValue:     t.MetricValue,
 			DefaultValue:    t.DefaultValue,
 			DefaultValueSet: t.DefaultValueSet,
+			Dimensions:      t.Dimensions,
+			Unit:            t.Unit,
 		}
 	}
 	return &MetricFilter{
-		Name:                  p.Name,
-		LogGroupName:          p.LogGroupName,
-		FilterPattern:         p.FilterPattern,
-		MetricTransformations: transformations,
-		CreatedAt:             time.UnixMilli(p.CreatedAt),
+		Name:                      p.Name,
+		LogGroupName:              p.LogGroupName,
+		FilterPattern:             p.FilterPattern,
+		MetricTransformations:     transformations,
+		CreatedAt:                 time.UnixMilli(p.CreatedAt),
+		ApplyOnTransformedLogs:    p.ApplyOnTransformedLogs,
+		FieldSelectionCriteria:    p.FieldSelectionCriteria,
+		EmitSystemFieldDimensions: p.EmitSystemFieldDimensions,
 	}
 }
 
@@ -168,13 +186,16 @@ func SubscriptionFilterToProto(sf *SubscriptionFilter) *pb.SubscriptionFilter {
 		return nil
 	}
 	return &pb.SubscriptionFilter{
-		LogGroupName:   sf.LogGroupName,
-		FilterName:     sf.FilterName,
-		FilterPattern:  sf.FilterPattern,
-		DestinationArn: sf.DestinationArn,
-		RoleArn:        sf.RoleArn,
-		Distribution:   sf.Distribution,
-		CreatedAt:      sf.CreationTime.UnixMilli(),
+		Name:                   sf.FilterName,
+		LogGroupName:           sf.LogGroupName,
+		FilterPattern:          sf.FilterPattern,
+		ApplyOnTransformedLogs: sf.ApplyOnTransformedLogs,
+		FieldSelectionCriteria: sf.FieldSelectionCriteria,
+		DestinationArn:         sf.DestinationArn,
+		RoleArn:                sf.RoleArn,
+		Distribution:           sf.Distribution,
+		EmitSystemFields:       sf.EmitSystemFields,
+		CreatedAt:              sf.CreationTime.UnixMilli(),
 	}
 }
 
@@ -184,13 +205,16 @@ func ProtoToSubscriptionFilter(p *pb.SubscriptionFilter) *SubscriptionFilter {
 		return nil
 	}
 	return &SubscriptionFilter{
-		LogGroupName:   p.LogGroupName,
-		FilterName:     p.FilterName,
-		FilterPattern:  p.FilterPattern,
-		DestinationArn: p.DestinationArn,
-		RoleArn:        p.RoleArn,
-		Distribution:   p.Distribution,
-		CreationTime:   time.UnixMilli(p.CreatedAt),
+		LogGroupName:           p.LogGroupName,
+		FilterName:             p.Name,
+		FilterPattern:          p.FilterPattern,
+		DestinationArn:         p.DestinationArn,
+		RoleArn:                p.RoleArn,
+		Distribution:           p.Distribution,
+		CreationTime:           time.UnixMilli(p.CreatedAt),
+		ApplyOnTransformedLogs: p.ApplyOnTransformedLogs,
+		FieldSelectionCriteria: p.FieldSelectionCriteria,
+		EmitSystemFields:       p.EmitSystemFields,
 	}
 }
 
@@ -205,8 +229,8 @@ func DestinationToProto(d *Destination) *pb.Destination {
 		RoleArn:      d.RoleArn,
 		TargetArn:    d.TargetArn,
 		AccessPolicy: d.AccessPolicy,
-		CreationTime: d.CreationTime,
 		Tags:         d.Tags,
+		CreatedAt:    d.CreationTime,
 	}
 }
 
@@ -221,7 +245,7 @@ func ProtoToDestination(p *pb.Destination) *Destination {
 		RoleArn:      p.RoleArn,
 		TargetArn:    p.TargetArn,
 		AccessPolicy: p.AccessPolicy,
-		CreationTime: p.CreationTime,
+		CreationTime: p.CreatedAt,
 		Tags:         p.Tags,
 	}
 }

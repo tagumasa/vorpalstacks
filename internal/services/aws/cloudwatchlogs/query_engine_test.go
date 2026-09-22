@@ -79,6 +79,27 @@ func TestValidateQueryPipelineRules(t *testing.T) {
 		{"source not first rejected", "fields @message | SOURCE logGroups(namePrefix: ['a'])", true},
 		{"source first ok", "SOURCE logGroups(namePrefix: ['a']) | fields @message", false},
 		{"comments ignored", "fields @message # trailing comment | limit 3", false},
+		{"subsequent stats over outputs ok", "stats sum(x) as sum_x by y, z | stats max(sum_x) as max_x by z", false},
+		{"subsequent stats referencing raw field rejected", "fields @message | stats sum(fault) by operation | stats max(strlen(@message)) as maxMsg", true},
+		{"subsequent stats bin without timestamp rejected", "fields strlen(@message) as len | stats sum(len) as total by @logStream | stats avg(total) by bin(5m)", true},
+		{"subsequent stats bin with propagated timestamp ok", "fields strlen(@message) as len | stats sum(len) as total, max(@timestamp) as @timestamp by @logStream | stats avg(total) by bin(5m)", false},
+		{"subsequent stats auto-named output ok", "fields @message | stats sum(fault) by operation | stats max(sum(fault)) as m by operation", false},
+		{"single stats unrestricted ok", "fields @message | stats max(strlen(@message)) as m", false},
+		// The documented grammar carries no "==" alias, no field-less
+		// dedup and no ispresentornull function.
+		{"double-equals alias rejected", "fields @message | filter a == 1", true},
+		{"single equals ok", "fields @message | filter a = 1", false},
+		{"field-less dedup rejected", "fields @message | dedup", true},
+		{"dedup with fields ok", "fields @message | dedup a, b", false},
+		{"ispresentornull rejected", "fields ispresentornull(a) as p", true},
+		{"ispresent ok", "fields ispresent(a) as p", false},
+		// topk's k ceiling and the aggregation-combination rule.
+		{"topk k over ceiling rejected", "stats topk(10001, x)", true},
+		{"topk k at ceiling ok", "stats topk(10000, x)", false},
+		{"topk with other aggregation rejected", "stats topk(3, x), count(*)", true},
+		{"topk alone ok", "stats topk(3, x)", false},
+		// "Nested subqueries are not supported."
+		{"nested subquery rejected", "fields @message | filter x in (fields y | filter z in (fields w))", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -150,9 +171,14 @@ func TestExpressionFunctions(t *testing.T) {
 }
 
 func TestExpressionStructureAccess(t *testing.T) {
-	row := queryResultRow{fields: map[string]string{
-		"json_message": `{"users": [{"action": "PutData"}, {"action": "GetData"}], "status": 200}`,
-	}}
+	// A structurally-nested field carries its decoded tree in the row's
+	// structural view — the ingest-time structure dot notation traverses.
+	decoded, ok := parseJSONValue(`{"users": [{"action": "PutData"}, {"action": "GetData"}], "status": 200}`)
+	if !ok {
+		t.Fatal("test fixture is not JSON")
+	}
+	row := queryResultRow{}
+	row.setStruct("json_message", decoded)
 	node, err := parseExprTokens(mustLex(t, "json_message.users[1].action"))
 	if err != nil {
 		t.Fatal(err)
@@ -166,6 +192,44 @@ func TestExpressionStructureAccess(t *testing.T) {
 	}
 	if got := asString(node2.eval(&row, nil)); got != "200" {
 		t.Fatalf("map access = %q, want 200", got)
+	}
+	// Dot-numeric segments address array positions — the documented
+	// discoverable-field form (items.0.instanceId): same lookup as bracket
+	// indexing, written inside the dotted path.
+	node3, err := parseExprTokens(mustLex(t, "json_message.users.0.action"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := asString(node3.eval(&row, nil)); got != "PutData" {
+		t.Fatalf("dot-numeric access = %q, want PutData", got)
+	}
+}
+
+func TestDotNumericArrayIndexingInQueries(t *testing.T) {
+	// The documented example shape: filter on the nested first item of an
+	// array through its dot-numeric address, in a full query pipeline.
+	events := testEvents(
+		`{"requestParameters": {"instancesSet": {"items": [{"instanceId": "i-abcde123"}]}}}`,
+		`{"requestParameters": {"instancesSet": {"items": [{"instanceId": "i-999"}]}}}`,
+		`{"requestParameters": {"instancesSet": {"items": []}}}`,
+	)
+	rows, err := executeQueryContext(newTestCtx(events),
+		`filter requestParameters.instancesSet.items.0.instanceId = "i-abcde123"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("rows = %d, want 1 (the i-abcde123 item alone)", len(rows))
+	}
+	// The address also projects as a field and returns nothing on an
+	// exhausted or missing position.
+	rows2, err := executeQueryContext(newTestCtx(events),
+		`fields requestParameters.instancesSet.items.0.instanceId as first | filter ispresent(first)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows2) != 2 || rows2[1].fields["first"] != "i-999" {
+		t.Fatalf("dot-numeric projection rows = %+v, want the two non-empty items", rows2)
 	}
 }
 
@@ -185,12 +249,29 @@ func TestExpressionLikeRegexAndIn(t *testing.T) {
 	if !truthy(node2.eval(&row, nil)) {
 		t.Fatal("in list should match")
 	}
-	node3, err := parseExprTokens(mustLex(t, `msg not like "Request*"`))
+	node3, err := parseExprTokens(mustLex(t, `msg not like "Request"`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if truthy(node3.eval(&row, nil)) {
-		t.Fatal("negated glob like should not match")
+		t.Fatal("negated substring like should not match")
+	}
+	// The documented regular-expression operator: "You can use the
+	// regular expression operator =~ to match substrings", e.g.
+	// filter f1 =~ /Exception/.
+	node4, err := parseExprTokens(mustLex(t, `msg =~ /error \d+/`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !truthy(node4.eval(&row, nil)) {
+		t.Fatal("=~ regex should match substrings")
+	}
+	node5, err := parseExprTokens(mustLex(t, `msg =~ /Exception/`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if truthy(node5.eval(&row, nil)) {
+		t.Fatal("non-matching =~ regex should not match")
 	}
 }
 
@@ -773,5 +854,72 @@ func TestOffsetsCountCharactersNotBytes(t *testing.T) {
 	want := utf8.RuneCountInString(q[:byteIdx])
 	if got := compileErrorOffset(t, err); got != want {
 		t.Fatalf("startCharOffset = %d, want %d (character position)", got, want)
+	}
+}
+
+// Division on a dotted field reference is division: a slash after an
+// identifier containing dots must not open a regex literal (core
+// nested-field syntax — `bytes.received / 2` is a documented query).
+// recordsMatched counts matched events, never output rows: the documented
+// QueryStatistics basis is "The number of log events that matched the query
+// string", and "These values reflect the full raw results of the query" —
+// so the count is taken at the aggregation boundary and before limit
+// truncation, not from the final result rows.
+func TestRecordsMatchedCountsMatchedEvents(t *testing.T) {
+	events := testEvents(
+		`{"sev": "ERROR", "id": 1}`,
+		`{"sev": "INFO", "id": 2}`,
+		`{"sev": "ERROR", "id": 3}`,
+		`{"sev": "ERROR", "id": 4}`,
+	)
+
+	ctx := newTestCtx(events)
+	rows, err := executeQueryContext(ctx, `stats count(*) as n`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("stats rows = %d, want 1", len(rows))
+	}
+	if ctx.recordsMatched != int64(len(events)) {
+		t.Fatalf("recordsMatched = %d, want %d (aggregation collapsing to one row keeps the event count)", ctx.recordsMatched, len(events))
+	}
+
+	ctx2 := newTestCtx(events)
+	if _, err := executeQueryContext(ctx2, `filter sev = "ERROR" | stats count(*) as n`); err != nil {
+		t.Fatal(err)
+	}
+	if ctx2.recordsMatched != 3 {
+		t.Fatalf("recordsMatched = %d, want 3 (the filter's matches alone)", ctx2.recordsMatched)
+	}
+
+	ctx3 := newTestCtx(events)
+	rows3, err := executeQueryContext(ctx3, `fields @message | limit 1`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows3) != 1 {
+		t.Fatalf("limit rows = %d, want 1", len(rows3))
+	}
+	if ctx3.recordsMatched != int64(len(events)) {
+		t.Fatalf("recordsMatched = %d, want %d (limit truncates results, never the count)", ctx3.recordsMatched, len(events))
+	}
+}
+
+func TestDivisionOnDottedFieldReference(t *testing.T) {
+	if err := validateQueryPipeline(`filter bytes.received / 2 > 100`); err != nil {
+		t.Fatalf("dotted-field division must compile: %v", err)
+	}
+	events := testEvents(
+		`{"dur": {"ms": 8}, "kind": "a"}`,
+		`{"dur": {"ms": 1}, "kind": "a"}`,
+	)
+	rows, err := executeQueryContext(newTestCtx(events),
+		`filter dur.ms / 2 > 1 and kind like /a/`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("division on the dotted field must keep only dur.ms > 2, rows = %d", len(rows))
 	}
 }

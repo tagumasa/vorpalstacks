@@ -14,8 +14,26 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-// fileSequence uniquifies chunk file names across concurrent writers.
+// fileSequence uniquifies chunk file names across concurrent writers. Its
+// value only ever grows: consumers whose chunk files persist across
+// restarts raise the floor through SeedFileSequence so a replayed write
+// cannot reuse a name an earlier process issued.
 var fileSequence uint64
+
+// SeedFileSequence raises the file-name sequence floor to at least the
+// given value. File names are unique only within one process lifetime by
+// default; a consumer restarting over durable chunk files seeds the
+// sequence from the highest sequence already present on disk, so a
+// backfill replayed at the same timestamps can never truncate an earlier
+// file by recreating its name.
+func SeedFileSequence(floor uint64) {
+	for {
+		cur := atomic.LoadUint64(&fileSequence)
+		if floor <= cur || atomic.CompareAndSwapUint64(&fileSequence, cur, floor) {
+			return
+		}
+	}
+}
 
 var (
 	// ErrEmptyEntries is returned when attempting to write a chunk with no entries.
@@ -170,16 +188,14 @@ func (w *Writer) Flush() (string, error) {
 	}
 	chunkPath = absPath
 
-	switch w.opts.Encoding {
-	case EncodingGzip:
-		_, err = w.writeGzipChunk(chunkPath, entries)
-	case EncodingZstd:
-		_, err = w.writeZstdChunk(chunkPath, entries)
-	default:
-		_, err = w.writeRawChunk(chunkPath, entries)
-	}
+	_, err = writeEncodedChunk(w, chunkPath, entries)
 
 	if err != nil {
+		// The partial file must not survive the failure: nothing will
+		// index it, and no sweep knows about unindexed files, so keeping
+		// it leaks storage for ever. The removal error is secondary to
+		// the write failure the caller must see.
+		os.Remove(chunkPath)
 		w.buffer = append(entries, w.buffer...)
 		return "", fmt.Errorf("%w: %w", ErrWriteFailed, err)
 	}
@@ -192,6 +208,36 @@ func (w *Writer) Flush() (string, error) {
 func (w *Writer) GetChunkPath() string {
 	return w.chunkPath
 }
+
+// syncDir fsyncs a directory so the creation of a file inside it survives
+// a crash: on filesystems where fsyncing the file alone does not persist
+// the directory entry, an index committed after the file fsync could point
+// at a file the crash never made visible.
+func syncDir(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	return d.Sync()
+}
+
+// encodeChunk dispatches one buffered batch to its encoding writer. It is
+// indirected through the writeEncodedChunk var so tests can exercise the
+// write-failure path of Flush (a partial file on disk must not survive
+// the error).
+func encodeChunk(w *Writer, path string, entries []Entry) (*Header, error) {
+	switch w.opts.Encoding {
+	case EncodingGzip:
+		return w.writeGzipChunk(path, entries)
+	case EncodingZstd:
+		return w.writeZstdChunk(path, entries)
+	default:
+		return w.writeRawChunk(path, entries)
+	}
+}
+
+var writeEncodedChunk = encodeChunk
 
 func (w *Writer) writeGzipChunk(path string, entries []Entry) (*Header, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -218,6 +264,9 @@ func (w *Writer) writeGzipChunk(path string, entries []Entry) (*Header, error) {
 
 	if w.opts.SyncOnWrite {
 		if err := f.Sync(); err != nil {
+			return nil, err
+		}
+		if err := syncDir(filepath.Dir(path)); err != nil {
 			return nil, err
 		}
 	}
@@ -258,6 +307,9 @@ func (w *Writer) writeZstdChunk(path string, entries []Entry) (*Header, error) {
 		if err := f.Sync(); err != nil {
 			return nil, err
 		}
+		if err := syncDir(filepath.Dir(path)); err != nil {
+			return nil, err
+		}
 	}
 
 	return header, nil
@@ -281,6 +333,9 @@ func (w *Writer) writeRawChunk(path string, entries []Entry) (*Header, error) {
 
 	if w.opts.SyncOnWrite {
 		if err := f.Sync(); err != nil {
+			return nil, err
+		}
+		if err := syncDir(filepath.Dir(path)); err != nil {
 			return nil, err
 		}
 	}

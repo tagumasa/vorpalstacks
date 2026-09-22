@@ -1,8 +1,15 @@
 package chunk
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/binary"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -285,6 +292,137 @@ func TestReadNonExistentFile(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for non-existent file")
 	}
+}
+
+// SeedFileSequence raises the file-name sequence floor: the next flushed
+// file must carry a sequence above it, so a process restarting over
+// durable files never recreates an earlier file's name (os.Create would
+// truncate it).
+func TestSeedFileSequenceRaisesFloor(t *testing.T) {
+	const floor = 1 << 20
+	SeedFileSequence(floor)
+
+	w := NewWriter(&WriterOptions{ChunksDir: t.TempDir(), Encoding: EncodingZstd, ChunkSize: 10})
+	if err := w.WriteBatch([]Entry{SimpleEntry{Ts: 1000, Msg: []byte("seeded")}}); err != nil {
+		t.Fatal(err)
+	}
+	path, err := w.Flush()
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts := strings.Split(strings.TrimSuffix(filepath.Base(path), ".vlog"), "-")
+	if len(parts) != 3 {
+		t.Fatalf("chunk file name %q is not the three-component form", filepath.Base(path))
+	}
+	seq, err := strconv.ParseUint(parts[2], 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if seq <= floor {
+		t.Fatalf("file sequence %d does not exceed the seeded floor %d", seq, floor)
+	}
+}
+
+// A write that fails partway through must not leak the partial file:
+// nothing will index it, and no sweep knows about unindexed files.
+func TestFlushRemovesPartialFileOnWriteFailure(t *testing.T) {
+	dir := t.TempDir()
+	orig := writeEncodedChunk
+	writeEncodedChunk = func(w *Writer, path string, entries []Entry) (*Header, error) {
+		// Simulate a write that created the file and failed partway
+		// through: the partial file is on disk, the caller sees an error.
+		if err := os.WriteFile(path, []byte("partial"), 0644); err != nil {
+			return nil, err
+		}
+		return nil, errors.New("injected mid-write failure")
+	}
+	t.Cleanup(func() { writeEncodedChunk = orig })
+
+	w := NewWriter(&WriterOptions{ChunksDir: dir, Encoding: EncodingZstd, ChunkSize: 10})
+	if err := w.WriteBatch([]Entry{SimpleEntry{Ts: 1000, Msg: []byte("doomed")}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.Flush(); err == nil {
+		t.Fatal("Flush reported success despite the injected write failure")
+	}
+	remaining, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range remaining {
+		if !f.IsDir() {
+			t.Fatalf("partial chunk file leaked: %s", filepath.Join(dir, f.Name()))
+		}
+	}
+	// The buffered entries survive the failure for a retry.
+	if err := w.WriteBatch([]Entry{SimpleEntry{Ts: 1000, Msg: []byte("doomed")}}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// zeroReader serves an endless stream of zero bytes without holding the
+// expansion in memory.
+type zeroReader struct{}
+
+func (zeroReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = 0
+	}
+	return len(p), nil
+}
+
+// The entry count and every message length come from the file itself: a
+// corrupt or planted header must fail as corruption, not allocate the
+// requested gigabytes until the process dies.
+func TestDecodeRejectsHostileAllocationRequests(t *testing.T) {
+	magic := [4]byte{'V', 'L', 'O', 'G'}
+
+	t.Run("entry count beyond the stream", func(t *testing.T) {
+		var buf bytes.Buffer
+		header := &Header{Magic: magic, Version: VersionV2, Encoding: EncodingNone, EntryCount: 0xFFFFFFFF}
+		if err := binary.Write(&buf, binary.BigEndian, header); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Decode(buf.Bytes()); err == nil {
+			t.Fatal("Decode accepted an entry count far beyond the bytes the file holds")
+		}
+	})
+
+	t.Run("message length beyond the stream", func(t *testing.T) {
+		var buf bytes.Buffer
+		header := &Header{Magic: magic, Version: VersionV2, Encoding: EncodingNone, EntryCount: 1}
+		if err := binary.Write(&buf, binary.BigEndian, header); err != nil {
+			t.Fatal(err)
+		}
+		if err := binary.Write(&buf, binary.BigEndian, int64(1000)); err != nil {
+			t.Fatal(err)
+		}
+		if err := binary.Write(&buf, binary.BigEndian, int64(2000)); err != nil {
+			t.Fatal(err)
+		}
+		if err := binary.Write(&buf, binary.BigEndian, uint32(0xFFFFFFFF)); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Decode(buf.Bytes()); err == nil {
+			t.Fatal("Decode accepted a message length beyond the bytes the file holds")
+		}
+	})
+
+	t.Run("decompression bomb", func(t *testing.T) {
+		var compressed bytes.Buffer
+		gz := gzip.NewWriter(&compressed)
+		// Just past the bound: the limited read stops at the bound and
+		// reports corruption instead of materialising the expansion.
+		if _, err := io.CopyN(gz, zeroReader{}, MaxDecompressedChunkBytes+1); err != nil {
+			t.Fatal(err)
+		}
+		if err := gz.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Decode(compressed.Bytes()); err == nil {
+			t.Fatal("Decode accepted a payload expanding beyond the decompressed-size bound")
+		}
+	})
 }
 
 func TestDecodeInvalidData(t *testing.T) {

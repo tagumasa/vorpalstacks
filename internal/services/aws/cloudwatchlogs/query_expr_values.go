@@ -105,6 +105,11 @@ func valuesEqual(l, r interface{}) bool {
 	if l == nil || r == nil {
 		return false
 	}
+	// "Comparing map and list to any other fields result in false" —
+	// structures never compare equal, not even to themselves.
+	if isStructure(l) || isStructure(r) {
+		return false
+	}
 	if ln, lok := asNumber(l); lok {
 		if rn, rok := asNumber(r); rok {
 			return ln == rn
@@ -158,14 +163,18 @@ func compareValues(l, r interface{}, op string) interface{} {
 	return false
 }
 
-// globMatch implements the wildcard matching used by like with quoted
-// patterns: * matches any run of characters.
-func globMatch(pattern, text string) bool {
-	if !strings.Contains(pattern, "*") {
-		return pattern == text
+// compileGlob compiles the wildcard pattern the glob-vocabulary sites
+// outside like use (the pattern command's masks): * matches any run of
+// characters, everything else is literal, and the match anchors to the
+// full string — unlike like's quoted patterns, which the documentation
+// defines as substrings. Compilation happens at parse time — the
+// pattern is evaluated per row.
+func compileGlob(pattern string) *regexp.Regexp {
+	quoted := regexp.QuoteMeta(pattern)
+	quoted = strings.ReplaceAll(quoted, `\*`, ".*")
+	re, err := regexp.Compile("^" + quoted + "$")
+	if err != nil {
+		return nil
 	}
-	re := regexp.QuoteMeta(pattern)
-	re = strings.ReplaceAll(re, `\*`, ".*")
-	matched, _ := regexp.MatchString("^"+re+"$", text)
-	return matched
+	return re
 }

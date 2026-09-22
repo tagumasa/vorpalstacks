@@ -214,3 +214,34 @@ func TestPaginateSliceByPosition(t *testing.T) {
 		t.Fatalf("empty list: got items=%v truncated=%v, want empty untruncated", empty.Items, empty.IsTruncated)
 	}
 }
+
+func TestPaginateSliceMarkerSemantics(t *testing.T) {
+	items := []string{"a", "b", "c", "d"}
+	key := func(s string) string { return s }
+
+	// An exact marker starts after its own record.
+	page := PaginateSlice(items, "b", 2, key)
+	if len(page.Items) != 2 || page.Items[0] != "c" || page.Items[1] != "d" || page.IsTruncated {
+		t.Fatalf("exact marker: got items=%v truncated=%v, want [c d] untruncated", page.Items, page.IsTruncated)
+	}
+
+	// A marker whose record was deleted between pages resumes from the
+	// neighbouring position instead of truncating the walk with an
+	// empty final page.
+	deleted := []string{"a", "c", "d"}
+	page = PaginateSlice(deleted, "b", 2, key)
+	if len(page.Items) != 2 || page.Items[0] != "c" || page.Items[1] != "d" || page.IsTruncated {
+		t.Fatalf("deleted marker: got items=%v truncated=%v, want [c d] untruncated", page.Items, page.IsTruncated)
+	}
+
+	page = PaginateSlice(deleted, "b", 1, key)
+	if len(page.Items) != 1 || page.Items[0] != "c" || !page.IsTruncated || page.NextMarker != "c" {
+		t.Fatalf("deleted marker single page: got items=%v marker=%q, want [c] truncated with marker c", page.Items, page.NextMarker)
+	}
+
+	// A marker sorting at or past the end leaves an empty terminal page.
+	page = PaginateSlice(items, "z", 2, key)
+	if len(page.Items) != 0 || page.IsTruncated || page.NextMarker != "" {
+		t.Fatalf("past-end marker: got items=%v truncated=%v marker=%q, want empty untruncated", page.Items, page.IsTruncated, page.NextMarker)
+	}
+}

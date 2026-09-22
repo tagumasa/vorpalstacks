@@ -2,7 +2,9 @@ package cloudwatchlogs
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -107,11 +109,15 @@ func (s *LogsService) resolveLookupTableBody(in *LookupTableInput) (string, erro
 				fmt.Sprintf("Query %s not found", in.QueryId), 400)
 		}
 		qs := val.(*queryState)
-		if qs.status != "Complete" && qs.status != "Cancelled" {
+		qs.mu.RLock()
+		status := qs.status
+		results := qs.results
+		qs.mu.RUnlock()
+		if status != queryStatusComplete && status != queryStatusCancelled {
 			return "", NewLogsError("InvalidParameterException",
-				fmt.Sprintf("Query %s has status %s; only completed or cancelled queries can populate a lookup table", in.QueryId, qs.status), 400)
+				fmt.Sprintf("Query %s has status %s; only completed or cancelled queries can populate a lookup table", in.QueryId, status), 400)
 		}
-		return rowsToCSV(qs.results), nil
+		return rowsToCSV(results), nil
 	}
 	return "", NewLogsError("ValidationException",
 		"Specify either tableBody or queryId", 400)
@@ -171,6 +177,13 @@ func (s *LogsService) applyLookupTableBody(lt *logsstore.LookupTable, body, regi
 		return NewLogsError("InvalidParameterException",
 			fmt.Sprintf("tableBody exceeds %d bytes", logsstore.MaxLookupTableBodyBytes), 400)
 	}
+	// "The content must use UTF-8 encoding and not exceed 10 MB"
+	// (PutLookupTable tableBody): a body that is not valid UTF-8 rejects
+	// instead of storing bytes no CSV reader or query lookup can render.
+	if !utf8.ValidString(body) {
+		return NewLogsError("InvalidParameterException",
+			"tableBody must use UTF-8 encoding", 400)
+	}
 	fields, records, err := parseLookupCSV(body)
 	if err != nil {
 		return err
@@ -198,7 +211,7 @@ func (s *LogsService) applyLookupTableBody(lt *logsstore.LookupTable, body, regi
 
 // mapLookupTableStoreError maps store sentinels to API errors.
 func mapLookupTableStoreError(err error) error {
-	if err == logsstore.ErrResourceNotFound {
+	if errors.Is(err, logsstore.ErrResourceNotFound) {
 		return NewLogsError("ResourceNotFoundException", "Lookup table not found", 400)
 	}
 	return err
@@ -213,9 +226,20 @@ func (s *LogsService) createLookupTableCore(store *logsstore.Store, in *LookupTa
 		return "", 0, NewLogsError("InvalidParameterException",
 			fmt.Sprintf("a maximum of %d tags can be attached to a lookup table", logsstore.MaxLookupTableTags), 400)
 	}
+	// The tags member targets the standard Tags map, so the per-entry
+	// TagKey/TagValue traits and the reserved aws: prefix apply here as
+	// on every other tag surface.
+	if err := validateTagEntries(in.Tags); err != nil {
+		return "", 0, err
+	}
 	if err := s.validateLookupTableKmsKey(in.KmsKeyId); err != nil {
 		return "", 0, err
 	}
+	// The admission window is one critical section: exists-check, quota
+	// census and write — concurrent creations of the same name admit
+	// exactly one, and the quota cannot be observed open twice.
+	s.lookupTableAdmissionMu.Lock()
+	defer s.lookupTableAdmissionMu.Unlock()
 	if _, err := store.GetLookupTable(in.Name); err == nil {
 		return "", 0, NewLogsError("ResourceAlreadyExistsException",
 			fmt.Sprintf("Lookup table %s already exists", in.Name), 400)
@@ -252,9 +276,9 @@ func (s *LogsService) createLookupTableCore(store *logsstore.Store, in *LookupTa
 // decrypted full content of the lookup table.
 func (s *LogsService) getLookupTableCore(store *logsstore.Store, in *GetLookupTableInput) (*GetLookupTableResult, error) {
 	if in.Identifier == "" {
-		return nil, ErrMissingParameter
+		return nil, errRequiredMember("identifier")
 	}
-	lt, err := store.GetLookupTable(lookupTableNameFromArn(in.Identifier))
+	lt, err := store.GetLookupTable(resolveLookupTableIdentifier(in.Identifier))
 	if err != nil {
 		return nil, mapLookupTableStoreError(err)
 	}
@@ -278,60 +302,71 @@ func (s *LogsService) getLookupTableCore(store *logsstore.Store, in *GetLookupTa
 // the KMS key, and persists the replacement content.
 func (s *LogsService) updateLookupTableCore(store *logsstore.Store, in *UpdateLookupTableInput) (*UpdateLookupTableResult, error) {
 	if in.Identifier == "" {
-		return nil, ErrMissingParameter
+		return nil, errRequiredMember("identifier")
 	}
-	lt, err := store.GetLookupTable(lookupTableNameFromArn(in.Identifier))
+	// The whole merge-validate-apply-persist cycle runs inside the
+	// lookup-table mutate seam: a scheduled-delivery refresh cannot
+	// revert this update's fields, and this update cannot drop a refresh
+	// that committed while it was resolving the body.
+	var result *UpdateLookupTableResult
+	err := store.MutateLookupTable(resolveLookupTableIdentifier(in.Identifier), func(lt *logsstore.LookupTable) error {
+		update := &LookupTableInput{
+			Name:     lt.Name,
+			KmsKeyId: lt.KmsKeyId,
+		}
+		if in.DescriptionSet {
+			update.Description = in.Description
+		} else {
+			update.Description = lt.Description
+		}
+		if in.TableBodySet {
+			update.TableBody = in.TableBody
+		}
+		if in.QueryIdSet {
+			update.QueryId = in.QueryId
+		}
+		if in.KmsKeyIdSet {
+			update.KmsKeyId = in.KmsKeyId
+		}
+		// The merged members revalidate against the create spec: the
+		// description bound the create path enforces applies unchanged
+		// when an update supplies the member (the name is the stored,
+		// already-valid key and always passes).
+		if err := validateLookupTableSpec(update.Name, update.Description); err != nil {
+			return err
+		}
+		if err := s.validateLookupTableKmsKey(update.KmsKeyId); err != nil {
+			return err
+		}
+
+		body, err := s.resolveLookupTableBody(update)
+		if err != nil {
+			return err
+		}
+		lt.Description = update.Description
+		lt.KmsKeyId = update.KmsKeyId
+		if err := s.applyLookupTableBody(lt, body, in.Region); err != nil {
+			return err
+		}
+		result = &UpdateLookupTableResult{
+			Arn:             lookupTableArn(in.Region, s.accountID, lt.Name),
+			LastUpdatedTime: lt.LastUpdatedTime,
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, mapLookupTableStoreError(err)
 	}
-
-	update := &LookupTableInput{
-		Name:     lt.Name,
-		KmsKeyId: lt.KmsKeyId,
-	}
-	if in.DescriptionSet {
-		update.Description = in.Description
-	} else {
-		update.Description = lt.Description
-	}
-	if in.TableBodySet {
-		update.TableBody = in.TableBody
-	}
-	if in.QueryIdSet {
-		update.QueryId = in.QueryId
-	}
-	if in.KmsKeyIdSet {
-		update.KmsKeyId = in.KmsKeyId
-	}
-	if err := s.validateLookupTableKmsKey(update.KmsKeyId); err != nil {
-		return nil, err
-	}
-
-	body, err := s.resolveLookupTableBody(update)
-	if err != nil {
-		return nil, err
-	}
-	lt.Description = update.Description
-	lt.KmsKeyId = update.KmsKeyId
-	if err := s.applyLookupTableBody(lt, body, in.Region); err != nil {
-		return nil, err
-	}
-	if err := store.PutLookupTable(lt); err != nil {
-		return nil, err
-	}
-	return &UpdateLookupTableResult{
-		Arn:             lookupTableArn(in.Region, s.accountID, lt.Name),
-		LastUpdatedTime: lt.LastUpdatedTime,
-	}, nil
+	return result, nil
 }
 
 // deleteLookupTableCore validates input and deletes a lookup table
 // permanently.
 func (s *LogsService) deleteLookupTableCore(store *logsstore.Store, identifier string) error {
 	if identifier == "" {
-		return ErrMissingParameter
+		return errRequiredMember("identifier")
 	}
-	if err := store.DeleteLookupTable(lookupTableNameFromArn(identifier)); err != nil {
+	if err := store.DeleteLookupTable(resolveLookupTableIdentifier(identifier)); err != nil {
 		return mapLookupTableStoreError(err)
 	}
 	return nil
@@ -340,6 +375,16 @@ func (s *LogsService) deleteLookupTableCore(store *logsstore.Store, identifier s
 // describeLookupTablesCore lists lookup tables filtered by name prefix,
 // paginated by numeric offset, sorted by name in ascending order.
 func (s *LogsService) describeLookupTablesCore(store *logsstore.Store, in *DescribeLookupTablesInput) (*DescribeLookupTablesResult, error) {
+	// The prefix member targets LookupTableName (1-256 characters of the
+	// name alphabet): an out-of-trait prefix rejects instead of silently
+	// matching nothing.
+	if in.Prefix != "" {
+		if len(in.Prefix) > logsstore.MaxLookupTableNameLength || !lookupTableNameRe.MatchString(in.Prefix) {
+			return nil, NewLogsError("InvalidParameterException",
+				fmt.Sprintf("Invalid lookupTableNamePrefix %q: 1-%d characters, alphanumeric and underscores only",
+					in.Prefix, logsstore.MaxLookupTableNameLength), 400)
+		}
+	}
 	if in.MaxResults < 0 || in.MaxResults > logsstore.MaxDescribeLookupTablesResults {
 		return nil, NewLogsError("InvalidParameterException",
 			fmt.Sprintf("maxResults must be between 1 and %d", logsstore.MaxDescribeLookupTablesResults), 400)
@@ -356,8 +401,8 @@ func (s *LogsService) describeLookupTablesCore(store *logsstore.Store, in *Descr
 
 	offset := 0
 	if in.NextToken != "" {
-		n, err := parseInt(in.NextToken)
-		if err != nil {
+		n, err := strconv.Atoi(in.NextToken)
+		if err != nil || n < 0 {
 			return nil, NewLogsError("InvalidParameterException", "Invalid nextToken", 400)
 		}
 		offset = n

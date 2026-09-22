@@ -22,21 +22,27 @@ const (
 )
 
 type LogGroup struct {
-	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Name                      string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Arn                       string                 `protobuf:"bytes,2,opt,name=arn,proto3" json:"arn,omitempty"`
-	Region                    string                 `protobuf:"bytes,3,opt,name=region,proto3" json:"region,omitempty"`
-	AccountId                 string                 `protobuf:"bytes,4,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
-	CreatedAt                 int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	RetentionInDays           int32                  `protobuf:"varint,6,opt,name=retention_in_days,json=retentionInDays,proto3" json:"retention_in_days,omitempty"`
-	MetricFilterCount         int32                  `protobuf:"varint,7,opt,name=metric_filter_count,json=metricFilterCount,proto3" json:"metric_filter_count,omitempty"`
-	StoredBytes               int64                  `protobuf:"varint,8,opt,name=stored_bytes,json=storedBytes,proto3" json:"stored_bytes,omitempty"`
-	Tags                      map[string]string      `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	LogGroupClass             string                 `protobuf:"bytes,10,opt,name=log_group_class,json=logGroupClass,proto3" json:"log_group_class,omitempty"`
-	KmsKeyId                  string                 `protobuf:"bytes,11,opt,name=kms_key_id,json=kmsKeyId,proto3" json:"kms_key_id,omitempty"`
-	DeletionProtectionEnabled bool                   `protobuf:"varint,12,opt,name=deletion_protection_enabled,json=deletionProtectionEnabled,proto3" json:"deletion_protection_enabled,omitempty"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Identity.
+	Name      string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Arn       string `protobuf:"bytes,2,opt,name=arn,proto3" json:"arn,omitempty"`
+	Region    string `protobuf:"bytes,3,opt,name=region,proto3" json:"region,omitempty"`
+	AccountId string `protobuf:"bytes,4,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	// Configuration.
+	RetentionInDays                  int32             `protobuf:"varint,5,opt,name=retention_in_days,json=retentionInDays,proto3" json:"retention_in_days,omitempty"`
+	LogGroupClass                    string            `protobuf:"bytes,6,opt,name=log_group_class,json=logGroupClass,proto3" json:"log_group_class,omitempty"`
+	KmsKeyId                         string            `protobuf:"bytes,7,opt,name=kms_key_id,json=kmsKeyId,proto3" json:"kms_key_id,omitempty"`
+	DeletionProtectionEnabled        bool              `protobuf:"varint,8,opt,name=deletion_protection_enabled,json=deletionProtectionEnabled,proto3" json:"deletion_protection_enabled,omitempty"`
+	BearerTokenAuthenticationEnabled bool              `protobuf:"varint,9,opt,name=bearer_token_authentication_enabled,json=bearerTokenAuthenticationEnabled,proto3" json:"bearer_token_authentication_enabled,omitempty"`
+	Tags                             map[string]string `protobuf:"bytes,10,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Live state.
+	MetricFilterCount    int32  `protobuf:"varint,11,opt,name=metric_filter_count,json=metricFilterCount,proto3" json:"metric_filter_count,omitempty"`
+	StoredBytes          int64  `protobuf:"varint,12,opt,name=stored_bytes,json=storedBytes,proto3" json:"stored_bytes,omitempty"`
+	DataProtectionStatus string `protobuf:"bytes,13,opt,name=data_protection_status,json=dataProtectionStatus,proto3" json:"data_protection_status,omitempty"`
+	// Timestamps.
+	CreatedAt     int64 `protobuf:"varint,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LogGroup) Reset() {
@@ -97,39 +103,11 @@ func (x *LogGroup) GetAccountId() string {
 	return ""
 }
 
-func (x *LogGroup) GetCreatedAt() int64 {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return 0
-}
-
 func (x *LogGroup) GetRetentionInDays() int32 {
 	if x != nil {
 		return x.RetentionInDays
 	}
 	return 0
-}
-
-func (x *LogGroup) GetMetricFilterCount() int32 {
-	if x != nil {
-		return x.MetricFilterCount
-	}
-	return 0
-}
-
-func (x *LogGroup) GetStoredBytes() int64 {
-	if x != nil {
-		return x.StoredBytes
-	}
-	return 0
-}
-
-func (x *LogGroup) GetTags() map[string]string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 func (x *LogGroup) GetLogGroupClass() string {
@@ -153,18 +131,63 @@ func (x *LogGroup) GetDeletionProtectionEnabled() bool {
 	return false
 }
 
+func (x *LogGroup) GetBearerTokenAuthenticationEnabled() bool {
+	if x != nil {
+		return x.BearerTokenAuthenticationEnabled
+	}
+	return false
+}
+
+func (x *LogGroup) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *LogGroup) GetMetricFilterCount() int32 {
+	if x != nil {
+		return x.MetricFilterCount
+	}
+	return 0
+}
+
+func (x *LogGroup) GetStoredBytes() int64 {
+	if x != nil {
+		return x.StoredBytes
+	}
+	return 0
+}
+
+func (x *LogGroup) GetDataProtectionStatus() string {
+	if x != nil {
+		return x.DataProtectionStatus
+	}
+	return ""
+}
+
+func (x *LogGroup) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
 type LogStream struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	Name                string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	LogGroupName        string                 `protobuf:"bytes,2,opt,name=log_group_name,json=logGroupName,proto3" json:"log_group_name,omitempty"`
-	Arn                 string                 `protobuf:"bytes,3,opt,name=arn,proto3" json:"arn,omitempty"`
-	CreatedAt           int64                  `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	FirstEventTs        int64                  `protobuf:"varint,5,opt,name=first_event_ts,json=firstEventTs,proto3" json:"first_event_ts,omitempty"`
-	LastEventTs         int64                  `protobuf:"varint,6,opt,name=last_event_ts,json=lastEventTs,proto3" json:"last_event_ts,omitempty"`
-	LastIngestionTs     int64                  `protobuf:"varint,7,opt,name=last_ingestion_ts,json=lastIngestionTs,proto3" json:"last_ingestion_ts,omitempty"`
-	UploadSequenceToken string                 `protobuf:"bytes,8,opt,name=upload_sequence_token,json=uploadSequenceToken,proto3" json:"upload_sequence_token,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Identity.
+	Name         string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	LogGroupName string `protobuf:"bytes,2,opt,name=log_group_name,json=logGroupName,proto3" json:"log_group_name,omitempty"`
+	Arn          string `protobuf:"bytes,3,opt,name=arn,proto3" json:"arn,omitempty"`
+	// Live state.
+	UploadSequenceToken string `protobuf:"bytes,4,opt,name=upload_sequence_token,json=uploadSequenceToken,proto3" json:"upload_sequence_token,omitempty"`
+	FirstEventTs        int64  `protobuf:"varint,5,opt,name=first_event_ts,json=firstEventTs,proto3" json:"first_event_ts,omitempty"`
+	LastEventTs         int64  `protobuf:"varint,6,opt,name=last_event_ts,json=lastEventTs,proto3" json:"last_event_ts,omitempty"`
+	LastIngestionTs     int64  `protobuf:"varint,7,opt,name=last_ingestion_ts,json=lastIngestionTs,proto3" json:"last_ingestion_ts,omitempty"`
+	// Timestamps.
+	CreatedAt     int64 `protobuf:"varint,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LogStream) Reset() {
@@ -218,11 +241,11 @@ func (x *LogStream) GetArn() string {
 	return ""
 }
 
-func (x *LogStream) GetCreatedAt() int64 {
+func (x *LogStream) GetUploadSequenceToken() string {
 	if x != nil {
-		return x.CreatedAt
+		return x.UploadSequenceToken
 	}
-	return 0
+	return ""
 }
 
 func (x *LogStream) GetFirstEventTs() int64 {
@@ -246,24 +269,36 @@ func (x *LogStream) GetLastIngestionTs() int64 {
 	return 0
 }
 
-func (x *LogStream) GetUploadSequenceToken() string {
+func (x *LogStream) GetCreatedAt() int64 {
 	if x != nil {
-		return x.UploadSequenceToken
+		return x.CreatedAt
 	}
-	return ""
+	return 0
 }
 
 type ChunkMeta struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChunkId       string                 `protobuf:"bytes,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
-	LogGroup      string                 `protobuf:"bytes,2,opt,name=log_group,json=logGroup,proto3" json:"log_group,omitempty"`
-	LogStream     string                 `protobuf:"bytes,3,opt,name=log_stream,json=logStream,proto3" json:"log_stream,omitempty"`
-	MinTs         int64                  `protobuf:"varint,4,opt,name=min_ts,json=minTs,proto3" json:"min_ts,omitempty"`
-	MaxTs         int64                  `protobuf:"varint,5,opt,name=max_ts,json=maxTs,proto3" json:"max_ts,omitempty"`
-	EntryCount    int32                  `protobuf:"varint,6,opt,name=entry_count,json=entryCount,proto3" json:"entry_count,omitempty"`
-	ChunkPath     string                 `protobuf:"bytes,7,opt,name=chunk_path,json=chunkPath,proto3" json:"chunk_path,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Identity.
+	ChunkId      string `protobuf:"bytes,1,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
+	LogGroupName string `protobuf:"bytes,2,opt,name=log_group_name,json=logGroupName,proto3" json:"log_group_name,omitempty"`
+	LogStream    string `protobuf:"bytes,3,opt,name=log_stream,json=logStream,proto3" json:"log_stream,omitempty"`
+	// Placement.
+	ChunkPath string `protobuf:"bytes,4,opt,name=chunk_path,json=chunkPath,proto3" json:"chunk_path,omitempty"`
+	// Live state.
+	MinTs      int64 `protobuf:"varint,5,opt,name=min_ts,json=minTs,proto3" json:"min_ts,omitempty"`
+	MaxTs      int64 `protobuf:"varint,6,opt,name=max_ts,json=maxTs,proto3" json:"max_ts,omitempty"`
+	EntryCount int32 `protobuf:"varint,7,opt,name=entry_count,json=entryCount,proto3" json:"entry_count,omitempty"`
+	// Sum of the entry message lengths ingested into this chunk — the exact
+	// quantity PutLogEvents added to LogGroup.StoredBytes, so every removal
+	// path (stream delete, retention purge) decrements on the same basis the
+	// ingestion path incremented. The chunk file on disk is compressed, so
+	// its size cannot stand in for this number.
+	ByteSize int64 `protobuf:"varint,8,opt,name=byte_size,json=byteSize,proto3" json:"byte_size,omitempty"`
+	// Greatest ingestion time among the chunk's entries — the index-level
+	// bound the delivery engine's late window selects chunks by.
+	MaxIngestionTs int64 `protobuf:"varint,9,opt,name=max_ingestion_ts,json=maxIngestionTs,proto3" json:"max_ingestion_ts,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ChunkMeta) Reset() {
@@ -303,9 +338,9 @@ func (x *ChunkMeta) GetChunkId() string {
 	return ""
 }
 
-func (x *ChunkMeta) GetLogGroup() string {
+func (x *ChunkMeta) GetLogGroupName() string {
 	if x != nil {
-		return x.LogGroup
+		return x.LogGroupName
 	}
 	return ""
 }
@@ -313,6 +348,13 @@ func (x *ChunkMeta) GetLogGroup() string {
 func (x *ChunkMeta) GetLogStream() string {
 	if x != nil {
 		return x.LogStream
+	}
+	return ""
+}
+
+func (x *ChunkMeta) GetChunkPath() string {
+	if x != nil {
+		return x.ChunkPath
 	}
 	return ""
 }
@@ -338,22 +380,35 @@ func (x *ChunkMeta) GetEntryCount() int32 {
 	return 0
 }
 
-func (x *ChunkMeta) GetChunkPath() string {
+func (x *ChunkMeta) GetByteSize() int64 {
 	if x != nil {
-		return x.ChunkPath
+		return x.ByteSize
 	}
-	return ""
+	return 0
+}
+
+func (x *ChunkMeta) GetMaxIngestionTs() int64 {
+	if x != nil {
+		return x.MaxIngestionTs
+	}
+	return 0
 }
 
 type MetricFilter struct {
-	state                 protoimpl.MessageState  `protogen:"open.v1"`
-	Name                  string                  `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	LogGroupName          string                  `protobuf:"bytes,2,opt,name=log_group_name,json=logGroupName,proto3" json:"log_group_name,omitempty"`
-	FilterPattern         string                  `protobuf:"bytes,3,opt,name=filter_pattern,json=filterPattern,proto3" json:"filter_pattern,omitempty"`
-	MetricTransformations []*MetricTransformation `protobuf:"bytes,4,rep,name=metric_transformations,json=metricTransformations,proto3" json:"metric_transformations,omitempty"`
-	CreatedAt             int64                   `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Identity.
+	Name         string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	LogGroupName string `protobuf:"bytes,2,opt,name=log_group_name,json=logGroupName,proto3" json:"log_group_name,omitempty"`
+	// Configuration.
+	FilterPattern             string                  `protobuf:"bytes,3,opt,name=filter_pattern,json=filterPattern,proto3" json:"filter_pattern,omitempty"`
+	ApplyOnTransformedLogs    bool                    `protobuf:"varint,4,opt,name=apply_on_transformed_logs,json=applyOnTransformedLogs,proto3" json:"apply_on_transformed_logs,omitempty"`
+	FieldSelectionCriteria    string                  `protobuf:"bytes,5,opt,name=field_selection_criteria,json=fieldSelectionCriteria,proto3" json:"field_selection_criteria,omitempty"`
+	MetricTransformations     []*MetricTransformation `protobuf:"bytes,6,rep,name=metric_transformations,json=metricTransformations,proto3" json:"metric_transformations,omitempty"`
+	EmitSystemFieldDimensions []string                `protobuf:"bytes,7,rep,name=emit_system_field_dimensions,json=emitSystemFieldDimensions,proto3" json:"emit_system_field_dimensions,omitempty"`
+	// Timestamps.
+	CreatedAt     int64 `protobuf:"varint,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MetricFilter) Reset() {
@@ -407,9 +462,30 @@ func (x *MetricFilter) GetFilterPattern() string {
 	return ""
 }
 
+func (x *MetricFilter) GetApplyOnTransformedLogs() bool {
+	if x != nil {
+		return x.ApplyOnTransformedLogs
+	}
+	return false
+}
+
+func (x *MetricFilter) GetFieldSelectionCriteria() string {
+	if x != nil {
+		return x.FieldSelectionCriteria
+	}
+	return ""
+}
+
 func (x *MetricFilter) GetMetricTransformations() []*MetricTransformation {
 	if x != nil {
 		return x.MetricTransformations
+	}
+	return nil
+}
+
+func (x *MetricFilter) GetEmitSystemFieldDimensions() []string {
+	if x != nil {
+		return x.EmitSystemFieldDimensions
 	}
 	return nil
 }
@@ -422,12 +498,15 @@ func (x *MetricFilter) GetCreatedAt() int64 {
 }
 
 type MetricTransformation struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	MetricName      string                 `protobuf:"bytes,1,opt,name=metric_name,json=metricName,proto3" json:"metric_name,omitempty"`
-	MetricNamespace string                 `protobuf:"bytes,2,opt,name=metric_namespace,json=metricNamespace,proto3" json:"metric_namespace,omitempty"`
-	MetricValue     string                 `protobuf:"bytes,3,opt,name=metric_value,json=metricValue,proto3" json:"metric_value,omitempty"`
-	DefaultValue    float64                `protobuf:"fixed64,4,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
-	DefaultValueSet bool                   `protobuf:"varint,5,opt,name=default_value_set,json=defaultValueSet,proto3" json:"default_value_set,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// A nested value type, not a stored record.
+	MetricName      string            `protobuf:"bytes,1,opt,name=metric_name,json=metricName,proto3" json:"metric_name,omitempty"`
+	MetricNamespace string            `protobuf:"bytes,2,opt,name=metric_namespace,json=metricNamespace,proto3" json:"metric_namespace,omitempty"`
+	MetricValue     string            `protobuf:"bytes,3,opt,name=metric_value,json=metricValue,proto3" json:"metric_value,omitempty"`
+	DefaultValue    float64           `protobuf:"fixed64,4,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+	DefaultValueSet bool              `protobuf:"varint,5,opt,name=default_value_set,json=defaultValueSet,proto3" json:"default_value_set,omitempty"`
+	Dimensions      map[string]string `protobuf:"bytes,6,rep,name=dimensions,proto3" json:"dimensions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Unit            string            `protobuf:"bytes,7,opt,name=unit,proto3" json:"unit,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -497,17 +576,37 @@ func (x *MetricTransformation) GetDefaultValueSet() bool {
 	return false
 }
 
+func (x *MetricTransformation) GetDimensions() map[string]string {
+	if x != nil {
+		return x.Dimensions
+	}
+	return nil
+}
+
+func (x *MetricTransformation) GetUnit() string {
+	if x != nil {
+		return x.Unit
+	}
+	return ""
+}
+
 type SubscriptionFilter struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	LogGroupName   string                 `protobuf:"bytes,1,opt,name=log_group_name,json=logGroupName,proto3" json:"log_group_name,omitempty"`
-	FilterName     string                 `protobuf:"bytes,2,opt,name=filter_name,json=filterName,proto3" json:"filter_name,omitempty"`
-	FilterPattern  string                 `protobuf:"bytes,3,opt,name=filter_pattern,json=filterPattern,proto3" json:"filter_pattern,omitempty"`
-	DestinationArn string                 `protobuf:"bytes,4,opt,name=destination_arn,json=destinationArn,proto3" json:"destination_arn,omitempty"`
-	RoleArn        string                 `protobuf:"bytes,5,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
-	Distribution   string                 `protobuf:"bytes,6,opt,name=distribution,proto3" json:"distribution,omitempty"`
-	CreatedAt      int64                  `protobuf:"varint,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Identity.
+	Name         string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	LogGroupName string `protobuf:"bytes,2,opt,name=log_group_name,json=logGroupName,proto3" json:"log_group_name,omitempty"`
+	// Configuration.
+	FilterPattern          string   `protobuf:"bytes,3,opt,name=filter_pattern,json=filterPattern,proto3" json:"filter_pattern,omitempty"`
+	ApplyOnTransformedLogs bool     `protobuf:"varint,4,opt,name=apply_on_transformed_logs,json=applyOnTransformedLogs,proto3" json:"apply_on_transformed_logs,omitempty"`
+	FieldSelectionCriteria string   `protobuf:"bytes,5,opt,name=field_selection_criteria,json=fieldSelectionCriteria,proto3" json:"field_selection_criteria,omitempty"`
+	DestinationArn         string   `protobuf:"bytes,6,opt,name=destination_arn,json=destinationArn,proto3" json:"destination_arn,omitempty"`
+	RoleArn                string   `protobuf:"bytes,7,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
+	Distribution           string   `protobuf:"bytes,8,opt,name=distribution,proto3" json:"distribution,omitempty"`
+	EmitSystemFields       []string `protobuf:"bytes,9,rep,name=emit_system_fields,json=emitSystemFields,proto3" json:"emit_system_fields,omitempty"`
+	// Timestamps.
+	CreatedAt     int64 `protobuf:"varint,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SubscriptionFilter) Reset() {
@@ -540,6 +639,13 @@ func (*SubscriptionFilter) Descriptor() ([]byte, []int) {
 	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{5}
 }
 
+func (x *SubscriptionFilter) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 func (x *SubscriptionFilter) GetLogGroupName() string {
 	if x != nil {
 		return x.LogGroupName
@@ -547,16 +653,23 @@ func (x *SubscriptionFilter) GetLogGroupName() string {
 	return ""
 }
 
-func (x *SubscriptionFilter) GetFilterName() string {
+func (x *SubscriptionFilter) GetFilterPattern() string {
 	if x != nil {
-		return x.FilterName
+		return x.FilterPattern
 	}
 	return ""
 }
 
-func (x *SubscriptionFilter) GetFilterPattern() string {
+func (x *SubscriptionFilter) GetApplyOnTransformedLogs() bool {
 	if x != nil {
-		return x.FilterPattern
+		return x.ApplyOnTransformedLogs
+	}
+	return false
+}
+
+func (x *SubscriptionFilter) GetFieldSelectionCriteria() string {
+	if x != nil {
+		return x.FieldSelectionCriteria
 	}
 	return ""
 }
@@ -582,6 +695,13 @@ func (x *SubscriptionFilter) GetDistribution() string {
 	return ""
 }
 
+func (x *SubscriptionFilter) GetEmitSystemFields() []string {
+	if x != nil {
+		return x.EmitSystemFields
+	}
+	return nil
+}
+
 func (x *SubscriptionFilter) GetCreatedAt() int64 {
 	if x != nil {
 		return x.CreatedAt
@@ -589,74 +709,25 @@ func (x *SubscriptionFilter) GetCreatedAt() int64 {
 	return 0
 }
 
-type LogEntry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp     int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LogEntry) Reset() {
-	*x = LogEntry{}
-	mi := &file_storage_cloudwatchlogs_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LogEntry) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LogEntry) ProtoMessage() {}
-
-func (x *LogEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudwatchlogs_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LogEntry.ProtoReflect.Descriptor instead.
-func (*LogEntry) Descriptor() ([]byte, []int) {
-	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *LogEntry) GetTimestamp() int64 {
-	if x != nil {
-		return x.Timestamp
-	}
-	return 0
-}
-
-func (x *LogEntry) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
 type Destination struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Arn           string                 `protobuf:"bytes,2,opt,name=arn,proto3" json:"arn,omitempty"`
-	RoleArn       string                 `protobuf:"bytes,3,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
-	TargetArn     string                 `protobuf:"bytes,4,opt,name=target_arn,json=targetArn,proto3" json:"target_arn,omitempty"`
-	AccessPolicy  string                 `protobuf:"bytes,5,opt,name=access_policy,json=accessPolicy,proto3" json:"access_policy,omitempty"`
-	CreationTime  int64                  `protobuf:"varint,6,opt,name=creation_time,json=creationTime,proto3" json:"creation_time,omitempty"`
-	Tags          map[string]string      `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Identity.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Arn  string `protobuf:"bytes,2,opt,name=arn,proto3" json:"arn,omitempty"`
+	// Configuration.
+	RoleArn      string            `protobuf:"bytes,3,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
+	TargetArn    string            `protobuf:"bytes,4,opt,name=target_arn,json=targetArn,proto3" json:"target_arn,omitempty"`
+	AccessPolicy string            `protobuf:"bytes,5,opt,name=access_policy,json=accessPolicy,proto3" json:"access_policy,omitempty"`
+	Tags         map[string]string `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Timestamps.
+	CreatedAt     int64 `protobuf:"varint,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Destination) Reset() {
 	*x = Destination{}
-	mi := &file_storage_cloudwatchlogs_proto_msgTypes[7]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -668,7 +739,7 @@ func (x *Destination) String() string {
 func (*Destination) ProtoMessage() {}
 
 func (x *Destination) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_cloudwatchlogs_proto_msgTypes[7]
+	mi := &file_storage_cloudwatchlogs_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -681,7 +752,7 @@ func (x *Destination) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Destination.ProtoReflect.Descriptor instead.
 func (*Destination) Descriptor() ([]byte, []int) {
-	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{7}
+	return file_storage_cloudwatchlogs_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Destination) GetName() string {
@@ -719,13 +790,6 @@ func (x *Destination) GetAccessPolicy() string {
 	return ""
 }
 
-func (x *Destination) GetCreationTime() int64 {
-	if x != nil {
-		return x.CreationTime
-	}
-	return 0
-}
-
 func (x *Destination) GetTags() map[string]string {
 	if x != nil {
 		return x.Tags
@@ -733,88 +797,110 @@ func (x *Destination) GetTags() map[string]string {
 	return nil
 }
 
+func (x *Destination) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
 var File_storage_cloudwatchlogs_proto protoreflect.FileDescriptor
 
 const file_storage_cloudwatchlogs_proto_rawDesc = "" +
 	"\n" +
-	"\x1cstorage_cloudwatchlogs.proto\x12\x16storage.cloudwatchlogs\"\x84\x04\n" +
+	"\x1cstorage_cloudwatchlogs.proto\x12\x16storage.cloudwatchlogs\"\x89\x05\n" +
 	"\bLogGroup\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
 	"\x03arn\x18\x02 \x01(\tR\x03arn\x12\x16\n" +
 	"\x06region\x18\x03 \x01(\tR\x06region\x12\x1d\n" +
 	"\n" +
-	"account_id\x18\x04 \x01(\tR\taccountId\x12\x1d\n" +
+	"account_id\x18\x04 \x01(\tR\taccountId\x12*\n" +
+	"\x11retention_in_days\x18\x05 \x01(\x05R\x0fretentionInDays\x12&\n" +
+	"\x0flog_group_class\x18\x06 \x01(\tR\rlogGroupClass\x12\x1c\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\x03R\tcreatedAt\x12*\n" +
-	"\x11retention_in_days\x18\x06 \x01(\x05R\x0fretentionInDays\x12.\n" +
-	"\x13metric_filter_count\x18\a \x01(\x05R\x11metricFilterCount\x12!\n" +
-	"\fstored_bytes\x18\b \x01(\x03R\vstoredBytes\x12>\n" +
-	"\x04tags\x18\t \x03(\v2*.storage.cloudwatchlogs.LogGroup.TagsEntryR\x04tags\x12&\n" +
-	"\x0flog_group_class\x18\n" +
-	" \x01(\tR\rlogGroupClass\x12\x1c\n" +
+	"kms_key_id\x18\a \x01(\tR\bkmsKeyId\x12>\n" +
+	"\x1bdeletion_protection_enabled\x18\b \x01(\bR\x19deletionProtectionEnabled\x12M\n" +
+	"#bearer_token_authentication_enabled\x18\t \x01(\bR bearerTokenAuthenticationEnabled\x12>\n" +
+	"\x04tags\x18\n" +
+	" \x03(\v2*.storage.cloudwatchlogs.LogGroup.TagsEntryR\x04tags\x12.\n" +
+	"\x13metric_filter_count\x18\v \x01(\x05R\x11metricFilterCount\x12!\n" +
+	"\fstored_bytes\x18\f \x01(\x03R\vstoredBytes\x124\n" +
+	"\x16data_protection_status\x18\r \x01(\tR\x14dataProtectionStatus\x12\x1d\n" +
 	"\n" +
-	"kms_key_id\x18\v \x01(\tR\bkmsKeyId\x12>\n" +
-	"\x1bdeletion_protection_enabled\x18\f \x01(\bR\x19deletionProtectionEnabled\x1a7\n" +
+	"created_at\x18\x0e \x01(\x03R\tcreatedAt\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa0\x02\n" +
 	"\tLogStream\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12$\n" +
 	"\x0elog_group_name\x18\x02 \x01(\tR\flogGroupName\x12\x10\n" +
-	"\x03arn\x18\x03 \x01(\tR\x03arn\x12\x1d\n" +
-	"\n" +
-	"created_at\x18\x04 \x01(\x03R\tcreatedAt\x12$\n" +
+	"\x03arn\x18\x03 \x01(\tR\x03arn\x122\n" +
+	"\x15upload_sequence_token\x18\x04 \x01(\tR\x13uploadSequenceToken\x12$\n" +
 	"\x0efirst_event_ts\x18\x05 \x01(\x03R\ffirstEventTs\x12\"\n" +
 	"\rlast_event_ts\x18\x06 \x01(\x03R\vlastEventTs\x12*\n" +
-	"\x11last_ingestion_ts\x18\a \x01(\x03R\x0flastIngestionTs\x122\n" +
-	"\x15upload_sequence_token\x18\b \x01(\tR\x13uploadSequenceToken\"\xd0\x01\n" +
+	"\x11last_ingestion_ts\x18\a \x01(\x03R\x0flastIngestionTs\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\b \x01(\x03R\tcreatedAt\"\xa0\x02\n" +
 	"\tChunkMeta\x12\x19\n" +
-	"\bchunk_id\x18\x01 \x01(\tR\achunkId\x12\x1b\n" +
-	"\tlog_group\x18\x02 \x01(\tR\blogGroup\x12\x1d\n" +
+	"\bchunk_id\x18\x01 \x01(\tR\achunkId\x12$\n" +
+	"\x0elog_group_name\x18\x02 \x01(\tR\flogGroupName\x12\x1d\n" +
 	"\n" +
-	"log_stream\x18\x03 \x01(\tR\tlogStream\x12\x15\n" +
-	"\x06min_ts\x18\x04 \x01(\x03R\x05minTs\x12\x15\n" +
-	"\x06max_ts\x18\x05 \x01(\x03R\x05maxTs\x12\x1f\n" +
-	"\ventry_count\x18\x06 \x01(\x05R\n" +
-	"entryCount\x12\x1d\n" +
+	"log_stream\x18\x03 \x01(\tR\tlogStream\x12\x1d\n" +
 	"\n" +
-	"chunk_path\x18\a \x01(\tR\tchunkPath\"\xf3\x01\n" +
+	"chunk_path\x18\x04 \x01(\tR\tchunkPath\x12\x15\n" +
+	"\x06min_ts\x18\x05 \x01(\x03R\x05minTs\x12\x15\n" +
+	"\x06max_ts\x18\x06 \x01(\x03R\x05maxTs\x12\x1f\n" +
+	"\ventry_count\x18\a \x01(\x05R\n" +
+	"entryCount\x12\x1b\n" +
+	"\tbyte_size\x18\b \x01(\x03R\bbyteSize\x12(\n" +
+	"\x10max_ingestion_ts\x18\t \x01(\x03R\x0emaxIngestionTs\"\xa9\x03\n" +
 	"\fMetricFilter\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12$\n" +
 	"\x0elog_group_name\x18\x02 \x01(\tR\flogGroupName\x12%\n" +
-	"\x0efilter_pattern\x18\x03 \x01(\tR\rfilterPattern\x12c\n" +
-	"\x16metric_transformations\x18\x04 \x03(\v2,.storage.cloudwatchlogs.MetricTransformationR\x15metricTransformations\x12\x1d\n" +
+	"\x0efilter_pattern\x18\x03 \x01(\tR\rfilterPattern\x129\n" +
+	"\x19apply_on_transformed_logs\x18\x04 \x01(\bR\x16applyOnTransformedLogs\x128\n" +
+	"\x18field_selection_criteria\x18\x05 \x01(\tR\x16fieldSelectionCriteria\x12c\n" +
+	"\x16metric_transformations\x18\x06 \x03(\v2,.storage.cloudwatchlogs.MetricTransformationR\x15metricTransformations\x12?\n" +
+	"\x1cemit_system_field_dimensions\x18\a \x03(\tR\x19emitSystemFieldDimensions\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\x03R\tcreatedAt\"\xd6\x01\n" +
+	"created_at\x18\b \x01(\x03R\tcreatedAt\"\x87\x03\n" +
 	"\x14MetricTransformation\x12\x1f\n" +
 	"\vmetric_name\x18\x01 \x01(\tR\n" +
 	"metricName\x12)\n" +
 	"\x10metric_namespace\x18\x02 \x01(\tR\x0fmetricNamespace\x12!\n" +
 	"\fmetric_value\x18\x03 \x01(\tR\vmetricValue\x12#\n" +
 	"\rdefault_value\x18\x04 \x01(\x01R\fdefaultValue\x12*\n" +
-	"\x11default_value_set\x18\x05 \x01(\bR\x0fdefaultValueSet\"\x89\x02\n" +
-	"\x12SubscriptionFilter\x12$\n" +
-	"\x0elog_group_name\x18\x01 \x01(\tR\flogGroupName\x12\x1f\n" +
-	"\vfilter_name\x18\x02 \x01(\tR\n" +
-	"filterName\x12%\n" +
-	"\x0efilter_pattern\x18\x03 \x01(\tR\rfilterPattern\x12'\n" +
-	"\x0fdestination_arn\x18\x04 \x01(\tR\x0edestinationArn\x12\x19\n" +
-	"\brole_arn\x18\x05 \x01(\tR\aroleArn\x12\"\n" +
-	"\fdistribution\x18\x06 \x01(\tR\fdistribution\x12\x1d\n" +
+	"\x11default_value_set\x18\x05 \x01(\bR\x0fdefaultValueSet\x12\\\n" +
 	"\n" +
-	"created_at\x18\a \x01(\x03R\tcreatedAt\"B\n" +
-	"\bLogEntry\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xb3\x02\n" +
+	"dimensions\x18\x06 \x03(\v2<.storage.cloudwatchlogs.MetricTransformation.DimensionsEntryR\n" +
+	"dimensions\x12\x12\n" +
+	"\x04unit\x18\a \x01(\tR\x04unit\x1a=\n" +
+	"\x0fDimensionsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9f\x03\n" +
+	"\x12SubscriptionFilter\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12$\n" +
+	"\x0elog_group_name\x18\x02 \x01(\tR\flogGroupName\x12%\n" +
+	"\x0efilter_pattern\x18\x03 \x01(\tR\rfilterPattern\x129\n" +
+	"\x19apply_on_transformed_logs\x18\x04 \x01(\bR\x16applyOnTransformedLogs\x128\n" +
+	"\x18field_selection_criteria\x18\x05 \x01(\tR\x16fieldSelectionCriteria\x12'\n" +
+	"\x0fdestination_arn\x18\x06 \x01(\tR\x0edestinationArn\x12\x19\n" +
+	"\brole_arn\x18\a \x01(\tR\aroleArn\x12\"\n" +
+	"\fdistribution\x18\b \x01(\tR\fdistribution\x12,\n" +
+	"\x12emit_system_fields\x18\t \x03(\tR\x10emitSystemFields\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\x03R\tcreatedAt\"\xad\x02\n" +
 	"\vDestination\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
 	"\x03arn\x18\x02 \x01(\tR\x03arn\x12\x19\n" +
 	"\brole_arn\x18\x03 \x01(\tR\aroleArn\x12\x1d\n" +
 	"\n" +
 	"target_arn\x18\x04 \x01(\tR\ttargetArn\x12#\n" +
-	"\raccess_policy\x18\x05 \x01(\tR\faccessPolicy\x12#\n" +
-	"\rcreation_time\x18\x06 \x01(\x03R\fcreationTime\x12A\n" +
-	"\x04tags\x18\a \x03(\v2-.storage.cloudwatchlogs.Destination.TagsEntryR\x04tags\x1a7\n" +
+	"\raccess_policy\x18\x05 \x01(\tR\faccessPolicy\x12A\n" +
+	"\x04tags\x18\x06 \x03(\v2-.storage.cloudwatchlogs.Destination.TagsEntryR\x04tags\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\x03R\tcreatedAt\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B9Z7vorpalstacks/internal/pb/storage/storage_cloudwatchlogsb\x06proto3"
@@ -839,20 +925,21 @@ var file_storage_cloudwatchlogs_proto_goTypes = []any{
 	(*MetricFilter)(nil),         // 3: storage.cloudwatchlogs.MetricFilter
 	(*MetricTransformation)(nil), // 4: storage.cloudwatchlogs.MetricTransformation
 	(*SubscriptionFilter)(nil),   // 5: storage.cloudwatchlogs.SubscriptionFilter
-	(*LogEntry)(nil),             // 6: storage.cloudwatchlogs.LogEntry
-	(*Destination)(nil),          // 7: storage.cloudwatchlogs.Destination
-	nil,                          // 8: storage.cloudwatchlogs.LogGroup.TagsEntry
+	(*Destination)(nil),          // 6: storage.cloudwatchlogs.Destination
+	nil,                          // 7: storage.cloudwatchlogs.LogGroup.TagsEntry
+	nil,                          // 8: storage.cloudwatchlogs.MetricTransformation.DimensionsEntry
 	nil,                          // 9: storage.cloudwatchlogs.Destination.TagsEntry
 }
 var file_storage_cloudwatchlogs_proto_depIdxs = []int32{
-	8, // 0: storage.cloudwatchlogs.LogGroup.tags:type_name -> storage.cloudwatchlogs.LogGroup.TagsEntry
+	7, // 0: storage.cloudwatchlogs.LogGroup.tags:type_name -> storage.cloudwatchlogs.LogGroup.TagsEntry
 	4, // 1: storage.cloudwatchlogs.MetricFilter.metric_transformations:type_name -> storage.cloudwatchlogs.MetricTransformation
-	9, // 2: storage.cloudwatchlogs.Destination.tags:type_name -> storage.cloudwatchlogs.Destination.TagsEntry
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	8, // 2: storage.cloudwatchlogs.MetricTransformation.dimensions:type_name -> storage.cloudwatchlogs.MetricTransformation.DimensionsEntry
+	9, // 3: storage.cloudwatchlogs.Destination.tags:type_name -> storage.cloudwatchlogs.Destination.TagsEntry
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_storage_cloudwatchlogs_proto_init() }

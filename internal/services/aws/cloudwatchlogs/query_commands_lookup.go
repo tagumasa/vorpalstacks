@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
 // parsedLookupTable is the query-time view of a stored lookup table: the
@@ -15,6 +16,50 @@ type parsedLookupTable struct {
 }
 
 // newParsedLookupTable indexes a parsed CSV table for the lookup commands.
+// loadParsedLookupTable resolves a lookup table to its parsed CSV form:
+// the shared body of the execContext's getLookupTable closure on both
+// the interactive and the scheduled query planes.
+func (s *LogsService) loadParsedLookupTable(store *logsstore.Store, region, name string) (*parsedLookupTable, error) {
+	lt, err := store.GetLookupTable(name)
+	if err != nil {
+		return nil, fmt.Errorf("lookup table %s not found", name)
+	}
+	body, err := s.lookupTablePlainBody(lt, region)
+	if err != nil {
+		return nil, fmt.Errorf("lookup table %s is unavailable: %v", name, err)
+	}
+	columns, records, err := parseLookupCSV(body)
+	if err != nil {
+		return nil, fmt.Errorf("lookup table %s is invalid: %v", name, err)
+	}
+	return newParsedLookupTable(columns, records), nil
+}
+
+// lookupColumn resolves one field name to its column index in the
+// parsed table, reporting an unknown field through the shared error
+// format.
+func lookupColumn(table *parsedLookupTable, tableName, field string) (int, error) {
+	col, ok := table.column(field)
+	if !ok {
+		return 0, fmt.Errorf("lookup table %s has no column %s", tableName, field)
+	}
+	return col, nil
+}
+
+// lookupColumns resolves field names to column indexes, reporting the
+// first unknown field through the same shared error format.
+func lookupColumns(table *parsedLookupTable, tableName string, fields []string) ([]int, error) {
+	cols := make([]int, 0, len(fields))
+	for _, f := range fields {
+		col, err := lookupColumn(table, tableName, f)
+		if err != nil {
+			return nil, err
+		}
+		cols = append(cols, col)
+	}
+	return cols, nil
+}
+
 func newParsedLookupTable(columns []string, rows [][]string) *parsedLookupTable {
 	idx := make(map[string]int, len(columns))
 	for i, c := range columns {
@@ -132,23 +177,19 @@ func (c *lookupCommand) apply(ctx *execContext, rows []queryResultRow) []queryRe
 		ctx.sourceError = err
 		return rows
 	}
-	var matchCols []int
+	matchFields := make([]string, 0, len(c.matches))
 	for _, m := range c.matches {
-		col, ok := table.column(m.lookupField)
-		if !ok {
-			ctx.sourceError = fmt.Errorf("lookup table %s has no column %s", c.table, m.lookupField)
-			return rows
-		}
-		matchCols = append(matchCols, col)
+		matchFields = append(matchFields, m.lookupField)
 	}
-	var outputCols []int
-	for _, out := range c.outputs {
-		col, ok := table.column(out)
-		if !ok {
-			ctx.sourceError = fmt.Errorf("lookup table %s has no column %s", c.table, out)
-			return rows
-		}
-		outputCols = append(outputCols, col)
+	matchCols, err := lookupColumns(table, c.table, matchFields)
+	if err != nil {
+		ctx.sourceError = err
+		return rows
+	}
+	outputCols, err := lookupColumns(table, c.table, c.outputs)
+	if err != nil {
+		ctx.sourceError = err
+		return rows
 	}
 
 	// Index the first table row per composite match key; rows must match
@@ -287,21 +328,21 @@ func (c *cidrlookupCommand) apply(ctx *execContext, rows []queryResultRow) []que
 	}
 	cidrCol := 0
 	if c.cidrColumn != "" {
-		col, ok := table.column(c.cidrColumn)
-		if !ok {
-			ctx.sourceError = fmt.Errorf("lookup table %s has no column %s", c.table, c.cidrColumn)
+		col, lerr := lookupColumn(table, c.table, c.cidrColumn)
+		if lerr != nil {
+			ctx.sourceError = lerr
 			return rows
 		}
 		cidrCol = col
 	}
-	var outputCols []int
+	outputFields := make([]string, 0, len(c.outputs))
 	for _, out := range c.outputs {
-		col, ok := table.column(out.lookupField)
-		if !ok {
-			ctx.sourceError = fmt.Errorf("lookup table %s has no column %s", c.table, out.lookupField)
-			return rows
-		}
-		outputCols = append(outputCols, col)
+		outputFields = append(outputFields, out.lookupField)
+	}
+	outputCols, err := lookupColumns(table, c.table, outputFields)
+	if err != nil {
+		ctx.sourceError = err
+		return rows
 	}
 
 	for i := range rows {

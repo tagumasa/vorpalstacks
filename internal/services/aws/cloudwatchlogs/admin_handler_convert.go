@@ -29,9 +29,12 @@ func toPbLogGroupSummary(lg *logsstore.LogGroup) *pb.LogGroupSummary {
 // representation used by the admin console.
 func toPbLogStream(ls *logsstore.LogStream) *pb.LogStream {
 	return &pb.LogStream{
-		Logstreamname:       proto.String(ls.Name),
-		Arn:                 proto.String(ls.ARN),
-		Creationtime:        proto.Int64(ls.CreatedAt.UnixMilli()),
+		Logstreamname: proto.String(ls.Name),
+		Arn:           proto.String(ls.ARN),
+		Creationtime:  proto.Int64(ls.CreatedAt.UnixMilli()),
+		// storedBytes is always zero for log streams (the LogStream
+		// shape's deprecated member documentation).
+		Storedbytes:         proto.Int64(0),
 		Firsteventtimestamp: proto.Int64(ls.FirstEventTs),
 		Lasteventtimestamp:  proto.Int64(ls.LastEventTs),
 		Lastingestiontime:   proto.Int64(ls.LastIngestionTs),

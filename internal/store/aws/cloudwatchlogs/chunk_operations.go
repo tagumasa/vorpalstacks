@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync/atomic"
 
 	"google.golang.org/protobuf/proto"
@@ -32,16 +33,31 @@ type pendingChunkIndex struct {
 // orphaned chunk files referenced by pendingChunks.
 func (s *Store) updateLogGroupStreamAndChunks(logGroupName string, lg *LogGroup, logStreamName string, ls *LogStream, pendingChunks []pendingChunkIndex) error {
 	if s.ts == nil {
-		if err := s.PutLogGroup(lg); err != nil {
+		// Fallback (non-transactional) commits are sequential writes, so a
+		// failure midway must undo the writes that already landed: the
+		// index records written before the failure are removed here (the
+		// caller removes the chunk files), and the caller restores the
+		// LogGroup/LogStream records to their pre-mutation state — without
+		// both compensations a failed call leaves StoredBytes and
+		// sequence-token drift that no later operation reconciles.
+		if err := s.putLogGroupLocked(lg); err != nil {
 			return err
 		}
 		if err := s.PutProto(s.logStreamKey(logGroupName, logStreamName), LogStreamToProto(ls)); err != nil {
 			return err
 		}
+		var written []string
 		for _, pc := range pendingChunks {
 			if err := s.PutProto(pc.indexKey, ChunkMetaToProto(pc.meta)); err != nil {
+				for _, key := range written {
+					if rmErr := s.Delete(key); rmErr != nil {
+						logs.Error("Failed to roll back chunk index record",
+							logs.String("key", key), logs.Err(rmErr))
+					}
+				}
 				return err
 			}
+			written = append(written, pc.indexKey)
 		}
 		return nil
 	}
@@ -96,6 +112,10 @@ func (s *Store) prepareChunkFlush(logGroupName, logStreamName string, entries []
 		return pendingChunkIndex{}, err
 	}
 
+	// The index records the relative form when the chunks directory
+	// allows the conversion; a server started with a relative data path
+	// cannot convert an absolute writer path against it, so both forms
+	// occur in stored records and both are first-class at read time.
 	relPath := actualPath
 	if filepath.IsAbs(actualPath) && s.chunksDir != "" {
 		if rel, err := filepath.Rel(s.chunksDir, actualPath); err == nil {
@@ -103,14 +123,29 @@ func (s *Store) prepareChunkFlush(logGroupName, logStreamName string, entries []
 		}
 	}
 
+	// The recorded byte size is the ingestion accounting basis (the sum of
+	// message lengths PutLogEvents added to StoredBytes), not the file
+	// size: the file is compressed, so removal paths that decremented by
+	// file size would drift against the increment.
+	var msgBytes int64
+	var maxIngestion int64
+	for _, e := range entries {
+		msgBytes += int64(len(e.Message))
+		if e.IngestionTime > maxIngestion {
+			maxIngestion = e.IngestionTime
+		}
+	}
+
 	meta := &ChunkMeta{
-		ChunkID:    chunkID,
-		LogGroup:   logGroupName,
-		LogStream:  logStreamName,
-		MinTs:      header.MinTs,
-		MaxTs:      header.MaxTs,
-		EntryCount: int(header.EntryCount),
-		ChunkPath:  relPath,
+		ChunkID:        chunkID,
+		LogGroupName:   logGroupName,
+		LogStream:      logStreamName,
+		MinTs:          header.MinTs,
+		MaxTs:          header.MaxTs,
+		MaxIngestionTs: maxIngestion,
+		EntryCount:     int(header.EntryCount),
+		ChunkPath:      relPath,
+		ByteSize:       msgBytes,
 	}
 
 	return pendingChunkIndex{
@@ -138,11 +173,16 @@ func (s *Store) writeChunkFile(entries []LogEntry) (string, *chunk.Header, error
 	// only a process restart: the chunk file is fsynced before the chunk
 	// index transaction commits, so the index can never point at data
 	// that a crash lost. The cost is one fsync per chunk, and a chunk is
-	// written exactly once per PutLogEvents call.
+	// written exactly once per PutLogEvents call. ChunkSize must exceed
+	// the maximal batch: the writer auto-flushes once its buffer reaches
+	// ChunkSize, and with a maximal batch that auto-flush would empty the
+	// buffer before the caller's explicit Flush, which then returns an
+	// empty path and the header read fails.
 	opts := &chunk.WriterOptions{
 		ChunksDir:   s.chunksDir,
 		Encoding:    chunk.EncodingZstd,
 		SyncOnWrite: true,
+		ChunkSize:   MaxChunkSize + 1,
 	}
 
 	w := chunk.NewWriter(opts)
@@ -170,13 +210,14 @@ func (s *Store) writeChunkFile(entries []LogEntry) (string, *chunk.Header, error
 }
 
 func (s *Store) readChunkFile(chunkPath string) ([]LogEntry, error) {
-	fullPath := chunkPath
-	if !filepath.IsAbs(chunkPath) {
-		p, err := s.safeChunkPath(chunkPath)
-		if err != nil {
-			return nil, err
-		}
-		fullPath = p
+	// Every read resolves through the safe-path check, absolute forms
+	// included: a stored ChunkPath is the absolute path the chunk writer
+	// records, and the check validates it in place against the chunks
+	// directory, so a traversal or fabricated record cannot answer
+	// through the chunk plane while the legitimate file opens as named.
+	fullPath, err := s.safeChunkPath(chunkPath)
+	if err != nil {
+		return nil, err
 	}
 
 	r := chunk.NewReader(&chunk.ReaderOptions{ChunksDir: s.chunksDir})
@@ -201,20 +242,25 @@ func (s *Store) readChunkFile(chunkPath string) ([]LogEntry, error) {
 	return entries, nil
 }
 
-// ListChunksForStream lists chunk metadata for a specific log stream.
-func (s *Store) ListChunksForStream(logGroupName, logStreamName string) []*ChunkMeta {
-	prefix := s.chunkIndexKey(logGroupName, logStreamName, "")
-	var chunks []*ChunkMeta
+// scanPrefix is indirected so tests can exercise the scan-failure paths
+// that ride on scanChunkMetas.
+var scanPrefix = (*Store).ScanPrefix
 
-	if err := s.ScanPrefix(prefix, func(key string, value []byte) error {
+// scanChunkMetas walks the chunk metadata records under one prefix —
+// the shared body of the stream- and group-scoped chunk listings. A
+// record that fails to decode is invisible to the caller; it is logged
+// so chunk corruption stays discoverable instead of silently shrinking
+// the chunk list. A scan failure propagates: the read engine must
+// answer an error rather than a short page, and a teardown must leave
+// the records it can no longer see in place for a retry.
+func (s *Store) scanChunkMetas(prefix string) ([]*ChunkMeta, error) {
+	var chunks []*ChunkMeta
+	if err := scanPrefix(s, prefix, func(key string, value []byte) error {
 		if !bytes.HasPrefix([]byte(key), []byte(prefix)) {
 			return nil
 		}
 		var p pb.ChunkMeta
 		if err := proto.Unmarshal(value, &p); err != nil {
-			// A record that fails to decode is invisible to the caller;
-			// log it so chunk corruption is discoverable instead of
-			// silently shrinking the chunk list.
 			logs.Warn("Corrupt chunk metadata record",
 				logs.String("key", key), logs.Err(err))
 			return nil
@@ -222,33 +268,63 @@ func (s *Store) ListChunksForStream(logGroupName, logStreamName string) []*Chunk
 		chunks = append(chunks, ProtoToChunkMeta(&p))
 		return nil
 	}); err != nil {
-		logs.Error("Failed to scan chunks for stream", logs.String("logGroup", logGroupName), logs.String("logStream", logStreamName), logs.Err(err))
+		return nil, err
 	}
+	return chunks, nil
+}
 
-	return chunks
+// ListChunksForStream lists chunk metadata for a specific log stream.
+func (s *Store) ListChunksForStream(logGroupName, logStreamName string) ([]*ChunkMeta, error) {
+	return s.scanChunkMetas(s.chunkIndexKey(logGroupName, logStreamName, ""))
+}
+
+// LateIngestionEvents returns the stream's events that landed below a
+// delivery cursor: timestamp strictly before cursorTime, ingestion time
+// strictly after ingestionMark. The chunk selection rides the index alone
+// (a chunk qualifies when its greatest ingestion time exceeds the mark
+// and its least timestamp falls below the cursor), so a stream with no
+// late arrivals costs one meta scan and no chunk-file reads. The listing
+// runs under the group's read lock — the same lock a PutLogEvents commit
+// holds from ingestion-time stamp to index commit — which is what lets a
+// caller that stamps its mark at listing time treat everything the
+// listing could not see as ingested after that mark.
+func (s *Store) LateIngestionEvents(logGroupName, logStreamName string, ingestionMark, cursorTime int64) ([]LogEntry, error) {
+	if cursorTime <= 0 {
+		return nil, nil
+	}
+	gLock := s.groupLock(logGroupName)
+	gLock.RLock()
+	defer gLock.RUnlock()
+
+	chunks, err := s.ListChunksForStream(logGroupName, logStreamName)
+	if err != nil {
+		return nil, err
+	}
+	var late []LogEntry
+	for _, chunk := range chunks {
+		if chunk.MaxIngestionTs <= ingestionMark || chunk.MinTs >= cursorTime {
+			continue
+		}
+		entries, err := s.readChunkFile(chunk.ChunkPath)
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range entries {
+			if e.Timestamp < cursorTime && e.IngestionTime > ingestionMark {
+				late = append(late, e)
+			}
+		}
+	}
+	sort.SliceStable(late, func(i, j int) bool {
+		if late[i].Timestamp != late[j].Timestamp {
+			return late[i].Timestamp < late[j].Timestamp
+		}
+		return late[i].Message < late[j].Message
+	})
+	return late, nil
 }
 
 // ListChunksForLogGroup lists chunk metadata for all streams in a log group.
-func (s *Store) ListChunksForLogGroup(logGroupName string) []*ChunkMeta {
-	prefix := "chunk:" + escapePath(logGroupName) + ":"
-	var chunks []*ChunkMeta
-
-	if err := s.ScanPrefix(prefix, func(key string, value []byte) error {
-		if !bytes.HasPrefix([]byte(key), []byte(prefix)) {
-			return nil
-		}
-		var p pb.ChunkMeta
-		if err := proto.Unmarshal(value, &p); err != nil {
-			// See ListChunksForStream: corruption must stay visible.
-			logs.Warn("Corrupt chunk metadata record",
-				logs.String("key", key), logs.Err(err))
-			return nil
-		}
-		chunks = append(chunks, ProtoToChunkMeta(&p))
-		return nil
-	}); err != nil {
-		logs.Error("Failed to scan chunks for log group", logs.String("logGroup", logGroupName), logs.Err(err))
-	}
-
-	return chunks
+func (s *Store) ListChunksForLogGroup(logGroupName string) ([]*ChunkMeta, error) {
+	return s.scanChunkMetas(keyPrefixChunk + escapePath(logGroupName) + ":")
 }

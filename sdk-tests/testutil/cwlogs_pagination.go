@@ -21,7 +21,9 @@ func (tc *cwlogsTestCtx) paginationTests() []TestResult {
 			pgPrefix + "gamma",
 		}
 		for _, name := range groupNames {
-			tc.createLogGroup(name)
+			if err := tc.createLogGroup(name); err != nil {
+				return fmt.Errorf("create %s: %v", name, err)
+			}
 			defer tc.deleteLogGroup(name)
 		}
 
@@ -50,15 +52,17 @@ func (tc *cwlogsTestCtx) paginationTests() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("logs", "DescribeLogStreams_Pagination", func() error {
-		psName := tc.uniquePrefix("PagStreamGroup")
-		if err := tc.createLogGroup(psName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		psName, cleanupGroup, err := tc.newLogGroupFixture("PagStreamGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(psName)
+		defer cleanupGroup()
 
 		streamNames := []string{psName + "-s1", psName + "-s2", psName + "-s3"}
 		for _, sn := range streamNames {
-			tc.createLogStream(psName, sn)
+			if err := tc.createLogStream(psName, sn); err != nil {
+				return fmt.Errorf("create stream %s: %v", sn, err)
+			}
 		}
 
 		var allStreams []types.LogStream
@@ -86,15 +90,17 @@ func (tc *cwlogsTestCtx) paginationTests() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("logs", "DescribeLogStreams_NamePrefix", func() error {
-		npName := tc.uniquePrefix("NpStreamGroup")
-		if err := tc.createLogGroup(npName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		npName, cleanupGroup, err := tc.newLogGroupFixture("NpStreamGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(npName)
+		defer cleanupGroup()
 
-		tc.createLogStream(npName, "app-server-1")
-		tc.createLogStream(npName, "app-server-2")
-		tc.createLogStream(npName, "db-server-1")
+		for _, sn := range []string{"app-server-1", "app-server-2", "db-server-1"} {
+			if err := tc.createLogStream(npName, sn); err != nil {
+				return fmt.Errorf("create stream %s: %v", sn, err)
+			}
+		}
 
 		resp, err := tc.client.DescribeLogStreams(tc.ctx, &cloudwatchlogs.DescribeLogStreamsInput{
 			LogGroupName:        aws.String(npName),
@@ -109,6 +115,45 @@ func (tc *cwlogsTestCtx) paginationTests() []TestResult {
 		for _, ls := range resp.LogStreams {
 			if !strings.HasPrefix(*ls.LogStreamName, "app-") {
 				return fmt.Errorf("unexpected stream: %q", *ls.LogStreamName)
+			}
+		}
+
+		// The identifier member addresses the same listing by ARN.
+		npArn, err := tc.findLogGroupARN(npName)
+		if err != nil {
+			return fmt.Errorf("find ARN: %v", err)
+		}
+		arnResp, err := tc.client.DescribeLogStreams(tc.ctx, &cloudwatchlogs.DescribeLogStreamsInput{
+			LogGroupIdentifier:  npArn,
+			LogStreamNamePrefix: aws.String("app-"),
+		})
+		if err != nil {
+			return fmt.Errorf("describe by identifier ARN: %v", err)
+		}
+		if len(arnResp.LogStreams) != 2 {
+			return fmt.Errorf("identifier-ARN describe expected 2 streams, got %d", len(arnResp.LogStreams))
+		}
+
+		// A prefix carrying '/' addresses streams whose names carry the
+		// same separator.
+		for _, sn := range []string{"app/alpha", "app/beta", "db/one"} {
+			if err := tc.createLogStream(npName, sn); err != nil {
+				return fmt.Errorf("create stream %s: %v", sn, err)
+			}
+		}
+		slashResp, err := tc.client.DescribeLogStreams(tc.ctx, &cloudwatchlogs.DescribeLogStreamsInput{
+			LogGroupName:        aws.String(npName),
+			LogStreamNamePrefix: aws.String("app/"),
+		})
+		if err != nil {
+			return fmt.Errorf("describe with slash prefix: %v", err)
+		}
+		if len(slashResp.LogStreams) != 2 {
+			return fmt.Errorf("expected 2 streams with prefix 'app/', got %d", len(slashResp.LogStreams))
+		}
+		for _, ls := range slashResp.LogStreams {
+			if !strings.HasPrefix(*ls.LogStreamName, "app/") {
+				return fmt.Errorf("unexpected stream under slash prefix: %q", *ls.LogStreamName)
 			}
 		}
 		return nil

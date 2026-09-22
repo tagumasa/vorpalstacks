@@ -8,27 +8,19 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/response"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // lookupTableNameRe validates the documented name pattern of lookup tables
 // (alphanumeric characters and underscores).
 var lookupTableNameRe = regexp.MustCompile(logsstore.LookupTableNamePattern)
 
-// lookupTableArn builds the ARN of a lookup table.
+// lookupTableArn builds the ARN of a lookup table through the platform
+// ARN builder — the single definition of the logs lookup-table ARN form.
 func lookupTableArn(region, accountID, name string) string {
-	return fmt.Sprintf("arn:aws:logs:%s:%s:lookup-table:%s", region, accountID, name)
-}
-
-// lookupTableNameFromArn extracts the table name from an ARN; a bare name
-// is accepted as-is.
-func lookupTableNameFromArn(identifier string) string {
-	if strings.HasPrefix(identifier, "arn:") {
-		if idx := strings.LastIndex(identifier, ":"); idx >= 0 {
-			return identifier[idx+1:]
-		}
-	}
-	return identifier
+	return svcarn.NewARNBuilder(accountID, region).CloudWatch().LookupTable(name)
 }
 
 // stringParamPresent extracts a string parameter with presence semantics
@@ -165,7 +157,7 @@ func (s *LogsService) DeleteLookupTable(ctx context.Context, reqCtx *request.Req
 	if err := s.deleteLookupTableCore(store, request.GetParamLowerFirst(req.Parameters, "LookupTableArn")); err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{}, nil
+	return response.EmptyResponse(), nil
 }
 
 // DescribeLookupTables lists lookup tables, optionally filtered by name

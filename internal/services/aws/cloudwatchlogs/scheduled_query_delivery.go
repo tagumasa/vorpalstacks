@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"errors"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
@@ -21,7 +22,7 @@ const (
 // deliverScheduledQueryResults renders the result rows and delivers them to
 // every configured destination, returning one delivery record per
 // destination.
-func (s *LogsService) deliverScheduledQueryResults(region string, store *logsstore.Store, sq *logsstore.ScheduledQuery, queryId string, rows []queryResultRow) []*logsstore.ScheduledQueryDestination {
+func (s *LogsService) deliverScheduledQueryResults(ctx context.Context, region string, store *logsstore.Store, sq *logsstore.ScheduledQuery, queryId string, rows []queryResultRow) []*logsstore.ScheduledQueryDestination {
 	var dests []*logsstore.ScheduledQueryDestination
 	if sq.DestinationConfiguration == nil {
 		return dests
@@ -30,7 +31,7 @@ func (s *LogsService) deliverScheduledQueryResults(region string, store *logssto
 		dests = append(dests, s.deliverToLookupTable(region, store, lt, rows))
 	}
 	if s3c, ok := sq.DestinationConfiguration["s3Configuration"].(map[string]interface{}); ok {
-		dests = append(dests, s.deliverToS3(region, s3c, queryId, rows))
+		dests = append(dests, s.deliverToS3(ctx, region, s3c, queryId, rows))
 	}
 	return dests
 }
@@ -55,8 +56,14 @@ func (s *LogsService) deliverToLookupTable(region string, store *logsstore.Store
 	if body == "" {
 		return fail(destinationStatusClientError, "query returned no result rows to populate the lookup table")
 	}
-	existing, err := store.GetLookupTable(name)
-	if err != nil {
+	// The refresh runs inside the lookup-table mutate seam: a concurrent
+	// UpdateLookupTable cannot have its fields reverted by this write,
+	// and this refresh cannot drop an update that committed while the
+	// query was running.
+	err := store.MutateLookupTable(name, func(existing *logsstore.LookupTable) error {
+		return s.applyLookupTableBody(existing, body, region)
+	})
+	if errors.Is(err, logsstore.ErrResourceNotFound) {
 		// The table does not exist yet: create it from the results. The
 		// configuration's description, KMS key and tags apply only during
 		// initial table creation.
@@ -67,23 +74,23 @@ func (s *LogsService) deliverToLookupTable(region string, store *logsstore.Store
 			KmsKeyId:    destinationParam(cfg, "kmsKeyId"),
 			Tags:        destinationTags(cfg),
 		}
-		if _, _, err := s.createLookupTableCore(store, in, region); err != nil {
-			return fail(destinationStatusClientError, fmt.Sprintf("failed to create lookup table: %v", err))
+		if _, _, cerr := s.createLookupTableCore(store, in, region); cerr != nil {
+			return fail(destinationStatusClientError, fmt.Sprintf("failed to create lookup table: %v", cerr))
 		}
 		return dest
 	}
-	if err := s.applyLookupTableBody(existing, body, region); err != nil {
+	if err != nil {
 		return fail(destinationStatusClientError, fmt.Sprintf("failed to refresh lookup table: %v", err))
-	}
-	if err := store.PutLookupTable(existing); err != nil {
-		return fail(destinationStatusFailed, fmt.Sprintf("failed to store lookup table: %v", err))
 	}
 	return dest
 }
 
 // deliverToS3 writes the query results as gzipped CSV under the configured
 // S3 URI prefix.
-func (s *LogsService) deliverToS3(region string, cfg map[string]interface{}, queryId string, rows []queryResultRow) *logsstore.ScheduledQueryDestination {
+func (s *LogsService) deliverToS3(ctx context.Context, region string, cfg map[string]interface{}, queryId string, rows []queryResultRow) *logsstore.ScheduledQueryDestination {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	uri := destinationParam(cfg, "destinationIdentifier")
 	dest := &logsstore.ScheduledQueryDestination{
 		DestinationType:       "S3",
@@ -109,10 +116,10 @@ func (s *LogsService) deliverToS3(region string, cfg map[string]interface{}, que
 	if prefix != "" {
 		key = prefix + "/" + key
 	}
-	if s.bus == nil || s.bus.S3Invoker() == nil {
+	if s.eventBus() == nil || s.eventBus().S3Invoker() == nil {
 		return fail(destinationStatusFailed, "S3 delivery is not available")
 	}
-	if err := s.bus.S3Invoker().PutObject(context.Background(), region, bucket, key, buf.Bytes(), "application/x-gzip"); err != nil {
+	if err := s.eventBus().S3Invoker().PutObject(ctx, region, bucket, key, buf.Bytes(), "application/x-gzip"); err != nil {
 		return fail(destinationStatusFailed, fmt.Sprintf("S3 upload error: %v", err))
 	}
 	dest.ProcessedIdentifier = key

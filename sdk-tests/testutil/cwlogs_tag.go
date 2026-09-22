@@ -12,11 +12,11 @@ func (tc *cwlogsTestCtx) tagTests() []TestResult {
 	var results []TestResult
 
 	results = append(results, tc.runner.RunTest("logs", "TagResource_Basic", func() error {
-		tgName := tc.uniquePrefix("TagGroup")
-		if err := tc.createLogGroup(tgName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		tgName, cleanupGroup, err := tc.newLogGroupFixture("TagGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(tgName)
+		defer cleanupGroup()
 
 		arn, err := tc.findLogGroupARN(tgName)
 		if err != nil {
@@ -33,28 +33,41 @@ func (tc *cwlogsTestCtx) tagTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("tag: %v", err)
 		}
+
+		// The put is verified through the read-back, not err == nil alone.
+		tagResp, err := tc.client.ListTagsForResource(tc.ctx, &cloudwatchlogs.ListTagsForResourceInput{
+			ResourceArn: arn,
+		})
+		if err != nil {
+			return fmt.Errorf("list tags: %v", err)
+		}
+		if tagResp.Tags["Environment"] != "test" || tagResp.Tags["Team"] != "vorpalstacks" {
+			return fmt.Errorf("tags after put: %v", tagResp.Tags)
+		}
 		return nil
 	}))
 
 	results = append(results, tc.runner.RunTest("logs", "ListTagsForResource_Basic", func() error {
-		ltName := tc.uniquePrefix("ListTagGroup")
-		if err := tc.createLogGroup(ltName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		ltName, cleanupGroup, err := tc.newLogGroupFixture("ListTagGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(ltName)
+		defer cleanupGroup()
 
 		arn, err := tc.findLogGroupARN(ltName)
 		if err != nil {
 			return err
 		}
 
-		tc.client.TagResource(tc.ctx, &cloudwatchlogs.TagResourceInput{
+		if _, err := tc.client.TagResource(tc.ctx, &cloudwatchlogs.TagResourceInput{
 			ResourceArn: arn,
 			Tags: map[string]string{
 				"Key1": "Value1",
 				"Key2": "Value2",
 			},
-		})
+		}); err != nil {
+			return fmt.Errorf("tag: %v", err)
+		}
 
 		tagResp, err := tc.client.ListTagsForResource(tc.ctx, &cloudwatchlogs.ListTagsForResourceInput{
 			ResourceArn: arn,
@@ -75,25 +88,27 @@ func (tc *cwlogsTestCtx) tagTests() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("logs", "UntagResource_Basic", func() error {
-		utName := tc.uniquePrefix("UntagGroup")
-		if err := tc.createLogGroup(utName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		utName, cleanupGroup, err := tc.newLogGroupFixture("UntagGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(utName)
+		defer cleanupGroup()
 
 		arn, err := tc.findLogGroupARN(utName)
 		if err != nil {
 			return err
 		}
 
-		tc.client.TagResource(tc.ctx, &cloudwatchlogs.TagResourceInput{
+		if _, err := tc.client.TagResource(tc.ctx, &cloudwatchlogs.TagResourceInput{
 			ResourceArn: arn,
 			Tags: map[string]string{
 				"RemoveMe":  "yes",
 				"KeepMe":    "no",
 				"KeepMeToo": "also-no",
 			},
-		})
+		}); err != nil {
+			return fmt.Errorf("tag: %v", err)
+		}
 
 		_, err = tc.client.UntagResource(tc.ctx, &cloudwatchlogs.UntagResourceInput{
 			ResourceArn: arn,
@@ -119,14 +134,14 @@ func (tc *cwlogsTestCtx) tagTests() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("logs", "TagLogGroup_Basic", func() error {
-		tlgName := tc.uniquePrefix("TagLGGroup")
-		if err := tc.createLogGroup(tlgName); err != nil {
-			return fmt.Errorf("create: %v", err)
+		tlgName, cleanupGroup, err := tc.newLogGroupFixture("TagLGGroup")
+		if err != nil {
+			return err
 		}
-		defer tc.deleteLogGroup(tlgName)
+		defer cleanupGroup()
 
 		resourceARN := fmt.Sprintf("arn:aws:logs:%s:%s:log-group:%s", tc.region, tc.runner.AccountID(), tlgName)
-		_, err := tc.client.TagResource(tc.ctx, &cloudwatchlogs.TagResourceInput{
+		_, err = tc.client.TagResource(tc.ctx, &cloudwatchlogs.TagResourceInput{
 			ResourceArn: &resourceARN,
 			Tags: map[string]string{
 				"TestTag": "yes",

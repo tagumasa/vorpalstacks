@@ -2,10 +2,10 @@ package cloudwatchlogs
 
 import (
 	"fmt"
-	"math"
-	"sort"
 	"strconv"
 	"strings"
+
+	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
 // The stats command: aggregation parsing, grouping with bin(), evaluation,
@@ -79,6 +79,11 @@ func parseStatsCommand(args []token, head token) (command, error) {
 	if c.hasTopk && len(byToks) > 0 {
 		return nil, newQueryCompileError("Syntax error: topk cannot be combined with by", head.start, head.end)
 	}
+	// "This function cannot be combined with by or other aggregation
+	// functions" — topk shares no stats command with another output.
+	if c.hasTopk && len(c.aggs) > 1 {
+		return nil, newQueryCompileError("Syntax error: topk cannot be combined with other aggregation functions", head.start, head.end)
+	}
 	if len(byToks) > 0 {
 		if err := parseGroupList(byToks, c, head); err != nil {
 			return nil, err
@@ -99,6 +104,8 @@ func parseAggList(toks []token, c *statsCommand, head token) error {
 			spec.alias = fn.name + "(" + exprDisplay(fn.args) + ")"
 		} else if lit, ok := e.(*literalNode); ok {
 			spec.alias = asString(lit.val)
+		} else {
+			spec.alias = exprText(e)
 		}
 		if p.acceptKeyword("as") {
 			alias, ok := p.next()
@@ -107,8 +114,18 @@ func parseAggList(toks []token, c *statsCommand, head token) error {
 			}
 			spec.alias = alias.text
 		}
-		if strings.HasPrefix(spec.alias, "topk") {
+		if fn, ok := e.(*funcNode); ok && strings.EqualFold(fn.name, "topk") {
 			c.hasTopk = true
+			// "Valid values for k range from 1 to 10000" — the literal k
+			// rejects at compile; a computed k bounds again at
+			// evaluation.
+			if lit, lok := fn.args[0].(*literalNode); lok {
+				if k, kok := asNumber(lit.val); !kok || k < 1 || k > logsstore.MaxTopkK {
+					return newQueryCompileError(fmt.Sprintf(
+						"Invalid topk k value: valid values range from 1 to %d", logsstore.MaxTopkK),
+						head.start, head.end)
+				}
+			}
 		}
 		c.aggs = append(c.aggs, spec)
 		t, ok := p.next()
@@ -120,42 +137,6 @@ func parseAggList(toks []token, c *statsCommand, head token) error {
 		}
 	}
 }
-
-func exprDisplay(args []exprNode) string {
-	parts := make([]string, 0, len(args))
-	for _, a := range args {
-		parts = append(parts, exprText(a))
-	}
-	return strings.Join(parts, ", ")
-}
-
-func exprText(e exprNode) string {
-	switch n := e.(type) {
-	case *literalNode:
-		return asString(n.val)
-	case *fieldNode:
-		var b strings.Builder
-		for i, s := range n.segs {
-			if i > 0 {
-				b.WriteByte('.')
-			}
-			if s.isIdx {
-				b.WriteString("[")
-				b.WriteString(strconv.Itoa(s.index))
-				b.WriteString("]")
-			} else {
-				b.WriteString(s.name)
-			}
-		}
-		return b.String()
-	case *funcNode:
-		return n.name + "(" + exprDisplay(n.args) + ")"
-	case *binOpNode:
-		return exprText(n.l) + " " + n.op + " " + exprText(n.r)
-	}
-	return ""
-}
-
 func parseGroupList(toks []token, c *statsCommand, head token) error {
 	p := &exprParser{toks: toks}
 	for {
@@ -176,7 +157,12 @@ func parseGroupList(toks []token, c *statsCommand, head token) error {
 					spec.offset = ms
 					spec.hasOffset = true
 				}
-				c.groups = append(c.groups, groupKeySpec{name: "bin(" + strconv.FormatInt(spec.dur, 10) + ")", bin: spec})
+				// The bin group key carries the emitted column's name:
+				// the results and the stats visibility set both address
+				// the bucket column as @bin, so the key must equal the
+				// name a subsequent command reads — a key of bin(<ms>)
+				// could never match the emitted @bin.
+				c.groups = append(c.groups, groupKeySpec{name: "@bin", bin: spec})
 				goto next
 			}
 		}
@@ -186,11 +172,7 @@ func parseGroupList(toks []token, c *statsCommand, head token) error {
 				return err
 			}
 			g := groupKeySpec{expr: e}
-			if fn, ok := e.(*fieldNode); ok {
-				g.name = fn.segs[0].name
-			} else {
-				g.name = exprText(e)
-			}
+			g.name = exprText(e)
 			// stats ... by bin(5m), otherField offset 1h — the offset
 			// applies to the bin grouping earlier in the clause.
 			if p.acceptKeyword("offset") {
@@ -254,357 +236,6 @@ func unitMillisOf(period string) int64 {
 	}
 	return 1
 }
-
-// evalAggExpr evaluates an aggregation expression over a group of rows.
-// Arithmetic over aggregation calls is supported per the documented grammar.
-func evalAggExpr(e exprNode, rows []queryResultRow, ctx *execContext) interface{} {
-	switch n := e.(type) {
-	case *funcNode:
-		return computeAggregation(strings.ToLower(n.name), n.args, rows, ctx)
-	case *binOpNode:
-		l := evalAggExpr(n.l, rows, ctx)
-		r := evalAggExpr(n.r, rows, ctx)
-		ln, lok := asNumber(l)
-		rn, rok := asNumber(r)
-		if !lok || !rok {
-			return nil
-		}
-		return applyArith(n.op, ln, rn)
-	case *literalNode:
-		return n.val
-	}
-	return nil
-}
-
-// computeAggregation evaluates one aggregation function over the rows of a
-// group.
-func computeAggregation(name string, args []exprNode, rows []queryResultRow, ctx *execContext) interface{} {
-	argValues := func() []interface{} {
-		out := make([]interface{}, len(rows))
-		for i := range rows {
-			row := rows[i]
-			if len(args) == 0 {
-				out[i] = nil
-				continue
-			}
-			out[i] = args[0].eval(&row, ctx)
-		}
-		return out
-	}
-	numeric := func() []float64 {
-		var out []float64
-		for _, v := range argValues() {
-			if f, ok := asNumber(v); ok {
-				out = append(out, f)
-			}
-		}
-		return out
-	}
-	present := func() []interface{} {
-		var out []interface{}
-		for _, v := range argValues() {
-			if v != nil && asString(v) != "" {
-				out = append(out, v)
-			}
-		}
-		return out
-	}
-
-	switch name {
-	case "count":
-		if len(args) == 0 {
-			return float64(len(rows))
-		}
-		return float64(len(present()))
-	case "avg":
-		vals := numeric()
-		if len(vals) == 0 {
-			return nil
-		}
-		sum := 0.0
-		for _, v := range vals {
-			sum += v
-		}
-		return sum / float64(len(vals))
-	case "sum":
-		vals := numeric()
-		if len(vals) == 0 {
-			return float64(0)
-		}
-		sum := 0.0
-		for _, v := range vals {
-			sum += v
-		}
-		return sum
-	case "min":
-		vals := argValues()
-		if len(vals) == 0 {
-			return nil
-		}
-		best := vals[0]
-		for _, v := range vals[1:] {
-			if compareForSort(v, best) < 0 {
-				best = v
-			}
-		}
-		return wrapTimestampResult(args, best)
-	case "max":
-		vals := argValues()
-		if len(vals) == 0 {
-			return nil
-		}
-		best := vals[0]
-		for _, v := range vals[1:] {
-			if compareForSort(v, best) > 0 {
-				best = v
-			}
-		}
-		return wrapTimestampResult(args, best)
-	case "countdistinct":
-		seen := make(map[string]bool)
-		for _, v := range present() {
-			seen[asString(v)] = true
-		}
-		return float64(len(seen))
-	case "stddev":
-		vals := numeric()
-		if len(vals) == 0 {
-			return nil
-		}
-		mean := 0.0
-		for _, v := range vals {
-			mean += v
-		}
-		mean /= float64(len(vals))
-		variance := 0.0
-		for _, v := range vals {
-			variance += (v - mean) * (v - mean)
-		}
-		variance /= float64(len(vals))
-		return math.Sqrt(variance)
-	case "variance":
-		vals := numeric()
-		if len(vals) == 0 {
-			return nil
-		}
-		mean := 0.0
-		for _, v := range vals {
-			mean += v
-		}
-		mean /= float64(len(vals))
-		variance := 0.0
-		for _, v := range vals {
-			variance += (v - mean) * (v - mean)
-		}
-		variance /= float64(len(vals))
-		return variance
-	case "pct":
-		vals := numeric()
-		if len(vals) == 0 || len(args) < 2 {
-			return nil
-		}
-		p, ok := asNumber(args[1].eval(&rows[0], ctx))
-		if !ok {
-			return nil
-		}
-		return wrapTimestampResult(args, percentile(vals, p))
-	case "values", "collect_values":
-		seen := make(map[string]bool)
-		var out []interface{}
-		for _, v := range present() {
-			s := asString(v)
-			if !seen[s] {
-				seen[s] = true
-				out = append(out, s)
-			}
-		}
-		if out == nil {
-			out = []interface{}{}
-		}
-		return out
-	case "topk":
-		if len(args) < 2 || len(rows) == 0 {
-			return nil
-		}
-		k, ok := asNumber(args[0].eval(&rows[0], ctx))
-		if !ok || k < 1 {
-			return nil
-		}
-		counts := make(map[string]int)
-		for _, v := range present() {
-			counts[asString(v)]++
-		}
-		type kv struct {
-			k string
-			v int
-		}
-		var list []kv
-		for k, v := range counts {
-			list = append(list, kv{k, v})
-		}
-		sort.Slice(list, func(i, j int) bool {
-			if list[i].v != list[j].v {
-				return list[i].v > list[j].v
-			}
-			return list[i].k < list[j].k
-		})
-		limit := int(k)
-		if limit > len(list) {
-			limit = len(list)
-		}
-		var out []interface{}
-		for i := 0; i < limit; i++ {
-			out = append(out, list[i].k)
-		}
-		return out
-
-	// Time-series functions. The per-time-bin windowing comes from the
-	// stats command's by bin() grouping; each aggregation here evaluates
-	// within one bin (or the whole query window when ungrouped).
-	case "countovertime":
-		return float64(len(present()))
-	case "sumovertime":
-		sum := 0.0
-		for _, v := range numeric() {
-			sum += v
-		}
-		return sum
-	case "rate":
-		if len(args) < 2 || len(rows) == 0 {
-			return nil
-		}
-		interval, ok := parsePeriodMillis(asString(args[1].eval(&rows[0], ctx)))
-		if !ok || interval <= 0 {
-			return nil
-		}
-		window := ctx.currentBinDur
-		if window <= 0 {
-			window = ctx.endTime - ctx.startTime
-		}
-		sum := 0.0
-		for _, v := range numeric() {
-			sum += v
-		}
-		return sum / (float64(window) / float64(interval))
-	case "histogram":
-		vals := numeric()
-		if len(vals) == 0 || len(args) < 2 || len(rows) == 0 {
-			return nil
-		}
-		buckets, ok := asNumber(args[1].eval(&rows[0], ctx))
-		if !ok || buckets < 1 {
-			return nil
-		}
-		n := int(buckets)
-		min, max := vals[0], vals[0]
-		for _, v := range vals[1:] {
-			if v < min {
-				min = v
-			}
-			if v > max {
-				max = v
-			}
-		}
-		width := (max - min) / float64(n)
-		if width <= 0 {
-			width = 1
-		}
-		counts := make(map[string]interface{}, n)
-		for _, v := range vals {
-			idx := int((v - min) / width)
-			if idx >= n {
-				idx = n - 1
-			}
-			if idx < 0 {
-				idx = 0
-			}
-			key := formatNumber(min+width*float64(idx)) + "-" + formatNumber(min+width*float64(idx+1))
-			if c, ok := counts[key].(int); ok {
-				counts[key] = c + 1
-			} else {
-				counts[key] = 1
-			}
-		}
-		return counts
-	case "earliest", "latest":
-		bestRow := -1
-		var bestTS float64
-		for i := range rows {
-			row := rows[i]
-			ts, ok := asNumber(row.fields["@timestamp"])
-			if !ok {
-				continue
-			}
-			if bestRow < 0 ||
-				(name == "earliest" && ts < bestTS) ||
-				(name == "latest" && ts > bestTS) {
-				bestRow = i
-				bestTS = ts
-			}
-		}
-		if bestRow < 0 || len(args) == 0 {
-			return nil
-		}
-		row := rows[bestRow]
-		return wrapTimestampResult(args, args[0].eval(&row, ctx))
-	case "sortsfirst", "sortslast":
-		vals := present()
-		if len(vals) == 0 {
-			return nil
-		}
-		best := vals[0]
-		for _, v := range vals[1:] {
-			cmp := compareForSort(v, best)
-			if (name == "sortsfirst" && cmp < 0) || (name == "sortslast" && cmp > 0) {
-				best = v
-			}
-		}
-		return wrapTimestampResult(args, best)
-	}
-	return nil
-}
-
-// isTimestampExpr reports whether the expression yields a timestamp-typed
-// value: a direct event timestamp field, a datetime function whose
-// documented result type is Timestamp, or the passthrough aggregation
-// functions (documented result type LogField) applied to one of those.
-func isTimestampExpr(e exprNode) bool {
-	switch n := e.(type) {
-	case *fieldNode:
-		if len(n.segs) == 1 {
-			switch strings.ToLower(n.segs[0].name) {
-			case "@timestamp", "@ingestiontime":
-				return true
-			}
-		}
-	case *funcNode:
-		switch strings.ToLower(n.name) {
-		case "frommillis", "datefloor", "dateceil":
-			return true
-		case "earliest", "latest", "min", "max", "pct", "sortsfirst", "sortslast":
-			return len(n.args) > 0 && isTimestampExpr(n.args[0])
-		}
-	}
-	return false
-}
-
-// wrapTimestampResult renders a passthrough aggregation result as a
-// timestamp when its argument is timestamp-typed, so the value keeps the
-// documented Timestamp rendering in result rows while remaining numeric
-// inside further expressions.
-func wrapTimestampResult(args []exprNode, v interface{}) interface{} {
-	if _, ok := v.(timestampValue); ok {
-		return v
-	}
-	if len(args) == 0 || !isTimestampExpr(args[0]) {
-		return v
-	}
-	if ms, ok := asNumber(v); ok {
-		return timestampValue(int64(ms))
-	}
-	return v
-}
-
 func (c *statsCommand) apply(ctx *execContext, rows []queryResultRow) []queryResultRow {
 	ctx.statsCount++
 	rowsByGroup := make(map[string][]queryResultRow)
@@ -715,89 +346,4 @@ func binRange(partsByGroup map[string][]string, order []string, binIdx int) (int
 		first = false
 	}
 	return min, max
-}
-
-// --- fillmissing ---
-
-type fillmissingCommand struct {
-	fills  []fillConst
-	headTk token
-}
-
-type fillConst struct {
-	value string
-	field string
-}
-
-func (c *fillmissingCommand) name() string { return "fillmissing" }
-
-func parseFillmissingCommand(args []token, head token) (command, error) {
-	c := &fillmissingCommand{headTk: head}
-	i := 0
-	for i < len(args) {
-		t := args[i]
-		if !(t.kind == tokIdent && strings.EqualFold(t.text, "with")) {
-			return nil, newQueryCompileError(
-				fmt.Sprintf("Syntax error at '%s': fillmissing expects with <value> for <field>", t.raw), t.start, t.end)
-		}
-		if i+4 > len(args) {
-			return nil, newQueryCompileError("Syntax error: incomplete with clause", head.start, head.end)
-		}
-		val := args[i+1]
-		if val.kind != tokIdent && val.kind != tokNumber && val.kind != tokString {
-			return nil, newQueryCompileError("Syntax error: with requires a value", val.start, val.end)
-		}
-		if args[i+2].kind != tokIdent || !strings.EqualFold(args[i+2].text, "for") {
-			return nil, newQueryCompileError("Syntax error: expected for", args[i+2].start, args[i+2].end)
-		}
-		fld := args[i+3]
-		if fld.kind != tokIdent && fld.kind != tokBacktickIdent {
-			return nil, newQueryCompileError("Syntax error: for requires a field", fld.start, fld.end)
-		}
-		c.fills = append(c.fills, fillConst{value: val.text, field: fld.text})
-		i += 4
-		if i < len(args) && args[i].kind == tokComma {
-			i++
-		}
-	}
-	return c, nil
-}
-
-func (c *fillmissingCommand) apply(ctx *execContext, rows []queryResultRow) []queryResultRow {
-	info := ctx.lastBins
-	if info == nil || info.dur <= 0 {
-		return rows
-	}
-	existing := make(map[string]bool, len(rows))
-	for _, r := range rows {
-		existing[r.fields["@bin"]] = true
-	}
-	var out []queryResultRow
-	out = append(out, rows...)
-	for bin := info.minBin; bin <= info.maxBin; bin += info.dur {
-		key := formatResultTimestamp(strconv.FormatInt(bin, 10))
-		if existing[key] {
-			continue
-		}
-		synth := queryResultRow{}
-		synth.set("@bin", key)
-		for _, f := range c.fills {
-			synth.set(f.field, f.value)
-		}
-		out = append(out, synth)
-	}
-	// Bins are stored in their timestamp rendering; the fixed-width layout
-	// orders chronologically, with the numeric form kept as a fallback for
-	// defensive sorting of unformatted values.
-	binOrder := func(v string) int64 {
-		if ms, ok := parseResultTimestamp(v); ok {
-			return ms
-		}
-		ms, _ := asNumber(v)
-		return int64(ms)
-	}
-	sort.SliceStable(out, func(i, j int) bool {
-		return binOrder(out[i].fields["@bin"]) < binOrder(out[j].fields["@bin"])
-	})
-	return out
 }

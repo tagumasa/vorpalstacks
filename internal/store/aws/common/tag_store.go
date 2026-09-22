@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 
@@ -155,7 +156,11 @@ func (t *TagStore) List(resourceKey string) (map[string]string, error) {
 	return tags, nil
 }
 
-// ListAsSlice returns all tags for the given resource as a slice of Tag structs.
+// ListAsSlice returns all tags for the given resource as a slice of Tag structs,
+// ordered ascending by key. The deterministic order is the contract every
+// marker-paginated consumer rides (pagination presupposes a stable order),
+// and the map-backed store must not hand its random iteration order to
+// the listing surfaces.
 func (t *TagStore) ListAsSlice(resourceKey string) ([]types.Tag, error) {
 	tags, err := t.List(resourceKey)
 	if err != nil {
@@ -165,6 +170,7 @@ func (t *TagStore) ListAsSlice(resourceKey string) ([]types.Tag, error) {
 	for k, v := range tags {
 		result = append(result, types.Tag{Key: k, Value: v})
 	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Key < result[j].Key })
 	return result, nil
 }
 

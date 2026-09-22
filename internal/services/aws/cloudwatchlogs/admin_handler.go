@@ -34,15 +34,10 @@ func NewAdminHandler(svc *LogsService) *AdminHandler {
 func (h *AdminHandler) ListLogGroups(ctx context.Context, req *connect.Request[pb.ListLogGroupsRequest]) (*connect.Response[pb.ListLogGroupsResponse], error) {
 	region := defaults.GetRegionFromHeader(req.Header())
 
-	limit, err := validateListLimit(int32(req.Msg.GetLimit()), 50, 1000)
-	if err != nil {
-		return nil, svcerrors.AWSErrorToGRPC(err)
-	}
-
 	input := ListLogGroupsInput{
 		LogGroupNamePrefix: req.Msg.GetLoggroupnamepattern(),
 		NextToken:          req.Msg.GetNexttoken(),
-		Limit:              limit,
+		Limit:              int32(req.Msg.GetLimit()),
 		Region:             region,
 	}
 
