@@ -4,6 +4,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	pb "vorpalstacks/internal/pb/aws/cloudwatchevents"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -33,7 +34,7 @@ func toPbRule(r *eventsstore.Rule) *pb.Rule {
 		Description:        proto.String(r.Description),
 		Eventpattern:       proto.String(r.EventPattern),
 		Scheduleexpression: proto.String(r.ScheduleExpression),
-		State:              toPbRuleState(r.State),
+		State:              pbutil.Enum(toPbRuleState(r.State)),
 		Managedby:          proto.String(r.ManagedBy),
 		Rolearn:            proto.String(r.RoleARN),
 	}

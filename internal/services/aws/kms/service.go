@@ -570,6 +570,32 @@ func (s *KMSService) NewKeyChecker() kmsutil.Checker {
 	return &kmsKeyCheckerAdapter{s}
 }
 
+// kmsKeyResolverAdapter adapts KMSService to satisfy kmsutil.Resolver.
+type kmsKeyResolverAdapter struct {
+	s *KMSService
+}
+
+// NewKeyResolver returns a kmsutil.Resolver backed by this service.
+func (s *KMSService) NewKeyResolver() kmsutil.Resolver {
+	return &kmsKeyResolverAdapter{s}
+}
+
+// ResolveKeyArn resolves the key by ID/alias/ARN through the service's
+// own resolution path and returns the key's ARN. Unresolvable input
+// returns the shared not-found sentinel so callers map it to their
+// service-specific error.
+func (a *kmsKeyResolverAdapter) ResolveKeyArn(ctx context.Context, region, keyID string) (string, error) {
+	stores, err := a.s.GetStoreForRegion(region)
+	if err != nil {
+		return "", kmsutil.ErrKeyNotFound
+	}
+	key, err := a.s.resolveKey(stores, map[string]interface{}{"KeyId": keyID})
+	if err != nil {
+		return "", kmsutil.ErrKeyNotFound
+	}
+	return key.Arn, nil
+}
+
 // CheckKey resolves the key by ID/alias/ARN and verifies that it exists, is
 // enabled, and has the ENCRYPT_DECRYPT key usage. Returns sentinel errors
 // from the common package so callers can map them to service-specific error

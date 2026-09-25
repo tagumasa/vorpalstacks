@@ -539,7 +539,7 @@ message CalculationStatus {
 
   optional string completiondatetime = 175822779;
 
-  CalculationExecutionState state = 502047895;
+  optional CalculationExecutionState state = 502047895;
 
   optional string statechangereason = 228940439;
 
@@ -721,7 +721,7 @@ message ColumnInfo {
 
   string name = 266367751;
 
-  ColumnNullable nullable = 373261405;
+  optional ColumnNullable nullable = 373261405;
 
   optional int32 precision = 110022584;
 
@@ -957,7 +957,7 @@ message CustomerContentEncryptionConfiguration {
 
 message DataCatalog {
 
-  ConnectionType connectiontype = 489507282;
+  optional ConnectionType connectiontype = 489507282;
 
   optional string description = 115243530;
 
@@ -967,7 +967,7 @@ message DataCatalog {
 
   map<string, string> parameters = 494900218;
 
-  DataCatalogStatus status = 6222352;
+  optional DataCatalogStatus status = 6222352;
 
   DataCatalogType type = 290836590;
 
@@ -1005,13 +1005,13 @@ message DataCatalogSummary {
 
   optional string catalogname = 518825212;
 
-  ConnectionType connectiontype = 489507282;
+  optional ConnectionType connectiontype = 489507282;
 
   optional string error = 328047858;
 
-  DataCatalogStatus status = 6222352;
+  optional DataCatalogStatus status = 6222352;
 
-  DataCatalogType type = 290836590;
+  optional DataCatalogType type = 290836590;
 
 }
 
@@ -1241,9 +1241,9 @@ message ExecutorsSummary {
 
   optional int64 executorsize = 220298710;
 
-  ExecutorState executorstate = 187122914;
+  optional ExecutorState executorstate = 187122914;
 
-  ExecutorType executortype = 213715221;
+  optional ExecutorType executortype = 213715221;
 
   optional int64 startdatetime = 88518355;
 
@@ -1487,7 +1487,7 @@ message GetQueryResultsInput {
 
   string queryexecutionid = 467615503;
 
-  QueryResultType queryresulttype = 3724043;
+  optional QueryResultType queryresulttype = 3724043;
 
 }
 
@@ -1735,7 +1735,7 @@ message ListCalculationExecutionsRequest {
 
   string sessionid = 20529723;
 
-  CalculationExecutionState statefilter = 184693297;
+  optional CalculationExecutionState statefilter = 184693297;
 
 }
 
@@ -1839,7 +1839,7 @@ message ListEngineVersionsOutput {
 
 message ListExecutorsRequest {
 
-  ExecutorState executorstatefilter = 208448852;
+  optional ExecutorState executorstatefilter = 208448852;
 
   optional int32 maxresults = 275174450;
 
@@ -1981,7 +1981,7 @@ message ListSessionsRequest {
 
   optional string nexttoken = 216957566;
 
-  SessionState statefilter = 184693297;
+  optional SessionState statefilter = 184693297;
 
   string workgroup = 505960068;
 
@@ -2173,7 +2173,7 @@ message NotebookMetadata {
 
   optional string notebookid = 157637214;
 
-  NotebookType type = 290836590;
+  optional NotebookType type = 290836590;
 
   optional string workgroup = 505960068;
 
@@ -2269,7 +2269,7 @@ message QueryExecution {
 
   ResultReuseConfiguration resultreuseconfiguration = 482796543;
 
-  StatementType statementtype = 286463655;
+  optional StatementType statementtype = 286463655;
 
   QueryExecutionStatistics statistics = 510636075;
 
@@ -2347,7 +2347,7 @@ message QueryExecutionStatus {
 
   optional string completiondatetime = 175822779;
 
-  QueryExecutionState state = 502047895;
+  optional QueryExecutionState state = 502047895;
 
   optional string statechangereason = 228940439;
 
@@ -2683,7 +2683,7 @@ message SessionStatus {
 
   optional string startdatetime = 88518355;
 
-  SessionState state = 502047895;
+  optional SessionState state = 502047895;
 
   optional string statechangereason = 228940439;
 
@@ -2729,7 +2729,7 @@ message StartCalculationExecutionResponse {
 
   optional string calculationexecutionid = 80028050;
 
-  CalculationExecutionState state = 502047895;
+  optional CalculationExecutionState state = 502047895;
 
 }
 
@@ -2795,7 +2795,7 @@ message StartSessionResponse {
 
   optional string sessionid = 20529723;
 
-  SessionState state = 502047895;
+  optional SessionState state = 502047895;
 
 }
 
@@ -2823,7 +2823,7 @@ message StopCalculationExecutionRequest {
 
 message StopCalculationExecutionResponse {
 
-  CalculationExecutionState state = 502047895;
+  optional CalculationExecutionState state = 502047895;
 
 }
 
@@ -2903,7 +2903,7 @@ message TerminateSessionRequest {
 
 message TerminateSessionResponse {
 
-  SessionState state = 502047895;
+  optional SessionState state = 502047895;
 
 }
 
@@ -2923,7 +2923,7 @@ message TooManyRequestsException {
 
   optional string message = 235854213;
 
-  ThrottleReason reason = 20005178;
+  optional ThrottleReason reason = 20005178;
 
 }
 
@@ -3109,7 +3109,7 @@ message UpdateWorkGroupInput {
 
   optional string description = 115243530;
 
-  WorkGroupState state = 502047895;
+  optional WorkGroupState state = 502047895;
 
   string workgroup = 505960068;
 
@@ -3137,7 +3137,7 @@ message WorkGroup {
 
   string name = 266367751;
 
-  WorkGroupState state = 502047895;
+  optional WorkGroupState state = 502047895;
 
 }
 
@@ -3245,7 +3245,7 @@ message WorkGroupSummary {
 
   optional string name = 266367751;
 
-  WorkGroupState state = 502047895;
+  optional WorkGroupState state = 502047895;
 
 }
 

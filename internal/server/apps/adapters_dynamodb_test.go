@@ -32,7 +32,7 @@ func newInvokerTestStore(t *testing.T, enableInsights bool) dynamodbstore.Dynamo
 	}
 	t.Cleanup(func() { st.Close() })
 
-	store := dynamodbstore.NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := dynamodbstore.NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(dynamodbstore.CreateTableParams{
 		Name: "Tbl",
 		KeySchema: []*dynamodbstore.KeySchemaElement{

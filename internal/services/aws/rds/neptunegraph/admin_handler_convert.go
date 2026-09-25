@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"vorpalstacks/internal/utils/ptrutil"
 	"vorpalstacks/internal/utils/timeutils"
@@ -210,7 +211,7 @@ func graphToPb(g *ngstore.Graph) *pb.GetGraphOutput {
 		Id:                 g.Id,
 		Name:               g.Name,
 		Arn:                g.Arn,
-		Status:             graphStatusToPb(g.Status),
+		Status:             pbutil.Enum(graphStatusToPb(g.Status)),
 		Statusreason:       proto.String(g.StatusReason),
 		Provisionedmemory:  g.ProvisionedMemory,
 		Replicacount:       g.ReplicaCount,
@@ -229,7 +230,7 @@ func graphSummaryToPb(g *ngstore.Graph) *pb.GraphSummary {
 		Id:                 g.Id,
 		Name:               g.Name,
 		Arn:                g.Arn,
-		Status:             graphStatusToPb(g.Status),
+		Status:             pbutil.Enum(graphStatusToPb(g.Status)),
 		Provisionedmemory:  g.ProvisionedMemory,
 		Replicacount:       g.ReplicaCount,
 		Deletionprotection: proto.String(boolToStr(g.DeletionProtection)),
@@ -245,7 +246,7 @@ func snapshotToPb(s *ngstore.GraphSnapshot) *pb.GetGraphSnapshotOutput {
 		Name:               s.Name,
 		Arn:                s.Arn,
 		Sourcegraphid:      proto.String(s.SourceGraphId),
-		Status:             snapshotStatusToPb(s.Status),
+		Status:             pbutil.Enum(snapshotStatusToPb(s.Status)),
 		Kmskeyidentifier:   proto.String(s.KmsKeyIdentifier),
 		Snapshotcreatetime: proto.String(timePtrToStr(s.SnapshotCreateTime)),
 	}
@@ -257,7 +258,7 @@ func snapshotSummaryToPb(s *ngstore.GraphSnapshot) *pb.GraphSnapshotSummary {
 		Name:               s.Name,
 		Arn:                s.Arn,
 		Sourcegraphid:      proto.String(s.SourceGraphId),
-		Status:             snapshotStatusToPb(s.Status),
+		Status:             pbutil.Enum(snapshotStatusToPb(s.Status)),
 		Kmskeyidentifier:   proto.String(s.KmsKeyIdentifier),
 		Snapshotcreatetime: proto.String(timePtrToStr(s.SnapshotCreateTime)),
 	}
@@ -286,9 +287,9 @@ func importTaskToPb(t *ngstore.ImportTask) *pb.GetImportTaskOutput {
 		Taskid:            t.TaskId,
 		Graphid:           proto.String(t.GraphId),
 		Source:            t.Source,
-		Format:            formatToPb(t.Format),
+		Format:            pbutil.Enum(formatToPb(t.Format)),
 		Rolearn:           t.RoleArn,
-		Parquettype:       parquetTypeToPb(t.ParquetType),
+		Parquettype:       pbutil.Enum(parquetTypeToPb(t.ParquetType)),
 		Status:            importTaskStatusToPb(t.Status),
 		Statusreason:      proto.String(t.StatusReason),
 		Attemptnumber:     proto.String(int32ToStr(t.AttemptNumber)),
@@ -302,9 +303,9 @@ func importTaskSummaryToPb(t *ngstore.ImportTask) *pb.ImportTaskSummary {
 		Taskid:      t.TaskId,
 		Graphid:     proto.String(t.GraphId),
 		Source:      t.Source,
-		Format:      formatToPb(t.Format),
+		Format:      pbutil.Enum(formatToPb(t.Format)),
 		Rolearn:     t.RoleArn,
-		Parquettype: parquetTypeToPb(t.ParquetType),
+		Parquettype: pbutil.Enum(parquetTypeToPb(t.ParquetType)),
 		Status:      importTaskStatusToPb(t.Status),
 	}
 }
@@ -316,7 +317,7 @@ func exportTaskToPb(t *ngstore.ExportTask) *pb.GetExportTaskOutput {
 		Destination:      t.Destination,
 		Format:           exportFormatToPb(t.Format),
 		Rolearn:          t.RoleArn,
-		Parquettype:      parquetTypeToPb(t.ParquetType),
+		Parquettype:      pbutil.Enum(parquetTypeToPb(t.ParquetType)),
 		Kmskeyidentifier: t.KmsKeyIdentifier,
 		Status:           exportTaskStatusToPb(t.Status),
 		Statusreason:     proto.String(t.StatusReason),
@@ -331,7 +332,7 @@ func exportTaskSummaryToPb(t *ngstore.ExportTask) *pb.ExportTaskSummary {
 		Destination: t.Destination,
 		Format:      exportFormatToPb(t.Format),
 		Rolearn:     t.RoleArn,
-		Parquettype: parquetTypeToPb(t.ParquetType),
+		Parquettype: pbutil.Enum(parquetTypeToPb(t.ParquetType)),
 		Status:      exportTaskStatusToPb(t.Status),
 	}
 }
@@ -565,7 +566,7 @@ func exportFilterElementToPb(e ngstore.ExportFilterElement) *pb.ExportFilterElem
 			mvh = pb.MultiValueHandlingType_MULTI_VALUE_HANDLING_TYPE_PICK_FIRST
 		}
 		pbElem.Properties[k] = &pb.ExportFilterPropertyAttributes{
-			Multivaluehandling: mvh,
+			Multivaluehandling: pbutil.Enum(mvh),
 			Outputtype:         proto.String(ptrutil.DerefOrZero(v.OutputType)),
 			Sourcepropertyname: proto.String(ptrutil.DerefOrZero(v.SourcePropertyName)),
 		}
@@ -590,7 +591,7 @@ func queryToSummaryPb(q *ngstore.QueryRecord) *pb.QuerySummary {
 		Querystring: proto.String(q.QueryString),
 		Elapsed:     proto.String(strconv.Itoa(int(q.Elapsed))),
 		Waited:      proto.String(strconv.Itoa(int(q.Waited))),
-		State:       queryStateToPb(q.State),
+		State:       pbutil.Enum(queryStateToPb(q.State)),
 	}
 }
 
@@ -702,37 +703,37 @@ func graphFieldsPb(g *ngstore.Graph) (id, name, arn, statusReason, deletionProte
 
 func graphToCreateGraphPb(g *ngstore.Graph) *pb.CreateGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.CreateGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
+	return &pb.CreateGraphOutput{Id: id, Name: name, Arn: arn, Status: pbutil.Enum(status), Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToUpdateGraphPb(g *ngstore.Graph) *pb.UpdateGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.UpdateGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
+	return &pb.UpdateGraphOutput{Id: id, Name: name, Arn: arn, Status: pbutil.Enum(status), Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToDeleteGraphPb(g *ngstore.Graph) *pb.DeleteGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.DeleteGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
+	return &pb.DeleteGraphOutput{Id: id, Name: name, Arn: arn, Status: pbutil.Enum(status), Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToResetGraphPb(g *ngstore.Graph) *pb.ResetGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.ResetGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
+	return &pb.ResetGraphOutput{Id: id, Name: name, Arn: arn, Status: pbutil.Enum(status), Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToStartGraphPb(g *ngstore.Graph) *pb.StartGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.StartGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
+	return &pb.StartGraphOutput{Id: id, Name: name, Arn: arn, Status: pbutil.Enum(status), Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToStopGraphPb(g *ngstore.Graph) *pb.StopGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.StopGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
+	return &pb.StopGraphOutput{Id: id, Name: name, Arn: arn, Status: pbutil.Enum(status), Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToRestoreGraphFromSnapshotPb(g *ngstore.Graph) *pb.RestoreGraphFromSnapshotOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.RestoreGraphFromSnapshotOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
+	return &pb.RestoreGraphFromSnapshotOutput{Id: id, Name: name, Arn: arn, Status: pbutil.Enum(status), Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 // formatPbToString maps the console format enum onto the Core's wire string.
@@ -861,12 +862,12 @@ func snapshotFieldsPb(s *ngstore.GraphSnapshot) (id, name, arn, sourceGraphID, k
 
 func snapshotToCreateGraphSnapshotPb(s *ngstore.GraphSnapshot) *pb.CreateGraphSnapshotOutput {
 	id, name, arn, src, kms, ct, status := snapshotFieldsPb(s)
-	return &pb.CreateGraphSnapshotOutput{Id: id, Name: name, Arn: arn, Sourcegraphid: proto.String(src), Status: status, Kmskeyidentifier: proto.String(kms), Snapshotcreatetime: proto.String(ct)}
+	return &pb.CreateGraphSnapshotOutput{Id: id, Name: name, Arn: arn, Sourcegraphid: proto.String(src), Status: pbutil.Enum(status), Kmskeyidentifier: proto.String(kms), Snapshotcreatetime: proto.String(ct)}
 }
 
 func snapshotToDeleteGraphSnapshotPb(s *ngstore.GraphSnapshot) *pb.DeleteGraphSnapshotOutput {
 	id, name, arn, src, kms, ct, status := snapshotFieldsPb(s)
-	return &pb.DeleteGraphSnapshotOutput{Id: id, Name: name, Arn: arn, Sourcegraphid: proto.String(src), Status: status, Kmskeyidentifier: proto.String(kms), Snapshotcreatetime: proto.String(ct)}
+	return &pb.DeleteGraphSnapshotOutput{Id: id, Name: name, Arn: arn, Sourcegraphid: proto.String(src), Status: pbutil.Enum(status), Kmskeyidentifier: proto.String(kms), Snapshotcreatetime: proto.String(ct)}
 }
 
 func endpointFieldsPb(ep *ngstore.PrivateGraphEndpoint) (vpcID, vpcEndpointID string, status pb.PrivateGraphEndpointStatus, subnetIDs []string) {
@@ -889,17 +890,17 @@ func importTaskFieldsPb(t *ngstore.ImportTask) (taskID, graphID, source string, 
 
 func importTaskToCreateGraphUsingImportTaskPb(t *ngstore.ImportTask) *pb.CreateGraphUsingImportTaskOutput {
 	taskID, graphID, source, format, roleArn, pt, status, _ := importTaskFieldsPb(t)
-	return &pb.CreateGraphUsingImportTaskOutput{Taskid: taskID, Graphid: proto.String(graphID), Source: source, Format: format, Rolearn: roleArn, Parquettype: pt, Status: status}
+	return &pb.CreateGraphUsingImportTaskOutput{Taskid: taskID, Graphid: proto.String(graphID), Source: source, Format: pbutil.Enum(format), Rolearn: roleArn, Parquettype: pbutil.Enum(pt), Status: status}
 }
 
 func importTaskToStartImportTaskPb(t *ngstore.ImportTask) *pb.StartImportTaskOutput {
 	taskID, graphID, source, format, roleArn, pt, status, _ := importTaskFieldsPb(t)
-	return &pb.StartImportTaskOutput{Taskid: taskID, Graphid: proto.String(graphID), Source: source, Format: format, Rolearn: roleArn, Parquettype: pt, Status: status}
+	return &pb.StartImportTaskOutput{Taskid: taskID, Graphid: proto.String(graphID), Source: source, Format: pbutil.Enum(format), Rolearn: roleArn, Parquettype: pbutil.Enum(pt), Status: status}
 }
 
 func importTaskToCancelImportTaskPb(t *ngstore.ImportTask) *pb.CancelImportTaskOutput {
 	taskID, graphID, source, format, roleArn, pt, status, _ := importTaskFieldsPb(t)
-	return &pb.CancelImportTaskOutput{Taskid: taskID, Graphid: proto.String(graphID), Source: source, Format: format, Rolearn: roleArn, Parquettype: pt, Status: status}
+	return &pb.CancelImportTaskOutput{Taskid: taskID, Graphid: proto.String(graphID), Source: source, Format: pbutil.Enum(format), Rolearn: roleArn, Parquettype: pbutil.Enum(pt), Status: status}
 }
 
 func exportTaskFieldsPb(t *ngstore.ExportTask) (taskID, graphID, destination string, format pb.ExportFormat, roleArn string, parquetType pb.ParquetType, kms, statusReason string, status pb.ExportTaskStatus, filter *pb.ExportFilter) {
@@ -908,10 +909,10 @@ func exportTaskFieldsPb(t *ngstore.ExportTask) (taskID, graphID, destination str
 
 func exportTaskToStartExportTaskPb(t *ngstore.ExportTask) *pb.StartExportTaskOutput {
 	taskID, graphID, dest, format, roleArn, pt, kms, sreason, status, filter := exportTaskFieldsPb(t)
-	return &pb.StartExportTaskOutput{Taskid: taskID, Graphid: graphID, Destination: dest, Format: format, Rolearn: roleArn, Parquettype: pt, Kmskeyidentifier: kms, Status: status, Statusreason: proto.String(sreason), Exportfilter: filter}
+	return &pb.StartExportTaskOutput{Taskid: taskID, Graphid: graphID, Destination: dest, Format: format, Rolearn: roleArn, Parquettype: pbutil.Enum(pt), Kmskeyidentifier: kms, Status: status, Statusreason: proto.String(sreason), Exportfilter: filter}
 }
 
 func exportTaskToCancelExportTaskPb(t *ngstore.ExportTask) *pb.CancelExportTaskOutput {
 	taskID, graphID, dest, format, roleArn, pt, kms, sreason, status, _ := exportTaskFieldsPb(t)
-	return &pb.CancelExportTaskOutput{Taskid: taskID, Graphid: graphID, Destination: dest, Format: format, Rolearn: roleArn, Parquettype: pt, Kmskeyidentifier: kms, Status: status, Statusreason: proto.String(sreason)}
+	return &pb.CancelExportTaskOutput{Taskid: taskID, Graphid: graphID, Destination: dest, Format: format, Rolearn: roleArn, Parquettype: pbutil.Enum(pt), Kmskeyidentifier: kms, Status: status, Statusreason: proto.String(sreason)}
 }

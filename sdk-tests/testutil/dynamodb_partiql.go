@@ -441,6 +441,194 @@ func (r *TestRunner) dynamoDBPartiQLEdgeCaseTests(ctx context.Context, client *d
 		if !ok || val.Value != "20" {
 			return fmt.Errorf("expected val=20 after PartiQL UPDATE, got %v", val)
 		}
+
+		// The reference documents a multi-clause SET: every clause's write
+		// must land, none dropped.
+		if _, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("UPDATE \"" + puTable + "\" SET val = 30 SET note = 'both clauses' WHERE id = 'pu1'"),
+		}); err != nil {
+			return fmt.Errorf("two-SET update: %v", err)
+		}
+		twoSetResp, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(puTable),
+			Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "pu1"}},
+		})
+		if err != nil {
+			return fmt.Errorf("get after two-SET update: %v", err)
+		}
+		if val, ok := twoSetResp.Item["val"].(*types.AttributeValueMemberN); !ok || val.Value != "30" {
+			return fmt.Errorf("expected val=30 after two-SET UPDATE, got %v", twoSetResp.Item["val"])
+		}
+		if note, ok := twoSetResp.Item["note"].(*types.AttributeValueMemberS); !ok || note.Value != "both clauses" {
+			return fmt.Errorf("expected note='both clauses' after two-SET UPDATE, got %v", twoSetResp.Item["note"])
+		}
+
+		// RETURNING ALL OLD * answers the pre-update image; ALL NEW * the
+		// post-update one.
+		oldResp, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("UPDATE \"" + puTable + "\" SET val = 40 WHERE id = 'pu1' RETURNING ALL OLD *"),
+		})
+		if err != nil {
+			return fmt.Errorf("update with RETURNING ALL OLD *: %v", err)
+		}
+		if len(oldResp.Items) != 1 {
+			return fmt.Errorf("expected 1 returned item after RETURNING ALL OLD *, got %d", len(oldResp.Items))
+		}
+		if val, ok := oldResp.Items[0]["val"].(*types.AttributeValueMemberN); !ok || val.Value != "30" {
+			return fmt.Errorf("expected pre-update val=30 from RETURNING ALL OLD *, got %v", oldResp.Items[0]["val"])
+		}
+		newResp, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("UPDATE \"" + puTable + "\" SET val = 50 WHERE id = 'pu1' RETURNING ALL NEW *"),
+		})
+		if err != nil {
+			return fmt.Errorf("update with RETURNING ALL NEW *: %v", err)
+		}
+		if len(newResp.Items) != 1 {
+			return fmt.Errorf("expected 1 returned item after RETURNING ALL NEW *, got %d", len(newResp.Items))
+		}
+		if val, ok := newResp.Items[0]["val"].(*types.AttributeValueMemberN); !ok || val.Value != "50" {
+			return fmt.Errorf("expected post-update val=50 from RETURNING ALL NEW *, got %v", newResp.Items[0]["val"])
+		}
+		if note, ok := newResp.Items[0]["note"].(*types.AttributeValueMemberS); !ok || note.Value != "both clauses" {
+			return fmt.Errorf("expected note preserved in ALL NEW * image, got %v", newResp.Items[0]["note"])
+		}
+
+		// The set functions fold a bound set value into the assignment's
+		// target: SET_ADD unions, SET_DELETE subtracts.
+		if _, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(puTable),
+			Item: map[string]types.AttributeValue{
+				"id":   &types.AttributeValueMemberS{Value: "pu3"},
+				"tags": &types.AttributeValueMemberSS{Value: []string{"a"}},
+			},
+		}); err != nil {
+			return err
+		}
+		if _, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement:  aws.String("UPDATE \"" + puTable + "\" SET tags = SET_ADD(tags, ?) WHERE id = 'pu3'"),
+			Parameters: []types.AttributeValue{&types.AttributeValueMemberSS{Value: []string{"b"}}},
+		}); err != nil {
+			return fmt.Errorf("SET_ADD update: %v", err)
+		}
+		setResp, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(puTable),
+			Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "pu3"}},
+		})
+		if err != nil {
+			return fmt.Errorf("get after SET_ADD: %v", err)
+		}
+		tags, ok := setResp.Item["tags"].(*types.AttributeValueMemberSS)
+		if !ok || len(tags.Value) != 2 || tags.Value[0] != "a" || tags.Value[1] != "b" {
+			return fmt.Errorf("expected tags=[a b] after SET_ADD, got %v", setResp.Item["tags"])
+		}
+		if _, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement:  aws.String("UPDATE \"" + puTable + "\" SET tags = SET_DELETE(tags, ?) WHERE id = 'pu3'"),
+			Parameters: []types.AttributeValue{&types.AttributeValueMemberSS{Value: []string{"a"}}},
+		}); err != nil {
+			return fmt.Errorf("SET_DELETE update: %v", err)
+		}
+		setResp, err = client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(puTable),
+			Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "pu3"}},
+		})
+		if err != nil {
+			return fmt.Errorf("get after SET_DELETE: %v", err)
+		}
+		tags, ok = setResp.Item["tags"].(*types.AttributeValueMemberSS)
+		if !ok || len(tags.Value) != 1 || tags.Value[0] != "b" {
+			return fmt.Errorf("expected tags=[b] after SET_DELETE, got %v", setResp.Item["tags"])
+		}
+
+		// The set literal writes a set value directly, and feeds the set
+		// functions as a literal operand — the documented example forms.
+		if _, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("UPDATE \"" + puTable + "\" SET tags = <<'c', 'd'>> WHERE id = 'pu3'"),
+		}); err != nil {
+			return fmt.Errorf("set literal update: %v", err)
+		}
+		if _, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("UPDATE \"" + puTable + "\" SET tags = set_add(tags, <<'e'>>) WHERE id = 'pu3'"),
+		}); err != nil {
+			return fmt.Errorf("set_add with set literal: %v", err)
+		}
+		setResp, err = client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(puTable),
+			Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "pu3"}},
+		})
+		if err != nil {
+			return fmt.Errorf("get after set literal: %v", err)
+		}
+		tags, ok = setResp.Item["tags"].(*types.AttributeValueMemberSS)
+		if !ok || len(tags.Value) != 3 {
+			return fmt.Errorf("expected 3 tags after literal + set_add, got %v", setResp.Item["tags"])
+		}
+		want := map[string]bool{"c": false, "d": false, "e": false}
+		for _, v := range tags.Value {
+			if _, isWant := want[v]; !isWant {
+				return fmt.Errorf("unexpected tag member %q in %v", v, tags.Value)
+			}
+			want[v] = true
+		}
+		for member, seen := range want {
+			if !seen {
+				return fmt.Errorf("missing tag member %q in %v", member, tags.Value)
+			}
+		}
+
+		// A nested left-hand side writes the member it names (the reference
+		// example SET AwardDetail.BillBoard=[2020]) and an indexed nested
+		// REMOVE removes that member (REMOVE AwardDetail.Grammys[2]) — never
+		// a literal flat attribute.
+		if _, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(puTable),
+			Item: map[string]types.AttributeValue{
+				"id": &types.AttributeValueMemberS{Value: "pu4"},
+				"detail": &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
+					"Grammys": &types.AttributeValueMemberL{Value: []types.AttributeValue{
+						&types.AttributeValueMemberN{Value: "2016"},
+						&types.AttributeValueMemberN{Value: "2018"},
+						&types.AttributeValueMemberN{Value: "2020"},
+					}},
+				}},
+			},
+		}); err != nil {
+			return err
+		}
+		if _, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("UPDATE \"" + puTable + "\" SET detail.BillBoard = [2020] WHERE id = 'pu4'"),
+		}); err != nil {
+			return fmt.Errorf("nested SET update: %v", err)
+		}
+		if _, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("UPDATE \"" + puTable + "\" REMOVE detail.Grammys[1] WHERE id = 'pu4'"),
+		}); err != nil {
+			return fmt.Errorf("nested REMOVE update: %v", err)
+		}
+		nestedResp, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(puTable),
+			Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "pu4"}},
+		})
+		if err != nil {
+			return fmt.Errorf("get after nested updates: %v", err)
+		}
+		detail, ok := nestedResp.Item["detail"].(*types.AttributeValueMemberM)
+		if !ok {
+			return fmt.Errorf("expected detail map, got %T", nestedResp.Item["detail"])
+		}
+		if _, flat := nestedResp.Item["detail.BillBoard"]; flat {
+			return fmt.Errorf("nested SET must not store a literal flat key")
+		}
+		billboard, ok := detail.Value["BillBoard"].(*types.AttributeValueMemberL)
+		if !ok || len(billboard.Value) != 1 {
+			return fmt.Errorf("expected detail.BillBoard list of one member, got %v", detail.Value["BillBoard"])
+		}
+		grammys, ok := detail.Value["Grammys"].(*types.AttributeValueMemberL)
+		if !ok || len(grammys.Value) != 2 {
+			return fmt.Errorf("expected detail.Grammys to keep 2 members after the indexed REMOVE, got %v", detail.Value["Grammys"])
+		}
+		if g, ok := grammys.Value[1].(*types.AttributeValueMemberN); !ok || g.Value != "2020" {
+			return fmt.Errorf("expected the 2018 member removed, got %v", grammys.Value)
+		}
 		return nil
 	}))
 
@@ -522,7 +710,11 @@ func (r *TestRunner) dynamoDBPartiQLEdgeCaseTests(ctx context.Context, client *d
 		if err == nil {
 			return fmt.Errorf("transactional SET on the partition key must be rejected")
 		}
-		return expectAWSErrorCode(err, "ValidationException")
+		// The transaction plane answers the singleton statement's error in
+		// the cancellation envelope: TransactionCanceledException whose
+		// reason code names the validation failure, never a bare
+		// ValidationException.
+		return expectTransactionCanceled(err, "ValidationError")
 	}))
 
 	// ExecuteTransaction UPDATE/DELETE must target a single item: a WHERE
@@ -558,13 +750,18 @@ func (r *TestRunner) dynamoDBPartiQLEdgeCaseTests(ctx context.Context, client *d
 			}
 		}
 
+		// The no-key-equality statement is an error the singleton UPDATE
+		// operation returns (its non-transactional twin answers a
+		// request-level ValidationException), and a singleton operation's
+		// error cancels the whole transaction as a per-statement
+		// cancellation reason — the documented ExecuteTransaction rule.
 		if _, err := client.ExecuteTransaction(ctx, &dynamodb.ExecuteTransactionInput{
 			TransactStatements: []types.ParameterizedStatement{
 				{Statement: aws.String("UPDATE \"" + mmTable + "\" SET tags = 'rewritten' WHERE tags = 'keep'")},
 			},
 		}); err == nil {
 			return fmt.Errorf("UPDATE without a partition-key equality must be rejected")
-		} else if e := expectAWSErrorCode(err, "ValidationException"); e != nil {
+		} else if e := expectTransactionCanceled(err, "ValidationError"); e != nil {
 			return e
 		}
 
@@ -674,6 +871,31 @@ func (r *TestRunner) dynamoDBPartiQLEdgeCaseTests(ctx context.Context, client *d
 		}
 		if len(getResp.Item) != 0 {
 			return fmt.Errorf("item should be deleted after PartiQL DELETE")
+		}
+
+		// The DELETE grammar's only RETURNING value is ALL OLD *: the
+		// response carries the deleted item's attributes as they were.
+		client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(pdTable),
+			Item: map[string]types.AttributeValue{
+				"id":  &types.AttributeValueMemberS{Value: "pd2"},
+				"val": &types.AttributeValueMemberN{Value: "77"},
+			},
+		})
+		retResp, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("DELETE FROM \"" + pdTable + "\" WHERE id = 'pd2' RETURNING ALL OLD *"),
+		})
+		if err != nil {
+			return fmt.Errorf("delete with RETURNING: %v", err)
+		}
+		if len(retResp.Items) != 1 {
+			return fmt.Errorf("expected 1 returned item after RETURNING delete, got %d", len(retResp.Items))
+		}
+		if id, ok := retResp.Items[0]["id"].(*types.AttributeValueMemberS); !ok || id.Value != "pd2" {
+			return fmt.Errorf("expected returned old item id=pd2, got %v", retResp.Items[0]["id"])
+		}
+		if val, ok := retResp.Items[0]["val"].(*types.AttributeValueMemberN); !ok || val.Value != "77" {
+			return fmt.Errorf("expected returned old item val=77, got %v", retResp.Items[0]["val"])
 		}
 		return nil
 	}))

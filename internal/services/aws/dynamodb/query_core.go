@@ -2,6 +2,8 @@ package dynamodb
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/binary"
 	"net/http"
 
 	"vorpalstacks/internal/common/request"
@@ -12,8 +14,8 @@ import (
 // Scan page Core — shared paginator for the Scan data plane
 // ---------------------------------------------------------------------------
 
-// scanPageOptions configures collectScanPage, the shared paginator for the
-// Scan data plane and the index fallback reads of Query.
+// scanPageOptions configures collectScanPage, the paginator of the Scan
+// data plane.
 type scanPageOptions struct {
 	table         *dbstore.Table
 	indexName     string // secondary index whose membership filters the page; "" scans the base table
@@ -95,26 +97,45 @@ func (s *DynamoDBService) collectScanPage(store dbstore.DynamoDBStoreInterface, 
 	return result, nil
 }
 
+// md5SegmentHash computes the MD5 hash of an AttributeValue for parallel
+// scan segment assignment. AWS does not document how segments are
+// assigned, so any deterministic hash over the partition value is
+// behaviour-compatible; the hash covers the raw value bytes (S string,
+// N number string, or B binary) and the first 4 bytes are interpreted as a
+// big-endian uint32.
+func md5SegmentHash(av *dbstore.AttributeValue) uint32 {
+	h := md5.New()
+	if av.S != nil {
+		h.Write([]byte(*av.S))
+	} else if av.N != nil {
+		h.Write([]byte(*av.N))
+	} else if av.B != nil {
+		h.Write(av.B)
+	}
+	sum := h.Sum(nil)
+	return binary.BigEndian.Uint32(sum[:4])
+}
+
 // ---------------------------------------------------------------------------
 // Query Core — key-condition read plane
 // ---------------------------------------------------------------------------
 
-// queryInput carries the raw wire parameters of a Query request; the Core
-// applies every validation in its documented order.
-type queryInput struct {
-	Parameters map[string]interface{}
-}
-
 // queryCore is the single validation and persistence path of the Query data
 // plane: table resolution, index and key-condition validation, the snapshot
 // read, filtering, ordering, projection, and the response assembly.
-func (s *DynamoDBService) queryCore(ctx context.Context, reqCtx *request.RequestContext, in queryInput) (map[string]interface{}, error) {
-	params := in.Parameters
+func (s *DynamoDBService) queryCore(ctx context.Context, reqCtx *request.RequestContext, params map[string]interface{}) (map[string]interface{}, error) {
 	table, err := s.validateAndGetTable(reqCtx, params)
 	if err != nil {
 		return nil, err
 	}
 	tableName := table.Name
+
+	// Response-shaping enums are request validation: an unknown value is
+	// rejected before anything executes.
+	returnConsumedCapacity, err := getReturnConsumedCapacity(params)
+	if err != nil {
+		return nil, err
+	}
 
 	preamble, preErr := resolveReadIndexPreamble(table, params)
 	if preErr != nil {
@@ -148,6 +169,26 @@ func (s *DynamoDBService) queryCore(ctx context.Context, reqCtx *request.Request
 		return nil, eavErr
 	}
 
+	// Legacy KeyConditions: exclusive with the KeyConditionExpression that
+	// replaced it (and with the expression substitution maps — a legacy
+	// condition is self-contained), translated onto the same key-condition
+	// path below.
+	if legacyMemberPresent(params, "KeyConditions") {
+		if keyCondExpr != "" {
+			return nil, legacyValidationException("KeyConditionExpression and KeyConditions cannot be used together: use KeyConditionExpression")
+		}
+		if len(exprAttrNames) > 0 || len(exprAttrValues) > 0 {
+			return nil, legacyValidationException("KeyConditions cannot be used with ExpressionAttributeNames or ExpressionAttributeValues")
+		}
+		legacyKeyCond, lkErr := translateKeyConditions(table, indexName, params["KeyConditions"])
+		if lkErr != nil {
+			return nil, lkErr
+		}
+		keyCondExpr = legacyKeyCond.Expr
+		exprAttrNames = legacyKeyCond.Names
+		exprAttrValues = legacyKeyCond.Values
+	}
+
 	if keyCondExpr == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -155,6 +196,15 @@ func (s *DynamoDBService) queryCore(ctx context.Context, reqCtx *request.Request
 	projection, countOnly, allProjected, projErr := resolveProjectionSelection(table, indexName, params)
 	if projErr != nil {
 		return nil, projErr
+	}
+
+	// The filter is request validation: whichever family carried it —
+	// FilterExpression or the legacy QueryFilter — it parses and its
+	// substitutions resolve before the read executes, so a malformed
+	// filter answers ValidationException, never a silently empty page.
+	filterCond, filterErr := resolveFilterCondition(params, "QueryFilter", request.GetStringParam(params, "FilterExpression"))
+	if filterErr != nil {
+		return nil, filterErr
 	}
 
 	// A Query must perform an equality test on the partition key of the
@@ -169,7 +219,10 @@ func (s *DynamoDBService) queryCore(ctx context.Context, reqCtx *request.Request
 	// own size requires.
 
 	if indexName != "" {
-		hashKeyValue, hashKeyAttr, sortKeyCondition := extractIndexKeyCondition(table, indexName, keyCondExpr, exprAttrNames, exprAttrValues)
+		hashKeyValue, hashKeyAttr, sortKeyCondition, condErr := extractIndexKeyCondition(table, indexName, keyCondExpr, exprAttrNames, exprAttrValues)
+		if condErr != nil {
+			return nil, condErr
+		}
 		queryPKValue = hashKeyAttr
 		if hashKeyValue == "" {
 			idxHashName, _, _ := indexKeyAttributeNames(table, indexName)
@@ -214,7 +267,10 @@ func (s *DynamoDBService) queryCore(ctx context.Context, reqCtx *request.Request
 			return nil, err
 		}
 	} else {
-		hashKeyValue, hashKeyAttr, sortKeyCondition := extractPrimaryKeyCondition(table, keyCondExpr, exprAttrNames, exprAttrValues)
+		hashKeyValue, hashKeyAttr, sortKeyCondition, condErr := extractPrimaryKeyCondition(table, keyCondExpr, exprAttrNames, exprAttrValues)
+		if condErr != nil {
+			return nil, condErr
+		}
 		queryPKValue = hashKeyAttr
 		if hashKeyValue == "" {
 			pkAttrName := ""
@@ -274,15 +330,27 @@ func (s *DynamoDBService) queryCore(ctx context.Context, reqCtx *request.Request
 
 	scannedCount := len(scannedItems)
 
-	filterExpr := request.GetStringParam(params, "FilterExpression")
 	var items []*dbstore.Item
-	if filterExpr != "" {
-		items = filterByExpression(scannedItems, filterExpr, exprAttrNames, exprAttrValues)
+	if filterCond != nil {
+		items = filterByCondition(scannedItems, filterCond)
 	} else {
 		items = scannedItems
 	}
 
 	hasMoreItems := len(allItems) > limit
+
+	// The LastEvaluatedKey names the read target's full key schema — the
+	// table primary key plus the index keys of an index read — regardless
+	// of the projection. It must be composed before a projection replaces
+	// the item attributes the key merge reads from; a key emitted from
+	// trimmed attributes cannot resume the walk. A truncated page holds
+	// exactly limit items and the preamble guarantees limit >= 1, so
+	// hasMore alone says the key exists.
+	hasLEK := hasMoreItems
+	var lastEvaluatedKey map[string]interface{}
+	if hasLEK {
+		lastEvaluatedKey = buildLastEvaluatedKeyWithIndex(scannedItems[len(scannedItems)-1], table, indexName)
+	}
 
 	if projection != nil {
 		for _, item := range items {
@@ -301,15 +369,26 @@ func (s *DynamoDBService) queryCore(ctx context.Context, reqCtx *request.Request
 	if !countOnly {
 		resp["Items"] = buildItemsResponse(items)
 	}
-	if hasMoreItems && len(scannedItems) > 0 {
-		resp["LastEvaluatedKey"] = buildLastEvaluatedKeyWithIndex(scannedItems[len(scannedItems)-1], table, indexName)
+	if hasLEK {
+		resp["LastEvaluatedKey"] = lastEvaluatedKey
 	}
 
-	returnConsumedCapacity := getReturnConsumedCapacity(params)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
-		capacityUnits := float64(scannedCount) * rcuPerItem(consistentRead, indexName, table)
-		isLSI := indexName != "" && !isGSI(table, indexName)
-		resp["ConsumedCapacity"] = buildConsumedCapacityResponseWithIndex(tableName, indexName, capacityUnits, isLSI)
+		// The charge sums each evaluated item's size-granular read units —
+		// the engine reads the full stored item for every scanned entry,
+		// before any filter or projection narrows the returned page.
+		// TOTAL reports only the aggregate; INDEXES adds the per-table and
+		// per-index breakdown.
+		capacityUnits := 0.0
+		for _, item := range scannedItems {
+			capacityUnits += itemReadUnits(dbstore.CalculateItemSize(item.Attributes), readIsStronglyConsistent(consistentRead, indexName, table))
+		}
+		if returnConsumedCapacity == "INDEXES" {
+			isLSI := indexName != "" && !isGSI(table, indexName)
+			resp["ConsumedCapacity"] = buildConsumedCapacityResponseWithIndex(tableName, indexName, capacityUnits, isLSI)
+		} else {
+			resp["ConsumedCapacity"] = buildConsumedCapacityResponse(tableName, capacityUnits)
+		}
 	}
 
 	// A Query is one read event on the queried partition regardless of how

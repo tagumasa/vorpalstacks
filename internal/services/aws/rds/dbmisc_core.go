@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/pbutil"
 	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -216,7 +217,7 @@ func (s *RDSService) describeEventsCore(stores *rdsStores, in DescribeEventsInpu
 			Message:          proto.String(evt.Message),
 			Sourcearn:        proto.String(evt.SourceArn),
 			Sourceidentifier: proto.String(evt.SourceIdentifier),
-			Sourcetype:       st,
+			Sourcetype:       pbutil.Enum(st),
 			Eventcategories:  evt.EventCategories,
 		})
 	}

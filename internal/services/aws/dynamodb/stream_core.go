@@ -34,6 +34,9 @@ type DescribeStreamResult struct {
 	KeySchema               []*dbstore.KeySchemaElement
 	Shards                  []ShardInfo
 	CreationRequestDateTime int64
+	// LastEvaluatedShardId names the last shard of the returned page when
+	// more shards exist; empty means the whole shard list was served.
+	LastEvaluatedShardId string
 }
 
 // ShardInfo describes a single shard within a stream.
@@ -43,24 +46,71 @@ type ShardInfo struct {
 	EndingSequenceNumber   string
 }
 
+// DescribeStreamInput is the service-layer input of DescribeStream. LimitSet
+// distinguishes an omitted Limit from an explicit zero because the model's
+// PositiveIntegerObject range (minimum 1) rejects the latter while the former
+// takes the default.
+type DescribeStreamInput struct {
+	StreamArn             string
+	Limit                 int
+	LimitSet              bool
+	ExclusiveStartShardId string
+	ShardFilter           *ShardFilterSpec
+}
+
+// ShardFilterSpec is the DescribeStream ShardFilter. The model's
+// ShardFilterType enum defines CHILD_SHARDS alone, and the member's
+// documentation names the shard whose children are requested.
+type ShardFilterSpec struct {
+	Type    string
+	ShardId string
+}
+
 // describeStreamCore builds the description of a single DynamoDB stream.
-// Returns ErrInvalidParameter when StreamArn is missing and
-// ErrResourceNotFound when the table or stream does not exist.
-func (s *DynamoDBService) describeStreamCore(store dbstore.DynamoDBStoreInterface, streamArn string) (*DescribeStreamResult, error) {
-	if streamArn == "" {
+// Returns ErrInvalidParameter when StreamArn is missing, a member carries an
+// out-of-range value, or the ShardFilter names a type outside the model's
+// enum; ErrResourceNotFound when the table or stream does not exist.
+func (s *DynamoDBService) describeStreamCore(store dbstore.DynamoDBStoreInterface, in DescribeStreamInput) (*DescribeStreamResult, error) {
+	if in.StreamArn == "" {
 		return nil, ErrInvalidParameter
 	}
-	tableName := arn.ParseStreamARN(streamArn)
+	if in.LimitSet && in.Limit < 1 {
+		return nil, ErrInvalidParameter
+	}
+	if in.ExclusiveStartShardId != "" && (len(in.ExclusiveStartShardId) < 28 || len(in.ExclusiveStartShardId) > 65) {
+		return nil, ErrInvalidParameter
+	}
+	if in.ShardFilter != nil && in.ShardFilter.Type != "CHILD_SHARDS" {
+		return nil, ErrInvalidParameter
+	}
+	limit := in.Limit
+	if limit == 0 {
+		limit = describeStreamDefaultLimit
+	}
+	if limit > describeStreamMaxLimit {
+		limit = describeStreamMaxLimit
+	}
+
+	tableName := arn.ParseStreamARN(in.StreamArn)
 	if tableName == "" {
 		return nil, ErrResourceNotFound
 	}
 
 	table, err := store.Tables().Get(tableName)
-	if err != nil || table == nil || table.StreamArn != streamArn {
+	if err != nil {
+		// Absence maps to the stream's not-found answer; a storage fault
+		// (bucket I/O, an unreadable record) is reported as the storage
+		// error it is — never masquerading as the stream's absence.
+		if storeRecordMissing(err) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, err
+	}
+	if table == nil || table.StreamArn != in.StreamArn {
 		return nil, ErrResourceNotFound
 	}
 
-	latestSeq, seqErr := store.Streams().GetLatestSequence(tableName)
+	latestSeq, seqErr := store.Streams().GetLatestSequenceForStream(tableName, in.StreamArn)
 	if seqErr != nil {
 		return nil, seqErr
 	}
@@ -74,7 +124,7 @@ func (s *DynamoDBService) describeStreamCore(store dbstore.DynamoDBStoreInterfac
 	}
 
 	result := &DescribeStreamResult{
-		StreamArn:               streamArn,
+		StreamArn:               in.StreamArn,
 		StreamLabel:             table.LatestStreamLabel,
 		StreamStatus:            streamStatus,
 		StreamViewType:          streamViewType,
@@ -83,13 +133,44 @@ func (s *DynamoDBService) describeStreamCore(store dbstore.DynamoDBStoreInterfac
 		CreationRequestDateTime: table.CreationDateTime.Unix(),
 	}
 	shard := ShardInfo{
-		ShardID:                dbstore.ShardIDForStream(streamArn),
-		StartingSequenceNumber: "1",
+		ShardID:                dbstore.ShardIDForStream(in.StreamArn),
+		StartingSequenceNumber: dbstore.FormatStreamSequenceNumber(1),
 	}
 	if latestSeq >= 1 {
-		shard.EndingSequenceNumber = fmt.Sprintf("%d", latestSeq)
+		shard.EndingSequenceNumber = dbstore.FormatStreamSequenceNumber(latestSeq)
 	}
-	result.Shards = []ShardInfo{shard}
+	shards := []ShardInfo{shard}
+
+	// The CHILD_SHARDS filter answers with the children of the named
+	// shard; the platform's streams expose a single shard that never
+	// splits, so no shard has children and the filtered list is empty.
+	if in.ShardFilter != nil {
+		shards = nil
+	}
+
+	// The exclusive-start cursor positions the page after the matching
+	// shard; a cursor naming no shard of this stream leaves nothing to
+	// serve, the same policy listStreamsCore applies to its cursor.
+	if in.ExclusiveStartShardId != "" {
+		cursorIdx := -1
+		for i, sh := range shards {
+			if sh.ShardID == in.ExclusiveStartShardId {
+				cursorIdx = i
+				break
+			}
+		}
+		if cursorIdx == -1 {
+			shards = nil
+		} else {
+			shards = shards[cursorIdx+1:]
+		}
+	}
+
+	if len(shards) > limit {
+		shards = shards[:limit]
+		result.LastEvaluatedShardId = shards[len(shards)-1].ShardID
+	}
+	result.Shards = shards
 	return result, nil
 }
 
@@ -98,52 +179,62 @@ type GetShardIteratorResult struct {
 	ShardIterator string
 }
 
-// encodeShardIterator creates an opaque iterator string from the table
-// name and sequence number. Format: "tableName|seqNum".
+// encodeShardIterator creates an opaque iterator string from the stream
+// ARN, table name, and sequence number. Format:
+// "streamArn|tableName|seqNum|issuedAt|iteratorType".
 // shardIteratorTTL is the documented shard iterator lifetime: a shard
 // iterator expires fifteen minutes after it was issued.
 const shardIteratorTTL = 15 * time.Minute
 
 // encodeShardIterator renders an opaque, signed iterator for a read
-// position. The payload carries the table, the sequence number to read
-// from, and the issue time; the HMAC-SHA256 signature under the
+// position. The payload carries the issuing stream's ARN, the table, the
+// sequence number to read from, the issue time, and the iterator type the
+// position was issued under; the HMAC-SHA256 signature under the
 // store-persisted signing key makes the token unforgeable — a client can
 // neither read a crafted position into the stream nor tamper with an
-// issued one, because only the server holds the key.
-func encodeShardIterator(signingKey []byte, tableName string, seq int64) string {
-	payload := fmt.Sprintf("%s|%d|%d", tableName, seq, streamTimeNow().Unix())
+// issued one, because only the server holds the key. The ARN binds the
+// iterator to its stream generation: a table whose stream is disabled and
+// re-enabled carries a fresh ARN, and an iterator of the superseded
+// generation must never read the successor stream. The type travels with
+// the position so the read side can apply the type's own semantics — a
+// TRIM_HORIZON position follows the retention floor at read time, not the
+// floor's historical value at issue time.
+func encodeShardIterator(signingKey []byte, streamArn, tableName string, seq int64, iteratorType string) string {
+	payload := fmt.Sprintf("%s|%s|%d|%d|%s", streamArn, tableName, seq, streamTimeNow().Unix(), iteratorType)
 	mac := crypto.HMACSHA256(signingKey, []byte(payload))
 	return base64.RawURLEncoding.EncodeToString(append([]byte(payload), mac...))
 }
 
 // decodeShardIterator verifies an iterator's signature and returns the
-// table name, sequence number, and issue time it carries. A token whose
-// signature does not verify — anything a client constructed or altered —
-// is rejected, as is any malformed encoding.
-func decodeShardIterator(signingKey []byte, iterator string) (string, int64, int64, error) {
+// issuing stream ARN, table name, sequence number, issue time, and
+// iterator type it carries. A token whose signature does not verify —
+// anything a client constructed or altered — is rejected, as is any
+// malformed encoding.
+func decodeShardIterator(signingKey []byte, iterator string) (string, string, int64, int64, string, error) {
 	raw, err := base64.RawURLEncoding.DecodeString(iterator)
 	if err != nil || len(raw) <= sha256.Size {
-		return "", 0, 0, fmt.Errorf("invalid iterator format")
+		return "", "", 0, 0, "", fmt.Errorf("invalid iterator format")
 	}
 	split := len(raw) - sha256.Size
 	payload, mac := raw[:split], raw[split:]
 	if !hmac.Equal(crypto.HMACSHA256(signingKey, payload), mac) {
-		return "", 0, 0, fmt.Errorf("invalid iterator signature")
+		return "", "", 0, 0, "", fmt.Errorf("invalid iterator signature")
 	}
 	parts := strings.Split(string(payload), "|")
-	if len(parts) != 3 {
-		return "", 0, 0, fmt.Errorf("invalid iterator format")
+	if len(parts) != 5 {
+		return "", "", 0, 0, "", fmt.Errorf("invalid iterator format")
 	}
-	tableName := parts[0]
-	seq, err := strconv.ParseInt(parts[1], 10, 64)
+	streamArn := parts[0]
+	tableName := parts[1]
+	seq, err := strconv.ParseInt(parts[2], 10, 64)
 	if err != nil {
-		return "", 0, 0, err
+		return "", "", 0, 0, "", err
 	}
-	issuedAt, err := strconv.ParseInt(parts[2], 10, 64)
+	issuedAt, err := strconv.ParseInt(parts[3], 10, 64)
 	if err != nil {
-		return "", 0, 0, err
+		return "", "", 0, 0, "", err
 	}
-	return tableName, seq, issuedAt, nil
+	return streamArn, tableName, seq, issuedAt, parts[4], nil
 }
 
 // shardIteratorExpired reports whether an iterator issued at the given
@@ -152,15 +243,24 @@ func shardIteratorExpired(issuedAtUnix int64, now time.Time) bool {
 	return now.Unix()-issuedAtUnix >= int64(shardIteratorTTL/time.Second)
 }
 
-// streamTimeNow returns the current time. Extracted for potential testing.
+// streamTimeNow is the stream plane's clock seam: the core-validation and
+// sweeper tests shift it past the shard-iterator expiry and retention
+// horizons to pin those behaviours without waiting real time; every
+// production read treats it as the UTC now.
 var streamTimeNow = func() time.Time { return time.Now().UTC() }
 
 // getShardIteratorCore computes and encodes a shard iterator for the
 // requested position. Returns ErrInvalidParameter when a required parameter
-// is missing or the iterator type or sequence number is unknown, and
-// ErrResourceNotFound when the table or stream does not exist.
+// is missing or the iterator type, shard id, or sequence number is invalid,
+// ErrResourceNotFound when the table, stream, or shard does not exist, and
+// ErrTrimmedDataAccess when the requested sequence number lies at or below
+// the retention trim floor.
 func (s *DynamoDBService) getShardIteratorCore(store dbstore.DynamoDBStoreInterface, streamArn, shardId, iteratorType, sequenceNumber string) (*GetShardIteratorResult, error) {
 	if streamArn == "" || shardId == "" || iteratorType == "" {
+		return nil, ErrInvalidParameter
+	}
+	// The model bounds ShardId at 28-65 characters.
+	if len(shardId) < 28 || len(shardId) > 65 {
 		return nil, ErrInvalidParameter
 	}
 	tableName := arn.ParseStreamARN(streamArn)
@@ -169,11 +269,24 @@ func (s *DynamoDBService) getShardIteratorCore(store dbstore.DynamoDBStoreInterf
 	}
 
 	table, err := store.Tables().Get(tableName)
-	if err != nil || table == nil || table.StreamArn != streamArn {
+	if err != nil {
+		// The same fault-versus-absence split the describe path applies.
+		if storeRecordMissing(err) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, err
+	}
+	if table == nil || table.StreamArn != streamArn {
 		return nil, ErrResourceNotFound
 	}
 
-	latestSeq, err := store.Streams().GetLatestSequence(tableName)
+	// The stream exposes exactly one shard, so any shard id other than the
+	// stream's own names a shard that does not exist.
+	if shardId != dbstore.ShardIDForStream(streamArn) {
+		return nil, ErrResourceNotFound
+	}
+
+	latestSeq, err := store.Streams().GetLatestSequenceForStream(tableName, streamArn)
 	if err != nil {
 		return nil, err
 	}
@@ -200,13 +313,27 @@ func (s *DynamoDBService) getShardIteratorCore(store dbstore.DynamoDBStoreInterf
 		return nil, ErrInvalidParameter
 	}
 
+	// A sequence-number position whose first record the retention window
+	// has already removed is the documented TrimmedDataAccessException at
+	// iterator-issuing time.
+	if iteratorType == "AT_SEQUENCE_NUMBER" || iteratorType == "AFTER_SEQUENCE_NUMBER" {
+		floor, floorErr := store.Streams().OldestSequence(tableName)
+		if floorErr != nil {
+			return nil, floorErr
+		}
+		firstServed := startSeq + 1
+		if firstServed <= floor {
+			return nil, ErrTrimmedDataAccess
+		}
+	}
+
 	signingKey, err := store.Streams().IteratorSigningKey()
 	if err != nil {
 		return nil, err
 	}
 
 	return &GetShardIteratorResult{
-		ShardIterator: encodeShardIterator(signingKey, tableName, startSeq),
+		ShardIterator: encodeShardIterator(signingKey, streamArn, tableName, startSeq, iteratorType),
 	}, nil
 }
 
@@ -242,7 +369,7 @@ func (s *DynamoDBService) getRecordsCore(store dbstore.DynamoDBStoreInterface, i
 	if err != nil {
 		return nil, err
 	}
-	tableName, fromSeq, issuedAt, err := decodeShardIterator(signingKey, iterator)
+	iterStreamArn, tableName, fromSeq, issuedAt, iteratorType, err := decodeShardIterator(signingKey, iterator)
 	if err != nil {
 		return nil, ErrInvalidParameter
 	}
@@ -251,7 +378,21 @@ func (s *DynamoDBService) getRecordsCore(store dbstore.DynamoDBStoreInterface, i
 	}
 
 	table, err := store.Tables().Get(tableName)
-	if err != nil || table == nil || table.StreamSpecification == nil || !table.StreamSpecification.StreamEnabled {
+	if err != nil {
+		// The same fault-versus-absence split the describe path applies.
+		if storeRecordMissing(err) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, err
+	}
+	if table == nil || table.StreamSpecification == nil || !table.StreamSpecification.StreamEnabled {
+		return nil, ErrResourceNotFound
+	}
+	// The iterator belongs to the stream generation that issued it. A
+	// table whose stream is disabled and re-enabled carries a fresh ARN,
+	// so only this comparison keeps a superseded generation's iterator
+	// from reading the successor stream.
+	if table.StreamArn != iterStreamArn {
 		return nil, ErrResourceNotFound
 	}
 
@@ -263,11 +404,23 @@ func (s *DynamoDBService) getRecordsCore(store dbstore.DynamoDBStoreInterface, i
 			logs.String("table", tableName), logs.Err(err))
 		return nil, ErrInternal
 	}
+	// A TRIM_HORIZON position reads the oldest retained record wherever
+	// the retention floor has moved to: the read clamps the position up to
+	// the floor, so a trim that happened after the iterator was issued —
+	// or between the pages of a long read — still serves the oldest
+	// survivor. A LATEST position is the same class: the iterator froze a
+	// position the window has since moved past, and the read serves the
+	// oldest survivor (or empty) rather than erroring. TrimmedDataAccess
+	// is the answer to a position the caller named (AT/AFTER a sequence
+	// number the window has removed), not to the horizon itself.
+	if (iteratorType == "TRIM_HORIZON" || iteratorType == "LATEST") && fromSeq < floor {
+		fromSeq = floor
+	}
 	if fromSeq < floor {
 		return nil, ErrTrimmedDataAccess
 	}
 
-	records, nextSeq, err := store.Streams().GetRecords(tableName, fromSeq, limit)
+	records, nextSeq, err := store.Streams().GetRecords(tableName, iterStreamArn, fromSeq, limit)
 	if err != nil {
 		logs.Warn("failed to get stream records",
 			logs.String("table", tableName),
@@ -282,7 +435,7 @@ func (s *DynamoDBService) getRecordsCore(store dbstore.DynamoDBStoreInterface, i
 
 	return &GetRecordsResult{
 		Records:           recordsResp,
-		NextShardIterator: encodeShardIterator(signingKey, tableName, nextSeq),
+		NextShardIterator: encodeShardIterator(signingKey, iterStreamArn, tableName, nextSeq, iteratorType),
 	}, nil
 }
 
@@ -301,9 +454,13 @@ type ListStreamsResult struct {
 
 // listStreamsCore walks every table in the store, collects those with
 // streaming enabled, applies the optional TableName filter, and returns a
-// single page of stream entries. The Limit default (and its cap) is applied
-// here so every caller shares one range policy.
-func (s *DynamoDBService) listStreamsCore(store dbstore.DynamoDBStoreInterface, tableNameFilter, exclusiveStartStreamArn string, limit int) (*ListStreamsResult, error) {
+// single page of stream entries. The Limit range (explicit values must be at
+// least 1), its default, and its cap are applied here so every caller shares
+// one policy.
+func (s *DynamoDBService) listStreamsCore(store dbstore.DynamoDBStoreInterface, tableNameFilter, exclusiveStartStreamArn string, limit int, limitSet bool) (*ListStreamsResult, error) {
+	if limitSet && limit < 1 {
+		return nil, ErrInvalidParameter
+	}
 	if limit == 0 {
 		limit = listStreamsDefaultLimit
 	}
@@ -361,7 +518,7 @@ func (s *DynamoDBService) listStreamsCore(store dbstore.DynamoDBStoreInterface, 
 		}
 	}
 
-	hasMore := limit > 0 && len(streams) > limit
+	hasMore := len(streams) > limit
 	if hasMore {
 		streams = streams[:limit]
 	}
@@ -376,7 +533,13 @@ func (s *DynamoDBService) listStreamsCore(store dbstore.DynamoDBStoreInterface, 
 }
 
 // parseSequenceNumber parses a sequence-number string used by
-// AT_SEQUENCE_NUMBER / AFTER_SEQUENCE_NUMBER iterator types.
+// AT_SEQUENCE_NUMBER / AFTER_SEQUENCE_NUMBER iterator types. The model
+// bounds the SequenceNumber type at 21-40 characters; the platform's own
+// sequence numbers are zero-padded to that minimum on the wire, so a shorter
+// or longer string never names one of the stream's records.
 func parseSequenceNumber(s string) (int64, error) {
+	if len(s) < 21 || len(s) > 40 {
+		return 0, fmt.Errorf("sequence number length outside the model's 21-40 range")
+	}
 	return strconv.ParseInt(s, 10, 64)
 }

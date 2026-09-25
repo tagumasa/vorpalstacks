@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -19,20 +20,20 @@ import (
 // delegate to these methods to ensure identical behaviour.
 // ---------------------------------------------------------------------------
 
-// revisionMatches compares an ExpectedRevisionId ("v<N>") against the
-// current revision number stored on the table. Returns true if they match,
-// or an error if the format is invalid.
-func revisionMatches(expected string, currentRev int) (bool, error) {
-	trimmed := strings.TrimPrefix(expected, "v")
-	if trimmed == "" || trimmed == expected {
-		// Either "v" alone, or no "v" prefix at all.
-		return false, ErrInvalidParameter
+// expectedPolicyRevision converts an already format-validated
+// ExpectedRevisionId ("v<N>") into the revision number the store compares
+// under the table record's lock. An absent member reports
+// PolicyRevisionUnchecked — the wire contract's skip-optimistic-locking
+// value.
+func expectedPolicyRevision(expected string) (int, error) {
+	if expected == "" {
+		return dbstore.PolicyRevisionUnchecked, nil
 	}
-	expectedNum, err := strconv.Atoi(trimmed)
+	num, err := strconv.Atoi(strings.TrimPrefix(expected, "v"))
 	if err != nil {
-		return false, ErrInvalidParameter
+		return 0, ErrInvalidParameter
 	}
-	return expectedNum == currentRev, nil
+	return num, nil
 }
 
 // resolveResourcePolicyTable validates the request ARN and resolves it to an
@@ -123,27 +124,21 @@ func (s *DynamoDBService) putResourcePolicyCore(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	if in.ExpectedRevisionId != "" {
-		currentRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
-		if revErr != nil {
-			return nil, revErr
-		}
-		matched, matchErr := revisionMatches(in.ExpectedRevisionId, currentRev)
-		if matchErr != nil {
-			return nil, matchErr
-		}
-		if !matched {
-			return nil, ErrPolicyNotFound
-		}
-	}
-
-	if err := store.Tables().SetResourcePolicy(tableName, in.Policy); err != nil {
-		return nil, err
-	}
-
-	newRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
+	expectedRev, revErr := expectedPolicyRevision(in.ExpectedRevisionId)
 	if revErr != nil {
 		return nil, revErr
+	}
+
+	// The revision check and the write run inside one locked
+	// read-modify-write of the table record: two concurrent writers that
+	// both observed the same revision cannot both apply — the loser is
+	// told the revision moved, never silently overwritten.
+	newRev, setErr := store.Tables().SetResourcePolicyExpected(tableName, in.Policy, expectedRev)
+	if setErr != nil {
+		if errors.Is(setErr, dbstore.ErrPolicyRevisionMismatch) {
+			return nil, ErrPolicyNotFound
+		}
+		return nil, setErr
 	}
 	return &PutResourcePolicyResult{
 		RevisionId: fmt.Sprintf("v%d", newRev),
@@ -157,31 +152,42 @@ type DeleteResourcePolicyInput struct {
 	ExpectedRevisionId string // optional; empty skips optimistic-lock check
 }
 
+// DeleteResourcePolicyResult is the service-layer result of
+// DeleteResourcePolicy.
+type DeleteResourcePolicyResult struct {
+	RevisionId string
+}
+
 // deleteResourcePolicyCore removes the resource-based policy from the table
 // named by the request ARN. When ExpectedRevisionId is non-empty, it must
 // match the current revision or ErrPolicyNotFound is returned.
-func (s *DynamoDBService) deleteResourcePolicyCore(ctx context.Context, reqCtx *request.RequestContext, in DeleteResourcePolicyInput) error {
+func (s *DynamoDBService) deleteResourcePolicyCore(ctx context.Context, reqCtx *request.RequestContext, in DeleteResourcePolicyInput) (*DeleteResourcePolicyResult, error) {
 	if !validatePolicyRevisionId(in.ExpectedRevisionId) {
-		return ErrInvalidParameter
+		return nil, ErrInvalidParameter
 	}
 
 	store, tableName, err := s.resolveResourcePolicyTable(reqCtx, in.ResourceArn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if in.ExpectedRevisionId != "" {
-		currentRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
-		if revErr != nil {
-			return revErr
-		}
-		matched, matchErr := revisionMatches(in.ExpectedRevisionId, currentRev)
-		if matchErr != nil {
-			return matchErr
-		}
-		if !matched {
-			return ErrPolicyNotFound
-		}
+	expectedRev, revErr := expectedPolicyRevision(in.ExpectedRevisionId)
+	if revErr != nil {
+		return nil, revErr
 	}
-	return store.Tables().DeleteResourcePolicy(tableName)
+
+	// The same one-lock write the put path applies: the check and the
+	// delete commit together, and the delete advances the revision so a
+	// concurrent put holding the same expected revision cannot apply past
+	// it.
+	newRev, delErr := store.Tables().DeleteResourcePolicyExpected(tableName, expectedRev)
+	if delErr != nil {
+		if errors.Is(delErr, dbstore.ErrPolicyRevisionMismatch) {
+			return nil, ErrPolicyNotFound
+		}
+		return nil, delErr
+	}
+	return &DeleteResourcePolicyResult{
+		RevisionId: fmt.Sprintf("v%d", newRev),
+	}, nil
 }

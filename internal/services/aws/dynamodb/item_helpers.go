@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,6 +10,87 @@ import (
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
+
+// errScanSufficient is returned from a scan callback to signal that
+// enough items have been collected and the scan can stop early.
+var errScanSufficient = errors.New("scan sufficient items collected")
+
+// stringSetCanonical is the canonical form of string-set and binary-set
+// membership: the member itself.
+func stringSetCanonical(s string) string { return s }
+
+// addStringSetMembers appends every incoming member whose canonical form
+// the stored set does not already carry, preserving the stored order and
+// appending the new members in statement order. The canonical form is both
+// the identity key and the stored representation of an appended member —
+// number sets pass their canonical number form so that two spellings of
+// one numeric value ("1" and "01") are one set member, while string sets
+// pass the member itself. Previously stored members keep their stored
+// spelling untouched.
+func addStringSetMembers(existing, incoming []string, canonical func(string) string) []string {
+	present := make(map[string]bool, len(existing))
+	for _, m := range existing {
+		present[canonical(m)] = true
+	}
+	for _, m := range incoming {
+		key := canonical(m)
+		if !present[key] {
+			present[key] = true
+			existing = append(existing, key)
+		}
+	}
+	return existing
+}
+
+// removeStringSetMembers filters the stored set down to the members whose
+// canonical form the removal set does not carry. Survivors keep their
+// stored spelling: the canonical form serves as the identity key alone.
+func removeStringSetMembers(existing, removals []string, canonical func(string) string) []string {
+	toDelete := make(map[string]bool, len(removals))
+	for _, m := range removals {
+		toDelete[canonical(m)] = true
+	}
+	remaining := make([]string, 0, len(existing))
+	for _, m := range existing {
+		if !toDelete[canonical(m)] {
+			remaining = append(remaining, m)
+		}
+	}
+	return remaining
+}
+
+// addBinarySetMembers appends every incoming member the stored set does
+// not already carry, preserving stored order. A binary member is its own
+// identity.
+func addBinarySetMembers(existing, incoming [][]byte) [][]byte {
+	present := make(map[string]bool, len(existing))
+	for _, b := range existing {
+		present[string(b)] = true
+	}
+	for _, b := range incoming {
+		if !present[string(b)] {
+			present[string(b)] = true
+			existing = append(existing, b)
+		}
+	}
+	return existing
+}
+
+// removeBinarySetMembers filters the stored set down to the members the
+// removal set does not carry. A binary member is its own identity.
+func removeBinarySetMembers(existing, removals [][]byte) [][]byte {
+	toDelete := make(map[string]bool, len(removals))
+	for _, b := range removals {
+		toDelete[string(b)] = true
+	}
+	remaining := make([][]byte, 0, len(existing))
+	for _, b := range existing {
+		if !toDelete[string(b)] {
+			remaining = append(remaining, b)
+		}
+	}
+	return remaining
+}
 
 func isKeyAttribute(table *dbstore.Table, attrName string) bool {
 	for _, ks := range table.KeySchema {
@@ -32,8 +114,77 @@ func validateNotKeyAttributes(table *dbstore.Table, paths []string) error {
 	return nil
 }
 
-func getReturnConsumedCapacity(params map[string]interface{}) string {
-	return request.GetStringParam(params, "ReturnConsumedCapacity")
+// getReturnConsumedCapacity validates and reads the ReturnConsumedCapacity
+// member: the Smithy enum trait admits exactly INDEXES, TOTAL and NONE, an
+// unset member behaving as NONE. An unknown value is a ValidationException
+// the caller must answer before executing anything.
+func getReturnConsumedCapacity(params map[string]interface{}) (string, error) {
+	v := request.GetStringParam(params, "ReturnConsumedCapacity")
+	return v, validateReturnConsumedCapacityValue(v)
+}
+
+// validateReturnConsumedCapacityValue is getReturnConsumedCapacity's form
+// for a core holding the extracted member: it admits the enum's values
+// plus the absent empty string and rejects everything else.
+func validateReturnConsumedCapacityValue(v string) error {
+	switch v {
+	case "", "NONE", "TOTAL", "INDEXES":
+		return nil
+	default:
+		return NewAPIError("com.amazon.coral.validate#ValidationException",
+			fmt.Sprintf("Invalid ReturnConsumedCapacity value %q: must be one of INDEXES, TOTAL, NONE", v), http.StatusBadRequest)
+	}
+}
+
+// itemReadUnits returns the read capacity one item read consumes: the
+// item's size rounded up to 4 KB multiples, halved for an eventually
+// consistent read ("One read request unit represents one strongly
+// consistent read operation per second, or two eventually consistent read
+// operations per second, for an item up to 4 KB in size"). The size basis
+// is what the read evaluated — the full stored item, before any
+// projection narrows the returned attributes.
+func itemReadUnits(itemSizeBytes int64, consistentRead bool) float64 {
+	units := (itemSizeBytes + dbstore.ReadCapacityUnitBytes - 1) / dbstore.ReadCapacityUnitBytes
+	if units < 1 {
+		units = 1
+	}
+	if consistentRead {
+		return float64(units)
+	}
+	return float64(units) / 2
+}
+
+// itemWriteUnits returns the write capacity one item write consumes: the
+// written item's size rounded up to 1 KB multiples ("One write request
+// unit represents one write operation per second, for an item up to 1 KB
+// in size"). A write of an item that does not exist (a delete of a missing
+// key) still consumes the one-unit minimum.
+func itemWriteUnits(itemSizeBytes int64) float64 {
+	units := (itemSizeBytes + dbstore.WriteCapacityUnitBytes - 1) / dbstore.WriteCapacityUnitBytes
+	if units < 1 {
+		units = 1
+	}
+	return float64(units)
+}
+
+// getItemCollectionMetricsSetting validates and reads the
+// ReturnItemCollectionMetrics member: the Smithy enum trait admits exactly
+// SIZE and NONE, an unset member behaving as NONE.
+func getItemCollectionMetricsSetting(params map[string]interface{}) (string, error) {
+	v := request.GetStringParam(params, "ReturnItemCollectionMetrics")
+	return v, validateItemCollectionMetricsValue(v)
+}
+
+// validateItemCollectionMetricsValue is getItemCollectionMetricsSetting's
+// form for a core holding the extracted member.
+func validateItemCollectionMetricsValue(v string) error {
+	switch v {
+	case "", "NONE", "SIZE":
+		return nil
+	default:
+		return NewAPIError("com.amazon.coral.validate#ValidationException",
+			fmt.Sprintf("Invalid ReturnItemCollectionMetrics value %q: must be one of SIZE, NONE", v), http.StatusBadRequest)
+	}
 }
 
 func buildConsumedCapacityResponse(tableName string, capacityUnits float64) map[string]interface{} {
@@ -46,13 +197,21 @@ func buildConsumedCapacityResponse(tableName string, capacityUnits float64) map[
 // buildReadConsumedCapacityResponse renders a read operation's
 // ConsumedCapacity entry: the ConsumedCapacity shape defines both the
 // aggregate member and the read-specific member, and read operations
-// populate them with the same figure.
-func buildReadConsumedCapacityResponse(tableName string, capacityUnits float64) map[string]interface{} {
-	return map[string]interface{}{
+// populate them with the same figure. Under ReturnConsumedCapacity=INDEXES
+// the per-table detail joins the aggregate.
+func buildReadConsumedCapacityResponse(tableName string, capacityUnits float64, includeTableDetail bool) map[string]interface{} {
+	resp := map[string]interface{}{
 		"TableName":         tableName,
 		"CapacityUnits":     capacityUnits,
 		"ReadCapacityUnits": capacityUnits,
 	}
+	if includeTableDetail {
+		resp["Table"] = map[string]interface{}{
+			"CapacityUnits":     capacityUnits,
+			"ReadCapacityUnits": capacityUnits,
+		}
+	}
+	return resp
 }
 
 // buildConsumedCapacityResponseWithVector adds the per-index vector write
@@ -110,12 +269,14 @@ func vectorWriteCapacityForItems(table *dbstore.Table, items ...*dbstore.Item) m
 }
 
 func buildConsumedCapacityResponseWithIndex(tableName string, indexName string, capacityUnits float64, isLSI bool) map[string]interface{} {
+	// The per-table detail belongs to every INDEXES response — a base-table
+	// read reports the table alone; an index read adds the index entry.
 	resp := map[string]interface{}{
 		"TableName":     tableName,
 		"CapacityUnits": capacityUnits,
+		"Table":         map[string]interface{}{"CapacityUnits": capacityUnits},
 	}
 	if indexName != "" {
-		resp["Table"] = map[string]interface{}{"CapacityUnits": capacityUnits}
 		if isLSI {
 			resp["LocalSecondaryIndexes"] = map[string]interface{}{
 				indexName: map[string]interface{}{"CapacityUnits": capacityUnits},
@@ -269,22 +430,13 @@ func splitAndTrim(s, sep string) []string {
 	return result
 }
 
-func isIdentRune(s string) bool {
-	if len(s) == 0 {
-		return false
-	}
-	for _, c := range s {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
-			return false
-		}
-	}
-	return true
-}
-
 // isConditionFunctionName returns true for DynamoDB expression function
 // names that should absorb their parenthetical arguments as a single token.
 // This prevents keywords like IN from being treated as function calls
 // when written as IN(:v1, :v2) without a space before the parenthesis.
+// Function names are case-sensitive (documented on the comparison
+// operators and functions page), so the match is exact — an uppercase
+// form does not glue and the downstream grammar rejects it.
 func isConditionFunctionName(s string) bool {
 	switch s {
 	case "attribute_exists", "attribute_not_exists", "attribute_type",
@@ -353,10 +505,94 @@ func validateKeySchemaAttrTypes(table *dbstore.Table, keySchema []*dbstore.KeySc
 	return nil
 }
 
+// validateKeySchemaMembership enforces that an addressing Key carries
+// exactly the table's primary-key attributes: a Key naming an attribute
+// outside the key schema — or missing one — is answered with the
+// ValidationException "The provided key element does not match the schema".
+// The rule binds only request Key members; an ExclusiveStartKey for an index
+// read legitimately carries the index key attributes alongside the primary
+// key, and a PutItem Item naturally holds non-key attributes, so neither
+// path may call this.
+func validateKeySchemaMembership(table *dbstore.Table, key map[string]*dbstore.AttributeValue) error {
+	if len(key) != len(table.KeySchema) {
+		return keySchemaMismatchError()
+	}
+	for name := range key {
+		if !isKeyAttribute(table, name) {
+			return keySchemaMismatchError()
+		}
+	}
+	return nil
+}
+
+// keySchemaMismatchError is the ValidationException DynamoDB answers a Key
+// whose member set differs from the table's key schema with.
+func keySchemaMismatchError() error {
+	return NewAPIError("com.amazon.coral.validate#ValidationException",
+		"The provided key element does not match the schema", http.StatusBadRequest)
+}
+
 // validateKeyTypes checks a supplied primary key against the table's key
-// schema and attribute definitions.
+// schema and attribute definitions, then enforces the documented length
+// limits on string-typed key values (partition 2048 bytes, sort 1024 —
+// the constraint is on the attribute value itself, so every plane that
+// addresses an item by primary key applies it).
 func validateKeyTypes(table *dbstore.Table, key map[string]*dbstore.AttributeValue) error {
-	return validateKeySchemaAttrTypes(table, table.KeySchema, key)
+	if err := validateKeySchemaAttrTypes(table, table.KeySchema, key); err != nil {
+		return err
+	}
+	for _, ks := range table.KeySchema {
+		attr, ok := key[ks.AttributeName]
+		if !ok || attr == nil || attr.S == nil {
+			continue
+		}
+		if ks.KeyType == dbstore.KeyTypeHash && len(*attr.S) > dbstore.MaxPartitionKeyBytes {
+			// The missing space before the byte count is the service's own
+			// message form.
+			return NewAPIError("com.amazon.coral.validate#ValidationException",
+				fmt.Sprintf("One or more parameter values were invalid: Size of hashkey has exceeded the maximum size limit of%d bytes", dbstore.MaxPartitionKeyBytes),
+				http.StatusBadRequest)
+		}
+		if ks.KeyType == dbstore.KeyTypeRange && len(*attr.S) > dbstore.MaxSortKeyBytes {
+			return NewAPIError("com.amazon.coral.validate#ValidationException",
+				fmt.Sprintf("One or more parameter values were invalid: Aggregated size of all range keys has exceeded the size limit of %d bytes", dbstore.MaxSortKeyBytes),
+				http.StatusBadRequest)
+		}
+	}
+	return nil
+}
+
+// validateIndexStartKeyTypes checks the index-key attributes an index
+// read's ExclusiveStartKey carries against the queried index's schema:
+// the service's own LastEvaluatedKey emits the index keys alongside the
+// primary key, and a wrong-typed echoed value would encode to a marker
+// position its own type dictates rather than the named item's. Absent
+// attributes are the marker composer's own presence contract; only
+// present values are type-checked here.
+func validateIndexStartKeyTypes(table *dbstore.Table, indexName string, esk map[string]*dbstore.AttributeValue) error {
+	hashName, sortName, _ := indexKeyAttributeNames(table, indexName)
+	defs := attributeTypeDefinitions(table)
+	for _, name := range []string{hashName, sortName} {
+		if name == "" {
+			continue
+		}
+		val, ok := esk[name]
+		if !ok || val == nil {
+			continue
+		}
+		expected, hasDef := defs[name]
+		if !hasDef {
+			continue
+		}
+		actual := attributeValueType(val)
+		if actual == "" {
+			return keyTypeMismatchError(name, expected, expected)
+		}
+		if actual != string(expected) {
+			return keyTypeMismatchError(name, expected, dbstore.ScalarAttributeType(actual))
+		}
+	}
+	return nil
 }
 
 // validateItemKeyTypes validates the primary key carried by an item along

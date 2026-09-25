@@ -12,17 +12,13 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // TransactGetItems performs multiple GetItem operations in a single transaction with snapshot isolation.
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactGetItems.html
 func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	transactItems, ok := req.Parameters["TransactItems"].([]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
+	transactItems, _ := req.Parameters["TransactItems"].([]interface{})
 	return s.transactGetItemsCore(ctx, reqCtx, transactGetItemsInput{
 		TransactItems: transactItems,
 		Parameters:    req.Parameters,
@@ -32,16 +28,18 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 // TransactWriteItems performs multiple write operations in a single transaction with ACID semantics.
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html
 func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	transactItems, ok := req.Parameters["TransactItems"].([]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
+	transactItems, _ := req.Parameters["TransactItems"].([]interface{})
 	return s.transactWriteItemsCore(ctx, reqCtx, transactWriteItemsInput{
 		TransactItems: transactItems,
 		Parameters:    req.Parameters,
 	})
 }
 
+// copyAttributes deep-copies an item's attribute map. The update appliers'
+// evaluation basis is the item as it was before the expression: the copy
+// must not alias any nested map or list whose members an action's write
+// replaces or extends, or a later operand's read would observe the
+// expression's own writes.
 func copyAttributes(attrs map[string]*dbstore.AttributeValue) map[string]*dbstore.AttributeValue {
 	if attrs == nil {
 		return nil
@@ -53,6 +51,8 @@ func copyAttributes(attrs map[string]*dbstore.AttributeValue) map[string]*dbstor
 	return cpy
 }
 
+// deepCopyAttributeValue copies one attribute value, recursing into the Map
+// and List containers and duplicating every slice and pointed-to scalar.
 func deepCopyAttributeValue(v *dbstore.AttributeValue) *dbstore.AttributeValue {
 	if v == nil {
 		return nil
@@ -150,6 +150,44 @@ func hashTransactWriteRequest(params map[string]interface{}) string {
 // removed from the per-region idempotency buckets.
 const idempotencySweepInterval = time.Minute
 
+// tokenClaimGuard tracks one transaction's idempotency-token claim. The
+// deferred release drops the in-progress record whenever the execution
+// does not reach its committed path, so no early return — on either
+// transaction core — can leave a claimed token locking the client out of
+// the idempotency window. Marking the guard committed stops the release:
+// after the storage commit the record belongs to the completion path,
+// and deleting it would let a retry re-execute the transaction.
+type tokenClaimGuard struct {
+	claimed   bool
+	committed bool
+	key       string
+	store     dbstore.DynamoDBStoreInterface
+}
+
+// claim records a successfully claimed token under its store key.
+func (g *tokenClaimGuard) claim(key string) {
+	g.key = key
+	g.claimed = true
+}
+
+// markCommitted moves the guard past the release point — the claim
+// survives as the completion path's record.
+func (g *tokenClaimGuard) markCommitted() {
+	g.committed = true
+}
+
+// release drops the in-progress record after a failed execution so the
+// client can retry the token; a claim never made and a committed
+// transaction are both no-ops.
+func (g *tokenClaimGuard) release() {
+	if !g.claimed || g.committed {
+		return
+	}
+	if delErr := g.store.Idempotency().Delete(g.key); delErr != nil {
+		logs.Error("Failed to release idempotency token claim", logs.Err(delErr))
+	}
+}
+
 // clientRequestTokenLockShards shards the per-token claim locks: tokens are
 // unique per request, so keyed locks would grow without bound, while a
 // fixed shard count still serialises every caller of one token (the same
@@ -168,38 +206,17 @@ func (s *DynamoDBService) lockClientRequestToken(token string) func() {
 	return mu.Unlock
 }
 
+// sweepStoreIdempotency removes the expired client request tokens of one
+// regional store.
+func (s *DynamoDBService) sweepStoreIdempotency(store dbstore.DynamoDBStoreInterface) {
+	if _, err := store.Idempotency().SweepExpired(time.Now()); err != nil {
+		logs.Error("Failed to sweep expired idempotency tokens", logs.Err(err))
+	}
+}
+
 // ensureIdempotencySweeper starts the background sweeper that removes
 // transaction client request tokens once their idempotency window has
 // lapsed, across every region store cached by the service.
 func (s *DynamoDBService) ensureIdempotencySweeper() {
-	s.idempotencySweepOnce.Do(func() {
-		s.bgWg.Add(1)
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					resilience.LogPanic("dynamodb idempotency sweep", r)
-				}
-			}()
-			defer s.bgWg.Done()
-			ticker := time.NewTicker(idempotencySweepInterval)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ticker.C:
-					s.stores.Range(func(_, v any) bool {
-						store, ok := v.(dbstore.DynamoDBStoreInterface)
-						if !ok {
-							return true
-						}
-						if _, err := store.Idempotency().SweepExpired(time.Now()); err != nil {
-							logs.Error("Failed to sweep expired idempotency tokens", logs.Err(err))
-						}
-						return true
-					})
-				case <-s.bgCtx.Done():
-					return
-				}
-			}
-		}()
-	})
+	s.startIntervalSweeper(&s.idempotencySweepOnce, idempotencySweepInterval, "dynamodb idempotency sweep", s.sweepStoreIdempotency)
 }

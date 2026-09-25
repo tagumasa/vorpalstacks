@@ -1185,6 +1185,56 @@ func (r *TestRunner) dynamoDBQueryScanConformanceTests(ctx context.Context, clie
 		return nil
 	}))
 
+	results = append(results, r.RunTest("dynamodb", "Query_BinarySortKeyBeginsWith", func() error {
+		// begins_with excludes a Number sort key alone, so a Binary sort
+		// key carries it — matching bytewise prefixes, NUL included.
+		sbTable := fmt.Sprintf("QsBinSort-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, sbTable, withDynamoKeySchema(
+			[]types.AttributeDefinition{
+				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
+				{AttributeName: aws.String("bsk"), AttributeType: types.ScalarAttributeTypeB},
+			},
+			[]types.KeySchemaElement{
+				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+				{AttributeName: aws.String("bsk"), KeyType: types.KeyTypeRange},
+			},
+		))
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		sks := [][]byte{[]byte("p\x001"), []byte("p\x002"), []byte("q1")}
+		for i, sk := range sks {
+			_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(sbTable),
+				Item: map[string]types.AttributeValue{
+					"id":  &types.AttributeValueMemberS{Value: "u1"},
+					"bsk": &types.AttributeValueMemberB{Value: sk},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("put item %d: %v", i, err)
+			}
+		}
+
+		resp, err := client.Query(ctx, &dynamodb.QueryInput{
+			TableName:              aws.String(sbTable),
+			KeyConditionExpression: aws.String("id = :id AND begins_with(bsk, :prefix)"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":id":     &types.AttributeValueMemberS{Value: "u1"},
+				":prefix": &types.AttributeValueMemberB{Value: []byte("p\x00")},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Count != 2 {
+			return fmt.Errorf("binary begins_with prefix must match 2 items, got %d", resp.Count)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("dynamodb", "Query_GSI_NumericHashKey_Matches", func() error {
 		// A GSI whose hash key is numeric must resolve Query on the index.
 		gnTable := fmt.Sprintf("QsGsiNumHash-%d", time.Now().UnixNano())

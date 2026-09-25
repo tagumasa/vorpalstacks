@@ -180,11 +180,11 @@ func vectorTopK(txn storage.Transaction, region string, table *Table, indexName 
 
 	var metric vecdist.DistanceMetric
 	switch vi.DistanceFunction {
-	case "COSINE":
+	case VectorDistanceFunctionCosine:
 		metric = vecdist.CosineDistance
-	case "EUCLIDEAN":
+	case VectorDistanceFunctionEuclidean:
 		metric = vecdist.L2
-	case "DOT_PRODUCT":
+	case VectorDistanceFunctionDotProduct:
 		metric = vecdist.DotProduct
 	default:
 		return nil, fmt.Errorf("unknown distance function %q for index %s", vi.DistanceFunction, indexName)
@@ -222,7 +222,7 @@ func vectorTopK(txn storage.Transaction, region string, table *Table, indexName 
 		return nil, err
 	}
 
-	descending := vi.DistanceFunction == "DOT_PRODUCT"
+	descending := vi.DistanceFunction == VectorDistanceFunctionDotProduct
 	sort.Slice(candidates, func(i, j int) bool {
 		if descending {
 			return candidates[i].score > candidates[j].score

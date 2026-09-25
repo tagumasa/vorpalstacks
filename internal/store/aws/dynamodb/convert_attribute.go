@@ -26,7 +26,11 @@ func attributeValueToProto(av *AttributeValue) *pb.AttributeValue {
 		return &pb.AttributeValue{Value: &pb.AttributeValue_M{M: attributeValueMapToProto(av.M)}}
 	case av.L != nil:
 		return &pb.AttributeValue{Value: &pb.AttributeValue_L{L: attributeValueListToProto(av.L)}}
-	case av.NULL != nil && *av.NULL:
+	// The NULL member's pointer presence is the type discriminator: the
+	// wire parser normalises {"NULL": ...} key presence to true and the
+	// persisted NullValue enum cannot carry false, so a false flag never
+	// survives a round-trip and the member converts on presence alone.
+	case av.NULL != nil:
 		return &pb.AttributeValue{Value: &pb.AttributeValue_Null{Null: &pb.NullValue{}}}
 	case av.BOOL != nil:
 		return &pb.AttributeValue{Value: &pb.AttributeValue_BoolVal{BoolVal: *av.BOOL}}

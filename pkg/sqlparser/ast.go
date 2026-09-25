@@ -2496,6 +2496,47 @@ func (node *ObjectLiteral) replace(from, to Expr) bool {
 
 func (*ObjectLiteral) iExpr() {}
 
+// SetLiteral represents a PartiQL set literal like << 'a', 'b' >>, the
+// DynamoDB PartiQL syntax for string, number and binary set values.
+type SetLiteral struct {
+	Values []Expr
+}
+
+// Format formats the node.
+func (node *SetLiteral) Format(buf *TrackedBuffer) {
+	buf.Myprintf("<<")
+	for i, val := range node.Values {
+		if i > 0 {
+			buf.Myprintf(", ")
+		}
+		buf.Myprintf("%v", val)
+	}
+	buf.Myprintf(">>")
+}
+
+func (node *SetLiteral) walkSubtree(visit Visit) error {
+	if node == nil {
+		return nil
+	}
+	for _, val := range node.Values {
+		if err := Walk(visit, val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (node *SetLiteral) replace(from, to Expr) bool {
+	for i := range node.Values {
+		if replaceExprs(from, to, &node.Values[i]) {
+			return true
+		}
+	}
+	return false
+}
+
+func (*SetLiteral) iExpr() {}
+
 // ObjectProperty represents a key-value pair in an ObjectLiteral.
 type ObjectProperty struct {
 	Key   Expr

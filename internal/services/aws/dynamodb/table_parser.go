@@ -2,6 +2,7 @@
 package dynamodb
 
 import (
+	"vorpalstacks/internal/common/kmsutil"
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
@@ -58,6 +59,72 @@ func parseProvisionedThroughput(params map[string]interface{}) *dbstore.Provisio
 	return &dbstore.ProvisionedThroughput{
 		ReadCapacityUnits:  request.GetInt64Param(pt, "ReadCapacityUnits"),
 		WriteCapacityUnits: request.GetInt64Param(pt, "WriteCapacityUnits"),
+	}
+}
+
+// parseOnDemandThroughput extracts the on-demand maximum-throughput pair
+// shared by the table-level member and the GSI action members; an absent
+// member returns nil.
+func parseOnDemandThroughput(params map[string]interface{}) (*dbstore.OnDemandThroughput, error) {
+	odt, ok := params["OnDemandThroughput"].(map[string]interface{})
+	if !ok {
+		return nil, nil
+	}
+	return parseOnDemandThroughputMap(odt)
+}
+
+// parseOnDemandThroughputMap reads the on-demand maximum-throughput pair
+// from one already-extracted member map — the table-level member, the GSI
+// members and the restore Override member carry the same shape. The model
+// requires a present member to name a limit of at least the minimum or
+// the removal sentinel, and the pair to carry at least one member; an
+// absent member stays unset (rendered as absent, never as zero).
+func parseOnDemandThroughputMap(odt map[string]interface{}) (*dbstore.OnDemandThroughput, error) {
+	parsed := &dbstore.OnDemandThroughput{}
+	present := 0
+	for member, slot := range map[string]*int64{
+		"MaxReadRequestUnits":  &parsed.MaxReadRequestUnits,
+		"MaxWriteRequestUnits": &parsed.MaxWriteRequestUnits,
+	} {
+		raw, ok := odt[member]
+		if !ok {
+			continue
+		}
+		f, ok := raw.(float64)
+		if !ok || f != float64(int64(f)) {
+			return nil, ErrInvalidParameter
+		}
+		v := int64(f)
+		if v != dbstore.OnDemandThroughputRemoveValue && v < dbstore.OnDemandThroughputMinUnits {
+			return nil, ErrInvalidParameter
+		}
+		*slot = v
+		present++
+	}
+	if present == 0 {
+		return nil, ErrInvalidParameter
+	}
+	return parsed, nil
+}
+
+// parseWarmThroughput extracts the warm-throughput pair shared by the
+// table-level member and the GSI action members; an absent member returns
+// nil.
+func parseWarmThroughput(params map[string]interface{}) *dbstore.WarmThroughput {
+	wt, ok := params["WarmThroughput"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	return parseWarmThroughputMap(wt)
+}
+
+// parseWarmThroughputMap reads the warm-throughput pair from one
+// already-extracted member map, shared by the table-level member, the GSI
+// members and the restore Override member.
+func parseWarmThroughputMap(wt map[string]interface{}) *dbstore.WarmThroughput {
+	return &dbstore.WarmThroughput{
+		ReadUnitsPerSecond:  request.GetInt64Param(wt, "ReadUnitsPerSecond"),
+		WriteUnitsPerSecond: request.GetInt64Param(wt, "WriteUnitsPerSecond"),
 	}
 }
 
@@ -140,6 +207,13 @@ func parseVectorIndexes(params map[string]interface{}) ([]*dbstore.VectorIndex, 
 	if !ok {
 		return nil, nil
 	}
+	return parseVectorIndexList(rawList)
+}
+
+// parseVectorIndexList parses one VectorIndexList member value — the
+// CreateTable VectorIndexes member and the restore VectorIndexOverride
+// member carry identical elements.
+func parseVectorIndexList(rawList []interface{}) ([]*dbstore.VectorIndex, error) {
 	result := make([]*dbstore.VectorIndex, 0, len(rawList))
 	for _, v := range rawList {
 		vm, ok := v.(map[string]interface{})
@@ -194,7 +268,7 @@ func parseVectorIndex(vm map[string]interface{}) (*dbstore.VectorIndex, error) {
 		IndexName:           idxName,
 		VectorAttributeName: attrName,
 		Dimensions:          dims,
-		DistanceFunction:    distanceFn,
+		DistanceFunction:    dbstore.VectorDistanceFunction(distanceFn),
 		Projection:          proj,
 		SearchSchema:        searchSchema,
 		IndexStatus:         dbstore.IndexStatusActive,
@@ -243,7 +317,7 @@ func parseSearchSchema(vm map[string]interface{}) ([]*dbstore.SearchSchemaElemen
 		}
 		result = append(result, &dbstore.SearchSchemaElement{
 			AttributeName:           attrName,
-			SearchSchemaElementType: elemType,
+			SearchSchemaElementType: dbstore.SearchSchemaElementType(elemType),
 		})
 	}
 	if len(result) == 0 {
@@ -260,13 +334,13 @@ func parseProjection(params map[string]interface{}) (*dbstore.Projection, error)
 	}
 
 	p := &dbstore.Projection{
-		ProjectionType: request.GetStringParam(proj, "ProjectionType"),
+		ProjectionType: dbstore.ProjectionType(request.GetStringParam(proj, "ProjectionType")),
 	}
 	if p.ProjectionType == "" {
-		p.ProjectionType = ProjectionTypeAll
+		p.ProjectionType = dbstore.ProjectionTypeAll
 	}
 	// Validate the ProjectionType enum (ALL, KEYS_ONLY, INCLUDE).
-	if !validateProjectionType(p.ProjectionType) {
+	if !validateProjectionType(string(p.ProjectionType)) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -280,9 +354,18 @@ func parseProjection(params map[string]interface{}) (*dbstore.Projection, error)
 	return p, nil
 }
 
+// parseStreamSpecification parses a StreamSpecification member into the
+// stored form. The member is typed as a structure and StreamEnabled as a
+// Boolean: a present value of another type on either is the
+// invalid-parameter error, never a silently skipped specification — the
+// typed-member family's discipline (wireStructMember); an absent member
+// leaves the table's streams untouched.
 func parseStreamSpecification(params map[string]interface{}) (*dbstore.StreamSpecification, error) {
-	ss, ok := params["StreamSpecification"].(map[string]interface{})
-	if !ok {
+	ss, present, err := wireStructMember(params["StreamSpecification"])
+	if err != nil {
+		return nil, err
+	}
+	if !present {
 		return nil, nil
 	}
 
@@ -297,32 +380,74 @@ func parseStreamSpecification(params map[string]interface{}) (*dbstore.StreamSpe
 	}, nil
 }
 
-func parseSSESpecification(ss map[string]interface{}) (*dbstore.SSEDescription, error) {
-	enabled := false
-	if e, ok := ss["Enabled"].(bool); ok {
-		enabled = e
-	}
-	if !enabled {
-		return nil, nil
-	}
+// defaultSSEKeyAlias is the model's name for the default DynamoDB KMS key;
+// resolveSSEKeyArn echoes its alias ARN when a specification enables KMS
+// without an explicit key identifier.
+const defaultSSEKeyAlias = "alias/aws/dynamodb"
 
-	sseType := dbstore.SSEType(request.GetStringParam(ss, "SSEType"))
-	if sseType == "" {
-		sseType = dbstore.SSETypeAES256
-	}
+// SetKMSResolver wires the KMS key-identifier resolver the SSE write paths
+// settle key ARNs through.
+func (s *DynamoDBService) SetKMSResolver(resolver kmsutil.Resolver) {
+	s.kmsResolver = resolver
+}
 
-	if sseType != dbstore.SSETypeAES256 && sseType != dbstore.SSETypeKMS {
-		return nil, ErrInvalidParameter
+// parseSSESpecification parses an SSESpecification member into the stored
+// description form. The member is typed as a structure and Enabled as a
+// Boolean: a present value of another type on either is the
+// invalid-parameter error, never a silently skipped specification — the
+// typed-member family's discipline (wireStructMember, wireBoolMember).
+// The specification side of the model is asymmetric by design:
+// Enabled=true sets the encryption type to KMS with an AWS managed key
+// ("If enabled (true), server-side encryption type is set to KMS and an
+// Amazon Web Services managed key is used"), SSEType's only supported
+// specification value is KMS, and the key identifier is optional — "you
+// should only provide this parameter if the key is different from the
+// default DynamoDB key alias/aws/dynamodb". The identifier's form is
+// validated here (validateKMSKeyIdentifier — a KMS key or alias ARN, an
+// alias name, or a bare key id); the ARN form
+// SSEDescription.KMSMasterKeyArn documents is settled by resolveSSEKeyArn
+// in the operation core, where the request's region and account live. An
+// explicit Enabled=false states the AWS owned-key default and carries no
+// settings to apply; the second return reports it so each operation core
+// can apply its own policy to a disable request. A specification whose
+// Enabled is absent but which carries SSEType or KMSMasterKeyId
+// contradicts the owned-key default that the absence states.
+func parseSSESpecification(raw interface{}) (*dbstore.SSEDescription, bool, error) {
+	ss, present, err := wireStructMember(raw)
+	if err != nil {
+		return nil, false, err
 	}
-
-	kmsMasterKeyId := request.GetStringParam(ss, "KMSMasterKeyId")
-	if sseType == dbstore.SSETypeKMS && kmsMasterKeyId == "" {
-		return nil, ErrInvalidParameter
+	if !present {
+		return nil, false, nil
 	}
-
-	return &dbstore.SSEDescription{
-		Status:          "ENABLED",
-		SSEType:         sseType,
-		KMSMasterKeyArn: kmsMasterKeyId,
-	}, nil
+	if enabled, present, err := wireBoolMember(ss["Enabled"]); err != nil {
+		return nil, false, err
+	} else if present {
+		if !enabled {
+			return nil, true, nil
+		}
+		sseType := dbstore.SSEType(request.GetStringParam(ss, "SSEType"))
+		if sseType == "" {
+			sseType = dbstore.SSETypeKMS
+		}
+		if sseType != dbstore.SSETypeKMS {
+			return nil, false, ErrInvalidParameter
+		}
+		keyID := request.GetStringParam(ss, "KMSMasterKeyId")
+		if keyID != "" && !validateKMSKeyIdentifier(keyID) {
+			return nil, false, ErrInvalidParameter
+		}
+		return &dbstore.SSEDescription{
+			Status:          "ENABLED",
+			SSEType:         dbstore.SSETypeKMS,
+			KMSMasterKeyArn: keyID,
+		}, false, nil
+	}
+	if _, hasType := ss["SSEType"]; hasType {
+		return nil, false, ErrInvalidParameter
+	}
+	if _, hasKey := ss["KMSMasterKeyId"]; hasKey {
+		return nil, false, ErrInvalidParameter
+	}
+	return nil, false, nil
 }

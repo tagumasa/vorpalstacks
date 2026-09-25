@@ -1691,7 +1691,7 @@ type ActivatedRule struct {
 	Overrideaction *WafOverrideAction     `protobuf:"bytes,515842888,opt,name=overrideaction,proto3" json:"overrideaction,omitempty"`
 	Priority       int32                  `protobuf:"varint,109944618,opt,name=priority,proto3" json:"priority,omitempty"`
 	Ruleid         string                 `protobuf:"bytes,430449567,opt,name=ruleid,proto3" json:"ruleid,omitempty"`
-	Type           WafRuleType            `protobuf:"varint,290836590,opt,name=type,proto3,enum=waf.WafRuleType" json:"type,omitempty"`
+	Type           *WafRuleType           `protobuf:"varint,290836590,opt,name=type,proto3,enum=waf.WafRuleType,oneof" json:"type,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1762,8 +1762,8 @@ func (x *ActivatedRule) GetRuleid() string {
 }
 
 func (x *ActivatedRule) GetType() WafRuleType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return WafRuleType_WAF_RULE_TYPE_GROUP
 }
@@ -5278,7 +5278,7 @@ func (x *GetChangeTokenStatusRequest) GetChangetoken() string {
 
 type GetChangeTokenStatusResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Changetokenstatus ChangeTokenStatus      `protobuf:"varint,37644373,opt,name=changetokenstatus,proto3,enum=waf.ChangeTokenStatus" json:"changetokenstatus,omitempty"`
+	Changetokenstatus *ChangeTokenStatus     `protobuf:"varint,37644373,opt,name=changetokenstatus,proto3,enum=waf.ChangeTokenStatus,oneof" json:"changetokenstatus,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -5314,8 +5314,8 @@ func (*GetChangeTokenStatusResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetChangeTokenStatusResponse) GetChangetokenstatus() ChangeTokenStatus {
-	if x != nil {
-		return x.Changetokenstatus
+	if x != nil && x.Changetokenstatus != nil {
+		return *x.Changetokenstatus
 	}
 	return ChangeTokenStatus_CHANGE_TOKEN_STATUS_PENDING
 }
@@ -12103,7 +12103,7 @@ func (x *WAFDisallowedNameException) GetMessage() string {
 type WAFEntityMigrationException struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Migrationerrorreason *string                `protobuf:"bytes,351537368,opt,name=migrationerrorreason,proto3,oneof" json:"migrationerrorreason,omitempty"`
-	Migrationerrortype   MigrationErrorType     `protobuf:"varint,53702508,opt,name=migrationerrortype,proto3,enum=waf.MigrationErrorType" json:"migrationerrortype,omitempty"`
+	Migrationerrortype   *MigrationErrorType    `protobuf:"varint,53702508,opt,name=migrationerrortype,proto3,enum=waf.MigrationErrorType,oneof" json:"migrationerrortype,omitempty"`
 	Message              *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -12147,8 +12147,8 @@ func (x *WAFEntityMigrationException) GetMigrationerrorreason() string {
 }
 
 func (x *WAFEntityMigrationException) GetMigrationerrortype() MigrationErrorType {
-	if x != nil {
-		return x.Migrationerrortype
+	if x != nil && x.Migrationerrortype != nil {
+		return *x.Migrationerrortype
 	}
 	return MigrationErrorType_MIGRATION_ERROR_TYPE_S3_BUCKET_NO_PERMISSION
 }
@@ -12285,10 +12285,10 @@ func (x *WAFInvalidOperationException) GetMessage() string {
 }
 
 type WAFInvalidParameterException struct {
-	state         protoimpl.MessageState   `protogen:"open.v1"`
-	Field         ParameterExceptionField  `protobuf:"varint,125985384,opt,name=field,proto3,enum=waf.ParameterExceptionField" json:"field,omitempty"`
-	Parameter     *string                  `protobuf:"bytes,363921681,opt,name=parameter,proto3,oneof" json:"parameter,omitempty"`
-	Reason        ParameterExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=waf.ParameterExceptionReason" json:"reason,omitempty"`
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Field         *ParameterExceptionField  `protobuf:"varint,125985384,opt,name=field,proto3,enum=waf.ParameterExceptionField,oneof" json:"field,omitempty"`
+	Parameter     *string                   `protobuf:"bytes,363921681,opt,name=parameter,proto3,oneof" json:"parameter,omitempty"`
+	Reason        *ParameterExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=waf.ParameterExceptionReason,oneof" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12324,8 +12324,8 @@ func (*WAFInvalidParameterException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFInvalidParameterException) GetField() ParameterExceptionField {
-	if x != nil {
-		return x.Field
+	if x != nil && x.Field != nil {
+		return *x.Field
 	}
 	return ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_POSITIONAL_CONSTRAINT
 }
@@ -12338,8 +12338,8 @@ func (x *WAFInvalidParameterException) GetParameter() string {
 }
 
 func (x *WAFInvalidParameterException) GetReason() ParameterExceptionReason {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return ParameterExceptionReason_PARAMETER_EXCEPTION_REASON_INVALID_OPTION
 }
@@ -13368,14 +13368,15 @@ var File_waf_proto protoreflect.FileDescriptor
 
 const file_waf_proto_rawDesc = "" +
 	"\n" +
-	"\twaf.proto\x12\x03waf\x1a\fcommon.proto\x1a\taws.proto\"\x9f\x02\n" +
+	"\twaf.proto\x12\x03waf\x1a\fcommon.proto\x1a\taws.proto\"\xad\x02\n" +
 	"\rActivatedRule\x12)\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\v2\x0e.waf.WafActionR\x06action\x12:\n" +
 	"\rexcludedrules\x18\xef\x9e\xfa= \x03(\v2\x11.waf.ExcludedRuleR\rexcludedrules\x12B\n" +
 	"\x0eoverrideaction\x18\xc8\xc6\xfc\xf5\x01 \x01(\v2\x16.waf.WafOverrideActionR\x0eoverrideaction\x12\x1d\n" +
 	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05R\bpriority\x12\x1a\n" +
-	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\x12(\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.waf.WafRuleTypeR\x04type\"\xa0\x01\n" +
+	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\x12-\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.waf.WafRuleTypeH\x00R\x04type\x88\x01\x01B\a\n" +
+	"\x05_type\"\xa0\x01\n" +
 	"\fByteMatchSet\x12)\n" +
 	"\x0ebytematchsetid\x18\xf6\x9b\xca\x1d \x01(\tR\x0ebytematchsetid\x12@\n" +
 	"\x0fbytematchtuples\x18\xb8\xb7\xc5\x01 \x03(\v2\x13.waf.ByteMatchTupleR\x0fbytematchtuples\x12\x1a\n" +
@@ -13610,9 +13611,10 @@ const file_waf_proto_rawDesc = "" +
 	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
 	"\f_changetoken\"B\n" +
 	"\x1bGetChangeTokenStatusRequest\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"g\n" +
-	"\x1cGetChangeTokenStatusResponse\x12G\n" +
-	"\x11changetokenstatus\x18\xd5\xd0\xf9\x11 \x01(\x0e2\x16.waf.ChangeTokenStatusR\x11changetokenstatus\"A\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\x82\x01\n" +
+	"\x1cGetChangeTokenStatusResponse\x12L\n" +
+	"\x11changetokenstatus\x18\xd5\xd0\xf9\x11 \x01(\x0e2\x16.waf.ChangeTokenStatusH\x00R\x11changetokenstatus\x88\x01\x01B\x14\n" +
+	"\x12_changetokenstatus\"A\n" +
 	"\x15GetGeoMatchSetRequest\x12(\n" +
 	"\rgeomatchsetid\x18՞\xa1\xf5\x01 \x01(\tR\rgeomatchsetid\"O\n" +
 	"\x16GetGeoMatchSetResponse\x125\n" +
@@ -14188,12 +14190,13 @@ const file_waf_proto_rawDesc = "" +
 	"\x1aWAFDisallowedNameException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xed\x01\n" +
+	"\b_message\"\x89\x02\n" +
 	"\x1bWAFEntityMigrationException\x12;\n" +
-	"\x14migrationerrorreason\x18ؑЧ\x01 \x01(\tH\x00R\x14migrationerrorreason\x88\x01\x01\x12J\n" +
-	"\x12migrationerrortype\x18\xec\xde\xcd\x19 \x01(\x0e2\x17.waf.MigrationErrorTypeR\x12migrationerrortype\x12 \n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x01R\amessage\x88\x01\x01B\x17\n" +
-	"\x15_migrationerrorreasonB\n" +
+	"\x14migrationerrorreason\x18ؑЧ\x01 \x01(\tH\x00R\x14migrationerrorreason\x88\x01\x01\x12O\n" +
+	"\x12migrationerrortype\x18\xec\xde\xcd\x19 \x01(\x0e2\x17.waf.MigrationErrorTypeH\x01R\x12migrationerrortype\x88\x01\x01\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x02R\amessage\x88\x01\x01B\x17\n" +
+	"\x15_migrationerrorreasonB\x15\n" +
+	"\x13_migrationerrortypeB\n" +
 	"\n" +
 	"\b_message\"I\n" +
 	"\x19WAFInternalErrorException\x12 \n" +
@@ -14204,13 +14207,15 @@ const file_waf_proto_rawDesc = "" +
 	"\x1cWAFInvalidOperationException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xc5\x01\n" +
-	"\x1cWAFInvalidParameterException\x125\n" +
-	"\x05field\x18\xe8ĉ< \x01(\x0e2\x1c.waf.ParameterExceptionFieldR\x05field\x12%\n" +
-	"\tparameter\x18\x91\x82ĭ\x01 \x01(\tH\x00R\tparameter\x88\x01\x01\x129\n" +
-	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x1d.waf.ParameterExceptionReasonR\x06reasonB\f\n" +
+	"\b_message\"\xe4\x01\n" +
+	"\x1cWAFInvalidParameterException\x12:\n" +
+	"\x05field\x18\xe8ĉ< \x01(\x0e2\x1c.waf.ParameterExceptionFieldH\x00R\x05field\x88\x01\x01\x12%\n" +
+	"\tparameter\x18\x91\x82ĭ\x01 \x01(\tH\x01R\tparameter\x88\x01\x01\x12>\n" +
+	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x1d.waf.ParameterExceptionReasonH\x02R\x06reason\x88\x01\x01B\b\n" +
+	"\x06_fieldB\f\n" +
 	"\n" +
-	"_parameter\"S\n" +
+	"_parameterB\t\n" +
+	"\a_reason\"S\n" +
 	"#WAFInvalidPermissionPolicyException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -15283,6 +15288,7 @@ func file_waf_proto_init() {
 	if File_waf_proto != nil {
 		return
 	}
+	file_waf_proto_msgTypes[0].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[1].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[6].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[8].OneofWrappers = []any{}
@@ -15312,6 +15318,7 @@ func file_waf_proto_init() {
 	file_waf_proto_msgTypes[60].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[62].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[68].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[70].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[78].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[79].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[80].OneofWrappers = []any{}

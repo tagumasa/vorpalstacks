@@ -603,9 +603,9 @@ message AccountDetails {
 
   repeated string additionalcontactemailaddresses = 322089693;
 
-  ContactLanguage contactlanguage = 114240022;
+  optional ContactLanguage contactlanguage = 114240022;
 
-  MailType mailtype = 138144527;
+  optional MailType mailtype = 138144527;
 
   ReviewDetails reviewdetails = 378909498;
 
@@ -675,11 +675,11 @@ message Attachment {
 
   optional string contentdescription = 29266325;
 
-  AttachmentContentDisposition contentdisposition = 120040130;
+  optional AttachmentContentDisposition contentdisposition = 120040130;
 
   optional string contentid = 431030096;
 
-  AttachmentContentTransferEncoding contenttransferencoding = 400458117;
+  optional AttachmentContentTransferEncoding contenttransferencoding = 400458117;
 
   optional string contenttype = 333064851;
 
@@ -807,7 +807,7 @@ message Bounce {
 
   optional string bouncesubtype = 297220246;
 
-  BounceType bouncetype = 490222550;
+  optional BounceType bouncetype = 490222550;
 
   optional string diagnosticcode = 20043524;
 
@@ -859,7 +859,7 @@ message BulkEmailEntryResult {
 
   optional string messageid = 360526634;
 
-  BulkEmailStatus status = 6222352;
+  optional BulkEmailStatus status = 6222352;
 
 }
 
@@ -1193,7 +1193,7 @@ message CreateDedicatedIpPoolRequest {
 
   string poolname = 81872585;
 
-  ScalingMode scalingmode = 210356138;
+  optional ScalingMode scalingmode = 210356138;
 
   repeated Tag tags = 381526209;
 
@@ -1281,7 +1281,7 @@ message CreateEmailIdentityResponse {
 
   DkimAttributes dkimattributes = 256039632;
 
-  IdentityType identitytype = 499274628;
+  optional IdentityType identitytype = 499274628;
 
   optional bool verifiedforsendingstatus = 163100765;
 
@@ -1375,7 +1375,7 @@ message CreateMultiRegionEndpointResponse {
 
   optional string endpointid = 35808946;
 
-  Status status = 6222352;
+  optional Status status = 6222352;
 
 }
 
@@ -1421,7 +1421,7 @@ message CreateTenantResponse {
 
   optional string createdtimestamp = 334753274;
 
-  SendingStatus sendingstatus = 420634540;
+  optional SendingStatus sendingstatus = 420634540;
 
   TenantSuppressionAttributes suppressionattributes = 17626546;
 
@@ -1473,7 +1473,7 @@ message DailyVolume {
 
 message DashboardAttributes {
 
-  FeatureStatus engagementmetrics = 102186588;
+  optional FeatureStatus engagementmetrics = 102186588;
 
 }
 
@@ -1483,7 +1483,7 @@ message DashboardAttributes {
 
 message DashboardOptions {
 
-  FeatureStatus engagementmetrics = 102186588;
+  optional FeatureStatus engagementmetrics = 102186588;
 
 }
 
@@ -1709,7 +1709,7 @@ message DeleteMultiRegionEndpointRequest {
 
 message DeleteMultiRegionEndpointResponse {
 
-  Status status = 6222352;
+  optional Status status = 6222352;
 
 }
 
@@ -1791,7 +1791,7 @@ message DeliverabilityTestReport {
 
   optional string createdate = 37690514;
 
-  DeliverabilityTestStatus deliverabilityteststatus = 71311387;
+  optional DeliverabilityTestStatus deliverabilityteststatus = 71311387;
 
   optional string fromemailaddress = 93506822;
 
@@ -1841,7 +1841,7 @@ message DeliveryOptions {
 
   optional string sendingpoolname = 89398333;
 
-  TlsPolicy tlspolicy = 127629;
+  optional TlsPolicy tlspolicy = 127629;
 
 }
 
@@ -1907,19 +1907,19 @@ message DisassociateEmailIdentityCertificateResponse {
 
 message DkimAttributes {
 
-  DkimSigningKeyLength currentsigningkeylength = 260519333;
+  optional DkimSigningKeyLength currentsigningkeylength = 260519333;
 
   optional string lastkeygenerationtimestamp = 455425631;
 
-  DkimSigningKeyLength nextsigningkeylength = 307141083;
+  optional DkimSigningKeyLength nextsigningkeylength = 307141083;
 
-  DkimSigningAttributesOrigin signingattributesorigin = 255219696;
+  optional DkimSigningAttributesOrigin signingattributesorigin = 255219696;
 
   optional bool signingenabled = 289566486;
 
   optional string signinghostedzone = 442955686;
 
-  DkimStatus status = 6222352;
+  optional DkimStatus status = 6222352;
 
   repeated string tokens = 50282100;
 
@@ -1931,13 +1931,13 @@ message DkimAttributes {
 
 message DkimSigningAttributes {
 
-  DkimSigningAttributesOrigin domainsigningattributesorigin = 248837556;
+  optional DkimSigningAttributesOrigin domainsigningattributesorigin = 248837556;
 
   optional string domainsigningprivatekey = 502133867;
 
   optional string domainsigningselector = 454592926;
 
-  DkimSigningKeyLength nextsigningkeylength = 307141083;
+  optional DkimSigningKeyLength nextsigningkeylength = 307141083;
 
 }
 
@@ -2141,7 +2141,7 @@ message EmailAddressInsightsMailboxEvaluations {
 
 message EmailAddressInsightsVerdict {
 
-  EmailAddressInsightsConfidenceVerdict confidenceverdict = 145545115;
+  optional EmailAddressInsightsConfidenceVerdict confidenceverdict = 145545115;
 
 }
 
@@ -2337,11 +2337,11 @@ message ExportJobSummary {
 
   optional string createdtimestamp = 334753274;
 
-  ExportSourceType exportsourcetype = 248243607;
+  optional ExportSourceType exportsourcetype = 248243607;
 
   optional string jobid = 108489298;
 
-  JobStatus jobstatus = 108973639;
+  optional JobStatus jobstatus = 108973639;
 
 }
 
@@ -2351,9 +2351,9 @@ message ExportJobSummary {
 
 message ExportMetric {
 
-  MetricAggregation aggregation = 132460038;
+  optional MetricAggregation aggregation = 132460038;
 
-  Metric name = 266367751;
+  optional Metric name = 266367751;
 
 }
 
@@ -2683,7 +2683,7 @@ message GetDeliverabilityDashboardOptionsRequest {
 
 message GetDeliverabilityDashboardOptionsResponse {
 
-  DeliverabilityDashboardAccountStatus accountstatus = 961735;
+  optional DeliverabilityDashboardAccountStatus accountstatus = 961735;
 
   repeated DomainDeliverabilityTrackingOption activesubscribeddomains = 441853281;
 
@@ -2831,7 +2831,7 @@ message GetEmailIdentityResponse {
 
   optional bool feedbackforwardingstatus = 304617468;
 
-  IdentityType identitytype = 499274628;
+  optional IdentityType identitytype = 499274628;
 
   MailFromAttributes mailfromattributes = 460277248;
 
@@ -2841,7 +2841,7 @@ message GetEmailIdentityResponse {
 
   VerificationInfo verificationinfo = 66315551;
 
-  VerificationStatus verificationstatus = 132712897;
+  optional VerificationStatus verificationstatus = 132712897;
 
   optional bool verifiedforsendingstatus = 163100765;
 
@@ -2895,13 +2895,13 @@ message GetExportJobResponse {
 
   ExportDestination exportdestination = 523408618;
 
-  ExportSourceType exportsourcetype = 248243607;
+  optional ExportSourceType exportsourcetype = 248243607;
 
   FailureInfo failureinfo = 451945802;
 
   optional string jobid = 108489298;
 
-  JobStatus jobstatus = 108973639;
+  optional JobStatus jobstatus = 108973639;
 
   ExportStatistics statistics = 510636075;
 
@@ -2937,7 +2937,7 @@ message GetImportJobResponse {
 
   optional string jobid = 108489298;
 
-  JobStatus jobstatus = 108973639;
+  optional JobStatus jobstatus = 108973639;
 
   optional int32 processedrecordscount = 507944491;
 
@@ -2997,7 +2997,7 @@ message GetMultiRegionEndpointResponse {
 
   repeated Route routes = 321835704;
 
-  Status status = 6222352;
+  optional Status status = 6222352;
 
 }
 
@@ -3071,7 +3071,7 @@ message GetTenantResponse {
 
 message GuardianAttributes {
 
-  FeatureStatus optimizedshareddelivery = 305138524;
+  optional FeatureStatus optimizedshareddelivery = 305138524;
 
 }
 
@@ -3081,7 +3081,7 @@ message GuardianAttributes {
 
 message GuardianOptions {
 
-  FeatureStatus optimizedshareddelivery = 305138524;
+  optional FeatureStatus optimizedshareddelivery = 305138524;
 
 }
 
@@ -3109,7 +3109,7 @@ message IdentityCertificate {
 
   optional string fromaddress = 84397700;
 
-  IdentityCertificateStatus status = 6222352;
+  optional IdentityCertificateStatus status = 6222352;
 
 }
 
@@ -3137,11 +3137,11 @@ message IdentityInfo {
 
   optional string identityname = 251627009;
 
-  IdentityType identitytype = 499274628;
+  optional IdentityType identitytype = 499274628;
 
   optional bool sendingenabled = 194846115;
 
-  VerificationStatus verificationstatus = 132712897;
+  optional VerificationStatus verificationstatus = 132712897;
 
 }
 
@@ -3205,7 +3205,7 @@ message ImportJobSummary {
 
   optional string jobid = 108489298;
 
-  JobStatus jobstatus = 108973639;
+  optional JobStatus jobstatus = 108973639;
 
   optional int32 processedrecordscount = 507944491;
 
@@ -3233,7 +3233,7 @@ message InsightsEvent {
 
   optional string timestamp = 162390468;
 
-  EventType type = 290836590;
+  optional EventType type = 290836590;
 
 }
 
@@ -3357,7 +3357,7 @@ message ListContactListsResponse {
 
 message ListContactsFilter {
 
-  SubscriptionStatus filteredstatus = 310398937;
+  optional SubscriptionStatus filteredstatus = 310398937;
 
   TopicFilter topicfilter = 211917895;
 
@@ -3569,9 +3569,9 @@ message ListEmailTemplatesResponse {
 
 message ListExportJobsRequest {
 
-  ExportSourceType exportsourcetype = 248243607;
+  optional ExportSourceType exportsourcetype = 248243607;
 
-  JobStatus jobstatus = 108973639;
+  optional JobStatus jobstatus = 108973639;
 
   optional string nexttoken = 216957566;
 
@@ -3597,7 +3597,7 @@ message ListExportJobsResponse {
 
 message ListImportJobsRequest {
 
-  ImportDestinationType importdestinationtype = 338152013;
+  optional ImportDestinationType importdestinationtype = 338152013;
 
   optional string nexttoken = 216957566;
 
@@ -3977,6 +3977,8 @@ message MessageInsightsFilters {
 
   repeated string subject = 7939312;
 
+  repeated string tenantname = 173338119;
+
 }
 
 
@@ -4053,7 +4055,7 @@ enum MetricAggregation {
 
 message MetricDataError {
 
-  QueryErrorCode code = 425572629;
+  optional QueryErrorCode code = 425572629;
 
   optional string id = 384350465;
 
@@ -4084,6 +4086,8 @@ enum MetricDimensionName {
   METRIC_DIMENSION_NAME_ISP = 1;
 
   METRIC_DIMENSION_NAME_CONFIGURATION_SET = 2;
+
+  METRIC_DIMENSION_NAME_TENANT_NAME = 3;
 
 }
 
@@ -4129,7 +4133,7 @@ message MultiRegionEndpoint {
 
   repeated string regions = 36200107;
 
-  Status status = 6222352;
+  optional Status status = 6222352;
 
 }
 
@@ -4191,9 +4195,9 @@ message PlacementStatistics {
 
 message PricingAttributes {
 
-  PricingPlan currentplan = 182710082;
+  optional PricingPlan currentplan = 182710082;
 
-  PricingPlan nextplan = 132683228;
+  optional PricingPlan nextplan = 132683228;
 
 }
 
@@ -4237,7 +4241,7 @@ message PutAccountDetailsRequest {
 
   repeated string additionalcontactemailaddresses = 322089693;
 
-  ContactLanguage contactlanguage = 114240022;
+  optional ContactLanguage contactlanguage = 114240022;
 
   MailType mailtype = 138144527;
 
@@ -4361,7 +4365,7 @@ message PutConfigurationSetDeliveryOptionsRequest {
 
   optional string sendingpoolname = 89398333;
 
-  TlsPolicy tlspolicy = 127629;
+  optional TlsPolicy tlspolicy = 127629;
 
 }
 
@@ -4423,7 +4427,7 @@ message PutConfigurationSetSuppressionOptionsRequest {
 
   repeated SuppressionListReason suppressedreasons = 465922417;
 
-  SuppressionListScope suppressionscope = 135059101;
+  optional SuppressionListScope suppressionscope = 135059101;
 
   SuppressionValidationOptions validationoptions = 216495637;
 
@@ -4447,7 +4451,7 @@ message PutConfigurationSetTrackingOptionsRequest {
 
   optional string customredirectdomain = 72478039;
 
-  HttpsPolicy httpspolicy = 147115397;
+  optional HttpsPolicy httpspolicy = 147115397;
 
 }
 
@@ -4619,7 +4623,7 @@ message PutEmailIdentityDkimSigningAttributesRequest {
 
 message PutEmailIdentityDkimSigningAttributesResponse {
 
-  DkimStatus dkimstatus = 42822693;
+  optional DkimStatus dkimstatus = 42822693;
 
   repeated string dkimtokens = 307118741;
 
@@ -4653,7 +4657,7 @@ message PutEmailIdentityFeedbackAttributesResponse {
 
 message PutEmailIdentityMailFromAttributesRequest {
 
-  BehaviorOnMxFailure behavioronmxfailure = 494873128;
+  optional BehaviorOnMxFailure behavioronmxfailure = 494873128;
 
   string emailidentity = 136088090;
 
@@ -4699,7 +4703,7 @@ message PutTenantSuppressionAttributesRequest {
 
   repeated SuppressionListReason suppressedreasons = 465922417;
 
-  SuppressionListScope suppressionscope = 135059101;
+  optional SuppressionListScope suppressionscope = 135059101;
 
   string tenantname = 173338119;
 
@@ -4743,15 +4747,15 @@ message Recommendation {
 
   optional string description = 115243530;
 
-  RecommendationImpact impact = 75836600;
+  optional RecommendationImpact impact = 75836600;
 
   optional string lastupdatedtimestamp = 133309845;
 
   optional string resourcearn = 364280877;
 
-  RecommendationStatus status = 6222352;
+  optional RecommendationStatus status = 6222352;
 
-  RecommendationType type = 290836590;
+  optional RecommendationType type = 290836590;
 
 }
 
@@ -4829,13 +4833,13 @@ message ReputationEntity {
 
   optional string reputationentityreference = 414929111;
 
-  ReputationEntityType reputationentitytype = 98287826;
+  optional ReputationEntityType reputationentitytype = 98287826;
 
-  RecommendationImpact reputationimpact = 345570753;
+  optional RecommendationImpact reputationimpact = 345570753;
 
   optional string reputationmanagementpolicy = 202871484;
 
-  SendingStatus sendingstatusaggregate = 10196739;
+  optional SendingStatus sendingstatusaggregate = 10196739;
 
 }
 
@@ -4909,7 +4913,7 @@ message ReviewDetails {
 
   optional string caseid = 181380677;
 
-  ReviewStatus status = 6222352;
+  optional ReviewStatus status = 6222352;
 
 }
 
@@ -5153,7 +5157,7 @@ message SigningScheme {
 
 message SmimeSigningScheme {
 
-  SignatureFormat signatureformat = 424814715;
+  optional SignatureFormat signatureformat = 424814715;
 
 }
 
@@ -5191,7 +5195,7 @@ message StatusRecord {
 
   optional string lastupdatedtimestamp = 133309845;
 
-  SendingStatus status = 6222352;
+  optional SendingStatus status = 6222352;
 
 }
 
@@ -5343,7 +5347,7 @@ message SuppressionOptions {
 
   repeated SuppressionListReason suppressedreasons = 465922417;
 
-  SuppressionListScope suppressionscope = 135059101;
+  optional SuppressionListScope suppressionscope = 135059101;
 
   SuppressionValidationOptions validationoptions = 216495637;
 
@@ -5425,7 +5429,7 @@ message Tenant {
 
   optional string createdtimestamp = 334753274;
 
-  SendingStatus sendingstatus = 420634540;
+  optional SendingStatus sendingstatus = 420634540;
 
   TenantSuppressionAttributes suppressionattributes = 17626546;
 
@@ -5463,7 +5467,7 @@ message TenantResource {
 
   optional string resourcearn = 364280877;
 
-  ResourceType resourcetype = 301342558;
+  optional ResourceType resourcetype = 301342558;
 
 }
 
@@ -5475,7 +5479,7 @@ message TenantSuppressionAttributes {
 
   repeated SuppressionListReason suppressedreasons = 465922417;
 
-  SuppressionListScope suppressionscope = 135059101;
+  optional SuppressionListScope suppressionscope = 135059101;
 
 }
 
@@ -5567,9 +5571,9 @@ message TopicPreference {
 
 message TrackingConfigurationOverrides {
 
-  FeatureStatus clicktrackingenabled = 357863968;
+  optional FeatureStatus clicktrackingenabled = 357863968;
 
-  FeatureStatus opentrackingenabled = 281869850;
+  optional FeatureStatus opentrackingenabled = 281869850;
 
 }
 
@@ -5581,7 +5585,7 @@ message TrackingOptions {
 
   string customredirectdomain = 72478039;
 
-  HttpsPolicy httpspolicy = 147115397;
+  optional HttpsPolicy httpspolicy = 147115397;
 
 }
 
@@ -5855,7 +5859,7 @@ enum VerificationError {
 
 message VerificationInfo {
 
-  VerificationError errortype = 398848954;
+  optional VerificationError errortype = 398848954;
 
   optional string lastcheckedtimestamp = 337895587;
 

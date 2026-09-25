@@ -4,6 +4,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	pb "vorpalstacks/internal/pb/aws/athena"
 	"vorpalstacks/internal/utils/timeutils"
@@ -73,7 +74,7 @@ func toPbWorkGroupSummaries(items []WorkGroupOut) []*pb.WorkGroupSummary {
 		}
 		summary := &pb.WorkGroupSummary{
 			Name:  proto.String(wg.Name),
-			State: state,
+			State: pbutil.Enum(state),
 		}
 		if wg.Description != "" {
 			summary.Description = proto.String(wg.Description)

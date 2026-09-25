@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"regexp"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -45,130 +44,216 @@ func parseKey(v interface{}) (map[string]*dbstore.AttributeValue, error) {
 func parseAttributeValueMap(m map[string]interface{}) (map[string]*dbstore.AttributeValue, error) {
 	result := make(map[string]*dbstore.AttributeValue)
 	for k, v := range m {
-		parsed := parseAttributeValue(v)
-		if parsed == nil {
-			return nil, ErrInvalidParameter
+		parsed, err := parseAttributeValue(v)
+		if err != nil {
+			return nil, err
 		}
 		result[k] = parsed
 	}
 	return result, nil
 }
 
-func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
-	if v == nil {
-		return dbstore.NullValue()
-	}
+// attributeValueMembers is the AttributeValue union membership: a wire
+// attribute value carries exactly one of these members.
+var attributeValueMembers = []string{"B", "BOOL", "BS", "L", "M", "N", "NS", "NULL", "S", "SS"}
 
-	m, ok := v.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	if s, ok := m["S"].(string); ok {
-		return dbstore.StringValue(s)
-	}
-	if n, ok := m["N"].(string); ok {
-		if !isValidDynamoDBNumber(n) {
-			return nil
-		}
-		return dbstore.NumberValue(n)
-	}
-	if b, ok := m["B"].([]byte); ok {
-		return dbstore.BinaryValue(b)
-	}
-	if b, ok := m["B"].(string); ok {
-		decoded, err := base64.StdEncoding.DecodeString(b)
-		if err != nil {
-			return nil
-		}
-		return dbstore.BinaryValue(decoded)
-	}
-	if b, ok := m["BOOL"].(bool); ok {
-		return dbstore.BoolValue(b)
-	}
-	if _, ok := m["NULL"]; ok {
-		return dbstore.NullValue()
-	}
-	if ss, ok := m["SS"].([]interface{}); ok {
-		strs := make([]string, 0, len(ss))
-		for _, s := range ss {
+// wireStringSet normalises the SS member from either wire shape into the
+// plain string slice the set validation works on. A non-string element is
+// the invalid-set error; a shape the member does not carry at all returns
+// nothing, leaving the caller to try the next member.
+func wireStringSet(raw interface{}) ([]string, error) {
+	switch list := raw.(type) {
+	case []string:
+		return list, nil
+	case []interface{}:
+		strs := make([]string, 0, len(list))
+		for _, s := range list {
 			str, ok := s.(string)
 			if !ok {
-				return nil
+				return nil, fmt.Errorf("Supplied AttributeValue is not a valid string set")
 			}
 			strs = append(strs, str)
 		}
-		if len(strs) == 0 {
-			return nil
-		}
-		if hasDuplicateString(strs) {
-			return nil
-		}
-		return dbstore.StringSet(strs)
+		return strs, nil
 	}
-	if ns, ok := m["NS"].([]interface{}); ok {
-		nums := make([]string, 0, len(ns))
-		for _, n := range ns {
+	return nil, nil
+}
+
+// wireNumberSet normalises the NS member from either wire shape, validating
+// each element as a DynamoDB number on the way through.
+func wireNumberSet(raw interface{}) ([]string, error) {
+	switch list := raw.(type) {
+	case []string:
+		for _, str := range list {
+			if !isValidDynamoDBNumber(str) {
+				return nil, fmt.Errorf("Supplied AttributeValue is not a valid number: %s", str)
+			}
+		}
+		return list, nil
+	case []interface{}:
+		nums := make([]string, 0, len(list))
+		for _, n := range list {
 			str, ok := n.(string)
 			if !ok {
-				return nil
+				return nil, fmt.Errorf("Supplied AttributeValue is not a valid number set")
 			}
 			if !isValidDynamoDBNumber(str) {
-				return nil
+				return nil, fmt.Errorf("Supplied AttributeValue is not a valid number: %s", str)
 			}
 			nums = append(nums, str)
 		}
-		if len(nums) == 0 {
-			return nil
-		}
-		if hasDuplicateNumber(nums) {
-			return nil
-		}
-		return dbstore.NumberSet(nums)
+		return nums, nil
 	}
-	if bs, ok := m["BS"].([]interface{}); ok {
-		binaries := make([][]byte, 0, len(bs))
-		for _, b := range bs {
+	return nil, nil
+}
+
+// wireBinarySet normalises the BS member from either wire shape: the
+// []interface{} form carries raw byte slices or base64 strings, the
+// []string form base64 strings alone.
+func wireBinarySet(raw interface{}) ([][]byte, error) {
+	switch list := raw.(type) {
+	case []string:
+		binaries := make([][]byte, 0, len(list))
+		for _, str := range list {
+			decoded, err := base64.StdEncoding.DecodeString(str)
+			if err != nil {
+				return nil, fmt.Errorf("Supplied AttributeValue is not valid base64")
+			}
+			binaries = append(binaries, decoded)
+		}
+		return binaries, nil
+	case []interface{}:
+		binaries := make([][]byte, 0, len(list))
+		for _, b := range list {
 			if bytes, ok := b.([]byte); ok {
 				binaries = append(binaries, bytes)
 			} else if str, ok := b.(string); ok {
 				decoded, err := base64.StdEncoding.DecodeString(str)
 				if err != nil {
-					return nil
+					return nil, fmt.Errorf("Supplied AttributeValue is not valid base64")
 				}
 				binaries = append(binaries, decoded)
 			} else {
-				return nil
+				return nil, fmt.Errorf("Supplied AttributeValue is not a valid binary set")
 			}
 		}
+		return binaries, nil
+	}
+	return nil, nil
+}
+
+// parseAttributeValue decodes one wire attribute value. The union contract
+// is enforced structurally before any member decodes: more than one member
+// present, or a NULL member whose value is not true, is rejected instead of
+// resolved by member order.
+func parseAttributeValue(v interface{}) (*dbstore.AttributeValue, error) {
+	if v == nil {
+		return dbstore.NullValue(), nil
+	}
+
+	m, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Supplied AttributeValue is not a map")
+	}
+
+	present := 0
+	for _, member := range attributeValueMembers {
+		if _, ok := m[member]; ok {
+			present++
+		}
+	}
+	if present > 1 {
+		return nil, fmt.Errorf("Supplied AttributeValue has more than one datatypes set")
+	}
+	if nv, ok := m["NULL"]; ok {
+		if isTrue, isBool := nv.(bool); !isBool || !isTrue {
+			return nil, fmt.Errorf("Null value must be true")
+		}
+		return dbstore.NullValue(), nil
+	}
+
+	if s, ok := m["S"].(string); ok {
+		return dbstore.StringValue(s), nil
+	}
+	if n, ok := m["N"].(string); ok {
+		if !isValidDynamoDBNumber(n) {
+			return nil, fmt.Errorf("Supplied AttributeValue is not a valid number: %s", n)
+		}
+		return dbstore.NumberValue(n), nil
+	}
+	if b, ok := m["B"].([]byte); ok {
+		return dbstore.BinaryValue(b), nil
+	}
+	if b, ok := m["B"].(string); ok {
+		decoded, err := base64.StdEncoding.DecodeString(b)
+		if err != nil {
+			return nil, fmt.Errorf("Supplied AttributeValue is not valid base64")
+		}
+		return dbstore.BinaryValue(decoded), nil
+	}
+	if b, ok := m["BOOL"].(bool); ok {
+		return dbstore.BoolValue(b), nil
+	}
+	// The set members arrive in either wire shape — the JSON decoder's
+	// []interface{} or the request codec's []string (a rendered key
+	// round-trips through internal request parameters) — so each set
+	// normalises first and validates once.
+	if strs, err := wireStringSet(m["SS"]); strs != nil || err != nil {
+		if err != nil {
+			return nil, err
+		}
+		if len(strs) == 0 {
+			return nil, fmt.Errorf("Supplied AttributeValue is an empty string set")
+		}
+		if hasDuplicateString(strs) {
+			return nil, fmt.Errorf("Supplied AttributeValue string set contains duplicates")
+		}
+		return dbstore.StringSet(strs), nil
+	}
+	if nums, err := wireNumberSet(m["NS"]); nums != nil || err != nil {
+		if err != nil {
+			return nil, err
+		}
+		if len(nums) == 0 {
+			return nil, fmt.Errorf("Supplied AttributeValue is an empty number set")
+		}
+		if hasDuplicateNumber(nums) {
+			return nil, fmt.Errorf("Supplied AttributeValue number set contains duplicates")
+		}
+		return dbstore.NumberSet(nums), nil
+	}
+	if binaries, err := wireBinarySet(m["BS"]); binaries != nil || err != nil {
+		if err != nil {
+			return nil, err
+		}
 		if len(binaries) == 0 {
-			return nil
+			return nil, fmt.Errorf("Supplied AttributeValue is an empty binary set")
 		}
 		if hasDuplicateBinary(binaries) {
-			return nil
+			return nil, fmt.Errorf("Supplied AttributeValue binary set contains duplicates")
 		}
-		return dbstore.BinarySet(binaries)
+		return dbstore.BinarySet(binaries), nil
 	}
 	if mm, ok := m["M"].(map[string]interface{}); ok {
 		parsed, err := parseAttributeValueMap(mm)
 		if err != nil {
-			return nil
+			return nil, err
 		}
-		return dbstore.MapValue(parsed)
+		return dbstore.MapValue(parsed), nil
 	}
 	if l, ok := m["L"].([]interface{}); ok {
 		list := make([]*dbstore.AttributeValue, 0, len(l))
 		for _, item := range l {
-			parsed := parseAttributeValue(item)
-			if parsed == nil {
-				return nil
+			parsed, err := parseAttributeValue(item)
+			if err != nil {
+				return nil, err
 			}
 			list = append(list, parsed)
 		}
-		return dbstore.ListValue(list)
+		return dbstore.ListValue(list), nil
 	}
 
-	return nil
+	return nil, fmt.Errorf("Supplied AttributeValue is empty: exactly one member must be set")
 }
 
 // buildItemResponse renders a typed attribute map in the wire shape; the
@@ -248,9 +333,9 @@ func parseExpressionAttributeValues(params map[string]interface{}) (map[string]*
 	values := make(map[string]*dbstore.AttributeValue)
 	if eav, ok := params["ExpressionAttributeValues"].(map[string]interface{}); ok {
 		for k, v := range eav {
-			parsed := parseAttributeValue(v)
-			if parsed == nil {
-				return nil, fmt.Errorf("invalid value for expression attribute %q", k)
+			parsed, err := parseAttributeValue(v)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for expression attribute %q: %w", k, err)
 			}
 			values[k] = parsed
 		}
@@ -258,7 +343,15 @@ func parseExpressionAttributeValues(params map[string]interface{}) (map[string]*
 	return values, nil
 }
 
-func parseProjectionExpression(params map[string]interface{}) ([]string, error) {
+// parseProjectionExpression parses the ProjectionExpression member into
+// resolved document paths. Each comma-separated token goes through the
+// document-path grammar FIRST and its expression attribute names are then
+// resolved per segment, so an alias standing for a name that itself
+// contains '.' or '[' stays a single top-level segment — a resolved value
+// never re-enters the path grammar. An alias the names map does not
+// define is ErrInvalidParameter, the rejection every expression plane
+// applies; a token the path grammar rejects is the same error.
+func parseProjectionExpression(params map[string]interface{}) ([][]docPathPart, error) {
 	projExpr := request.GetStringParam(params, "ProjectionExpression")
 	if projExpr == "" {
 		return nil, nil
@@ -268,83 +361,37 @@ func parseProjectionExpression(params map[string]interface{}) ([]string, error) 
 	if err != nil {
 		return nil, err
 	}
-	var projection []string
+	var projection [][]docPathPart
 
 	attrs := splitAndTrim(projExpr, ",")
 	for _, attr := range attrs {
-		resolved := resolvePathTokens(attr, names)
-		if _, pathErr := parseDocPath(resolved); pathErr != nil {
+		parts, resolveErr := resolveDocPathParts(attr, names)
+		if resolveErr != nil {
 			return nil, ErrInvalidParameter
 		}
-		projection = append(projection, resolved)
+		projection = append(projection, parts)
 	}
 
 	return projection, nil
 }
 
-func resolvePathTokens(path string, names map[string]string) string {
-	if names == nil {
-		return path
-	}
-
-	var result strings.Builder
-	current := ""
-	i := 0
-
-	for i < len(path) {
-		c := path[i]
-		if c == '.' || c == '[' {
-			if current != "" {
-				if resolved, ok := names[current]; ok {
-					result.WriteString(resolved)
-				} else {
-					result.WriteString(current)
-				}
-				current = ""
-			}
-			result.WriteByte(c)
-			i++
-		} else if c == ']' {
-			if current != "" {
-				result.WriteString(current)
-				current = ""
-			}
-			result.WriteByte(c)
-			i++
-		} else {
-			current += string(c)
-			i++
-		}
-	}
-
-	if current != "" {
-		if resolved, ok := names[current]; ok {
-			result.WriteString(resolved)
-		} else {
-			result.WriteString(current)
-		}
-	}
-
-	return result.String()
-}
-
-func applyProjection(attrs map[string]*dbstore.AttributeValue, projection []string) map[string]*dbstore.AttributeValue {
+// applyProjection narrows an item's attributes to the requested document
+// paths. The paths arrive already parsed and resolved (see
+// parseProjectionExpression); a whole path's leaf value is returned under
+// its own name, while a multi-segment path's leaf is rebuilt inside the
+// container shape the path descends through, merged across paths sharing
+// a top-level name.
+func applyProjection(attrs map[string]*dbstore.AttributeValue, projection [][]docPathPart) map[string]*dbstore.AttributeValue {
 	result := make(map[string]*dbstore.AttributeValue)
-	for _, path := range projection {
-		parts, pathErr := parseDocPath(path)
-		if pathErr != nil {
-			continue
-		}
+	for _, parts := range projection {
 		val := getDocPathValue(attrs, parts)
 		if val == nil {
 			continue
 		}
 		if len(parts) <= 1 {
-			key := path
 			if len(parts) == 1 {
-				key = parts[0].name
+				result[parts[0].name] = val
 			}
-			result[key] = val
 			continue
 		}
 		topKey := parts[0].name

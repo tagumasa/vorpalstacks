@@ -113,9 +113,11 @@ func forceEOF(yylex interface{}) {
   objectLiteral *ObjectLiteral
   objectProperty *ObjectProperty
   objectProperties []*ObjectProperty
+  setLiteral    *SetLiteral
 }
 
 %token LEX_ERROR
+%token SET_LITERAL_START SET_LITERAL_END
 %left <bytes> UNION
 %token <bytes> SELECT STREAM INSERT UPDATE DELETE FROM WHERE GROUP HAVING ORDER BY LIMIT OFFSET FOR
 %token <bytes> ALL DISTINCT AS EXISTS ASC DESC INTO DUPLICATE KEY DEFAULT SET LOCK KEYS
@@ -228,6 +230,7 @@ func forceEOF(yylex interface{}) {
 %type <objectLiteral> object_literal
 %type <objectProperty> object_property
 %type <objectProperties> object_property_list
+%type <setLiteral> set_literal
 %type <expr> value value_expression num_val
 %type <expr> function_call_keyword function_call_nonkeyword function_call_generic function_call_conflict
 %type <str> is_suffix
@@ -2577,6 +2580,10 @@ value:
   {
     $$ = $1
   }
+| set_literal
+  {
+    $$ = $1
+  }
 
 num_val:
   sql_id
@@ -2793,6 +2800,12 @@ object_literal:
 | '{' object_property_list '}'
   {
     $$ = &ObjectLiteral{Properties: $2}
+  }
+
+set_literal:
+  SET_LITERAL_START expression_list SET_LITERAL_END
+  {
+    $$ = &SetLiteral{Values: $2}
   }
 
 object_property_list:

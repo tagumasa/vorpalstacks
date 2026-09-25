@@ -2338,11 +2338,11 @@ type CreateCustomKeyStoreRequest struct {
 	state                            protoimpl.MessageState                `protogen:"open.v1"`
 	Cloudhsmclusterid                *string                               `protobuf:"bytes,56498754,opt,name=cloudhsmclusterid,proto3,oneof" json:"cloudhsmclusterid,omitempty"`
 	Customkeystorename               string                                `protobuf:"bytes,170278046,opt,name=customkeystorename,proto3" json:"customkeystorename,omitempty"`
-	Customkeystoretype               CustomKeyStoreType                    `protobuf:"varint,415647103,opt,name=customkeystoretype,proto3,enum=kms.CustomKeyStoreType" json:"customkeystoretype,omitempty"`
+	Customkeystoretype               *CustomKeyStoreType                   `protobuf:"varint,415647103,opt,name=customkeystoretype,proto3,enum=kms.CustomKeyStoreType,oneof" json:"customkeystoretype,omitempty"`
 	Keystorepassword                 *string                               `protobuf:"bytes,403136353,opt,name=keystorepassword,proto3,oneof" json:"keystorepassword,omitempty"`
 	Trustanchorcertificate           *string                               `protobuf:"bytes,48354588,opt,name=trustanchorcertificate,proto3,oneof" json:"trustanchorcertificate,omitempty"`
 	Xksproxyauthenticationcredential *XksProxyAuthenticationCredentialType `protobuf:"bytes,350418199,opt,name=xksproxyauthenticationcredential,proto3" json:"xksproxyauthenticationcredential,omitempty"`
-	Xksproxyconnectivity             XksProxyConnectivityType              `protobuf:"varint,298569161,opt,name=xksproxyconnectivity,proto3,enum=kms.XksProxyConnectivityType" json:"xksproxyconnectivity,omitempty"`
+	Xksproxyconnectivity             *XksProxyConnectivityType             `protobuf:"varint,298569161,opt,name=xksproxyconnectivity,proto3,enum=kms.XksProxyConnectivityType,oneof" json:"xksproxyconnectivity,omitempty"`
 	Xksproxyuriendpoint              *string                               `protobuf:"bytes,273255559,opt,name=xksproxyuriendpoint,proto3,oneof" json:"xksproxyuriendpoint,omitempty"`
 	Xksproxyuripath                  *string                               `protobuf:"bytes,436753509,opt,name=xksproxyuripath,proto3,oneof" json:"xksproxyuripath,omitempty"`
 	Xksproxyvpcendpointservicename   *string                               `protobuf:"bytes,372786130,opt,name=xksproxyvpcendpointservicename,proto3,oneof" json:"xksproxyvpcendpointservicename,omitempty"`
@@ -2396,8 +2396,8 @@ func (x *CreateCustomKeyStoreRequest) GetCustomkeystorename() string {
 }
 
 func (x *CreateCustomKeyStoreRequest) GetCustomkeystoretype() CustomKeyStoreType {
-	if x != nil {
-		return x.Customkeystoretype
+	if x != nil && x.Customkeystoretype != nil {
+		return *x.Customkeystoretype
 	}
 	return CustomKeyStoreType_CUSTOM_KEY_STORE_TYPE_EXTERNAL_KEY_STORE
 }
@@ -2424,8 +2424,8 @@ func (x *CreateCustomKeyStoreRequest) GetXksproxyauthenticationcredential() *Xks
 }
 
 func (x *CreateCustomKeyStoreRequest) GetXksproxyconnectivity() XksProxyConnectivityType {
-	if x != nil {
-		return x.Xksproxyconnectivity
+	if x != nil && x.Xksproxyconnectivity != nil {
+		return *x.Xksproxyconnectivity
 	}
 	return XksProxyConnectivityType_XKS_PROXY_CONNECTIVITY_TYPE_VPC_ENDPOINT_SERVICE
 }
@@ -2674,12 +2674,12 @@ type CreateKeyRequest struct {
 	state                          protoimpl.MessageState `protogen:"open.v1"`
 	Bypasspolicylockoutsafetycheck *bool                  `protobuf:"varint,177450851,opt,name=bypasspolicylockoutsafetycheck,proto3,oneof" json:"bypasspolicylockoutsafetycheck,omitempty"`
 	Customkeystoreid               *string                `protobuf:"bytes,88348228,opt,name=customkeystoreid,proto3,oneof" json:"customkeystoreid,omitempty"`
-	Customermasterkeyspec          CustomerMasterKeySpec  `protobuf:"varint,472470930,opt,name=customermasterkeyspec,proto3,enum=kms.CustomerMasterKeySpec" json:"customermasterkeyspec,omitempty"`
+	Customermasterkeyspec          *CustomerMasterKeySpec `protobuf:"varint,472470930,opt,name=customermasterkeyspec,proto3,enum=kms.CustomerMasterKeySpec,oneof" json:"customermasterkeyspec,omitempty"`
 	Description                    *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Keyspec                        KeySpec                `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.KeySpec" json:"keyspec,omitempty"`
-	Keyusage                       KeyUsageType           `protobuf:"varint,357216772,opt,name=keyusage,proto3,enum=kms.KeyUsageType" json:"keyusage,omitempty"`
+	Keyspec                        *KeySpec               `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.KeySpec,oneof" json:"keyspec,omitempty"`
+	Keyusage                       *KeyUsageType          `protobuf:"varint,357216772,opt,name=keyusage,proto3,enum=kms.KeyUsageType,oneof" json:"keyusage,omitempty"`
 	Multiregion                    *bool                  `protobuf:"varint,405769103,opt,name=multiregion,proto3,oneof" json:"multiregion,omitempty"`
-	Origin                         OriginType             `protobuf:"varint,529732720,opt,name=origin,proto3,enum=kms.OriginType" json:"origin,omitempty"`
+	Origin                         *OriginType            `protobuf:"varint,529732720,opt,name=origin,proto3,enum=kms.OriginType,oneof" json:"origin,omitempty"`
 	Policy                         *string                `protobuf:"bytes,471611296,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	Tags                           []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Xkskeyid                       *string                `protobuf:"bytes,12647506,opt,name=xkskeyid,proto3,oneof" json:"xkskeyid,omitempty"`
@@ -2732,8 +2732,8 @@ func (x *CreateKeyRequest) GetCustomkeystoreid() string {
 }
 
 func (x *CreateKeyRequest) GetCustomermasterkeyspec() CustomerMasterKeySpec {
-	if x != nil {
-		return x.Customermasterkeyspec
+	if x != nil && x.Customermasterkeyspec != nil {
+		return *x.Customermasterkeyspec
 	}
 	return CustomerMasterKeySpec_CUSTOMER_MASTER_KEY_SPEC_HMAC_256
 }
@@ -2746,15 +2746,15 @@ func (x *CreateKeyRequest) GetDescription() string {
 }
 
 func (x *CreateKeyRequest) GetKeyspec() KeySpec {
-	if x != nil {
-		return x.Keyspec
+	if x != nil && x.Keyspec != nil {
+		return *x.Keyspec
 	}
 	return KeySpec_KEY_SPEC_HMAC_256
 }
 
 func (x *CreateKeyRequest) GetKeyusage() KeyUsageType {
-	if x != nil {
-		return x.Keyusage
+	if x != nil && x.Keyusage != nil {
+		return *x.Keyusage
 	}
 	return KeyUsageType_KEY_USAGE_TYPE_ENCRYPT_DECRYPT
 }
@@ -2767,8 +2767,8 @@ func (x *CreateKeyRequest) GetMultiregion() bool {
 }
 
 func (x *CreateKeyRequest) GetOrigin() OriginType {
-	if x != nil {
-		return x.Origin
+	if x != nil && x.Origin != nil {
+		return *x.Origin
 	}
 	return OriginType_ORIGIN_TYPE_EXTERNAL
 }
@@ -3017,12 +3017,12 @@ func (x *CustomKeyStoreNotFoundException) GetMessage() string {
 type CustomKeyStoresListEntry struct {
 	state                  protoimpl.MessageState     `protogen:"open.v1"`
 	Cloudhsmclusterid      *string                    `protobuf:"bytes,56498754,opt,name=cloudhsmclusterid,proto3,oneof" json:"cloudhsmclusterid,omitempty"`
-	Connectionerrorcode    ConnectionErrorCodeType    `protobuf:"varint,324951101,opt,name=connectionerrorcode,proto3,enum=kms.ConnectionErrorCodeType" json:"connectionerrorcode,omitempty"`
-	Connectionstate        ConnectionStateType        `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=kms.ConnectionStateType" json:"connectionstate,omitempty"`
+	Connectionerrorcode    *ConnectionErrorCodeType   `protobuf:"varint,324951101,opt,name=connectionerrorcode,proto3,enum=kms.ConnectionErrorCodeType,oneof" json:"connectionerrorcode,omitempty"`
+	Connectionstate        *ConnectionStateType       `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=kms.ConnectionStateType,oneof" json:"connectionstate,omitempty"`
 	Creationdate           *string                    `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
 	Customkeystoreid       *string                    `protobuf:"bytes,88348228,opt,name=customkeystoreid,proto3,oneof" json:"customkeystoreid,omitempty"`
 	Customkeystorename     *string                    `protobuf:"bytes,170278046,opt,name=customkeystorename,proto3,oneof" json:"customkeystorename,omitempty"`
-	Customkeystoretype     CustomKeyStoreType         `protobuf:"varint,415647103,opt,name=customkeystoretype,proto3,enum=kms.CustomKeyStoreType" json:"customkeystoretype,omitempty"`
+	Customkeystoretype     *CustomKeyStoreType        `protobuf:"varint,415647103,opt,name=customkeystoretype,proto3,enum=kms.CustomKeyStoreType,oneof" json:"customkeystoretype,omitempty"`
 	Trustanchorcertificate *string                    `protobuf:"bytes,48354588,opt,name=trustanchorcertificate,proto3,oneof" json:"trustanchorcertificate,omitempty"`
 	Xksproxyconfiguration  *XksProxyConfigurationType `protobuf:"bytes,349047828,opt,name=xksproxyconfiguration,proto3" json:"xksproxyconfiguration,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -3067,15 +3067,15 @@ func (x *CustomKeyStoresListEntry) GetCloudhsmclusterid() string {
 }
 
 func (x *CustomKeyStoresListEntry) GetConnectionerrorcode() ConnectionErrorCodeType {
-	if x != nil {
-		return x.Connectionerrorcode
+	if x != nil && x.Connectionerrorcode != nil {
+		return *x.Connectionerrorcode
 	}
 	return ConnectionErrorCodeType_CONNECTION_ERROR_CODE_TYPE_SUBNET_NOT_FOUND
 }
 
 func (x *CustomKeyStoresListEntry) GetConnectionstate() ConnectionStateType {
-	if x != nil {
-		return x.Connectionstate
+	if x != nil && x.Connectionstate != nil {
+		return *x.Connectionstate
 	}
 	return ConnectionStateType_CONNECTION_STATE_TYPE_CONNECTING
 }
@@ -3102,8 +3102,8 @@ func (x *CustomKeyStoresListEntry) GetCustomkeystorename() string {
 }
 
 func (x *CustomKeyStoresListEntry) GetCustomkeystoretype() CustomKeyStoreType {
-	if x != nil {
-		return x.Customkeystoretype
+	if x != nil && x.Customkeystoretype != nil {
+		return *x.Customkeystoretype
 	}
 	return CustomKeyStoreType_CUSTOM_KEY_STORE_TYPE_EXTERNAL_KEY_STORE
 }
@@ -3123,15 +3123,15 @@ func (x *CustomKeyStoresListEntry) GetXksproxyconfiguration() *XksProxyConfigura
 }
 
 type DecryptRequest struct {
-	state               protoimpl.MessageState  `protogen:"open.v1"`
-	Ciphertextblob      []byte                  `protobuf:"bytes,338198183,opt,name=ciphertextblob,proto3,oneof" json:"ciphertextblob,omitempty"`
-	Dryrun              *bool                   `protobuf:"varint,92204984,opt,name=dryrun,proto3,oneof" json:"dryrun,omitempty"`
-	Dryrunmodifiers     []DryRunModifierType    `protobuf:"varint,24346424,rep,packed,name=dryrunmodifiers,proto3,enum=kms.DryRunModifierType" json:"dryrunmodifiers,omitempty"`
-	Encryptionalgorithm EncryptionAlgorithmSpec `protobuf:"varint,203224586,opt,name=encryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec" json:"encryptionalgorithm,omitempty"`
-	Encryptioncontext   map[string]string       `protobuf:"bytes,286249536,rep,name=encryptioncontext,proto3" json:"encryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Granttokens         []string                `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
-	Keyid               *string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
-	Recipient           *RecipientInfo          `protobuf:"bytes,445981721,opt,name=recipient,proto3" json:"recipient,omitempty"`
+	state               protoimpl.MessageState   `protogen:"open.v1"`
+	Ciphertextblob      []byte                   `protobuf:"bytes,338198183,opt,name=ciphertextblob,proto3,oneof" json:"ciphertextblob,omitempty"`
+	Dryrun              *bool                    `protobuf:"varint,92204984,opt,name=dryrun,proto3,oneof" json:"dryrun,omitempty"`
+	Dryrunmodifiers     []DryRunModifierType     `protobuf:"varint,24346424,rep,packed,name=dryrunmodifiers,proto3,enum=kms.DryRunModifierType" json:"dryrunmodifiers,omitempty"`
+	Encryptionalgorithm *EncryptionAlgorithmSpec `protobuf:"varint,203224586,opt,name=encryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec,oneof" json:"encryptionalgorithm,omitempty"`
+	Encryptioncontext   map[string]string        `protobuf:"bytes,286249536,rep,name=encryptioncontext,proto3" json:"encryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Granttokens         []string                 `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
+	Keyid               *string                  `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
+	Recipient           *RecipientInfo           `protobuf:"bytes,445981721,opt,name=recipient,proto3" json:"recipient,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -3188,8 +3188,8 @@ func (x *DecryptRequest) GetDryrunmodifiers() []DryRunModifierType {
 }
 
 func (x *DecryptRequest) GetEncryptionalgorithm() EncryptionAlgorithmSpec {
-	if x != nil {
-		return x.Encryptionalgorithm
+	if x != nil && x.Encryptionalgorithm != nil {
+		return *x.Encryptionalgorithm
 	}
 	return EncryptionAlgorithmSpec_ENCRYPTION_ALGORITHM_SPEC_SM2PKE
 }
@@ -3223,12 +3223,12 @@ func (x *DecryptRequest) GetRecipient() *RecipientInfo {
 }
 
 type DecryptResponse struct {
-	state                  protoimpl.MessageState  `protogen:"open.v1"`
-	Ciphertextforrecipient []byte                  `protobuf:"bytes,75299212,opt,name=ciphertextforrecipient,proto3,oneof" json:"ciphertextforrecipient,omitempty"`
-	Encryptionalgorithm    EncryptionAlgorithmSpec `protobuf:"varint,203224586,opt,name=encryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec" json:"encryptionalgorithm,omitempty"`
-	Keyid                  *string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
-	Keymaterialid          *string                 `protobuf:"bytes,147011585,opt,name=keymaterialid,proto3,oneof" json:"keymaterialid,omitempty"`
-	Plaintext              []byte                  `protobuf:"bytes,88342721,opt,name=plaintext,proto3,oneof" json:"plaintext,omitempty"`
+	state                  protoimpl.MessageState   `protogen:"open.v1"`
+	Ciphertextforrecipient []byte                   `protobuf:"bytes,75299212,opt,name=ciphertextforrecipient,proto3,oneof" json:"ciphertextforrecipient,omitempty"`
+	Encryptionalgorithm    *EncryptionAlgorithmSpec `protobuf:"varint,203224586,opt,name=encryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec,oneof" json:"encryptionalgorithm,omitempty"`
+	Keyid                  *string                  `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
+	Keymaterialid          *string                  `protobuf:"bytes,147011585,opt,name=keymaterialid,proto3,oneof" json:"keymaterialid,omitempty"`
+	Plaintext              []byte                   `protobuf:"bytes,88342721,opt,name=plaintext,proto3,oneof" json:"plaintext,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3271,8 +3271,8 @@ func (x *DecryptResponse) GetCiphertextforrecipient() []byte {
 }
 
 func (x *DecryptResponse) GetEncryptionalgorithm() EncryptionAlgorithmSpec {
-	if x != nil {
-		return x.Encryptionalgorithm
+	if x != nil && x.Encryptionalgorithm != nil {
+		return *x.Encryptionalgorithm
 	}
 	return EncryptionAlgorithmSpec_ENCRYPTION_ALGORITHM_SPEC_SM2PKE
 }
@@ -3655,12 +3655,12 @@ func (x *DeriveSharedSecretRequest) GetRecipient() *RecipientInfo {
 }
 
 type DeriveSharedSecretResponse struct {
-	state                  protoimpl.MessageState    `protogen:"open.v1"`
-	Ciphertextforrecipient []byte                    `protobuf:"bytes,75299212,opt,name=ciphertextforrecipient,proto3,oneof" json:"ciphertextforrecipient,omitempty"`
-	Keyagreementalgorithm  KeyAgreementAlgorithmSpec `protobuf:"varint,99147702,opt,name=keyagreementalgorithm,proto3,enum=kms.KeyAgreementAlgorithmSpec" json:"keyagreementalgorithm,omitempty"`
-	Keyid                  *string                   `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
-	Keyorigin              OriginType                `protobuf:"varint,50912311,opt,name=keyorigin,proto3,enum=kms.OriginType" json:"keyorigin,omitempty"`
-	Sharedsecret           []byte                    `protobuf:"bytes,382876889,opt,name=sharedsecret,proto3,oneof" json:"sharedsecret,omitempty"`
+	state                  protoimpl.MessageState     `protogen:"open.v1"`
+	Ciphertextforrecipient []byte                     `protobuf:"bytes,75299212,opt,name=ciphertextforrecipient,proto3,oneof" json:"ciphertextforrecipient,omitempty"`
+	Keyagreementalgorithm  *KeyAgreementAlgorithmSpec `protobuf:"varint,99147702,opt,name=keyagreementalgorithm,proto3,enum=kms.KeyAgreementAlgorithmSpec,oneof" json:"keyagreementalgorithm,omitempty"`
+	Keyid                  *string                    `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
+	Keyorigin              *OriginType                `protobuf:"varint,50912311,opt,name=keyorigin,proto3,enum=kms.OriginType,oneof" json:"keyorigin,omitempty"`
+	Sharedsecret           []byte                     `protobuf:"bytes,382876889,opt,name=sharedsecret,proto3,oneof" json:"sharedsecret,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3703,8 +3703,8 @@ func (x *DeriveSharedSecretResponse) GetCiphertextforrecipient() []byte {
 }
 
 func (x *DeriveSharedSecretResponse) GetKeyagreementalgorithm() KeyAgreementAlgorithmSpec {
-	if x != nil {
-		return x.Keyagreementalgorithm
+	if x != nil && x.Keyagreementalgorithm != nil {
+		return *x.Keyagreementalgorithm
 	}
 	return KeyAgreementAlgorithmSpec_KEY_AGREEMENT_ALGORITHM_SPEC_ECDH
 }
@@ -3717,8 +3717,8 @@ func (x *DeriveSharedSecretResponse) GetKeyid() string {
 }
 
 func (x *DeriveSharedSecretResponse) GetKeyorigin() OriginType {
-	if x != nil {
-		return x.Keyorigin
+	if x != nil && x.Keyorigin != nil {
+		return *x.Keyorigin
 	}
 	return OriginType_ORIGIN_TYPE_EXTERNAL
 }
@@ -4307,13 +4307,13 @@ func (x *EnableKeyRotationRequest) GetRotationperiodindays() int32 {
 }
 
 type EncryptRequest struct {
-	state               protoimpl.MessageState  `protogen:"open.v1"`
-	Dryrun              *bool                   `protobuf:"varint,92204984,opt,name=dryrun,proto3,oneof" json:"dryrun,omitempty"`
-	Encryptionalgorithm EncryptionAlgorithmSpec `protobuf:"varint,203224586,opt,name=encryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec" json:"encryptionalgorithm,omitempty"`
-	Encryptioncontext   map[string]string       `protobuf:"bytes,286249536,rep,name=encryptioncontext,proto3" json:"encryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Granttokens         []string                `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
-	Keyid               string                  `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Plaintext           []byte                  `protobuf:"bytes,88342721,opt,name=plaintext,proto3" json:"plaintext,omitempty"`
+	state               protoimpl.MessageState   `protogen:"open.v1"`
+	Dryrun              *bool                    `protobuf:"varint,92204984,opt,name=dryrun,proto3,oneof" json:"dryrun,omitempty"`
+	Encryptionalgorithm *EncryptionAlgorithmSpec `protobuf:"varint,203224586,opt,name=encryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec,oneof" json:"encryptionalgorithm,omitempty"`
+	Encryptioncontext   map[string]string        `protobuf:"bytes,286249536,rep,name=encryptioncontext,proto3" json:"encryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Granttokens         []string                 `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
+	Keyid               string                   `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
+	Plaintext           []byte                   `protobuf:"bytes,88342721,opt,name=plaintext,proto3" json:"plaintext,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -4356,8 +4356,8 @@ func (x *EncryptRequest) GetDryrun() bool {
 }
 
 func (x *EncryptRequest) GetEncryptionalgorithm() EncryptionAlgorithmSpec {
-	if x != nil {
-		return x.Encryptionalgorithm
+	if x != nil && x.Encryptionalgorithm != nil {
+		return *x.Encryptionalgorithm
 	}
 	return EncryptionAlgorithmSpec_ENCRYPTION_ALGORITHM_SPEC_SM2PKE
 }
@@ -4391,10 +4391,10 @@ func (x *EncryptRequest) GetPlaintext() []byte {
 }
 
 type EncryptResponse struct {
-	state               protoimpl.MessageState  `protogen:"open.v1"`
-	Ciphertextblob      []byte                  `protobuf:"bytes,338198183,opt,name=ciphertextblob,proto3,oneof" json:"ciphertextblob,omitempty"`
-	Encryptionalgorithm EncryptionAlgorithmSpec `protobuf:"varint,203224586,opt,name=encryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec" json:"encryptionalgorithm,omitempty"`
-	Keyid               *string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
+	state               protoimpl.MessageState   `protogen:"open.v1"`
+	Ciphertextblob      []byte                   `protobuf:"bytes,338198183,opt,name=ciphertextblob,proto3,oneof" json:"ciphertextblob,omitempty"`
+	Encryptionalgorithm *EncryptionAlgorithmSpec `protobuf:"varint,203224586,opt,name=encryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec,oneof" json:"encryptionalgorithm,omitempty"`
+	Keyid               *string                  `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -4437,8 +4437,8 @@ func (x *EncryptResponse) GetCiphertextblob() []byte {
 }
 
 func (x *EncryptResponse) GetEncryptionalgorithm() EncryptionAlgorithmSpec {
-	if x != nil {
-		return x.Encryptionalgorithm
+	if x != nil && x.Encryptionalgorithm != nil {
+		return *x.Encryptionalgorithm
 	}
 	return EncryptionAlgorithmSpec_ENCRYPTION_ALGORITHM_SPEC_SM2PKE
 }
@@ -4583,7 +4583,7 @@ type GenerateDataKeyPairResponse struct {
 	Ciphertextforrecipient   []byte                 `protobuf:"bytes,75299212,opt,name=ciphertextforrecipient,proto3,oneof" json:"ciphertextforrecipient,omitempty"`
 	Keyid                    *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	Keymaterialid            *string                `protobuf:"bytes,147011585,opt,name=keymaterialid,proto3,oneof" json:"keymaterialid,omitempty"`
-	Keypairspec              DataKeyPairSpec        `protobuf:"varint,142696380,opt,name=keypairspec,proto3,enum=kms.DataKeyPairSpec" json:"keypairspec,omitempty"`
+	Keypairspec              *DataKeyPairSpec       `protobuf:"varint,142696380,opt,name=keypairspec,proto3,enum=kms.DataKeyPairSpec,oneof" json:"keypairspec,omitempty"`
 	Privatekeyciphertextblob []byte                 `protobuf:"bytes,295238401,opt,name=privatekeyciphertextblob,proto3,oneof" json:"privatekeyciphertextblob,omitempty"`
 	Privatekeyplaintext      []byte                 `protobuf:"bytes,422534247,opt,name=privatekeyplaintext,proto3,oneof" json:"privatekeyplaintext,omitempty"`
 	Publickey                []byte                 `protobuf:"bytes,167335776,opt,name=publickey,proto3,oneof" json:"publickey,omitempty"`
@@ -4643,8 +4643,8 @@ func (x *GenerateDataKeyPairResponse) GetKeymaterialid() string {
 }
 
 func (x *GenerateDataKeyPairResponse) GetKeypairspec() DataKeyPairSpec {
-	if x != nil {
-		return x.Keypairspec
+	if x != nil && x.Keypairspec != nil {
+		return *x.Keypairspec
 	}
 	return DataKeyPairSpec_DATA_KEY_PAIR_SPEC_ECC_NIST_EDWARDS25519
 }
@@ -4750,7 +4750,7 @@ type GenerateDataKeyPairWithoutPlaintextResponse struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Keyid                    *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	Keymaterialid            *string                `protobuf:"bytes,147011585,opt,name=keymaterialid,proto3,oneof" json:"keymaterialid,omitempty"`
-	Keypairspec              DataKeyPairSpec        `protobuf:"varint,142696380,opt,name=keypairspec,proto3,enum=kms.DataKeyPairSpec" json:"keypairspec,omitempty"`
+	Keypairspec              *DataKeyPairSpec       `protobuf:"varint,142696380,opt,name=keypairspec,proto3,enum=kms.DataKeyPairSpec,oneof" json:"keypairspec,omitempty"`
 	Privatekeyciphertextblob []byte                 `protobuf:"bytes,295238401,opt,name=privatekeyciphertextblob,proto3,oneof" json:"privatekeyciphertextblob,omitempty"`
 	Publickey                []byte                 `protobuf:"bytes,167335776,opt,name=publickey,proto3,oneof" json:"publickey,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -4802,8 +4802,8 @@ func (x *GenerateDataKeyPairWithoutPlaintextResponse) GetKeymaterialid() string 
 }
 
 func (x *GenerateDataKeyPairWithoutPlaintextResponse) GetKeypairspec() DataKeyPairSpec {
-	if x != nil {
-		return x.Keypairspec
+	if x != nil && x.Keypairspec != nil {
+		return *x.Keypairspec
 	}
 	return DataKeyPairSpec_DATA_KEY_PAIR_SPEC_ECC_NIST_EDWARDS25519
 }
@@ -4828,7 +4828,7 @@ type GenerateDataKeyRequest struct {
 	Encryptioncontext map[string]string      `protobuf:"bytes,286249536,rep,name=encryptioncontext,proto3" json:"encryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Granttokens       []string               `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
 	Keyid             string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Keyspec           DataKeySpec            `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.DataKeySpec" json:"keyspec,omitempty"`
+	Keyspec           *DataKeySpec           `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.DataKeySpec,oneof" json:"keyspec,omitempty"`
 	Numberofbytes     *int32                 `protobuf:"varint,277086201,opt,name=numberofbytes,proto3,oneof" json:"numberofbytes,omitempty"`
 	Recipient         *RecipientInfo         `protobuf:"bytes,445981721,opt,name=recipient,proto3" json:"recipient,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -4894,8 +4894,8 @@ func (x *GenerateDataKeyRequest) GetKeyid() string {
 }
 
 func (x *GenerateDataKeyRequest) GetKeyspec() DataKeySpec {
-	if x != nil {
-		return x.Keyspec
+	if x != nil && x.Keyspec != nil {
+		return *x.Keyspec
 	}
 	return DataKeySpec_DATA_KEY_SPEC_AES_128
 }
@@ -4996,7 +4996,7 @@ type GenerateDataKeyWithoutPlaintextRequest struct {
 	Encryptioncontext map[string]string      `protobuf:"bytes,286249536,rep,name=encryptioncontext,proto3" json:"encryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Granttokens       []string               `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
 	Keyid             string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Keyspec           DataKeySpec            `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.DataKeySpec" json:"keyspec,omitempty"`
+	Keyspec           *DataKeySpec           `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.DataKeySpec,oneof" json:"keyspec,omitempty"`
 	Numberofbytes     *int32                 `protobuf:"varint,277086201,opt,name=numberofbytes,proto3,oneof" json:"numberofbytes,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -5061,8 +5061,8 @@ func (x *GenerateDataKeyWithoutPlaintextRequest) GetKeyid() string {
 }
 
 func (x *GenerateDataKeyWithoutPlaintextRequest) GetKeyspec() DataKeySpec {
-	if x != nil {
-		return x.Keyspec
+	if x != nil && x.Keyspec != nil {
+		return *x.Keyspec
 	}
 	return DataKeySpec_DATA_KEY_SPEC_AES_128
 }
@@ -5214,7 +5214,7 @@ type GenerateMacResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Keyid         *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	Mac           []byte                 `protobuf:"bytes,296223945,opt,name=mac,proto3,oneof" json:"mac,omitempty"`
-	Macalgorithm  MacAlgorithmSpec       `protobuf:"varint,253519878,opt,name=macalgorithm,proto3,enum=kms.MacAlgorithmSpec" json:"macalgorithm,omitempty"`
+	Macalgorithm  *MacAlgorithmSpec      `protobuf:"varint,253519878,opt,name=macalgorithm,proto3,enum=kms.MacAlgorithmSpec,oneof" json:"macalgorithm,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5264,8 +5264,8 @@ func (x *GenerateMacResponse) GetMac() []byte {
 }
 
 func (x *GenerateMacResponse) GetMacalgorithm() MacAlgorithmSpec {
-	if x != nil {
-		return x.Macalgorithm
+	if x != nil && x.Macalgorithm != nil {
+		return *x.Macalgorithm
 	}
 	return MacAlgorithmSpec_MAC_ALGORITHM_SPEC_HMAC_SHA_512
 }
@@ -5900,12 +5900,12 @@ func (x *GetPublicKeyRequest) GetKeyid() string {
 
 type GetPublicKeyResponse struct {
 	state                  protoimpl.MessageState      `protogen:"open.v1"`
-	Customermasterkeyspec  CustomerMasterKeySpec       `protobuf:"varint,472470930,opt,name=customermasterkeyspec,proto3,enum=kms.CustomerMasterKeySpec" json:"customermasterkeyspec,omitempty"`
+	Customermasterkeyspec  *CustomerMasterKeySpec      `protobuf:"varint,472470930,opt,name=customermasterkeyspec,proto3,enum=kms.CustomerMasterKeySpec,oneof" json:"customermasterkeyspec,omitempty"`
 	Encryptionalgorithms   []EncryptionAlgorithmSpec   `protobuf:"varint,194511375,rep,packed,name=encryptionalgorithms,proto3,enum=kms.EncryptionAlgorithmSpec" json:"encryptionalgorithms,omitempty"`
 	Keyagreementalgorithms []KeyAgreementAlgorithmSpec `protobuf:"varint,328746163,rep,packed,name=keyagreementalgorithms,proto3,enum=kms.KeyAgreementAlgorithmSpec" json:"keyagreementalgorithms,omitempty"`
 	Keyid                  *string                     `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
-	Keyspec                KeySpec                     `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.KeySpec" json:"keyspec,omitempty"`
-	Keyusage               KeyUsageType                `protobuf:"varint,357216772,opt,name=keyusage,proto3,enum=kms.KeyUsageType" json:"keyusage,omitempty"`
+	Keyspec                *KeySpec                    `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.KeySpec,oneof" json:"keyspec,omitempty"`
+	Keyusage               *KeyUsageType               `protobuf:"varint,357216772,opt,name=keyusage,proto3,enum=kms.KeyUsageType,oneof" json:"keyusage,omitempty"`
 	Publickey              []byte                      `protobuf:"bytes,167335776,opt,name=publickey,proto3,oneof" json:"publickey,omitempty"`
 	Signingalgorithms      []SigningAlgorithmSpec      `protobuf:"varint,508241975,rep,packed,name=signingalgorithms,proto3,enum=kms.SigningAlgorithmSpec" json:"signingalgorithms,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -5943,8 +5943,8 @@ func (*GetPublicKeyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetPublicKeyResponse) GetCustomermasterkeyspec() CustomerMasterKeySpec {
-	if x != nil {
-		return x.Customermasterkeyspec
+	if x != nil && x.Customermasterkeyspec != nil {
+		return *x.Customermasterkeyspec
 	}
 	return CustomerMasterKeySpec_CUSTOMER_MASTER_KEY_SPEC_HMAC_256
 }
@@ -5971,15 +5971,15 @@ func (x *GetPublicKeyResponse) GetKeyid() string {
 }
 
 func (x *GetPublicKeyResponse) GetKeyspec() KeySpec {
-	if x != nil {
-		return x.Keyspec
+	if x != nil && x.Keyspec != nil {
+		return *x.Keyspec
 	}
 	return KeySpec_KEY_SPEC_HMAC_256
 }
 
 func (x *GetPublicKeyResponse) GetKeyusage() KeyUsageType {
-	if x != nil {
-		return x.Keyusage
+	if x != nil && x.Keyusage != nil {
+		return *x.Keyusage
 	}
 	return KeyUsageType_KEY_USAGE_TYPE_ENCRYPT_DECRYPT
 }
@@ -6185,9 +6185,9 @@ func (x *GrantListEntry) GetRetiringserviceprincipal() string {
 type ImportKeyMaterialRequest struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Encryptedkeymaterial   []byte                 `protobuf:"bytes,3185968,opt,name=encryptedkeymaterial,proto3" json:"encryptedkeymaterial,omitempty"`
-	Expirationmodel        ExpirationModelType    `protobuf:"varint,113933558,opt,name=expirationmodel,proto3,enum=kms.ExpirationModelType" json:"expirationmodel,omitempty"`
+	Expirationmodel        *ExpirationModelType   `protobuf:"varint,113933558,opt,name=expirationmodel,proto3,enum=kms.ExpirationModelType,oneof" json:"expirationmodel,omitempty"`
 	Importtoken            []byte                 `protobuf:"bytes,461726162,opt,name=importtoken,proto3" json:"importtoken,omitempty"`
-	Importtype             ImportType             `protobuf:"varint,331980349,opt,name=importtype,proto3,enum=kms.ImportType" json:"importtype,omitempty"`
+	Importtype             *ImportType            `protobuf:"varint,331980349,opt,name=importtype,proto3,enum=kms.ImportType,oneof" json:"importtype,omitempty"`
 	Keyid                  string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
 	Keymaterialdescription *string                `protobuf:"bytes,277153546,opt,name=keymaterialdescription,proto3,oneof" json:"keymaterialdescription,omitempty"`
 	Keymaterialid          *string                `protobuf:"bytes,147011585,opt,name=keymaterialid,proto3,oneof" json:"keymaterialid,omitempty"`
@@ -6234,8 +6234,8 @@ func (x *ImportKeyMaterialRequest) GetEncryptedkeymaterial() []byte {
 }
 
 func (x *ImportKeyMaterialRequest) GetExpirationmodel() ExpirationModelType {
-	if x != nil {
-		return x.Expirationmodel
+	if x != nil && x.Expirationmodel != nil {
+		return *x.Expirationmodel
 	}
 	return ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_DOES_NOT_EXPIRE
 }
@@ -6248,8 +6248,8 @@ func (x *ImportKeyMaterialRequest) GetImporttoken() []byte {
 }
 
 func (x *ImportKeyMaterialRequest) GetImporttype() ImportType {
-	if x != nil {
-		return x.Importtype
+	if x != nil && x.Importtype != nil {
+		return *x.Importtype
 	}
 	return ImportType_IMPORT_TYPE_EXISTING_KEY_MATERIAL
 }
@@ -6995,11 +6995,11 @@ func (x *KMSInvalidStateException) GetMessage() string {
 }
 
 type KeyLastUsageData struct {
-	state             protoimpl.MessageState        `protogen:"open.v1"`
-	Cloudtraileventid *string                       `protobuf:"bytes,100722332,opt,name=cloudtraileventid,proto3,oneof" json:"cloudtraileventid,omitempty"`
-	Kmsrequestid      *string                       `protobuf:"bytes,427787075,opt,name=kmsrequestid,proto3,oneof" json:"kmsrequestid,omitempty"`
-	Operation         KeyLastUsageTrackingOperation `protobuf:"varint,26084007,opt,name=operation,proto3,enum=kms.KeyLastUsageTrackingOperation" json:"operation,omitempty"`
-	Timestamp         *string                       `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
+	state             protoimpl.MessageState         `protogen:"open.v1"`
+	Cloudtraileventid *string                        `protobuf:"bytes,100722332,opt,name=cloudtraileventid,proto3,oneof" json:"cloudtraileventid,omitempty"`
+	Kmsrequestid      *string                        `protobuf:"bytes,427787075,opt,name=kmsrequestid,proto3,oneof" json:"kmsrequestid,omitempty"`
+	Operation         *KeyLastUsageTrackingOperation `protobuf:"varint,26084007,opt,name=operation,proto3,enum=kms.KeyLastUsageTrackingOperation,oneof" json:"operation,omitempty"`
+	Timestamp         *string                        `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -7049,8 +7049,8 @@ func (x *KeyLastUsageData) GetKmsrequestid() string {
 }
 
 func (x *KeyLastUsageData) GetOperation() KeyLastUsageTrackingOperation {
-	if x != nil {
-		return x.Operation
+	if x != nil && x.Operation != nil {
+		return *x.Operation
 	}
 	return KeyLastUsageTrackingOperation_KEY_LAST_USAGE_TRACKING_OPERATION_GENERATEDATAKEYPAIR
 }
@@ -7122,22 +7122,22 @@ type KeyMetadata struct {
 	Creationdate                *string                     `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
 	Currentkeymaterialid        *string                     `protobuf:"bytes,183721586,opt,name=currentkeymaterialid,proto3,oneof" json:"currentkeymaterialid,omitempty"`
 	Customkeystoreid            *string                     `protobuf:"bytes,88348228,opt,name=customkeystoreid,proto3,oneof" json:"customkeystoreid,omitempty"`
-	Customermasterkeyspec       CustomerMasterKeySpec       `protobuf:"varint,472470930,opt,name=customermasterkeyspec,proto3,enum=kms.CustomerMasterKeySpec" json:"customermasterkeyspec,omitempty"`
+	Customermasterkeyspec       *CustomerMasterKeySpec      `protobuf:"varint,472470930,opt,name=customermasterkeyspec,proto3,enum=kms.CustomerMasterKeySpec,oneof" json:"customermasterkeyspec,omitempty"`
 	Deletiondate                *string                     `protobuf:"bytes,347845564,opt,name=deletiondate,proto3,oneof" json:"deletiondate,omitempty"`
 	Description                 *string                     `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Enabled                     *bool                       `protobuf:"varint,478602303,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
 	Encryptionalgorithms        []EncryptionAlgorithmSpec   `protobuf:"varint,194511375,rep,packed,name=encryptionalgorithms,proto3,enum=kms.EncryptionAlgorithmSpec" json:"encryptionalgorithms,omitempty"`
-	Expirationmodel             ExpirationModelType         `protobuf:"varint,113933558,opt,name=expirationmodel,proto3,enum=kms.ExpirationModelType" json:"expirationmodel,omitempty"`
+	Expirationmodel             *ExpirationModelType        `protobuf:"varint,113933558,opt,name=expirationmodel,proto3,enum=kms.ExpirationModelType,oneof" json:"expirationmodel,omitempty"`
 	Keyagreementalgorithms      []KeyAgreementAlgorithmSpec `protobuf:"varint,328746163,rep,packed,name=keyagreementalgorithms,proto3,enum=kms.KeyAgreementAlgorithmSpec" json:"keyagreementalgorithms,omitempty"`
 	Keyid                       string                      `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
-	Keymanager                  KeyManagerType              `protobuf:"varint,432733972,opt,name=keymanager,proto3,enum=kms.KeyManagerType" json:"keymanager,omitempty"`
-	Keyspec                     KeySpec                     `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.KeySpec" json:"keyspec,omitempty"`
-	Keystate                    KeyState                    `protobuf:"varint,27894226,opt,name=keystate,proto3,enum=kms.KeyState" json:"keystate,omitempty"`
-	Keyusage                    KeyUsageType                `protobuf:"varint,357216772,opt,name=keyusage,proto3,enum=kms.KeyUsageType" json:"keyusage,omitempty"`
+	Keymanager                  *KeyManagerType             `protobuf:"varint,432733972,opt,name=keymanager,proto3,enum=kms.KeyManagerType,oneof" json:"keymanager,omitempty"`
+	Keyspec                     *KeySpec                    `protobuf:"varint,138220928,opt,name=keyspec,proto3,enum=kms.KeySpec,oneof" json:"keyspec,omitempty"`
+	Keystate                    *KeyState                   `protobuf:"varint,27894226,opt,name=keystate,proto3,enum=kms.KeyState,oneof" json:"keystate,omitempty"`
+	Keyusage                    *KeyUsageType               `protobuf:"varint,357216772,opt,name=keyusage,proto3,enum=kms.KeyUsageType,oneof" json:"keyusage,omitempty"`
 	Macalgorithms               []MacAlgorithmSpec          `protobuf:"varint,532181443,rep,packed,name=macalgorithms,proto3,enum=kms.MacAlgorithmSpec" json:"macalgorithms,omitempty"`
 	Multiregion                 *bool                       `protobuf:"varint,405769103,opt,name=multiregion,proto3,oneof" json:"multiregion,omitempty"`
 	Multiregionconfiguration    *MultiRegionConfiguration   `protobuf:"bytes,460103813,opt,name=multiregionconfiguration,proto3" json:"multiregionconfiguration,omitempty"`
-	Origin                      OriginType                  `protobuf:"varint,529732720,opt,name=origin,proto3,enum=kms.OriginType" json:"origin,omitempty"`
+	Origin                      *OriginType                 `protobuf:"varint,529732720,opt,name=origin,proto3,enum=kms.OriginType,oneof" json:"origin,omitempty"`
 	Pendingdeletionwindowindays *int32                      `protobuf:"varint,480447795,opt,name=pendingdeletionwindowindays,proto3,oneof" json:"pendingdeletionwindowindays,omitempty"`
 	Signingalgorithms           []SigningAlgorithmSpec      `protobuf:"varint,508241975,rep,packed,name=signingalgorithms,proto3,enum=kms.SigningAlgorithmSpec" json:"signingalgorithms,omitempty"`
 	Validto                     *string                     `protobuf:"bytes,522718673,opt,name=validto,proto3,oneof" json:"validto,omitempty"`
@@ -7219,8 +7219,8 @@ func (x *KeyMetadata) GetCustomkeystoreid() string {
 }
 
 func (x *KeyMetadata) GetCustomermasterkeyspec() CustomerMasterKeySpec {
-	if x != nil {
-		return x.Customermasterkeyspec
+	if x != nil && x.Customermasterkeyspec != nil {
+		return *x.Customermasterkeyspec
 	}
 	return CustomerMasterKeySpec_CUSTOMER_MASTER_KEY_SPEC_HMAC_256
 }
@@ -7254,8 +7254,8 @@ func (x *KeyMetadata) GetEncryptionalgorithms() []EncryptionAlgorithmSpec {
 }
 
 func (x *KeyMetadata) GetExpirationmodel() ExpirationModelType {
-	if x != nil {
-		return x.Expirationmodel
+	if x != nil && x.Expirationmodel != nil {
+		return *x.Expirationmodel
 	}
 	return ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_DOES_NOT_EXPIRE
 }
@@ -7275,29 +7275,29 @@ func (x *KeyMetadata) GetKeyid() string {
 }
 
 func (x *KeyMetadata) GetKeymanager() KeyManagerType {
-	if x != nil {
-		return x.Keymanager
+	if x != nil && x.Keymanager != nil {
+		return *x.Keymanager
 	}
 	return KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER
 }
 
 func (x *KeyMetadata) GetKeyspec() KeySpec {
-	if x != nil {
-		return x.Keyspec
+	if x != nil && x.Keyspec != nil {
+		return *x.Keyspec
 	}
 	return KeySpec_KEY_SPEC_HMAC_256
 }
 
 func (x *KeyMetadata) GetKeystate() KeyState {
-	if x != nil {
-		return x.Keystate
+	if x != nil && x.Keystate != nil {
+		return *x.Keystate
 	}
 	return KeyState_KEY_STATE_PENDINGREPLICADELETION
 }
 
 func (x *KeyMetadata) GetKeyusage() KeyUsageType {
-	if x != nil {
-		return x.Keyusage
+	if x != nil && x.Keyusage != nil {
+		return *x.Keyusage
 	}
 	return KeyUsageType_KEY_USAGE_TYPE_ENCRYPT_DECRYPT
 }
@@ -7324,8 +7324,8 @@ func (x *KeyMetadata) GetMultiregionconfiguration() *MultiRegionConfiguration {
 }
 
 func (x *KeyMetadata) GetOrigin() OriginType {
-	if x != nil {
-		return x.Origin
+	if x != nil && x.Origin != nil {
+		return *x.Origin
 	}
 	return OriginType_ORIGIN_TYPE_EXTERNAL
 }
@@ -7832,7 +7832,7 @@ func (x *ListKeyPoliciesResponse) GetTruncated() bool {
 
 type ListKeyRotationsRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Includekeymaterial IncludeKeyMaterial     `protobuf:"varint,531559428,opt,name=includekeymaterial,proto3,enum=kms.IncludeKeyMaterial" json:"includekeymaterial,omitempty"`
+	Includekeymaterial *IncludeKeyMaterial    `protobuf:"varint,531559428,opt,name=includekeymaterial,proto3,enum=kms.IncludeKeyMaterial,oneof" json:"includekeymaterial,omitempty"`
 	Keyid              string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
 	Limit              *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Marker             *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
@@ -7871,8 +7871,8 @@ func (*ListKeyRotationsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListKeyRotationsRequest) GetIncludekeymaterial() IncludeKeyMaterial {
-	if x != nil {
-		return x.Includekeymaterial
+	if x != nil && x.Includekeymaterial != nil {
+		return *x.Includekeymaterial
 	}
 	return IncludeKeyMaterial_INCLUDE_KEY_MATERIAL_ALL_KEY_MATERIAL
 }
@@ -8304,7 +8304,7 @@ func (x *MalformedPolicyDocumentException) GetMessage() string {
 
 type MultiRegionConfiguration struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Multiregionkeytype MultiRegionKeyType     `protobuf:"varint,483927198,opt,name=multiregionkeytype,proto3,enum=kms.MultiRegionKeyType" json:"multiregionkeytype,omitempty"`
+	Multiregionkeytype *MultiRegionKeyType    `protobuf:"varint,483927198,opt,name=multiregionkeytype,proto3,enum=kms.MultiRegionKeyType,oneof" json:"multiregionkeytype,omitempty"`
 	Primarykey         *MultiRegionKey        `protobuf:"bytes,174019825,opt,name=primarykey,proto3" json:"primarykey,omitempty"`
 	Replicakeys        []*MultiRegionKey      `protobuf:"bytes,266801624,rep,name=replicakeys,proto3" json:"replicakeys,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -8342,8 +8342,8 @@ func (*MultiRegionConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *MultiRegionConfiguration) GetMultiregionkeytype() MultiRegionKeyType {
-	if x != nil {
-		return x.Multiregionkeytype
+	if x != nil && x.Multiregionkeytype != nil {
+		return *x.Multiregionkeytype
 	}
 	return MultiRegionKeyType_MULTI_REGION_KEY_TYPE_REPLICA
 }
@@ -8527,17 +8527,17 @@ func (x *PutKeyPolicyRequest) GetPolicyname() string {
 }
 
 type ReEncryptRequest struct {
-	state                          protoimpl.MessageState  `protogen:"open.v1"`
-	Ciphertextblob                 []byte                  `protobuf:"bytes,338198183,opt,name=ciphertextblob,proto3,oneof" json:"ciphertextblob,omitempty"`
-	Destinationencryptionalgorithm EncryptionAlgorithmSpec `protobuf:"varint,3500944,opt,name=destinationencryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec" json:"destinationencryptionalgorithm,omitempty"`
-	Destinationencryptioncontext   map[string]string       `protobuf:"bytes,116435710,rep,name=destinationencryptioncontext,proto3" json:"destinationencryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Destinationkeyid               string                  `protobuf:"bytes,396219964,opt,name=destinationkeyid,proto3" json:"destinationkeyid,omitempty"`
-	Dryrun                         *bool                   `protobuf:"varint,92204984,opt,name=dryrun,proto3,oneof" json:"dryrun,omitempty"`
-	Dryrunmodifiers                []DryRunModifierType    `protobuf:"varint,24346424,rep,packed,name=dryrunmodifiers,proto3,enum=kms.DryRunModifierType" json:"dryrunmodifiers,omitempty"`
-	Granttokens                    []string                `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
-	Sourceencryptionalgorithm      EncryptionAlgorithmSpec `protobuf:"varint,283215847,opt,name=sourceencryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec" json:"sourceencryptionalgorithm,omitempty"`
-	Sourceencryptioncontext        map[string]string       `protobuf:"bytes,203785001,rep,name=sourceencryptioncontext,proto3" json:"sourceencryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Sourcekeyid                    *string                 `protobuf:"bytes,137105771,opt,name=sourcekeyid,proto3,oneof" json:"sourcekeyid,omitempty"`
+	state                          protoimpl.MessageState   `protogen:"open.v1"`
+	Ciphertextblob                 []byte                   `protobuf:"bytes,338198183,opt,name=ciphertextblob,proto3,oneof" json:"ciphertextblob,omitempty"`
+	Destinationencryptionalgorithm *EncryptionAlgorithmSpec `protobuf:"varint,3500944,opt,name=destinationencryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec,oneof" json:"destinationencryptionalgorithm,omitempty"`
+	Destinationencryptioncontext   map[string]string        `protobuf:"bytes,116435710,rep,name=destinationencryptioncontext,proto3" json:"destinationencryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Destinationkeyid               string                   `protobuf:"bytes,396219964,opt,name=destinationkeyid,proto3" json:"destinationkeyid,omitempty"`
+	Dryrun                         *bool                    `protobuf:"varint,92204984,opt,name=dryrun,proto3,oneof" json:"dryrun,omitempty"`
+	Dryrunmodifiers                []DryRunModifierType     `protobuf:"varint,24346424,rep,packed,name=dryrunmodifiers,proto3,enum=kms.DryRunModifierType" json:"dryrunmodifiers,omitempty"`
+	Granttokens                    []string                 `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
+	Sourceencryptionalgorithm      *EncryptionAlgorithmSpec `protobuf:"varint,283215847,opt,name=sourceencryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec,oneof" json:"sourceencryptionalgorithm,omitempty"`
+	Sourceencryptioncontext        map[string]string        `protobuf:"bytes,203785001,rep,name=sourceencryptioncontext,proto3" json:"sourceencryptioncontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Sourcekeyid                    *string                  `protobuf:"bytes,137105771,opt,name=sourcekeyid,proto3,oneof" json:"sourcekeyid,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -8580,8 +8580,8 @@ func (x *ReEncryptRequest) GetCiphertextblob() []byte {
 }
 
 func (x *ReEncryptRequest) GetDestinationencryptionalgorithm() EncryptionAlgorithmSpec {
-	if x != nil {
-		return x.Destinationencryptionalgorithm
+	if x != nil && x.Destinationencryptionalgorithm != nil {
+		return *x.Destinationencryptionalgorithm
 	}
 	return EncryptionAlgorithmSpec_ENCRYPTION_ALGORITHM_SPEC_SM2PKE
 }
@@ -8622,8 +8622,8 @@ func (x *ReEncryptRequest) GetGranttokens() []string {
 }
 
 func (x *ReEncryptRequest) GetSourceencryptionalgorithm() EncryptionAlgorithmSpec {
-	if x != nil {
-		return x.Sourceencryptionalgorithm
+	if x != nil && x.Sourceencryptionalgorithm != nil {
+		return *x.Sourceencryptionalgorithm
 	}
 	return EncryptionAlgorithmSpec_ENCRYPTION_ALGORITHM_SPEC_SM2PKE
 }
@@ -8643,14 +8643,14 @@ func (x *ReEncryptRequest) GetSourcekeyid() string {
 }
 
 type ReEncryptResponse struct {
-	state                          protoimpl.MessageState  `protogen:"open.v1"`
-	Ciphertextblob                 []byte                  `protobuf:"bytes,338198183,opt,name=ciphertextblob,proto3,oneof" json:"ciphertextblob,omitempty"`
-	Destinationencryptionalgorithm EncryptionAlgorithmSpec `protobuf:"varint,3500944,opt,name=destinationencryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec" json:"destinationencryptionalgorithm,omitempty"`
-	Destinationkeymaterialid       *string                 `protobuf:"bytes,469834039,opt,name=destinationkeymaterialid,proto3,oneof" json:"destinationkeymaterialid,omitempty"`
-	Keyid                          *string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
-	Sourceencryptionalgorithm      EncryptionAlgorithmSpec `protobuf:"varint,283215847,opt,name=sourceencryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec" json:"sourceencryptionalgorithm,omitempty"`
-	Sourcekeyid                    *string                 `protobuf:"bytes,137105771,opt,name=sourcekeyid,proto3,oneof" json:"sourcekeyid,omitempty"`
-	Sourcekeymaterialid            *string                 `protobuf:"bytes,34789220,opt,name=sourcekeymaterialid,proto3,oneof" json:"sourcekeymaterialid,omitempty"`
+	state                          protoimpl.MessageState   `protogen:"open.v1"`
+	Ciphertextblob                 []byte                   `protobuf:"bytes,338198183,opt,name=ciphertextblob,proto3,oneof" json:"ciphertextblob,omitempty"`
+	Destinationencryptionalgorithm *EncryptionAlgorithmSpec `protobuf:"varint,3500944,opt,name=destinationencryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec,oneof" json:"destinationencryptionalgorithm,omitempty"`
+	Destinationkeymaterialid       *string                  `protobuf:"bytes,469834039,opt,name=destinationkeymaterialid,proto3,oneof" json:"destinationkeymaterialid,omitempty"`
+	Keyid                          *string                  `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
+	Sourceencryptionalgorithm      *EncryptionAlgorithmSpec `protobuf:"varint,283215847,opt,name=sourceencryptionalgorithm,proto3,enum=kms.EncryptionAlgorithmSpec,oneof" json:"sourceencryptionalgorithm,omitempty"`
+	Sourcekeyid                    *string                  `protobuf:"bytes,137105771,opt,name=sourcekeyid,proto3,oneof" json:"sourcekeyid,omitempty"`
+	Sourcekeymaterialid            *string                  `protobuf:"bytes,34789220,opt,name=sourcekeymaterialid,proto3,oneof" json:"sourcekeymaterialid,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -8693,8 +8693,8 @@ func (x *ReEncryptResponse) GetCiphertextblob() []byte {
 }
 
 func (x *ReEncryptResponse) GetDestinationencryptionalgorithm() EncryptionAlgorithmSpec {
-	if x != nil {
-		return x.Destinationencryptionalgorithm
+	if x != nil && x.Destinationencryptionalgorithm != nil {
+		return *x.Destinationencryptionalgorithm
 	}
 	return EncryptionAlgorithmSpec_ENCRYPTION_ALGORITHM_SPEC_SM2PKE
 }
@@ -8714,8 +8714,8 @@ func (x *ReEncryptResponse) GetKeyid() string {
 }
 
 func (x *ReEncryptResponse) GetSourceencryptionalgorithm() EncryptionAlgorithmSpec {
-	if x != nil {
-		return x.Sourceencryptionalgorithm
+	if x != nil && x.Sourceencryptionalgorithm != nil {
+		return *x.Sourceencryptionalgorithm
 	}
 	return EncryptionAlgorithmSpec_ENCRYPTION_ALGORITHM_SPEC_SM2PKE
 }
@@ -8735,9 +8735,9 @@ func (x *ReEncryptResponse) GetSourcekeymaterialid() string {
 }
 
 type RecipientInfo struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Attestationdocument    []byte                 `protobuf:"bytes,217786849,opt,name=attestationdocument,proto3,oneof" json:"attestationdocument,omitempty"`
-	Keyencryptionalgorithm KeyEncryptionMechanism `protobuf:"varint,478234803,opt,name=keyencryptionalgorithm,proto3,enum=kms.KeyEncryptionMechanism" json:"keyencryptionalgorithm,omitempty"`
+	state                  protoimpl.MessageState  `protogen:"open.v1"`
+	Attestationdocument    []byte                  `protobuf:"bytes,217786849,opt,name=attestationdocument,proto3,oneof" json:"attestationdocument,omitempty"`
+	Keyencryptionalgorithm *KeyEncryptionMechanism `protobuf:"varint,478234803,opt,name=keyencryptionalgorithm,proto3,enum=kms.KeyEncryptionMechanism,oneof" json:"keyencryptionalgorithm,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -8780,8 +8780,8 @@ func (x *RecipientInfo) GetAttestationdocument() []byte {
 }
 
 func (x *RecipientInfo) GetKeyencryptionalgorithm() KeyEncryptionMechanism {
-	if x != nil {
-		return x.Keyencryptionalgorithm
+	if x != nil && x.Keyencryptionalgorithm != nil {
+		return *x.Keyencryptionalgorithm
 	}
 	return KeyEncryptionMechanism_KEY_ENCRYPTION_MECHANISM_RSAES_OAEP_SHA_256
 }
@@ -9148,14 +9148,14 @@ func (x *RotateKeyOnDemandResponse) GetKeyid() string {
 
 type RotationsListEntry struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Expirationmodel        ExpirationModelType    `protobuf:"varint,113933558,opt,name=expirationmodel,proto3,enum=kms.ExpirationModelType" json:"expirationmodel,omitempty"`
-	Importstate            ImportState            `protobuf:"varint,32548970,opt,name=importstate,proto3,enum=kms.ImportState" json:"importstate,omitempty"`
+	Expirationmodel        *ExpirationModelType   `protobuf:"varint,113933558,opt,name=expirationmodel,proto3,enum=kms.ExpirationModelType,oneof" json:"expirationmodel,omitempty"`
+	Importstate            *ImportState           `protobuf:"varint,32548970,opt,name=importstate,proto3,enum=kms.ImportState,oneof" json:"importstate,omitempty"`
 	Keyid                  *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	Keymaterialdescription *string                `protobuf:"bytes,277153546,opt,name=keymaterialdescription,proto3,oneof" json:"keymaterialdescription,omitempty"`
 	Keymaterialid          *string                `protobuf:"bytes,147011585,opt,name=keymaterialid,proto3,oneof" json:"keymaterialid,omitempty"`
-	Keymaterialstate       KeyMaterialState       `protobuf:"varint,431806871,opt,name=keymaterialstate,proto3,enum=kms.KeyMaterialState" json:"keymaterialstate,omitempty"`
+	Keymaterialstate       *KeyMaterialState      `protobuf:"varint,431806871,opt,name=keymaterialstate,proto3,enum=kms.KeyMaterialState,oneof" json:"keymaterialstate,omitempty"`
 	Rotationdate           *string                `protobuf:"bytes,529238652,opt,name=rotationdate,proto3,oneof" json:"rotationdate,omitempty"`
-	Rotationtype           RotationType           `protobuf:"varint,122951592,opt,name=rotationtype,proto3,enum=kms.RotationType" json:"rotationtype,omitempty"`
+	Rotationtype           *RotationType          `protobuf:"varint,122951592,opt,name=rotationtype,proto3,enum=kms.RotationType,oneof" json:"rotationtype,omitempty"`
 	Validto                *string                `protobuf:"bytes,522718673,opt,name=validto,proto3,oneof" json:"validto,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -9192,15 +9192,15 @@ func (*RotationsListEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *RotationsListEntry) GetExpirationmodel() ExpirationModelType {
-	if x != nil {
-		return x.Expirationmodel
+	if x != nil && x.Expirationmodel != nil {
+		return *x.Expirationmodel
 	}
 	return ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_DOES_NOT_EXPIRE
 }
 
 func (x *RotationsListEntry) GetImportstate() ImportState {
-	if x != nil {
-		return x.Importstate
+	if x != nil && x.Importstate != nil {
+		return *x.Importstate
 	}
 	return ImportState_IMPORT_STATE_IMPORTED
 }
@@ -9227,8 +9227,8 @@ func (x *RotationsListEntry) GetKeymaterialid() string {
 }
 
 func (x *RotationsListEntry) GetKeymaterialstate() KeyMaterialState {
-	if x != nil {
-		return x.Keymaterialstate
+	if x != nil && x.Keymaterialstate != nil {
+		return *x.Keymaterialstate
 	}
 	return KeyMaterialState_KEY_MATERIAL_STATE_PENDING_ROTATION
 }
@@ -9241,8 +9241,8 @@ func (x *RotationsListEntry) GetRotationdate() string {
 }
 
 func (x *RotationsListEntry) GetRotationtype() RotationType {
-	if x != nil {
-		return x.Rotationtype
+	if x != nil && x.Rotationtype != nil {
+		return *x.Rotationtype
 	}
 	return RotationType_ROTATION_TYPE_AUTOMATIC
 }
@@ -9310,7 +9310,7 @@ type ScheduleKeyDeletionResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Deletiondate        *string                `protobuf:"bytes,347845564,opt,name=deletiondate,proto3,oneof" json:"deletiondate,omitempty"`
 	Keyid               *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
-	Keystate            KeyState               `protobuf:"varint,27894226,opt,name=keystate,proto3,enum=kms.KeyState" json:"keystate,omitempty"`
+	Keystate            *KeyState              `protobuf:"varint,27894226,opt,name=keystate,proto3,enum=kms.KeyState,oneof" json:"keystate,omitempty"`
 	Pendingwindowindays *int32                 `protobuf:"varint,532945081,opt,name=pendingwindowindays,proto3,oneof" json:"pendingwindowindays,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -9361,8 +9361,8 @@ func (x *ScheduleKeyDeletionResponse) GetKeyid() string {
 }
 
 func (x *ScheduleKeyDeletionResponse) GetKeystate() KeyState {
-	if x != nil {
-		return x.Keystate
+	if x != nil && x.Keystate != nil {
+		return *x.Keystate
 	}
 	return KeyState_KEY_STATE_PENDINGREPLICADELETION
 }
@@ -9380,7 +9380,7 @@ type SignRequest struct {
 	Granttokens      []string               `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
 	Keyid            string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
 	Message          []byte                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
-	Messagetype      MessageType            `protobuf:"varint,452676013,opt,name=messagetype,proto3,enum=kms.MessageType" json:"messagetype,omitempty"`
+	Messagetype      *MessageType           `protobuf:"varint,452676013,opt,name=messagetype,proto3,enum=kms.MessageType,oneof" json:"messagetype,omitempty"`
 	Signingalgorithm SigningAlgorithmSpec   `protobuf:"varint,488091842,opt,name=signingalgorithm,proto3,enum=kms.SigningAlgorithmSpec" json:"signingalgorithm,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -9445,8 +9445,8 @@ func (x *SignRequest) GetMessage() []byte {
 }
 
 func (x *SignRequest) GetMessagetype() MessageType {
-	if x != nil {
-		return x.Messagetype
+	if x != nil && x.Messagetype != nil {
+		return *x.Messagetype
 	}
 	return MessageType_MESSAGE_TYPE_RAW
 }
@@ -9462,7 +9462,7 @@ type SignResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Keyid            *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	Signature        []byte                 `protobuf:"bytes,4785422,opt,name=signature,proto3,oneof" json:"signature,omitempty"`
-	Signingalgorithm SigningAlgorithmSpec   `protobuf:"varint,488091842,opt,name=signingalgorithm,proto3,enum=kms.SigningAlgorithmSpec" json:"signingalgorithm,omitempty"`
+	Signingalgorithm *SigningAlgorithmSpec  `protobuf:"varint,488091842,opt,name=signingalgorithm,proto3,enum=kms.SigningAlgorithmSpec,oneof" json:"signingalgorithm,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -9512,8 +9512,8 @@ func (x *SignResponse) GetSignature() []byte {
 }
 
 func (x *SignResponse) GetSigningalgorithm() SigningAlgorithmSpec {
-	if x != nil {
-		return x.Signingalgorithm
+	if x != nil && x.Signingalgorithm != nil {
+		return *x.Signingalgorithm
 	}
 	return SigningAlgorithmSpec_SIGNING_ALGORITHM_SPEC_ECDSA_SHA_384
 }
@@ -9821,7 +9821,7 @@ type UpdateCustomKeyStoreRequest struct {
 	Keystorepassword                 *string                               `protobuf:"bytes,403136353,opt,name=keystorepassword,proto3,oneof" json:"keystorepassword,omitempty"`
 	Newcustomkeystorename            *string                               `protobuf:"bytes,10936866,opt,name=newcustomkeystorename,proto3,oneof" json:"newcustomkeystorename,omitempty"`
 	Xksproxyauthenticationcredential *XksProxyAuthenticationCredentialType `protobuf:"bytes,350418199,opt,name=xksproxyauthenticationcredential,proto3" json:"xksproxyauthenticationcredential,omitempty"`
-	Xksproxyconnectivity             XksProxyConnectivityType              `protobuf:"varint,298569161,opt,name=xksproxyconnectivity,proto3,enum=kms.XksProxyConnectivityType" json:"xksproxyconnectivity,omitempty"`
+	Xksproxyconnectivity             *XksProxyConnectivityType             `protobuf:"varint,298569161,opt,name=xksproxyconnectivity,proto3,enum=kms.XksProxyConnectivityType,oneof" json:"xksproxyconnectivity,omitempty"`
 	Xksproxyuriendpoint              *string                               `protobuf:"bytes,273255559,opt,name=xksproxyuriendpoint,proto3,oneof" json:"xksproxyuriendpoint,omitempty"`
 	Xksproxyuripath                  *string                               `protobuf:"bytes,436753509,opt,name=xksproxyuripath,proto3,oneof" json:"xksproxyuripath,omitempty"`
 	Xksproxyvpcendpointservicename   *string                               `protobuf:"bytes,372786130,opt,name=xksproxyvpcendpointservicename,proto3,oneof" json:"xksproxyvpcendpointservicename,omitempty"`
@@ -9896,8 +9896,8 @@ func (x *UpdateCustomKeyStoreRequest) GetXksproxyauthenticationcredential() *Xks
 }
 
 func (x *UpdateCustomKeyStoreRequest) GetXksproxyconnectivity() XksProxyConnectivityType {
-	if x != nil {
-		return x.Xksproxyconnectivity
+	if x != nil && x.Xksproxyconnectivity != nil {
+		return *x.Xksproxyconnectivity
 	}
 	return XksProxyConnectivityType_XKS_PROXY_CONNECTIVITY_TYPE_VPC_ENDPOINT_SERVICE
 }
@@ -10157,7 +10157,7 @@ func (x *VerifyMacRequest) GetMessage() []byte {
 type VerifyMacResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Keyid         *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
-	Macalgorithm  MacAlgorithmSpec       `protobuf:"varint,253519878,opt,name=macalgorithm,proto3,enum=kms.MacAlgorithmSpec" json:"macalgorithm,omitempty"`
+	Macalgorithm  *MacAlgorithmSpec      `protobuf:"varint,253519878,opt,name=macalgorithm,proto3,enum=kms.MacAlgorithmSpec,oneof" json:"macalgorithm,omitempty"`
 	Macvalid      *bool                  `protobuf:"varint,482746075,opt,name=macvalid,proto3,oneof" json:"macvalid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10201,8 +10201,8 @@ func (x *VerifyMacResponse) GetKeyid() string {
 }
 
 func (x *VerifyMacResponse) GetMacalgorithm() MacAlgorithmSpec {
-	if x != nil {
-		return x.Macalgorithm
+	if x != nil && x.Macalgorithm != nil {
+		return *x.Macalgorithm
 	}
 	return MacAlgorithmSpec_MAC_ALGORITHM_SPEC_HMAC_SHA_512
 }
@@ -10220,7 +10220,7 @@ type VerifyRequest struct {
 	Granttokens      []string               `protobuf:"bytes,339740300,rep,name=granttokens,proto3" json:"granttokens,omitempty"`
 	Keyid            string                 `protobuf:"bytes,275906594,opt,name=keyid,proto3" json:"keyid,omitempty"`
 	Message          []byte                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
-	Messagetype      MessageType            `protobuf:"varint,452676013,opt,name=messagetype,proto3,enum=kms.MessageType" json:"messagetype,omitempty"`
+	Messagetype      *MessageType           `protobuf:"varint,452676013,opt,name=messagetype,proto3,enum=kms.MessageType,oneof" json:"messagetype,omitempty"`
 	Signature        []byte                 `protobuf:"bytes,4785422,opt,name=signature,proto3" json:"signature,omitempty"`
 	Signingalgorithm SigningAlgorithmSpec   `protobuf:"varint,488091842,opt,name=signingalgorithm,proto3,enum=kms.SigningAlgorithmSpec" json:"signingalgorithm,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -10286,8 +10286,8 @@ func (x *VerifyRequest) GetMessage() []byte {
 }
 
 func (x *VerifyRequest) GetMessagetype() MessageType {
-	if x != nil {
-		return x.Messagetype
+	if x != nil && x.Messagetype != nil {
+		return *x.Messagetype
 	}
 	return MessageType_MESSAGE_TYPE_RAW
 }
@@ -10310,7 +10310,7 @@ type VerifyResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Keyid            *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	Signaturevalid   *bool                  `protobuf:"varint,272180330,opt,name=signaturevalid,proto3,oneof" json:"signaturevalid,omitempty"`
-	Signingalgorithm SigningAlgorithmSpec   `protobuf:"varint,488091842,opt,name=signingalgorithm,proto3,enum=kms.SigningAlgorithmSpec" json:"signingalgorithm,omitempty"`
+	Signingalgorithm *SigningAlgorithmSpec  `protobuf:"varint,488091842,opt,name=signingalgorithm,proto3,enum=kms.SigningAlgorithmSpec,oneof" json:"signingalgorithm,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -10360,8 +10360,8 @@ func (x *VerifyResponse) GetSignaturevalid() bool {
 }
 
 func (x *VerifyResponse) GetSigningalgorithm() SigningAlgorithmSpec {
-	if x != nil {
-		return x.Signingalgorithm
+	if x != nil && x.Signingalgorithm != nil {
+		return *x.Signingalgorithm
 	}
 	return SigningAlgorithmSpec_SIGNING_ALGORITHM_SPEC_ECDSA_SHA_384
 }
@@ -10595,13 +10595,13 @@ func (x *XksProxyAuthenticationCredentialType) GetRawsecretaccesskey() string {
 }
 
 type XksProxyConfigurationType struct {
-	state                   protoimpl.MessageState   `protogen:"open.v1"`
-	Accesskeyid             *string                  `protobuf:"bytes,453893024,opt,name=accesskeyid,proto3,oneof" json:"accesskeyid,omitempty"`
-	Connectivity            XksProxyConnectivityType `protobuf:"varint,210638147,opt,name=connectivity,proto3,enum=kms.XksProxyConnectivityType" json:"connectivity,omitempty"`
-	Uriendpoint             *string                  `protobuf:"bytes,79142005,opt,name=uriendpoint,proto3,oneof" json:"uriendpoint,omitempty"`
-	Uripath                 *string                  `protobuf:"bytes,288340351,opt,name=uripath,proto3,oneof" json:"uripath,omitempty"`
-	Vpcendpointservicename  *string                  `protobuf:"bytes,269882444,opt,name=vpcendpointservicename,proto3,oneof" json:"vpcendpointservicename,omitempty"`
-	Vpcendpointserviceowner *string                  `protobuf:"bytes,298819456,opt,name=vpcendpointserviceowner,proto3,oneof" json:"vpcendpointserviceowner,omitempty"`
+	state                   protoimpl.MessageState    `protogen:"open.v1"`
+	Accesskeyid             *string                   `protobuf:"bytes,453893024,opt,name=accesskeyid,proto3,oneof" json:"accesskeyid,omitempty"`
+	Connectivity            *XksProxyConnectivityType `protobuf:"varint,210638147,opt,name=connectivity,proto3,enum=kms.XksProxyConnectivityType,oneof" json:"connectivity,omitempty"`
+	Uriendpoint             *string                   `protobuf:"bytes,79142005,opt,name=uriendpoint,proto3,oneof" json:"uriendpoint,omitempty"`
+	Uripath                 *string                   `protobuf:"bytes,288340351,opt,name=uripath,proto3,oneof" json:"uripath,omitempty"`
+	Vpcendpointservicename  *string                   `protobuf:"bytes,269882444,opt,name=vpcendpointservicename,proto3,oneof" json:"vpcendpointservicename,omitempty"`
+	Vpcendpointserviceowner *string                   `protobuf:"bytes,298819456,opt,name=vpcendpointserviceowner,proto3,oneof" json:"vpcendpointserviceowner,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -10644,8 +10644,8 @@ func (x *XksProxyConfigurationType) GetAccesskeyid() string {
 }
 
 func (x *XksProxyConfigurationType) GetConnectivity() XksProxyConnectivityType {
-	if x != nil {
-		return x.Connectivity
+	if x != nil && x.Connectivity != nil {
+		return *x.Connectivity
 	}
 	return XksProxyConnectivityType_XKS_PROXY_CONNECTIVITY_TYPE_VPC_ENDPOINT_SERVICE
 }
@@ -11129,22 +11129,24 @@ const file_kms_proto_rawDesc = "" +
 	"\x1dConnectCustomKeyStoreResponse\"\\\n" +
 	"\x12CreateAliasRequest\x12 \n" +
 	"\taliasname\x18\x95\xa7\xaf\x95\x01 \x01(\tR\taliasname\x12$\n" +
-	"\vtargetkeyid\x18\x9b\x9f\xd8\xc1\x01 \x01(\tR\vtargetkeyid\"\xe4\a\n" +
+	"\vtargetkeyid\x18\x9b\x9f\xd8\xc1\x01 \x01(\tR\vtargetkeyid\"\x9e\b\n" +
 	"\x1bCreateCustomKeyStoreRequest\x124\n" +
 	"\x11cloudhsmclusterid\x18´\xf8\x1a \x01(\tH\x00R\x11cloudhsmclusterid\x88\x01\x01\x121\n" +
-	"\x12customkeystorename\x18\x9e\xf9\x98Q \x01(\tR\x12customkeystorename\x12K\n" +
-	"\x12customkeystoretype\x18\xff\x8a\x99\xc6\x01 \x01(\x0e2\x17.kms.CustomKeyStoreTypeR\x12customkeystoretype\x123\n" +
-	"\x10keystorepassword\x18ᾝ\xc0\x01 \x01(\tH\x01R\x10keystorepassword\x88\x01\x01\x12>\n" +
-	"\x16trustanchorcertificate\x18\x9c\xaa\x87\x17 \x01(\tH\x02R\x16trustanchorcertificate\x88\x01\x01\x12y\n" +
-	" xksproxyauthenticationcredential\x18\x97ꋧ\x01 \x01(\v2).kms.XksProxyAuthenticationCredentialTypeR xksproxyauthenticationcredential\x12U\n" +
-	"\x14xksproxyconnectivity\x18ɛ\xaf\x8e\x01 \x01(\x0e2\x1d.kms.XksProxyConnectivityTypeR\x14xksproxyconnectivity\x129\n" +
-	"\x13xksproxyuriendpoint\x18\x87\x99\xa6\x82\x01 \x01(\tH\x03R\x13xksproxyuriendpoint\x88\x01\x01\x121\n" +
-	"\x0fxksproxyuripath\x18娡\xd0\x01 \x01(\tH\x04R\x0fxksproxyuripath\x88\x01\x01\x12O\n" +
-	"\x1exksproxyvpcendpointservicename\x18҇\xe1\xb1\x01 \x01(\tH\x05R\x1exksproxyvpcendpointservicename\x88\x01\x01\x12P\n" +
-	"\x1fxksproxyvpcendpointserviceowner\x18\xb6\x95\xac\x1a \x01(\tH\x06R\x1fxksproxyvpcendpointserviceowner\x88\x01\x01B\x14\n" +
-	"\x12_cloudhsmclusteridB\x13\n" +
+	"\x12customkeystorename\x18\x9e\xf9\x98Q \x01(\tR\x12customkeystorename\x12P\n" +
+	"\x12customkeystoretype\x18\xff\x8a\x99\xc6\x01 \x01(\x0e2\x17.kms.CustomKeyStoreTypeH\x01R\x12customkeystoretype\x88\x01\x01\x123\n" +
+	"\x10keystorepassword\x18ᾝ\xc0\x01 \x01(\tH\x02R\x10keystorepassword\x88\x01\x01\x12>\n" +
+	"\x16trustanchorcertificate\x18\x9c\xaa\x87\x17 \x01(\tH\x03R\x16trustanchorcertificate\x88\x01\x01\x12y\n" +
+	" xksproxyauthenticationcredential\x18\x97ꋧ\x01 \x01(\v2).kms.XksProxyAuthenticationCredentialTypeR xksproxyauthenticationcredential\x12Z\n" +
+	"\x14xksproxyconnectivity\x18ɛ\xaf\x8e\x01 \x01(\x0e2\x1d.kms.XksProxyConnectivityTypeH\x04R\x14xksproxyconnectivity\x88\x01\x01\x129\n" +
+	"\x13xksproxyuriendpoint\x18\x87\x99\xa6\x82\x01 \x01(\tH\x05R\x13xksproxyuriendpoint\x88\x01\x01\x121\n" +
+	"\x0fxksproxyuripath\x18娡\xd0\x01 \x01(\tH\x06R\x0fxksproxyuripath\x88\x01\x01\x12O\n" +
+	"\x1exksproxyvpcendpointservicename\x18҇\xe1\xb1\x01 \x01(\tH\aR\x1exksproxyvpcendpointservicename\x88\x01\x01\x12P\n" +
+	"\x1fxksproxyvpcendpointserviceowner\x18\xb6\x95\xac\x1a \x01(\tH\bR\x1fxksproxyvpcendpointserviceowner\x88\x01\x01B\x14\n" +
+	"\x12_cloudhsmclusteridB\x15\n" +
+	"\x13_customkeystoretypeB\x13\n" +
 	"\x11_keystorepasswordB\x19\n" +
-	"\x17_trustanchorcertificateB\x16\n" +
+	"\x17_trustanchorcertificateB\x17\n" +
+	"\x15_xksproxyconnectivityB\x16\n" +
 	"\x14_xksproxyuriendpointB\x12\n" +
 	"\x10_xksproxyuripathB!\n" +
 	"\x1f_xksproxyvpcendpointservicenameB\"\n" +
@@ -11178,23 +11180,28 @@ const file_kms_proto_rawDesc = "" +
 	"granttoken\x88\x01\x01B\n" +
 	"\n" +
 	"\b_grantidB\r\n" +
-	"\v_granttoken\"\xa3\x05\n" +
+	"\v_granttoken\"\xf5\x05\n" +
 	"\x10CreateKeyRequest\x12N\n" +
 	"\x1ebypasspolicylockoutsafetycheck\x18\xe3\xde\xceT \x01(\bH\x00R\x1ebypasspolicylockoutsafetycheck\x88\x01\x01\x122\n" +
-	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tH\x01R\x10customkeystoreid\x88\x01\x01\x12T\n" +
-	"\x15customermasterkeyspec\x18\x92\xab\xa5\xe1\x01 \x01(\x0e2\x1a.kms.CustomerMasterKeySpecR\x15customermasterkeyspec\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x02R\vdescription\x88\x01\x01\x12)\n" +
-	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\f.kms.KeySpecR\akeyspec\x121\n" +
-	"\bkeyusage\x18\x84䪪\x01 \x01(\x0e2\x11.kms.KeyUsageTypeR\bkeyusage\x12)\n" +
-	"\vmultiregion\x18\x8f\x97\xbe\xc1\x01 \x01(\bH\x03R\vmultiregion\x88\x01\x01\x12+\n" +
-	"\x06origin\x18\xf0\xa8\xcc\xfc\x01 \x01(\x0e2\x0f.kms.OriginTypeR\x06origin\x12\x1f\n" +
-	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tH\x04R\x06policy\x88\x01\x01\x12 \n" +
+	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tH\x01R\x10customkeystoreid\x88\x01\x01\x12Y\n" +
+	"\x15customermasterkeyspec\x18\x92\xab\xa5\xe1\x01 \x01(\x0e2\x1a.kms.CustomerMasterKeySpecH\x02R\x15customermasterkeyspec\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12.\n" +
+	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\f.kms.KeySpecH\x04R\akeyspec\x88\x01\x01\x126\n" +
+	"\bkeyusage\x18\x84䪪\x01 \x01(\x0e2\x11.kms.KeyUsageTypeH\x05R\bkeyusage\x88\x01\x01\x12)\n" +
+	"\vmultiregion\x18\x8f\x97\xbe\xc1\x01 \x01(\bH\x06R\vmultiregion\x88\x01\x01\x120\n" +
+	"\x06origin\x18\xf0\xa8\xcc\xfc\x01 \x01(\x0e2\x0f.kms.OriginTypeH\aR\x06origin\x88\x01\x01\x12\x1f\n" +
+	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tH\bR\x06policy\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.kms.TagR\x04tags\x12\"\n" +
-	"\bxkskeyid\x18\xd2\xf8\x83\x06 \x01(\tH\x05R\bxkskeyid\x88\x01\x01B!\n" +
+	"\bxkskeyid\x18\xd2\xf8\x83\x06 \x01(\tH\tR\bxkskeyid\x88\x01\x01B!\n" +
 	"\x1f_bypasspolicylockoutsafetycheckB\x13\n" +
-	"\x11_customkeystoreidB\x0e\n" +
-	"\f_descriptionB\x0e\n" +
+	"\x11_customkeystoreidB\x18\n" +
+	"\x16_customermasterkeyspecB\x0e\n" +
+	"\f_descriptionB\n" +
+	"\n" +
+	"\b_keyspecB\v\n" +
+	"\t_keyusageB\x0e\n" +
 	"\f_multiregionB\t\n" +
+	"\a_originB\t\n" +
 	"\a_policyB\v\n" +
 	"\t_xkskeyid\"J\n" +
 	"\x11CreateKeyResponse\x125\n" +
@@ -11214,44 +11221,49 @@ const file_kms_proto_rawDesc = "" +
 	"\x1fCustomKeyStoreNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xda\x05\n" +
+	"\b_message\"\xac\x06\n" +
 	"\x18CustomKeyStoresListEntry\x124\n" +
-	"\x11cloudhsmclusterid\x18´\xf8\x1a \x01(\tH\x00R\x11cloudhsmclusterid\x88\x01\x01\x12R\n" +
-	"\x13connectionerrorcode\x18\xbd\xb8\xf9\x9a\x01 \x01(\x0e2\x1c.kms.ConnectionErrorCodeTypeR\x13connectionerrorcode\x12F\n" +
-	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2\x18.kms.ConnectionStateTypeR\x0fconnectionstate\x12+\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x01R\fcreationdate\x88\x01\x01\x122\n" +
-	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tH\x02R\x10customkeystoreid\x88\x01\x01\x126\n" +
-	"\x12customkeystorename\x18\x9e\xf9\x98Q \x01(\tH\x03R\x12customkeystorename\x88\x01\x01\x12K\n" +
-	"\x12customkeystoretype\x18\xff\x8a\x99\xc6\x01 \x01(\x0e2\x17.kms.CustomKeyStoreTypeR\x12customkeystoretype\x12>\n" +
-	"\x16trustanchorcertificate\x18\x9c\xaa\x87\x17 \x01(\tH\x04R\x16trustanchorcertificate\x88\x01\x01\x12X\n" +
+	"\x11cloudhsmclusterid\x18´\xf8\x1a \x01(\tH\x00R\x11cloudhsmclusterid\x88\x01\x01\x12W\n" +
+	"\x13connectionerrorcode\x18\xbd\xb8\xf9\x9a\x01 \x01(\x0e2\x1c.kms.ConnectionErrorCodeTypeH\x01R\x13connectionerrorcode\x88\x01\x01\x12K\n" +
+	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2\x18.kms.ConnectionStateTypeH\x02R\x0fconnectionstate\x88\x01\x01\x12+\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x03R\fcreationdate\x88\x01\x01\x122\n" +
+	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tH\x04R\x10customkeystoreid\x88\x01\x01\x126\n" +
+	"\x12customkeystorename\x18\x9e\xf9\x98Q \x01(\tH\x05R\x12customkeystorename\x88\x01\x01\x12P\n" +
+	"\x12customkeystoretype\x18\xff\x8a\x99\xc6\x01 \x01(\x0e2\x17.kms.CustomKeyStoreTypeH\x06R\x12customkeystoretype\x88\x01\x01\x12>\n" +
+	"\x16trustanchorcertificate\x18\x9c\xaa\x87\x17 \x01(\tH\aR\x16trustanchorcertificate\x88\x01\x01\x12X\n" +
 	"\x15xksproxyconfiguration\x18\x94\x98\xb8\xa6\x01 \x01(\v2\x1e.kms.XksProxyConfigurationTypeR\x15xksproxyconfigurationB\x14\n" +
-	"\x12_cloudhsmclusteridB\x0f\n" +
+	"\x12_cloudhsmclusteridB\x16\n" +
+	"\x14_connectionerrorcodeB\x12\n" +
+	"\x10_connectionstateB\x0f\n" +
 	"\r_creationdateB\x13\n" +
 	"\x11_customkeystoreidB\x15\n" +
-	"\x13_customkeystorenameB\x19\n" +
-	"\x17_trustanchorcertificate\"\xc1\x04\n" +
+	"\x13_customkeystorenameB\x15\n" +
+	"\x13_customkeystoretypeB\x19\n" +
+	"\x17_trustanchorcertificate\"\xde\x04\n" +
 	"\x0eDecryptRequest\x12/\n" +
 	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fH\x00R\x0eciphertextblob\x88\x01\x01\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x01R\x06dryrun\x88\x01\x01\x12D\n" +
-	"\x0fdryrunmodifiers\x18\xb8\xfe\xcd\v \x03(\x0e2\x17.kms.DryRunModifierTypeR\x0fdryrunmodifiers\x12Q\n" +
-	"\x13encryptionalgorithm\x18\x8a\xec\xf3` \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x13encryptionalgorithm\x12\\\n" +
+	"\x0fdryrunmodifiers\x18\xb8\xfe\xcd\v \x03(\x0e2\x17.kms.DryRunModifierTypeR\x0fdryrunmodifiers\x12V\n" +
+	"\x13encryptionalgorithm\x18\x8a\xec\xf3` \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecH\x02R\x13encryptionalgorithm\x88\x01\x01\x12\\\n" +
 	"\x11encryptioncontext\x18\xc0\xa4\xbf\x88\x01 \x03(\v2*.kms.DecryptRequest.EncryptioncontextEntryR\x11encryptioncontext\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x02R\x05keyid\x88\x01\x01\x124\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x03R\x05keyid\x88\x01\x01\x124\n" +
 	"\trecipient\x18\x99\xc8\xd4\xd4\x01 \x01(\v2\x12.kms.RecipientInfoR\trecipient\x1aD\n" +
 	"\x16EncryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
 	"\x0f_ciphertextblobB\t\n" +
-	"\a_dryrunB\b\n" +
-	"\x06_keyid\"\xdc\x02\n" +
+	"\a_dryrunB\x16\n" +
+	"\x14_encryptionalgorithmB\b\n" +
+	"\x06_keyid\"\xf9\x02\n" +
 	"\x0fDecryptResponse\x12>\n" +
-	"\x16ciphertextforrecipient\x18\x8c\xf3\xf3# \x01(\fH\x00R\x16ciphertextforrecipient\x88\x01\x01\x12Q\n" +
-	"\x13encryptionalgorithm\x18\x8a\xec\xf3` \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x13encryptionalgorithm\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x01R\x05keyid\x88\x01\x01\x12,\n" +
-	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x02R\rkeymaterialid\x88\x01\x01\x12$\n" +
-	"\tplaintext\x18\xc1\x81\x90* \x01(\fH\x03R\tplaintext\x88\x01\x01B\x19\n" +
-	"\x17_ciphertextforrecipientB\b\n" +
+	"\x16ciphertextforrecipient\x18\x8c\xf3\xf3# \x01(\fH\x00R\x16ciphertextforrecipient\x88\x01\x01\x12V\n" +
+	"\x13encryptionalgorithm\x18\x8a\xec\xf3` \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecH\x01R\x13encryptionalgorithm\x88\x01\x01\x12\x1d\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x02R\x05keyid\x88\x01\x01\x12,\n" +
+	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x03R\rkeymaterialid\x88\x01\x01\x12$\n" +
+	"\tplaintext\x18\xc1\x81\x90* \x01(\fH\x04R\tplaintext\x88\x01\x01B\x19\n" +
+	"\x17_ciphertextforrecipientB\x16\n" +
+	"\x14_encryptionalgorithmB\b\n" +
 	"\x06_keyidB\x10\n" +
 	"\x0e_keymaterialidB\f\n" +
 	"\n" +
@@ -11281,15 +11293,18 @@ const file_kms_proto_rawDesc = "" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1f\n" +
 	"\tpublickey\x18\xe0\xae\xe5O \x01(\fR\tpublickey\x124\n" +
 	"\trecipient\x18\x99\xc8\xd4\xd4\x01 \x01(\v2\x12.kms.RecipientInfoR\trecipientB\t\n" +
-	"\a_dryrun\"\xe9\x02\n" +
+	"\a_dryrun\"\x9b\x03\n" +
 	"\x1aDeriveSharedSecretResponse\x12>\n" +
-	"\x16ciphertextforrecipient\x18\x8c\xf3\xf3# \x01(\fH\x00R\x16ciphertextforrecipient\x88\x01\x01\x12W\n" +
-	"\x15keyagreementalgorithm\x18\xb6\xbf\xa3/ \x01(\x0e2\x1e.kms.KeyAgreementAlgorithmSpecR\x15keyagreementalgorithm\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x01R\x05keyid\x88\x01\x01\x120\n" +
-	"\tkeyorigin\x18\xb7\xb8\xa3\x18 \x01(\x0e2\x0f.kms.OriginTypeR\tkeyorigin\x12+\n" +
-	"\fsharedsecret\x18\xd9\xf9ȶ\x01 \x01(\fH\x02R\fsharedsecret\x88\x01\x01B\x19\n" +
-	"\x17_ciphertextforrecipientB\b\n" +
-	"\x06_keyidB\x0f\n" +
+	"\x16ciphertextforrecipient\x18\x8c\xf3\xf3# \x01(\fH\x00R\x16ciphertextforrecipient\x88\x01\x01\x12\\\n" +
+	"\x15keyagreementalgorithm\x18\xb6\xbf\xa3/ \x01(\x0e2\x1e.kms.KeyAgreementAlgorithmSpecH\x01R\x15keyagreementalgorithm\x88\x01\x01\x12\x1d\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x02R\x05keyid\x88\x01\x01\x125\n" +
+	"\tkeyorigin\x18\xb7\xb8\xa3\x18 \x01(\x0e2\x0f.kms.OriginTypeH\x03R\tkeyorigin\x88\x01\x01\x12+\n" +
+	"\fsharedsecret\x18\xd9\xf9ȶ\x01 \x01(\fH\x04R\fsharedsecret\x88\x01\x01B\x19\n" +
+	"\x17_ciphertextforrecipientB\x18\n" +
+	"\x16_keyagreementalgorithmB\b\n" +
+	"\x06_keyidB\f\n" +
+	"\n" +
+	"_keyoriginB\x0f\n" +
 	"\r_sharedsecret\"\x8c\x02\n" +
 	"\x1eDescribeCustomKeyStoresRequest\x122\n" +
 	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tH\x00R\x10customkeystoreid\x88\x01\x01\x126\n" +
@@ -11334,10 +11349,10 @@ const file_kms_proto_rawDesc = "" +
 	"\x18EnableKeyRotationRequest\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12:\n" +
 	"\x14rotationperiodindays\x18\xef\xf9\xb78 \x01(\x05H\x00R\x14rotationperiodindays\x88\x01\x01B\x17\n" +
-	"\x15_rotationperiodindays\"\x93\x03\n" +
+	"\x15_rotationperiodindays\"\xb0\x03\n" +
 	"\x0eEncryptRequest\x12\x1e\n" +
-	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12Q\n" +
-	"\x13encryptionalgorithm\x18\x8a\xec\xf3` \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x13encryptionalgorithm\x12\\\n" +
+	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12V\n" +
+	"\x13encryptionalgorithm\x18\x8a\xec\xf3` \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecH\x01R\x13encryptionalgorithm\x88\x01\x01\x12\\\n" +
 	"\x11encryptioncontext\x18\xc0\xa4\xbf\x88\x01 \x03(\v2*.kms.EncryptRequest.EncryptioncontextEntryR\x11encryptioncontext\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1f\n" +
@@ -11345,12 +11360,14 @@ const file_kms_proto_rawDesc = "" +
 	"\x16EncryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\t\n" +
-	"\a_dryrun\"\xd1\x01\n" +
+	"\a_dryrunB\x16\n" +
+	"\x14_encryptionalgorithm\"\xee\x01\n" +
 	"\x0fEncryptResponse\x12/\n" +
-	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fH\x00R\x0eciphertextblob\x88\x01\x01\x12Q\n" +
-	"\x13encryptionalgorithm\x18\x8a\xec\xf3` \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x13encryptionalgorithm\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x01R\x05keyid\x88\x01\x01B\x11\n" +
-	"\x0f_ciphertextblobB\b\n" +
+	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fH\x00R\x0eciphertextblob\x88\x01\x01\x12V\n" +
+	"\x13encryptionalgorithm\x18\x8a\xec\xf3` \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecH\x01R\x13encryptionalgorithm\x88\x01\x01\x12\x1d\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x02R\x05keyid\x88\x01\x01B\x11\n" +
+	"\x0f_ciphertextblobB\x16\n" +
+	"\x14_encryptionalgorithmB\b\n" +
 	"\x06_keyid\"K\n" +
 	"\x1bExpiredImportTokenException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -11366,18 +11383,19 @@ const file_kms_proto_rawDesc = "" +
 	"\x16EncryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\t\n" +
-	"\a_dryrun\"\x85\x04\n" +
+	"\a_dryrun\"\x9a\x04\n" +
 	"\x1bGenerateDataKeyPairResponse\x12>\n" +
 	"\x16ciphertextforrecipient\x18\x8c\xf3\xf3# \x01(\fH\x00R\x16ciphertextforrecipient\x88\x01\x01\x12\x1d\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x01R\x05keyid\x88\x01\x01\x12,\n" +
-	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x02R\rkeymaterialid\x88\x01\x01\x129\n" +
-	"\vkeypairspec\x18\xbc\xbf\x85D \x01(\x0e2\x14.kms.DataKeyPairSpecR\vkeypairspec\x12C\n" +
-	"\x18privatekeyciphertextblob\x18\x81\xf6\xe3\x8c\x01 \x01(\fH\x03R\x18privatekeyciphertextblob\x88\x01\x01\x129\n" +
-	"\x13privatekeyplaintext\x18總\xc9\x01 \x01(\fH\x04R\x13privatekeyplaintext\x88\x01\x01\x12$\n" +
-	"\tpublickey\x18\xe0\xae\xe5O \x01(\fH\x05R\tpublickey\x88\x01\x01B\x19\n" +
+	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x02R\rkeymaterialid\x88\x01\x01\x12>\n" +
+	"\vkeypairspec\x18\xbc\xbf\x85D \x01(\x0e2\x14.kms.DataKeyPairSpecH\x03R\vkeypairspec\x88\x01\x01\x12C\n" +
+	"\x18privatekeyciphertextblob\x18\x81\xf6\xe3\x8c\x01 \x01(\fH\x04R\x18privatekeyciphertextblob\x88\x01\x01\x129\n" +
+	"\x13privatekeyplaintext\x18總\xc9\x01 \x01(\fH\x05R\x13privatekeyplaintext\x88\x01\x01\x12$\n" +
+	"\tpublickey\x18\xe0\xae\xe5O \x01(\fH\x06R\tpublickey\x88\x01\x01B\x19\n" +
 	"\x17_ciphertextforrecipientB\b\n" +
 	"\x06_keyidB\x10\n" +
-	"\x0e_keymaterialidB\x1b\n" +
+	"\x0e_keymaterialidB\x0e\n" +
+	"\f_keypairspecB\x1b\n" +
 	"\x19_privatekeyciphertextblobB\x16\n" +
 	"\x14_privatekeyplaintextB\f\n" +
 	"\n" +
@@ -11391,30 +11409,33 @@ const file_kms_proto_rawDesc = "" +
 	"\x16EncryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\t\n" +
-	"\a_dryrun\"\xe7\x02\n" +
+	"\a_dryrun\"\xfc\x02\n" +
 	"+GenerateDataKeyPairWithoutPlaintextResponse\x12\x1d\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12,\n" +
-	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x01R\rkeymaterialid\x88\x01\x01\x129\n" +
-	"\vkeypairspec\x18\xbc\xbf\x85D \x01(\x0e2\x14.kms.DataKeyPairSpecR\vkeypairspec\x12C\n" +
-	"\x18privatekeyciphertextblob\x18\x81\xf6\xe3\x8c\x01 \x01(\fH\x02R\x18privatekeyciphertextblob\x88\x01\x01\x12$\n" +
-	"\tpublickey\x18\xe0\xae\xe5O \x01(\fH\x03R\tpublickey\x88\x01\x01B\b\n" +
+	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x01R\rkeymaterialid\x88\x01\x01\x12>\n" +
+	"\vkeypairspec\x18\xbc\xbf\x85D \x01(\x0e2\x14.kms.DataKeyPairSpecH\x02R\vkeypairspec\x88\x01\x01\x12C\n" +
+	"\x18privatekeyciphertextblob\x18\x81\xf6\xe3\x8c\x01 \x01(\fH\x03R\x18privatekeyciphertextblob\x88\x01\x01\x12$\n" +
+	"\tpublickey\x18\xe0\xae\xe5O \x01(\fH\x04R\tpublickey\x88\x01\x01B\b\n" +
 	"\x06_keyidB\x10\n" +
-	"\x0e_keymaterialidB\x1b\n" +
+	"\x0e_keymaterialidB\x0e\n" +
+	"\f_keypairspecB\x1b\n" +
 	"\x19_privatekeyciphertextblobB\f\n" +
 	"\n" +
-	"_publickey\"\xd5\x03\n" +
+	"_publickey\"\xe6\x03\n" +
 	"\x16GenerateDataKeyRequest\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12d\n" +
 	"\x11encryptioncontext\x18\xc0\xa4\xbf\x88\x01 \x03(\v22.kms.GenerateDataKeyRequest.EncryptioncontextEntryR\x11encryptioncontext\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12-\n" +
-	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\x10.kms.DataKeySpecR\akeyspec\x12-\n" +
-	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05H\x01R\rnumberofbytes\x88\x01\x01\x124\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x122\n" +
+	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\x10.kms.DataKeySpecH\x01R\akeyspec\x88\x01\x01\x12-\n" +
+	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05H\x02R\rnumberofbytes\x88\x01\x01\x124\n" +
 	"\trecipient\x18\x99\xc8\xd4\xd4\x01 \x01(\v2\x12.kms.RecipientInfoR\trecipient\x1aD\n" +
 	"\x16EncryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\t\n" +
-	"\a_dryrunB\x10\n" +
+	"\a_dryrunB\n" +
+	"\n" +
+	"\b_keyspecB\x10\n" +
 	"\x0e_numberofbytes\"\xd5\x02\n" +
 	"\x17GenerateDataKeyResponse\x12/\n" +
 	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fH\x00R\x0eciphertextblob\x88\x01\x01\x12>\n" +
@@ -11427,18 +11448,20 @@ const file_kms_proto_rawDesc = "" +
 	"\x06_keyidB\x10\n" +
 	"\x0e_keymaterialidB\f\n" +
 	"\n" +
-	"_plaintext\"\xbf\x03\n" +
+	"_plaintext\"\xd0\x03\n" +
 	"&GenerateDataKeyWithoutPlaintextRequest\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12t\n" +
 	"\x11encryptioncontext\x18\xc0\xa4\xbf\x88\x01 \x03(\v2B.kms.GenerateDataKeyWithoutPlaintextRequest.EncryptioncontextEntryR\x11encryptioncontext\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12-\n" +
-	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\x10.kms.DataKeySpecR\akeyspec\x12-\n" +
-	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05H\x01R\rnumberofbytes\x88\x01\x01\x1aD\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x122\n" +
+	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\x10.kms.DataKeySpecH\x01R\akeyspec\x88\x01\x01\x12-\n" +
+	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05H\x02R\rnumberofbytes\x88\x01\x01\x1aD\n" +
 	"\x16EncryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\t\n" +
-	"\a_dryrunB\x10\n" +
+	"\a_dryrunB\n" +
+	"\n" +
+	"\b_keyspecB\x10\n" +
 	"\x0e_numberofbytes\"\xd6\x01\n" +
 	"'GenerateDataKeyWithoutPlaintextResponse\x12/\n" +
 	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fH\x00R\x0eciphertextblob\x88\x01\x01\x12\x1d\n" +
@@ -11453,13 +11476,14 @@ const file_kms_proto_rawDesc = "" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12<\n" +
 	"\fmacalgorithm\x18\x86\xd0\xf1x \x01(\x0e2\x15.kms.MacAlgorithmSpecR\fmacalgorithm\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\fR\amessageB\t\n" +
-	"\a_dryrun\"\x9f\x01\n" +
+	"\a_dryrun\"\xb5\x01\n" +
 	"\x13GenerateMacResponse\x12\x1d\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12\x19\n" +
-	"\x03mac\x18ɉ\xa0\x8d\x01 \x01(\fH\x01R\x03mac\x88\x01\x01\x12<\n" +
-	"\fmacalgorithm\x18\x86\xd0\xf1x \x01(\x0e2\x15.kms.MacAlgorithmSpecR\fmacalgorithmB\b\n" +
+	"\x03mac\x18ɉ\xa0\x8d\x01 \x01(\fH\x01R\x03mac\x88\x01\x01\x12A\n" +
+	"\fmacalgorithm\x18\x86\xd0\xf1x \x01(\x0e2\x15.kms.MacAlgorithmSpecH\x02R\fmacalgorithm\x88\x01\x01B\b\n" +
 	"\x06_keyidB\x06\n" +
-	"\x04_mac\"\xd7\x01\n" +
+	"\x04_macB\x0f\n" +
+	"\r_macalgorithm\"\xd7\x01\n" +
 	"\x15GenerateRandomRequest\x122\n" +
 	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tH\x00R\x10customkeystoreid\x88\x01\x01\x12-\n" +
 	"\rnumberofbytes\x18\xf9\xff\x8f\x84\x01 \x01(\x05H\x01R\rnumberofbytes\x88\x01\x01\x124\n" +
@@ -11524,17 +11548,21 @@ const file_kms_proto_rawDesc = "" +
 	"_publickey\"U\n" +
 	"\x13GetPublicKeyRequest\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\"\xa5\x04\n" +
-	"\x14GetPublicKeyResponse\x12T\n" +
-	"\x15customermasterkeyspec\x18\x92\xab\xa5\xe1\x01 \x01(\x0e2\x1a.kms.CustomerMasterKeySpecR\x15customermasterkeyspec\x12S\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\"\xe7\x04\n" +
+	"\x14GetPublicKeyResponse\x12Y\n" +
+	"\x15customermasterkeyspec\x18\x92\xab\xa5\xe1\x01 \x01(\x0e2\x1a.kms.CustomerMasterKeySpecH\x00R\x15customermasterkeyspec\x88\x01\x01\x12S\n" +
 	"\x14encryptionalgorithms\x18\x8f\x84\xe0\\ \x03(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x14encryptionalgorithms\x12Z\n" +
 	"\x16keyagreementalgorithms\x18\xb3\x89\xe1\x9c\x01 \x03(\x0e2\x1e.kms.KeyAgreementAlgorithmSpecR\x16keyagreementalgorithms\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12)\n" +
-	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\f.kms.KeySpecR\akeyspec\x121\n" +
-	"\bkeyusage\x18\x84䪪\x01 \x01(\x0e2\x11.kms.KeyUsageTypeR\bkeyusage\x12$\n" +
-	"\tpublickey\x18\xe0\xae\xe5O \x01(\fH\x01R\tpublickey\x88\x01\x01\x12K\n" +
-	"\x11signingalgorithms\x18\xb7Ь\xf2\x01 \x03(\x0e2\x19.kms.SigningAlgorithmSpecR\x11signingalgorithmsB\b\n" +
-	"\x06_keyidB\f\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x01R\x05keyid\x88\x01\x01\x12.\n" +
+	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\f.kms.KeySpecH\x02R\akeyspec\x88\x01\x01\x126\n" +
+	"\bkeyusage\x18\x84䪪\x01 \x01(\x0e2\x11.kms.KeyUsageTypeH\x03R\bkeyusage\x88\x01\x01\x12$\n" +
+	"\tpublickey\x18\xe0\xae\xe5O \x01(\fH\x04R\tpublickey\x88\x01\x01\x12K\n" +
+	"\x11signingalgorithms\x18\xb7Ь\xf2\x01 \x03(\x0e2\x19.kms.SigningAlgorithmSpecR\x11signingalgorithmsB\x18\n" +
+	"\x16_customermasterkeyspecB\b\n" +
+	"\x06_keyidB\n" +
+	"\n" +
+	"\b_keyspecB\v\n" +
+	"\t_keyusageB\f\n" +
 	"\n" +
 	"_publickey\"\xc1\x03\n" +
 	"\x10GrantConstraints\x12o\n" +
@@ -11572,18 +11600,20 @@ const file_kms_proto_rawDesc = "" +
 	"\x06_keyidB\a\n" +
 	"\x05_nameB\x14\n" +
 	"\x12_retiringprincipalB\x1b\n" +
-	"\x19_retiringserviceprincipal\"\xd8\x03\n" +
+	"\x19_retiringserviceprincipal\"\x85\x04\n" +
 	"\x18ImportKeyMaterialRequest\x125\n" +
-	"\x14encryptedkeymaterial\x18\xb0\xba\xc2\x01 \x01(\fR\x14encryptedkeymaterial\x12E\n" +
-	"\x0fexpirationmodel\x18\xf6\xf9\xa96 \x01(\x0e2\x18.kms.ExpirationModelTypeR\x0fexpirationmodel\x12$\n" +
-	"\vimporttoken\x18\xd2Õ\xdc\x01 \x01(\fR\vimporttoken\x123\n" +
+	"\x14encryptedkeymaterial\x18\xb0\xba\xc2\x01 \x01(\fR\x14encryptedkeymaterial\x12J\n" +
+	"\x0fexpirationmodel\x18\xf6\xf9\xa96 \x01(\x0e2\x18.kms.ExpirationModelTypeH\x00R\x0fexpirationmodel\x88\x01\x01\x12$\n" +
+	"\vimporttoken\x18\xd2Õ\xdc\x01 \x01(\fR\vimporttoken\x128\n" +
 	"\n" +
-	"importtype\x18\xbd\xbc\xa6\x9e\x01 \x01(\x0e2\x0f.kms.ImportTypeR\n" +
-	"importtype\x12\x18\n" +
+	"importtype\x18\xbd\xbc\xa6\x9e\x01 \x01(\x0e2\x0f.kms.ImportTypeH\x01R\n" +
+	"importtype\x88\x01\x01\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12?\n" +
-	"\x16keymaterialdescription\x18\x8a\x8e\x94\x84\x01 \x01(\tH\x00R\x16keymaterialdescription\x88\x01\x01\x12,\n" +
-	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x01R\rkeymaterialid\x88\x01\x01\x12!\n" +
-	"\avalidto\x18ћ\xa0\xf9\x01 \x01(\tH\x02R\avalidto\x88\x01\x01B\x19\n" +
+	"\x16keymaterialdescription\x18\x8a\x8e\x94\x84\x01 \x01(\tH\x02R\x16keymaterialdescription\x88\x01\x01\x12,\n" +
+	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x03R\rkeymaterialid\x88\x01\x01\x12!\n" +
+	"\avalidto\x18ћ\xa0\xf9\x01 \x01(\tH\x04R\avalidto\x88\x01\x01B\x12\n" +
+	"\x10_expirationmodelB\r\n" +
+	"\v_importtypeB\x19\n" +
 	"\x17_keymaterialdescriptionB\x10\n" +
 	"\x0e_keymaterialidB\n" +
 	"\n" +
@@ -11652,62 +11682,72 @@ const file_kms_proto_rawDesc = "" +
 	"\x18KMSInvalidStateException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x95\x02\n" +
+	"\b_message\"\xa8\x02\n" +
 	"\x10KeyLastUsageData\x124\n" +
 	"\x11cloudtraileventid\x18\x9c̓0 \x01(\tH\x00R\x11cloudtraileventid\x88\x01\x01\x12+\n" +
-	"\fkmsrequestid\x18Æ\xfe\xcb\x01 \x01(\tH\x01R\fkmsrequestid\x88\x01\x01\x12C\n" +
-	"\toperation\x18\xa7\x85\xb8\f \x01(\x0e2\".kms.KeyLastUsageTrackingOperationR\toperation\x12$\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tH\x02R\ttimestamp\x88\x01\x01B\x14\n" +
+	"\fkmsrequestid\x18Æ\xfe\xcb\x01 \x01(\tH\x01R\fkmsrequestid\x88\x01\x01\x12H\n" +
+	"\toperation\x18\xa7\x85\xb8\f \x01(\x0e2\".kms.KeyLastUsageTrackingOperationH\x02R\toperation\x88\x01\x01\x12$\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tH\x03R\ttimestamp\x88\x01\x01B\x14\n" +
 	"\x12_cloudtraileventidB\x0f\n" +
 	"\r_kmsrequestidB\f\n" +
+	"\n" +
+	"_operationB\f\n" +
 	"\n" +
 	"_timestamp\"c\n" +
 	"\fKeyListEntry\x12\x1f\n" +
 	"\x06keyarn\x18䆬\xc7\x01 \x01(\tH\x00R\x06keyarn\x88\x01\x01\x12\x1d\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x01R\x05keyid\x88\x01\x01B\t\n" +
 	"\a_keyarnB\b\n" +
-	"\x06_keyid\"\xad\r\n" +
+	"\x06_keyid\"\xbe\x0e\n" +
 	"\vKeyMetadata\x12+\n" +
 	"\fawsaccountid\x18\xedڼ\xb0\x01 \x01(\tH\x00R\fawsaccountid\x88\x01\x01\x12\x19\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x01R\x03arn\x88\x01\x01\x124\n" +
 	"\x11cloudhsmclusterid\x18´\xf8\x1a \x01(\tH\x02R\x11cloudhsmclusterid\x88\x01\x01\x12+\n" +
 	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x03R\fcreationdate\x88\x01\x01\x12:\n" +
 	"\x14currentkeymaterialid\x18\xf2\xbc\xcdW \x01(\tH\x04R\x14currentkeymaterialid\x88\x01\x01\x122\n" +
-	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tH\x05R\x10customkeystoreid\x88\x01\x01\x12T\n" +
-	"\x15customermasterkeyspec\x18\x92\xab\xa5\xe1\x01 \x01(\x0e2\x1a.kms.CustomerMasterKeySpecR\x15customermasterkeyspec\x12+\n" +
-	"\fdeletiondate\x18\xbc\xe7\xee\xa5\x01 \x01(\tH\x06R\fdeletiondate\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\aR\vdescription\x88\x01\x01\x12!\n" +
-	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\bR\aenabled\x88\x01\x01\x12S\n" +
-	"\x14encryptionalgorithms\x18\x8f\x84\xe0\\ \x03(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x14encryptionalgorithms\x12E\n" +
-	"\x0fexpirationmodel\x18\xf6\xf9\xa96 \x01(\x0e2\x18.kms.ExpirationModelTypeR\x0fexpirationmodel\x12Z\n" +
+	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tH\x05R\x10customkeystoreid\x88\x01\x01\x12Y\n" +
+	"\x15customermasterkeyspec\x18\x92\xab\xa5\xe1\x01 \x01(\x0e2\x1a.kms.CustomerMasterKeySpecH\x06R\x15customermasterkeyspec\x88\x01\x01\x12+\n" +
+	"\fdeletiondate\x18\xbc\xe7\xee\xa5\x01 \x01(\tH\aR\fdeletiondate\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\bR\vdescription\x88\x01\x01\x12!\n" +
+	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\tR\aenabled\x88\x01\x01\x12S\n" +
+	"\x14encryptionalgorithms\x18\x8f\x84\xe0\\ \x03(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x14encryptionalgorithms\x12J\n" +
+	"\x0fexpirationmodel\x18\xf6\xf9\xa96 \x01(\x0e2\x18.kms.ExpirationModelTypeH\n" +
+	"R\x0fexpirationmodel\x88\x01\x01\x12Z\n" +
 	"\x16keyagreementalgorithms\x18\xb3\x89\xe1\x9c\x01 \x03(\x0e2\x1e.kms.KeyAgreementAlgorithmSpecR\x16keyagreementalgorithms\x12\x18\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x127\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12<\n" +
 	"\n" +
-	"keymanager\x18\x94\xfe\xab\xce\x01 \x01(\x0e2\x13.kms.KeyManagerTypeR\n" +
-	"keymanager\x12)\n" +
-	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\f.kms.KeySpecR\akeyspec\x12,\n" +
-	"\bkeystate\x18\xd2æ\r \x01(\x0e2\r.kms.KeyStateR\bkeystate\x121\n" +
-	"\bkeyusage\x18\x84䪪\x01 \x01(\x0e2\x11.kms.KeyUsageTypeR\bkeyusage\x12?\n" +
+	"keymanager\x18\x94\xfe\xab\xce\x01 \x01(\x0e2\x13.kms.KeyManagerTypeH\vR\n" +
+	"keymanager\x88\x01\x01\x12.\n" +
+	"\akeyspec\x18\x80\xab\xf4A \x01(\x0e2\f.kms.KeySpecH\fR\akeyspec\x88\x01\x01\x121\n" +
+	"\bkeystate\x18\xd2æ\r \x01(\x0e2\r.kms.KeyStateH\rR\bkeystate\x88\x01\x01\x126\n" +
+	"\bkeyusage\x18\x84䪪\x01 \x01(\x0e2\x11.kms.KeyUsageTypeH\x0eR\bkeyusage\x88\x01\x01\x12?\n" +
 	"\rmacalgorithms\x18\xc3\xe3\xe1\xfd\x01 \x03(\x0e2\x15.kms.MacAlgorithmSpecR\rmacalgorithms\x12)\n" +
-	"\vmultiregion\x18\x8f\x97\xbe\xc1\x01 \x01(\bH\tR\vmultiregion\x88\x01\x01\x12]\n" +
-	"\x18multiregionconfiguration\x18\x85\xc1\xb2\xdb\x01 \x01(\v2\x1d.kms.MultiRegionConfigurationR\x18multiregionconfiguration\x12+\n" +
-	"\x06origin\x18\xf0\xa8\xcc\xfc\x01 \x01(\x0e2\x0f.kms.OriginTypeR\x06origin\x12I\n" +
-	"\x1bpendingdeletionwindowindays\x18\xb3\x9a\x8c\xe5\x01 \x01(\x05H\n" +
-	"R\x1bpendingdeletionwindowindays\x88\x01\x01\x12K\n" +
+	"\vmultiregion\x18\x8f\x97\xbe\xc1\x01 \x01(\bH\x0fR\vmultiregion\x88\x01\x01\x12]\n" +
+	"\x18multiregionconfiguration\x18\x85\xc1\xb2\xdb\x01 \x01(\v2\x1d.kms.MultiRegionConfigurationR\x18multiregionconfiguration\x120\n" +
+	"\x06origin\x18\xf0\xa8\xcc\xfc\x01 \x01(\x0e2\x0f.kms.OriginTypeH\x10R\x06origin\x88\x01\x01\x12I\n" +
+	"\x1bpendingdeletionwindowindays\x18\xb3\x9a\x8c\xe5\x01 \x01(\x05H\x11R\x1bpendingdeletionwindowindays\x88\x01\x01\x12K\n" +
 	"\x11signingalgorithms\x18\xb7Ь\xf2\x01 \x03(\x0e2\x19.kms.SigningAlgorithmSpecR\x11signingalgorithms\x12!\n" +
-	"\avalidto\x18ћ\xa0\xf9\x01 \x01(\tH\vR\avalidto\x88\x01\x01\x12R\n" +
+	"\avalidto\x18ћ\xa0\xf9\x01 \x01(\tH\x12R\avalidto\x88\x01\x01\x12R\n" +
 	"\x13xkskeyconfiguration\x18\xb7\xb3ƫ\x01 \x01(\v2\x1c.kms.XksKeyConfigurationTypeR\x13xkskeyconfigurationB\x0f\n" +
 	"\r_awsaccountidB\x06\n" +
 	"\x04_arnB\x14\n" +
 	"\x12_cloudhsmclusteridB\x0f\n" +
 	"\r_creationdateB\x17\n" +
 	"\x15_currentkeymaterialidB\x13\n" +
-	"\x11_customkeystoreidB\x0f\n" +
+	"\x11_customkeystoreidB\x18\n" +
+	"\x16_customermasterkeyspecB\x0f\n" +
 	"\r_deletiondateB\x0e\n" +
 	"\f_descriptionB\n" +
 	"\n" +
-	"\b_enabledB\x0e\n" +
-	"\f_multiregionB\x1e\n" +
+	"\b_enabledB\x12\n" +
+	"\x10_expirationmodelB\r\n" +
+	"\v_keymanagerB\n" +
+	"\n" +
+	"\b_keyspecB\v\n" +
+	"\t_keystateB\v\n" +
+	"\t_keyusageB\x0e\n" +
+	"\f_multiregionB\t\n" +
+	"\a_originB\x1e\n" +
 	"\x1c_pendingdeletionwindowindaysB\n" +
 	"\n" +
 	"\b_validto\"G\n" +
@@ -11771,12 +11811,13 @@ const file_kms_proto_rawDesc = "" +
 	"\ttruncated\x18\xca\xef\xd8H \x01(\bH\x01R\ttruncated\x88\x01\x01B\r\n" +
 	"\v_nextmarkerB\f\n" +
 	"\n" +
-	"_truncated\"\xd4\x01\n" +
-	"\x17ListKeyRotationsRequest\x12K\n" +
-	"\x12includekeymaterial\x18\x84\xe8\xbb\xfd\x01 \x01(\x0e2\x17.kms.IncludeKeyMaterialR\x12includekeymaterial\x12\x18\n" +
+	"_truncated\"\xf0\x01\n" +
+	"\x17ListKeyRotationsRequest\x12P\n" +
+	"\x12includekeymaterial\x18\x84\xe8\xbb\xfd\x01 \x01(\x0e2\x17.kms.IncludeKeyMaterialH\x00R\x12includekeymaterial\x88\x01\x01\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01B\b\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x02R\x06marker\x88\x01\x01B\x15\n" +
+	"\x13_includekeymaterialB\b\n" +
 	"\x06_limitB\t\n" +
 	"\a_marker\"\xc0\x01\n" +
 	"\x18ListKeyRotationsResponse\x12'\n" +
@@ -11829,13 +11870,14 @@ const file_kms_proto_rawDesc = "" +
 	" MalformedPolicyDocumentException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xd9\x01\n" +
-	"\x18MultiRegionConfiguration\x12K\n" +
-	"\x12multiregionkeytype\x18\x9e\xc9\xe0\xe6\x01 \x01(\x0e2\x17.kms.MultiRegionKeyTypeR\x12multiregionkeytype\x126\n" +
+	"\b_message\"\xf5\x01\n" +
+	"\x18MultiRegionConfiguration\x12P\n" +
+	"\x12multiregionkeytype\x18\x9e\xc9\xe0\xe6\x01 \x01(\x0e2\x17.kms.MultiRegionKeyTypeH\x00R\x12multiregionkeytype\x88\x01\x01\x126\n" +
 	"\n" +
 	"primarykey\x18\xf1\xa9\xfdR \x01(\v2\x13.kms.MultiRegionKeyR\n" +
 	"primarykey\x128\n" +
-	"\vreplicakeys\x18أ\x9c\x7f \x03(\v2\x13.kms.MultiRegionKeyR\vreplicakeys\"^\n" +
+	"\vreplicakeys\x18أ\x9c\x7f \x03(\v2\x13.kms.MultiRegionKeyR\vreplicakeysB\x15\n" +
+	"\x13_multiregionkeytype\"^\n" +
 	"\x0eMultiRegionKey\x12\x19\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1e\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tH\x01R\x06region\x88\x01\x01B\x06\n" +
@@ -11853,44 +11895,49 @@ const file_kms_proto_rawDesc = "" +
 	"policyname\x18\xbd\xf5\x87\x7f \x01(\tH\x01R\n" +
 	"policyname\x88\x01\x01B!\n" +
 	"\x1f_bypasspolicylockoutsafetycheckB\r\n" +
-	"\v_policyname\"\xae\a\n" +
+	"\v_policyname\"\xf9\a\n" +
 	"\x10ReEncryptRequest\x12/\n" +
-	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fH\x00R\x0eciphertextblob\x88\x01\x01\x12g\n" +
-	"\x1edestinationencryptionalgorithm\x18\x90\xd7\xd5\x01 \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x1edestinationencryptionalgorithm\x12~\n" +
+	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fH\x00R\x0eciphertextblob\x88\x01\x01\x12l\n" +
+	"\x1edestinationencryptionalgorithm\x18\x90\xd7\xd5\x01 \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecH\x01R\x1edestinationencryptionalgorithm\x88\x01\x01\x12~\n" +
 	"\x1cdestinationencryptioncontext\x18\xfe\xd5\xc27 \x03(\v27.kms.ReEncryptRequest.DestinationencryptioncontextEntryR\x1cdestinationencryptioncontext\x12.\n" +
 	"\x10destinationkeyid\x18\xbc\xac\xf7\xbc\x01 \x01(\tR\x10destinationkeyid\x12\x1e\n" +
-	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x01R\x06dryrun\x88\x01\x01\x12D\n" +
+	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x02R\x06dryrun\x88\x01\x01\x12D\n" +
 	"\x0fdryrunmodifiers\x18\xb8\xfe\xcd\v \x03(\x0e2\x17.kms.DryRunModifierTypeR\x0fdryrunmodifiers\x12$\n" +
-	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12^\n" +
-	"\x19sourceencryptionalgorithm\x18珆\x87\x01 \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x19sourceencryptionalgorithm\x12o\n" +
+	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12c\n" +
+	"\x19sourceencryptionalgorithm\x18珆\x87\x01 \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecH\x03R\x19sourceencryptionalgorithm\x88\x01\x01\x12o\n" +
 	"\x17sourceencryptioncontext\x18\xa9\x86\x96a \x03(\v22.kms.ReEncryptRequest.SourceencryptioncontextEntryR\x17sourceencryptioncontext\x12(\n" +
-	"\vsourcekeyid\x18뢰A \x01(\tH\x02R\vsourcekeyid\x88\x01\x01\x1aO\n" +
+	"\vsourcekeyid\x18뢰A \x01(\tH\x04R\vsourcekeyid\x88\x01\x01\x1aO\n" +
 	"!DestinationencryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aJ\n" +
 	"\x1cSourceencryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
-	"\x0f_ciphertextblobB\t\n" +
-	"\a_dryrunB\x0e\n" +
-	"\f_sourcekeyid\"\xb7\x04\n" +
+	"\x0f_ciphertextblobB!\n" +
+	"\x1f_destinationencryptionalgorithmB\t\n" +
+	"\a_dryrunB\x1c\n" +
+	"\x1a_sourceencryptionalgorithmB\x0e\n" +
+	"\f_sourcekeyid\"\x82\x05\n" +
 	"\x11ReEncryptResponse\x12/\n" +
-	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fH\x00R\x0eciphertextblob\x88\x01\x01\x12g\n" +
-	"\x1edestinationencryptionalgorithm\x18\x90\xd7\xd5\x01 \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x1edestinationencryptionalgorithm\x12C\n" +
-	"\x18destinationkeymaterialid\x18\xb7\xb2\x84\xe0\x01 \x01(\tH\x01R\x18destinationkeymaterialid\x88\x01\x01\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x02R\x05keyid\x88\x01\x01\x12^\n" +
-	"\x19sourceencryptionalgorithm\x18珆\x87\x01 \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecR\x19sourceencryptionalgorithm\x12(\n" +
-	"\vsourcekeyid\x18뢰A \x01(\tH\x03R\vsourcekeyid\x88\x01\x01\x128\n" +
-	"\x13sourcekeymaterialid\x18\xe4\xae\xcb\x10 \x01(\tH\x04R\x13sourcekeymaterialid\x88\x01\x01B\x11\n" +
-	"\x0f_ciphertextblobB\x1b\n" +
+	"\x0eciphertextblob\x18\xa7\xfd\xa1\xa1\x01 \x01(\fH\x00R\x0eciphertextblob\x88\x01\x01\x12l\n" +
+	"\x1edestinationencryptionalgorithm\x18\x90\xd7\xd5\x01 \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecH\x01R\x1edestinationencryptionalgorithm\x88\x01\x01\x12C\n" +
+	"\x18destinationkeymaterialid\x18\xb7\xb2\x84\xe0\x01 \x01(\tH\x02R\x18destinationkeymaterialid\x88\x01\x01\x12\x1d\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x03R\x05keyid\x88\x01\x01\x12c\n" +
+	"\x19sourceencryptionalgorithm\x18珆\x87\x01 \x01(\x0e2\x1c.kms.EncryptionAlgorithmSpecH\x04R\x19sourceencryptionalgorithm\x88\x01\x01\x12(\n" +
+	"\vsourcekeyid\x18뢰A \x01(\tH\x05R\vsourcekeyid\x88\x01\x01\x128\n" +
+	"\x13sourcekeymaterialid\x18\xe4\xae\xcb\x10 \x01(\tH\x06R\x13sourcekeymaterialid\x88\x01\x01B\x11\n" +
+	"\x0f_ciphertextblobB!\n" +
+	"\x1f_destinationencryptionalgorithmB\x1b\n" +
 	"\x19_destinationkeymaterialidB\b\n" +
-	"\x06_keyidB\x0e\n" +
+	"\x06_keyidB\x1c\n" +
+	"\x1a_sourceencryptionalgorithmB\x0e\n" +
 	"\f_sourcekeyidB\x16\n" +
-	"\x14_sourcekeymaterialid\"\xba\x01\n" +
+	"\x14_sourcekeymaterialid\"\xda\x01\n" +
 	"\rRecipientInfo\x128\n" +
-	"\x13attestationdocument\x18\xe1\xd3\xecg \x01(\fH\x00R\x13attestationdocument\x88\x01\x01\x12W\n" +
-	"\x16keyencryptionalgorithm\x18\xb3\x91\x85\xe4\x01 \x01(\x0e2\x1b.kms.KeyEncryptionMechanismR\x16keyencryptionalgorithmB\x16\n" +
-	"\x14_attestationdocument\"\xd3\x02\n" +
+	"\x13attestationdocument\x18\xe1\xd3\xecg \x01(\fH\x00R\x13attestationdocument\x88\x01\x01\x12\\\n" +
+	"\x16keyencryptionalgorithm\x18\xb3\x91\x85\xe4\x01 \x01(\x0e2\x1b.kms.KeyEncryptionMechanismH\x01R\x16keyencryptionalgorithm\x88\x01\x01B\x16\n" +
+	"\x14_attestationdocumentB\x19\n" +
+	"\x17_keyencryptionalgorithm\"\xd3\x02\n" +
 	"\x13ReplicateKeyRequest\x12N\n" +
 	"\x1ebypasspolicylockoutsafetycheck\x18\xe3\xde\xceT \x01(\bH\x00R\x1ebypasspolicylockoutsafetycheck\x88\x01\x01\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x18\n" +
@@ -11927,50 +11974,57 @@ const file_kms_proto_rawDesc = "" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\"D\n" +
 	"\x19RotateKeyOnDemandResponse\x12\x1d\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01B\b\n" +
-	"\x06_keyid\"\xc5\x04\n" +
-	"\x12RotationsListEntry\x12E\n" +
-	"\x0fexpirationmodel\x18\xf6\xf9\xa96 \x01(\x0e2\x18.kms.ExpirationModelTypeR\x0fexpirationmodel\x125\n" +
-	"\vimportstate\x18\xea\xd0\xc2\x0f \x01(\x0e2\x10.kms.ImportStateR\vimportstate\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12?\n" +
-	"\x16keymaterialdescription\x18\x8a\x8e\x94\x84\x01 \x01(\tH\x01R\x16keymaterialdescription\x88\x01\x01\x12,\n" +
-	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x02R\rkeymaterialid\x88\x01\x01\x12E\n" +
-	"\x10keymaterialstate\x18\x97\xb3\xf3\xcd\x01 \x01(\x0e2\x15.kms.KeyMaterialStateR\x10keymaterialstate\x12+\n" +
-	"\frotationdate\x18\xfc\x94\xae\xfc\x01 \x01(\tH\x03R\frotationdate\x88\x01\x01\x128\n" +
-	"\frotationtype\x18\xa8\xaf\xd0: \x01(\x0e2\x11.kms.RotationTypeR\frotationtype\x12!\n" +
-	"\avalidto\x18ћ\xa0\xf9\x01 \x01(\tH\x04R\avalidto\x88\x01\x01B\b\n" +
+	"\x06_keyid\"\xa3\x05\n" +
+	"\x12RotationsListEntry\x12J\n" +
+	"\x0fexpirationmodel\x18\xf6\xf9\xa96 \x01(\x0e2\x18.kms.ExpirationModelTypeH\x00R\x0fexpirationmodel\x88\x01\x01\x12:\n" +
+	"\vimportstate\x18\xea\xd0\xc2\x0f \x01(\x0e2\x10.kms.ImportStateH\x01R\vimportstate\x88\x01\x01\x12\x1d\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x02R\x05keyid\x88\x01\x01\x12?\n" +
+	"\x16keymaterialdescription\x18\x8a\x8e\x94\x84\x01 \x01(\tH\x03R\x16keymaterialdescription\x88\x01\x01\x12,\n" +
+	"\rkeymaterialid\x18\x81\xf0\x8cF \x01(\tH\x04R\rkeymaterialid\x88\x01\x01\x12J\n" +
+	"\x10keymaterialstate\x18\x97\xb3\xf3\xcd\x01 \x01(\x0e2\x15.kms.KeyMaterialStateH\x05R\x10keymaterialstate\x88\x01\x01\x12+\n" +
+	"\frotationdate\x18\xfc\x94\xae\xfc\x01 \x01(\tH\x06R\frotationdate\x88\x01\x01\x12=\n" +
+	"\frotationtype\x18\xa8\xaf\xd0: \x01(\x0e2\x11.kms.RotationTypeH\aR\frotationtype\x88\x01\x01\x12!\n" +
+	"\avalidto\x18ћ\xa0\xf9\x01 \x01(\tH\bR\avalidto\x88\x01\x01B\x12\n" +
+	"\x10_expirationmodelB\x0e\n" +
+	"\f_importstateB\b\n" +
 	"\x06_keyidB\x19\n" +
 	"\x17_keymaterialdescriptionB\x10\n" +
-	"\x0e_keymaterialidB\x0f\n" +
-	"\r_rotationdateB\n" +
+	"\x0e_keymaterialidB\x13\n" +
+	"\x11_keymaterialstateB\x0f\n" +
+	"\r_rotationdateB\x0f\n" +
+	"\r_rotationtypeB\n" +
 	"\n" +
 	"\b_validto\"\x89\x01\n" +
 	"\x1aScheduleKeyDeletionRequest\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x129\n" +
 	"\x13pendingwindowindays\x18\xb9\xb1\x90\xfe\x01 \x01(\x05H\x00R\x13pendingwindowindays\x88\x01\x01B\x16\n" +
-	"\x14_pendingwindowindays\"\x85\x02\n" +
+	"\x14_pendingwindowindays\"\x97\x02\n" +
 	"\x1bScheduleKeyDeletionResponse\x12+\n" +
 	"\fdeletiondate\x18\xbc\xe7\xee\xa5\x01 \x01(\tH\x00R\fdeletiondate\x88\x01\x01\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x01R\x05keyid\x88\x01\x01\x12,\n" +
-	"\bkeystate\x18\xd2æ\r \x01(\x0e2\r.kms.KeyStateR\bkeystate\x129\n" +
-	"\x13pendingwindowindays\x18\xb9\xb1\x90\xfe\x01 \x01(\x05H\x02R\x13pendingwindowindays\x88\x01\x01B\x0f\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x01R\x05keyid\x88\x01\x01\x121\n" +
+	"\bkeystate\x18\xd2æ\r \x01(\x0e2\r.kms.KeyStateH\x02R\bkeystate\x88\x01\x01\x129\n" +
+	"\x13pendingwindowindays\x18\xb9\xb1\x90\xfe\x01 \x01(\x05H\x03R\x13pendingwindowindays\x88\x01\x01B\x0f\n" +
 	"\r_deletiondateB\b\n" +
-	"\x06_keyidB\x16\n" +
-	"\x14_pendingwindowindays\"\x98\x02\n" +
+	"\x06_keyidB\v\n" +
+	"\t_keystateB\x16\n" +
+	"\x14_pendingwindowindays\"\xad\x02\n" +
 	"\vSignRequest\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\fR\amessage\x126\n" +
-	"\vmessagetype\x18\xad\x93\xed\xd7\x01 \x01(\x0e2\x10.kms.MessageTypeR\vmessagetype\x12I\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\fR\amessage\x12;\n" +
+	"\vmessagetype\x18\xad\x93\xed\xd7\x01 \x01(\x0e2\x10.kms.MessageTypeH\x01R\vmessagetype\x88\x01\x01\x12I\n" +
 	"\x10signingalgorithm\x18\xc2\xe1\xde\xe8\x01 \x01(\x0e2\x19.kms.SigningAlgorithmSpecR\x10signingalgorithmB\t\n" +
-	"\a_dryrun\"\xb6\x01\n" +
+	"\a_dryrunB\x0e\n" +
+	"\f_messagetype\"\xd0\x01\n" +
 	"\fSignResponse\x12\x1d\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12$\n" +
-	"\tsignature\x18\x8e\x8a\xa4\x02 \x01(\fH\x01R\tsignature\x88\x01\x01\x12I\n" +
-	"\x10signingalgorithm\x18\xc2\xe1\xde\xe8\x01 \x01(\x0e2\x19.kms.SigningAlgorithmSpecR\x10signingalgorithmB\b\n" +
+	"\tsignature\x18\x8e\x8a\xa4\x02 \x01(\fH\x01R\tsignature\x88\x01\x01\x12N\n" +
+	"\x10signingalgorithm\x18\xc2\xe1\xde\xe8\x01 \x01(\x0e2\x19.kms.SigningAlgorithmSpecH\x02R\x10signingalgorithm\x88\x01\x01B\b\n" +
 	"\x06_keyidB\f\n" +
 	"\n" +
-	"_signature\"@\n" +
+	"_signatureB\x13\n" +
+	"\x11_signingalgorithm\"@\n" +
 	"\x03Tag\x12\x19\n" +
 	"\x06tagkey\x18\x8b\xfd\xddS \x01(\tR\x06tagkey\x12\x1e\n" +
 	"\btagvalue\x18\xf1\xa0\xc9\xe8\x01 \x01(\tR\btagvalue\"<\n" +
@@ -11990,21 +12044,22 @@ const file_kms_proto_rawDesc = "" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\\\n" +
 	"\x12UpdateAliasRequest\x12 \n" +
 	"\taliasname\x18\x95\xa7\xaf\x95\x01 \x01(\tR\taliasname\x12$\n" +
-	"\vtargetkeyid\x18\x9b\x9f\xd8\xc1\x01 \x01(\tR\vtargetkeyid\"\x90\a\n" +
+	"\vtargetkeyid\x18\x9b\x9f\xd8\xc1\x01 \x01(\tR\vtargetkeyid\"\xae\a\n" +
 	"\x1bUpdateCustomKeyStoreRequest\x124\n" +
 	"\x11cloudhsmclusterid\x18´\xf8\x1a \x01(\tH\x00R\x11cloudhsmclusterid\x88\x01\x01\x12-\n" +
 	"\x10customkeystoreid\x18Ĭ\x90* \x01(\tR\x10customkeystoreid\x123\n" +
 	"\x10keystorepassword\x18ᾝ\xc0\x01 \x01(\tH\x01R\x10keystorepassword\x88\x01\x01\x12<\n" +
 	"\x15newcustomkeystorename\x18\xa2ě\x05 \x01(\tH\x02R\x15newcustomkeystorename\x88\x01\x01\x12y\n" +
-	" xksproxyauthenticationcredential\x18\x97ꋧ\x01 \x01(\v2).kms.XksProxyAuthenticationCredentialTypeR xksproxyauthenticationcredential\x12U\n" +
-	"\x14xksproxyconnectivity\x18ɛ\xaf\x8e\x01 \x01(\x0e2\x1d.kms.XksProxyConnectivityTypeR\x14xksproxyconnectivity\x129\n" +
-	"\x13xksproxyuriendpoint\x18\x87\x99\xa6\x82\x01 \x01(\tH\x03R\x13xksproxyuriendpoint\x88\x01\x01\x121\n" +
-	"\x0fxksproxyuripath\x18娡\xd0\x01 \x01(\tH\x04R\x0fxksproxyuripath\x88\x01\x01\x12O\n" +
-	"\x1exksproxyvpcendpointservicename\x18҇\xe1\xb1\x01 \x01(\tH\x05R\x1exksproxyvpcendpointservicename\x88\x01\x01\x12P\n" +
-	"\x1fxksproxyvpcendpointserviceowner\x18\xb6\x95\xac\x1a \x01(\tH\x06R\x1fxksproxyvpcendpointserviceowner\x88\x01\x01B\x14\n" +
+	" xksproxyauthenticationcredential\x18\x97ꋧ\x01 \x01(\v2).kms.XksProxyAuthenticationCredentialTypeR xksproxyauthenticationcredential\x12Z\n" +
+	"\x14xksproxyconnectivity\x18ɛ\xaf\x8e\x01 \x01(\x0e2\x1d.kms.XksProxyConnectivityTypeH\x03R\x14xksproxyconnectivity\x88\x01\x01\x129\n" +
+	"\x13xksproxyuriendpoint\x18\x87\x99\xa6\x82\x01 \x01(\tH\x04R\x13xksproxyuriendpoint\x88\x01\x01\x121\n" +
+	"\x0fxksproxyuripath\x18娡\xd0\x01 \x01(\tH\x05R\x0fxksproxyuripath\x88\x01\x01\x12O\n" +
+	"\x1exksproxyvpcendpointservicename\x18҇\xe1\xb1\x01 \x01(\tH\x06R\x1exksproxyvpcendpointservicename\x88\x01\x01\x12P\n" +
+	"\x1fxksproxyvpcendpointserviceowner\x18\xb6\x95\xac\x1a \x01(\tH\aR\x1fxksproxyvpcendpointserviceowner\x88\x01\x01B\x14\n" +
 	"\x12_cloudhsmclusteridB\x13\n" +
 	"\x11_keystorepasswordB\x18\n" +
-	"\x16_newcustomkeystorenameB\x16\n" +
+	"\x16_newcustomkeystorenameB\x17\n" +
+	"\x15_xksproxyconnectivityB\x16\n" +
 	"\x14_xksproxyuriendpointB\x12\n" +
 	"\x10_xksproxyuripathB!\n" +
 	"\x1f_xksproxyvpcendpointservicenameB\"\n" +
@@ -12023,28 +12078,31 @@ const file_kms_proto_rawDesc = "" +
 	"\x03mac\x18ɉ\xa0\x8d\x01 \x01(\fR\x03mac\x12<\n" +
 	"\fmacalgorithm\x18\x86\xd0\xf1x \x01(\x0e2\x15.kms.MacAlgorithmSpecR\fmacalgorithm\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\fR\amessageB\t\n" +
-	"\a_dryrun\"\xac\x01\n" +
+	"\a_dryrun\"\xc2\x01\n" +
 	"\x11VerifyMacResponse\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12<\n" +
-	"\fmacalgorithm\x18\x86\xd0\xf1x \x01(\x0e2\x15.kms.MacAlgorithmSpecR\fmacalgorithm\x12#\n" +
-	"\bmacvalid\x18۽\x98\xe6\x01 \x01(\bH\x01R\bmacvalid\x88\x01\x01B\b\n" +
-	"\x06_keyidB\v\n" +
-	"\t_macvalid\"\xbb\x02\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12A\n" +
+	"\fmacalgorithm\x18\x86\xd0\xf1x \x01(\x0e2\x15.kms.MacAlgorithmSpecH\x01R\fmacalgorithm\x88\x01\x01\x12#\n" +
+	"\bmacvalid\x18۽\x98\xe6\x01 \x01(\bH\x02R\bmacvalid\x88\x01\x01B\b\n" +
+	"\x06_keyidB\x0f\n" +
+	"\r_macalgorithmB\v\n" +
+	"\t_macvalid\"\xd0\x02\n" +
 	"\rVerifyRequest\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12$\n" +
 	"\vgranttokens\x18\x8c\x8d\x80\xa2\x01 \x03(\tR\vgranttokens\x12\x18\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tR\x05keyid\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\fR\amessage\x126\n" +
-	"\vmessagetype\x18\xad\x93\xed\xd7\x01 \x01(\x0e2\x10.kms.MessageTypeR\vmessagetype\x12\x1f\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\fR\amessage\x12;\n" +
+	"\vmessagetype\x18\xad\x93\xed\xd7\x01 \x01(\x0e2\x10.kms.MessageTypeH\x01R\vmessagetype\x88\x01\x01\x12\x1f\n" +
 	"\tsignature\x18\x8e\x8a\xa4\x02 \x01(\fR\tsignature\x12I\n" +
 	"\x10signingalgorithm\x18\xc2\xe1\xde\xe8\x01 \x01(\x0e2\x19.kms.SigningAlgorithmSpecR\x10signingalgorithmB\t\n" +
-	"\a_dryrun\"\xc8\x01\n" +
+	"\a_dryrunB\x0e\n" +
+	"\f_messagetype\"\xe2\x01\n" +
 	"\x0eVerifyResponse\x12\x1d\n" +
 	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12/\n" +
-	"\x0esignaturevalid\x18\xea\xc8\xe4\x81\x01 \x01(\bH\x01R\x0esignaturevalid\x88\x01\x01\x12I\n" +
-	"\x10signingalgorithm\x18\xc2\xe1\xde\xe8\x01 \x01(\x0e2\x19.kms.SigningAlgorithmSpecR\x10signingalgorithmB\b\n" +
+	"\x0esignaturevalid\x18\xea\xc8\xe4\x81\x01 \x01(\bH\x01R\x0esignaturevalid\x88\x01\x01\x12N\n" +
+	"\x10signingalgorithm\x18\xc2\xe1\xde\xe8\x01 \x01(\x0e2\x19.kms.SigningAlgorithmSpecH\x02R\x10signingalgorithm\x88\x01\x01B\b\n" +
 	"\x06_keyidB\x11\n" +
-	"\x0f_signaturevalid\"K\n" +
+	"\x0f_signaturevalidB\x13\n" +
+	"\x11_signingalgorithm\"K\n" +
 	"\x1bXksKeyAlreadyInUseException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -12062,15 +12120,16 @@ const file_kms_proto_rawDesc = "" +
 	"\b_message\"\x7f\n" +
 	"$XksProxyAuthenticationCredentialType\x12$\n" +
 	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\x121\n" +
-	"\x12rawsecretaccesskey\x18\xe3\xe4\xbe  \x01(\tR\x12rawsecretaccesskey\"\xc0\x03\n" +
+	"\x12rawsecretaccesskey\x18\xe3\xe4\xbe  \x01(\tR\x12rawsecretaccesskey\"\xd6\x03\n" +
 	"\x19XksProxyConfigurationType\x12)\n" +
-	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tH\x00R\vaccesskeyid\x88\x01\x01\x12D\n" +
-	"\fconnectivity\x18ê\xb8d \x01(\x0e2\x1d.kms.XksProxyConnectivityTypeR\fconnectivity\x12(\n" +
-	"\vuriendpoint\x18\xf5\xb8\xde% \x01(\tH\x01R\vuriendpoint\x88\x01\x01\x12!\n" +
-	"\auripath\x18\xff\xf2\xbe\x89\x01 \x01(\tH\x02R\auripath\x88\x01\x01\x12?\n" +
-	"\x16vpcendpointservicename\x18̨\u0600\x01 \x01(\tH\x03R\x16vpcendpointservicename\x88\x01\x01\x12A\n" +
-	"\x17vpcendpointserviceowner\x18\x80\xbf\xbe\x8e\x01 \x01(\tH\x04R\x17vpcendpointserviceowner\x88\x01\x01B\x0e\n" +
-	"\f_accesskeyidB\x0e\n" +
+	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tH\x00R\vaccesskeyid\x88\x01\x01\x12I\n" +
+	"\fconnectivity\x18ê\xb8d \x01(\x0e2\x1d.kms.XksProxyConnectivityTypeH\x01R\fconnectivity\x88\x01\x01\x12(\n" +
+	"\vuriendpoint\x18\xf5\xb8\xde% \x01(\tH\x02R\vuriendpoint\x88\x01\x01\x12!\n" +
+	"\auripath\x18\xff\xf2\xbe\x89\x01 \x01(\tH\x03R\auripath\x88\x01\x01\x12?\n" +
+	"\x16vpcendpointservicename\x18̨\u0600\x01 \x01(\tH\x04R\x16vpcendpointservicename\x88\x01\x01\x12A\n" +
+	"\x17vpcendpointserviceowner\x18\x80\xbf\xbe\x8e\x01 \x01(\tH\x05R\x17vpcendpointserviceowner\x88\x01\x01B\x0e\n" +
+	"\f_accesskeyidB\x0f\n" +
+	"\r_connectivityB\x0e\n" +
 	"\f_uriendpointB\n" +
 	"\n" +
 	"\b_uripathB\x19\n" +
@@ -12911,6 +12970,7 @@ func file_kms_proto_init() {
 	file_kms_proto_msgTypes[106].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[107].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[108].OneofWrappers = []any{}
+	file_kms_proto_msgTypes[109].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[110].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[111].OneofWrappers = []any{}
 	file_kms_proto_msgTypes[112].OneofWrappers = []any{}

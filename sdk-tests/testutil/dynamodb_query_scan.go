@@ -693,45 +693,46 @@ func (r *TestRunner) dynamoDBPaginationTests(ctx context.Context, client *dynamo
 	results = append(results, r.RunTest("dynamodb", "ListGlobalTables_Pagination", func() error {
 		pagGT1 := fmt.Sprintf("PagGT-%d-1", time.Now().UnixNano())
 		pagGT2 := fmt.Sprintf("PagGT-%d-2", time.Now().UnixNano())
-		// A global table links existing replica tables, so each name needs
-		// a backing table streaming both item images.
+		// A global table links existing replica tables over two or more
+		// regions, so each name needs a backing table streaming both item
+		// images in both member regions.
+		replicaClient, replicaRegion, cfgErr := r.replicaRegionClient()
+		if cfgErr != nil {
+			return fmt.Errorf("load replica config: %v", cfgErr)
+		}
+		for _, c := range []*dynamodb.Client{client, replicaClient} {
+			for _, name := range []string{pagGT1, pagGT2} {
+				_, err := c.CreateTable(ctx, &dynamodb.CreateTableInput{
+					TableName: aws.String(name),
+					AttributeDefinitions: []types.AttributeDefinition{
+						{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+					},
+					KeySchema: []types.KeySchemaElement{
+						{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+					},
+					BillingMode: types.BillingModePayPerRequest,
+					StreamSpecification: &types.StreamSpecification{
+						StreamEnabled:  aws.Bool(true),
+						StreamViewType: types.StreamViewTypeNewAndOldImages,
+					},
+				})
+				if err != nil {
+					return fmt.Errorf("create backing table %s: %v", name, err)
+				}
+				defer c.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(name)})
+			}
+		}
 		for _, name := range []string{pagGT1, pagGT2} {
-			_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-				TableName: aws.String(name),
-				AttributeDefinitions: []types.AttributeDefinition{
-					{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
-				},
-				KeySchema: []types.KeySchemaElement{
-					{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
-				},
-				BillingMode: types.BillingModePayPerRequest,
-				StreamSpecification: &types.StreamSpecification{
-					StreamEnabled:  aws.Bool(true),
-					StreamViewType: types.StreamViewTypeNewAndOldImages,
+			_, err := client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
+				GlobalTableName: aws.String(name),
+				ReplicationGroup: []types.Replica{
+					{RegionName: aws.String(r.region)},
+					{RegionName: aws.String(replicaRegion)},
 				},
 			})
 			if err != nil {
-				return fmt.Errorf("create backing table %s: %v", name, err)
+				return fmt.Errorf("create global table %s: %v", name, err)
 			}
-		}
-		_, err := client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
-			GlobalTableName: aws.String(pagGT1),
-			ReplicationGroup: []types.Replica{
-				{RegionName: aws.String(r.region)},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("create global table %s: %v", pagGT1, err)
-		}
-		_, err = client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
-			GlobalTableName: aws.String(pagGT2),
-			ReplicationGroup: []types.Replica{
-				{RegionName: aws.String(r.region)},
-			},
-		})
-		if err != nil {
-			client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagGT1)})
-			return fmt.Errorf("create global table %s: %v", pagGT2, err)
 		}
 
 		found := map[string]bool{pagGT1: false, pagGT2: false}

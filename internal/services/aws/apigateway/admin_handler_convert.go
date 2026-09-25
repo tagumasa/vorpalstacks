@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"google.golang.org/protobuf/proto"
+	"vorpalstacks/internal/common/pbutil"
 	aws_types "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
@@ -61,12 +62,12 @@ func toPbRestApi(api *apigatewaystore.RestApi) *pb.RestApi {
 		Createddate:            proto.String(api.CreatedDate.Format(timeutils.ISO8601UTCFormat)),
 		Binarymediatypes:       api.BinaryMediaTypes,
 		Minimumcompressionsize: api.MinimumCompressionSize,
-		Apikeysource:           toPbApiKeySourceType(api.ApiKeySource),
+		Apikeysource:           pbutil.Enum(toPbApiKeySourceType(api.ApiKeySource)),
 		Policy:                 proto.String(api.Policy),
 		Tags:                   tagsToPbMap(api.Tags),
-		Securitypolicy:         toPbSecurityPolicy(api.SecurityPolicy),
-		Endpointaccessmode:     toPbEndpointAccessMode(api.EndpointAccessMode),
-		Apistatus:              toPbApiStatus(api.ApiStatus),
+		Securitypolicy:         pbutil.Enum(toPbSecurityPolicy(api.SecurityPolicy)),
+		Endpointaccessmode:     pbutil.Enum(toPbEndpointAccessMode(api.EndpointAccessMode)),
+		Apistatus:              pbutil.Enum(toPbApiStatus(api.ApiStatus)),
 		Apistatusmessage:       proto.String(api.ApiStatusMessage),
 	}
 	if api.DisableExecuteApiEndpoint {
@@ -130,20 +131,20 @@ func toPbMethod(m *apigatewaystore.Method) *pb.Method {
 
 func toPbIntegration(i *apigatewaystore.Integration) *pb.Integration {
 	pbI := &pb.Integration{
-		Type:                toPbIntegrationType(i.Type),
+		Type:                pbutil.Enum(toPbIntegrationType(i.Type)),
 		Httpmethod:          proto.String(i.IntegrationHttpMethod),
 		Uri:                 proto.String(i.Uri),
 		Credentials:         proto.String(i.Credentials),
 		Passthroughbehavior: proto.String(i.PassthroughBehavior),
 		Cachenamespace:      proto.String(i.CacheNamespace),
-		Connectiontype:      toPbConnectionType(i.ConnectionType),
+		Connectiontype:      pbutil.Enum(toPbConnectionType(i.ConnectionType)),
 		Connectionid:        proto.String(i.ConnectionId),
 		Requestparameters:   i.RequestParameters,
 		Requesttemplates:    i.RequestTemplates,
 		Cachekeyparameters:  i.CacheKeyParameters,
 	}
 	if i.ContentHandling != "" {
-		pbI.Contenthandling = toPbContentHandling(i.ContentHandling)
+		pbI.Contenthandling = pbutil.Enum(toPbContentHandling(i.ContentHandling))
 	}
 	if i.TimeoutInMillis > 0 {
 		pbI.Timeoutinmillis = proto.Int32(i.TimeoutInMillis)
@@ -163,7 +164,7 @@ func toPbIntegrationResponse(r *apigatewaystore.IntegrationResponse) *pb.Integra
 		Selectionpattern: proto.String(r.SelectionPattern),
 	}
 	if r.ContentHandling != "" {
-		pbR.Contenthandling = toPbContentHandling(r.ContentHandling)
+		pbR.Contenthandling = pbutil.Enum(toPbContentHandling(r.ContentHandling))
 	}
 	if len(r.ResponseParameters) > 0 {
 		pbR.Responseparameters = r.ResponseParameters
@@ -293,10 +294,10 @@ func toPbStage(s *apigatewaystore.Stage) *pb.Stage {
 		Tags:                 tagsToPbMap(s.Tags),
 	}
 	if s.CacheClusterSize != "" {
-		pbS.Cacheclustersize = toPbCacheClusterSize(s.CacheClusterSize)
+		pbS.Cacheclustersize = pbutil.Enum(toPbCacheClusterSize(s.CacheClusterSize))
 	}
 	if s.CacheClusterStatus != "" {
-		pbS.Cacheclusterstatus = toPbCacheClusterStatus(s.CacheClusterStatus)
+		pbS.Cacheclusterstatus = pbutil.Enum(toPbCacheClusterStatus(s.CacheClusterStatus))
 	}
 	if len(s.Variables) > 0 {
 		pbS.Variables = s.Variables
@@ -370,7 +371,7 @@ func toPbUsagePlan(p *apigatewaystore.UsagePlan) *pb.UsagePlan {
 		pbP.Quota = &pb.QuotaSettings{
 			Limit:  proto.Int32(int32(p.Quota.Limit)),
 			Offset: proto.Int32(int32(p.Quota.Offset)),
-			Period: toPbQuotaPeriodType(p.Quota.Period),
+			Period: pbutil.Enum(toPbQuotaPeriodType(p.Quota.Period)),
 		}
 	}
 	if p.Throttle != nil {
@@ -395,7 +396,7 @@ func toPbAuthorizer(a *apigatewaystore.Authorizer) *pb.Authorizer {
 	return &pb.Authorizer{
 		Id:                           proto.String(a.Id),
 		Name:                         proto.String(a.Name),
-		Type:                         toPbAuthorizerType(a.Type),
+		Type:                         pbutil.Enum(toPbAuthorizerType(a.Type)),
 		Authtype:                     proto.String(a.AuthType),
 		Authorizeruri:                proto.String(a.AuthorizerUri),
 		Authorizercredentials:        proto.String(a.AuthorizerCredentials),

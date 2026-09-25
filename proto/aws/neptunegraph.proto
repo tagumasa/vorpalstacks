@@ -223,7 +223,7 @@ message CancelExportTaskOutput {
 
   string kmskeyidentifier = 271380819;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -247,11 +247,11 @@ message CancelImportTaskInput {
 
 message CancelImportTaskOutput {
 
-  Format format = 429753683;
+  optional Format format = 429753683;
 
   optional string graphid = 154780971;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -281,7 +281,7 @@ message ConflictException {
 
   string message = 82970853;
 
-  ConflictExceptionReason reason = 413359642;
+  optional ConflictExceptionReason reason = 413359642;
 
 }
 
@@ -343,7 +343,7 @@ message CreateGraphOutput {
 
   optional string sourcesnapshotid = 450029490;
 
-  GraphStatus status = 441153520;
+  optional GraphStatus status = 441153520;
 
   optional string statusreason = 352592412;
 
@@ -379,7 +379,7 @@ message CreateGraphSnapshotOutput {
 
   optional string sourcegraphid = 384181138;
 
-  SnapshotStatus status = 441153520;
+  optional SnapshotStatus status = 441153520;
 
 }
 
@@ -387,13 +387,13 @@ message CreateGraphSnapshotOutput {
 
 message CreateGraphUsingImportTaskInput {
 
-  BlankNodeHandling blanknodehandling = 96253201;
+  optional BlankNodeHandling blanknodehandling = 96253201;
 
   optional string deletionprotection = 408487537;
 
   optional string failonerror = 437165343;
 
-  Format format = 429753683;
+  optional Format format = 429753683;
 
   string graphname = 300324709;
 
@@ -405,7 +405,7 @@ message CreateGraphUsingImportTaskInput {
 
   optional int32 minprovisionedmemory = 410054529;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   optional string publicconnectivity = 454618760;
 
@@ -425,13 +425,13 @@ message CreateGraphUsingImportTaskInput {
 
 message CreateGraphUsingImportTaskOutput {
 
-  Format format = 429753683;
+  optional Format format = 429753683;
 
   optional string graphid = 154780971;
 
   ImportOptions importoptions = 42536491;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -509,7 +509,7 @@ message DeleteGraphOutput {
 
   optional string sourcesnapshotid = 450029490;
 
-  GraphStatus status = 441153520;
+  optional GraphStatus status = 441153520;
 
   optional string statusreason = 352592412;
 
@@ -541,7 +541,7 @@ message DeleteGraphSnapshotOutput {
 
   optional string sourcegraphid = 384181138;
 
-  SnapshotStatus status = 441153520;
+  optional SnapshotStatus status = 441153520;
 
 }
 
@@ -585,7 +585,7 @@ message EdgeStructure {
 
 message ExecuteQueryInput {
 
-  ExplainMode explainmode = 259893600;
+  optional ExplainMode explainmode = 259893600;
 
   string graphidentifier = 49625581;
 
@@ -593,7 +593,7 @@ message ExecuteQueryInput {
 
   map<string, string> parameters = 145043162;
 
-  PlanCacheType plancache = 4222769;
+  optional PlanCacheType plancache = 4222769;
 
   string querystring = 520568967;
 
@@ -647,7 +647,7 @@ message ExportFilterElement {
 
 message ExportFilterPropertyAttributes {
 
-  MultiValueHandlingType multivaluehandling = 492198599;
+  optional MultiValueHandlingType multivaluehandling = 492198599;
 
   optional string outputtype = 354916141;
 
@@ -717,7 +717,7 @@ message ExportTaskSummary {
 
   string kmskeyidentifier = 271380819;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -767,7 +767,7 @@ message GetExportTaskOutput {
 
   string kmskeyidentifier = 271380819;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -815,7 +815,7 @@ message GetGraphOutput {
 
   optional string sourcesnapshotid = 450029490;
 
-  GraphStatus status = 441153520;
+  optional GraphStatus status = 441153520;
 
   optional string statusreason = 352592412;
 
@@ -847,7 +847,7 @@ message GetGraphSnapshotOutput {
 
   optional string sourcegraphid = 384181138;
 
-  SnapshotStatus status = 441153520;
+  optional SnapshotStatus status = 441153520;
 
 }
 
@@ -857,7 +857,7 @@ message GetGraphSummaryInput {
 
   string graphidentifier = 49625581;
 
-  GraphSummaryMode mode = 208592915;
+  optional GraphSummaryMode mode = 208592915;
 
 }
 
@@ -887,7 +887,7 @@ message GetImportTaskOutput {
 
   optional string attemptnumber = 466940700;
 
-  Format format = 429753683;
+  optional Format format = 429753683;
 
   optional string graphid = 154780971;
 
@@ -895,7 +895,7 @@ message GetImportTaskOutput {
 
   ImportTaskDetails importtaskdetails = 345811978;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -953,7 +953,7 @@ message GetQueryOutput {
 
   optional string querystring = 520568967;
 
-  QueryState state = 405877495;
+  optional QueryState state = 405877495;
 
   optional string waited = 136179618;
 
@@ -1013,7 +1013,7 @@ message GraphSnapshotSummary {
 
   optional string sourcegraphid = 384181138;
 
-  SnapshotStatus status = 441153520;
+  optional SnapshotStatus status = 441153520;
 
 }
 
@@ -1069,7 +1069,7 @@ message GraphSummary {
 
   optional int32 replicacount = 508743359;
 
-  GraphStatus status = 441153520;
+  optional GraphStatus status = 441153520;
 
 }
 
@@ -1151,11 +1151,11 @@ enum ImportTaskStatus {
 
 message ImportTaskSummary {
 
-  Format format = 429753683;
+  optional Format format = 429753683;
 
   optional string graphid = 154780971;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -1291,7 +1291,7 @@ message ListQueriesInput {
 
   string maxresults = 465170002;
 
-  QueryStateInput state = 405877495;
+  optional QueryStateInput state = 405877495;
 
 }
 
@@ -1455,7 +1455,7 @@ message QuerySummary {
 
   optional string querystring = 520568967;
 
-  QueryState state = 405877495;
+  optional QueryState state = 405877495;
 
   optional string waited = 136179618;
 
@@ -1499,7 +1499,7 @@ message ResetGraphOutput {
 
   optional string sourcesnapshotid = 450029490;
 
-  GraphStatus status = 441153520;
+  optional GraphStatus status = 441153520;
 
   optional string statusreason = 352592412;
 
@@ -1565,7 +1565,7 @@ message RestoreGraphFromSnapshotOutput {
 
   optional string sourcesnapshotid = 450029490;
 
-  GraphStatus status = 441153520;
+  optional GraphStatus status = 441153520;
 
   optional string statusreason = 352592412;
 
@@ -1619,7 +1619,7 @@ message StartExportTaskInput {
 
   string kmskeyidentifier = 271380819;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -1641,7 +1641,7 @@ message StartExportTaskOutput {
 
   string kmskeyidentifier = 271380819;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -1689,7 +1689,7 @@ message StartGraphOutput {
 
   optional string sourcesnapshotid = 450029490;
 
-  GraphStatus status = 441153520;
+  optional GraphStatus status = 441153520;
 
   optional string statusreason = 352592412;
 
@@ -1701,17 +1701,17 @@ message StartGraphOutput {
 
 message StartImportTaskInput {
 
-  BlankNodeHandling blanknodehandling = 96253201;
+  optional BlankNodeHandling blanknodehandling = 96253201;
 
   optional string failonerror = 437165343;
 
-  Format format = 429753683;
+  optional Format format = 429753683;
 
   string graphidentifier = 49625581;
 
   ImportOptions importoptions = 42536491;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -1723,13 +1723,13 @@ message StartImportTaskInput {
 
 message StartImportTaskOutput {
 
-  Format format = 429753683;
+  optional Format format = 429753683;
 
   optional string graphid = 154780971;
 
   ImportOptions importoptions = 42536491;
 
-  ParquetType parquettype = 239821940;
+  optional ParquetType parquettype = 239821940;
 
   string rolearn = 170019745;
 
@@ -1777,7 +1777,7 @@ message StopGraphOutput {
 
   optional string sourcesnapshotid = 450029490;
 
-  GraphStatus status = 441153520;
+  optional GraphStatus status = 441153520;
 
   optional string statusreason = 352592412;
 
@@ -1897,7 +1897,7 @@ message UpdateGraphOutput {
 
   optional string sourcesnapshotid = 450029490;
 
-  GraphStatus status = 441153520;
+  optional GraphStatus status = 441153520;
 
   optional string statusreason = 352592412;
 
@@ -1913,7 +1913,7 @@ message ValidationException {
 
   string message = 82970853;
 
-  ValidationExceptionReason reason = 413359642;
+  optional ValidationExceptionReason reason = 413359642;
 
 }
 

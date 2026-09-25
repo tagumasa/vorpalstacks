@@ -20,7 +20,7 @@ func newVectorCoreFixture(t *testing.T) *dbstore.DynamoDBStore {
 	}
 	t.Cleanup(func() { st.Close() })
 
-	store := dbstore.NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := dbstore.NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(dbstore.CreateTableParams{
 		Name:                 "VecTbl",
 		KeySchema:            []*dbstore.KeySchemaElement{{AttributeName: "id", KeyType: dbstore.KeyTypeHash}},
@@ -238,6 +238,21 @@ func TestSearchVectorsCoreCondition(t *testing.T) {
 	outside["ExpressionAttributeValues"] = map[string]interface{}{":t": map[string]interface{}{"S": "x"}}
 	if _, err := svc.searchVectorsCore(t.Context(), store, outside); err == nil {
 		t.Errorf("attribute outside the search schema: expected rejection")
+	}
+
+	// A truncated expression is rejected at every truncated position — the
+	// value token after "=" and the attribute token after a trailing AND —
+	// never a walk past the token slice or a silently dropped tail.
+	truncatedEq := vecSearchParams("VecTbl", "vec", []float64{1, 0}, 3)
+	truncatedEq["SearchConditionExpression"] = "category ="
+	if _, err := svc.searchVectorsCore(t.Context(), store, truncatedEq); err == nil {
+		t.Errorf("expression truncated after '=': expected rejection")
+	}
+	danglingAnd := vecSearchParams("VecTbl", "vec", []float64{1, 0}, 3)
+	danglingAnd["SearchConditionExpression"] = "category = :cat AND"
+	danglingAnd["ExpressionAttributeValues"] = map[string]interface{}{":cat": map[string]interface{}{"S": "a"}}
+	if _, err := svc.searchVectorsCore(t.Context(), store, danglingAnd); err == nil {
+		t.Errorf("dangling AND: expected rejection")
 	}
 }
 

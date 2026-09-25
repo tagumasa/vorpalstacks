@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -18,34 +17,7 @@ const journalSweepInterval = time.Minute
 // never be replayed, and tables without recovery enabled have no use for a
 // journal at all.
 func (s *DynamoDBService) ensureJournalSweeper() {
-	s.journalSweepOnce.Do(func() {
-		s.bgWg.Add(1)
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					resilience.LogPanic("dynamodb journal sweep", r)
-				}
-			}()
-			defer s.bgWg.Done()
-			ticker := time.NewTicker(journalSweepInterval)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ticker.C:
-					s.stores.Range(func(_, v any) bool {
-						store, ok := v.(dbstore.DynamoDBStoreInterface)
-						if !ok {
-							return true
-						}
-						s.sweepStoreJournals(store)
-						return true
-					})
-				case <-s.bgCtx.Done():
-					return
-				}
-			}
-		}()
-	})
+	s.startIntervalSweeper(&s.journalSweepOnce, journalSweepInterval, "dynamodb journal sweep", s.sweepStoreJournals)
 }
 
 // sweepStoreJournals prunes the journals of every table in one regional

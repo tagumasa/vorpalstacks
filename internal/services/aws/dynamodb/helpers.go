@@ -2,16 +2,54 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
+	commonstore "vorpalstacks/internal/store/aws/common"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 func (s *DynamoDBService) validateAndGetTable(reqCtx *request.RequestContext, params map[string]interface{}) (*dbstore.Table, error) {
 	return s.validateAndGetTableWithErr(reqCtx, params, ErrTableNotFound)
+}
+
+// storeRecordMissing reports whether an error is a store read failure of
+// the not-found kind, in any sentinel family the store layers use: the
+// common not-found class and the dynamodb store's own raw sentinels.
+func storeRecordMissing(err error) bool {
+	return commonstore.IsNotFound(err) ||
+		errors.Is(err, dbstore.ErrTableNotFound) ||
+		errors.Is(err, dbstore.ErrBackupNotFound)
+}
+
+// describeByArn runs the shared shape of every ARN-addressed describe
+// core (backup, export, import): a length-validated ARN addresses one
+// record of the regional store, and a failed read maps to the family's
+// not-found sentinel rather than the store's raw error.
+func describeByArn[T any](s *DynamoDBService, reqCtx *request.RequestContext, arn string, arnValid bool, notFound error, get func(dbstore.DynamoDBStoreInterface) (T, error)) (T, error) {
+	var zero T
+	if !arnValid {
+		return zero, ErrInvalidParameter
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return zero, err
+	}
+	got, err := get(store)
+	if err != nil {
+		// Absence maps to the family's not-found sentinel; a storage fault
+		// (bucket I/O, an unreadable record) is reported as the storage
+		// error it is — never masquerading as absence.
+		if storeRecordMissing(err) {
+			return zero, notFound
+		}
+		return zero, err
+	}
+	return got, nil
 }
 
 func (s *DynamoDBService) validateAndGetActiveTable(reqCtx *request.RequestContext, params map[string]interface{}) (*dbstore.Table, error) {
@@ -75,15 +113,16 @@ func (s *DynamoDBService) backfillVectorIndex(ctx context.Context, store dbstore
 
 // applyRestoredVectorIndexes attaches vector index metadata to a restored
 // table, cloning each definition so the backup or source table records are
-// never mutated, and re-deriving index ARNs against the restored table's ARN.
-func applyRestoredVectorIndexes(table *dbstore.Table, vectorIdx []*dbstore.VectorIndex) {
+// never mutated, and re-deriving index ARNs against the restored table's
+// region and account through the ARN builder.
+func applyRestoredVectorIndexes(arnBuilder *svcarn.DynamoDBBuilder, table *dbstore.Table, vectorIdx []*dbstore.VectorIndex) {
 	if len(vectorIdx) == 0 {
 		return
 	}
 	copied := make([]*dbstore.VectorIndex, len(vectorIdx))
 	for i, vi := range vectorIdx {
 		clone := *vi
-		clone.IndexArn = table.ARN + "/index/" + vi.IndexName
+		clone.IndexArn = arnBuilder.Index(table.Name, vi.IndexName)
 		copied[i] = &clone
 	}
 	table.VectorIndexes = copied

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"google.golang.org/protobuf/proto"
 
@@ -44,19 +45,19 @@ func toPbParameterMetadata(p *ssmstore.Parameter) *pb.ParameterMetadata {
 	}
 	switch p.Type {
 	case ssmstore.ParameterTypeString:
-		meta.Type = pb.ParameterType_PARAMETER_TYPE_STRING
+		meta.Type = pbutil.Enum(pb.ParameterType_PARAMETER_TYPE_STRING)
 	case ssmstore.ParameterTypeStringList:
-		meta.Type = pb.ParameterType_PARAMETER_TYPE_STRING_LIST
+		meta.Type = pbutil.Enum(pb.ParameterType_PARAMETER_TYPE_STRING_LIST)
 	case ssmstore.ParameterTypeSecureString:
-		meta.Type = pb.ParameterType_PARAMETER_TYPE_SECURE_STRING
+		meta.Type = pbutil.Enum(pb.ParameterType_PARAMETER_TYPE_SECURE_STRING)
 	}
 	switch p.Tier {
 	case ssmstore.ParameterTierStandard:
-		meta.Tier = pb.ParameterTier_PARAMETER_TIER_STANDARD
+		meta.Tier = pbutil.Enum(pb.ParameterTier_PARAMETER_TIER_STANDARD)
 	case ssmstore.ParameterTierAdvanced:
-		meta.Tier = pb.ParameterTier_PARAMETER_TIER_ADVANCED
+		meta.Tier = pbutil.Enum(pb.ParameterTier_PARAMETER_TIER_ADVANCED)
 	case ssmstore.ParameterTierIntelligentTiering:
-		meta.Tier = pb.ParameterTier_PARAMETER_TIER_INTELLIGENT_TIERING
+		meta.Tier = pbutil.Enum(pb.ParameterTier_PARAMETER_TIER_INTELLIGENT_TIERING)
 	}
 	return meta
 }
@@ -103,19 +104,19 @@ func toPbParameterMetadataFromMeta(p *ssmstore.ParameterMetadata) *pb.ParameterM
 	}
 	switch p.Type {
 	case ssmstore.ParameterTypeString:
-		meta.Type = pb.ParameterType_PARAMETER_TYPE_STRING
+		meta.Type = pbutil.Enum(pb.ParameterType_PARAMETER_TYPE_STRING)
 	case ssmstore.ParameterTypeStringList:
-		meta.Type = pb.ParameterType_PARAMETER_TYPE_STRING_LIST
+		meta.Type = pbutil.Enum(pb.ParameterType_PARAMETER_TYPE_STRING_LIST)
 	case ssmstore.ParameterTypeSecureString:
-		meta.Type = pb.ParameterType_PARAMETER_TYPE_SECURE_STRING
+		meta.Type = pbutil.Enum(pb.ParameterType_PARAMETER_TYPE_SECURE_STRING)
 	}
 	switch p.Tier {
 	case ssmstore.ParameterTierStandard:
-		meta.Tier = pb.ParameterTier_PARAMETER_TIER_STANDARD
+		meta.Tier = pbutil.Enum(pb.ParameterTier_PARAMETER_TIER_STANDARD)
 	case ssmstore.ParameterTierAdvanced:
-		meta.Tier = pb.ParameterTier_PARAMETER_TIER_ADVANCED
+		meta.Tier = pbutil.Enum(pb.ParameterTier_PARAMETER_TIER_ADVANCED)
 	case ssmstore.ParameterTierIntelligentTiering:
-		meta.Tier = pb.ParameterTier_PARAMETER_TIER_INTELLIGENT_TIERING
+		meta.Tier = pbutil.Enum(pb.ParameterTier_PARAMETER_TIER_INTELLIGENT_TIERING)
 	}
 	return meta
 }

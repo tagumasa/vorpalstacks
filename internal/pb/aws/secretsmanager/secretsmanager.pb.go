@@ -1316,7 +1316,7 @@ func (x *ExternalSecretRotationMetadataItem) GetValue() string {
 
 type Filter struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           FilterNameStringType   `protobuf:"varint,219859213,opt,name=key,proto3,enum=secretsmanager.FilterNameStringType" json:"key,omitempty"`
+	Key           *FilterNameStringType  `protobuf:"varint,219859213,opt,name=key,proto3,enum=secretsmanager.FilterNameStringType,oneof" json:"key,omitempty"`
 	Values        []string               `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1353,8 +1353,8 @@ func (*Filter) Descriptor() ([]byte, []int) {
 }
 
 func (x *Filter) GetKey() FilterNameStringType {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return FilterNameStringType_FILTER_NAME_STRING_TYPE_TAG_KEY
 }
@@ -2128,8 +2128,8 @@ type ListSecretsRequest struct {
 	Includeplanneddeletion *bool                  `protobuf:"varint,64231622,opt,name=includeplanneddeletion,proto3,oneof" json:"includeplanneddeletion,omitempty"`
 	Maxresults             *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken              *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Sortby                 SortByType             `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=secretsmanager.SortByType" json:"sortby,omitempty"`
-	Sortorder              SortOrderType          `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=secretsmanager.SortOrderType" json:"sortorder,omitempty"`
+	Sortby                 *SortByType            `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=secretsmanager.SortByType,oneof" json:"sortby,omitempty"`
+	Sortorder              *SortOrderType         `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=secretsmanager.SortOrderType,oneof" json:"sortorder,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2193,15 +2193,15 @@ func (x *ListSecretsRequest) GetNexttoken() string {
 }
 
 func (x *ListSecretsRequest) GetSortby() SortByType {
-	if x != nil {
-		return x.Sortby
+	if x != nil && x.Sortby != nil {
+		return *x.Sortby
 	}
 	return SortByType_SORT_BY_TYPE_LAST_ACCESSED_DATE
 }
 
 func (x *ListSecretsRequest) GetSortorder() SortOrderType {
-	if x != nil {
-		return x.Sortorder
+	if x != nil && x.Sortorder != nil {
+		return *x.Sortorder
 	}
 	return SortOrderType_SORT_ORDER_TYPE_ASC
 }
@@ -2927,7 +2927,7 @@ type ReplicationStatusType struct {
 	Kmskeyid         *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Lastaccesseddate *string                `protobuf:"bytes,194418963,opt,name=lastaccesseddate,proto3,oneof" json:"lastaccesseddate,omitempty"`
 	Region           *string                `protobuf:"bytes,154040478,opt,name=region,proto3,oneof" json:"region,omitempty"`
-	Status           StatusType             `protobuf:"varint,6222352,opt,name=status,proto3,enum=secretsmanager.StatusType" json:"status,omitempty"`
+	Status           *StatusType            `protobuf:"varint,6222352,opt,name=status,proto3,enum=secretsmanager.StatusType,oneof" json:"status,omitempty"`
 	Statusmessage    *string                `protobuf:"bytes,72590095,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -2985,8 +2985,8 @@ func (x *ReplicationStatusType) GetRegion() string {
 }
 
 func (x *ReplicationStatusType) GetStatus() StatusType {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return StatusType_STATUS_TYPE_INSYNC
 }
@@ -4573,10 +4573,11 @@ const file_secretsmanager_proto_rawDesc = "" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tH\x00R\x03key\x88\x01\x01\x12\x1d\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\x06\n" +
 	"\x04_keyB\b\n" +
-	"\x06_value\"^\n" +
-	"\x06Filter\x129\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\x0e2$.secretsmanager.FilterNameStringTypeR\x03key\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xea\x04\n" +
+	"\x06_value\"k\n" +
+	"\x06Filter\x12>\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\x0e2$.secretsmanager.FilterNameStringTypeH\x00R\x03key\x88\x01\x01\x12\x19\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\x06\n" +
+	"\x04_key\"\xea\x04\n" +
 	"\x18GetRandomPasswordRequest\x125\n" +
 	"\x11excludecharacters\x18\xfeޒ\xa0\x01 \x01(\tH\x00R\x11excludecharacters\x88\x01\x01\x122\n" +
 	"\x10excludelowercase\x18\x9b\xaa\xd9k \x01(\bH\x01R\x10excludelowercase\x88\x01\x01\x12.\n" +
@@ -4667,20 +4668,23 @@ const file_secretsmanager_proto_rawDesc = "" +
 	"\x04_arnB\a\n" +
 	"\x05_nameB\f\n" +
 	"\n" +
-	"_nexttoken\"\x88\x03\n" +
+	"_nexttoken\"\xab\x03\n" +
 	"\x12ListSecretsRequest\x123\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x16.secretsmanager.FilterR\afilters\x12>\n" +
 	"\x16includeplanneddeletion\x18Ʊ\xd0\x1e \x01(\bH\x00R\x16includeplanneddeletion\x88\x01\x01\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x125\n" +
-	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x1a.secretsmanager.SortByTypeR\x06sortby\x12?\n" +
-	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x1d.secretsmanager.SortOrderTypeR\tsortorderB\x19\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12:\n" +
+	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x1a.secretsmanager.SortByTypeH\x03R\x06sortby\x88\x01\x01\x12D\n" +
+	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x1d.secretsmanager.SortOrderTypeH\x04R\tsortorder\x88\x01\x01B\x19\n" +
 	"\x17_includeplanneddeletionB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x8e\x01\n" +
+	"_nexttokenB\t\n" +
+	"\a_sortbyB\f\n" +
+	"\n" +
+	"_sortorder\"\x8e\x01\n" +
 	"\x13ListSecretsResponse\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12C\n" +
 	"\n" +
@@ -4750,16 +4754,17 @@ const file_secretsmanager_proto_rawDesc = "" +
 	" ReplicateSecretToRegionsResponse\x12\x19\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12W\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x03(\v2%.secretsmanager.ReplicationStatusTypeR\x11replicationstatusB\x06\n" +
-	"\x04_arn\"\xb3\x02\n" +
+	"\x04_arn\"\xc3\x02\n" +
 	"\x15ReplicationStatusType\x12\"\n" +
 	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x00R\bkmskeyid\x88\x01\x01\x122\n" +
 	"\x10lastaccesseddate\x18\x93\xb2\xda\\ \x01(\tH\x01R\x10lastaccesseddate\x88\x01\x01\x12\x1e\n" +
-	"\x06region\x18\x9e\xf1\xb9I \x01(\tH\x02R\x06region\x88\x01\x01\x125\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.secretsmanager.StatusTypeR\x06status\x12,\n" +
-	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x03R\rstatusmessage\x88\x01\x01B\v\n" +
+	"\x06region\x18\x9e\xf1\xb9I \x01(\tH\x02R\x06region\x88\x01\x01\x12:\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.secretsmanager.StatusTypeH\x03R\x06status\x88\x01\x01\x12,\n" +
+	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x04R\rstatusmessage\x88\x01\x01B\v\n" +
 	"\t_kmskeyidB\x13\n" +
 	"\x11_lastaccesseddateB\t\n" +
-	"\a_regionB\x10\n" +
+	"\a_regionB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusmessage\"G\n" +
 	"\x17ResourceExistsException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -5171,6 +5176,7 @@ func file_secretsmanager_proto_init() {
 	file_secretsmanager_proto_msgTypes[13].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[14].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[15].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[16].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[17].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[18].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[20].OneofWrappers = []any{}

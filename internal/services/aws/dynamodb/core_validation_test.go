@@ -1,11 +1,14 @@
 package dynamodb
 
 import (
+	"context"
 	"errors"
+	"math"
+	"strconv"
 	"strings"
 	"testing"
-	"time"
 
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
@@ -31,16 +34,23 @@ func TestBuildConditionCheckerEvaluatesSyntheticMissingItem(t *testing.T) {
 	table := typedKeyTable("t1")
 
 	// An empty expression yields a nil checker — unconditional write.
-	if checker := buildConditionChecker(table.Name, map[string]*dbstore.AttributeValue{"pk": dbstore.NumberValue("1")}, conditionSpec{}); checker != nil {
+	checker, err := buildConditionChecker(table.Name, map[string]*dbstore.AttributeValue{"pk": dbstore.NumberValue("1")}, conditionSpec{})
+	if err != nil {
+		t.Fatalf("empty condition: unexpected error %v", err)
+	}
+	if checker != nil {
 		t.Fatalf("empty condition: expected nil checker, got %v", checker)
 	}
 
 	key := map[string]*dbstore.AttributeValue{"pk": dbstore.NumberValue("1")}
-	checker := buildConditionChecker(table.Name, key, conditionSpec{
+	checker, err = buildConditionChecker(table.Name, key, conditionSpec{
 		Expr:   "attribute_not_exists(pk)",
 		Names:  nil,
 		Values: nil,
 	})
+	if err != nil {
+		t.Fatalf("condition parse: unexpected error %v", err)
+	}
 
 	// A missing item evaluates against the synthetic empty item, so the
 	// condition holds.
@@ -117,7 +127,7 @@ func TestDeleteAndGetItemCoreValidateKeyBeforeStore(t *testing.T) {
 		t.Fatalf("deleteItemCore key type mismatch: expected typed key-mismatch error, got %v", err)
 	}
 
-	if _, err := svc.getItemCore(t.Context(), nil, table, map[string]*dbstore.AttributeValue{"pk": dbstore.StringValue("not-a-number")}); err == nil || !strings.Contains(err.Error(), "Type mismatch for key pk") {
+	if _, err := svc.getItemCore(t.Context(), nil, table, map[string]*dbstore.AttributeValue{"pk": dbstore.StringValue("not-a-number")}, false, ""); err == nil || !strings.Contains(err.Error(), "Type mismatch for key pk") {
 		t.Fatalf("getItemCore key type mismatch: expected typed key-mismatch error, got %v", err)
 	}
 }
@@ -196,7 +206,7 @@ func TestCreateTableCoreRejectsPayPerRequestWithThroughput(t *testing.T) {
 		ProvisionedThroughput: &dbstore.ProvisionedThroughput{ReadCapacityUnits: 5, WriteCapacityUnits: 5},
 	}
 
-	if _, err := svc.createTableCore(nil, in); !errors.Is(err, ErrInvalidParameter) {
+	if _, err := svc.createTableCore(context.Background(), nil, nil, in); !errors.Is(err, ErrInvalidParameter) {
 		t.Fatalf("PAY_PER_REQUEST with ProvisionedThroughput: expected ErrInvalidParameter, got %v", err)
 	}
 }
@@ -303,66 +313,6 @@ func repeatChar(c byte, n int) string {
 	return string(b)
 }
 
-func TestGetRecordsCoreValidatesLimitAndIterator(t *testing.T) {
-	svc := &DynamoDBService{}
-
-	// An explicit Limit below 1 is invalid (model PositiveLongObject
-	// minimum 1) even though an omitted Limit defaults. These checks run
-	// before any store access, which the nil store proves.
-	if _, err := svc.getRecordsCore(nil, "t|0|0", 0, true); !errors.Is(err, ErrInvalidParameter) {
-		t.Fatalf("explicit Limit 0: expected ErrInvalidParameter, got %v", err)
-	}
-
-	// Values above the documented bound of 1000 are the model's
-	// LimitExceededException, not a ValidationException.
-	if _, err := svc.getRecordsCore(nil, "t|0|0", 1001, true); !errors.Is(err, ErrStreamsLimitExceeded) {
-		t.Fatalf("Limit 1001: expected ErrStreamsLimitExceeded, got %v", err)
-	}
-
-	// Iterator verification needs the store's signing key, so the
-	// iterator-shape cases run against a real store.
-	st, err := storage.Open(t.TempDir())
-	if err != nil {
-		t.Fatalf("open storage: %v", err)
-	}
-	defer st.Close()
-	store := dbstore.NewDynamoDBStore(st, "123456789012", "us-east-1")
-	signingKey, err := store.Streams().IteratorSigningKey()
-	if err != nil {
-		t.Fatalf("signing key: %v", err)
-	}
-
-	if _, err := svc.getRecordsCore(store, "not-an-iterator", 10, true); !errors.Is(err, ErrInvalidParameter) {
-		t.Fatalf("malformed iterator: expected ErrInvalidParameter, got %v", err)
-	}
-	if _, err := svc.getRecordsCore(store, "t|0|0", 10, true); !errors.Is(err, ErrInvalidParameter) {
-		t.Fatalf("hand-crafted plaintext iterator: expected ErrInvalidParameter, got %v", err)
-	}
-
-	// A shard iterator older than the fifteen-minute lifetime is expired.
-	restoreNow := streamTimeNow
-	streamTimeNow = func() time.Time { return time.Now().Add(-20 * time.Minute) }
-	stale := encodeShardIterator(signingKey, "t", 0)
-	streamTimeNow = restoreNow
-	if _, err := svc.getRecordsCore(store, stale, 10, true); !errors.Is(err, ErrExpiredIterator) {
-		t.Fatalf("expired iterator: expected ErrExpiredIterator, got %v", err)
-	}
-}
-
-func TestGetShardIteratorCoreRequiresParameters(t *testing.T) {
-	svc := &DynamoDBService{}
-
-	if _, err := svc.getShardIteratorCore(nil, "", "shard-1", "LATEST", ""); !errors.Is(err, ErrInvalidParameter) {
-		t.Fatalf("empty StreamArn: expected ErrInvalidParameter, got %v", err)
-	}
-	if _, err := svc.getShardIteratorCore(nil, "arn", "", "LATEST", ""); !errors.Is(err, ErrInvalidParameter) {
-		t.Fatalf("empty ShardId: expected ErrInvalidParameter, got %v", err)
-	}
-	if _, err := svc.getShardIteratorCore(nil, "arn", "shard-1", "", ""); !errors.Is(err, ErrInvalidParameter) {
-		t.Fatalf("empty ShardIteratorType: expected ErrInvalidParameter, got %v", err)
-	}
-}
-
 // A projection document path with a malformed bracket segment is rejected
 // at parse time — the same validateBracketIndex contract the
 // update-expression paths enforce — instead of silently parsing to index 0.
@@ -392,9 +342,114 @@ func TestParseProjectionExpressionRejectsMalformedBracketPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("valid bracket path rejected: %v", err)
 	}
-	if len(projection) != 1 || projection[0] != "doc.list[2].name" {
-		t.Fatalf("projection=%v, want the resolved path", projection)
+	if len(projection) != 1 || len(projection[0]) != 4 {
+		t.Fatalf("projection=%v, want one four-segment path", projection)
 	}
+
+	// An undefined expression attribute name is a validation error on the
+	// projection plane, exactly as on the condition and update planes: the
+	// alias may not silently stand as a literal name the projection then
+	// fails to find.
+	undefinedAlias := map[string]interface{}{
+		"ProjectionExpression": "#p",
+	}
+	if _, err := parseProjectionExpression(undefinedAlias); err == nil {
+		t.Fatal("undefined alias accepted: the projection must reject a #name the names map does not define")
+	}
+}
+
+// A bracket index too large to represent never wraps into a small valid
+// index: the accumulation bails at the first digit that would overflow,
+// so an absurd document-path index is a validation error instead of
+// silently addressing an unrelated list position.
+func TestBracketIndexOverflowIsRejected(t *testing.T) {
+	if _, err := validateBracketIndex("18446744073709551617"); err == nil {
+		t.Fatal("2^64+1 wraps to a small index when accumulated unchecked; must be rejected")
+	}
+	if _, err := validateBracketIndex(strings.Repeat("9", 25)); err == nil {
+		t.Fatal("a 25-digit index must be rejected, not wrapped")
+	}
+	maxText := strconv.FormatInt(int64(math.MaxInt), 10)
+	idx, err := validateBracketIndex(maxText)
+	if err != nil {
+		t.Fatalf("the largest representable index rejected: %v", err)
+	}
+	if idx != math.MaxInt {
+		t.Fatalf("idx = %d, want the largest representable index", idx)
+	}
+}
+
+// A whole-token projection alias stands for exactly one attribute name: when
+// the documented name itself contains '.', the resolved name must stay a
+// single top-level path segment instead of being re-split into a document
+// path. The naming-rules page grounds the pin — attribute names containing
+// dots are addressable through expression attribute names. The compound
+// form (#p.#n) keeps descending: each of its segments resolves separately.
+func TestGetItemProjectionAliasAddressesDottedNameAsOneSegment(t *testing.T) {
+	svc, reqCtx := newLegacyTestService(t)
+	ctx := context.Background()
+
+	seed := func(t *testing.T) {
+		t.Helper()
+		if _, err := svc.PutItem(ctx, reqCtx, &request.ParsedRequest{Parameters: map[string]interface{}{
+			"TableName": "LegacyTable",
+			"Item": map[string]interface{}{
+				"id":          map[string]interface{}{"S": "A"},
+				"sk":          map[string]interface{}{"S": "1"},
+				"dotted.name": map[string]interface{}{"S": "top-level"},
+				"dotted":      map[string]interface{}{"M": map[string]interface{}{"name": map[string]interface{}{"S": "nested"}}},
+			},
+		}}); err != nil {
+			t.Fatalf("seed item: %v", err)
+		}
+	}
+	key := map[string]interface{}{"id": map[string]interface{}{"S": "A"}, "sk": map[string]interface{}{"S": "1"}}
+
+	t.Run("whole-token alias", func(t *testing.T) {
+		seed(t)
+		resp, err := svc.GetItem(ctx, reqCtx, &request.ParsedRequest{Parameters: map[string]interface{}{
+			"TableName":                "LegacyTable",
+			"Key":                      key,
+			"ProjectionExpression":     "#d",
+			"ExpressionAttributeNames": map[string]interface{}{"#d": "dotted.name"},
+		}})
+		if err != nil {
+			t.Fatalf("GetItem: %v", err)
+		}
+		item := resp.(map[string]interface{})["Item"].(map[string]interface{})
+		if av, ok := item["dotted.name"].(map[string]interface{}); !ok || av["S"] != "top-level" {
+			t.Fatalf("projected item = %v, want the top-level attribute dotted.name", item)
+		}
+		if _, hasNested := item["dotted"]; hasNested {
+			t.Fatalf("projected item = %v, the alias must not re-split into the nested path", item)
+		}
+	})
+
+	t.Run("compound alias still descends", func(t *testing.T) {
+		seed(t)
+		resp, err := svc.GetItem(ctx, reqCtx, &request.ParsedRequest{Parameters: map[string]interface{}{
+			"TableName":            "LegacyTable",
+			"Key":                  key,
+			"ProjectionExpression": "#p.#n",
+			"ExpressionAttributeNames": map[string]interface{}{
+				"#p": "dotted",
+				"#n": "name",
+			},
+		}})
+		if err != nil {
+			t.Fatalf("GetItem: %v", err)
+		}
+		item := resp.(map[string]interface{})["Item"].(map[string]interface{})
+		outer, ok := item["dotted"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("projected item = %v, want the nested map under dotted", item)
+		}
+		if av, ok := outer["M"].(map[string]interface{}); !ok {
+			t.Fatalf("dotted = %v, want the M-shaped nested value", outer)
+		} else if inner, ok := av["name"].(map[string]interface{}); !ok || inner["S"] != "nested" {
+			t.Fatalf("dotted.name = %v, want the nested value", av)
+		}
+	})
 }
 
 // The three string enums the table cores persist must be validated before
@@ -449,8 +504,8 @@ func TestBuildTableDescriptionRendersReplicas(t *testing.T) {
 	}
 
 	desc := svc.buildTableDescription(table, svc.replicasForTable(store, table.Name))
-	if replicas, ok := desc["Replicas"].([]interface{}); !ok || len(replicas) != 0 {
-		t.Fatalf("standalone table replicas = %v, want empty", desc["Replicas"])
+	if _, ok := desc["Replicas"]; ok {
+		t.Fatalf("standalone table replicas = %v, want the member absent", desc["Replicas"])
 	}
 
 	if _, err := store.GlobalTables().Create("ImpTbl", []*dbstore.Replica{
@@ -641,6 +696,131 @@ func TestTransactReplayReadUnits(t *testing.T) {
 
 	units = transactReplayReadUnits([]writeOperation{{opType: "Delete", tableName: "T"}})
 	if units["T"] != 2 {
-		t.Fatalf("absent delete replay read units = %v, want 2", units["T"])
+		t.Fatalf("absent delete replay read units = %v, want T:2", units)
 	}
 }
+
+// streamPlaneFixture stands up one streamed table with two committed item
+// writes, the state every Streams read pin below starts from.
+func streamPlaneFixture(t *testing.T) (*DynamoDBService, dbstore.DynamoDBStoreInterface, *request.RequestContext, *dbstore.Table) {
+	t.Helper()
+	sm, err := storage.NewRegionStorageManager(&storage.Config{Path: t.TempDir()})
+	if err != nil {
+		t.Fatalf("storage manager: %v", err)
+	}
+	t.Cleanup(func() { sm.Close() })
+	svc := &DynamoDBService{}
+	svc.SetStorageManager(sm)
+
+	store, err := svc.GetCachedStoreForRegion("us-east-1")
+	if err != nil {
+		t.Fatalf("region store: %v", err)
+	}
+	table, err := store.Tables().Create(dbstore.CreateTableParams{
+		Name:                 "StreamsPinTable",
+		KeySchema:            []*dbstore.KeySchemaElement{{AttributeName: "id", KeyType: dbstore.KeyTypeHash}},
+		AttributeDefinitions: []*dbstore.AttributeDefinition{{AttributeName: "id", AttributeType: dbstore.ScalarAttributeTypeS}},
+		BillingMode:          dbstore.BillingModePayPerRequest,
+		StreamSpecification:  &dbstore.StreamSpecification{StreamEnabled: true, StreamViewType: dbstore.StreamViewTypeNewAndOldImages},
+	})
+	if err != nil {
+		t.Fatalf("create streamed table: %v", err)
+	}
+	reqCtx := request.NewRequestContext(context.Background(), sm, "123456789012", "us-east-1")
+	for _, id := range []string{"a", "b"} {
+		if _, err := svc.PutItem(context.Background(), reqCtx, &request.ParsedRequest{Parameters: map[string]interface{}{
+			"TableName": "StreamsPinTable",
+			"Item":      map[string]interface{}{"id": map[string]interface{}{"S": id}},
+		}}); err != nil {
+			t.Fatalf("seed put %s: %v", id, err)
+		}
+	}
+	return svc, store, reqCtx, table
+}
+
+// streamShardID reads the stream's single shard id the way a client does:
+// from DescribeStream's response.
+func streamShardID(t *testing.T, svc *DynamoDBService, reqCtx *request.RequestContext, streamArn string) string {
+	t.Helper()
+	resp, err := svc.DescribeStream(context.Background(), reqCtx, &request.ParsedRequest{Parameters: map[string]interface{}{"StreamArn": streamArn}})
+	if err != nil {
+		t.Fatalf("describe stream: %v", err)
+	}
+	shards := resp.(map[string]interface{})["StreamDescription"].(map[string]interface{})["Shards"].([]interface{})
+	if len(shards) != 1 {
+		t.Fatalf("expected the single shard, got %d", len(shards))
+	}
+	return shards[0].(map[string]interface{})["ShardId"].(string)
+}
+
+// TestDescribeStreamValidatesAndHonoursRequestMembers pins the
+// DescribeStream request members against the model: the Limit range rejects
+// an explicit below-one value, the ExclusiveStartShardId length bounds hold
+// and the cursor positions the page after the matching shard, and the
+// ShardFilter accepts the enum's lone CHILD_SHARDS value — whose answer over
+// a never-splitting single shard is an empty list — while rejecting any
+// other type. The shard's sequence numbers ride the wire in the model's
+// 21-40 character form.
+
+// TestGetShardIteratorValidatesShardIdAndSequenceNumber pins the
+// GetShardIterator members against the model: a ShardId outside the 28-65
+// length bounds is a validation error and a well-formed id that is not the
+// stream's shard answers ResourceNotFound; the SequenceNumber length is the
+// model's 21-40 and the padded wire form round-trips through
+// AT/AFTER_SEQUENCE_NUMBER; and a position whose first record the retention
+// window already removed is the documented TrimmedDataAccessException at
+// iterator-issuing time.
+
+// streamsFaultStore wraps a real store so that every Update hands its
+// callback a transaction whose buckets all delegate to the carrying
+// transaction except the streams bucket, whose writes fail — the
+// storage-fault class the stream record write can hit inside the item
+// write's own transaction.
+type streamsFaultStore struct {
+	dbstore.DynamoDBStoreInterface
+}
+
+func (w streamsFaultStore) Update(ctx context.Context, fn func(txn *dbstore.DynamoDBTxn) error) error {
+	return w.DynamoDBStoreInterface.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+		return fn(w.NewTxn(faultingStreamsTxn{txn.RawTxn()}))
+	})
+}
+
+type faultingStreamsTxn struct {
+	storage.Transaction
+}
+
+func (t faultingStreamsTxn) Bucket(name string) storage.Bucket {
+	if name == "dynamodb_streams-us-east-1" {
+		return faultingStreamsBucket{}
+	}
+	return t.Transaction.Bucket(name)
+}
+
+type faultingStreamsBucket struct {
+	storage.Bucket
+}
+
+func (faultingStreamsBucket) Put(key, value []byte) error {
+	return errors.New("injected stream-record write failure")
+}
+
+// TestStreamRecordWriteFailureFailsTheItemWrite pins the capture
+// atomicity: when the stream record write fails inside the carrying
+// transaction, the item write itself fails and nothing commits — a streamed
+// table's item change never lands without the stream record its
+// StreamSpecification promises.
+
+// TestShardIteratorIsBoundToItsStreamGeneration pins the iterator's stream
+// identity and the generation boundary: UpdateTable regenerates the stream
+// ARN on every re-enable, an iterator issued for the superseded generation —
+// whose signature, table, and position are all still valid — must answer
+// ResourceNotFound against the successor stream, exactly as an iterator of a
+// stream that no longer exists does, and the re-enabled stream is a new
+// generation that starts empty — its record space carries none of the
+// superseded generation's records, and its own writes read back under its
+// own ARN.
+
+// TestListStreamsRejectsBelowOneLimit pins the ListStreams Limit range: an
+// explicit value below the model's minimum of 1 is a ValidationException,
+// while an omitted Limit takes the default page.

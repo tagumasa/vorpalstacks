@@ -53,6 +53,7 @@ type FieldData struct {
 	Type                    string
 	Number                  int
 	IsRequired              bool
+	IsEnumRef               bool
 	HTTPLabel               bool
 	HTTPQuery               string
 	HTTPHeader              string

@@ -117,8 +117,9 @@ func (a *App) newServiceState() *serviceState {
 	}
 }
 
-// wireKMSCheckers injects KMS key checkers into every constructed service
-// that validates key identifiers against KMS. It runs after the whole
+// wireKMSCheckers injects KMS key checkers — and the DynamoDB SSE
+// key-identifier resolver — into every constructed service that validates
+// or resolves key identifiers against KMS. It runs after the whole
 // initialiser list so the wiring depends only on which services are
 // enabled — never on another service's initialiser having run — and each
 // target is guarded individually, so every enable/disable combination
@@ -133,6 +134,9 @@ func wireKMSCheckers(st *serviceState) {
 	}
 	if st.kinesisService != nil {
 		st.kinesisService.SetKMSChecker(st.kmsService.NewKeyChecker())
+	}
+	if st.dynamoDBService != nil {
+		st.dynamoDBService.SetKMSResolver(st.kmsService.NewKeyResolver())
 	}
 }
 

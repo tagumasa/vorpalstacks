@@ -1698,6 +1698,7 @@ const (
 	MetricDimensionName_METRIC_DIMENSION_NAME_EMAIL_IDENTITY    MetricDimensionName = 0
 	MetricDimensionName_METRIC_DIMENSION_NAME_ISP               MetricDimensionName = 1
 	MetricDimensionName_METRIC_DIMENSION_NAME_CONFIGURATION_SET MetricDimensionName = 2
+	MetricDimensionName_METRIC_DIMENSION_NAME_TENANT_NAME       MetricDimensionName = 3
 )
 
 // Enum value maps for MetricDimensionName.
@@ -1706,11 +1707,13 @@ var (
 		0: "METRIC_DIMENSION_NAME_EMAIL_IDENTITY",
 		1: "METRIC_DIMENSION_NAME_ISP",
 		2: "METRIC_DIMENSION_NAME_CONFIGURATION_SET",
+		3: "METRIC_DIMENSION_NAME_TENANT_NAME",
 	}
 	MetricDimensionName_value = map[string]int32{
 		"METRIC_DIMENSION_NAME_EMAIL_IDENTITY":    0,
 		"METRIC_DIMENSION_NAME_ISP":               1,
 		"METRIC_DIMENSION_NAME_CONFIGURATION_SET": 2,
+		"METRIC_DIMENSION_NAME_TENANT_NAME":       3,
 	}
 )
 
@@ -2880,8 +2883,8 @@ func (WarmupStatus) EnumDescriptor() ([]byte, []int) {
 type AccountDetails struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	Additionalcontactemailaddresses []string               `protobuf:"bytes,322089693,rep,name=additionalcontactemailaddresses,proto3" json:"additionalcontactemailaddresses,omitempty"`
-	Contactlanguage                 ContactLanguage        `protobuf:"varint,114240022,opt,name=contactlanguage,proto3,enum=sesv2.ContactLanguage" json:"contactlanguage,omitempty"`
-	Mailtype                        MailType               `protobuf:"varint,138144527,opt,name=mailtype,proto3,enum=sesv2.MailType" json:"mailtype,omitempty"`
+	Contactlanguage                 *ContactLanguage       `protobuf:"varint,114240022,opt,name=contactlanguage,proto3,enum=sesv2.ContactLanguage,oneof" json:"contactlanguage,omitempty"`
+	Mailtype                        *MailType              `protobuf:"varint,138144527,opt,name=mailtype,proto3,enum=sesv2.MailType,oneof" json:"mailtype,omitempty"`
 	Reviewdetails                   *ReviewDetails         `protobuf:"bytes,378909498,opt,name=reviewdetails,proto3" json:"reviewdetails,omitempty"`
 	Usecasedescription              *string                `protobuf:"bytes,141053987,opt,name=usecasedescription,proto3,oneof" json:"usecasedescription,omitempty"`
 	Websiteurl                      *string                `protobuf:"bytes,201971828,opt,name=websiteurl,proto3,oneof" json:"websiteurl,omitempty"`
@@ -2927,15 +2930,15 @@ func (x *AccountDetails) GetAdditionalcontactemailaddresses() []string {
 }
 
 func (x *AccountDetails) GetContactlanguage() ContactLanguage {
-	if x != nil {
-		return x.Contactlanguage
+	if x != nil && x.Contactlanguage != nil {
+		return *x.Contactlanguage
 	}
 	return ContactLanguage_CONTACT_LANGUAGE_EN
 }
 
 func (x *AccountDetails) GetMailtype() MailType {
-	if x != nil {
-		return x.Mailtype
+	if x != nil && x.Mailtype != nil {
+		return *x.Mailtype
 	}
 	return MailType_MAIL_TYPE_MARKETING
 }
@@ -3190,14 +3193,14 @@ func (*AssociateEmailIdentityCertificateResponse) Descriptor() ([]byte, []int) {
 }
 
 type Attachment struct {
-	state                   protoimpl.MessageState            `protogen:"open.v1"`
-	Contentdescription      *string                           `protobuf:"bytes,29266325,opt,name=contentdescription,proto3,oneof" json:"contentdescription,omitempty"`
-	Contentdisposition      AttachmentContentDisposition      `protobuf:"varint,120040130,opt,name=contentdisposition,proto3,enum=sesv2.AttachmentContentDisposition" json:"contentdisposition,omitempty"`
-	Contentid               *string                           `protobuf:"bytes,431030096,opt,name=contentid,proto3,oneof" json:"contentid,omitempty"`
-	Contenttransferencoding AttachmentContentTransferEncoding `protobuf:"varint,400458117,opt,name=contenttransferencoding,proto3,enum=sesv2.AttachmentContentTransferEncoding" json:"contenttransferencoding,omitempty"`
-	Contenttype             *string                           `protobuf:"bytes,333064851,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
-	Filename                string                            `protobuf:"bytes,536729737,opt,name=filename,proto3" json:"filename,omitempty"`
-	Rawcontent              []byte                            `protobuf:"bytes,230318007,opt,name=rawcontent,proto3" json:"rawcontent,omitempty"`
+	state                   protoimpl.MessageState             `protogen:"open.v1"`
+	Contentdescription      *string                            `protobuf:"bytes,29266325,opt,name=contentdescription,proto3,oneof" json:"contentdescription,omitempty"`
+	Contentdisposition      *AttachmentContentDisposition      `protobuf:"varint,120040130,opt,name=contentdisposition,proto3,enum=sesv2.AttachmentContentDisposition,oneof" json:"contentdisposition,omitempty"`
+	Contentid               *string                            `protobuf:"bytes,431030096,opt,name=contentid,proto3,oneof" json:"contentid,omitempty"`
+	Contenttransferencoding *AttachmentContentTransferEncoding `protobuf:"varint,400458117,opt,name=contenttransferencoding,proto3,enum=sesv2.AttachmentContentTransferEncoding,oneof" json:"contenttransferencoding,omitempty"`
+	Contenttype             *string                            `protobuf:"bytes,333064851,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
+	Filename                string                             `protobuf:"bytes,536729737,opt,name=filename,proto3" json:"filename,omitempty"`
+	Rawcontent              []byte                             `protobuf:"bytes,230318007,opt,name=rawcontent,proto3" json:"rawcontent,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -3240,8 +3243,8 @@ func (x *Attachment) GetContentdescription() string {
 }
 
 func (x *Attachment) GetContentdisposition() AttachmentContentDisposition {
-	if x != nil {
-		return x.Contentdisposition
+	if x != nil && x.Contentdisposition != nil {
+		return *x.Contentdisposition
 	}
 	return AttachmentContentDisposition_ATTACHMENT_CONTENT_DISPOSITION_INLINE
 }
@@ -3254,8 +3257,8 @@ func (x *Attachment) GetContentid() string {
 }
 
 func (x *Attachment) GetContenttransferencoding() AttachmentContentTransferEncoding {
-	if x != nil {
-		return x.Contenttransferencoding
+	if x != nil && x.Contenttransferencoding != nil {
+		return *x.Contenttransferencoding
 	}
 	return AttachmentContentTransferEncoding_ATTACHMENT_CONTENT_TRANSFER_ENCODING_QUOTED_PRINTABLE
 }
@@ -3620,7 +3623,7 @@ func (x *Body) GetText() *Content {
 type Bounce struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Bouncesubtype  *string                `protobuf:"bytes,297220246,opt,name=bouncesubtype,proto3,oneof" json:"bouncesubtype,omitempty"`
-	Bouncetype     BounceType             `protobuf:"varint,490222550,opt,name=bouncetype,proto3,enum=sesv2.BounceType" json:"bouncetype,omitempty"`
+	Bouncetype     *BounceType            `protobuf:"varint,490222550,opt,name=bouncetype,proto3,enum=sesv2.BounceType,oneof" json:"bouncetype,omitempty"`
 	Diagnosticcode *string                `protobuf:"bytes,20043524,opt,name=diagnosticcode,proto3,oneof" json:"diagnosticcode,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -3664,8 +3667,8 @@ func (x *Bounce) GetBouncesubtype() string {
 }
 
 func (x *Bounce) GetBouncetype() BounceType {
-	if x != nil {
-		return x.Bouncetype
+	if x != nil && x.Bouncetype != nil {
+		return *x.Bouncetype
 	}
 	return BounceType_BOUNCE_TYPE_UNDETERMINED
 }
@@ -3793,7 +3796,7 @@ type BulkEmailEntryResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Error         *string                `protobuf:"bytes,328047858,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Messageid     *string                `protobuf:"bytes,360526634,opt,name=messageid,proto3,oneof" json:"messageid,omitempty"`
-	Status        BulkEmailStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.BulkEmailStatus" json:"status,omitempty"`
+	Status        *BulkEmailStatus       `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.BulkEmailStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3843,8 +3846,8 @@ func (x *BulkEmailEntryResult) GetMessageid() string {
 }
 
 func (x *BulkEmailEntryResult) GetStatus() BulkEmailStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return BulkEmailStatus_BULK_EMAIL_STATUS_MESSAGE_REJECTED
 }
@@ -5044,7 +5047,7 @@ func (*CreateCustomVerificationEmailTemplateResponse) Descriptor() ([]byte, []in
 type CreateDedicatedIpPoolRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Poolname      string                 `protobuf:"bytes,81872585,opt,name=poolname,proto3" json:"poolname,omitempty"`
-	Scalingmode   ScalingMode            `protobuf:"varint,210356138,opt,name=scalingmode,proto3,enum=sesv2.ScalingMode" json:"scalingmode,omitempty"`
+	Scalingmode   *ScalingMode           `protobuf:"varint,210356138,opt,name=scalingmode,proto3,enum=sesv2.ScalingMode,oneof" json:"scalingmode,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5088,8 +5091,8 @@ func (x *CreateDedicatedIpPoolRequest) GetPoolname() string {
 }
 
 func (x *CreateDedicatedIpPoolRequest) GetScalingmode() ScalingMode {
-	if x != nil {
-		return x.Scalingmode
+	if x != nil && x.Scalingmode != nil {
+		return *x.Scalingmode
 	}
 	return ScalingMode_SCALING_MODE_STANDARD
 }
@@ -5424,7 +5427,7 @@ func (x *CreateEmailIdentityRequest) GetTags() []*Tag {
 type CreateEmailIdentityResponse struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Dkimattributes           *DkimAttributes        `protobuf:"bytes,256039632,opt,name=dkimattributes,proto3" json:"dkimattributes,omitempty"`
-	Identitytype             IdentityType           `protobuf:"varint,499274628,opt,name=identitytype,proto3,enum=sesv2.IdentityType" json:"identitytype,omitempty"`
+	Identitytype             *IdentityType          `protobuf:"varint,499274628,opt,name=identitytype,proto3,enum=sesv2.IdentityType,oneof" json:"identitytype,omitempty"`
 	Verifiedforsendingstatus *bool                  `protobuf:"varint,163100765,opt,name=verifiedforsendingstatus,proto3,oneof" json:"verifiedforsendingstatus,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -5468,8 +5471,8 @@ func (x *CreateEmailIdentityResponse) GetDkimattributes() *DkimAttributes {
 }
 
 func (x *CreateEmailIdentityResponse) GetIdentitytype() IdentityType {
-	if x != nil {
-		return x.Identitytype
+	if x != nil && x.Identitytype != nil {
+		return *x.Identitytype
 	}
 	return IdentityType_IDENTITY_TYPE_MANAGED_DOMAIN
 }
@@ -5832,7 +5835,7 @@ func (x *CreateMultiRegionEndpointRequest) GetTags() []*Tag {
 type CreateMultiRegionEndpointResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Endpointid    *string                `protobuf:"bytes,35808946,opt,name=endpointid,proto3,oneof" json:"endpointid,omitempty"`
-	Status        Status                 `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.Status" json:"status,omitempty"`
+	Status        *Status                `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.Status,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5875,8 +5878,8 @@ func (x *CreateMultiRegionEndpointResponse) GetEndpointid() string {
 }
 
 func (x *CreateMultiRegionEndpointResponse) GetStatus() Status {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return Status_STATUS_READY
 }
@@ -6032,7 +6035,7 @@ func (*CreateTenantResourceAssociationResponse) Descriptor() ([]byte, []int) {
 type CreateTenantResponse struct {
 	state                 protoimpl.MessageState       `protogen:"open.v1"`
 	Createdtimestamp      *string                      `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
-	Sendingstatus         SendingStatus                `protobuf:"varint,420634540,opt,name=sendingstatus,proto3,enum=sesv2.SendingStatus" json:"sendingstatus,omitempty"`
+	Sendingstatus         *SendingStatus               `protobuf:"varint,420634540,opt,name=sendingstatus,proto3,enum=sesv2.SendingStatus,oneof" json:"sendingstatus,omitempty"`
 	Suppressionattributes *TenantSuppressionAttributes `protobuf:"bytes,17626546,opt,name=suppressionattributes,proto3" json:"suppressionattributes,omitempty"`
 	Tags                  []*Tag                       `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Tenantarn             *string                      `protobuf:"bytes,19777181,opt,name=tenantarn,proto3,oneof" json:"tenantarn,omitempty"`
@@ -6080,8 +6083,8 @@ func (x *CreateTenantResponse) GetCreatedtimestamp() string {
 }
 
 func (x *CreateTenantResponse) GetSendingstatus() SendingStatus {
-	if x != nil {
-		return x.Sendingstatus
+	if x != nil && x.Sendingstatus != nil {
+		return *x.Sendingstatus
 	}
 	return SendingStatus_SENDING_STATUS_DISABLED
 }
@@ -6259,7 +6262,7 @@ func (x *DailyVolume) GetVolumestatistics() *VolumeStatistics {
 
 type DashboardAttributes struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Engagementmetrics FeatureStatus          `protobuf:"varint,102186588,opt,name=engagementmetrics,proto3,enum=sesv2.FeatureStatus" json:"engagementmetrics,omitempty"`
+	Engagementmetrics *FeatureStatus         `protobuf:"varint,102186588,opt,name=engagementmetrics,proto3,enum=sesv2.FeatureStatus,oneof" json:"engagementmetrics,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -6295,15 +6298,15 @@ func (*DashboardAttributes) Descriptor() ([]byte, []int) {
 }
 
 func (x *DashboardAttributes) GetEngagementmetrics() FeatureStatus {
-	if x != nil {
-		return x.Engagementmetrics
+	if x != nil && x.Engagementmetrics != nil {
+		return *x.Engagementmetrics
 	}
 	return FeatureStatus_FEATURE_STATUS_DISABLED
 }
 
 type DashboardOptions struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Engagementmetrics FeatureStatus          `protobuf:"varint,102186588,opt,name=engagementmetrics,proto3,enum=sesv2.FeatureStatus" json:"engagementmetrics,omitempty"`
+	Engagementmetrics *FeatureStatus         `protobuf:"varint,102186588,opt,name=engagementmetrics,proto3,enum=sesv2.FeatureStatus,oneof" json:"engagementmetrics,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -6339,8 +6342,8 @@ func (*DashboardOptions) Descriptor() ([]byte, []int) {
 }
 
 func (x *DashboardOptions) GetEngagementmetrics() FeatureStatus {
-	if x != nil {
-		return x.Engagementmetrics
+	if x != nil && x.Engagementmetrics != nil {
+		return *x.Engagementmetrics
 	}
 	return FeatureStatus_FEATURE_STATUS_DISABLED
 }
@@ -7291,7 +7294,7 @@ func (x *DeleteMultiRegionEndpointRequest) GetEndpointname() string {
 
 type DeleteMultiRegionEndpointResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        Status                 `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.Status" json:"status,omitempty"`
+	Status        *Status                `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.Status,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7327,8 +7330,8 @@ func (*DeleteMultiRegionEndpointResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteMultiRegionEndpointResponse) GetStatus() Status {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return Status_STATUS_READY
 }
@@ -7590,13 +7593,13 @@ func (*DeleteTenantResponse) Descriptor() ([]byte, []int) {
 }
 
 type DeliverabilityTestReport struct {
-	state                    protoimpl.MessageState   `protogen:"open.v1"`
-	Createdate               *string                  `protobuf:"bytes,37690514,opt,name=createdate,proto3,oneof" json:"createdate,omitempty"`
-	Deliverabilityteststatus DeliverabilityTestStatus `protobuf:"varint,71311387,opt,name=deliverabilityteststatus,proto3,enum=sesv2.DeliverabilityTestStatus" json:"deliverabilityteststatus,omitempty"`
-	Fromemailaddress         *string                  `protobuf:"bytes,93506822,opt,name=fromemailaddress,proto3,oneof" json:"fromemailaddress,omitempty"`
-	Reportid                 *string                  `protobuf:"bytes,420903847,opt,name=reportid,proto3,oneof" json:"reportid,omitempty"`
-	Reportname               *string                  `protobuf:"bytes,526054737,opt,name=reportname,proto3,oneof" json:"reportname,omitempty"`
-	Subject                  *string                  `protobuf:"bytes,7939312,opt,name=subject,proto3,oneof" json:"subject,omitempty"`
+	state                    protoimpl.MessageState    `protogen:"open.v1"`
+	Createdate               *string                   `protobuf:"bytes,37690514,opt,name=createdate,proto3,oneof" json:"createdate,omitempty"`
+	Deliverabilityteststatus *DeliverabilityTestStatus `protobuf:"varint,71311387,opt,name=deliverabilityteststatus,proto3,enum=sesv2.DeliverabilityTestStatus,oneof" json:"deliverabilityteststatus,omitempty"`
+	Fromemailaddress         *string                   `protobuf:"bytes,93506822,opt,name=fromemailaddress,proto3,oneof" json:"fromemailaddress,omitempty"`
+	Reportid                 *string                   `protobuf:"bytes,420903847,opt,name=reportid,proto3,oneof" json:"reportid,omitempty"`
+	Reportname               *string                   `protobuf:"bytes,526054737,opt,name=reportname,proto3,oneof" json:"reportname,omitempty"`
+	Subject                  *string                   `protobuf:"bytes,7939312,opt,name=subject,proto3,oneof" json:"subject,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -7639,8 +7642,8 @@ func (x *DeliverabilityTestReport) GetCreatedate() string {
 }
 
 func (x *DeliverabilityTestReport) GetDeliverabilityteststatus() DeliverabilityTestStatus {
-	if x != nil {
-		return x.Deliverabilityteststatus
+	if x != nil && x.Deliverabilityteststatus != nil {
+		return *x.Deliverabilityteststatus
 	}
 	return DeliverabilityTestStatus_DELIVERABILITY_TEST_STATUS_IN_PROGRESS
 }
@@ -7677,7 +7680,7 @@ type DeliveryOptions struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Maxdeliveryseconds *int64                 `protobuf:"varint,16229983,opt,name=maxdeliveryseconds,proto3,oneof" json:"maxdeliveryseconds,omitempty"`
 	Sendingpoolname    *string                `protobuf:"bytes,89398333,opt,name=sendingpoolname,proto3,oneof" json:"sendingpoolname,omitempty"`
-	Tlspolicy          TlsPolicy              `protobuf:"varint,127629,opt,name=tlspolicy,proto3,enum=sesv2.TlsPolicy" json:"tlspolicy,omitempty"`
+	Tlspolicy          *TlsPolicy             `protobuf:"varint,127629,opt,name=tlspolicy,proto3,enum=sesv2.TlsPolicy,oneof" json:"tlspolicy,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -7727,8 +7730,8 @@ func (x *DeliveryOptions) GetSendingpoolname() string {
 }
 
 func (x *DeliveryOptions) GetTlspolicy() TlsPolicy {
-	if x != nil {
-		return x.Tlspolicy
+	if x != nil && x.Tlspolicy != nil {
+		return *x.Tlspolicy
 	}
 	return TlsPolicy_TLS_POLICY_OPTIONAL
 }
@@ -7926,15 +7929,15 @@ func (*DisassociateEmailIdentityCertificateResponse) Descriptor() ([]byte, []int
 }
 
 type DkimAttributes struct {
-	state                      protoimpl.MessageState      `protogen:"open.v1"`
-	Currentsigningkeylength    DkimSigningKeyLength        `protobuf:"varint,260519333,opt,name=currentsigningkeylength,proto3,enum=sesv2.DkimSigningKeyLength" json:"currentsigningkeylength,omitempty"`
-	Lastkeygenerationtimestamp *string                     `protobuf:"bytes,455425631,opt,name=lastkeygenerationtimestamp,proto3,oneof" json:"lastkeygenerationtimestamp,omitempty"`
-	Nextsigningkeylength       DkimSigningKeyLength        `protobuf:"varint,307141083,opt,name=nextsigningkeylength,proto3,enum=sesv2.DkimSigningKeyLength" json:"nextsigningkeylength,omitempty"`
-	Signingattributesorigin    DkimSigningAttributesOrigin `protobuf:"varint,255219696,opt,name=signingattributesorigin,proto3,enum=sesv2.DkimSigningAttributesOrigin" json:"signingattributesorigin,omitempty"`
-	Signingenabled             *bool                       `protobuf:"varint,289566486,opt,name=signingenabled,proto3,oneof" json:"signingenabled,omitempty"`
-	Signinghostedzone          *string                     `protobuf:"bytes,442955686,opt,name=signinghostedzone,proto3,oneof" json:"signinghostedzone,omitempty"`
-	Status                     DkimStatus                  `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.DkimStatus" json:"status,omitempty"`
-	Tokens                     []string                    `protobuf:"bytes,50282100,rep,name=tokens,proto3" json:"tokens,omitempty"`
+	state                      protoimpl.MessageState       `protogen:"open.v1"`
+	Currentsigningkeylength    *DkimSigningKeyLength        `protobuf:"varint,260519333,opt,name=currentsigningkeylength,proto3,enum=sesv2.DkimSigningKeyLength,oneof" json:"currentsigningkeylength,omitempty"`
+	Lastkeygenerationtimestamp *string                      `protobuf:"bytes,455425631,opt,name=lastkeygenerationtimestamp,proto3,oneof" json:"lastkeygenerationtimestamp,omitempty"`
+	Nextsigningkeylength       *DkimSigningKeyLength        `protobuf:"varint,307141083,opt,name=nextsigningkeylength,proto3,enum=sesv2.DkimSigningKeyLength,oneof" json:"nextsigningkeylength,omitempty"`
+	Signingattributesorigin    *DkimSigningAttributesOrigin `protobuf:"varint,255219696,opt,name=signingattributesorigin,proto3,enum=sesv2.DkimSigningAttributesOrigin,oneof" json:"signingattributesorigin,omitempty"`
+	Signingenabled             *bool                        `protobuf:"varint,289566486,opt,name=signingenabled,proto3,oneof" json:"signingenabled,omitempty"`
+	Signinghostedzone          *string                      `protobuf:"bytes,442955686,opt,name=signinghostedzone,proto3,oneof" json:"signinghostedzone,omitempty"`
+	Status                     *DkimStatus                  `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.DkimStatus,oneof" json:"status,omitempty"`
+	Tokens                     []string                     `protobuf:"bytes,50282100,rep,name=tokens,proto3" json:"tokens,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -7970,8 +7973,8 @@ func (*DkimAttributes) Descriptor() ([]byte, []int) {
 }
 
 func (x *DkimAttributes) GetCurrentsigningkeylength() DkimSigningKeyLength {
-	if x != nil {
-		return x.Currentsigningkeylength
+	if x != nil && x.Currentsigningkeylength != nil {
+		return *x.Currentsigningkeylength
 	}
 	return DkimSigningKeyLength_DKIM_SIGNING_KEY_LENGTH_RSA_1024_BIT
 }
@@ -7984,15 +7987,15 @@ func (x *DkimAttributes) GetLastkeygenerationtimestamp() string {
 }
 
 func (x *DkimAttributes) GetNextsigningkeylength() DkimSigningKeyLength {
-	if x != nil {
-		return x.Nextsigningkeylength
+	if x != nil && x.Nextsigningkeylength != nil {
+		return *x.Nextsigningkeylength
 	}
 	return DkimSigningKeyLength_DKIM_SIGNING_KEY_LENGTH_RSA_1024_BIT
 }
 
 func (x *DkimAttributes) GetSigningattributesorigin() DkimSigningAttributesOrigin {
-	if x != nil {
-		return x.Signingattributesorigin
+	if x != nil && x.Signingattributesorigin != nil {
+		return *x.Signingattributesorigin
 	}
 	return DkimSigningAttributesOrigin_DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_NORTHEAST_3
 }
@@ -8012,8 +8015,8 @@ func (x *DkimAttributes) GetSigninghostedzone() string {
 }
 
 func (x *DkimAttributes) GetStatus() DkimStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DkimStatus_DKIM_STATUS_PENDING
 }
@@ -8026,11 +8029,11 @@ func (x *DkimAttributes) GetTokens() []string {
 }
 
 type DkimSigningAttributes struct {
-	state                         protoimpl.MessageState      `protogen:"open.v1"`
-	Domainsigningattributesorigin DkimSigningAttributesOrigin `protobuf:"varint,248837556,opt,name=domainsigningattributesorigin,proto3,enum=sesv2.DkimSigningAttributesOrigin" json:"domainsigningattributesorigin,omitempty"`
-	Domainsigningprivatekey       *string                     `protobuf:"bytes,502133867,opt,name=domainsigningprivatekey,proto3,oneof" json:"domainsigningprivatekey,omitempty"`
-	Domainsigningselector         *string                     `protobuf:"bytes,454592926,opt,name=domainsigningselector,proto3,oneof" json:"domainsigningselector,omitempty"`
-	Nextsigningkeylength          DkimSigningKeyLength        `protobuf:"varint,307141083,opt,name=nextsigningkeylength,proto3,enum=sesv2.DkimSigningKeyLength" json:"nextsigningkeylength,omitempty"`
+	state                         protoimpl.MessageState       `protogen:"open.v1"`
+	Domainsigningattributesorigin *DkimSigningAttributesOrigin `protobuf:"varint,248837556,opt,name=domainsigningattributesorigin,proto3,enum=sesv2.DkimSigningAttributesOrigin,oneof" json:"domainsigningattributesorigin,omitempty"`
+	Domainsigningprivatekey       *string                      `protobuf:"bytes,502133867,opt,name=domainsigningprivatekey,proto3,oneof" json:"domainsigningprivatekey,omitempty"`
+	Domainsigningselector         *string                      `protobuf:"bytes,454592926,opt,name=domainsigningselector,proto3,oneof" json:"domainsigningselector,omitempty"`
+	Nextsigningkeylength          *DkimSigningKeyLength        `protobuf:"varint,307141083,opt,name=nextsigningkeylength,proto3,enum=sesv2.DkimSigningKeyLength,oneof" json:"nextsigningkeylength,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -8066,8 +8069,8 @@ func (*DkimSigningAttributes) Descriptor() ([]byte, []int) {
 }
 
 func (x *DkimSigningAttributes) GetDomainsigningattributesorigin() DkimSigningAttributesOrigin {
-	if x != nil {
-		return x.Domainsigningattributesorigin
+	if x != nil && x.Domainsigningattributesorigin != nil {
+		return *x.Domainsigningattributesorigin
 	}
 	return DkimSigningAttributesOrigin_DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_NORTHEAST_3
 }
@@ -8087,8 +8090,8 @@ func (x *DkimSigningAttributes) GetDomainsigningselector() string {
 }
 
 func (x *DkimSigningAttributes) GetNextsigningkeylength() DkimSigningKeyLength {
-	if x != nil {
-		return x.Nextsigningkeylength
+	if x != nil && x.Nextsigningkeylength != nil {
+		return *x.Nextsigningkeylength
 	}
 	return DkimSigningKeyLength_DKIM_SIGNING_KEY_LENGTH_RSA_1024_BIT
 }
@@ -8462,8 +8465,8 @@ func (x *EmailAddressInsightsMailboxEvaluations) GetMailboxexists() *EmailAddres
 }
 
 type EmailAddressInsightsVerdict struct {
-	state             protoimpl.MessageState                `protogen:"open.v1"`
-	Confidenceverdict EmailAddressInsightsConfidenceVerdict `protobuf:"varint,145545115,opt,name=confidenceverdict,proto3,enum=sesv2.EmailAddressInsightsConfidenceVerdict" json:"confidenceverdict,omitempty"`
+	state             protoimpl.MessageState                 `protogen:"open.v1"`
+	Confidenceverdict *EmailAddressInsightsConfidenceVerdict `protobuf:"varint,145545115,opt,name=confidenceverdict,proto3,enum=sesv2.EmailAddressInsightsConfidenceVerdict,oneof" json:"confidenceverdict,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -8499,8 +8502,8 @@ func (*EmailAddressInsightsVerdict) Descriptor() ([]byte, []int) {
 }
 
 func (x *EmailAddressInsightsVerdict) GetConfidenceverdict() EmailAddressInsightsConfidenceVerdict {
-	if x != nil {
-		return x.Confidenceverdict
+	if x != nil && x.Confidenceverdict != nil {
+		return *x.Confidenceverdict
 	}
 	return EmailAddressInsightsConfidenceVerdict_EMAIL_ADDRESS_INSIGHTS_CONFIDENCE_VERDICT_MEDIUM
 }
@@ -9133,9 +9136,9 @@ type ExportJobSummary struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Completedtimestamp *string                `protobuf:"bytes,333312139,opt,name=completedtimestamp,proto3,oneof" json:"completedtimestamp,omitempty"`
 	Createdtimestamp   *string                `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
-	Exportsourcetype   ExportSourceType       `protobuf:"varint,248243607,opt,name=exportsourcetype,proto3,enum=sesv2.ExportSourceType" json:"exportsourcetype,omitempty"`
+	Exportsourcetype   *ExportSourceType      `protobuf:"varint,248243607,opt,name=exportsourcetype,proto3,enum=sesv2.ExportSourceType,oneof" json:"exportsourcetype,omitempty"`
 	Jobid              *string                `protobuf:"bytes,108489298,opt,name=jobid,proto3,oneof" json:"jobid,omitempty"`
-	Jobstatus          JobStatus              `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus" json:"jobstatus,omitempty"`
+	Jobstatus          *JobStatus             `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus,oneof" json:"jobstatus,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -9185,8 +9188,8 @@ func (x *ExportJobSummary) GetCreatedtimestamp() string {
 }
 
 func (x *ExportJobSummary) GetExportsourcetype() ExportSourceType {
-	if x != nil {
-		return x.Exportsourcetype
+	if x != nil && x.Exportsourcetype != nil {
+		return *x.Exportsourcetype
 	}
 	return ExportSourceType_EXPORT_SOURCE_TYPE_METRICS_DATA
 }
@@ -9199,16 +9202,16 @@ func (x *ExportJobSummary) GetJobid() string {
 }
 
 func (x *ExportJobSummary) GetJobstatus() JobStatus {
-	if x != nil {
-		return x.Jobstatus
+	if x != nil && x.Jobstatus != nil {
+		return *x.Jobstatus
 	}
 	return JobStatus_JOB_STATUS_PROCESSING
 }
 
 type ExportMetric struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Aggregation   MetricAggregation      `protobuf:"varint,132460038,opt,name=aggregation,proto3,enum=sesv2.MetricAggregation" json:"aggregation,omitempty"`
-	Name          Metric                 `protobuf:"varint,266367751,opt,name=name,proto3,enum=sesv2.Metric" json:"name,omitempty"`
+	Aggregation   *MetricAggregation     `protobuf:"varint,132460038,opt,name=aggregation,proto3,enum=sesv2.MetricAggregation,oneof" json:"aggregation,omitempty"`
+	Name          *Metric                `protobuf:"varint,266367751,opt,name=name,proto3,enum=sesv2.Metric,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9244,15 +9247,15 @@ func (*ExportMetric) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExportMetric) GetAggregation() MetricAggregation {
-	if x != nil {
-		return x.Aggregation
+	if x != nil && x.Aggregation != nil {
+		return *x.Aggregation
 	}
 	return MetricAggregation_METRIC_AGGREGATION_VOLUME
 }
 
 func (x *ExportMetric) GetName() Metric {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return Metric_METRIC_TRANSIENT_BOUNCE
 }
@@ -10583,7 +10586,7 @@ func (*GetDeliverabilityDashboardOptionsRequest) Descriptor() ([]byte, []int) {
 
 type GetDeliverabilityDashboardOptionsResponse struct {
 	state                              protoimpl.MessageState                `protogen:"open.v1"`
-	Accountstatus                      DeliverabilityDashboardAccountStatus  `protobuf:"varint,961735,opt,name=accountstatus,proto3,enum=sesv2.DeliverabilityDashboardAccountStatus" json:"accountstatus,omitempty"`
+	Accountstatus                      *DeliverabilityDashboardAccountStatus `protobuf:"varint,961735,opt,name=accountstatus,proto3,enum=sesv2.DeliverabilityDashboardAccountStatus,oneof" json:"accountstatus,omitempty"`
 	Activesubscribeddomains            []*DomainDeliverabilityTrackingOption `protobuf:"bytes,441853281,rep,name=activesubscribeddomains,proto3" json:"activesubscribeddomains,omitempty"`
 	Dashboardenabled                   *bool                                 `protobuf:"varint,90846529,opt,name=dashboardenabled,proto3,oneof" json:"dashboardenabled,omitempty"`
 	Pendingexpirationsubscribeddomains []*DomainDeliverabilityTrackingOption `protobuf:"bytes,188697179,rep,name=pendingexpirationsubscribeddomains,proto3" json:"pendingexpirationsubscribeddomains,omitempty"`
@@ -10623,8 +10626,8 @@ func (*GetDeliverabilityDashboardOptionsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetDeliverabilityDashboardOptionsResponse) GetAccountstatus() DeliverabilityDashboardAccountStatus {
-	if x != nil {
-		return x.Accountstatus
+	if x != nil && x.Accountstatus != nil {
+		return *x.Accountstatus
 	}
 	return DeliverabilityDashboardAccountStatus_DELIVERABILITY_DASHBOARD_ACCOUNT_STATUS_DISABLED
 }
@@ -11202,12 +11205,12 @@ type GetEmailIdentityResponse struct {
 	Configurationsetname     *string                `protobuf:"bytes,403457485,opt,name=configurationsetname,proto3,oneof" json:"configurationsetname,omitempty"`
 	Dkimattributes           *DkimAttributes        `protobuf:"bytes,256039632,opt,name=dkimattributes,proto3" json:"dkimattributes,omitempty"`
 	Feedbackforwardingstatus *bool                  `protobuf:"varint,304617468,opt,name=feedbackforwardingstatus,proto3,oneof" json:"feedbackforwardingstatus,omitempty"`
-	Identitytype             IdentityType           `protobuf:"varint,499274628,opt,name=identitytype,proto3,enum=sesv2.IdentityType" json:"identitytype,omitempty"`
+	Identitytype             *IdentityType          `protobuf:"varint,499274628,opt,name=identitytype,proto3,enum=sesv2.IdentityType,oneof" json:"identitytype,omitempty"`
 	Mailfromattributes       *MailFromAttributes    `protobuf:"bytes,460277248,opt,name=mailfromattributes,proto3" json:"mailfromattributes,omitempty"`
 	Policies                 map[string]string      `protobuf:"bytes,40015384,rep,name=policies,proto3" json:"policies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Tags                     []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Verificationinfo         *VerificationInfo      `protobuf:"bytes,66315551,opt,name=verificationinfo,proto3" json:"verificationinfo,omitempty"`
-	Verificationstatus       VerificationStatus     `protobuf:"varint,132712897,opt,name=verificationstatus,proto3,enum=sesv2.VerificationStatus" json:"verificationstatus,omitempty"`
+	Verificationstatus       *VerificationStatus    `protobuf:"varint,132712897,opt,name=verificationstatus,proto3,enum=sesv2.VerificationStatus,oneof" json:"verificationstatus,omitempty"`
 	Verifiedforsendingstatus *bool                  `protobuf:"varint,163100765,opt,name=verifiedforsendingstatus,proto3,oneof" json:"verifiedforsendingstatus,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -11265,8 +11268,8 @@ func (x *GetEmailIdentityResponse) GetFeedbackforwardingstatus() bool {
 }
 
 func (x *GetEmailIdentityResponse) GetIdentitytype() IdentityType {
-	if x != nil {
-		return x.Identitytype
+	if x != nil && x.Identitytype != nil {
+		return *x.Identitytype
 	}
 	return IdentityType_IDENTITY_TYPE_MANAGED_DOMAIN
 }
@@ -11300,8 +11303,8 @@ func (x *GetEmailIdentityResponse) GetVerificationinfo() *VerificationInfo {
 }
 
 func (x *GetEmailIdentityResponse) GetVerificationstatus() VerificationStatus {
-	if x != nil {
-		return x.Verificationstatus
+	if x != nil && x.Verificationstatus != nil {
+		return *x.Verificationstatus
 	}
 	return VerificationStatus_VERIFICATION_STATUS_PENDING
 }
@@ -11467,10 +11470,10 @@ type GetExportJobResponse struct {
 	Createdtimestamp   *string                `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
 	Exportdatasource   *ExportDataSource      `protobuf:"bytes,308051423,opt,name=exportdatasource,proto3" json:"exportdatasource,omitempty"`
 	Exportdestination  *ExportDestination     `protobuf:"bytes,523408618,opt,name=exportdestination,proto3" json:"exportdestination,omitempty"`
-	Exportsourcetype   ExportSourceType       `protobuf:"varint,248243607,opt,name=exportsourcetype,proto3,enum=sesv2.ExportSourceType" json:"exportsourcetype,omitempty"`
+	Exportsourcetype   *ExportSourceType      `protobuf:"varint,248243607,opt,name=exportsourcetype,proto3,enum=sesv2.ExportSourceType,oneof" json:"exportsourcetype,omitempty"`
 	Failureinfo        *FailureInfo           `protobuf:"bytes,451945802,opt,name=failureinfo,proto3" json:"failureinfo,omitempty"`
 	Jobid              *string                `protobuf:"bytes,108489298,opt,name=jobid,proto3,oneof" json:"jobid,omitempty"`
-	Jobstatus          JobStatus              `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus" json:"jobstatus,omitempty"`
+	Jobstatus          *JobStatus             `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus,oneof" json:"jobstatus,omitempty"`
 	Statistics         *ExportStatistics      `protobuf:"bytes,510636075,opt,name=statistics,proto3" json:"statistics,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -11535,8 +11538,8 @@ func (x *GetExportJobResponse) GetExportdestination() *ExportDestination {
 }
 
 func (x *GetExportJobResponse) GetExportsourcetype() ExportSourceType {
-	if x != nil {
-		return x.Exportsourcetype
+	if x != nil && x.Exportsourcetype != nil {
+		return *x.Exportsourcetype
 	}
 	return ExportSourceType_EXPORT_SOURCE_TYPE_METRICS_DATA
 }
@@ -11556,8 +11559,8 @@ func (x *GetExportJobResponse) GetJobid() string {
 }
 
 func (x *GetExportJobResponse) GetJobstatus() JobStatus {
-	if x != nil {
-		return x.Jobstatus
+	if x != nil && x.Jobstatus != nil {
+		return *x.Jobstatus
 	}
 	return JobStatus_JOB_STATUS_PROCESSING
 }
@@ -11622,7 +11625,7 @@ type GetImportJobResponse struct {
 	Importdatasource      *ImportDataSource      `protobuf:"bytes,486006026,opt,name=importdatasource,proto3" json:"importdatasource,omitempty"`
 	Importdestination     *ImportDestination     `protobuf:"bytes,146287461,opt,name=importdestination,proto3" json:"importdestination,omitempty"`
 	Jobid                 *string                `protobuf:"bytes,108489298,opt,name=jobid,proto3,oneof" json:"jobid,omitempty"`
-	Jobstatus             JobStatus              `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus" json:"jobstatus,omitempty"`
+	Jobstatus             *JobStatus             `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus,oneof" json:"jobstatus,omitempty"`
 	Processedrecordscount *int32                 `protobuf:"varint,507944491,opt,name=processedrecordscount,proto3,oneof" json:"processedrecordscount,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -11708,8 +11711,8 @@ func (x *GetImportJobResponse) GetJobid() string {
 }
 
 func (x *GetImportJobResponse) GetJobstatus() JobStatus {
-	if x != nil {
-		return x.Jobstatus
+	if x != nil && x.Jobstatus != nil {
+		return *x.Jobstatus
 	}
 	return JobStatus_JOB_STATUS_PROCESSING
 }
@@ -11892,7 +11895,7 @@ type GetMultiRegionEndpointResponse struct {
 	Endpointname         *string                `protobuf:"bytes,209534392,opt,name=endpointname,proto3,oneof" json:"endpointname,omitempty"`
 	Lastupdatedtimestamp *string                `protobuf:"bytes,133309845,opt,name=lastupdatedtimestamp,proto3,oneof" json:"lastupdatedtimestamp,omitempty"`
 	Routes               []*Route               `protobuf:"bytes,321835704,rep,name=routes,proto3" json:"routes,omitempty"`
-	Status               Status                 `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.Status" json:"status,omitempty"`
+	Status               *Status                `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.Status,oneof" json:"status,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -11963,8 +11966,8 @@ func (x *GetMultiRegionEndpointResponse) GetRoutes() []*Route {
 }
 
 func (x *GetMultiRegionEndpointResponse) GetStatus() Status {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return Status_STATUS_READY
 }
@@ -12251,7 +12254,7 @@ func (x *GetTenantResponse) GetTenant() *Tenant {
 
 type GuardianAttributes struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Optimizedshareddelivery FeatureStatus          `protobuf:"varint,305138524,opt,name=optimizedshareddelivery,proto3,enum=sesv2.FeatureStatus" json:"optimizedshareddelivery,omitempty"`
+	Optimizedshareddelivery *FeatureStatus         `protobuf:"varint,305138524,opt,name=optimizedshareddelivery,proto3,enum=sesv2.FeatureStatus,oneof" json:"optimizedshareddelivery,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -12287,15 +12290,15 @@ func (*GuardianAttributes) Descriptor() ([]byte, []int) {
 }
 
 func (x *GuardianAttributes) GetOptimizedshareddelivery() FeatureStatus {
-	if x != nil {
-		return x.Optimizedshareddelivery
+	if x != nil && x.Optimizedshareddelivery != nil {
+		return *x.Optimizedshareddelivery
 	}
 	return FeatureStatus_FEATURE_STATUS_DISABLED
 }
 
 type GuardianOptions struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Optimizedshareddelivery FeatureStatus          `protobuf:"varint,305138524,opt,name=optimizedshareddelivery,proto3,enum=sesv2.FeatureStatus" json:"optimizedshareddelivery,omitempty"`
+	Optimizedshareddelivery *FeatureStatus         `protobuf:"varint,305138524,opt,name=optimizedshareddelivery,proto3,enum=sesv2.FeatureStatus,oneof" json:"optimizedshareddelivery,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -12331,18 +12334,18 @@ func (*GuardianOptions) Descriptor() ([]byte, []int) {
 }
 
 func (x *GuardianOptions) GetOptimizedshareddelivery() FeatureStatus {
-	if x != nil {
-		return x.Optimizedshareddelivery
+	if x != nil && x.Optimizedshareddelivery != nil {
+		return *x.Optimizedshareddelivery
 	}
 	return FeatureStatus_FEATURE_STATUS_DISABLED
 }
 
 type IdentityCertificate struct {
-	state                 protoimpl.MessageState    `protogen:"open.v1"`
-	Certificatearn        *string                   `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
-	Certificateexpirytime *string                   `protobuf:"bytes,210271267,opt,name=certificateexpirytime,proto3,oneof" json:"certificateexpirytime,omitempty"`
-	Fromaddress           *string                   `protobuf:"bytes,84397700,opt,name=fromaddress,proto3,oneof" json:"fromaddress,omitempty"`
-	Status                IdentityCertificateStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.IdentityCertificateStatus" json:"status,omitempty"`
+	state                 protoimpl.MessageState     `protogen:"open.v1"`
+	Certificatearn        *string                    `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificateexpirytime *string                    `protobuf:"bytes,210271267,opt,name=certificateexpirytime,proto3,oneof" json:"certificateexpirytime,omitempty"`
+	Fromaddress           *string                    `protobuf:"bytes,84397700,opt,name=fromaddress,proto3,oneof" json:"fromaddress,omitempty"`
+	Status                *IdentityCertificateStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.IdentityCertificateStatus,oneof" json:"status,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -12399,8 +12402,8 @@ func (x *IdentityCertificate) GetFromaddress() string {
 }
 
 func (x *IdentityCertificate) GetStatus() IdentityCertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return IdentityCertificateStatus_IDENTITY_CERTIFICATE_STATUS_DEPROVISIONING
 }
@@ -12408,9 +12411,9 @@ func (x *IdentityCertificate) GetStatus() IdentityCertificateStatus {
 type IdentityInfo struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Identityname       *string                `protobuf:"bytes,251627009,opt,name=identityname,proto3,oneof" json:"identityname,omitempty"`
-	Identitytype       IdentityType           `protobuf:"varint,499274628,opt,name=identitytype,proto3,enum=sesv2.IdentityType" json:"identitytype,omitempty"`
+	Identitytype       *IdentityType          `protobuf:"varint,499274628,opt,name=identitytype,proto3,enum=sesv2.IdentityType,oneof" json:"identitytype,omitempty"`
 	Sendingenabled     *bool                  `protobuf:"varint,194846115,opt,name=sendingenabled,proto3,oneof" json:"sendingenabled,omitempty"`
-	Verificationstatus VerificationStatus     `protobuf:"varint,132712897,opt,name=verificationstatus,proto3,enum=sesv2.VerificationStatus" json:"verificationstatus,omitempty"`
+	Verificationstatus *VerificationStatus    `protobuf:"varint,132712897,opt,name=verificationstatus,proto3,enum=sesv2.VerificationStatus,oneof" json:"verificationstatus,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -12453,8 +12456,8 @@ func (x *IdentityInfo) GetIdentityname() string {
 }
 
 func (x *IdentityInfo) GetIdentitytype() IdentityType {
-	if x != nil {
-		return x.Identitytype
+	if x != nil && x.Identitytype != nil {
+		return *x.Identitytype
 	}
 	return IdentityType_IDENTITY_TYPE_MANAGED_DOMAIN
 }
@@ -12467,8 +12470,8 @@ func (x *IdentityInfo) GetSendingenabled() bool {
 }
 
 func (x *IdentityInfo) GetVerificationstatus() VerificationStatus {
-	if x != nil {
-		return x.Verificationstatus
+	if x != nil && x.Verificationstatus != nil {
+		return *x.Verificationstatus
 	}
 	return VerificationStatus_VERIFICATION_STATUS_PENDING
 }
@@ -12583,7 +12586,7 @@ type ImportJobSummary struct {
 	Failedrecordscount    *int32                 `protobuf:"varint,528801670,opt,name=failedrecordscount,proto3,oneof" json:"failedrecordscount,omitempty"`
 	Importdestination     *ImportDestination     `protobuf:"bytes,146287461,opt,name=importdestination,proto3" json:"importdestination,omitempty"`
 	Jobid                 *string                `protobuf:"bytes,108489298,opt,name=jobid,proto3,oneof" json:"jobid,omitempty"`
-	Jobstatus             JobStatus              `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus" json:"jobstatus,omitempty"`
+	Jobstatus             *JobStatus             `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus,oneof" json:"jobstatus,omitempty"`
 	Processedrecordscount *int32                 `protobuf:"varint,507944491,opt,name=processedrecordscount,proto3,oneof" json:"processedrecordscount,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -12648,8 +12651,8 @@ func (x *ImportJobSummary) GetJobid() string {
 }
 
 func (x *ImportJobSummary) GetJobstatus() JobStatus {
-	if x != nil {
-		return x.Jobstatus
+	if x != nil && x.Jobstatus != nil {
+		return *x.Jobstatus
 	}
 	return JobStatus_JOB_STATUS_PROCESSING
 }
@@ -12717,7 +12720,7 @@ type InsightsEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Details       *EventDetails          `protobuf:"bytes,247611974,opt,name=details,proto3" json:"details,omitempty"`
 	Timestamp     *string                `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
-	Type          EventType              `protobuf:"varint,290836590,opt,name=type,proto3,enum=sesv2.EventType" json:"type,omitempty"`
+	Type          *EventType             `protobuf:"varint,290836590,opt,name=type,proto3,enum=sesv2.EventType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12767,8 +12770,8 @@ func (x *InsightsEvent) GetTimestamp() string {
 }
 
 func (x *InsightsEvent) GetType() EventType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return EventType_EVENT_TYPE_DELIVERY_DELAY
 }
@@ -13219,7 +13222,7 @@ func (x *ListContactListsResponse) GetNexttoken() string {
 
 type ListContactsFilter struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Filteredstatus SubscriptionStatus     `protobuf:"varint,310398937,opt,name=filteredstatus,proto3,enum=sesv2.SubscriptionStatus" json:"filteredstatus,omitempty"`
+	Filteredstatus *SubscriptionStatus    `protobuf:"varint,310398937,opt,name=filteredstatus,proto3,enum=sesv2.SubscriptionStatus,oneof" json:"filteredstatus,omitempty"`
 	Topicfilter    *TopicFilter           `protobuf:"bytes,211917895,opt,name=topicfilter,proto3" json:"topicfilter,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -13256,8 +13259,8 @@ func (*ListContactsFilter) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListContactsFilter) GetFilteredstatus() SubscriptionStatus {
-	if x != nil {
-		return x.Filteredstatus
+	if x != nil && x.Filteredstatus != nil {
+		return *x.Filteredstatus
 	}
 	return SubscriptionStatus_SUBSCRIPTION_STATUS_OPT_OUT
 }
@@ -14151,8 +14154,8 @@ func (x *ListEmailTemplatesResponse) GetTemplatesmetadata() []*EmailTemplateMeta
 
 type ListExportJobsRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Exportsourcetype ExportSourceType       `protobuf:"varint,248243607,opt,name=exportsourcetype,proto3,enum=sesv2.ExportSourceType" json:"exportsourcetype,omitempty"`
-	Jobstatus        JobStatus              `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus" json:"jobstatus,omitempty"`
+	Exportsourcetype *ExportSourceType      `protobuf:"varint,248243607,opt,name=exportsourcetype,proto3,enum=sesv2.ExportSourceType,oneof" json:"exportsourcetype,omitempty"`
+	Jobstatus        *JobStatus             `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=sesv2.JobStatus,oneof" json:"jobstatus,omitempty"`
 	Nexttoken        *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Pagesize         *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -14190,15 +14193,15 @@ func (*ListExportJobsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListExportJobsRequest) GetExportsourcetype() ExportSourceType {
-	if x != nil {
-		return x.Exportsourcetype
+	if x != nil && x.Exportsourcetype != nil {
+		return *x.Exportsourcetype
 	}
 	return ExportSourceType_EXPORT_SOURCE_TYPE_METRICS_DATA
 }
 
 func (x *ListExportJobsRequest) GetJobstatus() JobStatus {
-	if x != nil {
-		return x.Jobstatus
+	if x != nil && x.Jobstatus != nil {
+		return *x.Jobstatus
 	}
 	return JobStatus_JOB_STATUS_PROCESSING
 }
@@ -14271,7 +14274,7 @@ func (x *ListExportJobsResponse) GetNexttoken() string {
 
 type ListImportJobsRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Importdestinationtype ImportDestinationType  `protobuf:"varint,338152013,opt,name=importdestinationtype,proto3,enum=sesv2.ImportDestinationType" json:"importdestinationtype,omitempty"`
+	Importdestinationtype *ImportDestinationType `protobuf:"varint,338152013,opt,name=importdestinationtype,proto3,enum=sesv2.ImportDestinationType,oneof" json:"importdestinationtype,omitempty"`
 	Nexttoken             *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Pagesize              *int32                 `protobuf:"varint,438340024,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -14309,8 +14312,8 @@ func (*ListImportJobsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListImportJobsRequest) GetImportdestinationtype() ImportDestinationType {
-	if x != nil {
-		return x.Importdestinationtype
+	if x != nil && x.Importdestinationtype != nil {
+		return *x.Importdestinationtype
 	}
 	return ImportDestinationType_IMPORT_DESTINATION_TYPE_SUPPRESSION_LIST
 }
@@ -15681,6 +15684,7 @@ type MessageInsightsFilters struct {
 	Lastdeliveryevent   []DeliveryEventType    `protobuf:"varint,528148396,rep,packed,name=lastdeliveryevent,proto3,enum=sesv2.DeliveryEventType" json:"lastdeliveryevent,omitempty"`
 	Lastengagementevent []EngagementEventType  `protobuf:"varint,426898599,rep,packed,name=lastengagementevent,proto3,enum=sesv2.EngagementEventType" json:"lastengagementevent,omitempty"`
 	Subject             []string               `protobuf:"bytes,7939312,rep,name=subject,proto3" json:"subject,omitempty"`
+	Tenantname          []string               `protobuf:"bytes,173338119,rep,name=tenantname,proto3" json:"tenantname,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -15753,6 +15757,13 @@ func (x *MessageInsightsFilters) GetLastengagementevent() []EngagementEventType 
 func (x *MessageInsightsFilters) GetSubject() []string {
 	if x != nil {
 		return x.Subject
+	}
+	return nil
+}
+
+func (x *MessageInsightsFilters) GetTenantname() []string {
+	if x != nil {
+		return x.Tenantname
 	}
 	return nil
 }
@@ -15899,7 +15910,7 @@ func (x *MessageTag) GetValue() string {
 
 type MetricDataError struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          QueryErrorCode         `protobuf:"varint,425572629,opt,name=code,proto3,enum=sesv2.QueryErrorCode" json:"code,omitempty"`
+	Code          *QueryErrorCode        `protobuf:"varint,425572629,opt,name=code,proto3,enum=sesv2.QueryErrorCode,oneof" json:"code,omitempty"`
 	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -15937,8 +15948,8 @@ func (*MetricDataError) Descriptor() ([]byte, []int) {
 }
 
 func (x *MetricDataError) GetCode() QueryErrorCode {
-	if x != nil {
-		return x.Code
+	if x != nil && x.Code != nil {
+		return *x.Code
 	}
 	return QueryErrorCode_QUERY_ERROR_CODE_ACCESS_DENIED
 }
@@ -16100,7 +16111,7 @@ type MultiRegionEndpoint struct {
 	Endpointname         *string                `protobuf:"bytes,209534392,opt,name=endpointname,proto3,oneof" json:"endpointname,omitempty"`
 	Lastupdatedtimestamp *string                `protobuf:"bytes,133309845,opt,name=lastupdatedtimestamp,proto3,oneof" json:"lastupdatedtimestamp,omitempty"`
 	Regions              []string               `protobuf:"bytes,36200107,rep,name=regions,proto3" json:"regions,omitempty"`
-	Status               Status                 `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.Status" json:"status,omitempty"`
+	Status               *Status                `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.Status,oneof" json:"status,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -16171,8 +16182,8 @@ func (x *MultiRegionEndpoint) GetRegions() []string {
 }
 
 func (x *MultiRegionEndpoint) GetStatus() Status {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return Status_STATUS_READY
 }
@@ -16403,8 +16414,8 @@ func (x *PlacementStatistics) GetSpfpercentage() float64 {
 
 type PricingAttributes struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Currentplan   PricingPlan            `protobuf:"varint,182710082,opt,name=currentplan,proto3,enum=sesv2.PricingPlan" json:"currentplan,omitempty"`
-	Nextplan      PricingPlan            `protobuf:"varint,132683228,opt,name=nextplan,proto3,enum=sesv2.PricingPlan" json:"nextplan,omitempty"`
+	Currentplan   *PricingPlan           `protobuf:"varint,182710082,opt,name=currentplan,proto3,enum=sesv2.PricingPlan,oneof" json:"currentplan,omitempty"`
+	Nextplan      *PricingPlan           `protobuf:"varint,132683228,opt,name=nextplan,proto3,enum=sesv2.PricingPlan,oneof" json:"nextplan,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -16440,15 +16451,15 @@ func (*PricingAttributes) Descriptor() ([]byte, []int) {
 }
 
 func (x *PricingAttributes) GetCurrentplan() PricingPlan {
-	if x != nil {
-		return x.Currentplan
+	if x != nil && x.Currentplan != nil {
+		return *x.Currentplan
 	}
 	return PricingPlan_PRICING_PLAN_ENTERPRISE
 }
 
 func (x *PricingAttributes) GetNextplan() PricingPlan {
-	if x != nil {
-		return x.Nextplan
+	if x != nil && x.Nextplan != nil {
+		return *x.Nextplan
 	}
 	return PricingPlan_PRICING_PLAN_ENTERPRISE
 }
@@ -16536,7 +16547,7 @@ func (*PutAccountDedicatedIpWarmupAttributesResponse) Descriptor() ([]byte, []in
 type PutAccountDetailsRequest struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	Additionalcontactemailaddresses []string               `protobuf:"bytes,322089693,rep,name=additionalcontactemailaddresses,proto3" json:"additionalcontactemailaddresses,omitempty"`
-	Contactlanguage                 ContactLanguage        `protobuf:"varint,114240022,opt,name=contactlanguage,proto3,enum=sesv2.ContactLanguage" json:"contactlanguage,omitempty"`
+	Contactlanguage                 *ContactLanguage       `protobuf:"varint,114240022,opt,name=contactlanguage,proto3,enum=sesv2.ContactLanguage,oneof" json:"contactlanguage,omitempty"`
 	Mailtype                        MailType               `protobuf:"varint,138144527,opt,name=mailtype,proto3,enum=sesv2.MailType" json:"mailtype,omitempty"`
 	Productionaccessenabled         *bool                  `protobuf:"varint,471167534,opt,name=productionaccessenabled,proto3,oneof" json:"productionaccessenabled,omitempty"`
 	Usecasedescription              *string                `protobuf:"bytes,141053987,opt,name=usecasedescription,proto3,oneof" json:"usecasedescription,omitempty"`
@@ -16583,8 +16594,8 @@ func (x *PutAccountDetailsRequest) GetAdditionalcontactemailaddresses() []string
 }
 
 func (x *PutAccountDetailsRequest) GetContactlanguage() ContactLanguage {
-	if x != nil {
-		return x.Contactlanguage
+	if x != nil && x.Contactlanguage != nil {
+		return *x.Contactlanguage
 	}
 	return ContactLanguage_CONTACT_LANGUAGE_EN
 }
@@ -17074,7 +17085,7 @@ type PutConfigurationSetDeliveryOptionsRequest struct {
 	Configurationsetname string                 `protobuf:"bytes,403457485,opt,name=configurationsetname,proto3" json:"configurationsetname,omitempty"`
 	Maxdeliveryseconds   *int64                 `protobuf:"varint,16229983,opt,name=maxdeliveryseconds,proto3,oneof" json:"maxdeliveryseconds,omitempty"`
 	Sendingpoolname      *string                `protobuf:"bytes,89398333,opt,name=sendingpoolname,proto3,oneof" json:"sendingpoolname,omitempty"`
-	Tlspolicy            TlsPolicy              `protobuf:"varint,127629,opt,name=tlspolicy,proto3,enum=sesv2.TlsPolicy" json:"tlspolicy,omitempty"`
+	Tlspolicy            *TlsPolicy             `protobuf:"varint,127629,opt,name=tlspolicy,proto3,enum=sesv2.TlsPolicy,oneof" json:"tlspolicy,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -17131,8 +17142,8 @@ func (x *PutConfigurationSetDeliveryOptionsRequest) GetSendingpoolname() string 
 }
 
 func (x *PutConfigurationSetDeliveryOptionsRequest) GetTlspolicy() TlsPolicy {
-	if x != nil {
-		return x.Tlspolicy
+	if x != nil && x.Tlspolicy != nil {
+		return *x.Tlspolicy
 	}
 	return TlsPolicy_TLS_POLICY_OPTIONAL
 }
@@ -17353,7 +17364,7 @@ type PutConfigurationSetSuppressionOptionsRequest struct {
 	state                protoimpl.MessageState        `protogen:"open.v1"`
 	Configurationsetname string                        `protobuf:"bytes,403457485,opt,name=configurationsetname,proto3" json:"configurationsetname,omitempty"`
 	Suppressedreasons    []SuppressionListReason       `protobuf:"varint,465922417,rep,packed,name=suppressedreasons,proto3,enum=sesv2.SuppressionListReason" json:"suppressedreasons,omitempty"`
-	Suppressionscope     SuppressionListScope          `protobuf:"varint,135059101,opt,name=suppressionscope,proto3,enum=sesv2.SuppressionListScope" json:"suppressionscope,omitempty"`
+	Suppressionscope     *SuppressionListScope         `protobuf:"varint,135059101,opt,name=suppressionscope,proto3,enum=sesv2.SuppressionListScope,oneof" json:"suppressionscope,omitempty"`
 	Validationoptions    *SuppressionValidationOptions `protobuf:"bytes,216495637,opt,name=validationoptions,proto3" json:"validationoptions,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -17404,8 +17415,8 @@ func (x *PutConfigurationSetSuppressionOptionsRequest) GetSuppressedreasons() []
 }
 
 func (x *PutConfigurationSetSuppressionOptionsRequest) GetSuppressionscope() SuppressionListScope {
-	if x != nil {
-		return x.Suppressionscope
+	if x != nil && x.Suppressionscope != nil {
+		return *x.Suppressionscope
 	}
 	return SuppressionListScope_SUPPRESSION_LIST_SCOPE_ACCOUNT
 }
@@ -17457,7 +17468,7 @@ type PutConfigurationSetTrackingOptionsRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Configurationsetname string                 `protobuf:"bytes,403457485,opt,name=configurationsetname,proto3" json:"configurationsetname,omitempty"`
 	Customredirectdomain *string                `protobuf:"bytes,72478039,opt,name=customredirectdomain,proto3,oneof" json:"customredirectdomain,omitempty"`
-	Httpspolicy          HttpsPolicy            `protobuf:"varint,147115397,opt,name=httpspolicy,proto3,enum=sesv2.HttpsPolicy" json:"httpspolicy,omitempty"`
+	Httpspolicy          *HttpsPolicy           `protobuf:"varint,147115397,opt,name=httpspolicy,proto3,enum=sesv2.HttpsPolicy,oneof" json:"httpspolicy,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -17507,8 +17518,8 @@ func (x *PutConfigurationSetTrackingOptionsRequest) GetCustomredirectdomain() st
 }
 
 func (x *PutConfigurationSetTrackingOptionsRequest) GetHttpspolicy() HttpsPolicy {
-	if x != nil {
-		return x.Httpspolicy
+	if x != nil && x.Httpspolicy != nil {
+		return *x.Httpspolicy
 	}
 	return HttpsPolicy_HTTPS_POLICY_OPTIONAL
 }
@@ -18227,7 +18238,7 @@ func (x *PutEmailIdentityDkimSigningAttributesRequest) GetSigningattributesorigi
 
 type PutEmailIdentityDkimSigningAttributesResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Dkimstatus        DkimStatus             `protobuf:"varint,42822693,opt,name=dkimstatus,proto3,enum=sesv2.DkimStatus" json:"dkimstatus,omitempty"`
+	Dkimstatus        *DkimStatus            `protobuf:"varint,42822693,opt,name=dkimstatus,proto3,enum=sesv2.DkimStatus,oneof" json:"dkimstatus,omitempty"`
 	Dkimtokens        []string               `protobuf:"bytes,307118741,rep,name=dkimtokens,proto3" json:"dkimtokens,omitempty"`
 	Signinghostedzone *string                `protobuf:"bytes,442955686,opt,name=signinghostedzone,proto3,oneof" json:"signinghostedzone,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -18265,8 +18276,8 @@ func (*PutEmailIdentityDkimSigningAttributesResponse) Descriptor() ([]byte, []in
 }
 
 func (x *PutEmailIdentityDkimSigningAttributesResponse) GetDkimstatus() DkimStatus {
-	if x != nil {
-		return x.Dkimstatus
+	if x != nil && x.Dkimstatus != nil {
+		return *x.Dkimstatus
 	}
 	return DkimStatus_DKIM_STATUS_PENDING
 }
@@ -18375,7 +18386,7 @@ func (*PutEmailIdentityFeedbackAttributesResponse) Descriptor() ([]byte, []int) 
 
 type PutEmailIdentityMailFromAttributesRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Behavioronmxfailure BehaviorOnMxFailure    `protobuf:"varint,494873128,opt,name=behavioronmxfailure,proto3,enum=sesv2.BehaviorOnMxFailure" json:"behavioronmxfailure,omitempty"`
+	Behavioronmxfailure *BehaviorOnMxFailure   `protobuf:"varint,494873128,opt,name=behavioronmxfailure,proto3,enum=sesv2.BehaviorOnMxFailure,oneof" json:"behavioronmxfailure,omitempty"`
 	Emailidentity       string                 `protobuf:"bytes,136088090,opt,name=emailidentity,proto3" json:"emailidentity,omitempty"`
 	Mailfromdomain      *string                `protobuf:"bytes,512250671,opt,name=mailfromdomain,proto3,oneof" json:"mailfromdomain,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -18413,8 +18424,8 @@ func (*PutEmailIdentityMailFromAttributesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutEmailIdentityMailFromAttributesRequest) GetBehavioronmxfailure() BehaviorOnMxFailure {
-	if x != nil {
-		return x.Behavioronmxfailure
+	if x != nil && x.Behavioronmxfailure != nil {
+		return *x.Behavioronmxfailure
 	}
 	return BehaviorOnMxFailure_BEHAVIOR_ON_MX_FAILURE_USE_DEFAULT_VALUE
 }
@@ -18568,7 +18579,7 @@ func (*PutSuppressedDestinationResponse) Descriptor() ([]byte, []int) {
 type PutTenantSuppressionAttributesRequest struct {
 	state             protoimpl.MessageState  `protogen:"open.v1"`
 	Suppressedreasons []SuppressionListReason `protobuf:"varint,465922417,rep,packed,name=suppressedreasons,proto3,enum=sesv2.SuppressionListReason" json:"suppressedreasons,omitempty"`
-	Suppressionscope  SuppressionListScope    `protobuf:"varint,135059101,opt,name=suppressionscope,proto3,enum=sesv2.SuppressionListScope" json:"suppressionscope,omitempty"`
+	Suppressionscope  *SuppressionListScope   `protobuf:"varint,135059101,opt,name=suppressionscope,proto3,enum=sesv2.SuppressionListScope,oneof" json:"suppressionscope,omitempty"`
 	Tenantname        string                  `protobuf:"bytes,173338119,opt,name=tenantname,proto3" json:"tenantname,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -18612,8 +18623,8 @@ func (x *PutTenantSuppressionAttributesRequest) GetSuppressedreasons() []Suppres
 }
 
 func (x *PutTenantSuppressionAttributesRequest) GetSuppressionscope() SuppressionListScope {
-	if x != nil {
-		return x.Suppressionscope
+	if x != nil && x.Suppressionscope != nil {
+		return *x.Suppressionscope
 	}
 	return SuppressionListScope_SUPPRESSION_LIST_SCOPE_ACCOUNT
 }
@@ -18709,11 +18720,11 @@ type Recommendation struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Createdtimestamp     *string                `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
 	Description          *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Impact               RecommendationImpact   `protobuf:"varint,75836600,opt,name=impact,proto3,enum=sesv2.RecommendationImpact" json:"impact,omitempty"`
+	Impact               *RecommendationImpact  `protobuf:"varint,75836600,opt,name=impact,proto3,enum=sesv2.RecommendationImpact,oneof" json:"impact,omitempty"`
 	Lastupdatedtimestamp *string                `protobuf:"bytes,133309845,opt,name=lastupdatedtimestamp,proto3,oneof" json:"lastupdatedtimestamp,omitempty"`
 	Resourcearn          *string                `protobuf:"bytes,364280877,opt,name=resourcearn,proto3,oneof" json:"resourcearn,omitempty"`
-	Status               RecommendationStatus   `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.RecommendationStatus" json:"status,omitempty"`
-	Type                 RecommendationType     `protobuf:"varint,290836590,opt,name=type,proto3,enum=sesv2.RecommendationType" json:"type,omitempty"`
+	Status               *RecommendationStatus  `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.RecommendationStatus,oneof" json:"status,omitempty"`
+	Type                 *RecommendationType    `protobuf:"varint,290836590,opt,name=type,proto3,enum=sesv2.RecommendationType,oneof" json:"type,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -18763,8 +18774,8 @@ func (x *Recommendation) GetDescription() string {
 }
 
 func (x *Recommendation) GetImpact() RecommendationImpact {
-	if x != nil {
-		return x.Impact
+	if x != nil && x.Impact != nil {
+		return *x.Impact
 	}
 	return RecommendationImpact_RECOMMENDATION_IMPACT_LOW
 }
@@ -18784,15 +18795,15 @@ func (x *Recommendation) GetResourcearn() string {
 }
 
 func (x *Recommendation) GetStatus() RecommendationStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return RecommendationStatus_RECOMMENDATION_STATUS_FIXED
 }
 
 func (x *Recommendation) GetType() RecommendationType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return RecommendationType_RECOMMENDATION_TYPE_DMARC
 }
@@ -18890,10 +18901,10 @@ type ReputationEntity struct {
 	Awssesmanagedstatus        *StatusRecord          `protobuf:"bytes,20222799,opt,name=awssesmanagedstatus,proto3" json:"awssesmanagedstatus,omitempty"`
 	Customermanagedstatus      *StatusRecord          `protobuf:"bytes,21835973,opt,name=customermanagedstatus,proto3" json:"customermanagedstatus,omitempty"`
 	Reputationentityreference  *string                `protobuf:"bytes,414929111,opt,name=reputationentityreference,proto3,oneof" json:"reputationentityreference,omitempty"`
-	Reputationentitytype       ReputationEntityType   `protobuf:"varint,98287826,opt,name=reputationentitytype,proto3,enum=sesv2.ReputationEntityType" json:"reputationentitytype,omitempty"`
-	Reputationimpact           RecommendationImpact   `protobuf:"varint,345570753,opt,name=reputationimpact,proto3,enum=sesv2.RecommendationImpact" json:"reputationimpact,omitempty"`
+	Reputationentitytype       *ReputationEntityType  `protobuf:"varint,98287826,opt,name=reputationentitytype,proto3,enum=sesv2.ReputationEntityType,oneof" json:"reputationentitytype,omitempty"`
+	Reputationimpact           *RecommendationImpact  `protobuf:"varint,345570753,opt,name=reputationimpact,proto3,enum=sesv2.RecommendationImpact,oneof" json:"reputationimpact,omitempty"`
 	Reputationmanagementpolicy *string                `protobuf:"bytes,202871484,opt,name=reputationmanagementpolicy,proto3,oneof" json:"reputationmanagementpolicy,omitempty"`
-	Sendingstatusaggregate     SendingStatus          `protobuf:"varint,10196739,opt,name=sendingstatusaggregate,proto3,enum=sesv2.SendingStatus" json:"sendingstatusaggregate,omitempty"`
+	Sendingstatusaggregate     *SendingStatus         `protobuf:"varint,10196739,opt,name=sendingstatusaggregate,proto3,enum=sesv2.SendingStatus,oneof" json:"sendingstatusaggregate,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -18950,15 +18961,15 @@ func (x *ReputationEntity) GetReputationentityreference() string {
 }
 
 func (x *ReputationEntity) GetReputationentitytype() ReputationEntityType {
-	if x != nil {
-		return x.Reputationentitytype
+	if x != nil && x.Reputationentitytype != nil {
+		return *x.Reputationentitytype
 	}
 	return ReputationEntityType_REPUTATION_ENTITY_TYPE_RESOURCE
 }
 
 func (x *ReputationEntity) GetReputationimpact() RecommendationImpact {
-	if x != nil {
-		return x.Reputationimpact
+	if x != nil && x.Reputationimpact != nil {
+		return *x.Reputationimpact
 	}
 	return RecommendationImpact_RECOMMENDATION_IMPACT_LOW
 }
@@ -18971,8 +18982,8 @@ func (x *ReputationEntity) GetReputationmanagementpolicy() string {
 }
 
 func (x *ReputationEntity) GetSendingstatusaggregate() SendingStatus {
-	if x != nil {
-		return x.Sendingstatusaggregate
+	if x != nil && x.Sendingstatusaggregate != nil {
+		return *x.Sendingstatusaggregate
 	}
 	return SendingStatus_SENDING_STATUS_DISABLED
 }
@@ -19100,7 +19111,7 @@ func (x *ResourceTenantMetadata) GetTenantname() string {
 type ReviewDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Caseid        *string                `protobuf:"bytes,181380677,opt,name=caseid,proto3,oneof" json:"caseid,omitempty"`
-	Status        ReviewStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.ReviewStatus" json:"status,omitempty"`
+	Status        *ReviewStatus          `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.ReviewStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -19143,8 +19154,8 @@ func (x *ReviewDetails) GetCaseid() string {
 }
 
 func (x *ReviewDetails) GetStatus() ReviewStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ReviewStatus_REVIEW_STATUS_PENDING
 }
@@ -19963,7 +19974,7 @@ func (x *SigningScheme) GetSmimescheme() *SmimeSigningScheme {
 
 type SmimeSigningScheme struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Signatureformat SignatureFormat        `protobuf:"varint,424814715,opt,name=signatureformat,proto3,enum=sesv2.SignatureFormat" json:"signatureformat,omitempty"`
+	Signatureformat *SignatureFormat       `protobuf:"varint,424814715,opt,name=signatureformat,proto3,enum=sesv2.SignatureFormat,oneof" json:"signatureformat,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -19999,8 +20010,8 @@ func (*SmimeSigningScheme) Descriptor() ([]byte, []int) {
 }
 
 func (x *SmimeSigningScheme) GetSignatureformat() SignatureFormat {
-	if x != nil {
-		return x.Signatureformat
+	if x != nil && x.Signatureformat != nil {
+		return *x.Signatureformat
 	}
 	return SignatureFormat_SIGNATURE_FORMAT_DETACHED
 }
@@ -20053,7 +20064,7 @@ type StatusRecord struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Cause                *string                `protobuf:"bytes,283421889,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
 	Lastupdatedtimestamp *string                `protobuf:"bytes,133309845,opt,name=lastupdatedtimestamp,proto3,oneof" json:"lastupdatedtimestamp,omitempty"`
-	Status               SendingStatus          `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.SendingStatus" json:"status,omitempty"`
+	Status               *SendingStatus         `protobuf:"varint,6222352,opt,name=status,proto3,enum=sesv2.SendingStatus,oneof" json:"status,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -20103,8 +20114,8 @@ func (x *StatusRecord) GetLastupdatedtimestamp() string {
 }
 
 func (x *StatusRecord) GetStatus() SendingStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SendingStatus_SENDING_STATUS_DISABLED
 }
@@ -20492,7 +20503,7 @@ func (x *SuppressionListDestination) GetSuppressionlistimportaction() Suppressio
 type SuppressionOptions struct {
 	state             protoimpl.MessageState        `protogen:"open.v1"`
 	Suppressedreasons []SuppressionListReason       `protobuf:"varint,465922417,rep,packed,name=suppressedreasons,proto3,enum=sesv2.SuppressionListReason" json:"suppressedreasons,omitempty"`
-	Suppressionscope  SuppressionListScope          `protobuf:"varint,135059101,opt,name=suppressionscope,proto3,enum=sesv2.SuppressionListScope" json:"suppressionscope,omitempty"`
+	Suppressionscope  *SuppressionListScope         `protobuf:"varint,135059101,opt,name=suppressionscope,proto3,enum=sesv2.SuppressionListScope,oneof" json:"suppressionscope,omitempty"`
 	Validationoptions *SuppressionValidationOptions `protobuf:"bytes,216495637,opt,name=validationoptions,proto3" json:"validationoptions,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -20536,8 +20547,8 @@ func (x *SuppressionOptions) GetSuppressedreasons() []SuppressionListReason {
 }
 
 func (x *SuppressionOptions) GetSuppressionscope() SuppressionListScope {
-	if x != nil {
-		return x.Suppressionscope
+	if x != nil && x.Suppressionscope != nil {
+		return *x.Suppressionscope
 	}
 	return SuppressionListScope_SUPPRESSION_LIST_SCOPE_ACCOUNT
 }
@@ -20864,7 +20875,7 @@ func (x *Template) GetTemplatename() string {
 type Tenant struct {
 	state                 protoimpl.MessageState       `protogen:"open.v1"`
 	Createdtimestamp      *string                      `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
-	Sendingstatus         SendingStatus                `protobuf:"varint,420634540,opt,name=sendingstatus,proto3,enum=sesv2.SendingStatus" json:"sendingstatus,omitempty"`
+	Sendingstatus         *SendingStatus               `protobuf:"varint,420634540,opt,name=sendingstatus,proto3,enum=sesv2.SendingStatus,oneof" json:"sendingstatus,omitempty"`
 	Suppressionattributes *TenantSuppressionAttributes `protobuf:"bytes,17626546,opt,name=suppressionattributes,proto3" json:"suppressionattributes,omitempty"`
 	Tags                  []*Tag                       `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Tenantarn             *string                      `protobuf:"bytes,19777181,opt,name=tenantarn,proto3,oneof" json:"tenantarn,omitempty"`
@@ -20912,8 +20923,8 @@ func (x *Tenant) GetCreatedtimestamp() string {
 }
 
 func (x *Tenant) GetSendingstatus() SendingStatus {
-	if x != nil {
-		return x.Sendingstatus
+	if x != nil && x.Sendingstatus != nil {
+		return *x.Sendingstatus
 	}
 	return SendingStatus_SENDING_STATUS_DISABLED
 }
@@ -21024,7 +21035,7 @@ func (x *TenantInfo) GetTenantname() string {
 type TenantResource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Resourcearn   *string                `protobuf:"bytes,364280877,opt,name=resourcearn,proto3,oneof" json:"resourcearn,omitempty"`
-	Resourcetype  ResourceType           `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=sesv2.ResourceType" json:"resourcetype,omitempty"`
+	Resourcetype  *ResourceType          `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=sesv2.ResourceType,oneof" json:"resourcetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -21067,8 +21078,8 @@ func (x *TenantResource) GetResourcearn() string {
 }
 
 func (x *TenantResource) GetResourcetype() ResourceType {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return ResourceType_RESOURCE_TYPE_EMAIL_IDENTITY
 }
@@ -21076,7 +21087,7 @@ func (x *TenantResource) GetResourcetype() ResourceType {
 type TenantSuppressionAttributes struct {
 	state             protoimpl.MessageState  `protogen:"open.v1"`
 	Suppressedreasons []SuppressionListReason `protobuf:"varint,465922417,rep,packed,name=suppressedreasons,proto3,enum=sesv2.SuppressionListReason" json:"suppressedreasons,omitempty"`
-	Suppressionscope  SuppressionListScope    `protobuf:"varint,135059101,opt,name=suppressionscope,proto3,enum=sesv2.SuppressionListScope" json:"suppressionscope,omitempty"`
+	Suppressionscope  *SuppressionListScope   `protobuf:"varint,135059101,opt,name=suppressionscope,proto3,enum=sesv2.SuppressionListScope,oneof" json:"suppressionscope,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -21119,8 +21130,8 @@ func (x *TenantSuppressionAttributes) GetSuppressedreasons() []SuppressionListRe
 }
 
 func (x *TenantSuppressionAttributes) GetSuppressionscope() SuppressionListScope {
-	if x != nil {
-		return x.Suppressionscope
+	if x != nil && x.Suppressionscope != nil {
+		return *x.Suppressionscope
 	}
 	return SuppressionListScope_SUPPRESSION_LIST_SCOPE_ACCOUNT
 }
@@ -21439,8 +21450,8 @@ func (x *TopicPreference) GetTopicname() string {
 
 type TrackingConfigurationOverrides struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Clicktrackingenabled FeatureStatus          `protobuf:"varint,357863968,opt,name=clicktrackingenabled,proto3,enum=sesv2.FeatureStatus" json:"clicktrackingenabled,omitempty"`
-	Opentrackingenabled  FeatureStatus          `protobuf:"varint,281869850,opt,name=opentrackingenabled,proto3,enum=sesv2.FeatureStatus" json:"opentrackingenabled,omitempty"`
+	Clicktrackingenabled *FeatureStatus         `protobuf:"varint,357863968,opt,name=clicktrackingenabled,proto3,enum=sesv2.FeatureStatus,oneof" json:"clicktrackingenabled,omitempty"`
+	Opentrackingenabled  *FeatureStatus         `protobuf:"varint,281869850,opt,name=opentrackingenabled,proto3,enum=sesv2.FeatureStatus,oneof" json:"opentrackingenabled,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -21476,15 +21487,15 @@ func (*TrackingConfigurationOverrides) Descriptor() ([]byte, []int) {
 }
 
 func (x *TrackingConfigurationOverrides) GetClicktrackingenabled() FeatureStatus {
-	if x != nil {
-		return x.Clicktrackingenabled
+	if x != nil && x.Clicktrackingenabled != nil {
+		return *x.Clicktrackingenabled
 	}
 	return FeatureStatus_FEATURE_STATUS_DISABLED
 }
 
 func (x *TrackingConfigurationOverrides) GetOpentrackingenabled() FeatureStatus {
-	if x != nil {
-		return x.Opentrackingenabled
+	if x != nil && x.Opentrackingenabled != nil {
+		return *x.Opentrackingenabled
 	}
 	return FeatureStatus_FEATURE_STATUS_DISABLED
 }
@@ -21492,7 +21503,7 @@ func (x *TrackingConfigurationOverrides) GetOpentrackingenabled() FeatureStatus 
 type TrackingOptions struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Customredirectdomain string                 `protobuf:"bytes,72478039,opt,name=customredirectdomain,proto3" json:"customredirectdomain,omitempty"`
-	Httpspolicy          HttpsPolicy            `protobuf:"varint,147115397,opt,name=httpspolicy,proto3,enum=sesv2.HttpsPolicy" json:"httpspolicy,omitempty"`
+	Httpspolicy          *HttpsPolicy           `protobuf:"varint,147115397,opt,name=httpspolicy,proto3,enum=sesv2.HttpsPolicy,oneof" json:"httpspolicy,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -21535,8 +21546,8 @@ func (x *TrackingOptions) GetCustomredirectdomain() string {
 }
 
 func (x *TrackingOptions) GetHttpspolicy() HttpsPolicy {
-	if x != nil {
-		return x.Httpspolicy
+	if x != nil && x.Httpspolicy != nil {
+		return *x.Httpspolicy
 	}
 	return HttpsPolicy_HTTPS_POLICY_OPTIONAL
 }
@@ -22631,7 +22642,7 @@ func (x *VdmOptions) GetGuardianoptions() *GuardianOptions {
 
 type VerificationInfo struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Errortype            VerificationError      `protobuf:"varint,398848954,opt,name=errortype,proto3,enum=sesv2.VerificationError" json:"errortype,omitempty"`
+	Errortype            *VerificationError     `protobuf:"varint,398848954,opt,name=errortype,proto3,enum=sesv2.VerificationError,oneof" json:"errortype,omitempty"`
 	Lastcheckedtimestamp *string                `protobuf:"bytes,337895587,opt,name=lastcheckedtimestamp,proto3,oneof" json:"lastcheckedtimestamp,omitempty"`
 	Lastsuccesstimestamp *string                `protobuf:"bytes,446188237,opt,name=lastsuccesstimestamp,proto3,oneof" json:"lastsuccesstimestamp,omitempty"`
 	Soarecord            *SOARecord             `protobuf:"bytes,456865288,opt,name=soarecord,proto3" json:"soarecord,omitempty"`
@@ -22670,8 +22681,8 @@ func (*VerificationInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *VerificationInfo) GetErrortype() VerificationError {
-	if x != nil {
-		return x.Errortype
+	if x != nil && x.Errortype != nil {
+		return *x.Errortype
 	}
 	return VerificationError_VERIFICATION_ERROR_REPLICATION_PRIMARY_BYO_DKIM_NOT_SUPPORTED
 }
@@ -22769,16 +22780,18 @@ var File_sesv2_proto protoreflect.FileDescriptor
 
 const file_sesv2_proto_rawDesc = "" +
 	"\n" +
-	"\vsesv2.proto\x12\x05sesv2\x1a\fcommon.proto\x1a\taws.proto\"\x99\x03\n" +
+	"\vsesv2.proto\x12\x05sesv2\x1a\fcommon.proto\x1a\taws.proto\"\xc4\x03\n" +
 	"\x0eAccountDetails\x12L\n" +
-	"\x1fadditionalcontactemailaddresses\x18\xdd\xe5ʙ\x01 \x03(\tR\x1fadditionalcontactemailaddresses\x12C\n" +
-	"\x0fcontactlanguage\x18\x96Լ6 \x01(\x0e2\x16.sesv2.ContactLanguageR\x0fcontactlanguage\x12.\n" +
-	"\bmailtype\x18\x8f\xd6\xefA \x01(\x0e2\x0f.sesv2.MailTypeR\bmailtype\x12>\n" +
+	"\x1fadditionalcontactemailaddresses\x18\xdd\xe5ʙ\x01 \x03(\tR\x1fadditionalcontactemailaddresses\x12H\n" +
+	"\x0fcontactlanguage\x18\x96Լ6 \x01(\x0e2\x16.sesv2.ContactLanguageH\x00R\x0fcontactlanguage\x88\x01\x01\x123\n" +
+	"\bmailtype\x18\x8f\xd6\xefA \x01(\x0e2\x0f.sesv2.MailTypeH\x01R\bmailtype\x88\x01\x01\x12>\n" +
 	"\rreviewdetails\x18\xba\xe6ִ\x01 \x01(\v2\x14.sesv2.ReviewDetailsR\rreviewdetails\x126\n" +
-	"\x12usecasedescription\x18\xa3\xa0\xa1C \x01(\tH\x00R\x12usecasedescription\x88\x01\x01\x12&\n" +
+	"\x12usecasedescription\x18\xa3\xa0\xa1C \x01(\tH\x02R\x12usecasedescription\x88\x01\x01\x12&\n" +
 	"\n" +
-	"websiteurl\x18\xf4\xb0\xa7` \x01(\tH\x01R\n" +
-	"websiteurl\x88\x01\x01B\x15\n" +
+	"websiteurl\x18\xf4\xb0\xa7` \x01(\tH\x03R\n" +
+	"websiteurl\x88\x01\x01B\x12\n" +
+	"\x10_contactlanguageB\v\n" +
+	"\t_mailtypeB\x15\n" +
 	"\x13_usecasedescriptionB\r\n" +
 	"\v_websiteurl\"I\n" +
 	"\x19AccountSuspendedException\x12 \n" +
@@ -22799,21 +22812,23 @@ const file_sesv2_proto_rawDesc = "" +
 	"\remailidentity\x18\x9a\x94\xf2@ \x01(\tR\remailidentity\x12(\n" +
 	"\vfromaddress\x18\x84\x9d\x9f( \x01(\tH\x00R\vfromaddress\x88\x01\x01B\x0e\n" +
 	"\f_fromaddress\"+\n" +
-	")AssociateEmailIdentityCertificateResponse\"\xce\x03\n" +
+	")AssociateEmailIdentityCertificateResponse\"\x8b\x04\n" +
 	"\n" +
 	"Attachment\x126\n" +
-	"\x12contentdescription\x18\x95\xa3\xfa\r \x01(\tH\x00R\x12contentdescription\x88\x01\x01\x12V\n" +
-	"\x12contentdisposition\x18\xc2՞9 \x01(\x0e2#.sesv2.AttachmentContentDispositionR\x12contentdisposition\x12%\n" +
-	"\tcontentid\x18\xd0\xfe\xc3\xcd\x01 \x01(\tH\x01R\tcontentid\x88\x01\x01\x12f\n" +
-	"\x17contenttransferencoding\x18\x85\x83\xfa\xbe\x01 \x01(\x0e2(.sesv2.AttachmentContentTransferEncodingR\x17contenttransferencoding\x12)\n" +
-	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x02R\vcontenttype\x88\x01\x01\x12\x1e\n" +
+	"\x12contentdescription\x18\x95\xa3\xfa\r \x01(\tH\x00R\x12contentdescription\x88\x01\x01\x12[\n" +
+	"\x12contentdisposition\x18\xc2՞9 \x01(\x0e2#.sesv2.AttachmentContentDispositionH\x01R\x12contentdisposition\x88\x01\x01\x12%\n" +
+	"\tcontentid\x18\xd0\xfe\xc3\xcd\x01 \x01(\tH\x02R\tcontentid\x88\x01\x01\x12k\n" +
+	"\x17contenttransferencoding\x18\x85\x83\xfa\xbe\x01 \x01(\x0e2(.sesv2.AttachmentContentTransferEncodingH\x03R\x17contenttransferencoding\x88\x01\x01\x12)\n" +
+	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x04R\vcontenttype\x88\x01\x01\x12\x1e\n" +
 	"\bfilename\x18\x89\xb1\xf7\xff\x01 \x01(\tR\bfilename\x12!\n" +
 	"\n" +
 	"rawcontent\x18\xb7\xbf\xe9m \x01(\fR\n" +
 	"rawcontentB\x15\n" +
-	"\x13_contentdescriptionB\f\n" +
+	"\x13_contentdescriptionB\x15\n" +
+	"\x13_contentdispositionB\f\n" +
 	"\n" +
-	"_contentidB\x0e\n" +
+	"_contentidB\x1a\n" +
+	"\x18_contenttransferencodingB\x0e\n" +
 	"\f_contenttype\"C\n" +
 	"\x13BadRequestException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -22846,14 +22861,15 @@ const file_sesv2_proto_rawDesc = "" +
 	"\b_rblname\"V\n" +
 	"\x04Body\x12&\n" +
 	"\x04html\x18\xf1燽\x01 \x01(\v2\x0e.sesv2.ContentR\x04html\x12&\n" +
-	"\x04text\x18\xdf\xda\xd0\xf0\x01 \x01(\v2\x0e.sesv2.ContentR\x04text\"\xc3\x01\n" +
+	"\x04text\x18\xdf\xda\xd0\xf0\x01 \x01(\v2\x0e.sesv2.ContentR\x04text\"\xd7\x01\n" +
 	"\x06Bounce\x12-\n" +
-	"\rbouncesubtype\x18\x96\xf1܍\x01 \x01(\tH\x00R\rbouncesubtype\x88\x01\x01\x125\n" +
+	"\rbouncesubtype\x18\x96\xf1܍\x01 \x01(\tH\x00R\rbouncesubtype\x88\x01\x01\x12:\n" +
 	"\n" +
-	"bouncetype\x18\xd6\xe7\xe0\xe9\x01 \x01(\x0e2\x11.sesv2.BounceTypeR\n" +
-	"bouncetype\x12.\n" +
-	"\x0ediagnosticcode\x18\x84\xae\xc7\t \x01(\tH\x01R\x0ediagnosticcode\x88\x01\x01B\x10\n" +
-	"\x0e_bouncesubtypeB\x11\n" +
+	"bouncetype\x18\xd6\xe7\xe0\xe9\x01 \x01(\x0e2\x11.sesv2.BounceTypeH\x01R\n" +
+	"bouncetype\x88\x01\x01\x12.\n" +
+	"\x0ediagnosticcode\x18\x84\xae\xc7\t \x01(\tH\x02R\x0ediagnosticcode\x88\x01\x01B\x10\n" +
+	"\x0e_bouncesubtypeB\r\n" +
+	"\v_bouncetypeB\x11\n" +
 	"\x0f_diagnosticcode\"B\n" +
 	"\x10BulkEmailContent\x12.\n" +
 	"\btemplate\x18\xac\xd6\xd9, \x01(\v2\x0f.sesv2.TemplateR\btemplate\"\xb2\x02\n" +
@@ -22861,14 +22877,15 @@ const file_sesv2_proto_rawDesc = "" +
 	"\vdestination\x18\xe0\x92\x90\xda\x01 \x01(\v2\x12.sesv2.DestinationR\vdestination\x12[\n" +
 	"\x17replacementemailcontent\x18\x93\xee\xd2G \x01(\v2\x1e.sesv2.ReplacementEmailContentR\x17replacementemailcontent\x12H\n" +
 	"\x12replacementheaders\x18\xc8\xe0\xf7\xcf\x01 \x03(\v2\x14.sesv2.MessageHeaderR\x12replacementheaders\x12?\n" +
-	"\x0freplacementtags\x18\x9b\xc5\xe1\xb4\x01 \x03(\v2\x11.sesv2.MessageTagR\x0freplacementtags\"\xa7\x01\n" +
+	"\x0freplacementtags\x18\x9b\xc5\xe1\xb4\x01 \x03(\v2\x11.sesv2.MessageTagR\x0freplacementtags\"\xb7\x01\n" +
 	"\x14BulkEmailEntryResult\x12\x1d\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\tH\x00R\x05error\x88\x01\x01\x12%\n" +
-	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tH\x01R\tmessageid\x88\x01\x01\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.sesv2.BulkEmailStatusR\x06statusB\b\n" +
+	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tH\x01R\tmessageid\x88\x01\x01\x126\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.sesv2.BulkEmailStatusH\x02R\x06status\x88\x01\x01B\b\n" +
 	"\x06_errorB\f\n" +
 	"\n" +
-	"_messageid\"1\n" +
+	"_messageidB\t\n" +
+	"\a_status\"1\n" +
 	"\x16CancelExportJobRequest\x12\x17\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\"\x19\n" +
 	"\x17CancelExportJobResponse\"~\n" +
@@ -22961,12 +22978,13 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x0ftemplatecontent\x18\x8d\xfd\x9d\xfc\x01 \x01(\tR\x0ftemplatecontent\x12&\n" +
 	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tR\ftemplatename\x12+\n" +
 	"\x0ftemplatesubject\x18\xaa\xfb\xfcD \x01(\tR\x0ftemplatesubject\"/\n" +
-	"-CreateCustomVerificationEmailTemplateResponse\"\x9a\x01\n" +
+	"-CreateCustomVerificationEmailTemplateResponse\"\xaf\x01\n" +
 	"\x1cCreateDedicatedIpPoolRequest\x12\x1d\n" +
-	"\bpoolname\x18ɍ\x85' \x01(\tR\bpoolname\x127\n" +
-	"\vscalingmode\x18\xaa\x8f\xa7d \x01(\x0e2\x12.sesv2.ScalingModeR\vscalingmode\x12\"\n" +
+	"\bpoolname\x18ɍ\x85' \x01(\tR\bpoolname\x12<\n" +
+	"\vscalingmode\x18\xaa\x8f\xa7d \x01(\x0e2\x12.sesv2.ScalingModeH\x00R\vscalingmode\x88\x01\x01\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
-	".sesv2.TagR\x04tags\"\x1f\n" +
+	".sesv2.TagR\x04tagsB\x0e\n" +
+	"\f_scalingmode\"\x1f\n" +
 	"\x1dCreateDedicatedIpPoolResponse\"\xe4\x01\n" +
 	"%CreateDeliverabilityTestReportRequest\x120\n" +
 	"\acontent\x18㾞\v \x01(\v2\x13.sesv2.EmailContentR\acontent\x12-\n" +
@@ -22993,11 +23011,12 @@ const file_sesv2_proto_rawDesc = "" +
 	"\remailidentity\x18\x9a\x94\xf2@ \x01(\tR\remailidentity\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
 	".sesv2.TagR\x04tagsB\x17\n" +
-	"\x15_configurationsetname\"\xfd\x01\n" +
+	"\x15_configurationsetname\"\x93\x02\n" +
 	"\x1bCreateEmailIdentityResponse\x12@\n" +
-	"\x0edkimattributes\x18е\x8bz \x01(\v2\x15.sesv2.DkimAttributesR\x0edkimattributes\x12;\n" +
-	"\fidentitytype\x18\x84\xa7\x89\xee\x01 \x01(\x0e2\x13.sesv2.IdentityTypeR\fidentitytype\x12B\n" +
-	"\x18verifiedforsendingstatus\x18\xdd\xf0\xe2M \x01(\bH\x00R\x18verifiedforsendingstatus\x88\x01\x01B\x1b\n" +
+	"\x0edkimattributes\x18е\x8bz \x01(\v2\x15.sesv2.DkimAttributesR\x0edkimattributes\x12@\n" +
+	"\fidentitytype\x18\x84\xa7\x89\xee\x01 \x01(\x0e2\x13.sesv2.IdentityTypeH\x00R\fidentitytype\x88\x01\x01\x12B\n" +
+	"\x18verifiedforsendingstatus\x18\xdd\xf0\xe2M \x01(\bH\x01R\x18verifiedforsendingstatus\x88\x01\x01B\x0f\n" +
+	"\r_identitytypeB\x1b\n" +
 	"\x19_verifiedforsendingstatus\"\xb3\x01\n" +
 	"\x1aCreateEmailTemplateRequest\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
@@ -23021,13 +23040,14 @@ const file_sesv2_proto_rawDesc = "" +
 	"\adetails\x18Ƅ\x89v \x01(\v2\x0e.sesv2.DetailsR\adetails\x12%\n" +
 	"\fendpointname\x18\xb8\xfb\xf4c \x01(\tR\fendpointname\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
-	".sesv2.TagR\x04tags\"\x84\x01\n" +
+	".sesv2.TagR\x04tags\"\x94\x01\n" +
 	"!CreateMultiRegionEndpointResponse\x12&\n" +
 	"\n" +
 	"endpointid\x18\xb2͉\x11 \x01(\tH\x00R\n" +
-	"endpointid\x88\x01\x01\x12(\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\r.sesv2.StatusR\x06statusB\r\n" +
-	"\v_endpointid\"\xb9\x01\n" +
+	"endpointid\x88\x01\x01\x12-\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\r.sesv2.StatusH\x01R\x06status\x88\x01\x01B\r\n" +
+	"\v_endpointidB\t\n" +
+	"\a_status\"\xb9\x01\n" +
 	"\x13CreateTenantRequest\x12[\n" +
 	"\x15suppressionattributes\x18\xb2\xeb\xb3\b \x01(\v2\".sesv2.TenantSuppressionAttributesR\x15suppressionattributes\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
@@ -23040,19 +23060,20 @@ const file_sesv2_proto_rawDesc = "" +
 	"\n" +
 	"tenantname\x18\x87\xdc\xd3R \x01(\tR\n" +
 	"tenantname\")\n" +
-	"'CreateTenantResourceAssociationResponse\"\xbd\x03\n" +
+	"'CreateTenantResourceAssociationResponse\"\xd4\x03\n" +
 	"\x14CreateTenantResponse\x123\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12>\n" +
-	"\rsendingstatus\x18\xac\xbf\xc9\xc8\x01 \x01(\x0e2\x14.sesv2.SendingStatusR\rsendingstatus\x12[\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12C\n" +
+	"\rsendingstatus\x18\xac\xbf\xc9\xc8\x01 \x01(\x0e2\x14.sesv2.SendingStatusH\x01R\rsendingstatus\x88\x01\x01\x12[\n" +
 	"\x15suppressionattributes\x18\xb2\xeb\xb3\b \x01(\v2\".sesv2.TenantSuppressionAttributesR\x15suppressionattributes\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
 	".sesv2.TagR\x04tags\x12$\n" +
-	"\ttenantarn\x18\x9d\x8d\xb7\t \x01(\tH\x01R\ttenantarn\x88\x01\x01\x12\"\n" +
-	"\btenantid\x18\x81\xf8\xefd \x01(\tH\x02R\btenantid\x88\x01\x01\x12&\n" +
+	"\ttenantarn\x18\x9d\x8d\xb7\t \x01(\tH\x02R\ttenantarn\x88\x01\x01\x12\"\n" +
+	"\btenantid\x18\x81\xf8\xefd \x01(\tH\x03R\btenantid\x88\x01\x01\x12&\n" +
 	"\n" +
-	"tenantname\x18\x87\xdc\xd3R \x01(\tH\x03R\n" +
+	"tenantname\x18\x87\xdc\xd3R \x01(\tH\x04R\n" +
 	"tenantname\x88\x01\x01B\x13\n" +
-	"\x11_createdtimestampB\f\n" +
+	"\x11_createdtimestampB\x10\n" +
+	"\x0e_sendingstatusB\f\n" +
 	"\n" +
 	"_tenantarnB\v\n" +
 	"\t_tenantidB\r\n" +
@@ -23073,11 +23094,13 @@ const file_sesv2_proto_rawDesc = "" +
 	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tH\x00R\tstartdate\x88\x01\x01\x12G\n" +
 	"\x10volumestatistics\x18͏\x93\x9e\x01 \x01(\v2\x17.sesv2.VolumeStatisticsR\x10volumestatisticsB\f\n" +
 	"\n" +
-	"_startdate\"\\\n" +
-	"\x13DashboardAttributes\x12E\n" +
-	"\x11engagementmetrics\x18\xdc\xfc\xdc0 \x01(\x0e2\x14.sesv2.FeatureStatusR\x11engagementmetrics\"Y\n" +
-	"\x10DashboardOptions\x12E\n" +
-	"\x11engagementmetrics\x18\xdc\xfc\xdc0 \x01(\x0e2\x14.sesv2.FeatureStatusR\x11engagementmetrics\"\xbd\x01\n" +
+	"_startdate\"w\n" +
+	"\x13DashboardAttributes\x12J\n" +
+	"\x11engagementmetrics\x18\xdc\xfc\xdc0 \x01(\x0e2\x14.sesv2.FeatureStatusH\x00R\x11engagementmetrics\x88\x01\x01B\x14\n" +
+	"\x12_engagementmetrics\"t\n" +
+	"\x10DashboardOptions\x12J\n" +
+	"\x11engagementmetrics\x18\xdc\xfc\xdc0 \x01(\x0e2\x14.sesv2.FeatureStatusH\x00R\x11engagementmetrics\x88\x01\x01B\x14\n" +
+	"\x12_engagementmetrics\"\xbd\x01\n" +
 	"\vDedicatedIp\x12\x11\n" +
 	"\x02ip\x18\xfd\xb0\xa3W \x01(\tR\x02ip\x12\"\n" +
 	"\bpoolname\x18ɍ\x85' \x01(\tH\x00R\bpoolname\x88\x01\x01\x12.\n" +
@@ -23121,9 +23144,10 @@ const file_sesv2_proto_rawDesc = "" +
 	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tR\ftemplatename\"\x1d\n" +
 	"\x1bDeleteEmailTemplateResponse\"I\n" +
 	" DeleteMultiRegionEndpointRequest\x12%\n" +
-	"\fendpointname\x18\xb8\xfb\xf4c \x01(\tR\fendpointname\"M\n" +
-	"!DeleteMultiRegionEndpointResponse\x12(\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\r.sesv2.StatusR\x06status\"\x83\x01\n" +
+	"\fendpointname\x18\xb8\xfb\xf4c \x01(\tR\fendpointname\"]\n" +
+	"!DeleteMultiRegionEndpointResponse\x12-\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\r.sesv2.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"\x83\x01\n" +
 	"\"DeleteSuppressedDestinationRequest\x12&\n" +
 	"\femailaddress\x18\xd6\xf1\x8a\xe9\x01 \x01(\tR\femailaddress\x12&\n" +
 	"\n" +
@@ -23141,30 +23165,33 @@ const file_sesv2_proto_rawDesc = "" +
 	"tenantname\x18\x87\xdc\xd3R \x01(\tR\n" +
 	"tenantname\")\n" +
 	"'DeleteTenantResourceAssociationResponse\"\x16\n" +
-	"\x14DeleteTenantResponse\"\x92\x03\n" +
+	"\x14DeleteTenantResponse\"\xb4\x03\n" +
 	"\x18DeliverabilityTestReport\x12&\n" +
 	"\n" +
 	"createdate\x18\x92\xb9\xfc\x11 \x01(\tH\x00R\n" +
-	"createdate\x88\x01\x01\x12^\n" +
-	"\x18deliverabilityteststatus\x18\x9b\xc0\x80\" \x01(\x0e2\x1f.sesv2.DeliverabilityTestStatusR\x18deliverabilityteststatus\x122\n" +
-	"\x10fromemailaddress\x18\x86\x9a\xcb, \x01(\tH\x01R\x10fromemailaddress\x88\x01\x01\x12#\n" +
-	"\breportid\x18\xa7\xf7\xd9\xc8\x01 \x01(\tH\x02R\breportid\x88\x01\x01\x12'\n" +
+	"createdate\x88\x01\x01\x12c\n" +
+	"\x18deliverabilityteststatus\x18\x9b\xc0\x80\" \x01(\x0e2\x1f.sesv2.DeliverabilityTestStatusH\x01R\x18deliverabilityteststatus\x88\x01\x01\x122\n" +
+	"\x10fromemailaddress\x18\x86\x9a\xcb, \x01(\tH\x02R\x10fromemailaddress\x88\x01\x01\x12#\n" +
+	"\breportid\x18\xa7\xf7\xd9\xc8\x01 \x01(\tH\x03R\breportid\x88\x01\x01\x12'\n" +
 	"\n" +
-	"reportname\x18\xd1\xea\xeb\xfa\x01 \x01(\tH\x03R\n" +
+	"reportname\x18\xd1\xea\xeb\xfa\x01 \x01(\tH\x04R\n" +
 	"reportname\x88\x01\x01\x12 \n" +
-	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tH\x04R\asubject\x88\x01\x01B\r\n" +
-	"\v_createdateB\x13\n" +
+	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tH\x05R\asubject\x88\x01\x01B\r\n" +
+	"\v_createdateB\x1b\n" +
+	"\x19_deliverabilityteststatusB\x13\n" +
 	"\x11_fromemailaddressB\v\n" +
 	"\t_reportidB\r\n" +
 	"\v_reportnameB\n" +
 	"\n" +
-	"\b_subject\"\xd8\x01\n" +
+	"\b_subject\"\xeb\x01\n" +
 	"\x0fDeliveryOptions\x126\n" +
 	"\x12maxdeliveryseconds\x18\xdf\xcc\xde\a \x01(\x03H\x00R\x12maxdeliveryseconds\x88\x01\x01\x120\n" +
-	"\x0fsendingpoolname\x18\xbd\xb8\xd0* \x01(\tH\x01R\x0fsendingpoolname\x88\x01\x01\x120\n" +
-	"\ttlspolicy\x18\x8d\xe5\a \x01(\x0e2\x10.sesv2.TlsPolicyR\ttlspolicyB\x15\n" +
+	"\x0fsendingpoolname\x18\xbd\xb8\xd0* \x01(\tH\x01R\x0fsendingpoolname\x88\x01\x01\x125\n" +
+	"\ttlspolicy\x18\x8d\xe5\a \x01(\x0e2\x10.sesv2.TlsPolicyH\x02R\ttlspolicy\x88\x01\x01B\x15\n" +
 	"\x13_maxdeliverysecondsB\x12\n" +
-	"\x10_sendingpoolname\"~\n" +
+	"\x10_sendingpoolnameB\f\n" +
+	"\n" +
+	"_tlspolicy\"~\n" +
 	"\vDestination\x12%\n" +
 	"\fbccaddresses\x18\x9eȋ/ \x03(\tR\fbccaddresses\x12#\n" +
 	"\vccaddresses\x18\xbe\xa8\xe0] \x03(\tR\vccaddresses\x12#\n" +
@@ -23175,26 +23202,32 @@ const file_sesv2_proto_rawDesc = "" +
 	"\remailidentity\x18\x9a\x94\xf2@ \x01(\tR\remailidentity\x12(\n" +
 	"\vfromaddress\x18\x84\x9d\x9f( \x01(\tH\x00R\vfromaddress\x88\x01\x01B\x0e\n" +
 	"\f_fromaddress\".\n" +
-	",DisassociateEmailIdentityCertificateResponse\"\xe2\x04\n" +
-	"\x0eDkimAttributes\x12X\n" +
-	"\x17currentsigningkeylength\x18\xa5\xeb\x9c| \x01(\x0e2\x1b.sesv2.DkimSigningKeyLengthR\x17currentsigningkeylength\x12G\n" +
-	"\x1alastkeygenerationtimestamp\x18\xdf\xfc\x94\xd9\x01 \x01(\tH\x00R\x1alastkeygenerationtimestamp\x88\x01\x01\x12S\n" +
-	"\x14nextsigningkeylength\x18۳\xba\x92\x01 \x01(\x0e2\x1b.sesv2.DkimSigningKeyLengthR\x14nextsigningkeylength\x12_\n" +
-	"\x17signingattributesorigin\x18\xf0\xaf\xd9y \x01(\x0e2\".sesv2.DkimSigningAttributesOriginR\x17signingattributesorigin\x12/\n" +
-	"\x0esigningenabled\x18\x96މ\x8a\x01 \x01(\bH\x01R\x0esigningenabled\x88\x01\x01\x125\n" +
-	"\x11signinghostedzone\x18\xa6\xef\x9b\xd3\x01 \x01(\tH\x02R\x11signinghostedzone\x88\x01\x01\x12,\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.sesv2.DkimStatusR\x06status\x12\x19\n" +
-	"\x06tokens\x18\xf4\xfc\xfc\x17 \x03(\tR\x06tokensB\x1d\n" +
-	"\x1b_lastkeygenerationtimestampB\x11\n" +
+	",DisassociateEmailIdentityCertificateResponse\"\xd2\x05\n" +
+	"\x0eDkimAttributes\x12]\n" +
+	"\x17currentsigningkeylength\x18\xa5\xeb\x9c| \x01(\x0e2\x1b.sesv2.DkimSigningKeyLengthH\x00R\x17currentsigningkeylength\x88\x01\x01\x12G\n" +
+	"\x1alastkeygenerationtimestamp\x18\xdf\xfc\x94\xd9\x01 \x01(\tH\x01R\x1alastkeygenerationtimestamp\x88\x01\x01\x12X\n" +
+	"\x14nextsigningkeylength\x18۳\xba\x92\x01 \x01(\x0e2\x1b.sesv2.DkimSigningKeyLengthH\x02R\x14nextsigningkeylength\x88\x01\x01\x12d\n" +
+	"\x17signingattributesorigin\x18\xf0\xaf\xd9y \x01(\x0e2\".sesv2.DkimSigningAttributesOriginH\x03R\x17signingattributesorigin\x88\x01\x01\x12/\n" +
+	"\x0esigningenabled\x18\x96މ\x8a\x01 \x01(\bH\x04R\x0esigningenabled\x88\x01\x01\x125\n" +
+	"\x11signinghostedzone\x18\xa6\xef\x9b\xd3\x01 \x01(\tH\x05R\x11signinghostedzone\x88\x01\x01\x121\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.sesv2.DkimStatusH\x06R\x06status\x88\x01\x01\x12\x19\n" +
+	"\x06tokens\x18\xf4\xfc\xfc\x17 \x03(\tR\x06tokensB\x1a\n" +
+	"\x18_currentsigningkeylengthB\x1d\n" +
+	"\x1b_lastkeygenerationtimestampB\x17\n" +
+	"\x15_nextsigningkeylengthB\x1a\n" +
+	"\x18_signingattributesoriginB\x11\n" +
 	"\x0f_signingenabledB\x14\n" +
-	"\x12_signinghostedzone\"\x91\x03\n" +
-	"\x15DkimSigningAttributes\x12k\n" +
-	"\x1ddomainsigningattributesorigin\x18\xb4\xeb\xd3v \x01(\x0e2\".sesv2.DkimSigningAttributesOriginR\x1ddomainsigningattributesorigin\x12A\n" +
-	"\x17domainsigningprivatekey\x18\xeb\xe8\xb7\xef\x01 \x01(\tH\x00R\x17domainsigningprivatekey\x88\x01\x01\x12=\n" +
-	"\x15domainsigningselector\x18\x9e\x93\xe2\xd8\x01 \x01(\tH\x01R\x15domainsigningselector\x88\x01\x01\x12S\n" +
-	"\x14nextsigningkeylength\x18۳\xba\x92\x01 \x01(\x0e2\x1b.sesv2.DkimSigningKeyLengthR\x14nextsigningkeylengthB\x1a\n" +
+	"\x12_signinghostedzoneB\t\n" +
+	"\a_status\"\xd6\x03\n" +
+	"\x15DkimSigningAttributes\x12p\n" +
+	"\x1ddomainsigningattributesorigin\x18\xb4\xeb\xd3v \x01(\x0e2\".sesv2.DkimSigningAttributesOriginH\x00R\x1ddomainsigningattributesorigin\x88\x01\x01\x12A\n" +
+	"\x17domainsigningprivatekey\x18\xeb\xe8\xb7\xef\x01 \x01(\tH\x01R\x17domainsigningprivatekey\x88\x01\x01\x12=\n" +
+	"\x15domainsigningselector\x18\x9e\x93\xe2\xd8\x01 \x01(\tH\x02R\x15domainsigningselector\x88\x01\x01\x12X\n" +
+	"\x14nextsigningkeylength\x18۳\xba\x92\x01 \x01(\x0e2\x1b.sesv2.DkimSigningKeyLengthH\x03R\x14nextsigningkeylength\x88\x01\x01B \n" +
+	"\x1e_domainsigningattributesoriginB\x1a\n" +
 	"\x18_domainsigningprivatekeyB\x18\n" +
-	"\x16_domainsigningselector\"\x9d\x06\n" +
+	"\x16_domainsigningselectorB\x17\n" +
+	"\x15_nextsigningkeylength\"\x9d\x06\n" +
 	"\x1cDomainDeliverabilityCampaign\x12'\n" +
 	"\n" +
 	"campaignid\x18\xbf\x99\xf5\x8e\x01 \x01(\tH\x00R\n" +
@@ -23257,9 +23290,10 @@ const file_sesv2_proto_rawDesc = "" +
 	"\fisdisposable\x18\x94\xf9\xcdV \x01(\v2\".sesv2.EmailAddressInsightsVerdictR\fisdisposable\x12K\n" +
 	"\risrandominput\x18\u05fb\xa0y \x01(\v2\".sesv2.EmailAddressInsightsVerdictR\risrandominput\x12K\n" +
 	"\risroleaddress\x18\xb8\xa3\x9d\x1d \x01(\v2\".sesv2.EmailAddressInsightsVerdictR\risroleaddress\x12K\n" +
-	"\rmailboxexists\x18\xfc\xf5\xb0' \x01(\v2\".sesv2.EmailAddressInsightsVerdictR\rmailboxexists\"|\n" +
-	"\x1bEmailAddressInsightsVerdict\x12]\n" +
-	"\x11confidenceverdict\x18\x9b\xaf\xb3E \x01(\x0e2,.sesv2.EmailAddressInsightsConfidenceVerdictR\x11confidenceverdict\"\x91\x01\n" +
+	"\rmailboxexists\x18\xfc\xf5\xb0' \x01(\v2\".sesv2.EmailAddressInsightsVerdictR\rmailboxexists\"\x97\x01\n" +
+	"\x1bEmailAddressInsightsVerdict\x12b\n" +
+	"\x11confidenceverdict\x18\x9b\xaf\xb3E \x01(\x0e2,.sesv2.EmailAddressInsightsConfidenceVerdictH\x00R\x11confidenceverdict\x88\x01\x01B\x14\n" +
+	"\x12_confidenceverdict\"\x91\x01\n" +
 	"\fEmailContent\x12&\n" +
 	"\x03raw\x18\x92զ4 \x01(\v2\x11.sesv2.RawMessageR\x03raw\x12)\n" +
 	"\x06simple\x18\xa0\xe9\xcdY \x01(\v2\x0e.sesv2.MessageR\x06simple\x12.\n" +
@@ -23317,19 +23351,24 @@ const file_sesv2_proto_rawDesc = "" +
 	"dataformat\x18\xf3\xf6\xdf* \x01(\x0e2\x11.sesv2.DataFormatR\n" +
 	"dataformat\x12\x1d\n" +
 	"\x05s3url\x18\x95ӹ\xc2\x01 \x01(\tH\x00R\x05s3url\x88\x01\x01B\b\n" +
-	"\x06_s3url\"\xcf\x02\n" +
+	"\x06_s3url\"\xfc\x02\n" +
 	"\x10ExportJobSummary\x127\n" +
 	"\x12completedtimestamp\x18\x8b\xe1\xf7\x9e\x01 \x01(\tH\x00R\x12completedtimestamp\x88\x01\x01\x123\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x01R\x10createdtimestamp\x88\x01\x01\x12F\n" +
-	"\x10exportsourcetype\x18\x97˯v \x01(\x0e2\x17.sesv2.ExportSourceTypeR\x10exportsourcetype\x12\x1c\n" +
-	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x02R\x05jobid\x88\x01\x01\x121\n" +
-	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatusB\x15\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x01R\x10createdtimestamp\x88\x01\x01\x12K\n" +
+	"\x10exportsourcetype\x18\x97˯v \x01(\x0e2\x17.sesv2.ExportSourceTypeH\x02R\x10exportsourcetype\x88\x01\x01\x12\x1c\n" +
+	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x03R\x05jobid\x88\x01\x01\x126\n" +
+	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusH\x04R\tjobstatus\x88\x01\x01B\x15\n" +
 	"\x13_completedtimestampB\x13\n" +
-	"\x11_createdtimestampB\b\n" +
-	"\x06_jobid\"s\n" +
-	"\fExportMetric\x12=\n" +
-	"\vaggregation\x18\x86ܔ? \x01(\x0e2\x18.sesv2.MetricAggregationR\vaggregation\x12$\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\r.sesv2.MetricR\x04name\"\xc1\x01\n" +
+	"\x11_createdtimestampB\x13\n" +
+	"\x11_exportsourcetypeB\b\n" +
+	"\x06_jobidB\f\n" +
+	"\n" +
+	"_jobstatus\"\x96\x01\n" +
+	"\fExportMetric\x12B\n" +
+	"\vaggregation\x18\x86ܔ? \x01(\x0e2\x18.sesv2.MetricAggregationH\x00R\vaggregation\x88\x01\x01\x12)\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\r.sesv2.MetricH\x01R\x04name\x88\x01\x01B\x0e\n" +
+	"\f_aggregationB\a\n" +
+	"\x05_name\"\xc1\x01\n" +
 	"\x10ExportStatistics\x12;\n" +
 	"\x14exportedrecordscount\x18\x94꿿\x01 \x01(\x05H\x00R\x14exportedrecordscount\x88\x01\x01\x12=\n" +
 	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05H\x01R\x15processedrecordscount\x88\x01\x01B\x17\n" +
@@ -23453,13 +23492,14 @@ const file_sesv2_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
 	"_nexttoken\"*\n" +
-	"(GetDeliverabilityDashboardOptionsRequest\"\x8c\x04\n" +
-	")GetDeliverabilityDashboardOptionsResponse\x12S\n" +
-	"\raccountstatus\x18\xc7\xd9: \x01(\x0e2+.sesv2.DeliverabilityDashboardAccountStatusR\raccountstatus\x12g\n" +
+	"(GetDeliverabilityDashboardOptionsRequest\"\xa3\x04\n" +
+	")GetDeliverabilityDashboardOptionsResponse\x12X\n" +
+	"\raccountstatus\x18\xc7\xd9: \x01(\x0e2+.sesv2.DeliverabilityDashboardAccountStatusH\x00R\raccountstatus\x88\x01\x01\x12g\n" +
 	"\x17activesubscribeddomains\x18\xe1\xca\xd8\xd2\x01 \x03(\v2).sesv2.DomainDeliverabilityTrackingOptionR\x17activesubscribeddomains\x122\n" +
-	"\x10dashboardenabled\x18\xc1\xea\xa8+ \x01(\bH\x00R\x10dashboardenabled\x88\x01\x01\x12|\n" +
+	"\x10dashboardenabled\x18\xc1\xea\xa8+ \x01(\bH\x01R\x10dashboardenabled\x88\x01\x01\x12|\n" +
 	"\"pendingexpirationsubscribeddomains\x18۔\xfdY \x03(\v2).sesv2.DomainDeliverabilityTrackingOptionR\"pendingexpirationsubscribeddomains\x12?\n" +
-	"\x16subscriptionexpirydate\x18\xe4ڀ\xb6\x01 \x01(\tH\x01R\x16subscriptionexpirydate\x88\x01\x01B\x13\n" +
+	"\x16subscriptionexpirydate\x18\xe4ڀ\xb6\x01 \x01(\tH\x02R\x16subscriptionexpirydate\x88\x01\x01B\x10\n" +
+	"\x0e_accountstatusB\x13\n" +
 	"\x11_dashboardenabledB\x19\n" +
 	"\x17_subscriptionexpirydate\"D\n" +
 	"\"GetDeliverabilityTestReportRequest\x12\x1e\n" +
@@ -23498,24 +23538,26 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
 	"\x17GetEmailIdentityRequest\x12'\n" +
-	"\remailidentity\x18\x9a\x94\xf2@ \x01(\tR\remailidentity\"\xc6\x06\n" +
+	"\remailidentity\x18\x9a\x94\xf2@ \x01(\tR\remailidentity\"\xf8\x06\n" +
 	"\x18GetEmailIdentityResponse\x12;\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tH\x00R\x14configurationsetname\x88\x01\x01\x12@\n" +
 	"\x0edkimattributes\x18е\x8bz \x01(\v2\x15.sesv2.DkimAttributesR\x0edkimattributes\x12C\n" +
-	"\x18feedbackforwardingstatus\x18\xfc\xaf\xa0\x91\x01 \x01(\bH\x01R\x18feedbackforwardingstatus\x88\x01\x01\x12;\n" +
-	"\fidentitytype\x18\x84\xa7\x89\xee\x01 \x01(\x0e2\x13.sesv2.IdentityTypeR\fidentitytype\x12M\n" +
+	"\x18feedbackforwardingstatus\x18\xfc\xaf\xa0\x91\x01 \x01(\bH\x01R\x18feedbackforwardingstatus\x88\x01\x01\x12@\n" +
+	"\fidentitytype\x18\x84\xa7\x89\xee\x01 \x01(\x0e2\x13.sesv2.IdentityTypeH\x02R\fidentitytype\x88\x01\x01\x12M\n" +
 	"\x12mailfromattributes\x18\x80\x8c\xbd\xdb\x01 \x01(\v2\x19.sesv2.MailFromAttributesR\x12mailfromattributes\x12L\n" +
 	"\bpolicies\x18\x98\xac\x8a\x13 \x03(\v2-.sesv2.GetEmailIdentityResponse.PoliciesEntryR\bpolicies\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
 	".sesv2.TagR\x04tags\x12F\n" +
-	"\x10verificationinfo\x18\x9f\xca\xcf\x1f \x01(\v2\x17.sesv2.VerificationInfoR\x10verificationinfo\x12L\n" +
-	"\x12verificationstatus\x18\xc1\x93\xa4? \x01(\x0e2\x19.sesv2.VerificationStatusR\x12verificationstatus\x12B\n" +
-	"\x18verifiedforsendingstatus\x18\xdd\xf0\xe2M \x01(\bH\x02R\x18verifiedforsendingstatus\x88\x01\x01\x1a;\n" +
+	"\x10verificationinfo\x18\x9f\xca\xcf\x1f \x01(\v2\x17.sesv2.VerificationInfoR\x10verificationinfo\x12Q\n" +
+	"\x12verificationstatus\x18\xc1\x93\xa4? \x01(\x0e2\x19.sesv2.VerificationStatusH\x03R\x12verificationstatus\x88\x01\x01\x12B\n" +
+	"\x18verifiedforsendingstatus\x18\xdd\xf0\xe2M \x01(\bH\x04R\x18verifiedforsendingstatus\x88\x01\x01\x1a;\n" +
 	"\rPoliciesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x17\n" +
 	"\x15_configurationsetnameB\x1b\n" +
-	"\x19_feedbackforwardingstatusB\x1b\n" +
+	"\x19_feedbackforwardingstatusB\x0f\n" +
+	"\r_identitytypeB\x15\n" +
+	"\x13_verificationstatusB\x1b\n" +
 	"\x19_verifiedforsendingstatus\"A\n" +
 	"\x17GetEmailTemplateRequest\x12&\n" +
 	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tR\ftemplatename\"\xb1\x01\n" +
@@ -23525,24 +23567,27 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x0ftemplatecontent\x18\x8d\xfd\x9d\xfc\x01 \x01(\v2\x1b.sesv2.EmailTemplateContentR\x0ftemplatecontent\x12&\n" +
 	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tR\ftemplatename\".\n" +
 	"\x13GetExportJobRequest\x12\x17\n" +
-	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\"\xdf\x04\n" +
+	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\"\x8c\x05\n" +
 	"\x14GetExportJobResponse\x127\n" +
 	"\x12completedtimestamp\x18\x8b\xe1\xf7\x9e\x01 \x01(\tH\x00R\x12completedtimestamp\x88\x01\x01\x123\n" +
 	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x01R\x10createdtimestamp\x88\x01\x01\x12G\n" +
 	"\x10exportdatasource\x18\xdf\xfb\xf1\x92\x01 \x01(\v2\x17.sesv2.ExportDataSourceR\x10exportdatasource\x12J\n" +
-	"\x11exportdestination\x18\xea\xa9\xca\xf9\x01 \x01(\v2\x18.sesv2.ExportDestinationR\x11exportdestination\x12F\n" +
-	"\x10exportsourcetype\x18\x97˯v \x01(\x0e2\x17.sesv2.ExportSourceTypeR\x10exportsourcetype\x128\n" +
+	"\x11exportdestination\x18\xea\xa9\xca\xf9\x01 \x01(\v2\x18.sesv2.ExportDestinationR\x11exportdestination\x12K\n" +
+	"\x10exportsourcetype\x18\x97˯v \x01(\x0e2\x17.sesv2.ExportSourceTypeH\x02R\x10exportsourcetype\x88\x01\x01\x128\n" +
 	"\vfailureinfo\x18\xca\xca\xc0\xd7\x01 \x01(\v2\x12.sesv2.FailureInfoR\vfailureinfo\x12\x1c\n" +
-	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x02R\x05jobid\x88\x01\x01\x121\n" +
-	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\x12;\n" +
+	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x03R\x05jobid\x88\x01\x01\x126\n" +
+	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusH\x04R\tjobstatus\x88\x01\x01\x12;\n" +
 	"\n" +
 	"statistics\x18\xab\xe0\xbe\xf3\x01 \x01(\v2\x17.sesv2.ExportStatisticsR\n" +
 	"statisticsB\x15\n" +
 	"\x13_completedtimestampB\x13\n" +
-	"\x11_createdtimestampB\b\n" +
-	"\x06_jobid\".\n" +
+	"\x11_createdtimestampB\x13\n" +
+	"\x11_exportsourcetypeB\b\n" +
+	"\x06_jobidB\f\n" +
+	"\n" +
+	"_jobstatus\".\n" +
 	"\x13GetImportJobRequest\x12\x17\n" +
-	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\"\x82\x05\n" +
+	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\"\x95\x05\n" +
 	"\x14GetImportJobResponse\x127\n" +
 	"\x12completedtimestamp\x18\x8b\xe1\xf7\x9e\x01 \x01(\tH\x00R\x12completedtimestamp\x88\x01\x01\x123\n" +
 	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x01R\x10createdtimestamp\x88\x01\x01\x127\n" +
@@ -23550,13 +23595,15 @@ const file_sesv2_proto_rawDesc = "" +
 	"\vfailureinfo\x18\xca\xca\xc0\xd7\x01 \x01(\v2\x12.sesv2.FailureInfoR\vfailureinfo\x12G\n" +
 	"\x10importdatasource\x18\x8a\xba\xdf\xe7\x01 \x01(\v2\x17.sesv2.ImportDataSourceR\x10importdatasource\x12I\n" +
 	"\x11importdestination\x18\xe5\xd6\xe0E \x01(\v2\x18.sesv2.ImportDestinationR\x11importdestination\x12\x1c\n" +
-	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x03R\x05jobid\x88\x01\x01\x121\n" +
-	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\x12=\n" +
-	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05H\x04R\x15processedrecordscount\x88\x01\x01B\x15\n" +
+	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x03R\x05jobid\x88\x01\x01\x126\n" +
+	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusH\x04R\tjobstatus\x88\x01\x01\x12=\n" +
+	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05H\x05R\x15processedrecordscount\x88\x01\x01B\x15\n" +
 	"\x13_completedtimestampB\x13\n" +
 	"\x11_createdtimestampB\x15\n" +
 	"\x13_failedrecordscountB\b\n" +
-	"\x06_jobidB\x18\n" +
+	"\x06_jobidB\f\n" +
+	"\n" +
+	"_jobstatusB\x18\n" +
 	"\x16_processedrecordscount\"=\n" +
 	"\x19GetMessageInsightsRequest\x12 \n" +
 	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tR\tmessageid\"\xb1\x02\n" +
@@ -23572,7 +23619,7 @@ const file_sesv2_proto_rawDesc = "" +
 	"\n" +
 	"\b_subject\"F\n" +
 	"\x1dGetMultiRegionEndpointRequest\x12%\n" +
-	"\fendpointname\x18\xb8\xfb\xf4c \x01(\tR\fendpointname\"\x87\x03\n" +
+	"\fendpointname\x18\xb8\xfb\xf4c \x01(\tR\fendpointname\"\x97\x03\n" +
 	"\x1eGetMultiRegionEndpointResponse\x123\n" +
 	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12&\n" +
 	"\n" +
@@ -23580,12 +23627,13 @@ const file_sesv2_proto_rawDesc = "" +
 	"endpointid\x88\x01\x01\x12*\n" +
 	"\fendpointname\x18\xb8\xfb\xf4c \x01(\tH\x02R\fendpointname\x88\x01\x01\x12:\n" +
 	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tH\x03R\x14lastupdatedtimestamp\x88\x01\x01\x12(\n" +
-	"\x06routes\x18\xb8\xa5\xbb\x99\x01 \x03(\v2\f.sesv2.RouteR\x06routes\x12(\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\r.sesv2.StatusR\x06statusB\x13\n" +
+	"\x06routes\x18\xb8\xa5\xbb\x99\x01 \x03(\v2\f.sesv2.RouteR\x06routes\x12-\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\r.sesv2.StatusH\x04R\x06status\x88\x01\x01B\x13\n" +
 	"\x11_createdtimestampB\r\n" +
 	"\v_endpointidB\x0f\n" +
 	"\r_endpointnameB\x17\n" +
-	"\x15_lastupdatedtimestamp\"\xb2\x01\n" +
+	"\x15_lastupdatedtimestampB\t\n" +
+	"\a_status\"\xb2\x01\n" +
 	"\x1aGetReputationEntityRequest\x12@\n" +
 	"\x19reputationentityreference\x18ס\xed\xc5\x01 \x01(\tR\x19reputationentityreference\x12R\n" +
 	"\x14reputationentitytype\x18ҁ\xef. \x01(\x0e2\x1b.sesv2.ReputationEntityTypeR\x14reputationentitytype\"e\n" +
@@ -23604,26 +23652,31 @@ const file_sesv2_proto_rawDesc = "" +
 	"tenantname\x18\x87\xdc\xd3R \x01(\tR\n" +
 	"tenantname\"=\n" +
 	"\x11GetTenantResponse\x12(\n" +
-	"\x06tenant\x18\xc6ѽ\x13 \x01(\v2\r.sesv2.TenantR\x06tenant\"h\n" +
-	"\x12GuardianAttributes\x12R\n" +
-	"\x17optimizedshareddelivery\x18ܖ\xc0\x91\x01 \x01(\x0e2\x14.sesv2.FeatureStatusR\x17optimizedshareddelivery\"e\n" +
-	"\x0fGuardianOptions\x12R\n" +
-	"\x17optimizedshareddelivery\x18ܖ\xc0\x91\x01 \x01(\x0e2\x14.sesv2.FeatureStatusR\x17optimizedshareddelivery\"\xa7\x02\n" +
+	"\x06tenant\x18\xc6ѽ\x13 \x01(\v2\r.sesv2.TenantR\x06tenant\"\x89\x01\n" +
+	"\x12GuardianAttributes\x12W\n" +
+	"\x17optimizedshareddelivery\x18ܖ\xc0\x91\x01 \x01(\x0e2\x14.sesv2.FeatureStatusH\x00R\x17optimizedshareddelivery\x88\x01\x01B\x1a\n" +
+	"\x18_optimizedshareddelivery\"\x86\x01\n" +
+	"\x0fGuardianOptions\x12W\n" +
+	"\x17optimizedshareddelivery\x18ܖ\xc0\x91\x01 \x01(\x0e2\x14.sesv2.FeatureStatusH\x00R\x17optimizedshareddelivery\x88\x01\x01B\x1a\n" +
+	"\x18_optimizedshareddelivery\"\xb7\x02\n" +
 	"\x13IdentityCertificate\x12.\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12<\n" +
 	"\x15certificateexpirytime\x18\xa3\xf8\xa1d \x01(\tH\x01R\x15certificateexpirytime\x88\x01\x01\x12(\n" +
-	"\vfromaddress\x18\x84\x9d\x9f( \x01(\tH\x02R\vfromaddress\x88\x01\x01\x12;\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .sesv2.IdentityCertificateStatusR\x06statusB\x11\n" +
+	"\vfromaddress\x18\x84\x9d\x9f( \x01(\tH\x02R\vfromaddress\x88\x01\x01\x12@\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .sesv2.IdentityCertificateStatusH\x03R\x06status\x88\x01\x01B\x11\n" +
 	"\x0f_certificatearnB\x18\n" +
 	"\x16_certificateexpirytimeB\x0e\n" +
-	"\f_fromaddress\"\x99\x02\n" +
+	"\f_fromaddressB\t\n" +
+	"\a_status\"\xcb\x02\n" +
 	"\fIdentityInfo\x12*\n" +
-	"\fidentityname\x18\x81\x8c\xfew \x01(\tH\x00R\fidentityname\x88\x01\x01\x12;\n" +
-	"\fidentitytype\x18\x84\xa7\x89\xee\x01 \x01(\x0e2\x13.sesv2.IdentityTypeR\fidentitytype\x12.\n" +
-	"\x0esendingenabled\x18\xa3\xbb\xf4\\ \x01(\bH\x01R\x0esendingenabled\x88\x01\x01\x12L\n" +
-	"\x12verificationstatus\x18\xc1\x93\xa4? \x01(\x0e2\x19.sesv2.VerificationStatusR\x12verificationstatusB\x0f\n" +
-	"\r_identitynameB\x11\n" +
-	"\x0f_sendingenabled\"b\n" +
+	"\fidentityname\x18\x81\x8c\xfew \x01(\tH\x00R\fidentityname\x88\x01\x01\x12@\n" +
+	"\fidentitytype\x18\x84\xa7\x89\xee\x01 \x01(\x0e2\x13.sesv2.IdentityTypeH\x01R\fidentitytype\x88\x01\x01\x12.\n" +
+	"\x0esendingenabled\x18\xa3\xbb\xf4\\ \x01(\bH\x02R\x0esendingenabled\x88\x01\x01\x12Q\n" +
+	"\x12verificationstatus\x18\xc1\x93\xa4? \x01(\x0e2\x19.sesv2.VerificationStatusH\x03R\x12verificationstatus\x88\x01\x01B\x0f\n" +
+	"\r_identitynameB\x0f\n" +
+	"\r_identitytypeB\x11\n" +
+	"\x0f_sendingenabledB\x15\n" +
+	"\x13_verificationstatus\"b\n" +
 	"\x10ImportDataSource\x124\n" +
 	"\n" +
 	"dataformat\x18\xf3\xf6\xdf* \x01(\x0e2\x11.sesv2.DataFormatR\n" +
@@ -23631,29 +23684,32 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x05s3url\x18\x95ӹ\xc2\x01 \x01(\tR\x05s3url\"\xd3\x01\n" +
 	"\x11ImportDestination\x12X\n" +
 	"\x16contactlistdestination\x18\xe2\xb5\xe0{ \x01(\v2\x1d.sesv2.ContactListDestinationR\x16contactlistdestination\x12d\n" +
-	"\x1asuppressionlistdestination\x18\xc1\x95\xe9C \x01(\v2!.sesv2.SuppressionListDestinationR\x1asuppressionlistdestination\"\xab\x03\n" +
+	"\x1asuppressionlistdestination\x18\xc1\x95\xe9C \x01(\v2!.sesv2.SuppressionListDestinationR\x1asuppressionlistdestination\"\xbe\x03\n" +
 	"\x10ImportJobSummary\x123\n" +
 	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x127\n" +
 	"\x12failedrecordscount\x18\x86\xbf\x93\xfc\x01 \x01(\x05H\x01R\x12failedrecordscount\x88\x01\x01\x12I\n" +
 	"\x11importdestination\x18\xe5\xd6\xe0E \x01(\v2\x18.sesv2.ImportDestinationR\x11importdestination\x12\x1c\n" +
-	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x02R\x05jobid\x88\x01\x01\x121\n" +
-	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\x12=\n" +
-	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05H\x03R\x15processedrecordscount\x88\x01\x01B\x13\n" +
+	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x02R\x05jobid\x88\x01\x01\x126\n" +
+	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusH\x03R\tjobstatus\x88\x01\x01\x12=\n" +
+	"\x15processedrecordscount\x18\xab\xbc\x9a\xf2\x01 \x01(\x05H\x04R\x15processedrecordscount\x88\x01\x01B\x13\n" +
 	"\x11_createdtimestampB\x15\n" +
 	"\x13_failedrecordscountB\b\n" +
-	"\x06_jobidB\x18\n" +
+	"\x06_jobidB\f\n" +
+	"\n" +
+	"_jobstatusB\x18\n" +
 	"\x16_processedrecordscount\"n\n" +
 	"\x1cInboxPlacementTrackingOption\x12\x1e\n" +
 	"\x06global\x18ρ\xca  \x01(\bH\x00R\x06global\x88\x01\x01\x12#\n" +
 	"\vtrackedisps\x18\xbd\xb9\xb9\n" +
 	" \x03(\tR\vtrackedispsB\t\n" +
-	"\a_global\"\x9f\x01\n" +
+	"\a_global\"\xad\x01\n" +
 	"\rInsightsEvent\x120\n" +
 	"\adetails\x18Ƅ\x89v \x01(\v2\x13.sesv2.EventDetailsR\adetails\x12$\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tH\x00R\ttimestamp\x88\x01\x01\x12(\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.sesv2.EventTypeR\x04typeB\f\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tH\x00R\ttimestamp\x88\x01\x01\x12-\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.sesv2.EventTypeH\x01R\x04type\x88\x01\x01B\f\n" +
 	"\n" +
-	"_timestamp\"M\n" +
+	"_timestampB\a\n" +
+	"\x05_type\"M\n" +
 	"\x1dInternalServiceErrorException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -23697,10 +23753,11 @@ const file_sesv2_proto_rawDesc = "" +
 	"\fcontactlists\x18ɸ\x92\xaf\x01 \x03(\v2\x12.sesv2.ContactListR\fcontactlists\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\x94\x01\n" +
-	"\x12ListContactsFilter\x12E\n" +
-	"\x0efilteredstatus\x18ٟ\x81\x94\x01 \x01(\x0e2\x19.sesv2.SubscriptionStatusR\x0efilteredstatus\x127\n" +
-	"\vtopicfilter\x18Ǹ\x86e \x01(\v2\x12.sesv2.TopicFilterR\vtopicfilter\"\xe0\x01\n" +
+	"_nexttoken\"\xac\x01\n" +
+	"\x12ListContactsFilter\x12J\n" +
+	"\x0efilteredstatus\x18ٟ\x81\x94\x01 \x01(\x0e2\x19.sesv2.SubscriptionStatusH\x00R\x0efilteredstatus\x88\x01\x01\x127\n" +
+	"\vtopicfilter\x18Ǹ\x86e \x01(\v2\x12.sesv2.TopicFilterR\vtopicfilterB\x11\n" +
+	"\x0f_filteredstatus\"\xe0\x01\n" +
 	"\x13ListContactsRequest\x12,\n" +
 	"\x0fcontactlistname\x18\U0007d9e1\x01 \x01(\tR\x0fcontactlistname\x125\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x19.sesv2.ListContactsFilterR\x06filter\x12$\n" +
@@ -23794,12 +23851,15 @@ const file_sesv2_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12M\n" +
 	"\x11templatesmetadata\x18\xbe\xac\xf0\r \x03(\v2\x1c.sesv2.EmailTemplateMetadataR\x11templatesmetadataB\f\n" +
 	"\n" +
-	"_nexttoken\"\xf8\x01\n" +
-	"\x15ListExportJobsRequest\x12F\n" +
-	"\x10exportsourcetype\x18\x97˯v \x01(\x0e2\x17.sesv2.ExportSourceTypeR\x10exportsourcetype\x121\n" +
-	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusR\tjobstatus\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12#\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x01R\bpagesize\x88\x01\x01B\f\n" +
+	"_nexttoken\"\xa5\x02\n" +
+	"\x15ListExportJobsRequest\x12K\n" +
+	"\x10exportsourcetype\x18\x97˯v \x01(\x0e2\x17.sesv2.ExportSourceTypeH\x00R\x10exportsourcetype\x88\x01\x01\x126\n" +
+	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x10.sesv2.JobStatusH\x01R\tjobstatus\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x03R\bpagesize\x88\x01\x01B\x13\n" +
+	"\x11_exportsourcetypeB\f\n" +
+	"\n" +
+	"_jobstatusB\f\n" +
 	"\n" +
 	"_nexttokenB\v\n" +
 	"\t_pagesize\"\x89\x01\n" +
@@ -23809,11 +23869,12 @@ const file_sesv2_proto_rawDesc = "" +
 	"exportjobs\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xd5\x01\n" +
-	"\x15ListImportJobsRequest\x12V\n" +
-	"\x15importdestinationtype\x18͔\x9f\xa1\x01 \x01(\x0e2\x1c.sesv2.ImportDestinationTypeR\x15importdestinationtype\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12#\n" +
-	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x01R\bpagesize\x88\x01\x01B\f\n" +
+	"_nexttoken\"\xf4\x01\n" +
+	"\x15ListImportJobsRequest\x12[\n" +
+	"\x15importdestinationtype\x18͔\x9f\xa1\x01 \x01(\x0e2\x1c.sesv2.ImportDestinationTypeH\x00R\x15importdestinationtype\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12#\n" +
+	"\bpagesize\x18\xb8\x93\x82\xd1\x01 \x01(\x05H\x02R\bpagesize\x88\x01\x01B\x18\n" +
+	"\x16_importdestinationtypeB\f\n" +
 	"\n" +
 	"_nexttokenB\v\n" +
 	"\t_pagesize\"\x88\x01\n" +
@@ -23965,14 +24026,17 @@ const file_sesv2_proto_rawDesc = "" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12 \n" +
 	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdateB\r\n" +
-	"\v_maxresults\"\xbd\x02\n" +
+	"\v_maxresults\"\xe0\x02\n" +
 	"\x16MessageInsightsFilters\x12$\n" +
 	"\vdestination\x18\xe0\x92\x90\xda\x01 \x03(\tR\vdestination\x12-\n" +
 	"\x10fromemailaddress\x18\x86\x9a\xcb, \x03(\tR\x10fromemailaddress\x12\x13\n" +
 	"\x03isp\x18\xa0\xa7\xd1T \x03(\tR\x03isp\x12J\n" +
 	"\x11lastdeliveryevent\x18\xac\xcf\xeb\xfb\x01 \x03(\x0e2\x18.sesv2.DeliveryEventTypeR\x11lastdeliveryevent\x12P\n" +
 	"\x13lastengagementevent\x18\xa7\xe9\xc7\xcb\x01 \x03(\x0e2\x1a.sesv2.EngagementEventTypeR\x13lastengagementevent\x12\x1b\n" +
-	"\asubject\x18\xf0\xc9\xe4\x03 \x03(\tR\asubject\"?\n" +
+	"\asubject\x18\xf0\xc9\xe4\x03 \x03(\tR\asubject\x12!\n" +
+	"\n" +
+	"tenantname\x18\x87\xdc\xd3R \x03(\tR\n" +
+	"tenantname\"?\n" +
 	"\x0fMessageRejected\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -23982,11 +24046,12 @@ const file_sesv2_proto_rawDesc = "" +
 	"\n" +
 	"MessageTag\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\x8e\x01\n" +
-	"\x0fMetricDataError\x12-\n" +
-	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\x0e2\x15.sesv2.QueryErrorCodeR\x04code\x12\x17\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12 \n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x01R\amessage\x88\x01\x01B\x05\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\x9c\x01\n" +
+	"\x0fMetricDataError\x122\n" +
+	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\x0e2\x15.sesv2.QueryErrorCodeH\x00R\x04code\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x02R\amessage\x88\x01\x01B\a\n" +
+	"\x05_codeB\x05\n" +
 	"\x03_idB\n" +
 	"\n" +
 	"\b_message\"p\n" +
@@ -24007,7 +24072,7 @@ const file_sesv2_proto_rawDesc = "" +
 	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\x1a=\n" +
 	"\x0fDimensionsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xef\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xff\x02\n" +
 	"\x13MultiRegionEndpoint\x123\n" +
 	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12&\n" +
 	"\n" +
@@ -24015,12 +24080,13 @@ const file_sesv2_proto_rawDesc = "" +
 	"endpointid\x88\x01\x01\x12*\n" +
 	"\fendpointname\x18\xb8\xfb\xf4c \x01(\tH\x02R\fendpointname\x88\x01\x01\x12:\n" +
 	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tH\x03R\x14lastupdatedtimestamp\x88\x01\x01\x12\x1b\n" +
-	"\aregions\x18\xab\xbd\xa1\x11 \x03(\tR\aregions\x12(\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\r.sesv2.StatusR\x06statusB\x13\n" +
+	"\aregions\x18\xab\xbd\xa1\x11 \x03(\tR\aregions\x12-\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\r.sesv2.StatusH\x04R\x06status\x88\x01\x01B\x13\n" +
 	"\x11_createdtimestampB\r\n" +
 	"\v_endpointidB\x0f\n" +
 	"\r_endpointnameB\x17\n" +
-	"\x15_lastupdatedtimestamp\"A\n" +
+	"\x15_lastupdatedtimestampB\t\n" +
+	"\a_status\"A\n" +
 	"\x11NotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -24043,23 +24109,26 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x10_inboxpercentageB\x14\n" +
 	"\x12_missingpercentageB\x11\n" +
 	"\x0f_spampercentageB\x10\n" +
-	"\x0e_spfpercentage\"\x7f\n" +
-	"\x11PricingAttributes\x127\n" +
-	"\vcurrentplan\x18\xc2ޏW \x01(\x0e2\x12.sesv2.PricingPlanR\vcurrentplan\x121\n" +
-	"\bnextplan\x18ܫ\xa2? \x01(\x0e2\x12.sesv2.PricingPlanR\bnextplan\"{\n" +
+	"\x0e_spfpercentage\"\xa6\x01\n" +
+	"\x11PricingAttributes\x12<\n" +
+	"\vcurrentplan\x18\xc2ޏW \x01(\x0e2\x12.sesv2.PricingPlanH\x00R\vcurrentplan\x88\x01\x01\x126\n" +
+	"\bnextplan\x18ܫ\xa2? \x01(\x0e2\x12.sesv2.PricingPlanH\x01R\bnextplan\x88\x01\x01B\x0e\n" +
+	"\f_currentplanB\v\n" +
+	"\t_nextplan\"{\n" +
 	",PutAccountDedicatedIpWarmupAttributesRequest\x125\n" +
 	"\x11autowarmupenabled\x18\xb4\xe1\xea\x80\x01 \x01(\bH\x00R\x11autowarmupenabled\x88\x01\x01B\x14\n" +
 	"\x12_autowarmupenabled\"/\n" +
-	"-PutAccountDedicatedIpWarmupAttributesResponse\"\xae\x03\n" +
+	"-PutAccountDedicatedIpWarmupAttributesResponse\"\xc7\x03\n" +
 	"\x18PutAccountDetailsRequest\x12L\n" +
-	"\x1fadditionalcontactemailaddresses\x18\xdd\xe5ʙ\x01 \x03(\tR\x1fadditionalcontactemailaddresses\x12C\n" +
-	"\x0fcontactlanguage\x18\x96Լ6 \x01(\x0e2\x16.sesv2.ContactLanguageR\x0fcontactlanguage\x12.\n" +
+	"\x1fadditionalcontactemailaddresses\x18\xdd\xe5ʙ\x01 \x03(\tR\x1fadditionalcontactemailaddresses\x12H\n" +
+	"\x0fcontactlanguage\x18\x96Լ6 \x01(\x0e2\x16.sesv2.ContactLanguageH\x00R\x0fcontactlanguage\x88\x01\x01\x12.\n" +
 	"\bmailtype\x18\x8f\xd6\xefA \x01(\x0e2\x0f.sesv2.MailTypeR\bmailtype\x12A\n" +
-	"\x17productionaccessenabled\x18\xae\xe4\xd5\xe0\x01 \x01(\bH\x00R\x17productionaccessenabled\x88\x01\x01\x126\n" +
-	"\x12usecasedescription\x18\xa3\xa0\xa1C \x01(\tH\x01R\x12usecasedescription\x88\x01\x01\x12!\n" +
+	"\x17productionaccessenabled\x18\xae\xe4\xd5\xe0\x01 \x01(\bH\x01R\x17productionaccessenabled\x88\x01\x01\x126\n" +
+	"\x12usecasedescription\x18\xa3\xa0\xa1C \x01(\tH\x02R\x12usecasedescription\x88\x01\x01\x12!\n" +
 	"\n" +
 	"websiteurl\x18\xf4\xb0\xa7` \x01(\tR\n" +
-	"websiteurlB\x1a\n" +
+	"websiteurlB\x12\n" +
+	"\x10_contactlanguageB\x1a\n" +
 	"\x18_productionaccessenabledB\x15\n" +
 	"\x13_usecasedescription\"\x1b\n" +
 	"\x19PutAccountDetailsResponse\"P\n" +
@@ -24083,14 +24152,16 @@ const file_sesv2_proto_rawDesc = "" +
 	"archivearn\x88\x01\x01\x126\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetnameB\r\n" +
 	"\v_archivearn\"-\n" +
-	"+PutConfigurationSetArchivingOptionsResponse\"\xaa\x02\n" +
+	"+PutConfigurationSetArchivingOptionsResponse\"\xbd\x02\n" +
 	")PutConfigurationSetDeliveryOptionsRequest\x126\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x126\n" +
 	"\x12maxdeliveryseconds\x18\xdf\xcc\xde\a \x01(\x03H\x00R\x12maxdeliveryseconds\x88\x01\x01\x120\n" +
-	"\x0fsendingpoolname\x18\xbd\xb8\xd0* \x01(\tH\x01R\x0fsendingpoolname\x88\x01\x01\x120\n" +
-	"\ttlspolicy\x18\x8d\xe5\a \x01(\x0e2\x10.sesv2.TlsPolicyR\ttlspolicyB\x15\n" +
+	"\x0fsendingpoolname\x18\xbd\xb8\xd0* \x01(\tH\x01R\x0fsendingpoolname\x88\x01\x01\x125\n" +
+	"\ttlspolicy\x18\x8d\xe5\a \x01(\x0e2\x10.sesv2.TlsPolicyH\x02R\ttlspolicy\x88\x01\x01B\x15\n" +
 	"\x13_maxdeliverysecondsB\x12\n" +
-	"\x10_sendingpoolname\",\n" +
+	"\x10_sendingpoolnameB\f\n" +
+	"\n" +
+	"_tlspolicy\",\n" +
 	"*PutConfigurationSetDeliveryOptionsResponse\"\xc7\x01\n" +
 	"+PutConfigurationSetReputationOptionsRequest\x126\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x12C\n" +
@@ -24101,18 +24172,20 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x12.\n" +
 	"\x0esendingenabled\x18\xa3\xbb\xf4\\ \x01(\bH\x00R\x0esendingenabled\x88\x01\x01B\x11\n" +
 	"\x0f_sendingenabled\"+\n" +
-	")PutConfigurationSetSendingOptionsResponse\"\xd8\x02\n" +
+	")PutConfigurationSetSendingOptionsResponse\"\xf2\x02\n" +
 	",PutConfigurationSetSuppressionOptionsRequest\x126\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x12N\n" +
-	"\x11suppressedreasons\x18\xf1ҕ\xde\x01 \x03(\x0e2\x1c.sesv2.SuppressionListReasonR\x11suppressedreasons\x12J\n" +
-	"\x10suppressionscope\x18\x9d\xad\xb3@ \x01(\x0e2\x1b.sesv2.SuppressionListScopeR\x10suppressionscope\x12T\n" +
-	"\x11validationoptions\x18\x95\xec\x9dg \x01(\v2#.sesv2.SuppressionValidationOptionsR\x11validationoptions\"/\n" +
-	"-PutConfigurationSetSuppressionOptionsResponse\"\xf1\x01\n" +
+	"\x11suppressedreasons\x18\xf1ҕ\xde\x01 \x03(\x0e2\x1c.sesv2.SuppressionListReasonR\x11suppressedreasons\x12O\n" +
+	"\x10suppressionscope\x18\x9d\xad\xb3@ \x01(\x0e2\x1b.sesv2.SuppressionListScopeH\x00R\x10suppressionscope\x88\x01\x01\x12T\n" +
+	"\x11validationoptions\x18\x95\xec\x9dg \x01(\v2#.sesv2.SuppressionValidationOptionsR\x11validationoptionsB\x13\n" +
+	"\x11_suppressionscope\"/\n" +
+	"-PutConfigurationSetSuppressionOptionsResponse\"\x86\x02\n" +
 	")PutConfigurationSetTrackingOptionsRequest\x126\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x12:\n" +
-	"\x14customredirectdomain\x18\xd7\xda\xc7\" \x01(\tH\x00R\x14customredirectdomain\x88\x01\x01\x127\n" +
-	"\vhttpspolicy\x18\x85\x9b\x93F \x01(\x0e2\x12.sesv2.HttpsPolicyR\vhttpspolicyB\x17\n" +
-	"\x15_customredirectdomain\",\n" +
+	"\x14customredirectdomain\x18\xd7\xda\xc7\" \x01(\tH\x00R\x14customredirectdomain\x88\x01\x01\x12<\n" +
+	"\vhttpspolicy\x18\x85\x9b\x93F \x01(\x0e2\x12.sesv2.HttpsPolicyH\x01R\vhttpspolicy\x88\x01\x01B\x17\n" +
+	"\x15_customredirectdomainB\x0e\n" +
+	"\f_httpspolicy\",\n" +
 	"*PutConfigurationSetTrackingOptionsResponse\"\x95\x01\n" +
 	"$PutConfigurationSetVdmOptionsRequest\x126\n" +
 	"\x14configurationsetname\x18͋\xb1\xc0\x01 \x01(\tR\x14configurationsetname\x125\n" +
@@ -24150,25 +24223,27 @@ const file_sesv2_proto_rawDesc = "" +
 	",PutEmailIdentityDkimSigningAttributesRequest\x12'\n" +
 	"\remailidentity\x18\x9a\x94\xf2@ \x01(\tR\remailidentity\x12M\n" +
 	"\x11signingattributes\x18ƺ\x97( \x01(\v2\x1c.sesv2.DkimSigningAttributesR\x11signingattributes\x12_\n" +
-	"\x17signingattributesorigin\x18\xf0\xaf\xd9y \x01(\x0e2\".sesv2.DkimSigningAttributesOriginR\x17signingattributesorigin\"\xd6\x01\n" +
-	"-PutEmailIdentityDkimSigningAttributesResponse\x124\n" +
+	"\x17signingattributesorigin\x18\xf0\xaf\xd9y \x01(\x0e2\".sesv2.DkimSigningAttributesOriginR\x17signingattributesorigin\"\xea\x01\n" +
+	"-PutEmailIdentityDkimSigningAttributesResponse\x129\n" +
 	"\n" +
-	"dkimstatus\x18\xa5ص\x14 \x01(\x0e2\x11.sesv2.DkimStatusR\n" +
-	"dkimstatus\x12\"\n" +
+	"dkimstatus\x18\xa5ص\x14 \x01(\x0e2\x11.sesv2.DkimStatusH\x00R\n" +
+	"dkimstatus\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"dkimtokens\x18\x95\x85\xb9\x92\x01 \x03(\tR\n" +
 	"dkimtokens\x125\n" +
-	"\x11signinghostedzone\x18\xa6\xef\x9b\xd3\x01 \x01(\tH\x00R\x11signinghostedzone\x88\x01\x01B\x14\n" +
+	"\x11signinghostedzone\x18\xa6\xef\x9b\xd3\x01 \x01(\tH\x01R\x11signinghostedzone\x88\x01\x01B\r\n" +
+	"\v_dkimstatusB\x14\n" +
 	"\x12_signinghostedzone\"\xb0\x01\n" +
 	")PutEmailIdentityFeedbackAttributesRequest\x12?\n" +
 	"\x16emailforwardingenabled\x18\x86\ued74\x01 \x01(\bH\x00R\x16emailforwardingenabled\x88\x01\x01\x12'\n" +
 	"\remailidentity\x18\x9a\x94\xf2@ \x01(\tR\remailidentityB\x19\n" +
 	"\x17_emailforwardingenabled\",\n" +
-	"*PutEmailIdentityFeedbackAttributesResponse\"\xea\x01\n" +
-	")PutEmailIdentityMailFromAttributesRequest\x12P\n" +
-	"\x13behavioronmxfailure\x18\xa8\xd4\xfc\xeb\x01 \x01(\x0e2\x1a.sesv2.BehaviorOnMxFailureR\x13behavioronmxfailure\x12'\n" +
+	"*PutEmailIdentityFeedbackAttributesResponse\"\x87\x02\n" +
+	")PutEmailIdentityMailFromAttributesRequest\x12U\n" +
+	"\x13behavioronmxfailure\x18\xa8\xd4\xfc\xeb\x01 \x01(\x0e2\x1a.sesv2.BehaviorOnMxFailureH\x00R\x13behavioronmxfailure\x88\x01\x01\x12'\n" +
 	"\remailidentity\x18\x9a\x94\xf2@ \x01(\tR\remailidentity\x12/\n" +
-	"\x0emailfromdomain\x18\xaf\xa6\xa1\xf4\x01 \x01(\tH\x00R\x0emailfromdomain\x88\x01\x01B\x11\n" +
+	"\x0emailfromdomain\x18\xaf\xa6\xa1\xf4\x01 \x01(\tH\x01R\x0emailfromdomain\x88\x01\x01B\x16\n" +
+	"\x14_behavioronmxfailureB\x11\n" +
 	"\x0f_mailfromdomain\",\n" +
 	"*PutEmailIdentityMailFromAttributesResponse\"\xb9\x01\n" +
 	"\x1fPutSuppressedDestinationRequest\x12&\n" +
@@ -24178,45 +24253,52 @@ const file_sesv2_proto_rawDesc = "" +
 	"tenantname\x18\x87\xdc\xd3R \x01(\tH\x00R\n" +
 	"tenantname\x88\x01\x01B\r\n" +
 	"\v_tenantname\"\"\n" +
-	" PutSuppressedDestinationResponse\"\xe6\x01\n" +
+	" PutSuppressedDestinationResponse\"\x80\x02\n" +
 	"%PutTenantSuppressionAttributesRequest\x12N\n" +
-	"\x11suppressedreasons\x18\xf1ҕ\xde\x01 \x03(\x0e2\x1c.sesv2.SuppressionListReasonR\x11suppressedreasons\x12J\n" +
-	"\x10suppressionscope\x18\x9d\xad\xb3@ \x01(\x0e2\x1b.sesv2.SuppressionListScopeR\x10suppressionscope\x12!\n" +
+	"\x11suppressedreasons\x18\xf1ҕ\xde\x01 \x03(\x0e2\x1c.sesv2.SuppressionListReasonR\x11suppressedreasons\x12O\n" +
+	"\x10suppressionscope\x18\x9d\xad\xb3@ \x01(\x0e2\x1b.sesv2.SuppressionListScopeH\x00R\x10suppressionscope\x88\x01\x01\x12!\n" +
 	"\n" +
 	"tenantname\x18\x87\xdc\xd3R \x01(\tR\n" +
-	"tenantname\"(\n" +
+	"tenantnameB\x13\n" +
+	"\x11_suppressionscope\"(\n" +
 	"&PutTenantSuppressionAttributesResponse\"$\n" +
 	"\n" +
 	"RawMessage\x12\x16\n" +
-	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x01(\fR\x04data\"\xc7\x03\n" +
+	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x01(\fR\x04data\"\xf5\x03\n" +
 	"\x0eRecommendation\x123\n" +
 	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x126\n" +
-	"\x06impact\x18\xb8ٔ$ \x01(\x0e2\x1b.sesv2.RecommendationImpactR\x06impact\x12:\n" +
-	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tH\x02R\x14lastupdatedtimestamp\x88\x01\x01\x12)\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tH\x03R\vresourcearn\x88\x01\x01\x126\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1b.sesv2.RecommendationStatusR\x06status\x121\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.sesv2.RecommendationTypeR\x04typeB\x13\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12;\n" +
+	"\x06impact\x18\xb8ٔ$ \x01(\x0e2\x1b.sesv2.RecommendationImpactH\x02R\x06impact\x88\x01\x01\x12:\n" +
+	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tH\x03R\x14lastupdatedtimestamp\x88\x01\x01\x12)\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tH\x04R\vresourcearn\x88\x01\x01\x12;\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1b.sesv2.RecommendationStatusH\x05R\x06status\x88\x01\x01\x126\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.sesv2.RecommendationTypeH\x06R\x04type\x88\x01\x01B\x13\n" +
 	"\x11_createdtimestampB\x0e\n" +
-	"\f_descriptionB\x17\n" +
+	"\f_descriptionB\t\n" +
+	"\a_impactB\x17\n" +
 	"\x15_lastupdatedtimestampB\x0e\n" +
-	"\f_resourcearn\"j\n" +
+	"\f_resourcearnB\t\n" +
+	"\a_statusB\a\n" +
+	"\x05_type\"j\n" +
 	"\x17ReplacementEmailContent\x12O\n" +
 	"\x13replacementtemplate\x18\xc6\xfc\xb3~ \x01(\v2\x1a.sesv2.ReplacementTemplateR\x13replacementtemplate\"t\n" +
 	"\x13ReplacementTemplate\x12A\n" +
 	"\x17replacementtemplatedata\x18\xc6ġ\xb6\x01 \x01(\tH\x00R\x17replacementtemplatedata\x88\x01\x01B\x1a\n" +
-	"\x18_replacementtemplatedata\"\xe8\x04\n" +
+	"\x18_replacementtemplatedata\"\xc0\x05\n" +
 	"\x10ReputationEntity\x12H\n" +
 	"\x13awssesmanagedstatus\x18Ϧ\xd2\t \x01(\v2\x13.sesv2.StatusRecordR\x13awssesmanagedstatus\x12L\n" +
 	"\x15customermanagedstatus\x18\xc5\xe1\xb4\n" +
 	" \x01(\v2\x13.sesv2.StatusRecordR\x15customermanagedstatus\x12E\n" +
-	"\x19reputationentityreference\x18ס\xed\xc5\x01 \x01(\tH\x00R\x19reputationentityreference\x88\x01\x01\x12R\n" +
-	"\x14reputationentitytype\x18ҁ\xef. \x01(\x0e2\x1b.sesv2.ReputationEntityTypeR\x14reputationentitytype\x12K\n" +
-	"\x10reputationimpact\x18\xc1\xfb\xe3\xa4\x01 \x01(\x0e2\x1b.sesv2.RecommendationImpactR\x10reputationimpact\x12F\n" +
-	"\x1areputationmanagementpolicy\x18\xbc\xa5\xde` \x01(\tH\x01R\x1areputationmanagementpolicy\x88\x01\x01\x12O\n" +
-	"\x16sendingstatusaggregate\x18\x83\xae\xee\x04 \x01(\x0e2\x14.sesv2.SendingStatusR\x16sendingstatusaggregateB\x1c\n" +
-	"\x1a_reputationentityreferenceB\x1d\n" +
-	"\x1b_reputationmanagementpolicy\"\xb8\x01\n" +
+	"\x19reputationentityreference\x18ס\xed\xc5\x01 \x01(\tH\x00R\x19reputationentityreference\x88\x01\x01\x12W\n" +
+	"\x14reputationentitytype\x18ҁ\xef. \x01(\x0e2\x1b.sesv2.ReputationEntityTypeH\x01R\x14reputationentitytype\x88\x01\x01\x12P\n" +
+	"\x10reputationimpact\x18\xc1\xfb\xe3\xa4\x01 \x01(\x0e2\x1b.sesv2.RecommendationImpactH\x02R\x10reputationimpact\x88\x01\x01\x12F\n" +
+	"\x1areputationmanagementpolicy\x18\xbc\xa5\xde` \x01(\tH\x03R\x1areputationmanagementpolicy\x88\x01\x01\x12T\n" +
+	"\x16sendingstatusaggregate\x18\x83\xae\xee\x04 \x01(\x0e2\x14.sesv2.SendingStatusH\x04R\x16sendingstatusaggregate\x88\x01\x01B\x1c\n" +
+	"\x1a_reputationentityreferenceB\x17\n" +
+	"\x15_reputationentitytypeB\x13\n" +
+	"\x11_reputationimpactB\x1d\n" +
+	"\x1b_reputationmanagementpolicyB\x19\n" +
+	"\x17_sendingstatusaggregate\"\xb8\x01\n" +
 	"\x11ReputationOptions\x12.\n" +
 	"\x0elastfreshstart\x18ک\xdbJ \x01(\tH\x00R\x0elastfreshstart\x88\x01\x01\x12C\n" +
 	"\x18reputationmetricsenabled\x18\x9d\xa8\xfd\xd1\x01 \x01(\bH\x01R\x18reputationmetricsenabled\x88\x01\x01B\x11\n" +
@@ -24232,11 +24314,12 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x14_associatedtimestampB\x0e\n" +
 	"\f_resourcearnB\v\n" +
 	"\t_tenantidB\r\n" +
-	"\v_tenantname\"j\n" +
+	"\v_tenantname\"z\n" +
 	"\rReviewDetails\x12\x1e\n" +
-	"\x06caseid\x18\xc5̾V \x01(\tH\x00R\x06caseid\x88\x01\x01\x12.\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.sesv2.ReviewStatusR\x06statusB\t\n" +
-	"\a_caseid\"\"\n" +
+	"\x06caseid\x18\xc5̾V \x01(\tH\x00R\x06caseid\x88\x01\x01\x123\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.sesv2.ReviewStatusH\x01R\x06status\x88\x01\x01B\t\n" +
+	"\a_caseidB\t\n" +
+	"\a_status\"\"\n" +
 	"\x05Route\x12\x19\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\")\n" +
 	"\fRouteDetails\x12\x19\n" +
@@ -24330,17 +24413,19 @@ const file_sesv2_proto_rawDesc = "" +
 	"\b_message\"\x95\x01\n" +
 	"\rSigningScheme\x12D\n" +
 	"\rdefaultscheme\x18\x86\xe6\x99\x14 \x01(\v2\x1b.sesv2.DefaultSigningSchemeR\rdefaultscheme\x12>\n" +
-	"\vsmimescheme\x18\xb2\x90\x9bx \x01(\v2\x19.sesv2.SmimeSigningSchemeR\vsmimescheme\"Z\n" +
-	"\x12SmimeSigningScheme\x12D\n" +
-	"\x0fsignatureformat\x18\xfb\xd0\xc8\xca\x01 \x01(\x0e2\x16.sesv2.SignatureFormatR\x0fsignatureformat\"/\n" +
+	"\vsmimescheme\x18\xb2\x90\x9bx \x01(\v2\x19.sesv2.SmimeSigningSchemeR\vsmimescheme\"s\n" +
+	"\x12SmimeSigningScheme\x12I\n" +
+	"\x0fsignatureformat\x18\xfb\xd0\xc8\xca\x01 \x01(\x0e2\x16.sesv2.SignatureFormatH\x00R\x0fsignatureformat\x88\x01\x01B\x12\n" +
+	"\x10_signatureformat\"/\n" +
 	"\x0eSnsDestination\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"\xbd\x01\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"\xcd\x01\n" +
 	"\fStatusRecord\x12\x1d\n" +
 	"\x05cause\x18\xc1ْ\x87\x01 \x01(\tH\x00R\x05cause\x88\x01\x01\x12:\n" +
-	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tH\x01R\x14lastupdatedtimestamp\x88\x01\x01\x12/\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x14.sesv2.SendingStatusR\x06statusB\b\n" +
+	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tH\x01R\x14lastupdatedtimestamp\x88\x01\x01\x124\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x14.sesv2.SendingStatusH\x02R\x06status\x88\x01\x01B\b\n" +
 	"\x06_causeB\x17\n" +
-	"\x15_lastupdatedtimestamp\"\xa6\x02\n" +
+	"\x15_lastupdatedtimestampB\t\n" +
+	"\a_status\"\xa6\x02\n" +
 	"\x15SuppressedDestination\x12I\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x01(\v2&.sesv2.SuppressedDestinationAttributesR\n" +
@@ -24373,11 +24458,12 @@ const file_sesv2_proto_rawDesc = "" +
 	"\x1eSuppressionConfidenceThreshold\x12o\n" +
 	"\x1aconfidenceverdictthreshold\x18\x96\xe4\xf5{ \x01(\x0e2,.sesv2.SuppressionConfidenceVerdictThresholdR\x1aconfidenceverdictthreshold\"\x86\x01\n" +
 	"\x1aSuppressionListDestination\x12h\n" +
-	"\x1bsuppressionlistimportaction\x18\x88\xb7\xeb\xbf\x01 \x01(\x0e2\".sesv2.SuppressionListImportActionR\x1bsuppressionlistimportaction\"\x86\x02\n" +
+	"\x1bsuppressionlistimportaction\x18\x88\xb7\xeb\xbf\x01 \x01(\x0e2\".sesv2.SuppressionListImportActionR\x1bsuppressionlistimportaction\"\xa0\x02\n" +
 	"\x12SuppressionOptions\x12N\n" +
-	"\x11suppressedreasons\x18\xf1ҕ\xde\x01 \x03(\x0e2\x1c.sesv2.SuppressionListReasonR\x11suppressedreasons\x12J\n" +
-	"\x10suppressionscope\x18\x9d\xad\xb3@ \x01(\x0e2\x1b.sesv2.SuppressionListScopeR\x10suppressionscope\x12T\n" +
-	"\x11validationoptions\x18\x95\xec\x9dg \x01(\v2#.sesv2.SuppressionValidationOptionsR\x11validationoptions\"{\n" +
+	"\x11suppressedreasons\x18\xf1ҕ\xde\x01 \x03(\x0e2\x1c.sesv2.SuppressionListReasonR\x11suppressedreasons\x12O\n" +
+	"\x10suppressionscope\x18\x9d\xad\xb3@ \x01(\x0e2\x1b.sesv2.SuppressionListScopeH\x00R\x10suppressionscope\x88\x01\x01\x12T\n" +
+	"\x11validationoptions\x18\x95\xec\x9dg \x01(\v2#.sesv2.SuppressionValidationOptionsR\x11validationoptionsB\x13\n" +
+	"\x11_suppressionscope\"{\n" +
 	"\x1fSuppressionValidationAttributes\x12X\n" +
 	"\x12conditionthreshold\x18\xaa\xf6\x90\xfc\x01 \x01(\v2$.sesv2.SuppressionConditionThresholdR\x12conditionthreshold\"x\n" +
 	"\x1cSuppressionValidationOptions\x12X\n" +
@@ -24399,19 +24485,20 @@ const file_sesv2_proto_rawDesc = "" +
 	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tH\x02R\ftemplatename\x88\x01\x01B\x0e\n" +
 	"\f_templatearnB\x0f\n" +
 	"\r_templatedataB\x0f\n" +
-	"\r_templatename\"\xaf\x03\n" +
+	"\r_templatename\"\xc6\x03\n" +
 	"\x06Tenant\x123\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12>\n" +
-	"\rsendingstatus\x18\xac\xbf\xc9\xc8\x01 \x01(\x0e2\x14.sesv2.SendingStatusR\rsendingstatus\x12[\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12C\n" +
+	"\rsendingstatus\x18\xac\xbf\xc9\xc8\x01 \x01(\x0e2\x14.sesv2.SendingStatusH\x01R\rsendingstatus\x88\x01\x01\x12[\n" +
 	"\x15suppressionattributes\x18\xb2\xeb\xb3\b \x01(\v2\".sesv2.TenantSuppressionAttributesR\x15suppressionattributes\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
 	".sesv2.TagR\x04tags\x12$\n" +
-	"\ttenantarn\x18\x9d\x8d\xb7\t \x01(\tH\x01R\ttenantarn\x88\x01\x01\x12\"\n" +
-	"\btenantid\x18\x81\xf8\xefd \x01(\tH\x02R\btenantid\x88\x01\x01\x12&\n" +
+	"\ttenantarn\x18\x9d\x8d\xb7\t \x01(\tH\x02R\ttenantarn\x88\x01\x01\x12\"\n" +
+	"\btenantid\x18\x81\xf8\xefd \x01(\tH\x03R\btenantid\x88\x01\x01\x12&\n" +
 	"\n" +
-	"tenantname\x18\x87\xdc\xd3R \x01(\tH\x03R\n" +
+	"tenantname\x18\x87\xdc\xd3R \x01(\tH\x04R\n" +
 	"tenantname\x88\x01\x01B\x13\n" +
-	"\x11_createdtimestampB\f\n" +
+	"\x11_createdtimestampB\x10\n" +
+	"\x0e_sendingstatusB\f\n" +
 	"\n" +
 	"_tenantarnB\v\n" +
 	"\t_tenantidB\r\n" +
@@ -24428,14 +24515,16 @@ const file_sesv2_proto_rawDesc = "" +
 	"\n" +
 	"_tenantarnB\v\n" +
 	"\t_tenantidB\r\n" +
-	"\v_tenantname\"\x88\x01\n" +
+	"\v_tenantname\"\x9e\x01\n" +
 	"\x0eTenantResource\x12)\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tH\x00R\vresourcearn\x88\x01\x01\x12;\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x13.sesv2.ResourceTypeR\fresourcetypeB\x0e\n" +
-	"\f_resourcearn\"\xb9\x01\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tH\x00R\vresourcearn\x88\x01\x01\x12@\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x13.sesv2.ResourceTypeH\x01R\fresourcetype\x88\x01\x01B\x0e\n" +
+	"\f_resourcearnB\x0f\n" +
+	"\r_resourcetype\"\xd3\x01\n" +
 	"\x1bTenantSuppressionAttributes\x12N\n" +
-	"\x11suppressedreasons\x18\xf1ҕ\xde\x01 \x03(\x0e2\x1c.sesv2.SuppressionListReasonR\x11suppressedreasons\x12J\n" +
-	"\x10suppressionscope\x18\x9d\xad\xb3@ \x01(\x0e2\x1b.sesv2.SuppressionListScopeR\x10suppressionscope\"p\n" +
+	"\x11suppressedreasons\x18\xf1ҕ\xde\x01 \x03(\x0e2\x1c.sesv2.SuppressionListReasonR\x11suppressedreasons\x12O\n" +
+	"\x10suppressionscope\x18\x9d\xad\xb3@ \x01(\x0e2\x1b.sesv2.SuppressionListScopeH\x00R\x10suppressionscope\x88\x01\x01B\x13\n" +
+	"\x11_suppressionscope\"p\n" +
 	"\x1eTestRenderEmailTemplateRequest\x12&\n" +
 	"\ftemplatedata\x18\x94\xed\xbe\x87\x01 \x01(\tR\ftemplatedata\x12&\n" +
 	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tR\ftemplatename\"P\n" +
@@ -24459,13 +24548,16 @@ const file_sesv2_proto_rawDesc = "" +
 	"\"_usedefaultifpreferenceunavailable\"\x82\x01\n" +
 	"\x0fTopicPreference\x12M\n" +
 	"\x12subscriptionstatus\x18\xbf\xbe\x96\xd4\x01 \x01(\x0e2\x19.sesv2.SubscriptionStatusR\x12subscriptionstatus\x12 \n" +
-	"\ttopicname\x18\x80\xa7\xd6\xd4\x01 \x01(\tR\ttopicname\"\xba\x01\n" +
-	"\x1eTrackingConfigurationOverrides\x12L\n" +
-	"\x14clicktrackingenabled\x18\xa0\xa4Ҫ\x01 \x01(\x0e2\x14.sesv2.FeatureStatusR\x14clicktrackingenabled\x12J\n" +
-	"\x13opentrackingenabled\x18\x9a\xfc\xb3\x86\x01 \x01(\x0e2\x14.sesv2.FeatureStatusR\x13opentrackingenabled\"\x81\x01\n" +
+	"\ttopicname\x18\x80\xa7\xd6\xd4\x01 \x01(\tR\ttopicname\"\xf5\x01\n" +
+	"\x1eTrackingConfigurationOverrides\x12Q\n" +
+	"\x14clicktrackingenabled\x18\xa0\xa4Ҫ\x01 \x01(\x0e2\x14.sesv2.FeatureStatusH\x00R\x14clicktrackingenabled\x88\x01\x01\x12O\n" +
+	"\x13opentrackingenabled\x18\x9a\xfc\xb3\x86\x01 \x01(\x0e2\x14.sesv2.FeatureStatusH\x01R\x13opentrackingenabled\x88\x01\x01B\x17\n" +
+	"\x15_clicktrackingenabledB\x16\n" +
+	"\x14_opentrackingenabled\"\x96\x01\n" +
 	"\x0fTrackingOptions\x125\n" +
-	"\x14customredirectdomain\x18\xd7\xda\xc7\" \x01(\tR\x14customredirectdomain\x127\n" +
-	"\vhttpspolicy\x18\x85\x9b\x93F \x01(\x0e2\x12.sesv2.HttpsPolicyR\vhttpspolicy\"Z\n" +
+	"\x14customredirectdomain\x18\xd7\xda\xc7\" \x01(\tR\x14customredirectdomain\x12<\n" +
+	"\vhttpspolicy\x18\x85\x9b\x93F \x01(\x0e2\x12.sesv2.HttpsPolicyH\x00R\vhttpspolicy\x88\x01\x01B\x0e\n" +
+	"\f_httpspolicy\"Z\n" +
 	"\x14UntagResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x17\n" +
@@ -24532,12 +24624,14 @@ const file_sesv2_proto_rawDesc = "" +
 	"\n" +
 	"VdmOptions\x12G\n" +
 	"\x10dashboardoptions\x18\xc0\x9e\xe5\xe0\x01 \x01(\v2\x17.sesv2.DashboardOptionsR\x10dashboardoptions\x12C\n" +
-	"\x0fguardianoptions\x18\xc9ɿ\x04 \x01(\v2\x16.sesv2.GuardianOptionsR\x0fguardianoptions\"\xae\x02\n" +
-	"\x10VerificationInfo\x12:\n" +
-	"\terrortype\x18\xba痾\x01 \x01(\x0e2\x18.sesv2.VerificationErrorR\terrortype\x12;\n" +
-	"\x14lastcheckedtimestamp\x18\xa3\xc1\x8f\xa1\x01 \x01(\tH\x00R\x14lastcheckedtimestamp\x88\x01\x01\x12;\n" +
-	"\x14lastsuccesstimestamp\x18͕\xe1\xd4\x01 \x01(\tH\x01R\x14lastsuccesstimestamp\x88\x01\x01\x122\n" +
-	"\tsoarecord\x18\x88\xec\xec\xd9\x01 \x01(\v2\x10.sesv2.SOARecordR\tsoarecordB\x17\n" +
+	"\x0fguardianoptions\x18\xc9ɿ\x04 \x01(\v2\x16.sesv2.GuardianOptionsR\x0fguardianoptions\"\xc1\x02\n" +
+	"\x10VerificationInfo\x12?\n" +
+	"\terrortype\x18\xba痾\x01 \x01(\x0e2\x18.sesv2.VerificationErrorH\x00R\terrortype\x88\x01\x01\x12;\n" +
+	"\x14lastcheckedtimestamp\x18\xa3\xc1\x8f\xa1\x01 \x01(\tH\x01R\x14lastcheckedtimestamp\x88\x01\x01\x12;\n" +
+	"\x14lastsuccesstimestamp\x18͕\xe1\xd4\x01 \x01(\tH\x02R\x14lastsuccesstimestamp\x88\x01\x01\x122\n" +
+	"\tsoarecord\x18\x88\xec\xec\xd9\x01 \x01(\v2\x10.sesv2.SOARecordR\tsoarecordB\f\n" +
+	"\n" +
+	"_errortypeB\x17\n" +
 	"\x15_lastcheckedtimestampB\x17\n" +
 	"\x15_lastsuccesstimestamp\"\x94\x02\n" +
 	"\x10VolumeStatistics\x12,\n" +
@@ -24726,11 +24820,12 @@ const file_sesv2_proto_rawDesc = "" +
 	"\fMETRIC_CLICK\x10\t*O\n" +
 	"\x11MetricAggregation\x12\x1d\n" +
 	"\x19METRIC_AGGREGATION_VOLUME\x10\x00\x12\x1b\n" +
-	"\x17METRIC_AGGREGATION_RATE\x10\x01*\x8b\x01\n" +
+	"\x17METRIC_AGGREGATION_RATE\x10\x01*\xb2\x01\n" +
 	"\x13MetricDimensionName\x12(\n" +
 	"$METRIC_DIMENSION_NAME_EMAIL_IDENTITY\x10\x00\x12\x1d\n" +
 	"\x19METRIC_DIMENSION_NAME_ISP\x10\x01\x12+\n" +
-	"'METRIC_DIMENSION_NAME_CONFIGURATION_SET\x10\x02*+\n" +
+	"'METRIC_DIMENSION_NAME_CONFIGURATION_SET\x10\x02\x12%\n" +
+	"!METRIC_DIMENSION_NAME_TENANT_NAME\x10\x03*+\n" +
 	"\x0fMetricNamespace\x12\x18\n" +
 	"\x14METRIC_NAMESPACE_VDM\x10\x00*t\n" +
 	"\vPricingPlan\x12\x1b\n" +
@@ -25981,6 +26076,7 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[28].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[33].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[35].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[39].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[41].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[45].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[46].OneofWrappers = []any{}
@@ -25990,7 +26086,10 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[58].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[59].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[60].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[61].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[62].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[63].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[85].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[86].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[92].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[93].OneofWrappers = []any{}
@@ -26000,6 +26099,7 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[100].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[101].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[102].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[104].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[106].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[107].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[108].OneofWrappers = []any{}
@@ -26007,6 +26107,7 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[111].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[114].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[115].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[116].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[117].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[118].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[120].OneofWrappers = []any{}
@@ -26024,6 +26125,8 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[160].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[162].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[165].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[169].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[170].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[171].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[172].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[175].OneofWrappers = []any{}
@@ -26037,6 +26140,7 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[184].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[185].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[186].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[187].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[188].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[189].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[190].OneofWrappers = []any{}
@@ -26082,6 +26186,7 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[240].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[241].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[242].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[243].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[244].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[246].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[250].OneofWrappers = []any{}
@@ -26089,6 +26194,7 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[258].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[260].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[262].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[264].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[266].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[276].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[278].OneofWrappers = []any{}
@@ -26097,6 +26203,7 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[284].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[286].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[288].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[290].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[293].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[295].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[296].OneofWrappers = []any{}
@@ -26112,16 +26219,21 @@ func file_sesv2_proto_init() {
 	file_sesv2_proto_msgTypes[309].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[310].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[311].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[313].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[315].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[316].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[317].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[323].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[329].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[330].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[331].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[332].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[333].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[336].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[337].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[338].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[340].OneofWrappers = []any{}
+	file_sesv2_proto_msgTypes[341].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[348].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[350].OneofWrappers = []any{}
 	file_sesv2_proto_msgTypes[364].OneofWrappers = []any{}

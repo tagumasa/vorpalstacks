@@ -39,8 +39,8 @@ func resolvePlaceholder(val []byte, params *partiQLParams) (*dbstore.AttributeVa
 	if err != nil || idx < 1 || idx > len(params.Parameters) {
 		return nil, ErrInvalidParameter
 	}
-	parsed := parseAttributeValue(params.Parameters[idx-1])
-	if parsed == nil {
+	parsed, err := parseAttributeValue(params.Parameters[idx-1])
+	if err != nil {
 		return nil, ErrInvalidParameter
 	}
 	return parsed, nil
@@ -77,6 +77,16 @@ func exprToAttributeValueWithParams(expr sqlparser.Expr, params *partiQLParams) 
 			return nil, err
 		}
 		return &dbstore.AttributeValue{L: l}, nil
+	case *sqlparser.SetLiteral:
+		members := make([]*dbstore.AttributeValue, 0, len(e.Values))
+		for _, member := range e.Values {
+			v, mErr := exprToAttributeValueWithParams(member, params)
+			if mErr != nil {
+				return nil, mErr
+			}
+			members = append(members, v)
+		}
+		return setLiteralValue(members)
 	}
 	// The literal materialiser is the only path that builds stored numbers
 	// without going through the wire AttributeValue parser, so the DynamoDB
@@ -118,13 +128,13 @@ func exprToAttributeValue(expr sqlparser.Expr) (*dbstore.AttributeValue, error) 
 	case *sqlparser.UnaryExpr:
 		// The grammar reduces a sign-prefixed number literal to a unary
 		// expression around the bare literal; only that shape is a Number —
-		// any other unary expression keeps the NULL fallback.
+		// any other unary expression has no value this grammar defines.
 		if e.Operator != sqlparser.UMinusStr && e.Operator != sqlparser.UPlusStr {
-			return &dbstore.AttributeValue{NULL: proto.Bool(true)}, nil
+			return nil, ErrInvalidParameter
 		}
 		inner, ok := e.Expr.(*sqlparser.SQLVal)
 		if !ok || (inner.Type != sqlparser.IntVal && inner.Type != sqlparser.FloatVal) {
-			return &dbstore.AttributeValue{NULL: proto.Bool(true)}, nil
+			return nil, ErrInvalidParameter
 		}
 		s := string(inner.Val)
 		if e.Operator == sqlparser.UMinusStr {
@@ -135,7 +145,11 @@ func exprToAttributeValue(expr sqlparser.Expr) (*dbstore.AttributeValue, error) 
 		}
 		return &dbstore.AttributeValue{N: &s}, nil
 	}
-	return &dbstore.AttributeValue{NULL: proto.Bool(true)}, nil
+	// Nothing else in the value grammar has a stored value: a function
+	// call, a column reference, an operator combination or any other
+	// expression is a validation error — materialising it as NULL would
+	// silently corrupt the attribute the statement writes.
+	return nil, ErrInvalidParameter
 }
 
 func tupleToAttributeListWithParams(tuple sqlparser.ValTuple, params *partiQLParams) ([]*dbstore.AttributeValue, error) {
@@ -148,4 +162,51 @@ func tupleToAttributeListWithParams(tuple sqlparser.ValTuple, params *partiQLPar
 		result = append(result, value)
 	}
 	return result, nil
+}
+
+// setLiteralValue builds the set AttributeValue a set literal names: every
+// member must be a scalar of one set-compatible kind (string or number —
+// binary members only reach statements as bound parameters), the members
+// must all share that kind, and a repeated member is rejected rather than
+// silently collapsed. An empty literal never reaches the grammar (the
+// production requires at least one expression) but the bound-parameter
+// path can carry one — a DynamoDB set is never empty.
+func setLiteralValue(members []*dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
+	if len(members) == 0 {
+		return nil, ErrInvalidParameter
+	}
+	allStrings, allNumbers := true, true
+	for _, v := range members {
+		if v == nil || v.S == nil {
+			allStrings = false
+		}
+		if v == nil || v.N == nil {
+			allNumbers = false
+		}
+	}
+	seen := make(map[string]struct{}, len(members))
+	switch {
+	case allStrings:
+		values := make([]string, 0, len(members))
+		for _, v := range members {
+			if _, dup := seen[*v.S]; dup {
+				return nil, ErrInvalidParameter
+			}
+			seen[*v.S] = struct{}{}
+			values = append(values, *v.S)
+		}
+		return dbstore.StringSet(values), nil
+	case allNumbers:
+		values := make([]string, 0, len(members))
+		for _, v := range members {
+			normalised := normalizeNumberString(*v.N)
+			if _, dup := seen[normalised]; dup {
+				return nil, ErrInvalidParameter
+			}
+			seen[normalised] = struct{}{}
+			values = append(values, *v.N)
+		}
+		return dbstore.NumberSet(values), nil
+	}
+	return nil, ErrInvalidParameter
 }

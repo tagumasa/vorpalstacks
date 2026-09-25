@@ -12,7 +12,7 @@ func ExportDescriptionToProto(e *ExportDescription) *pb.ExportDescription {
 	}
 	return &pb.ExportDescription{
 		ExportArn:         e.ExportArn,
-		ExportStatus:      e.ExportStatus,
+		ExportStatus:      exportStatusToProto(e.ExportStatus),
 		StartTime:         timestamppb.New(e.StartTime),
 		EndTime:           timestamppb.New(e.EndTime),
 		ManifestFilesSize: e.ManifestFilesSize,
@@ -21,16 +21,22 @@ func ExportDescriptionToProto(e *ExportDescription) *pb.ExportDescription {
 		ExportTime:        timestamppb.New(e.ExportTime),
 		TableArn:          e.TableArn,
 		TableId:           e.TableId,
-		ExportFormat:      e.ExportFormat,
-		S3Bucket:          e.S3Bucket,
-		S3Prefix:          e.S3Prefix,
-		FailureCode:       e.FailureCode,
-		FailureMessage:    e.FailureMessage,
-		ClientToken:       e.ClientToken,
-		S3BucketOwner:     e.S3BucketOwner,
-		S3SseKmsKeyId:     e.S3SseKmsKeyId,
-		ExportManifest:    e.ExportManifest,
-		ExportType:        e.ExportType,
+		ExportFormat:      exportFormatToProto(e.ExportFormat),
+		S3BucketSource: &pb.S3BucketSource{
+			S3Bucket:      e.S3Bucket,
+			S3Prefix:      e.S3Prefix,
+			S3BucketOwner: e.S3BucketOwner,
+		},
+		FailureCode:    e.FailureCode,
+		FailureMessage: e.FailureMessage,
+		ClientToken:    e.ClientToken,
+		S3SseKmsKeyId:  e.S3SseKmsKeyId,
+		ExportManifest: e.ExportManifest,
+		ExportType:     exportTypeToProto(e.ExportType),
+		S3SseAlgorithm: s3SseAlgorithmToProto(e.S3SseAlgorithm),
+		ExportViewType: exportViewTypeToProto(e.ExportViewType),
+		ExportFromTime: timestamppb.New(e.ExportFromTime),
+		ExportToTime:   timestamppb.New(e.ExportToTime),
 	}
 }
 
@@ -39,9 +45,13 @@ func ProtoToExportDescription(p *pb.ExportDescription) *ExportDescription {
 	if p == nil {
 		return nil
 	}
+	var s3Bucket, s3Prefix, s3BucketOwner string
+	if src := p.S3BucketSource; src != nil {
+		s3Bucket, s3Prefix, s3BucketOwner = src.S3Bucket, src.S3Prefix, src.S3BucketOwner
+	}
 	return &ExportDescription{
 		ExportArn:         p.ExportArn,
-		ExportStatus:      p.ExportStatus,
+		ExportStatus:      protoToExportStatus(p.ExportStatus),
 		StartTime:         p.StartTime.AsTime(),
 		EndTime:           p.EndTime.AsTime(),
 		ManifestFilesSize: p.ManifestFilesSize,
@@ -50,16 +60,20 @@ func ProtoToExportDescription(p *pb.ExportDescription) *ExportDescription {
 		ExportTime:        p.ExportTime.AsTime(),
 		TableArn:          p.TableArn,
 		TableId:           p.TableId,
-		ExportFormat:      p.ExportFormat,
-		S3Bucket:          p.S3Bucket,
-		S3Prefix:          p.S3Prefix,
+		ExportFormat:      protoToExportFormat(p.ExportFormat),
+		S3Bucket:          s3Bucket,
+		S3Prefix:          s3Prefix,
 		FailureCode:       p.FailureCode,
 		FailureMessage:    p.FailureMessage,
 		ClientToken:       p.ClientToken,
-		S3BucketOwner:     p.S3BucketOwner,
+		S3BucketOwner:     s3BucketOwner,
 		S3SseKmsKeyId:     p.S3SseKmsKeyId,
 		ExportManifest:    p.ExportManifest,
-		ExportType:        p.ExportType,
+		ExportType:        protoToExportType(p.ExportType),
+		S3SseAlgorithm:    protoToS3SseAlgorithm(p.S3SseAlgorithm),
+		ExportViewType:    protoToExportViewType(p.ExportViewType),
+		ExportFromTime:    p.ExportFromTime.AsTime(),
+		ExportToTime:      p.ExportToTime.AsTime(),
 	}
 }
 
@@ -70,7 +84,7 @@ func ImportTableDescriptionToProto(i *ImportTableDescription) *pb.ImportTableDes
 	}
 	return &pb.ImportTableDescription{
 		ImportArn:            i.ImportArn,
-		ImportStatus:         i.ImportStatus,
+		ImportStatus:         importStatusToProto(i.ImportStatus),
 		TableArn:             i.TableArn,
 		TableId:              i.TableId,
 		StartTime:            timestamppb.New(i.StartTime),
@@ -79,12 +93,12 @@ func ImportTableDescriptionToProto(i *ImportTableDescription) *pb.ImportTableDes
 		ProcessedSizeBytes:   i.ProcessedSizeBytes,
 		ImportedItemCount:    i.ImportedItemCount,
 		ErrorCount:           i.ErrorCount,
-		InputFormat:          i.InputFormat,
+		InputFormat:          inputFormatToProto(i.InputFormat),
 		S3BucketSource:       s3BucketSourceToProto(i.S3BucketSource),
 		FailureCode:          i.FailureCode,
 		FailureMessage:       i.FailureMessage,
 		ClientToken:          i.ClientToken,
-		InputCompressionType: i.InputCompressionType,
+		InputCompressionType: inputCompressionTypeToProto(i.InputCompressionType),
 	}
 }
 
@@ -95,7 +109,7 @@ func ProtoToImportTableDescription(p *pb.ImportTableDescription) *ImportTableDes
 	}
 	return &ImportTableDescription{
 		ImportArn:            p.ImportArn,
-		ImportStatus:         p.ImportStatus,
+		ImportStatus:         protoToImportStatus(p.ImportStatus),
 		TableArn:             p.TableArn,
 		TableId:              p.TableId,
 		StartTime:            p.StartTime.AsTime(),
@@ -104,12 +118,12 @@ func ProtoToImportTableDescription(p *pb.ImportTableDescription) *ImportTableDes
 		ProcessedSizeBytes:   p.ProcessedSizeBytes,
 		ImportedItemCount:    p.ImportedItemCount,
 		ErrorCount:           p.ErrorCount,
-		InputFormat:          p.InputFormat,
+		InputFormat:          protoToInputFormat(p.InputFormat),
 		S3BucketSource:       protoToS3BucketSource(p.S3BucketSource),
 		FailureCode:          p.FailureCode,
 		FailureMessage:       p.FailureMessage,
 		ClientToken:          p.ClientToken,
-		InputCompressionType: p.InputCompressionType,
+		InputCompressionType: protoToInputCompressionType(p.InputCompressionType),
 	}
 }
 

@@ -8,9 +8,7 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/common/request"
-	commonstore "vorpalstacks/internal/store/aws/common"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
-	"vorpalstacks/internal/utils/aws/arn"
 )
 
 // searchVectorsCoreResult carries the SearchVectors response in a
@@ -31,6 +29,9 @@ type searchVectorsCoreResult struct {
 // index, or an index that is not ACTIVE is ResourceNotFoundException, per
 // the API reference error list.
 func (s *DynamoDBService) searchVectorsCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, params map[string]interface{}) (*searchVectorsCoreResult, error) {
+	if _, err := getReturnConsumedCapacity(params); err != nil {
+		return nil, err
+	}
 	tableName, err := resolveVectorSearchTable(request.GetStringParam(params, "TableName"))
 	if err != nil {
 		return nil, err
@@ -42,7 +43,7 @@ func (s *DynamoDBService) searchVectorsCore(ctx context.Context, store dbstore.D
 
 	table, err := store.Tables().Get(tableName)
 	if err != nil {
-		if dbstore.IsTableNotFound(err) || commonstore.IsNotFound(err) {
+		if dbstore.IsTableNotFound(err) {
 			return nil, ErrResourceNotFound
 		}
 		return nil, err
@@ -68,8 +69,8 @@ func (s *DynamoDBService) searchVectorsCore(ctx context.Context, store dbstore.D
 	}
 	queryVec := make([]float64, len(rawVec))
 	for i, el := range rawVec {
-		av := parseAttributeValue(el)
-		if av == nil || av.N == nil {
+		av, avErr := parseAttributeValue(el)
+		if avErr != nil || av.N == nil {
 			return nil, ErrInvalidParameter
 		}
 		// SearchVector elements are 32-bit IEEE-754 values in DynamoDB list
@@ -160,17 +161,12 @@ func (s *DynamoDBService) searchVectorsCore(ctx context.Context, store dbstore.D
 // table containing the vector index" — and returns the table name. It is
 // the one DynamoDB table parameter modelled as TableArn rather than
 // TableName; a plain table name keeps the shared resource-name validation.
+// The ARN form must be the table ARN itself: stream and index ARNs carry
+// further resource segments, so a resource that is not exactly table/<name>
+// does not resolve (the family's ParseTableARN accepts stream ARNs and
+// would widen the member past its documentation).
 func resolveVectorSearchTable(member string) (string, error) {
-	if parsed, perr := arn.ParseARN(member); perr == nil {
-		if parsed.Service != "dynamodb" || !strings.HasPrefix(parsed.Resource, "table/") {
-			return "", ErrInvalidParameter
-		}
-		member = parsed.Resource[len("table/"):]
-	}
-	if !validateResourceName(member) {
-		return "", ErrInvalidParameter
-	}
-	return member, nil
+	return resolveTableNameMember(member)
 }
 
 // ---------------------------------------------------------------------------
@@ -232,12 +228,16 @@ func (c *searchConditionConjunction) hasClause(attrName string) bool {
 // element partitions the index, so its attribute must appear as an equality
 // clause — a search without the partition-key value is rejected. With no
 // HASH element in the schema, an empty expression matches everything.
+// Every token position the walk advances past — the value after "=" and
+// the attribute after a trailing AND included — is bounds-checked, so a
+// truncated expression is the invalid-parameter error, never a read past
+// the token slice or a silently dropped tail.
 func parseSearchCondition(expr string, names map[string]string, values map[string]*dbstore.AttributeValue, vi *dbstore.VectorIndex) (*searchConditionConjunction, error) {
-	schemaRole := make(map[string]string)
+	schemaRole := make(map[string]dbstore.SearchSchemaElementType)
 	var hashNames []string
 	for _, e := range vi.SearchSchema {
 		schemaRole[e.AttributeName] = e.SearchSchemaElementType
-		if e.SearchSchemaElementType == "HASH" {
+		if e.SearchSchemaElementType == dbstore.SearchSchemaElementTypeHash {
 			hashNames = append(hashNames, e.AttributeName)
 		}
 	}
@@ -277,6 +277,9 @@ func parseSearchCondition(expr string, names map[string]string, values map[strin
 				return nil, ErrInvalidParameter
 			}
 			i++
+			if i >= len(tokens) {
+				return nil, ErrInvalidParameter
+			}
 			clause := &searchConditionClause{attrName: attrName}
 			if clause.value, err = resolveValue(tokens[i]); err != nil {
 				return nil, err
@@ -289,6 +292,9 @@ func parseSearchCondition(expr string, names map[string]string, values map[strin
 					return nil, ErrInvalidParameter
 				}
 				i++
+				if i >= len(tokens) {
+					return nil, ErrInvalidParameter
+				}
 			}
 		}
 		if len(conj.clauses) == 0 {
@@ -315,7 +321,7 @@ func parseSearchCondition(expr string, names map[string]string, values map[strin
 // ProjectionExpression narrows it further: requesting an attribute outside
 // the projection is rejected, per "Only attributes projected into the
 // vector index can be retrieved".
-func vectorProjectionSet(vi *dbstore.VectorIndex, table *dbstore.Table, projection []string) (map[string]bool, error) {
+func vectorProjectionSet(vi *dbstore.VectorIndex, table *dbstore.Table, projection [][]docPathPart) (map[string]bool, error) {
 	if vi.Projection == nil {
 		return nil, fmt.Errorf("vector index %s has no projection", vi.IndexName)
 	}
@@ -344,12 +350,17 @@ func vectorProjectionSet(vi *dbstore.VectorIndex, table *dbstore.Table, projecti
 		return projected, nil
 	}
 	// Key attributes are part of every projection, so an explicit
-	// ProjectionExpression narrows the non-key set only.
+	// ProjectionExpression narrows the non-key set only. The set is named
+	// by top-level attribute — the segment a document path starts from.
 	narrowed := make(map[string]bool, len(projection))
 	for _, ks := range table.KeySchema {
 		narrowed[ks.AttributeName] = true
 	}
-	for _, attr := range projection {
+	for _, path := range projection {
+		attr := ""
+		if len(path) > 0 {
+			attr = path[0].name
+		}
 		if projected != nil && !projected[attr] {
 			return nil, ErrInvalidParameter
 		}

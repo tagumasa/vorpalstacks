@@ -3,6 +3,7 @@ package dynamodb
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -139,6 +140,20 @@ func TestEncodeKeyValuePrefixFree(t *testing.T) {
 	for i := 0; i+1 < len(encs); i++ {
 		if len(encs[i]) <= len(encs[i+1]) && encs[i+1][:len(encs[i])] == encs[i] {
 			t.Fatalf("encoding %q is a prefix of %q", encs[i], encs[i+1])
+		}
+	}
+}
+
+// The unparseable-number fallback is a component payload like any other:
+// every escape-relevant byte in it is escaped, so the terminator — and the
+// separator it doubles as — occurs exactly once, as the component's last
+// byte. The invariant the header asserts holds on this path too, not only
+// on the validated ones.
+func TestEncodeKeyValueUnparseableNumberFallbackEscapes(t *testing.T) {
+	for _, n := range []string{"1\x002", "1\x012", "1\x01\x002"} {
+		enc := EncodeKeyValue(avN(n))
+		if strings.Count(enc, "\x00") != 1 || !strings.HasSuffix(enc, "\x00") {
+			t.Fatalf("fallback %q left its payload unescaped: %q", n, enc)
 		}
 	}
 }

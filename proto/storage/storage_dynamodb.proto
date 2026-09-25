@@ -6,6 +6,26 @@ option go_package = "vorpalstacks/internal/pb/storage/storage_dynamodb";
 
 import "google/protobuf/timestamp.proto";
 
+// Numbering convention: every message family shares a semantic layout —
+// identity first, then schema and configuration, then runtime state, then
+// timestamps — and same-meaning members across a family carry the same
+// number. A family member that does not exist in a particular message
+// leaves its slot unused; proto numbering is sparse by design. New members
+// are inserted at their semantic position within the family layout, never
+// appended past it.
+//
+// Typing convention: members whose AWS counterpart is a closed enum are
+// stored as enums here, with the value set taken from the Smithy model
+// (com.amazonaws.dynamodb) plus a zero UNSPECIFIED value for absence.
+//
+// Timestamp convention: calendar timestamps use google.protobuf.Timestamp;
+// the three members that carry an epoch number keep it as int64 in the unit
+// their consumer defines, each named with its member: stream approximate
+// creation time is epoch seconds, idempotency expiry is epoch seconds, and
+// journal time is epoch nanoseconds by design — the journal bucket key
+// zero-pads the nanosecond epoch to a fixed width, and the oldest-first
+// lexicographic order the prefix scans rely on depends on that width.
+
 // TableStatus represents the status of a DynamoDB table.
 enum TableStatus {
   TABLE_STATUS_UNSPECIFIED = 0;
@@ -15,11 +35,143 @@ enum TableStatus {
   TABLE_STATUS_DELETING = 4;
 }
 
+// GlobalTableStatus represents the status of a global table.
+enum GlobalTableStatus {
+  GLOBAL_TABLE_STATUS_UNSPECIFIED = 0;
+  GLOBAL_TABLE_STATUS_CREATING = 1;
+  GLOBAL_TABLE_STATUS_ACTIVE = 2;
+  GLOBAL_TABLE_STATUS_UPDATING = 3;
+  GLOBAL_TABLE_STATUS_DELETING = 4;
+}
+
+// ReplicaStatus represents the status of one replica in a global table.
+enum ReplicaStatus {
+  REPLICA_STATUS_UNSPECIFIED = 0;
+  REPLICA_STATUS_CREATING = 1;
+  REPLICA_STATUS_CREATION_FAILED = 2;
+  REPLICA_STATUS_UPDATING = 3;
+  REPLICA_STATUS_DELETING = 4;
+  REPLICA_STATUS_ACTIVE = 5;
+  REPLICA_STATUS_ARCHIVING = 6;
+  REPLICA_STATUS_ARCHIVED = 7;
+  REPLICA_STATUS_INACCESSIBLE_ENCRYPTION_CREDENTIALS = 8;
+  REPLICA_STATUS_REGION_DISABLED = 9;
+  REPLICA_STATUS_REPLICATION_NOT_AUTHORIZED = 10;
+}
+
+// ImportStatus represents the status of a table import.
+enum ImportStatus {
+  IMPORT_STATUS_UNSPECIFIED = 0;
+  IMPORT_STATUS_IN_PROGRESS = 1;
+  IMPORT_STATUS_COMPLETED = 2;
+  IMPORT_STATUS_CANCELLING = 3;
+  IMPORT_STATUS_CANCELLED = 4;
+  IMPORT_STATUS_FAILED = 5;
+}
+
+// InputFormat represents the input format of a table import.
+enum InputFormat {
+  INPUT_FORMAT_UNSPECIFIED = 0;
+  INPUT_FORMAT_DYNAMODB_JSON = 1;
+  INPUT_FORMAT_ION = 2;
+  INPUT_FORMAT_CSV = 3;
+}
+
+// InputCompressionType represents the compression of an import's input.
+enum InputCompressionType {
+  INPUT_COMPRESSION_TYPE_UNSPECIFIED = 0;
+  INPUT_COMPRESSION_TYPE_GZIP = 1;
+  INPUT_COMPRESSION_TYPE_ZSTD = 2;
+  INPUT_COMPRESSION_TYPE_NONE = 3;
+}
+
+// ExportStatus represents the status of a table export.
+enum ExportStatus {
+  EXPORT_STATUS_UNSPECIFIED = 0;
+  EXPORT_STATUS_IN_PROGRESS = 1;
+  EXPORT_STATUS_COMPLETED = 2;
+  EXPORT_STATUS_FAILED = 3;
+}
+
+// ExportFormat represents the output format of a table export.
+enum ExportFormat {
+  EXPORT_FORMAT_UNSPECIFIED = 0;
+  EXPORT_FORMAT_DYNAMODB_JSON = 1;
+  EXPORT_FORMAT_ION = 2;
+}
+
+// ExportType represents the type of a table export.
+enum ExportType {
+  EXPORT_TYPE_UNSPECIFIED = 0;
+  EXPORT_TYPE_FULL_EXPORT = 1;
+  EXPORT_TYPE_INCREMENTAL_EXPORT = 2;
+}
+
+// ExportViewType represents the image set an incremental export outputs.
+enum ExportViewType {
+  EXPORT_VIEW_TYPE_UNSPECIFIED = 0;
+  EXPORT_VIEW_TYPE_NEW_IMAGE = 1;
+  EXPORT_VIEW_TYPE_NEW_AND_OLD_IMAGES = 2;
+}
+
+// S3SseAlgorithm represents the encryption algorithm an export requests
+// for its destination bucket.
+enum S3SseAlgorithm {
+  S3_SSE_ALGORITHM_UNSPECIFIED = 0;
+  S3_SSE_ALGORITHM_AES256 = 1;
+  S3_SSE_ALGORITHM_KMS = 2;
+}
+
+// DestinationStatus represents the status of a Kinesis data stream
+// destination.
+enum DestinationStatus {
+  DESTINATION_STATUS_UNSPECIFIED = 0;
+  DESTINATION_STATUS_ENABLING = 1;
+  DESTINATION_STATUS_ACTIVE = 2;
+  DESTINATION_STATUS_DISABLING = 3;
+  DESTINATION_STATUS_DISABLED = 4;
+  DESTINATION_STATUS_ENABLE_FAILED = 5;
+  DESTINATION_STATUS_UPDATING = 6;
+}
+
+// SSEStatus represents the status of server-side encryption.
+enum SSEStatus {
+  SSE_STATUS_UNSPECIFIED = 0;
+  SSE_STATUS_ENABLING = 1;
+  SSE_STATUS_ENABLED = 2;
+  SSE_STATUS_DISABLING = 3;
+  SSE_STATUS_DISABLED = 4;
+  SSE_STATUS_UPDATING = 5;
+}
+
+// ContributorInsightsMode represents the contributor-insights tracking
+// mode.
+enum ContributorInsightsMode {
+  CONTRIBUTOR_INSIGHTS_MODE_UNSPECIFIED = 0;
+  CONTRIBUTOR_INSIGHTS_MODE_THROTTLED_KEYS = 1;
+  CONTRIBUTOR_INSIGHTS_MODE_ACCESSED_AND_THROTTLED_KEYS = 2;
+}
+
+// ApproximateCreationDateTimePrecision represents the precision of a
+// stream destination's approximate creation timestamp.
+enum ApproximateCreationDateTimePrecision {
+  APPROXIMATE_CREATION_DATE_TIME_PRECISION_UNSPECIFIED = 0;
+  APPROXIMATE_CREATION_DATE_TIME_PRECISION_MILLISECOND = 1;
+  APPROXIMATE_CREATION_DATE_TIME_PRECISION_MICROSECOND = 2;
+}
+
 // BillingMode represents the billing mode for a DynamoDB table.
 enum BillingMode {
   BILLING_MODE_UNSPECIFIED = 0;
   BILLING_MODE_PROVISIONED = 1;
   BILLING_MODE_PAY_PER_REQUEST = 2;
+}
+
+// TableClass represents the storage class of a table or replica.
+enum TableClass {
+  TABLE_CLASS_UNSPECIFIED = 0;
+  TABLE_CLASS_STANDARD = 1;
+  TABLE_CLASS_STANDARD_INFREQUENT_ACCESS = 2;
 }
 
 // KeyType represents the type of a key in a DynamoDB key schema.
@@ -37,6 +189,14 @@ enum ScalarAttributeType {
   SCALAR_ATTRIBUTE_TYPE_B = 3;
 }
 
+// SearchSchemaElementType represents the role of an attribute in a vector
+// index search schema.
+enum SearchSchemaElementType {
+  SEARCH_SCHEMA_ELEMENT_TYPE_UNSPECIFIED = 0;
+  SEARCH_SCHEMA_ELEMENT_TYPE_HASH = 1;
+  SEARCH_SCHEMA_ELEMENT_TYPE_INLINE_FILTER = 2;
+}
+
 // StreamViewType represents the type of view for DynamoDB streams.
 enum StreamViewType {
   STREAM_VIEW_TYPE_UNSPECIFIED = 0;
@@ -44,6 +204,14 @@ enum StreamViewType {
   STREAM_VIEW_TYPE_OLD_IMAGE = 2;
   STREAM_VIEW_TYPE_NEW_AND_OLD_IMAGES = 3;
   STREAM_VIEW_TYPE_KEYS_ONLY = 4;
+}
+
+// ProjectionType represents which attributes an index projects.
+enum ProjectionType {
+  PROJECTION_TYPE_UNSPECIFIED = 0;
+  PROJECTION_TYPE_ALL = 1;
+  PROJECTION_TYPE_KEYS_ONLY = 2;
+  PROJECTION_TYPE_INCLUDE = 3;
 }
 
 // SSEType represents the server-side encryption type.
@@ -60,6 +228,15 @@ enum IndexStatus {
   INDEX_STATUS_ACTIVE = 2;
   INDEX_STATUS_UPDATING = 3;
   INDEX_STATUS_DELETING = 4;
+}
+
+// VectorDistanceFunction represents the distance function of a vector
+// index.
+enum VectorDistanceFunction {
+  VECTOR_DISTANCE_FUNCTION_UNSPECIFIED = 0;
+  VECTOR_DISTANCE_FUNCTION_COSINE = 1;
+  VECTOR_DISTANCE_FUNCTION_EUCLIDEAN = 2;
+  VECTOR_DISTANCE_FUNCTION_DOT_PRODUCT = 3;
 }
 
 // BackupStatus represents the status of a DynamoDB backup.
@@ -136,9 +313,18 @@ message ProvisionedThroughput {
 
 // Projection represents the attributes that are projected from an index.
 message Projection {
-  string projection_type = 1;
+  ProjectionType projection_type = 1;
   repeated string non_key_attributes = 2;
 }
+
+// Index family shared layout:
+//   1 index name                    2 index arn
+//   3 key schema                    4 projection
+//   5 provisioned throughput        6 on-demand throughput
+//   7 warm throughput               (capacity members GSI only)
+//   8 index status                  9 index size bytes     10 item count
+// A family member that does not exist in a particular index leaves its
+// slot unused. Family-specific members follow at 11+.
 
 // GlobalSecondaryIndex represents a global secondary index.
 message GlobalSecondaryIndex {
@@ -147,40 +333,47 @@ message GlobalSecondaryIndex {
   repeated KeySchemaElement key_schema = 3;
   Projection projection = 4;
   ProvisionedThroughput provisioned_throughput = 5;
-  IndexStatus index_status = 6;
-  int64 index_size_bytes = 7;
-  int64 item_count = 8;
+  OnDemandThroughput on_demand_throughput = 6;
+  WarmThroughput warm_throughput = 7;
+  IndexStatus index_status = 8;
+  int64 index_size_bytes = 9;
+  int64 item_count = 10;
 }
 
-// LocalSecondaryIndex represents a local secondary index.
+// LocalSecondaryIndex represents a local secondary index. Slots 2 and 5
+// through 8 are unused: an LSI has no ARN, shares the table's throughput
+// and has no index status of its own.
 message LocalSecondaryIndex {
   string index_name = 1;
-  repeated KeySchemaElement key_schema = 2;
-  Projection projection = 3;
-  int64 index_size_bytes = 4;
-  int64 item_count = 5;
+  repeated KeySchemaElement key_schema = 3;
+  Projection projection = 4;
+  int64 index_size_bytes = 9;
+  int64 item_count = 10;
 }
 
 // SearchSchemaElement defines an attribute's role in a vector index search
 // schema: HASH partitions the index, INLINE_FILTER is projected for filtering.
 message SearchSchemaElement {
   string attribute_name = 1;
-  string search_schema_element_type = 2;
+  SearchSchemaElementType search_schema_element_type = 2;
 }
 
-// VectorIndex represents a vector index on a table.
+// VectorIndex represents a vector index on a table. Slots 5 through 7 are
+// unused (a vector index carries no capacity members); the search schema
+// occupies the family's schema slot.
 message VectorIndex {
   string index_name = 1;
-  string vector_attribute_name = 2;
-  int64 dimensions = 3;
-  string distance_function = 4;  // COSINE | EUCLIDEAN | DOT_PRODUCT
-  Projection projection = 5;
-  repeated SearchSchemaElement search_schema = 6;
-  IndexStatus index_status = 7;
-  bool backfilling = 8;
-  string index_arn = 9;
-  int64 index_size_bytes = 10;
-  int64 item_count = 11;
+  string index_arn = 2;
+  repeated SearchSchemaElement search_schema = 3;
+  Projection projection = 4;
+  IndexStatus index_status = 8;
+  int64 index_size_bytes = 9;
+  int64 item_count = 10;
+  // Vector-specific members.
+  string vector_attribute_name = 11;
+  int64 dimensions = 12;
+  VectorDistanceFunction distance_function = 13;
+  bool backfilling = 14;
 }
 
 // VectorIndexEntry is the stored record of one item's vector under one
@@ -197,16 +390,10 @@ message StreamSpecification {
 
 // SSEDescription represents the server-side encryption description.
 message SSEDescription {
-  string status = 1;
+  SSEStatus status = 1;
   SSEType sse_type = 2;
   string kms_master_key_arn = 3;
   google.protobuf.Timestamp inaccessible_encryption_date_time = 4;
-}
-
-// Tag represents a key-value pair for tagging resources.
-message Tag {
-  string key = 1;
-  string value = 2;
 }
 
 // TimeToLiveSpecification represents the time-to-live specification.
@@ -227,52 +414,59 @@ message PointInTimeRecoveryDescription {
 // KinesisDataStreamDestination represents a Kinesis data stream destination.
 message KinesisDataStreamDestination {
   string stream_arn = 1;
-  string destination_status = 2;
+  DestinationStatus destination_status = 2;
   string destination_status_description = 3;
-  string approximate_creation_date_time_precision = 4;
+  ApproximateCreationDateTimePrecision approximate_creation_date_time_precision = 4;
 }
 
 // Table represents a DynamoDB table. Fields are grouped logically —
 // identity, schema and configuration, runtime state, timestamps — so the
-// numbering reads in the order the concepts belong together.
+// numbering reads in the order the concepts belong together. The table is
+// the canonical layout for the schema-and-configuration block that Backup
+// snapshots member-for-member.
 message Table {
-  // Identity.
+  // Identity. The table UUID is minted at creation and is stable for the
+  // table's lifetime; a re-created table of the same name mints a fresh
+  // one, so records of different generations never share an identity.
   string name = 1;
   string arn = 2;
+  string table_id = 3;
   // Schema and configuration.
-  repeated KeySchemaElement key_schema = 3;
-  repeated AttributeDefinition attribute_definitions = 4;
-  BillingMode billing_mode = 5;
-  ProvisionedThroughput provisioned_throughput = 6;
-  OnDemandThroughput on_demand_throughput = 7;
-  WarmThroughput warm_throughput = 8;
-  repeated GlobalSecondaryIndex global_secondary_indexes = 9;
-  repeated LocalSecondaryIndex local_secondary_indexes = 10;
-  repeated VectorIndex vector_indexes = 11;
-  StreamSpecification stream_specification = 12;
-  SSEDescription sse_description = 13;
-  string table_class = 14;
-  bool deletion_protection_enabled = 15;
-  TimeToLiveSpecification time_to_live = 16;
-  PointInTimeRecoveryDescription point_in_time_recovery = 17;
-  string resource_policy = 18;
-  int32 resource_policy_revision_id = 19;
-  repeated KinesisDataStreamDestination kinesis_data_stream_destinations = 20;
-  bool contributor_insights_enabled = 21;
-  string contributor_insights_mode = 22;
-  google.protobuf.Timestamp contributor_insights_updated_at = 23;
-  string global_table_source_arn = 24;
-  repeated Tag tags = 25;
+  repeated KeySchemaElement key_schema = 4;
+  repeated AttributeDefinition attribute_definitions = 5;
+  BillingMode billing_mode = 6;
+  ProvisionedThroughput provisioned_throughput = 7;
+  OnDemandThroughput on_demand_throughput = 8;
+  WarmThroughput warm_throughput = 9;
+  repeated GlobalSecondaryIndex global_secondary_indexes = 10;
+  repeated LocalSecondaryIndex local_secondary_indexes = 11;
+  repeated VectorIndex vector_indexes = 12;
+  StreamSpecification stream_specification = 13;
+  SSEDescription sse_description = 14;
+  TableClass table_class = 15;
+  bool deletion_protection_enabled = 16;
+  TimeToLiveSpecification time_to_live = 17;
+  PointInTimeRecoveryDescription point_in_time_recovery = 18;
+  string resource_policy = 19;
+  int32 resource_policy_revision_id = 20;
+  repeated KinesisDataStreamDestination kinesis_data_stream_destinations = 21;
+  bool contributor_insights_enabled = 22;
+  ContributorInsightsMode contributor_insights_mode = 23;
+  google.protobuf.Timestamp contributor_insights_updated_at = 24;
+  string global_table_source_arn = 25;
   // Runtime state.
-  TableStatus status = 26;
-  int64 table_size_bytes = 27;
-  int64 item_count = 28;
-  string stream_arn = 29;
-  string latest_stream_label = 30;
-  RestoreSummary restore_summary = 31;
+  TableStatus status = 27;
+  int64 table_size_bytes = 28;
+  int64 item_count = 29;
+  string stream_arn = 30;
+  string latest_stream_label = 31;
+  RestoreSummary restore_summary = 32;
+  // Timestamps of provisioned-to-on-demand billing mode switches inside
+  // the rolling 24-hour window the quota page bounds at four switches.
+  repeated google.protobuf.Timestamp billing_mode_switches = 33;
   // Timestamps.
-  google.protobuf.Timestamp creation_date_time = 32;
-  google.protobuf.Timestamp last_updated_date_time = 33;
+  google.protobuf.Timestamp creation_date_time = 34;
+  google.protobuf.Timestamp last_updated_date_time = 35;
 }
 
 // AttributeValue represents a DynamoDB attribute value.
@@ -328,47 +522,68 @@ message Item {
   map<string, AttributeValue> attributes = 3;
 }
 
-// Backup represents a DynamoDB table backup.
+// Backup represents a DynamoDB table backup. The schema-and-configuration
+// block follows the Table's block order member-for-member; the source-table
+// summary sits between identity and the snapshot.
 message Backup {
+  // Identity.
   string backup_name = 1;
   string backup_arn = 2;
+  // Source-table summary.
   string source_table_name = 3;
   string source_table_arn = 4;
-  google.protobuf.Timestamp source_table_creation_time = 5;
-  int64 source_table_size_bytes = 6;
-  int64 source_table_item_count = 7;
-  BackupStatus backup_status = 8;
-  BackupType backup_type = 9;
-  google.protobuf.Timestamp backup_creation_date_time = 10;
-  int64 backup_size_bytes = 11;
-  google.protobuf.Timestamp backup_expiry_date_time = 12;
-  repeated KeySchemaElement key_schema = 13;
-  repeated AttributeDefinition attribute_definitions = 14;
-  BillingMode billing_mode = 15;
-  ProvisionedThroughput provisioned_throughput = 16;
-  repeated GlobalSecondaryIndex global_secondary_indexes = 17;
-  repeated LocalSecondaryIndex local_secondary_indexes = 18;
-  repeated VectorIndex vector_indexes = 19;
+  string source_table_id = 5;
+  google.protobuf.Timestamp source_table_creation_time = 6;
+  int64 source_table_size_bytes = 7;
+  int64 source_table_item_count = 8;
+  // Table snapshot — schema and configuration, in the Table's block order.
+  repeated KeySchemaElement key_schema = 9;
+  repeated AttributeDefinition attribute_definitions = 10;
+  BillingMode billing_mode = 11;
+  ProvisionedThroughput provisioned_throughput = 12;
+  repeated GlobalSecondaryIndex global_secondary_indexes = 13;
+  repeated LocalSecondaryIndex local_secondary_indexes = 14;
+  repeated VectorIndex vector_indexes = 15;
+  // Backup state.
+  BackupStatus backup_status = 16;
+  BackupType backup_type = 17;
+  // Runtime and timestamps.
+  int64 backup_size_bytes = 18;
+  google.protobuf.Timestamp backup_creation_date_time = 19;
+  google.protobuf.Timestamp backup_expiry_date_time = 20;
 }
 
 // Replica represents a replica of a global table.
 message Replica {
   string region_name = 1;
-  string replica_status = 2;
-  string billing_mode = 3;
+  ReplicaStatus replica_status = 2;
+  BillingMode billing_mode = 3;
   int64 provisioned_read_capacity_units = 4;
   int64 provisioned_write_capacity_units = 5;
   AutoScalingSettingsDescription read_auto_scaling_settings = 6;
   repeated IndexAutoScalingSettings global_secondary_index_read_settings = 7;
-  string table_class = 8;
+  TableClass table_class = 8;
   google.protobuf.Timestamp table_class_last_updated = 9;
+  string kms_master_key_id = 10;
+  OnDemandThroughput on_demand_throughput_override = 11;
+  repeated ReplicaGlobalSecondaryIndex global_secondary_index_overrides = 12;
+}
+
+// ReplicaGlobalSecondaryIndex is a replica's per-index capacity override,
+// applied through the replica Update action's GlobalSecondaryIndexes
+// member: the read-side provisioned override and the on-demand maximum
+// override an index carries in one replica region.
+message ReplicaGlobalSecondaryIndex {
+  string index_name = 1;
+  int64 provisioned_read_capacity_units = 2;
+  OnDemandThroughput on_demand_throughput_override = 3;
 }
 
 // GlobalTable represents a global table in DynamoDB.
 message GlobalTable {
   string global_table_name = 1;
   string global_table_arn = 2;
-  string global_table_status = 3;
+  GlobalTableStatus global_table_status = 3;
   google.protobuf.Timestamp creation_date_time = 4;
   repeated Replica replication_group = 5;
   AutoScalingSettingsDescription write_auto_scaling_settings = 6;
@@ -381,62 +596,70 @@ message BackupSnapshot {
   repeated Item items = 1;
 }
 
-// S3BucketSource represents an S3 bucket source for table import.
+// S3BucketSource represents the S3 location of an import source or an
+// export target.
 message S3BucketSource {
   string s3_bucket = 1;
   string s3_prefix = 2;
   string s3_bucket_owner = 3;
 }
 
+// Import/Export descriptor family shared layout:
+//   1 operation arn       2 operation status
+//   3 table arn           4 table id
+//   5 start time          6 end time
+//   7 failure code        8 failure message
+//   9 client token       10 S3 location (S3BucketSource)
+// Family-specific counts, formats and options follow at 11+.
+
 // ImportTableDescription represents the description of a table import.
 message ImportTableDescription {
   string import_arn = 1;
-  string import_status = 2;
+  ImportStatus import_status = 2;
   string table_arn = 3;
   string table_id = 4;
   google.protobuf.Timestamp start_time = 5;
   google.protobuf.Timestamp end_time = 6;
-  int64 processed_item_count = 7;
-  int64 processed_size_bytes = 8;
-  string input_format = 9;
+  string failure_code = 7;
+  string failure_message = 8;
+  string client_token = 9;
   S3BucketSource s3_bucket_source = 10;
-  string failure_code = 11;
-  string failure_message = 12;
+  // Import-specific members.
+  int64 processed_item_count = 11;
+  int64 processed_size_bytes = 12;
   int64 imported_item_count = 13;
   int64 error_count = 14;
-  string client_token = 15;
-  string input_compression_type = 16;
+  InputFormat input_format = 15;
+  InputCompressionType input_compression_type = 16;
 }
 
 // ExportDescription represents the description of a table export.
 message ExportDescription {
   string export_arn = 1;
-  string export_status = 2;
-  google.protobuf.Timestamp start_time = 3;
-  google.protobuf.Timestamp end_time = 4;
-  int64 manifest_files_size = 5;
-  int64 item_count = 6;
-  string table_arn = 7;
-  string table_id = 8;
-  string export_format = 9;
-  string s3_bucket = 10;
-  string s3_prefix = 11;
-  string failure_code = 12;
-  string failure_message = 13;
-  int64 billed_size_bytes = 14;
+  ExportStatus export_status = 2;
+  string table_arn = 3;
+  string table_id = 4;
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  string failure_code = 7;
+  string failure_message = 8;
+  string client_token = 9;
+  S3BucketSource s3_bucket_source = 10;
+  // Export-specific members.
+  int64 item_count = 11;
+  int64 manifest_files_size = 12;
+  int64 billed_size_bytes = 13;
+  ExportFormat export_format = 14;
   google.protobuf.Timestamp export_time = 15;
-  string client_token = 16;
-  string s3_bucket_owner = 17;
-  string s3_sse_kms_key_id = 18;
-  string export_manifest = 19;
-  string export_type = 20;
-}
-
-// ContributorInsightsSummary represents the contributor insights summary.
-message ContributorInsightsSummary {
-  string table_name = 1;
-  string index_name = 2;
-  string contributor_insights_status = 3;
+  string s3_sse_kms_key_id = 16;
+  string export_manifest = 17;
+  ExportType export_type = 18;
+  // Export-specific members continued: the SSE request and the resolved
+  // incremental specification extend the configuration block.
+  S3SseAlgorithm s3_sse_algorithm = 19;
+  ExportViewType export_view_type = 20;
+  google.protobuf.Timestamp export_from_time = 21;
+  google.protobuf.Timestamp export_to_time = 22;
 }
 
 // TargetTrackingScalingPolicyConfiguration mirrors the model's
@@ -508,7 +731,7 @@ message StoredStreamRecordData {
   map<string, AttributeValue> old_image = 4;
   string sequence_number = 5;
   int64 size_bytes = 6;
-  string stream_view_type = 7;
+  StreamViewType stream_view_type = 7;
 }
 
 // StoredStreamRecord is the persisted form of one DynamoDB Streams record.
@@ -525,8 +748,12 @@ message StoredStreamRecord {
 
 // StreamSequenceCounter is the per-table sequence allocator state; the
 // trimmed floor records the highest sequence number removed by retention.
+// Slot 1 is unused by the family's numbering convention: the record path
+// once persisted a last-seq extent inside its carrying transaction, but a
+// transaction-committed extent regresses under commit-order inversion, so
+// the extent is derived (max of highest record key and floor) and never
+// stored.
 message StreamSequenceCounter {
-  int64 last_seq = 1;
   int64 trimmed_floor = 2;
 }
 

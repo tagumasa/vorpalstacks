@@ -54,10 +54,10 @@ func (h *AdminHandler) ExecuteQuery(ctx context.Context, req *connect.Request[pb
 		}
 		body["parameters"] = params
 	}
-	if mode := explainModeInputPbToString(req.Msg.Explainmode); mode != "" {
+	if mode := explainModeInputPbToString(req.Msg.GetExplainmode()); mode != "" {
 		body["explain"] = mode
 	}
-	if pc := planCacheInputPbToString(req.Msg.Plancache); pc != "" {
+	if pc := planCacheInputPbToString(req.Msg.GetPlancache()); pc != "" {
 		body["planCache"] = pc
 	}
 	if req.Msg.GetQuerytimeoutmilliseconds() != "" {
@@ -129,7 +129,7 @@ func (h *AdminHandler) ListQueries(ctx context.Context, req *connect.Request[pb.
 	queries, err := h.service.listQueriesCore(store, &ListQueriesInput{
 		GraphIdentifier: req.Msg.GetGraphidentifier(),
 		MaxResults:      maxResults,
-		State:           queryStateInputPbToString(req.Msg.State),
+		State:           queryStateInputPbToString(req.Msg.GetState()),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -148,7 +148,7 @@ func (h *AdminHandler) GetGraphSummary(ctx context.Context, req *connect.Request
 	}
 	result, err := h.service.getGraphSummaryCore(store, &GetGraphSummaryInput{
 		GraphIdentifier: req.Msg.GetGraphidentifier(),
-		Mode:            graphSummaryModePbToString(req.Msg.Mode),
+		Mode:            graphSummaryModePbToString(req.Msg.GetMode()),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -440,9 +440,9 @@ func (h *AdminHandler) CreateGraphUsingImportTask(ctx context.Context, req *conn
 		GraphName:          req.Msg.Graphname,
 		RoleArn:            req.Msg.Rolearn,
 		Source:             req.Msg.Source,
-		Format:             formatPbToString(req.Msg.Format),
-		ParquetType:        parquetTypePbToString(req.Msg.Parquettype),
-		BlankNodeHandling:  blankNodeHandlingPbToString(req.Msg.Blanknodehandling),
+		Format:             formatPbToString(req.Msg.GetFormat()),
+		ParquetType:        parquetTypePbToString(req.Msg.GetParquettype()),
+		BlankNodeHandling:  blankNodeHandlingPbToString(req.Msg.GetBlanknodehandling()),
 		KmsKeyIdentifier:   req.Msg.GetKmskeyidentifier(),
 		DeletionProtection: strToBool(req.Msg.GetDeletionprotection()),
 		PublicConnectivity: strToBool(req.Msg.GetPublicconnectivity()),
@@ -515,9 +515,9 @@ func (h *AdminHandler) StartImportTask(ctx context.Context, req *connect.Request
 		GraphIdentifier:   req.Msg.GetGraphidentifier(),
 		RoleArn:           req.Msg.Rolearn,
 		Source:            req.Msg.Source,
-		Format:            formatPbToString(req.Msg.Format),
-		ParquetType:       parquetTypePbToString(req.Msg.Parquettype),
-		BlankNodeHandling: blankNodeHandlingPbToString(req.Msg.Blanknodehandling),
+		Format:            formatPbToString(req.Msg.GetFormat()),
+		ParquetType:       parquetTypePbToString(req.Msg.GetParquettype()),
+		BlankNodeHandling: blankNodeHandlingPbToString(req.Msg.GetBlanknodehandling()),
 		FailOnError:       strToBool(req.Msg.GetFailonerror()),
 	}
 	if req.Msg.Importoptions != nil {
@@ -539,7 +539,7 @@ func (h *AdminHandler) StartExportTask(ctx context.Context, req *connect.Request
 	in := &StartExportTaskInput{
 		GraphIdentifier:  req.Msg.GetGraphidentifier(),
 		Format:           exportFormatPbToString(req.Msg.Format),
-		ParquetType:      parquetTypePbToString(req.Msg.Parquettype),
+		ParquetType:      parquetTypePbToString(req.Msg.GetParquettype()),
 		KmsKeyIdentifier: req.Msg.GetKmskeyidentifier(),
 		RoleArn:          req.Msg.Rolearn,
 		Destination:      req.Msg.Destination,

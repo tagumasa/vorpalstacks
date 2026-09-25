@@ -26,10 +26,8 @@ const (
 	kinesisDestinationEnabling  = "ENABLING"
 	kinesisDestinationActive    = "ACTIVE"
 	kinesisDestinationDisabling = "DISABLING"
+	kinesisDestinationDisabled  = "DISABLED"
 	kinesisDestinationUpdating  = "UPDATING"
-
-	kinesisPrecisionMillisecond = "MILLISECOND"
-	kinesisPrecisionMicrosecond = "MICROSECOND"
 
 	// kinesisDestinationTransitionDelay is the delay before a destination
 	// reaches the state its triggering request announced (ENABLING/DISABLING/
@@ -41,7 +39,7 @@ const (
 // kinesisPrecisionFromConfig reads the ApproximateCreationDateTimePrecision
 // enum out of the named configuration member. An empty string means the
 // member was absent; a value outside the model enum is a client error.
-func kinesisPrecisionFromConfig(params map[string]interface{}, member string) (string, error) {
+func kinesisPrecisionFromConfig(params map[string]interface{}, member string) (dbstore.ApproximateCreationDateTimePrecision, error) {
 	configMap, ok := params[member].(map[string]interface{})
 	if !ok {
 		return "", nil
@@ -50,10 +48,11 @@ func kinesisPrecisionFromConfig(params map[string]interface{}, member string) (s
 	if value == "" {
 		return "", nil
 	}
-	if value != kinesisPrecisionMillisecond && value != kinesisPrecisionMicrosecond {
+	precision := dbstore.ApproximateCreationDateTimePrecision(value)
+	if precision != dbstore.ACDTPrecisionMillisecond && precision != dbstore.ACDTPrecisionMicrosecond {
 		return "", ErrInvalidParameter
 	}
-	return value, nil
+	return precision, nil
 }
 
 // kinesisStreamExists reports whether the destination stream exists in the
@@ -93,7 +92,7 @@ func copyKinesisDestinations(destinations []*dbstore.KinesisDataStreamDestinatio
 // request changed its state in the meantime); remove=true drops the entry;
 // otherwise the function has mutated the entry in place and the result must
 // be persisted.
-type kinesisDestinationApply func(d *dbstore.KinesisDataStreamDestination) (remove bool, ok bool)
+type kinesisDestinationApply func(d *dbstore.KinesisDataStreamDestination) bool
 
 // scheduleKinesisDestinationTransition performs a destination transition
 // after the observable intermediate state has been visible for a moment. The
@@ -124,21 +123,14 @@ func (s *DynamoDBService) scheduleKinesisDestinationTransition(store dbstore.Dyn
 		if err != nil || table == nil {
 			return
 		}
-		for i, d := range table.KinesisDataStreamDestinations {
+		for _, d := range table.KinesisDataStreamDestinations {
 			if d.StreamArn != streamArn {
 				continue
 			}
-			remove, ok := apply(d)
-			if !ok {
+			if !apply(d) {
 				return
 			}
-			next := table.KinesisDataStreamDestinations
-			if remove {
-				next = make([]*dbstore.KinesisDataStreamDestination, 0, len(table.KinesisDataStreamDestinations)-1)
-				next = append(next, table.KinesisDataStreamDestinations[:i]...)
-				next = append(next, table.KinesisDataStreamDestinations[i+1:]...)
-			}
-			if err := store.Tables().SetKinesisStreamingDestination(tableName, next); err != nil {
+			if err := store.Tables().SetKinesisStreamingDestination(tableName, table.KinesisDataStreamDestinations); err != nil {
 				logs.Error("Failed to complete Kinesis destination transition",
 					logs.Err(err),
 					logs.String("tableName", tableName),
@@ -148,6 +140,39 @@ func (s *DynamoDBService) scheduleKinesisDestinationTransition(store dbstore.Dyn
 			return
 		}
 	}()
+}
+
+// describeKinesisStreamingDestinationInput carries the raw wire parameters
+// for DescribeKinesisStreamingDestination.
+type describeKinesisStreamingDestinationInput struct {
+	Parameters map[string]interface{}
+}
+
+// describeKinesisStreamingDestinationCore validates the request, then
+// returns the Kinesis streaming destinations of the named table.
+func (s *DynamoDBService) describeKinesisStreamingDestinationCore(ctx context.Context, reqCtx *request.RequestContext, in describeKinesisStreamingDestinationInput) (interface{}, error) {
+	table, err := s.validateAndGetTable(reqCtx, in.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	var destinations []map[string]interface{}
+	for _, d := range table.KinesisDataStreamDestinations {
+		dest := map[string]interface{}{
+			"StreamArn":                    d.StreamArn,
+			"DestinationStatus":            string(d.DestinationStatus),
+			"DestinationStatusDescription": d.DestinationStatusDescription,
+		}
+		if d.ApproximateCreationDateTimePrecision != "" {
+			dest["ApproximateCreationDateTimePrecision"] = d.ApproximateCreationDateTimePrecision
+		}
+		destinations = append(destinations, dest)
+	}
+
+	return map[string]interface{}{
+		"KinesisDataStreamDestinations": destinations,
+		"TableName":                     table.Name,
+	}, nil
 }
 
 // enableKinesisStreamingDestinationInput carries the raw wire parameters
@@ -205,9 +230,14 @@ func (s *DynamoDBService) enableKinesisStreamingDestinationCore(ctx context.Cont
 		return nil, ErrTableNotFound
 	}
 	// A table streams to at most one Kinesis data stream; an entry in any
-	// state (including a transitional one) occupies that slot.
-	if len(current.KinesisDataStreamDestinations) > 0 {
-		return nil, ErrResourceAlreadyExists
+	// state except DISABLED (including a transitional one) occupies that
+	// slot. A DISABLED entry is the residue of a completed disable: whether
+	// it names this stream or another, the enable starts the one live
+	// destination afresh through ENABLING.
+	for _, d := range current.KinesisDataStreamDestinations {
+		if d.DestinationStatus != kinesisDestinationDisabled {
+			return nil, ErrResourceAlreadyExists
+		}
 	}
 
 	destinations := []*dbstore.KinesisDataStreamDestination{{
@@ -219,12 +249,12 @@ func (s *DynamoDBService) enableKinesisStreamingDestinationCore(ctx context.Cont
 		return nil, err
 	}
 
-	s.scheduleKinesisDestinationTransition(store, tableName, streamArn, func(d *dbstore.KinesisDataStreamDestination) (bool, bool) {
+	s.scheduleKinesisDestinationTransition(store, tableName, streamArn, func(d *dbstore.KinesisDataStreamDestination) bool {
 		if d.DestinationStatus != kinesisDestinationEnabling {
-			return false, false
+			return false
 		}
 		d.DestinationStatus = kinesisDestinationActive
-		return false, true
+		return true
 	})
 
 	response := map[string]interface{}{
@@ -234,7 +264,7 @@ func (s *DynamoDBService) enableKinesisStreamingDestinationCore(ctx context.Cont
 	}
 	if precision != "" {
 		response["EnableKinesisStreamingConfiguration"] = map[string]interface{}{
-			"ApproximateCreationDateTimePrecision": precision,
+			"ApproximateCreationDateTimePrecision": string(precision),
 		}
 	}
 	return response, nil
@@ -294,11 +324,16 @@ func (s *DynamoDBService) disableKinesisStreamingDestinationCore(ctx context.Con
 		return nil, err
 	}
 
-	s.scheduleKinesisDestinationTransition(store, tableName, streamArn, func(d *dbstore.KinesisDataStreamDestination) (bool, bool) {
+	s.scheduleKinesisDestinationTransition(store, tableName, streamArn, func(d *dbstore.KinesisDataStreamDestination) bool {
 		if d.DestinationStatus != kinesisDestinationDisabling {
-			return false, false
+			return false
 		}
-		return true, true
+		// The destination stays on the record in the DISABLED state: the
+		// model's DestinationStatus enum carries DISABLED, and a Describe
+		// after the disable reports the disabled destination rather than
+		// nothing.
+		d.DestinationStatus = kinesisDestinationDisabled
+		return true
 	})
 
 	return map[string]interface{}{
@@ -362,6 +397,10 @@ func (s *DynamoDBService) updateKinesisStreamingDestinationCore(ctx context.Cont
 	}
 
 	destinations := copyKinesisDestinations(current.KinesisDataStreamDestinations)
+	// An update against a DISABLED destination applies its configuration
+	// but keeps the client's disable: the transition returns the entry to
+	// DISABLED, never resurrecting it to ACTIVE.
+	wasDisabled := destinations[idx].DestinationStatus == kinesisDestinationDisabled
 	if precision != "" {
 		destinations[idx].ApproximateCreationDateTimePrecision = precision
 	}
@@ -370,12 +409,16 @@ func (s *DynamoDBService) updateKinesisStreamingDestinationCore(ctx context.Cont
 		return nil, err
 	}
 
-	s.scheduleKinesisDestinationTransition(store, tableName, streamArn, func(d *dbstore.KinesisDataStreamDestination) (bool, bool) {
+	s.scheduleKinesisDestinationTransition(store, tableName, streamArn, func(d *dbstore.KinesisDataStreamDestination) bool {
 		if d.DestinationStatus != kinesisDestinationUpdating {
-			return false, false
+			return false
+		}
+		if wasDisabled {
+			d.DestinationStatus = kinesisDestinationDisabled
+			return true
 		}
 		d.DestinationStatus = kinesisDestinationActive
-		return false, true
+		return true
 	})
 
 	response := map[string]interface{}{
@@ -385,7 +428,7 @@ func (s *DynamoDBService) updateKinesisStreamingDestinationCore(ctx context.Cont
 	}
 	if precision != "" {
 		response["UpdateKinesisStreamingConfiguration"] = map[string]interface{}{
-			"ApproximateCreationDateTimePrecision": precision,
+			"ApproximateCreationDateTimePrecision": string(precision),
 		}
 	}
 	return response, nil

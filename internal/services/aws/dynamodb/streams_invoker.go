@@ -26,7 +26,20 @@ func (i *ddbStreamsInvoker) GetRecords(ctx context.Context, region, tableName st
 		return nil, 0, err
 	}
 
-	records, nextSeq, err := store.Streams().GetRecords(tableName, fromSeq, limit)
+	// Records are served per stream generation: the table's current ARN
+	// selects the generation, and a table whose stream is disabled or
+	// absent serves nothing — the same selection the Streams read path's
+	// iterator-ARN comparison makes.
+	table, err := store.Tables().Get(tableName)
+	if err != nil {
+		return nil, 0, err
+	}
+	streamArn := ""
+	if table != nil {
+		streamArn = table.StreamArn
+	}
+
+	records, nextSeq, err := store.Streams().GetRecords(tableName, streamArn, fromSeq, limit)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -65,7 +78,14 @@ func (i *ddbStreamsInvoker) GetLatestSequence(ctx context.Context, region, table
 	if err != nil {
 		return 0, err
 	}
-	return store.Streams().GetLatestSequence(tableName)
+	// The poller's position is the CURRENT generation's extent: residue of
+	// a superseded generation the best-effort sweep missed must not
+	// advance the position past records this generation will serve.
+	table, err := store.Tables().Get(tableName)
+	if err != nil {
+		return 0, err
+	}
+	return store.Streams().GetLatestSequenceForStream(tableName, table.StreamArn)
 }
 
 // ShardIDForStream returns the deterministic shard identifier of a DynamoDB

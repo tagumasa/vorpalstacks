@@ -74,7 +74,7 @@ func TestUpdateTableSweepsDeletedVectorEntriesDespiteBackfillFailure(t *testing.
 		t.Fatalf("open storage: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
-	real := dbstore.NewDynamoDBStore(st, "123456789012", "us-east-1")
+	real := dbstore.NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 
 	if _, err := real.Tables().Create(dbstore.CreateTableParams{
 		Name:                 "SweepTbl",
@@ -118,7 +118,7 @@ func TestUpdateTableSweepsDeletedVectorEntriesDespiteBackfillFailure(t *testing.
 	}
 
 	var svc DynamoDBService
-	_, err = svc.updateTableCore(context.Background(), itemsPanicStore{real}, UpdateTableInput{
+	_, err = svc.updateTableCore(context.Background(), nil, itemsPanicStore{real}, UpdateTableInput{
 		TableName: "SweepTbl",
 		GSIUpdates: []interface{}{
 			map[string]interface{}{
@@ -171,7 +171,7 @@ func TestUpdateTableRejectsDuplicateGSICreate(t *testing.T) {
 		t.Fatalf("open storage: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
-	real := dbstore.NewDynamoDBStore(st, "123456789012", "us-east-1")
+	real := dbstore.NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 
 	if _, err := real.Tables().Create(dbstore.CreateTableParams{
 		Name:                 "DupTbl",
@@ -192,11 +192,11 @@ func TestUpdateTableRejectsDuplicateGSICreate(t *testing.T) {
 		},
 	}
 	var svc DynamoDBService
-	if _, err := svc.updateTableCore(context.Background(), real, UpdateTableInput{TableName: "DupTbl", GSIUpdates: gsiCreate}); err != nil {
+	if _, err := svc.updateTableCore(context.Background(), nil, real, UpdateTableInput{TableName: "DupTbl", GSIUpdates: gsiCreate}); err != nil {
 		t.Fatalf("first create: %v", err)
 	}
 
-	_, err = svc.updateTableCore(context.Background(), real, UpdateTableInput{TableName: "DupTbl", GSIUpdates: gsiCreate})
+	_, err = svc.updateTableCore(context.Background(), nil, real, UpdateTableInput{TableName: "DupTbl", GSIUpdates: gsiCreate})
 	apiErr, ok := err.(*APIError)
 	if !ok || apiErr.Code != "com.amazonaws.dynamodb.v20120810#ResourceInUseException" {
 		t.Fatalf("duplicate create: got %v, want ResourceInUseException", err)

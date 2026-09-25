@@ -3618,7 +3618,7 @@ func (x *AWSManagedRulesATPRuleSet) GetResponseinspection() *ResponseInspection 
 type AWSManagedRulesAntiDDoSRuleSet struct {
 	state                  protoimpl.MessageState  `protogen:"open.v1"`
 	Clientsideactionconfig *ClientSideActionConfig `protobuf:"bytes,55744822,opt,name=clientsideactionconfig,proto3" json:"clientsideactionconfig,omitempty"`
-	Sensitivitytoblock     SensitivityToAct        `protobuf:"varint,531809347,opt,name=sensitivitytoblock,proto3,enum=wafv2.SensitivityToAct" json:"sensitivitytoblock,omitempty"`
+	Sensitivitytoblock     *SensitivityToAct       `protobuf:"varint,531809347,opt,name=sensitivitytoblock,proto3,enum=wafv2.SensitivityToAct,oneof" json:"sensitivitytoblock,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3661,8 +3661,8 @@ func (x *AWSManagedRulesAntiDDoSRuleSet) GetClientsideactionconfig() *ClientSide
 }
 
 func (x *AWSManagedRulesAntiDDoSRuleSet) GetSensitivitytoblock() SensitivityToAct {
-	if x != nil {
-		return x.Sensitivitytoblock
+	if x != nil && x.Sensitivitytoblock != nil {
+		return *x.Sensitivitytoblock
 	}
 	return SensitivityToAct_SENSITIVITY_TO_ACT_MEDIUM
 }
@@ -4293,7 +4293,7 @@ func (x *BlockAction) GetCustomresponse() *CustomResponse {
 
 type Body struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Oversizehandling OversizeHandling       `protobuf:"varint,139375132,opt,name=oversizehandling,proto3,enum=wafv2.OversizeHandling" json:"oversizehandling,omitempty"`
+	Oversizehandling *OversizeHandling      `protobuf:"varint,139375132,opt,name=oversizehandling,proto3,enum=wafv2.OversizeHandling,oneof" json:"oversizehandling,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -4329,8 +4329,8 @@ func (*Body) Descriptor() ([]byte, []int) {
 }
 
 func (x *Body) GetOversizehandling() OversizeHandling {
-	if x != nil {
-		return x.Oversizehandling
+	if x != nil && x.Oversizehandling != nil {
+		return *x.Oversizehandling
 	}
 	return OversizeHandling_OVERSIZE_HANDLING_MATCH
 }
@@ -4561,7 +4561,7 @@ func (x *CaptchaConfig) GetImmunitytimeproperty() *ImmunityTimeProperty {
 
 type CaptchaResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Failurereason  FailureReason          `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=wafv2.FailureReason" json:"failurereason,omitempty"`
+	Failurereason  *FailureReason         `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=wafv2.FailureReason,oneof" json:"failurereason,omitempty"`
 	Responsecode   *int32                 `protobuf:"varint,447553700,opt,name=responsecode,proto3,oneof" json:"responsecode,omitempty"`
 	Solvetimestamp *int64                 `protobuf:"varint,433307777,opt,name=solvetimestamp,proto3,oneof" json:"solvetimestamp,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -4599,8 +4599,8 @@ func (*CaptchaResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CaptchaResponse) GetFailurereason() FailureReason {
-	if x != nil {
-		return x.Failurereason
+	if x != nil && x.Failurereason != nil {
+		return *x.Failurereason
 	}
 	return FailureReason_FAILURE_REASON_TOKEN_MISSING
 }
@@ -4709,7 +4709,7 @@ func (x *ChallengeConfig) GetImmunitytimeproperty() *ImmunityTimeProperty {
 
 type ChallengeResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Failurereason  FailureReason          `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=wafv2.FailureReason" json:"failurereason,omitempty"`
+	Failurereason  *FailureReason         `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=wafv2.FailureReason,oneof" json:"failurereason,omitempty"`
 	Responsecode   *int32                 `protobuf:"varint,447553700,opt,name=responsecode,proto3,oneof" json:"responsecode,omitempty"`
 	Solvetimestamp *int64                 `protobuf:"varint,433307777,opt,name=solvetimestamp,proto3,oneof" json:"solvetimestamp,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -4747,8 +4747,8 @@ func (*ChallengeResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ChallengeResponse) GetFailurereason() FailureReason {
-	if x != nil {
-		return x.Failurereason
+	if x != nil && x.Failurereason != nil {
+		return *x.Failurereason
 	}
 	return FailureReason_FAILURE_REASON_TOKEN_MISSING
 }
@@ -4866,7 +4866,7 @@ func (x *CheckCapacityResponse) GetCapacity() int64 {
 type ClientSideAction struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Exempturiregularexpressions []*Regex               `protobuf:"bytes,148735428,rep,name=exempturiregularexpressions,proto3" json:"exempturiregularexpressions,omitempty"`
-	Sensitivity                 SensitivityToAct       `protobuf:"varint,30112173,opt,name=sensitivity,proto3,enum=wafv2.SensitivityToAct" json:"sensitivity,omitempty"`
+	Sensitivity                 *SensitivityToAct      `protobuf:"varint,30112173,opt,name=sensitivity,proto3,enum=wafv2.SensitivityToAct,oneof" json:"sensitivity,omitempty"`
 	Usageofaction               UsageOfAction          `protobuf:"varint,213215420,opt,name=usageofaction,proto3,enum=wafv2.UsageOfAction" json:"usageofaction,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -4910,8 +4910,8 @@ func (x *ClientSideAction) GetExempturiregularexpressions() []*Regex {
 }
 
 func (x *ClientSideAction) GetSensitivity() SensitivityToAct {
-	if x != nil {
-		return x.Sensitivity
+	if x != nil && x.Sensitivity != nil {
+		return *x.Sensitivity
 	}
 	return SensitivityToAct_SENSITIVITY_TO_ACT_MEDIUM
 }
@@ -6685,8 +6685,8 @@ func (*DeleteIPSetResponse) Descriptor() ([]byte, []int) {
 
 type DeleteLoggingConfigurationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Logscope      LogScope               `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope" json:"logscope,omitempty"`
-	Logtype       LogType                `protobuf:"varint,116703930,opt,name=logtype,proto3,enum=wafv2.LogType" json:"logtype,omitempty"`
+	Logscope      *LogScope              `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope,oneof" json:"logscope,omitempty"`
+	Logtype       *LogType               `protobuf:"varint,116703930,opt,name=logtype,proto3,enum=wafv2.LogType,oneof" json:"logtype,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,364280877,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6723,15 +6723,15 @@ func (*DeleteLoggingConfigurationRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteLoggingConfigurationRequest) GetLogscope() LogScope {
-	if x != nil {
-		return x.Logscope
+	if x != nil && x.Logscope != nil {
+		return *x.Logscope
 	}
 	return LogScope_LOG_SCOPE_CUSTOMER
 }
 
 func (x *DeleteLoggingConfigurationRequest) GetLogtype() LogType {
-	if x != nil {
-		return x.Logtype
+	if x != nil && x.Logtype != nil {
+		return *x.Logtype
 	}
 	return LogType_LOG_TYPE_WAF_LOGS
 }
@@ -8601,8 +8601,8 @@ func (x *GetIPSetResponse) GetLocktoken() string {
 
 type GetLoggingConfigurationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Logscope      LogScope               `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope" json:"logscope,omitempty"`
-	Logtype       LogType                `protobuf:"varint,116703930,opt,name=logtype,proto3,enum=wafv2.LogType" json:"logtype,omitempty"`
+	Logscope      *LogScope              `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope,oneof" json:"logscope,omitempty"`
+	Logtype       *LogType               `protobuf:"varint,116703930,opt,name=logtype,proto3,enum=wafv2.LogType,oneof" json:"logtype,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,364280877,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8639,15 +8639,15 @@ func (*GetLoggingConfigurationRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetLoggingConfigurationRequest) GetLogscope() LogScope {
-	if x != nil {
-		return x.Logscope
+	if x != nil && x.Logscope != nil {
+		return *x.Logscope
 	}
 	return LogScope_LOG_SCOPE_CUSTOMER
 }
 
 func (x *GetLoggingConfigurationRequest) GetLogtype() LogType {
-	if x != nil {
-		return x.Logtype
+	if x != nil && x.Logtype != nil {
+		return *x.Logtype
 	}
 	return LogType_LOG_TYPE_WAF_LOGS
 }
@@ -9243,12 +9243,12 @@ type GetRevenueStatisticsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Currency      Currency               `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
 	Filters       []*MonetizationFilter  `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Groupby       GroupByType            `protobuf:"varint,125823402,opt,name=groupby,proto3,enum=wafv2.GroupByType" json:"groupby,omitempty"`
+	Groupby       *GroupByType           `protobuf:"varint,125823402,opt,name=groupby,proto3,enum=wafv2.GroupByType,oneof" json:"groupby,omitempty"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
-	Sortby        RankingSortBy          `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=wafv2.RankingSortBy" json:"sortby,omitempty"`
-	Sortorder     SortOrder              `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=wafv2.SortOrder" json:"sortorder,omitempty"`
+	Sortby        *RankingSortBy         `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=wafv2.RankingSortBy,oneof" json:"sortby,omitempty"`
+	Sortorder     *SortOrder             `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=wafv2.SortOrder,oneof" json:"sortorder,omitempty"`
 	Statistictype RankingStatisticType   `protobuf:"varint,76638614,opt,name=statistictype,proto3,enum=wafv2.RankingStatisticType" json:"statistictype,omitempty"`
 	Timewindow    *TimeWindow            `protobuf:"bytes,140543513,opt,name=timewindow,proto3" json:"timewindow,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -9300,8 +9300,8 @@ func (x *GetRevenueStatisticsRequest) GetFilters() []*MonetizationFilter {
 }
 
 func (x *GetRevenueStatisticsRequest) GetGroupby() GroupByType {
-	if x != nil {
-		return x.Groupby
+	if x != nil && x.Groupby != nil {
+		return *x.Groupby
 	}
 	return GroupByType_GROUP_BY_TYPE_ORGANIZATION
 }
@@ -9328,15 +9328,15 @@ func (x *GetRevenueStatisticsRequest) GetScope() Scope {
 }
 
 func (x *GetRevenueStatisticsRequest) GetSortby() RankingSortBy {
-	if x != nil {
-		return x.Sortby
+	if x != nil && x.Sortby != nil {
+		return *x.Sortby
 	}
 	return RankingSortBy_RANKING_SORT_BY_REVENUE
 }
 
 func (x *GetRevenueStatisticsRequest) GetSortorder() SortOrder {
-	if x != nil {
-		return x.Sortorder
+	if x != nil && x.Sortorder != nil {
+		return *x.Sortorder
 	}
 	return SortOrder_SORT_ORDER_DESC
 }
@@ -9531,7 +9531,7 @@ type GetRevenueStatisticsTimeSeriesRequest struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Currency      Currency                `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
 	Filters       []*MonetizationFilter   `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Groupby       GroupByType             `protobuf:"varint,125823402,opt,name=groupby,proto3,enum=wafv2.GroupByType" json:"groupby,omitempty"`
+	Groupby       *GroupByType            `protobuf:"varint,125823402,opt,name=groupby,proto3,enum=wafv2.GroupByType,oneof" json:"groupby,omitempty"`
 	Interval      IntervalType            `protobuf:"varint,463550873,opt,name=interval,proto3,enum=wafv2.IntervalType" json:"interval,omitempty"`
 	Limit         *int32                  `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    *string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
@@ -9587,8 +9587,8 @@ func (x *GetRevenueStatisticsTimeSeriesRequest) GetFilters() []*MonetizationFilt
 }
 
 func (x *GetRevenueStatisticsTimeSeriesRequest) GetGroupby() GroupByType {
-	if x != nil {
-		return x.Groupby
+	if x != nil && x.Groupby != nil {
+		return *x.Groupby
 	}
 	return GroupByType_GROUP_BY_TYPE_ORGANIZATION
 }
@@ -9692,7 +9692,7 @@ type GetRuleGroupRequest struct {
 	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
 	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
+	Scope         *Scope                 `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope,oneof" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9749,8 +9749,8 @@ func (x *GetRuleGroupRequest) GetName() string {
 }
 
 func (x *GetRuleGroupRequest) GetScope() Scope {
-	if x != nil {
-		return x.Scope
+	if x != nil && x.Scope != nil {
+		return *x.Scope
 	}
 	return Scope_SCOPE_CLOUDFRONT
 }
@@ -10220,7 +10220,7 @@ type GetWebACLRequest struct {
 	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
 	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
+	Scope         *Scope                 `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope,oneof" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10277,8 +10277,8 @@ func (x *GetWebACLRequest) GetName() string {
 }
 
 func (x *GetWebACLRequest) GetScope() Scope {
-	if x != nil {
-		return x.Scope
+	if x != nil && x.Scope != nil {
+		return *x.Scope
 	}
 	return Scope_SCOPE_CLOUDFRONT
 }
@@ -11048,11 +11048,11 @@ func (x *JA4Fingerprint) GetFallbackbehavior() FallbackBehavior {
 }
 
 type JsonBody struct {
-	state                   protoimpl.MessageState      `protogen:"open.v1"`
-	Invalidfallbackbehavior BodyParsingFallbackBehavior `protobuf:"varint,302950641,opt,name=invalidfallbackbehavior,proto3,enum=wafv2.BodyParsingFallbackBehavior" json:"invalidfallbackbehavior,omitempty"`
-	Matchpattern            *JsonMatchPattern           `protobuf:"bytes,294565637,opt,name=matchpattern,proto3" json:"matchpattern,omitempty"`
-	Matchscope              JsonMatchScope              `protobuf:"varint,272445459,opt,name=matchscope,proto3,enum=wafv2.JsonMatchScope" json:"matchscope,omitempty"`
-	Oversizehandling        OversizeHandling            `protobuf:"varint,139375132,opt,name=oversizehandling,proto3,enum=wafv2.OversizeHandling" json:"oversizehandling,omitempty"`
+	state                   protoimpl.MessageState       `protogen:"open.v1"`
+	Invalidfallbackbehavior *BodyParsingFallbackBehavior `protobuf:"varint,302950641,opt,name=invalidfallbackbehavior,proto3,enum=wafv2.BodyParsingFallbackBehavior,oneof" json:"invalidfallbackbehavior,omitempty"`
+	Matchpattern            *JsonMatchPattern            `protobuf:"bytes,294565637,opt,name=matchpattern,proto3" json:"matchpattern,omitempty"`
+	Matchscope              JsonMatchScope               `protobuf:"varint,272445459,opt,name=matchscope,proto3,enum=wafv2.JsonMatchScope" json:"matchscope,omitempty"`
+	Oversizehandling        *OversizeHandling            `protobuf:"varint,139375132,opt,name=oversizehandling,proto3,enum=wafv2.OversizeHandling,oneof" json:"oversizehandling,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -11088,8 +11088,8 @@ func (*JsonBody) Descriptor() ([]byte, []int) {
 }
 
 func (x *JsonBody) GetInvalidfallbackbehavior() BodyParsingFallbackBehavior {
-	if x != nil {
-		return x.Invalidfallbackbehavior
+	if x != nil && x.Invalidfallbackbehavior != nil {
+		return *x.Invalidfallbackbehavior
 	}
 	return BodyParsingFallbackBehavior_BODY_PARSING_FALLBACK_BEHAVIOR_EVALUATE_AS_STRING
 }
@@ -11109,8 +11109,8 @@ func (x *JsonBody) GetMatchscope() JsonMatchScope {
 }
 
 func (x *JsonBody) GetOversizehandling() OversizeHandling {
-	if x != nil {
-		return x.Oversizehandling
+	if x != nil && x.Oversizehandling != nil {
+		return *x.Oversizehandling
 	}
 	return OversizeHandling_OVERSIZE_HANDLING_MATCH
 }
@@ -11834,7 +11834,7 @@ func (x *ListIPSetsResponse) GetNextmarker() string {
 type ListLoggingConfigurationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Logscope      LogScope               `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope" json:"logscope,omitempty"`
+	Logscope      *LogScope              `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope,oneof" json:"logscope,omitempty"`
 	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11879,8 +11879,8 @@ func (x *ListLoggingConfigurationsRequest) GetLimit() int32 {
 }
 
 func (x *ListLoggingConfigurationsRequest) GetLogscope() LogScope {
-	if x != nil {
-		return x.Logscope
+	if x != nil && x.Logscope != nil {
+		return *x.Logscope
 	}
 	return LogScope_LOG_SCOPE_CUSTOMER
 }
@@ -12289,7 +12289,7 @@ func (x *ListRegexPatternSetsResponse) GetRegexpatternsets() []*RegexPatternSetS
 
 type ListResourcesForWebACLRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resourcetype  ResourceType           `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=wafv2.ResourceType" json:"resourcetype,omitempty"`
+	Resourcetype  *ResourceType          `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=wafv2.ResourceType,oneof" json:"resourcetype,omitempty"`
 	Webaclarn     string                 `protobuf:"bytes,82506659,opt,name=webaclarn,proto3" json:"webaclarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12326,8 +12326,8 @@ func (*ListResourcesForWebACLRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListResourcesForWebACLRequest) GetResourcetype() ResourceType {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return ResourceType_RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE
 }
@@ -12502,8 +12502,8 @@ type ListSettlementRecordsRequest struct {
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
-	Sortby        SettlementSortBy       `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=wafv2.SettlementSortBy" json:"sortby,omitempty"`
-	Sortorder     SortOrder              `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=wafv2.SortOrder" json:"sortorder,omitempty"`
+	Sortby        *SettlementSortBy      `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=wafv2.SettlementSortBy,oneof" json:"sortby,omitempty"`
+	Sortorder     *SortOrder             `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=wafv2.SortOrder,oneof" json:"sortorder,omitempty"`
 	Timewindow    *TimeWindow            `protobuf:"bytes,140543513,opt,name=timewindow,proto3" json:"timewindow,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12575,15 +12575,15 @@ func (x *ListSettlementRecordsRequest) GetScope() Scope {
 }
 
 func (x *ListSettlementRecordsRequest) GetSortby() SettlementSortBy {
-	if x != nil {
-		return x.Sortby
+	if x != nil && x.Sortby != nil {
+		return *x.Sortby
 	}
 	return SettlementSortBy_SETTLEMENT_SORT_BY_AMOUNT
 }
 
 func (x *ListSettlementRecordsRequest) GetSortorder() SortOrder {
-	if x != nil {
-		return x.Sortorder
+	if x != nil && x.Sortorder != nil {
+		return *x.Sortorder
 	}
 	return SortOrder_SORT_ORDER_DESC
 }
@@ -12874,8 +12874,8 @@ func (x *ListWebACLsResponse) GetWebacls() []*WebACLSummary {
 type LoggingConfiguration struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Logdestinationconfigs    []string               `protobuf:"bytes,22070207,rep,name=logdestinationconfigs,proto3" json:"logdestinationconfigs,omitempty"`
-	Logscope                 LogScope               `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope" json:"logscope,omitempty"`
-	Logtype                  LogType                `protobuf:"varint,116703930,opt,name=logtype,proto3,enum=wafv2.LogType" json:"logtype,omitempty"`
+	Logscope                 *LogScope              `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope,oneof" json:"logscope,omitempty"`
+	Logtype                  *LogType               `protobuf:"varint,116703930,opt,name=logtype,proto3,enum=wafv2.LogType,oneof" json:"logtype,omitempty"`
 	Loggingfilter            *LoggingFilter         `protobuf:"bytes,28441529,opt,name=loggingfilter,proto3" json:"loggingfilter,omitempty"`
 	Managedbyfirewallmanager *bool                  `protobuf:"varint,415792743,opt,name=managedbyfirewallmanager,proto3,oneof" json:"managedbyfirewallmanager,omitempty"`
 	Redactedfields           []*FieldToMatch        `protobuf:"bytes,48530737,rep,name=redactedfields,proto3" json:"redactedfields,omitempty"`
@@ -12922,15 +12922,15 @@ func (x *LoggingConfiguration) GetLogdestinationconfigs() []string {
 }
 
 func (x *LoggingConfiguration) GetLogscope() LogScope {
-	if x != nil {
-		return x.Logscope
+	if x != nil && x.Logscope != nil {
+		return *x.Logscope
 	}
 	return LogScope_LOG_SCOPE_CUSTOMER
 }
 
 func (x *LoggingConfiguration) GetLogtype() LogType {
-	if x != nil {
-		return x.Logtype
+	if x != nil && x.Logtype != nil {
+		return *x.Logtype
 	}
 	return LogType_LOG_TYPE_WAF_LOGS
 }
@@ -13131,7 +13131,7 @@ type ManagedRuleGroupConfig struct {
 	Awsmanagedrulesbotcontrolruleset *AWSManagedRulesBotControlRuleSet `protobuf:"bytes,283828283,opt,name=awsmanagedrulesbotcontrolruleset,proto3" json:"awsmanagedrulesbotcontrolruleset,omitempty"`
 	Loginpath                        *string                           `protobuf:"bytes,128281874,opt,name=loginpath,proto3,oneof" json:"loginpath,omitempty"`
 	Passwordfield                    *PasswordField                    `protobuf:"bytes,318147221,opt,name=passwordfield,proto3" json:"passwordfield,omitempty"`
-	Payloadtype                      PayloadType                       `protobuf:"varint,510845422,opt,name=payloadtype,proto3,enum=wafv2.PayloadType" json:"payloadtype,omitempty"`
+	Payloadtype                      *PayloadType                      `protobuf:"varint,510845422,opt,name=payloadtype,proto3,enum=wafv2.PayloadType,oneof" json:"payloadtype,omitempty"`
 	Usernamefield                    *UsernameField                    `protobuf:"bytes,125830068,opt,name=usernamefield,proto3" json:"usernamefield,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
@@ -13210,8 +13210,8 @@ func (x *ManagedRuleGroupConfig) GetPasswordfield() *PasswordField {
 }
 
 func (x *ManagedRuleGroupConfig) GetPayloadtype() PayloadType {
-	if x != nil {
-		return x.Payloadtype
+	if x != nil && x.Payloadtype != nil {
+		return *x.Payloadtype
 	}
 	return PayloadType_PAYLOAD_TYPE_JSON
 }
@@ -13802,7 +13802,7 @@ func (x *MobileSdkRelease) GetTimestamp() string {
 type MonetizationConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Cryptoconfig  *CryptoConfig          `protobuf:"bytes,510843391,opt,name=cryptoconfig,proto3" json:"cryptoconfig,omitempty"`
-	Currencymode  CurrencyMode           `protobuf:"varint,117263358,opt,name=currencymode,proto3,enum=wafv2.CurrencyMode" json:"currencymode,omitempty"`
+	Currencymode  *CurrencyMode          `protobuf:"varint,117263358,opt,name=currencymode,proto3,enum=wafv2.CurrencyMode,oneof" json:"currencymode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13845,8 +13845,8 @@ func (x *MonetizationConfig) GetCryptoconfig() *CryptoConfig {
 }
 
 func (x *MonetizationConfig) GetCurrencymode() CurrencyMode {
-	if x != nil {
-		return x.Currencymode
+	if x != nil && x.Currencymode != nil {
+		return *x.Currencymode
 	}
 	return CurrencyMode_CURRENCY_MODE_TEST
 }
@@ -15054,7 +15054,7 @@ func (x *RateBasedStatementCustomKey) GetUripath() *RateLimitUriPath {
 type RateBasedStatementManagedKeysIPSet struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Addresses        []string               `protobuf:"bytes,375939972,rep,name=addresses,proto3" json:"addresses,omitempty"`
-	Ipaddressversion IPAddressVersion       `protobuf:"varint,313363841,opt,name=ipaddressversion,proto3,enum=wafv2.IPAddressVersion" json:"ipaddressversion,omitempty"`
+	Ipaddressversion *IPAddressVersion      `protobuf:"varint,313363841,opt,name=ipaddressversion,proto3,enum=wafv2.IPAddressVersion,oneof" json:"ipaddressversion,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -15097,8 +15097,8 @@ func (x *RateBasedStatementManagedKeysIPSet) GetAddresses() []string {
 }
 
 func (x *RateBasedStatementManagedKeysIPSet) GetIpaddressversion() IPAddressVersion {
-	if x != nil {
-		return x.Ipaddressversion
+	if x != nil && x.Ipaddressversion != nil {
+		return *x.Ipaddressversion
 	}
 	return IPAddressVersion_I_P_ADDRESS_VERSION_IPV6
 }
@@ -16489,7 +16489,7 @@ func (x *ResponseInspectionStatusCode) GetSuccesscodes() []int32 {
 
 type RevenueBreakdown struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Currency            Currency               `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
+	Currency            *Currency              `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency,oneof" json:"currency,omitempty"`
 	Totalamount         *string                `protobuf:"bytes,45332786,opt,name=totalamount,proto3,oneof" json:"totalamount,omitempty"`
 	Totalmonetizeserved *int64                 `protobuf:"varint,410017796,opt,name=totalmonetizeserved,proto3,oneof" json:"totalmonetizeserved,omitempty"`
 	Totalsettled        *int64                 `protobuf:"varint,72471795,opt,name=totalsettled,proto3,oneof" json:"totalsettled,omitempty"`
@@ -16530,8 +16530,8 @@ func (*RevenueBreakdown) Descriptor() ([]byte, []int) {
 }
 
 func (x *RevenueBreakdown) GetCurrency() Currency {
-	if x != nil {
-		return x.Currency
+	if x != nil && x.Currency != nil {
+		return *x.Currency
 	}
 	return Currency_CURRENCY_USDC
 }
@@ -17331,7 +17331,7 @@ type SettlementRecord struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Amount           string                 `protobuf:"bytes,72127338,opt,name=amount,proto3" json:"amount,omitempty"`
 	Contentpath      *string                `protobuf:"bytes,524626210,opt,name=contentpath,proto3,oneof" json:"contentpath,omitempty"`
-	Currency         Currency               `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
+	Currency         *Currency              `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency,oneof" json:"currency,omitempty"`
 	Intent           *string                `protobuf:"bytes,158359916,opt,name=intent,proto3,oneof" json:"intent,omitempty"`
 	Network          *string                `protobuf:"bytes,158641510,opt,name=network,proto3,oneof" json:"network,omitempty"`
 	Organization     *string                `protobuf:"bytes,426894091,opt,name=organization,proto3,oneof" json:"organization,omitempty"`
@@ -17395,8 +17395,8 @@ func (x *SettlementRecord) GetContentpath() string {
 }
 
 func (x *SettlementRecord) GetCurrency() Currency {
-	if x != nil {
-		return x.Currency
+	if x != nil && x.Currency != nil {
+		return *x.Currency
 	}
 	return Currency_CURRENCY_USDC
 }
@@ -17775,7 +17775,7 @@ type SqliMatchStatement struct {
 	state                       protoimpl.MessageState        `protogen:"open.v1"`
 	Fieldtomatch                *FieldToMatch                 `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
 	Preparsetexttransformations []*PreParseTextTransformation `protobuf:"bytes,68274401,rep,name=preparsetexttransformations,proto3" json:"preparsetexttransformations,omitempty"`
-	Sensitivitylevel            SensitivityLevel              `protobuf:"varint,12020595,opt,name=sensitivitylevel,proto3,enum=wafv2.SensitivityLevel" json:"sensitivitylevel,omitempty"`
+	Sensitivitylevel            *SensitivityLevel             `protobuf:"varint,12020595,opt,name=sensitivitylevel,proto3,enum=wafv2.SensitivityLevel,oneof" json:"sensitivitylevel,omitempty"`
 	Texttransformations         []*TextTransformation         `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -17826,8 +17826,8 @@ func (x *SqliMatchStatement) GetPreparsetexttransformations() []*PreParseTextTra
 }
 
 func (x *SqliMatchStatement) GetSensitivitylevel() SensitivityLevel {
-	if x != nil {
-		return x.Sensitivitylevel
+	if x != nil && x.Sensitivitylevel != nil {
+		return *x.Sensitivitylevel
 	}
 	return SensitivityLevel_SENSITIVITY_LEVEL_LOW
 }
@@ -19157,7 +19157,7 @@ func (x *UpdateWebACLResponse) GetNextlocktoken() string {
 
 type UriFragment struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Fallbackbehavior FallbackBehavior       `protobuf:"varint,440114542,opt,name=fallbackbehavior,proto3,enum=wafv2.FallbackBehavior" json:"fallbackbehavior,omitempty"`
+	Fallbackbehavior *FallbackBehavior      `protobuf:"varint,440114542,opt,name=fallbackbehavior,proto3,enum=wafv2.FallbackBehavior,oneof" json:"fallbackbehavior,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -19193,8 +19193,8 @@ func (*UriFragment) Descriptor() ([]byte, []int) {
 }
 
 func (x *UriFragment) GetFallbackbehavior() FallbackBehavior {
-	if x != nil {
-		return x.Fallbackbehavior
+	if x != nil && x.Fallbackbehavior != nil {
+		return *x.Fallbackbehavior
 	}
 	return FallbackBehavior_FALLBACK_BEHAVIOR_MATCH
 }
@@ -19708,11 +19708,11 @@ func (x *WAFInvalidOperationException) GetMessage() string {
 }
 
 type WAFInvalidParameterException struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Field         ParameterExceptionField `protobuf:"varint,263732488,opt,name=field,proto3,enum=wafv2.ParameterExceptionField" json:"field,omitempty"`
-	Parameter     *string                 `protobuf:"bytes,407419825,opt,name=parameter,proto3,oneof" json:"parameter,omitempty"`
-	Reason        *string                 `protobuf:"bytes,20005178,opt,name=reason,proto3,oneof" json:"reason,omitempty"`
-	Message       *string                 `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Field         *ParameterExceptionField `protobuf:"varint,263732488,opt,name=field,proto3,enum=wafv2.ParameterExceptionField,oneof" json:"field,omitempty"`
+	Parameter     *string                  `protobuf:"bytes,407419825,opt,name=parameter,proto3,oneof" json:"parameter,omitempty"`
+	Reason        *string                  `protobuf:"bytes,20005178,opt,name=reason,proto3,oneof" json:"reason,omitempty"`
+	Message       *string                  `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -19748,8 +19748,8 @@ func (*WAFInvalidParameterException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFInvalidParameterException) GetField() ParameterExceptionField {
-	if x != nil {
-		return x.Field
+	if x != nil && x.Field != nil {
+		return *x.Field
 	}
 	return ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_COOKIE_MATCH_PATTERN
 }
@@ -20685,10 +20685,11 @@ const file_wafv2_proto_rawDesc = "" +
 	"\tloginpath\x18\x92ڕ= \x01(\tR\tloginpath\x12J\n" +
 	"\x11requestinspection\x18\xa9\xd1ǹ\x01 \x01(\v2\x18.wafv2.RequestInspectionR\x11requestinspection\x12L\n" +
 	"\x12responseinspection\x18\xfd\xd5\xcd\x7f \x01(\v2\x19.wafv2.ResponseInspectionR\x12responseinspectionB\x14\n" +
-	"\x12_enableregexinpath\"\xc7\x01\n" +
+	"\x12_enableregexinpath\"\xe3\x01\n" +
 	"\x1eAWSManagedRulesAntiDDoSRuleSet\x12X\n" +
-	"\x16clientsideactionconfig\x18\xb6\xb2\xca\x1a \x01(\v2\x1d.wafv2.ClientSideActionConfigR\x16clientsideactionconfig\x12K\n" +
-	"\x12sensitivitytoblock\x18È\xcb\xfd\x01 \x01(\x0e2\x17.wafv2.SensitivityToActR\x12sensitivitytoblock\"\xbf\x01\n" +
+	"\x16clientsideactionconfig\x18\xb6\xb2\xca\x1a \x01(\v2\x1d.wafv2.ClientSideActionConfigR\x16clientsideactionconfig\x12P\n" +
+	"\x12sensitivitytoblock\x18È\xcb\xfd\x01 \x01(\x0e2\x17.wafv2.SensitivityToActH\x00R\x12sensitivitytoblock\x88\x01\x01B\x15\n" +
+	"\x13_sensitivitytoblock\"\xbf\x01\n" +
 	" AWSManagedRulesBotControlRuleSet\x12<\n" +
 	"\x15enablemachinelearning\x18֑\xa3/ \x01(\bH\x00R\x15enablemachinelearning\x88\x01\x01\x12C\n" +
 	"\x0finspectionlevel\x18\xa4\xdb\xc5\x1a \x01(\x0e2\x16.wafv2.InspectionLevelR\x0finspectionlevelB\x18\n" +
@@ -20728,9 +20729,10 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12D\n" +
 	"\x05value\x18\x02 \x01(\v2..wafv2.RequestBodyAssociatedResourceTypeConfigR\x05value:\x028\x01\"O\n" +
 	"\vBlockAction\x12@\n" +
-	"\x0ecustomresponse\x18\x92\xde\xc4A \x01(\v2\x15.wafv2.CustomResponseR\x0ecustomresponse\"N\n" +
-	"\x04Body\x12F\n" +
-	"\x10oversizehandling\x18\x9c\xe4\xbaB \x01(\x0e2\x17.wafv2.OversizeHandlingR\x10oversizehandling\"x\n" +
+	"\x0ecustomresponse\x18\x92\xde\xc4A \x01(\v2\x15.wafv2.CustomResponseR\x0ecustomresponse\"h\n" +
+	"\x04Body\x12K\n" +
+	"\x10oversizehandling\x18\x9c\xe4\xbaB \x01(\x0e2\x17.wafv2.OversizeHandlingH\x00R\x10oversizehandling\x88\x01\x01B\x13\n" +
+	"\x11_oversizehandling\"x\n" +
 	"\rBotStatistics\x12\x1b\n" +
 	"\abotname\x18\x9eυ* \x01(\tR\abotname\x12\"\n" +
 	"\n" +
@@ -20746,21 +20748,23 @@ const file_wafv2_proto_rawDesc = "" +
 	"\rCaptchaAction\x12U\n" +
 	"\x15customrequesthandling\x18\xbf\x8c\x8a\a \x01(\v2\x1c.wafv2.CustomRequestHandlingR\x15customrequesthandling\"c\n" +
 	"\rCaptchaConfig\x12R\n" +
-	"\x14immunitytimeproperty\x18Ԗ\xc1\r \x01(\v2\x1b.wafv2.ImmunityTimePropertyR\x14immunitytimeproperty\"\xd2\x01\n" +
-	"\x0fCaptchaResponse\x12=\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x14.wafv2.FailureReasonR\rfailurereason\x12+\n" +
-	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\x05H\x00R\fresponsecode\x88\x01\x01\x12/\n" +
-	"\x0esolvetimestamp\x18\x81\x81\xcf\xce\x01 \x01(\x03H\x01R\x0esolvetimestamp\x88\x01\x01B\x0f\n" +
+	"\x14immunitytimeproperty\x18Ԗ\xc1\r \x01(\v2\x1b.wafv2.ImmunityTimePropertyR\x14immunitytimeproperty\"\xe9\x01\n" +
+	"\x0fCaptchaResponse\x12B\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x14.wafv2.FailureReasonH\x00R\rfailurereason\x88\x01\x01\x12+\n" +
+	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\x05H\x01R\fresponsecode\x88\x01\x01\x12/\n" +
+	"\x0esolvetimestamp\x18\x81\x81\xcf\xce\x01 \x01(\x03H\x02R\x0esolvetimestamp\x88\x01\x01B\x10\n" +
+	"\x0e_failurereasonB\x0f\n" +
 	"\r_responsecodeB\x11\n" +
 	"\x0f_solvetimestamp\"h\n" +
 	"\x0fChallengeAction\x12U\n" +
 	"\x15customrequesthandling\x18\xbf\x8c\x8a\a \x01(\v2\x1c.wafv2.CustomRequestHandlingR\x15customrequesthandling\"e\n" +
 	"\x0fChallengeConfig\x12R\n" +
-	"\x14immunitytimeproperty\x18Ԗ\xc1\r \x01(\v2\x1b.wafv2.ImmunityTimePropertyR\x14immunitytimeproperty\"\xd4\x01\n" +
-	"\x11ChallengeResponse\x12=\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x14.wafv2.FailureReasonR\rfailurereason\x12+\n" +
-	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\x05H\x00R\fresponsecode\x88\x01\x01\x12/\n" +
-	"\x0esolvetimestamp\x18\x81\x81\xcf\xce\x01 \x01(\x03H\x01R\x0esolvetimestamp\x88\x01\x01B\x0f\n" +
+	"\x14immunitytimeproperty\x18Ԗ\xc1\r \x01(\v2\x1b.wafv2.ImmunityTimePropertyR\x14immunitytimeproperty\"\xeb\x01\n" +
+	"\x11ChallengeResponse\x12B\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x14.wafv2.FailureReasonH\x00R\rfailurereason\x88\x01\x01\x12+\n" +
+	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\x05H\x01R\fresponsecode\x88\x01\x01\x12/\n" +
+	"\x0esolvetimestamp\x18\x81\x81\xcf\xce\x01 \x01(\x03H\x02R\x0esolvetimestamp\x88\x01\x01B\x10\n" +
+	"\x0e_failurereasonB\x0f\n" +
 	"\r_responsecodeB\x11\n" +
 	"\x0f_solvetimestamp\"c\n" +
 	"\x14CheckCapacityRequest\x12$\n" +
@@ -20768,11 +20772,12 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"H\n" +
 	"\x15CheckCapacityResponse\x12\"\n" +
 	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03H\x00R\bcapacity\x88\x01\x01B\v\n" +
-	"\t_capacity\"\xe2\x01\n" +
+	"\t_capacity\"\xf7\x01\n" +
 	"\x10ClientSideAction\x12Q\n" +
-	"\x1bexempturiregularexpressions\x18ċ\xf6F \x03(\v2\f.wafv2.RegexR\x1bexempturiregularexpressions\x12<\n" +
-	"\vsensitivity\x18\xad\xf3\xad\x0e \x01(\x0e2\x17.wafv2.SensitivityToActR\vsensitivity\x12=\n" +
-	"\rusageofaction\x18\xbc\xd1\xd5e \x01(\x0e2\x14.wafv2.UsageOfActionR\rusageofaction\"R\n" +
+	"\x1bexempturiregularexpressions\x18ċ\xf6F \x03(\v2\f.wafv2.RegexR\x1bexempturiregularexpressions\x12A\n" +
+	"\vsensitivity\x18\xad\xf3\xad\x0e \x01(\x0e2\x17.wafv2.SensitivityToActH\x00R\vsensitivity\x88\x01\x01\x12=\n" +
+	"\rusageofaction\x18\xbc\xd1\xd5e \x01(\x0e2\x14.wafv2.UsageOfActionR\rusageofactionB\x0e\n" +
+	"\f_sensitivity\"R\n" +
 	"\x16ClientSideActionConfig\x128\n" +
 	"\tchallenge\x18߅\xb6= \x01(\v2\x17.wafv2.ClientSideActionR\tchallenge\"\x9f\x01\n" +
 	"\tCondition\x12C\n" +
@@ -20920,11 +20925,14 @@ const file_wafv2_proto_rawDesc = "" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x15\n" +
-	"\x13DeleteIPSetResponse\"\xa6\x01\n" +
-	"!DeleteLoggingConfigurationRequest\x12.\n" +
-	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeR\blogscope\x12+\n" +
-	"\alogtype\x18\xba\x85\xd37 \x01(\x0e2\x0e.wafv2.LogTypeR\alogtype\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"$\n" +
+	"\x13DeleteIPSetResponse\"\xc9\x01\n" +
+	"!DeleteLoggingConfigurationRequest\x123\n" +
+	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeH\x00R\blogscope\x88\x01\x01\x120\n" +
+	"\alogtype\x18\xba\x85\xd37 \x01(\x0e2\x0e.wafv2.LogTypeH\x01R\alogtype\x88\x01\x01\x12$\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearnB\v\n" +
+	"\t_logscopeB\n" +
+	"\n" +
+	"\b_logtype\"$\n" +
 	"\"DeleteLoggingConfigurationResponse\"E\n" +
 	"\x1dDeletePermissionPolicyRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\" \n" +
@@ -21064,11 +21072,14 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x05ipset\x18\x95\xc1\x8c\xd0\x01 \x01(\v2\f.wafv2.IPSetR\x05ipset\x12$\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x00R\tlocktoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_locktoken\"\xa3\x01\n" +
-	"\x1eGetLoggingConfigurationRequest\x12.\n" +
-	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeR\blogscope\x12+\n" +
-	"\alogtype\x18\xba\x85\xd37 \x01(\x0e2\x0e.wafv2.LogTypeR\alogtype\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"v\n" +
+	"_locktoken\"\xc6\x01\n" +
+	"\x1eGetLoggingConfigurationRequest\x123\n" +
+	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeH\x00R\blogscope\x88\x01\x01\x120\n" +
+	"\alogtype\x18\xba\x85\xd37 \x01(\x0e2\x0e.wafv2.LogTypeH\x01R\alogtype\x88\x01\x01\x12$\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearnB\v\n" +
+	"\t_logscopeB\n" +
+	"\n" +
+	"\b_logtype\"v\n" +
 	"\x1fGetLoggingConfigurationResponse\x12S\n" +
 	"\x14loggingconfiguration\x18\xb5\xa8\x99\xab\x01 \x01(\v2\x1b.wafv2.LoggingConfigurationR\x14loggingconfiguration\"l\n" +
 	"\x18GetManagedRuleSetRequest\x12\x12\n" +
@@ -21110,24 +21121,29 @@ const file_wafv2_proto_rawDesc = "" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x00R\tlocktoken\x88\x01\x01\x12C\n" +
 	"\x0fregexpatternset\x18Ù\xbc\x04 \x01(\v2\x16.wafv2.RegexPatternSetR\x0fregexpatternsetB\f\n" +
 	"\n" +
-	"_locktoken\"\xa0\x04\n" +
+	"_locktoken\"\xd4\x04\n" +
 	"\x1bGetRevenueStatisticsRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12/\n" +
-	"\agroupby\x18\xaa\xd3\xff; \x01(\x0e2\x12.wafv2.GroupByTypeR\agroupby\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x124\n" +
+	"\agroupby\x18\xaa\xd3\xff; \x01(\x0e2\x12.wafv2.GroupByTypeH\x00R\agroupby\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x02R\n" +
 	"nextmarker\x88\x01\x01\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12/\n" +
-	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x14.wafv2.RankingSortByR\x06sortby\x122\n" +
-	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x10.wafv2.SortOrderR\tsortorder\x12D\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x124\n" +
+	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x14.wafv2.RankingSortByH\x03R\x06sortby\x88\x01\x01\x127\n" +
+	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x10.wafv2.SortOrderH\x04R\tsortorder\x88\x01\x01\x12D\n" +
 	"\rstatistictype\x18\x96\xd3\xc5$ \x01(\x0e2\x1b.wafv2.RankingStatisticTypeR\rstatistictype\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
-	"timewindowB\b\n" +
+	"timewindowB\n" +
+	"\n" +
+	"\b_groupbyB\b\n" +
 	"\x06_limitB\r\n" +
-	"\v_nextmarker\"\xf5\x01\n" +
+	"\v_nextmarkerB\t\n" +
+	"\a_sortbyB\f\n" +
+	"\n" +
+	"_sortorder\"\xf5\x01\n" +
 	"\x1cGetRevenueStatisticsResponse\x12'\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
@@ -21143,21 +21159,23 @@ const file_wafv2_proto_rawDesc = "" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
 	"timewindow\"m\n" +
 	"#GetRevenueStatisticsSummaryResponse\x12F\n" +
-	"\x10revenuebreakdown\x18\xb7ʕ\f \x01(\v2\x17.wafv2.RevenueBreakdownR\x10revenuebreakdown\"\xfd\x03\n" +
+	"\x10revenuebreakdown\x18\xb7ʕ\f \x01(\v2\x17.wafv2.RevenueBreakdownR\x10revenuebreakdown\"\x8e\x04\n" +
 	"%GetRevenueStatisticsTimeSeriesRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12/\n" +
-	"\agroupby\x18\xaa\xd3\xff; \x01(\x0e2\x12.wafv2.GroupByTypeR\agroupby\x123\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x124\n" +
+	"\agroupby\x18\xaa\xd3\xff; \x01(\x0e2\x12.wafv2.GroupByTypeH\x00R\agroupby\x88\x01\x01\x123\n" +
 	"\binterval\x18\x99\xf3\x84\xdd\x01 \x01(\x0e2\x13.wafv2.IntervalTypeR\binterval\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x02R\n" +
 	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12G\n" +
 	"\rstatistictype\x18\x96\xd3\xc5$ \x01(\x0e2\x1e.wafv2.TimeSeriesStatisticTypeR\rstatistictype\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
-	"timewindowB\b\n" +
+	"timewindowB\n" +
+	"\n" +
+	"\b_groupbyB\b\n" +
 	"\x06_limitB\r\n" +
 	"\v_nextmarker\"\x9a\x01\n" +
 	"&GetRevenueStatisticsTimeSeriesResponse\x128\n" +
@@ -21167,15 +21185,16 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
 	"nextmarker\x88\x01\x01B\r\n" +
-	"\v_nextmarker\"\xa4\x01\n" +
+	"\v_nextmarker\"\xb3\x01\n" +
 	"\x13GetRuleGroupRequest\x12\x19\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x17\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\x06\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12*\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeH\x03R\x05scope\x88\x01\x01B\x06\n" +
 	"\x04_arnB\x05\n" +
 	"\x03_idB\a\n" +
-	"\x05_name\"}\n" +
+	"\x05_nameB\b\n" +
+	"\x06_scope\"}\n" +
 	"\x14GetRuleGroupResponse\x12$\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x00R\tlocktoken\x88\x01\x01\x121\n" +
 	"\trulegroup\x18\xab\xdb\xc0\x7f \x01(\v2\x10.wafv2.RuleGroupR\trulegroupB\f\n" +
@@ -21228,15 +21247,16 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x1bGetWebACLForResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"I\n" +
 	"\x1cGetWebACLForResourceResponse\x12)\n" +
-	"\x06webacl\x18\xc0\xedݣ\x01 \x01(\v2\r.wafv2.WebACLR\x06webacl\"\xa1\x01\n" +
+	"\x06webacl\x18\xc0\xedݣ\x01 \x01(\v2\r.wafv2.WebACLR\x06webacl\"\xb0\x01\n" +
 	"\x10GetWebACLRequest\x12\x19\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x17\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\x06\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12*\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeH\x03R\x05scope\x88\x01\x01B\x06\n" +
 	"\x04_arnB\x05\n" +
 	"\x03_idB\a\n" +
-	"\x05_name\"\xd6\x01\n" +
+	"\x05_nameB\b\n" +
+	"\x06_scope\"\xd6\x01\n" +
 	"\x11GetWebACLResponse\x12D\n" +
 	"\x19applicationintegrationurl\x18\xc7\xe5\x91W \x01(\tH\x00R\x19applicationintegrationurl\x88\x01\x01\x12$\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x01R\tlocktoken\x88\x01\x01\x12)\n" +
@@ -21310,14 +21330,16 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x0eJA3Fingerprint\x12G\n" +
 	"\x10fallbackbehavior\x18\xee\xba\xee\xd1\x01 \x01(\x0e2\x17.wafv2.FallbackBehaviorR\x10fallbackbehavior\"Y\n" +
 	"\x0eJA4Fingerprint\x12G\n" +
-	"\x10fallbackbehavior\x18\xee\xba\xee\xd1\x01 \x01(\x0e2\x17.wafv2.FallbackBehaviorR\x10fallbackbehavior\"\xb0\x02\n" +
-	"\bJsonBody\x12`\n" +
-	"\x17invalidfallbackbehavior\x18\xf1Ѻ\x90\x01 \x01(\x0e2\".wafv2.BodyParsingFallbackBehaviorR\x17invalidfallbackbehavior\x12?\n" +
+	"\x10fallbackbehavior\x18\xee\xba\xee\xd1\x01 \x01(\x0e2\x17.wafv2.FallbackBehaviorR\x10fallbackbehavior\"\xeb\x02\n" +
+	"\bJsonBody\x12e\n" +
+	"\x17invalidfallbackbehavior\x18\xf1Ѻ\x90\x01 \x01(\x0e2\".wafv2.BodyParsingFallbackBehaviorH\x00R\x17invalidfallbackbehavior\x88\x01\x01\x12?\n" +
 	"\fmatchpattern\x18\x85\uee8c\x01 \x01(\v2\x17.wafv2.JsonMatchPatternR\fmatchpattern\x129\n" +
 	"\n" +
 	"matchscope\x18\x93\xe0\xf4\x81\x01 \x01(\x0e2\x15.wafv2.JsonMatchScopeR\n" +
-	"matchscope\x12F\n" +
-	"\x10oversizehandling\x18\x9c\xe4\xbaB \x01(\x0e2\x17.wafv2.OversizeHandlingR\x10oversizehandling\"^\n" +
+	"matchscope\x12K\n" +
+	"\x10oversizehandling\x18\x9c\xe4\xbaB \x01(\x0e2\x17.wafv2.OversizeHandlingH\x01R\x10oversizehandling\x88\x01\x01B\x1a\n" +
+	"\x18_invalidfallbackbehaviorB\x13\n" +
+	"\x11_oversizehandling\"^\n" +
 	"\x10JsonMatchPattern\x12 \n" +
 	"\x03all\x18\xe5ƿ\xad\x01 \x01(\v2\n" +
 	".wafv2.AllR\x03all\x12(\n" +
@@ -21395,15 +21417,16 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
 	"nextmarker\x88\x01\x01B\r\n" +
-	"\v_nextmarker\"\xda\x01\n" +
+	"\v_nextmarker\"\xec\x01\n" +
 	" ListLoggingConfigurationsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12.\n" +
-	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeR\blogscope\x12'\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x123\n" +
+	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeH\x01R\blogscope\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x02R\n" +
 	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
-	"\x06_limitB\r\n" +
+	"\x06_limitB\v\n" +
+	"\t_logscopeB\r\n" +
 	"\v_nextmarker\"\xb2\x01\n" +
 	"!ListLoggingConfigurationsResponse\x12U\n" +
 	"\x15loggingconfigurations\x18\xc6\xd7ڸ\x01 \x03(\v2\x1b.wafv2.LoggingConfigurationR\x15loggingconfigurations\x12'\n" +
@@ -21452,10 +21475,11 @@ const file_wafv2_proto_rawDesc = "" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
 	"nextmarker\x88\x01\x01\x12M\n" +
 	"\x10regexpatternsets\x18\xa4\xf5Ñ\x01 \x03(\v2\x1d.wafv2.RegexPatternSetSummaryR\x10regexpatternsetsB\r\n" +
-	"\v_nextmarker\"}\n" +
-	"\x1dListResourcesForWebACLRequest\x12;\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x13.wafv2.ResourceTypeR\fresourcetype\x12\x1f\n" +
-	"\twebaclarn\x18\xa3\xe7\xab' \x01(\tR\twebaclarn\"G\n" +
+	"\v_nextmarker\"\x93\x01\n" +
+	"\x1dListResourcesForWebACLRequest\x12@\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x13.wafv2.ResourceTypeH\x00R\fresourcetype\x88\x01\x01\x12\x1f\n" +
+	"\twebaclarn\x18\xa3\xe7\xab' \x01(\tR\twebaclarnB\x0f\n" +
+	"\r_resourcetype\"G\n" +
 	"\x1eListResourcesForWebACLResponse\x12%\n" +
 	"\fresourcearns\x18\x8e\x93\x97j \x03(\tR\fresourcearns\"\x9f\x01\n" +
 	"\x15ListRuleGroupsRequest\x12\x1d\n" +
@@ -21473,7 +21497,7 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"rulegroups\x18\x9c\xd9\xe0\x80\x01 \x03(\v2\x17.wafv2.RuleGroupSummaryR\n" +
 	"rulegroupsB\r\n" +
-	"\v_nextmarker\"\xad\x03\n" +
+	"\v_nextmarker\"\xd0\x03\n" +
 	"\x1cListSettlementRecordsRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12\x1d\n" +
@@ -21481,14 +21505,17 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
 	"nextmarker\x88\x01\x01\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x122\n" +
-	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x17.wafv2.SettlementSortByR\x06sortby\x122\n" +
-	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x10.wafv2.SortOrderR\tsortorder\x124\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x127\n" +
+	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x17.wafv2.SettlementSortByH\x02R\x06sortby\x88\x01\x01\x127\n" +
+	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x10.wafv2.SortOrderH\x03R\tsortorder\x88\x01\x01\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
 	"timewindowB\b\n" +
 	"\x06_limitB\r\n" +
-	"\v_nextmarker\"\x96\x01\n" +
+	"\v_nextmarkerB\t\n" +
+	"\a_sortbyB\f\n" +
+	"\n" +
+	"_sortorder\"\x96\x01\n" +
 	"\x1dListSettlementRecordsResponse\x12'\n" +
 	"\n" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
@@ -21522,16 +21549,19 @@ const file_wafv2_proto_rawDesc = "" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
 	"nextmarker\x88\x01\x01\x121\n" +
 	"\awebacls\x18\xa5\x86\xc0  \x03(\v2\x14.wafv2.WebACLSummaryR\awebaclsB\r\n" +
-	"\v_nextmarker\"\xb3\x03\n" +
+	"\v_nextmarker\"\xd6\x03\n" +
 	"\x14LoggingConfiguration\x127\n" +
 	"\x15logdestinationconfigs\x18\xbf\x87\xc3\n" +
-	" \x03(\tR\x15logdestinationconfigs\x12.\n" +
-	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeR\blogscope\x12+\n" +
-	"\alogtype\x18\xba\x85\xd37 \x01(\x0e2\x0e.wafv2.LogTypeR\alogtype\x12=\n" +
+	" \x03(\tR\x15logdestinationconfigs\x123\n" +
+	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeH\x00R\blogscope\x88\x01\x01\x120\n" +
+	"\alogtype\x18\xba\x85\xd37 \x01(\x0e2\x0e.wafv2.LogTypeH\x01R\alogtype\x88\x01\x01\x12=\n" +
 	"\rloggingfilter\x18\xb9\xf7\xc7\r \x01(\v2\x14.wafv2.LoggingFilterR\rloggingfilter\x12C\n" +
-	"\x18managedbyfirewallmanager\x18\xe7\xfc\xa1\xc6\x01 \x01(\bH\x00R\x18managedbyfirewallmanager\x88\x01\x01\x12>\n" +
+	"\x18managedbyfirewallmanager\x18\xe7\xfc\xa1\xc6\x01 \x01(\bH\x02R\x18managedbyfirewallmanager\x88\x01\x01\x12>\n" +
 	"\x0eredactedfields\x18\xb1\x8a\x92\x17 \x03(\v2\x13.wafv2.FieldToMatchR\x0eredactedfields\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearnB\x1b\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearnB\v\n" +
+	"\t_logscopeB\n" +
+	"\n" +
+	"\b_logtypeB\x1b\n" +
 	"\x19_managedbyfirewallmanager\"\x80\x01\n" +
 	"\rLoggingFilter\x12C\n" +
 	"\x0fdefaultbehavior\x18\x89\xa7\xa5\x8c\x01 \x01(\x0e2\x15.wafv2.FilterBehaviorR\x0fdefaultbehavior\x12*\n" +
@@ -21557,18 +21587,19 @@ const file_wafv2_proto_rawDesc = "" +
 	"\f_productlinkB\x0f\n" +
 	"\r_producttitleB\x0e\n" +
 	"\f_snstopicarnB\r\n" +
-	"\v_vendorname\"\xbb\x05\n" +
+	"\v_vendorname\"\xd0\x05\n" +
 	"\x16ManagedRuleGroupConfig\x12e\n" +
 	"\x1aawsmanagedrulesacfpruleset\x18\xd7\xfd\x84\xaa\x01 \x01(\v2!.wafv2.AWSManagedRulesACFPRuleSetR\x1aawsmanagedrulesacfpruleset\x12a\n" +
 	"\x19awsmanagedrulesatpruleset\x18\x9a\xf5\xb4} \x01(\v2 .wafv2.AWSManagedRulesATPRuleSetR\x19awsmanagedrulesatpruleset\x12q\n" +
 	"\x1eawsmanagedrulesantiddosruleset\x18\x8f\x89\xf2\xf6\x01 \x01(\v2%.wafv2.AWSManagedRulesAntiDDoSRuleSetR\x1eawsmanagedrulesantiddosruleset\x12w\n" +
 	" awsmanagedrulesbotcontrolruleset\x18\xbb\xc0\xab\x87\x01 \x01(\v2'.wafv2.AWSManagedRulesBotControlRuleSetR awsmanagedrulesbotcontrolruleset\x12$\n" +
 	"\tloginpath\x18\x92ڕ= \x01(\tH\x00R\tloginpath\x88\x01\x01\x12>\n" +
-	"\rpasswordfield\x18\x95\x95ڗ\x01 \x01(\v2\x14.wafv2.PasswordFieldR\rpasswordfield\x128\n" +
-	"\vpayloadtype\x18\xee\xc3\xcb\xf3\x01 \x01(\x0e2\x12.wafv2.PayloadTypeR\vpayloadtype\x12=\n" +
+	"\rpasswordfield\x18\x95\x95ڗ\x01 \x01(\v2\x14.wafv2.PasswordFieldR\rpasswordfield\x12=\n" +
+	"\vpayloadtype\x18\xee\xc3\xcb\xf3\x01 \x01(\x0e2\x12.wafv2.PayloadTypeH\x01R\vpayloadtype\x88\x01\x01\x12=\n" +
 	"\rusernamefield\x18\xb4\x87\x80< \x01(\v2\x14.wafv2.UsernameFieldR\rusernamefieldB\f\n" +
 	"\n" +
-	"_loginpath\"\xb4\x03\n" +
+	"_loginpathB\x0e\n" +
+	"\f_payloadtype\"\xb4\x03\n" +
 	"\x19ManagedRuleGroupStatement\x12<\n" +
 	"\rexcludedrules\x18\xef\x9e\xfa= \x03(\v2\x13.wafv2.ExcludedRuleR\rexcludedrules\x12Z\n" +
 	"\x17managedrulegroupconfigs\x18\xa7\xa3\xf6i \x03(\v2\x1d.wafv2.ManagedRuleGroupConfigR\x17managedrulegroupconfigs\x12\x15\n" +
@@ -21648,10 +21679,11 @@ const file_wafv2_proto_rawDesc = "" +
 	"\r_releasenotesB\x11\n" +
 	"\x0f_releaseversionB\f\n" +
 	"\n" +
-	"_timestamp\"\x8d\x01\n" +
+	"_timestamp\"\xa3\x01\n" +
 	"\x12MonetizationConfig\x12;\n" +
-	"\fcryptoconfig\x18\xff\xb3\xcb\xf3\x01 \x01(\v2\x13.wafv2.CryptoConfigR\fcryptoconfig\x12:\n" +
-	"\fcurrencymode\x18\xfe\x97\xf57 \x01(\x0e2\x13.wafv2.CurrencyModeR\fcurrencymode\"F\n" +
+	"\fcryptoconfig\x18\xff\xb3\xcb\xf3\x01 \x01(\v2\x13.wafv2.CryptoConfigR\fcryptoconfig\x12?\n" +
+	"\fcurrencymode\x18\xfe\x97\xf57 \x01(\x0e2\x13.wafv2.CurrencyModeH\x00R\fcurrencymode\x88\x01\x01B\x0f\n" +
+	"\r_currencymode\"F\n" +
 	"\x12MonetizationFilter\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
 	"\x06values\x18\xdcĴj \x03(\tR\x06values\"W\n" +
@@ -21744,10 +21776,11 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\v2\x1e.wafv2.RateLimitLabelNamespaceR\x0elabelnamespace\x12G\n" +
 	"\rqueryargument\x18\xa1\x87Ƅ\x01 \x01(\v2\x1d.wafv2.RateLimitQueryArgumentR\rqueryargument\x12A\n" +
 	"\vquerystring\x18\xe7\xca\xef\xcf\x01 \x01(\v2\x1b.wafv2.RateLimitQueryStringR\vquerystring\x125\n" +
-	"\auripath\x18\xff\xf2\xbe\x89\x01 \x01(\v2\x17.wafv2.RateLimitUriPathR\auripath\"\x8f\x01\n" +
+	"\auripath\x18\xff\xf2\xbe\x89\x01 \x01(\v2\x17.wafv2.RateLimitUriPathR\auripath\"\xa9\x01\n" +
 	"\"RateBasedStatementManagedKeysIPSet\x12 \n" +
-	"\taddresses\x18\x84ǡ\xb3\x01 \x03(\tR\taddresses\x12G\n" +
-	"\x10ipaddressversion\x18\x81\x9b\xb6\x95\x01 \x01(\x0e2\x17.wafv2.IPAddressVersionR\x10ipaddressversion\"\x0e\n" +
+	"\taddresses\x18\x84ǡ\xb3\x01 \x03(\tR\taddresses\x12L\n" +
+	"\x10ipaddressversion\x18\x81\x9b\xb6\x95\x01 \x01(\x0e2\x17.wafv2.IPAddressVersionH\x00R\x10ipaddressversion\x88\x01\x01B\x13\n" +
+	"\x11_ipaddressversion\"\x0e\n" +
 	"\fRateLimitAsn\"x\n" +
 	"\x0fRateLimitCookie\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12N\n" +
@@ -21849,14 +21882,15 @@ const file_wafv2_proto_rawDesc = "" +
 	"\rsuccessvalues\x18\xb7\xc9\xc1\xad\x01 \x03(\tR\rsuccessvalues\"m\n" +
 	"\x1cResponseInspectionStatusCode\x12&\n" +
 	"\ffailurecodes\x18\x92\xe8\xf6\xed\x01 \x03(\x05R\ffailurecodes\x12%\n" +
-	"\fsuccesscodes\x18\xa3\xe8\xdb: \x03(\x05R\fsuccesscodes\"\x99\x03\n" +
-	"\x10RevenueBreakdown\x12/\n" +
-	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x12(\n" +
-	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tH\x00R\vtotalamount\x88\x01\x01\x129\n" +
-	"\x13totalmonetizeserved\x18\x84\xc0\xc1\xc3\x01 \x01(\x03H\x01R\x13totalmonetizeserved\x88\x01\x01\x12*\n" +
-	"\ftotalsettled\x18\xf3\xa9\xc7\" \x01(\x03H\x02R\ftotalsettled\x88\x01\x01\x122\n" +
-	"\x10unverifiedamount\x18\xaf\xb9\x93z \x01(\tH\x03R\x10unverifiedamount\x88\x01\x01\x12.\n" +
-	"\x0everifiedamount\x18\xca\xe4\xb08 \x01(\tH\x04R\x0everifiedamount\x88\x01\x01B\x0e\n" +
+	"\fsuccesscodes\x18\xa3\xe8\xdb: \x03(\x05R\fsuccesscodes\"\xab\x03\n" +
+	"\x10RevenueBreakdown\x124\n" +
+	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyH\x00R\bcurrency\x88\x01\x01\x12(\n" +
+	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tH\x01R\vtotalamount\x88\x01\x01\x129\n" +
+	"\x13totalmonetizeserved\x18\x84\xc0\xc1\xc3\x01 \x01(\x03H\x02R\x13totalmonetizeserved\x88\x01\x01\x12*\n" +
+	"\ftotalsettled\x18\xf3\xa9\xc7\" \x01(\x03H\x03R\ftotalsettled\x88\x01\x01\x122\n" +
+	"\x10unverifiedamount\x18\xaf\xb9\x93z \x01(\tH\x04R\x10unverifiedamount\x88\x01\x01\x12.\n" +
+	"\x0everifiedamount\x18\xca\xe4\xb08 \x01(\tH\x05R\x0everifiedamount\x88\x01\x01B\v\n" +
+	"\t_currencyB\x0e\n" +
 	"\f_totalamountB\x16\n" +
 	"\x14_totalmonetizeservedB\x0f\n" +
 	"\r_totalsettledB\x13\n" +
@@ -21947,29 +21981,30 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x11_responsecodesentB\x1a\n" +
 	"\x18_rulenamewithinrulegroupB\f\n" +
 	"\n" +
-	"_timestamp\"\xa3\a\n" +
+	"_timestamp\"\xb5\a\n" +
 	"\x10SettlementRecord\x12\x19\n" +
 	"\x06amount\x18ꦲ\" \x01(\tR\x06amount\x12)\n" +
-	"\vcontentpath\x18\xa2Ҕ\xfa\x01 \x01(\tH\x00R\vcontentpath\x88\x01\x01\x12/\n" +
-	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x12\x1e\n" +
-	"\x06intent\x18\xec\xc2\xc1K \x01(\tH\x01R\x06intent\x88\x01\x01\x12 \n" +
-	"\anetwork\x18\xe6\xda\xd2K \x01(\tH\x02R\anetwork\x88\x01\x01\x12+\n" +
-	"\forganization\x18\x8b\xc6\xc7\xcb\x01 \x01(\tH\x03R\forganization\x88\x01\x01\x12*\n" +
-	"\fpayeraddress\x18\xab\xaf\x87\x15 \x01(\tH\x04R\fpayeraddress\x88\x01\x01\x12%\n" +
-	"\trequestid\x18\x80ߔ\xbd\x01 \x01(\tH\x05R\trequestid\x88\x01\x01\x123\n" +
-	"\x10requesttimestamp\x18\xeb\xb7σ\x01 \x01(\tH\x06R\x10requesttimestamp\x88\x01\x01\x12.\n" +
-	"\x0esourcecategory\x18\xf1\xaa\xe2\b \x01(\tH\aR\x0esourcecategory\x88\x01\x01\x12'\n" +
+	"\vcontentpath\x18\xa2Ҕ\xfa\x01 \x01(\tH\x00R\vcontentpath\x88\x01\x01\x124\n" +
+	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyH\x01R\bcurrency\x88\x01\x01\x12\x1e\n" +
+	"\x06intent\x18\xec\xc2\xc1K \x01(\tH\x02R\x06intent\x88\x01\x01\x12 \n" +
+	"\anetwork\x18\xe6\xda\xd2K \x01(\tH\x03R\anetwork\x88\x01\x01\x12+\n" +
+	"\forganization\x18\x8b\xc6\xc7\xcb\x01 \x01(\tH\x04R\forganization\x88\x01\x01\x12*\n" +
+	"\fpayeraddress\x18\xab\xaf\x87\x15 \x01(\tH\x05R\fpayeraddress\x88\x01\x01\x12%\n" +
+	"\trequestid\x18\x80ߔ\xbd\x01 \x01(\tH\x06R\trequestid\x88\x01\x01\x123\n" +
+	"\x10requesttimestamp\x18\xeb\xb7σ\x01 \x01(\tH\aR\x10requesttimestamp\x88\x01\x01\x12.\n" +
+	"\x0esourcecategory\x18\xf1\xaa\xe2\b \x01(\tH\bR\x0esourcecategory\x88\x01\x01\x12'\n" +
 	"\n" +
-	"sourcename\x18\xbc\xe0\xb2\xed\x01 \x01(\tH\bR\n" +
+	"sourcename\x18\xbc\xe0\xb2\xed\x01 \x01(\tH\tR\n" +
 	"sourcename\x88\x01\x01\x122\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.wafv2.SettlementStatusR\x06status\x12\x1f\n" +
 	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x12-\n" +
-	"\rtransactionid\x18\xaf\xa5\xb3\xba\x01 \x01(\tH\tR\rtransactionid\x88\x01\x01\x12\"\n" +
-	"\bverified\x18\xe6\xc3\xdcD \x01(\bH\n" +
-	"R\bverified\x88\x01\x01\x12,\n" +
-	"\rwalletaddress\x18\x9d\xe4\xe2m \x01(\tH\vR\rwalletaddress\x88\x01\x01\x12%\n" +
-	"\twebaclarn\x18\xa3\x9c\xef\xfa\x01 \x01(\tH\fR\twebaclarn\x88\x01\x01B\x0e\n" +
-	"\f_contentpathB\t\n" +
+	"\rtransactionid\x18\xaf\xa5\xb3\xba\x01 \x01(\tH\n" +
+	"R\rtransactionid\x88\x01\x01\x12\"\n" +
+	"\bverified\x18\xe6\xc3\xdcD \x01(\bH\vR\bverified\x88\x01\x01\x12,\n" +
+	"\rwalletaddress\x18\x9d\xe4\xe2m \x01(\tH\fR\rwalletaddress\x88\x01\x01\x12%\n" +
+	"\twebaclarn\x18\xa3\x9c\xef\xfa\x01 \x01(\tH\rR\twebaclarn\x88\x01\x01B\x0e\n" +
+	"\f_contentpathB\v\n" +
+	"\t_currencyB\t\n" +
 	"\a_intentB\n" +
 	"\n" +
 	"\b_networkB\x0f\n" +
@@ -22013,12 +22048,13 @@ const file_wafv2_proto_rawDesc = "" +
 	"\a_intentB\x0f\n" +
 	"\r_organizationB\x11\n" +
 	"\x0f_sourcecategoryB\v\n" +
-	"\t_verified\"\xd1\x02\n" +
+	"\t_verified\"\xeb\x02\n" +
 	"\x12SqliMatchStatement\x12;\n" +
 	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12f\n" +
-	"\x1bpreparsetexttransformations\x18\xe1\x91\xc7  \x03(\v2!.wafv2.PreParseTextTransformationR\x1bpreparsetexttransformations\x12F\n" +
-	"\x10sensitivitylevel\x18\xf3\xd6\xdd\x05 \x01(\x0e2\x17.wafv2.SensitivityLevelR\x10sensitivitylevel\x12N\n" +
-	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"\xb5\n" +
+	"\x1bpreparsetexttransformations\x18\xe1\x91\xc7  \x03(\v2!.wafv2.PreParseTextTransformationR\x1bpreparsetexttransformations\x12K\n" +
+	"\x10sensitivitylevel\x18\xf3\xd6\xdd\x05 \x01(\x0e2\x17.wafv2.SensitivityLevelH\x00R\x10sensitivitylevel\x88\x01\x01\x12N\n" +
+	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformationsB\x13\n" +
+	"\x11_sensitivitylevel\"\xb5\n" +
 	"\n" +
 	"\tStatement\x12;\n" +
 	"\fandstatement\x18\xe0\x8dä\x01 \x01(\v2\x13.wafv2.AndStatementR\fandstatement\x12J\n" +
@@ -22138,9 +22174,10 @@ const file_wafv2_proto_rawDesc = "" +
 	"\f_description\"W\n" +
 	"\x14UpdateWebACLResponse\x12-\n" +
 	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tH\x00R\rnextlocktoken\x88\x01\x01B\x10\n" +
-	"\x0e_nextlocktoken\"V\n" +
-	"\vUriFragment\x12G\n" +
-	"\x10fallbackbehavior\x18\xee\xba\xee\xd1\x01 \x01(\x0e2\x17.wafv2.FallbackBehaviorR\x10fallbackbehavior\"\t\n" +
+	"\x0e_nextlocktoken\"p\n" +
+	"\vUriFragment\x12L\n" +
+	"\x10fallbackbehavior\x18\xee\xba\xee\xd1\x01 \x01(\x0e2\x17.wafv2.FallbackBehaviorH\x00R\x10fallbackbehavior\x88\x01\x01B\x13\n" +
+	"\x11_fallbackbehavior\"\t\n" +
 	"\aUriPath\"2\n" +
 	"\rUsernameField\x12!\n" +
 	"\n" +
@@ -22187,12 +22224,13 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x1cWAFInvalidOperationException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xe5\x01\n" +
-	"\x1cWAFInvalidParameterException\x127\n" +
-	"\x05field\x18\x88\xfa\xe0} \x01(\x0e2\x1e.wafv2.ParameterExceptionFieldR\x05field\x12%\n" +
-	"\tparameter\x18\xb1\xf7\xa2\xc2\x01 \x01(\tH\x00R\tparameter\x88\x01\x01\x12\x1e\n" +
-	"\x06reason\x18\xba\x82\xc5\t \x01(\tH\x01R\x06reason\x88\x01\x01\x12 \n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x02R\amessage\x88\x01\x01B\f\n" +
+	"\b_message\"\xf4\x01\n" +
+	"\x1cWAFInvalidParameterException\x12<\n" +
+	"\x05field\x18\x88\xfa\xe0} \x01(\x0e2\x1e.wafv2.ParameterExceptionFieldH\x00R\x05field\x88\x01\x01\x12%\n" +
+	"\tparameter\x18\xb1\xf7\xa2\xc2\x01 \x01(\tH\x01R\tparameter\x88\x01\x01\x12\x1e\n" +
+	"\x06reason\x18\xba\x82\xc5\t \x01(\tH\x02R\x06reason\x88\x01\x01\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x03R\amessage\x88\x01\x01B\b\n" +
+	"\x06_fieldB\f\n" +
 	"\n" +
 	"_parameterB\t\n" +
 	"\a_reasonB\n" +
@@ -23813,11 +23851,14 @@ func file_wafv2_proto_init() {
 	file_wafv2_proto_msgTypes[0].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[1].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[2].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[3].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[4].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[11].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[18].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[23].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[26].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[28].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[29].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[36].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[37].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[39].OneofWrappers = []any{}
@@ -23827,6 +23868,7 @@ func file_wafv2_proto_init() {
 	file_wafv2_proto_msgTypes[50].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[51].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[57].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[60].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[74].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[75].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[76].OneofWrappers = []any{}
@@ -23834,6 +23876,7 @@ func file_wafv2_proto_init() {
 	file_wafv2_proto_msgTypes[89].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[92].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[94].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[95].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[98].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[102].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[103].OneofWrappers = []any{}
@@ -23853,6 +23896,7 @@ func file_wafv2_proto_init() {
 	file_wafv2_proto_msgTypes[124].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[128].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[131].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[135].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[140].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[141].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[142].OneofWrappers = []any{}
@@ -23870,6 +23914,7 @@ func file_wafv2_proto_init() {
 	file_wafv2_proto_msgTypes[154].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[155].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[156].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[157].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[159].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[160].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[161].OneofWrappers = []any{}
@@ -23888,10 +23933,12 @@ func file_wafv2_proto_init() {
 	file_wafv2_proto_msgTypes[175].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[176].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[178].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[179].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[181].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[195].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[196].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[200].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[202].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[215].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[217].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[219].OneofWrappers = []any{}
@@ -23903,6 +23950,7 @@ func file_wafv2_proto_init() {
 	file_wafv2_proto_msgTypes[238].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[239].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[243].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[244].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[247].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[254].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[255].OneofWrappers = []any{}
@@ -23913,6 +23961,7 @@ func file_wafv2_proto_init() {
 	file_wafv2_proto_msgTypes[261].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[262].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[263].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[264].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[267].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[268].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[269].OneofWrappers = []any{}

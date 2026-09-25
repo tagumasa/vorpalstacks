@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -108,6 +109,10 @@ func ContributorKeyString(table *Table, key map[string]*AttributeValue, layout s
 }
 
 // encodeContributorValue renders one attribute value as a stable string.
+// Binary values hex-encode: the rendered slice is JSON-marshalled by
+// ContributorKeyString, and raw bytes would collapse onto the same U+FFFD
+// replacement wherever they differ only in invalid UTF-8 positions,
+// merging distinct counter keys.
 func encodeContributorValue(v *AttributeValue) string {
 	switch {
 	case v.S != nil:
@@ -115,7 +120,7 @@ func encodeContributorValue(v *AttributeValue) string {
 	case v.N != nil:
 		return "n:" + *v.N
 	case v.B != nil:
-		return "b:" + string(v.B)
+		return "b:" + hex.EncodeToString(v.B)
 	case v.BOOL != nil:
 		return "bool:" + strconv.FormatBool(*v.BOOL)
 	default:
@@ -169,11 +174,16 @@ func RecordAccessTxn(txn storage.Transaction, region, tableName, layout, keyStr 
 	return bucket.Put(key, data)
 }
 
+// contributorTopKeysDefaultLimit bounds a TopKeys call that passes no
+// explicit limit — the insights reports read a top slice, not the whole
+// tracked population.
+const contributorTopKeysDefaultLimit = 10
+
 // TopKeys returns the most accessed tracked keys of a table within the
 // half-open time window, ordered by consumed throughput units.
 func (s *ContributorStore) TopKeys(tableName, layout string, start, end time.Time, limit int) ([]ContributorKeyStat, error) {
 	if limit <= 0 {
-		limit = 10
+		limit = contributorTopKeysDefaultLimit
 	}
 	prefix := tableName + KeySep + layout + KeySep
 	startMinute := start.Unix() / 60

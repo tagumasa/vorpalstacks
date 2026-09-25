@@ -109,7 +109,7 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 		in.Quota = &QuotaInput{
 			Limit:  int64(req.Msg.Quota.GetLimit()),
 			Offset: int64(req.Msg.Quota.GetOffset()),
-			Period: toQuotaPeriodString(req.Msg.Quota.Period),
+			Period: toQuotaPeriodString(req.Msg.Quota.GetPeriod()),
 		}
 	}
 	if req.Msg.Throttle != nil {

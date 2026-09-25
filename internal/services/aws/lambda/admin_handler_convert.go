@@ -3,6 +3,7 @@ package lambda
 import (
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"google.golang.org/protobuf/proto"
 
@@ -119,7 +120,7 @@ func functionToProto(f *lambdastore.Function) *pb.FunctionConfiguration {
 	pbFn := &pb.FunctionConfiguration{
 		Functionname:    proto.String(f.FunctionName),
 		Functionarn:     proto.String(f.FunctionArn),
-		Runtime:         safeRuntime(f.Runtime),
+		Runtime:         pbutil.Enum(safeRuntime(f.Runtime)),
 		Role:            proto.String(f.Role),
 		Handler:         proto.String(f.Handler),
 		Codesize:        proto.Int64(f.CodeSize),
@@ -129,10 +130,10 @@ func functionToProto(f *lambdastore.Function) *pb.FunctionConfiguration {
 		Memorysize:      proto.Int32(f.MemorySize),
 		Lastmodified:    proto.String(f.LastModified.Format(timeutils.ISO8601UTCFormat)),
 		Revisionid:      proto.String(f.RevisionId),
-		State:           safeState(f.State),
+		State:           pbutil.Enum(safeState(f.State)),
 		Statereason:     proto.String(f.StateReason),
-		Statereasoncode: safeStateReasonCode(f.StateReasonCode),
-		Packagetype:     safePackageType(f.PackageType),
+		Statereasoncode: pbutil.Enum(safeStateReasonCode(f.StateReasonCode)),
+		Packagetype:     pbutil.Enum(safePackageType(f.PackageType)),
 	}
 	if f.EphemeralStorage != nil {
 		pbFn.Ephemeralstorage = &pb.EphemeralStorage{Size: f.EphemeralStorage.Size}

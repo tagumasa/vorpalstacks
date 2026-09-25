@@ -4,6 +4,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	pb "vorpalstacks/internal/pb/aws/sesv2"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
@@ -30,12 +31,12 @@ func toPbIdentityInfos(items []IdentitySummary) []*pb.IdentityInfo {
 	for _, item := range items {
 		info := &pb.IdentityInfo{
 			Identityname:       proto.String(item.IdentityName),
-			Identitytype:       pb.IdentityType_IDENTITY_TYPE_EMAIL_ADDRESS,
+			Identitytype:       pbutil.Enum(pb.IdentityType_IDENTITY_TYPE_EMAIL_ADDRESS),
 			Sendingenabled:     boolPtr(item.SendingEnabled),
-			Verificationstatus: verificationStatusToProtoFromString(item.VerificationStatus),
+			Verificationstatus: pbutil.Enum(verificationStatusToProtoFromString(item.VerificationStatus)),
 		}
 		if item.IdentityType == "DOMAIN" {
-			info.Identitytype = pb.IdentityType_IDENTITY_TYPE_DOMAIN
+			info.Identitytype = pbutil.Enum(pb.IdentityType_IDENTITY_TYPE_DOMAIN)
 		}
 		result = append(result, info)
 	}
@@ -46,11 +47,11 @@ func toPbIdentityInfos(items []IdentitySummary) []*pb.IdentityInfo {
 // to the proto response type.
 func toPbCreateEmailIdentityResponse(r *IdentityResult) *pb.CreateEmailIdentityResponse {
 	resp := &pb.CreateEmailIdentityResponse{
-		Identitytype:             pb.IdentityType_IDENTITY_TYPE_EMAIL_ADDRESS,
+		Identitytype:             pbutil.Enum(pb.IdentityType_IDENTITY_TYPE_EMAIL_ADDRESS),
 		Verifiedforsendingstatus: boolPtr(r.VerifiedForSending),
 	}
 	if r.IdentityType == "DOMAIN" {
-		resp.Identitytype = pb.IdentityType_IDENTITY_TYPE_DOMAIN
+		resp.Identitytype = pbutil.Enum(pb.IdentityType_IDENTITY_TYPE_DOMAIN)
 	}
 	if r.DkimAttributes != nil {
 		tokens, _ := r.DkimAttributes["Tokens"].([]string)
@@ -66,7 +67,7 @@ func toPbCreateEmailIdentityResponse(r *IdentityResult) *pb.CreateEmailIdentityR
 		resp.Dkimattributes = &pb.DkimAttributes{
 			Signingenabled: boolPtr(signingEnabled),
 			Tokens:         tokens,
-			Status:         dkimStatusToProtoFromString(statusStr),
+			Status:         pbutil.Enum(dkimStatusToProtoFromString(statusStr)),
 		}
 	}
 	return resp

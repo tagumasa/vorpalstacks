@@ -1,6 +1,10 @@
 package dynamodb
 
 import (
+	"net/http"
+	"strings"
+	"unicode/utf8"
+
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -11,6 +15,20 @@ type docPathPart struct {
 	name    string
 	index   int
 	isIndex bool
+}
+
+// docPathPartsEqual answers whether two parsed document paths address the
+// same value.
+func docPathPartsEqual(a, b []docPathPart) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // parseDocPath is the single document-path grammar shared by condition
@@ -54,8 +72,12 @@ func parseDocPath(path string) ([]docPathPart, error) {
 			parts = append(parts, docPathPart{index: idx, isIndex: true})
 			i = j + 1
 		default:
-			current += string(c)
-			i++
+			// A segment name carries whole runes: taking a byte at a time
+			// would re-encode each byte's value as a rune and mangle a
+			// multi-byte name.
+			_, size := utf8.DecodeRuneInString(path[i:])
+			current += path[i : i+size]
+			i += size
 		}
 	}
 
@@ -69,6 +91,48 @@ func parseDocPath(path string) ([]docPathPart, error) {
 		return nil, ErrInvalidParameter
 	}
 
+	return parts, nil
+}
+
+// resolveDocPathParts parses a raw document-path token and resolves every
+// name segment that is an expression attribute name. The documented
+// grammar defines one alias per path element (#pr.#1star), so a compound
+// token resolves segment by segment after the path grammar has split it.
+// Resolution happens on the parsed segments, never on a re-serialised
+// string: an alias standing for a name that itself contains '.' or '['
+// stays a single segment. An alias absent from the names map is a
+// validation error.
+func resolveDocPathParts(path string, names map[string]string) ([]docPathPart, error) {
+	return resolveDocPathSegments(path, names, true)
+}
+
+// resolveDocPathPartsLenient is the analysis-pass variant: an alias absent
+// from the names map stays as the literal segment name, so an analysis
+// that runs before an expression's application — the key-attribute
+// guard's top-level segment extraction — never pre-empts the apply pass's
+// own rejection of the undefined alias.
+func resolveDocPathPartsLenient(path string, names map[string]string) ([]docPathPart, error) {
+	return resolveDocPathSegments(path, names, false)
+}
+
+func resolveDocPathSegments(path string, names map[string]string, strict bool) ([]docPathPart, error) {
+	parts, err := parseDocPath(path)
+	if err != nil {
+		return nil, err
+	}
+	for i := range parts {
+		if parts[i].isIndex || !strings.HasPrefix(parts[i].name, "#") {
+			continue
+		}
+		resolved, ok := names[parts[i].name]
+		if !ok {
+			if !strict {
+				continue
+			}
+			return nil, ErrInvalidParameter
+		}
+		parts[i].name = resolved
+	}
 	return parts, nil
 }
 
@@ -103,11 +167,21 @@ func getDocPathValue(attrs map[string]*dbstore.AttributeValue, parts []docPathPa
 	return current
 }
 
-func setNestedValue(attrs map[string]*dbstore.AttributeValue, path string, value *dbstore.AttributeValue) error {
-	parts, err := parseDocPath(path)
-	if err != nil {
-		return err
-	}
+// errInvalidUpdateDocumentPath is the ValidationException the service
+// answers a SET whose document path cannot be traversed with. The guide:
+// "You cannot update nested map attributes if the parent map does not
+// exist. If you attempt to update a nested attribute ... when the parent
+// map ... does not exist, DynamoDB returns a ValidationException with the
+// message 'The document path provided in the update expression is invalid
+// for update.'" The same path-validity rule covers a parent that exists
+// but is not the container type the path descends through: items meant to
+// carry nested updates later initialise their parent maps empty.
+func errInvalidUpdateDocumentPath() error {
+	return NewAPIError("com.amazon.coral.validate#ValidationException",
+		"The document path provided in the update expression is invalid for update", http.StatusBadRequest)
+}
+
+func setNestedValue(attrs map[string]*dbstore.AttributeValue, parts []docPathPart, value *dbstore.AttributeValue) error {
 	if len(parts) == 0 {
 		return nil
 	}
@@ -117,19 +191,11 @@ func setNestedValue(attrs map[string]*dbstore.AttributeValue, path string, value
 		return nil
 	}
 
+	// A nested SET traverses existing containers only — no implicit parent
+	// creation at any depth.
 	current, exists := attrs[parts[0].name]
-	nextPartIsIndex := parts[1].isIndex
-	if !exists {
-		if nextPartIsIndex {
-			return ErrInvalidParameter
-		}
-		current = dbstore.MapValue(make(map[string]*dbstore.AttributeValue))
-		attrs[parts[0].name] = current
-	} else if nextPartIsIndex && current.L == nil {
-		return ErrInvalidParameter
-	} else if !nextPartIsIndex && current.M == nil {
-		current = dbstore.MapValue(make(map[string]*dbstore.AttributeValue))
-		attrs[parts[0].name] = current
+	if !exists || current == nil {
+		return errInvalidUpdateDocumentPath()
 	}
 
 	return setNestedValueRecursive(current, parts[1:], value)
@@ -144,41 +210,46 @@ func setNestedValueRecursive(current *dbstore.AttributeValue, parts []docPathPar
 	isLast := len(parts) == 1
 
 	if part.isIndex {
-		if current.L == nil || part.index >= len(current.L) {
-			return ErrInvalidParameter
+		if current.L == nil {
+			return errInvalidUpdateDocumentPath()
 		}
 		if isLast {
+			// The documented SET rule for lists: an element the path names
+			// that does not already exist appends at the end of the list —
+			// an out-of-range index never positions the write and never
+			// pads the gap.
+			if part.index >= len(current.L) {
+				current.L = append(current.L, value)
+				return nil
+			}
 			current.L[part.index] = value
 			return nil
-		} else {
-			return setNestedValueRecursive(current.L[part.index], parts[1:], value)
 		}
-	} else {
-		if current.M == nil {
-			if current.S != nil || current.N != nil || current.B != nil ||
-				current.BOOL != nil || current.NULL != nil || current.L != nil ||
-				current.SS != nil || current.NS != nil || current.BS != nil {
-				return ErrInvalidParameter
-			}
-			current.M = make(map[string]*dbstore.AttributeValue)
+		if part.index >= len(current.L) {
+			return errInvalidUpdateDocumentPath()
 		}
-		if isLast {
-			current.M[part.name] = value
-			return nil
-		} else {
-			if _, ok := current.M[part.name]; !ok {
-				current.M[part.name] = dbstore.MapValue(make(map[string]*dbstore.AttributeValue))
-			}
-			return setNestedValueRecursive(current.M[part.name], parts[1:], value)
+		next := current.L[part.index]
+		if next == nil {
+			return errInvalidUpdateDocumentPath()
 		}
+		return setNestedValueRecursive(next, parts[1:], value)
 	}
+
+	if current.M == nil {
+		return errInvalidUpdateDocumentPath()
+	}
+	if isLast {
+		current.M[part.name] = value
+		return nil
+	}
+	next, ok := current.M[part.name]
+	if !ok || next == nil {
+		return errInvalidUpdateDocumentPath()
+	}
+	return setNestedValueRecursive(next, parts[1:], value)
 }
 
-func removeNestedValue(attrs map[string]*dbstore.AttributeValue, path string) error {
-	parts, err := parseDocPath(path)
-	if err != nil {
-		return err
-	}
+func removeNestedValue(attrs map[string]*dbstore.AttributeValue, parts []docPathPart) error {
 	if len(parts) == 0 {
 		return nil
 	}

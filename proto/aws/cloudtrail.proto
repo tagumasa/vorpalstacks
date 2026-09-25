@@ -18,22 +18,22 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc AddTags(AddTagsRequest) returns (AddTagsResponse);
 
-  // Cancels a query if the query is not in a terminated state, such as CANCELLED, FAILED, TIMED_OUT, or FINISHED. You must specify an ARN value for EventDataStore. The ID of the query that you want to ...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc CancelQuery(CancelQueryRequest) returns (CancelQueryResponse);
 
-  // Creates a channel for CloudTrail to ingest events from a partner or external source. After you create a channel, a CloudTrail Lake event data store can log events from the partner or source that yo...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc CreateChannel(CreateChannelRequest) returns (CreateChannelResponse);
 
-  // Creates a custom dashboard or the Highlights dashboard. Custom dashboards - Custom dashboards allow you to query events in any event data store type. You can add up to 10 widgets to a custom dashbo...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc CreateDashboard(CreateDashboardRequest) returns (CreateDashboardResponse);
 
-  // Creates a new event data store.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc CreateEventDataStore(CreateEventDataStoreRequest) returns (CreateEventDataStoreResponse);
@@ -43,17 +43,17 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc CreateTrail(CreateTrailRequest) returns (CreateTrailResponse);
 
-  // Deletes a channel.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DeleteChannel(DeleteChannelRequest) returns (DeleteChannelResponse);
 
-  // Deletes the specified dashboard. You cannot delete a dashboard that has termination protection enabled.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DeleteDashboard(DeleteDashboardRequest) returns (DeleteDashboardResponse);
 
-  // Disables the event data store specified by EventDataStore, which accepts an event data store ARN. After you run DeleteEventDataStore, the event data store enters a PENDING_DELETION state, and is au...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DeleteEventDataStore(DeleteEventDataStoreRequest) returns (DeleteEventDataStoreResponse);
@@ -73,7 +73,7 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc DeregisterOrganizationDelegatedAdmin(DeregisterOrganizationDelegatedAdminRequest) returns (DeregisterOrganizationDelegatedAdminResponse);
 
-  // Returns metadata about a query, including query run time in milliseconds, number of events scanned and matched, and query status. If the query results were delivered to an S3 bucket, the response a...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DescribeQuery(DescribeQueryRequest) returns (DescribeQueryResponse);
@@ -83,27 +83,27 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc DescribeTrails(DescribeTrailsRequest) returns (DescribeTrailsResponse);
 
-  // Disables Lake query federation on the specified event data store. When you disable federation, CloudTrail disables the integration with Glue, Lake Formation, and Amazon Athena. After disabling Lake...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DisableFederation(DisableFederationRequest) returns (DisableFederationResponse);
 
-  // Enables Lake query federation on the specified event data store. Federating an event data store lets you view the metadata associated with the event data store in the Glue Data Catalog and run SQL ...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc EnableFederation(EnableFederationRequest) returns (EnableFederationResponse);
 
-  // Generates a query from a natural language prompt. This operation uses generative artificial intelligence (generative AI) to produce a ready-to-use SQL query from the prompt. The prompt can be a que...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc GenerateQuery(GenerateQueryRequest) returns (GenerateQueryResponse);
 
-  // Returns information about a specific channel.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc GetChannel(GetChannelRequest) returns (GetChannelResponse);
 
-  // Returns the specified dashboard.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc GetDashboard(GetDashboardRequest) returns (GetDashboardResponse);
@@ -113,7 +113,7 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc GetEventConfiguration(GetEventConfigurationRequest) returns (GetEventConfigurationResponse);
 
-  // Returns information about an event data store specified as either an ARN or the ID portion of the ARN.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc GetEventDataStore(GetEventDataStoreRequest) returns (GetEventDataStoreResponse);
@@ -123,7 +123,7 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc GetEventSelectors(GetEventSelectorsRequest) returns (GetEventSelectorsResponse);
 
-  // Returns information about a specific import.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc GetImport(GetImportRequest) returns (GetImportResponse);
@@ -133,7 +133,7 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc GetInsightSelectors(GetInsightSelectorsRequest) returns (GetInsightSelectorsResponse);
 
-  // Gets event data results of a query. You must specify the QueryID value returned by the StartQuery operation.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc GetQueryResults(GetQueryResultsRequest) returns (GetQueryResultsResponse);
@@ -153,27 +153,27 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc GetTrailStatus(GetTrailStatusRequest) returns (GetTrailStatusResponse);
 
-  // Lists the channels in the current account, and their source names.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc ListChannels(ListChannelsRequest) returns (ListChannelsResponse);
 
-  // Returns information about all dashboards in the account, in the current Region.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc ListDashboards(ListDashboardsRequest) returns (ListDashboardsResponse);
 
-  // Returns information about all event data stores in the account, in the current Region.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc ListEventDataStores(ListEventDataStoresRequest) returns (ListEventDataStoresResponse);
 
-  // Returns a list of failures for the specified import.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc ListImportFailures(ListImportFailuresRequest) returns (ListImportFailuresResponse);
 
-  // Returns information on all imports, or a select set of imports by ImportStatus or Destination.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc ListImports(ListImportsRequest) returns (ListImportsResponse);
@@ -193,7 +193,7 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc ListPublicKeys(ListPublicKeysRequest) returns (ListPublicKeysResponse);
 
-  // Returns a list of queries and query statuses for the past seven days. You must specify an ARN value for EventDataStore. Optionally, to shorten the list of results, you can specify a time range, for...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc ListQueries(ListQueriesRequest) returns (ListQueriesResponse);
@@ -243,27 +243,27 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc RemoveTags(RemoveTagsRequest) returns (RemoveTagsResponse);
 
-  // Restores a deleted event data store specified by EventDataStore, which accepts an event data store ARN. You can only restore a deleted event data store within the seven-day wait period after deleti...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc RestoreEventDataStore(RestoreEventDataStoreRequest) returns (RestoreEventDataStoreResponse);
 
-  // Searches sample queries and returns a list of sample queries that are sorted by relevance. To search for sample queries, provide a natural language SearchPhrase in English.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc SearchSampleQueries(SearchSampleQueriesRequest) returns (SearchSampleQueriesResponse);
 
-  // Starts a refresh of the specified dashboard. Each time a dashboard is refreshed, CloudTrail runs queries to populate the dashboard's widgets. CloudTrail must be granted permissions to run the Start...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc StartDashboardRefresh(StartDashboardRefreshRequest) returns (StartDashboardRefreshResponse);
 
-  // Starts the ingestion of live events on an event data store specified as either an ARN or the ID portion of the ARN. To start ingestion, the event data store Status must be STOPPED_INGESTION and the...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc StartEventDataStoreIngestion(StartEventDataStoreIngestionRequest) returns (StartEventDataStoreIngestionResponse);
 
-  // Starts an import of logged trail events from a source S3 bucket to a destination event data store. By default, CloudTrail only imports events contained in the S3 bucket's CloudTrail prefix and the ...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc StartImport(StartImportRequest) returns (StartImportResponse);
@@ -273,17 +273,17 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc StartLogging(StartLoggingRequest) returns (StartLoggingResponse);
 
-  // Starts a CloudTrail Lake query. Use the QueryStatement parameter to provide your SQL query, enclosed in single quotation marks. Use the optional DeliveryS3Uri parameter to deliver the query results...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc StartQuery(StartQueryRequest) returns (StartQueryResponse);
 
-  // Stops the ingestion of live events on an event data store specified as either an ARN or the ID portion of the ARN. To stop ingestion, the event data store Status must be ENABLED and the eventCatego...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc StopEventDataStoreIngestion(StopEventDataStoreIngestionRequest) returns (StopEventDataStoreIngestionResponse);
 
-  // Stops a specified import.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc StopImport(StopImportRequest) returns (StopImportResponse);
@@ -293,17 +293,17 @@ service CloudTrailService {
   // Protocol: awsJson1_1
   rpc StopLogging(StopLoggingRequest) returns (StopLoggingResponse);
 
-  // Updates a channel specified by a required channel ARN or UUID.
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc UpdateChannel(UpdateChannelRequest) returns (UpdateChannelResponse);
 
-  // Updates the specified dashboard. To set a refresh schedule, CloudTrail must be granted permissions to run the StartDashboardRefresh operation to refresh the dashboard on your behalf. To provide per...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc UpdateDashboard(UpdateDashboardRequest) returns (UpdateDashboardResponse);
 
-  // Updates an event data store. The required EventDataStore value is an ARN or the ID portion of the ARN. Other parameters are optional, but at least one optional parameter must be specified, or Cloud...
+  // CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc UpdateEventDataStore(UpdateEventDataStoreRequest) returns (UpdateEventDataStoreResponse);
@@ -669,7 +669,7 @@ message CreateDashboardResponse {
 
   optional bool terminationprotectionenabled = 376863196;
 
-  DashboardType type = 290836590;
+  optional DashboardType type = 290836590;
 
   repeated Widget widgets = 501826147;
 
@@ -681,7 +681,7 @@ message CreateEventDataStoreRequest {
 
   repeated AdvancedEventSelector advancedeventselectors = 36838194;
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   optional string kmskeyid = 46523533;
 
@@ -707,7 +707,7 @@ message CreateEventDataStoreResponse {
 
   repeated AdvancedEventSelector advancedeventselectors = 36838194;
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   optional string createdtimestamp = 334753274;
 
@@ -723,7 +723,7 @@ message CreateEventDataStoreResponse {
 
   optional int32 retentionperiod = 196383721;
 
-  EventDataStoreStatus status = 6222352;
+  optional EventDataStoreStatus status = 6222352;
 
   repeated Tag tagslist = 497422889;
 
@@ -754,6 +754,8 @@ message CreateTrailRequest {
   optional string kmskeyid = 46523533;
 
   string name = 266367751;
+
+  optional bool recursivelogging = 379010649;
 
   string s3bucketname = 320495427;
 
@@ -787,6 +789,8 @@ message CreateTrailResponse {
 
   optional string name = 266367751;
 
+  optional bool recursivelogging = 379010649;
+
   optional string s3bucketname = 320495427;
 
   optional string s3keyprefix = 206015359;
@@ -807,7 +811,7 @@ message DashboardDetail {
 
   optional string dashboardarn = 108051951;
 
-  DashboardType type = 290836590;
+  optional DashboardType type = 290836590;
 
 }
 
@@ -997,7 +1001,7 @@ message DescribeQueryResponse {
 
   optional string deliverys3uri = 230884460;
 
-  DeliveryStatus deliverystatus = 483265504;
+  optional DeliveryStatus deliverystatus = 483265504;
 
   optional string errormessage = 518702377;
 
@@ -1009,7 +1013,7 @@ message DescribeQueryResponse {
 
   QueryStatisticsForDescribeQuery querystatistics = 260794841;
 
-  QueryStatus querystatus = 367016406;
+  optional QueryStatus querystatus = 367016406;
 
   optional string querystring = 435938663;
 
@@ -1073,7 +1077,7 @@ message DisableFederationResponse {
 
   optional string eventdatastorearn = 331732456;
 
-  FederationStatus federationstatus = 146235383;
+  optional FederationStatus federationstatus = 146235383;
 
 }
 
@@ -1095,7 +1099,7 @@ message EnableFederationResponse {
 
   optional string federationrolearn = 504464364;
 
-  FederationStatus federationstatus = 146235383;
+  optional FederationStatus federationstatus = 146235383;
 
 }
 
@@ -1161,7 +1165,7 @@ message EventDataStore {
 
   optional int32 retentionperiod = 196383721;
 
-  EventDataStoreStatus status = 6222352;
+  optional EventDataStoreStatus status = 6222352;
 
   optional bool terminationprotectionenabled = 376863196;
 
@@ -1269,7 +1273,7 @@ message EventSelector {
 
   optional bool includemanagementevents = 215824550;
 
-  ReadWriteType readwritetype = 296653333;
+  optional ReadWriteType readwritetype = 296653333;
 
 }
 
@@ -1367,11 +1371,11 @@ message GetDashboardResponse {
 
   RefreshSchedule refreshschedule = 261773338;
 
-  DashboardStatus status = 6222352;
+  optional DashboardStatus status = 6222352;
 
   optional bool terminationprotectionenabled = 376863196;
 
-  DashboardType type = 290836590;
+  optional DashboardType type = 290836590;
 
   optional string updatedtimestamp = 44364161;
 
@@ -1399,7 +1403,7 @@ message GetEventConfigurationResponse {
 
   optional string eventdatastorearn = 331732456;
 
-  MaxEventSize maxeventsize = 517627763;
+  optional MaxEventSize maxeventsize = 517627763;
 
   optional string trailarn = 39585143;
 
@@ -1419,7 +1423,7 @@ message GetEventDataStoreResponse {
 
   repeated AdvancedEventSelector advancedeventselectors = 36838194;
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   optional string createdtimestamp = 334753274;
 
@@ -1427,7 +1431,7 @@ message GetEventDataStoreResponse {
 
   optional string federationrolearn = 504464364;
 
-  FederationStatus federationstatus = 146235383;
+  optional FederationStatus federationstatus = 146235383;
 
   optional string kmskeyid = 46523533;
 
@@ -1441,7 +1445,7 @@ message GetEventDataStoreResponse {
 
   optional int32 retentionperiod = 196383721;
 
-  EventDataStoreStatus status = 6222352;
+  optional EventDataStoreStatus status = 6222352;
 
   optional bool terminationprotectionenabled = 376863196;
 
@@ -1493,7 +1497,7 @@ message GetImportResponse {
 
   ImportStatistics importstatistics = 48175528;
 
-  ImportStatus importstatus = 129077631;
+  optional ImportStatus importstatus = 129077631;
 
   optional string starteventtime = 107272573;
 
@@ -1553,7 +1557,7 @@ message GetQueryResultsResponse {
 
   QueryStatistics querystatistics = 260794841;
 
-  QueryStatus querystatus = 367016406;
+  optional QueryStatus querystatus = 367016406;
 
 }
 
@@ -1659,7 +1663,7 @@ message ImportFailureListItem {
 
   optional string location = 465604039;
 
-  ImportFailureStatus status = 6222352;
+  optional ImportFailureStatus status = 6222352;
 
 }
 
@@ -1741,7 +1745,7 @@ message ImportsListItem {
 
   optional string importid = 420153946;
 
-  ImportStatus importstatus = 129077631;
+  optional ImportStatus importstatus = 129077631;
 
   optional string updatedtimestamp = 44364161;
 
@@ -1803,7 +1807,7 @@ message InsightSelector {
 
   repeated SourceEventCategory eventcategories = 3676820;
 
-  InsightType insighttype = 530375860;
+  optional InsightType insighttype = 530375860;
 
 }
 
@@ -2197,7 +2201,7 @@ message ListDashboardsRequest {
 
   optional string nexttoken = 216957566;
 
-  DashboardType type = 290836590;
+  optional DashboardType type = 290836590;
 
 }
 
@@ -2259,7 +2263,7 @@ message ListImportsRequest {
 
   optional string destination = 457443680;
 
-  ImportStatus importstatus = 129077631;
+  optional ImportStatus importstatus = 129077631;
 
   optional int32 maxresults = 275174450;
 
@@ -2331,7 +2335,7 @@ enum ListInsightsDataType {
 
 message ListInsightsMetricDataRequest {
 
-  InsightsMetricDataType datatype = 67988590;
+  optional InsightsMetricDataType datatype = 67988590;
 
   optional string endtime = 63911884;
 
@@ -2365,7 +2369,7 @@ message ListInsightsMetricDataResponse {
 
   optional string eventsource = 37841339;
 
-  InsightType insighttype = 530375860;
+  optional InsightType insighttype = 530375860;
 
   optional string nexttoken = 216957566;
 
@@ -2415,7 +2419,7 @@ message ListQueriesRequest {
 
   optional string nexttoken = 216957566;
 
-  QueryStatus querystatus = 367016406;
+  optional QueryStatus querystatus = 367016406;
 
   optional string starttime = 370760303;
 
@@ -2515,7 +2519,7 @@ message LookupEventsRequest {
 
   optional string endtime = 63911884;
 
-  EventCategory eventcategory = 164668724;
+  optional EventCategory eventcategory = 164668724;
 
   repeated LookupAttribute lookupattributes = 162162567;
 
@@ -2667,7 +2671,7 @@ message PutEventConfigurationRequest {
 
   optional string eventdatastore = 136801729;
 
-  MaxEventSize maxeventsize = 517627763;
+  optional MaxEventSize maxeventsize = 517627763;
 
   optional string trailname = 507774985;
 
@@ -2683,7 +2687,7 @@ message PutEventConfigurationResponse {
 
   optional string eventdatastorearn = 331732456;
 
-  MaxEventSize maxeventsize = 517627763;
+  optional MaxEventSize maxeventsize = 517627763;
 
   optional string trailarn = 39585143;
 
@@ -2773,7 +2777,7 @@ message Query {
 
   optional string queryid = 110737519;
 
-  QueryStatus querystatus = 367016406;
+  optional QueryStatus querystatus = 367016406;
 
 }
 
@@ -2857,7 +2861,7 @@ message RefreshSchedule {
 
   RefreshScheduleFrequency frequency = 227673762;
 
-  RefreshScheduleStatus status = 6222352;
+  optional RefreshScheduleStatus status = 6222352;
 
   optional string timeofday = 77605358;
 
@@ -2869,7 +2873,7 @@ message RefreshSchedule {
 
 message RefreshScheduleFrequency {
 
-  RefreshScheduleFrequencyUnit unit = 148989480;
+  optional RefreshScheduleFrequencyUnit unit = 148989480;
 
   optional int32 value = 289929579;
 
@@ -3035,7 +3039,7 @@ message RestoreEventDataStoreResponse {
 
   repeated AdvancedEventSelector advancedeventselectors = 36838194;
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   optional string createdtimestamp = 334753274;
 
@@ -3051,7 +3055,7 @@ message RestoreEventDataStoreResponse {
 
   optional int32 retentionperiod = 196383721;
 
-  EventDataStoreStatus status = 6222352;
+  optional EventDataStoreStatus status = 6222352;
 
   optional bool terminationprotectionenabled = 376863196;
 
@@ -3215,7 +3219,7 @@ message StartImportResponse {
 
   ImportSource importsource = 41128754;
 
-  ImportStatus importstatus = 129077631;
+  optional ImportStatus importstatus = 129077631;
 
   optional string starteventtime = 107272573;
 
@@ -3305,7 +3309,7 @@ message StopImportResponse {
 
   ImportStatistics importstatistics = 48175528;
 
-  ImportStatus importstatus = 129077631;
+  optional ImportStatus importstatus = 129077631;
 
   optional string starteventtime = 107272573;
 
@@ -3402,6 +3406,8 @@ message Trail {
   optional bool logfilevalidationenabled = 35904346;
 
   optional string name = 266367751;
+
+  optional bool recursivelogging = 379010649;
 
   optional string s3bucketname = 320495427;
 
@@ -3533,7 +3539,7 @@ message UpdateDashboardResponse {
 
   optional bool terminationprotectionenabled = 376863196;
 
-  DashboardType type = 290836590;
+  optional DashboardType type = 290836590;
 
   optional string updatedtimestamp = 44364161;
 
@@ -3547,7 +3553,7 @@ message UpdateEventDataStoreRequest {
 
   repeated AdvancedEventSelector advancedeventselectors = 36838194;
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   string eventdatastore = 136801729;
 
@@ -3571,7 +3577,7 @@ message UpdateEventDataStoreResponse {
 
   repeated AdvancedEventSelector advancedeventselectors = 36838194;
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   optional string createdtimestamp = 334753274;
 
@@ -3579,7 +3585,7 @@ message UpdateEventDataStoreResponse {
 
   optional string federationrolearn = 504464364;
 
-  FederationStatus federationstatus = 146235383;
+  optional FederationStatus federationstatus = 146235383;
 
   optional string kmskeyid = 46523533;
 
@@ -3591,7 +3597,7 @@ message UpdateEventDataStoreResponse {
 
   optional int32 retentionperiod = 196383721;
 
-  EventDataStoreStatus status = 6222352;
+  optional EventDataStoreStatus status = 6222352;
 
   optional bool terminationprotectionenabled = 376863196;
 
@@ -3620,6 +3626,8 @@ message UpdateTrailRequest {
   optional string kmskeyid = 46523533;
 
   string name = 266367751;
+
+  optional bool recursivelogging = 379010649;
 
   optional string s3bucketname = 320495427;
 
@@ -3650,6 +3658,8 @@ message UpdateTrailResponse {
   optional bool logfilevalidationenabled = 35904346;
 
   optional string name = 266367751;
+
+  optional bool recursivelogging = 379010649;
 
   optional string s3bucketname = 320495427;
 

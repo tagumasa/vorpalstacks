@@ -18,6 +18,25 @@ import (
 // MaxItemSizeBytes is the documented maximum size of a single item.
 const MaxItemSizeBytes = 400 * 1024
 
+// MaxTransactionAggregateBytes is the documented aggregate size limit of
+// the items in one transaction: both TransactWriteItems and
+// TransactGetItems document "The aggregate size of the items in the
+// transaction cannot exceed 4 MB" and reject the whole request past it.
+const MaxTransactionAggregateBytes int64 = 4 * 1024 * 1024
+
+// MaxPartitionKeyBytes is the documented maximum length of a string-typed
+// partition-key attribute value (Naming rules and data types: "The following
+// additional constraints apply to primary key attributes that are defined as
+// type string: For a simple primary key, the maximum length of the first
+// attribute value (the partition key) is 2048 bytes.").
+const MaxPartitionKeyBytes = 2048
+
+// MaxSortKeyBytes is the documented maximum length of a string-typed
+// sort-key attribute value (Naming rules and data types: "For a composite
+// primary key, the maximum length of the second attribute value (the sort
+// key) is 1024 bytes.").
+const MaxSortKeyBytes = 1024
+
 // ReadCapacityUnitBytes is the documented read-capacity granularity: one
 // read capacity unit covers one strongly consistent read of an item up to
 // this many bytes, with larger items rounding up to multiples of it.

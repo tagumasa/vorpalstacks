@@ -65,7 +65,7 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 // PutParameter creates or updates an SSM parameter via the admin console.
 func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb.PutParameterRequest]) (*connect.Response[pb.PutParameterResult], error) {
 	paramType := ""
-	switch req.Msg.Type {
+	switch req.Msg.GetType() {
 	case pb.ParameterType_PARAMETER_TYPE_STRING_LIST:
 		paramType = "StringList"
 	case pb.ParameterType_PARAMETER_TYPE_SECURE_STRING:
@@ -73,7 +73,7 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 	}
 
 	tier := ""
-	switch req.Msg.Tier {
+	switch req.Msg.GetTier() {
 	case pb.ParameterTier_PARAMETER_TIER_ADVANCED:
 		tier = "Advanced"
 	case pb.ParameterTier_PARAMETER_TIER_INTELLIGENT_TIERING:

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -18,34 +17,7 @@ const retentionSweepInterval = time.Minute
 // records and contributor access counters inside the 24-hour retention
 // window documented for DynamoDB Streams.
 func (s *DynamoDBService) ensureRetentionSweeper() {
-	s.streamSweepOnce.Do(func() {
-		s.bgWg.Add(1)
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					resilience.LogPanic("dynamodb retention sweep", r)
-				}
-			}()
-			defer s.bgWg.Done()
-			ticker := time.NewTicker(retentionSweepInterval)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ticker.C:
-					s.stores.Range(func(_, v any) bool {
-						store, ok := v.(dbstore.DynamoDBStoreInterface)
-						if !ok {
-							return true
-						}
-						s.sweepStoreRetentions(store)
-						return true
-					})
-				case <-s.bgCtx.Done():
-					return
-				}
-			}
-		}()
-	})
+	s.startIntervalSweeper(&s.streamSweepOnce, retentionSweepInterval, "dynamodb retention sweep", s.sweepStoreRetentions)
 }
 
 // sweepStoreRetentions trims the stream records of every streaming table

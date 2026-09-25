@@ -15,24 +15,21 @@ type TableStoreInterface interface {
 	Put(table *Table) error
 	Update(name string, mutate func(*Table) error) (*Table, error)
 	WithTableLock(name string, fn func() error) error
-	Delete(name string) error
 	Exists(name string) bool
 	List(marker string, limit int) ([]*Table, string, error)
-	UpdateItemCount(name string, delta int64) error
-	UpdateTableSize(name string, delta int64) error
 	Tags() *common.TagStore
 	ARNBuilder() *svcarn.DynamoDBBuilder
 	SetTimeToLive(name string, ttl *TimeToLiveSpecification) error
 	GetTimeToLive(name string) (*TimeToLiveSpecification, error)
 	SetPointInTimeRecovery(name string, pitr *PointInTimeRecoveryDescription) error
 	GetPointInTimeRecovery(name string) (*PointInTimeRecoveryDescription, error)
-	SetResourcePolicy(name string, policy string) error
+	SetResourcePolicyExpected(name string, policy string, expectedRev int) (int, error)
 	GetResourcePolicyRevisionId(name string) (int, error)
 	GetResourcePolicy(name string) (string, error)
-	DeleteResourcePolicy(name string) error
+	DeleteResourcePolicyExpected(name string, expectedRev int) (int, error)
 	SetKinesisStreamingDestination(name string, destinations []*KinesisDataStreamDestination) error
-	SetContributorInsights(name string, enabled bool, mode string) error
-	SetAutoScalingSettings(name string, settings *TableReplicaAutoScalingSettings) error
+	SetContributorInsights(name string, enabled bool, mode ContributorInsightsMode) error
+	UpdateAutoScalingSettings(name string, merge func(existing *TableReplicaAutoScalingSettings) *TableReplicaAutoScalingSettings) (*TableReplicaAutoScalingSettings, error)
 	GetAutoScalingSettings(name string) (*TableReplicaAutoScalingSettings, error)
 }
 
@@ -51,36 +48,34 @@ type ItemStoreInterface interface {
 }
 
 // BackupStoreInterface defines operations for managing DynamoDB backups.
+// A backup's identity is its ARN's generated id segment — the name is a
+// label, so every keyed operation addresses the ARN.
 type BackupStoreInterface interface {
 	Get(backupArn string) (*Backup, error)
-	GetByName(backupName string) (*Backup, error)
 	Create(backupName, tableName, tableArn string, tableSize int64) (*Backup, error)
 	Put(backup *Backup) error
-	Delete(backupName string) error
-	Exists(backupName string) bool
+	Delete(backupArn string) error
 	List(marker string, limit int, tableName string) ([]*Backup, string, error)
-	ARNBuilder() *svcarn.DynamoDBBuilder
-	SaveSnapshot(backupName string, items []*Item) error
-	GetSnapshot(backupName string) ([]*Item, error)
-	DeleteSnapshot(backupName string) error
+	SaveSnapshot(backupArn string, items []*Item) error
+	GetSnapshot(backupArn string) ([]*Item, error)
+	DeleteSnapshot(backupArn string) error
 }
 
 // GlobalTableStoreInterface defines operations for managing DynamoDB global tables.
 type GlobalTableStoreInterface interface {
 	Get(name string) (*GlobalTable, error)
 	Create(name string, replicationGroup []*Replica) (*GlobalTable, error)
-	Put(globalTable *GlobalTable) error
 	Update(name string, mutate func(*GlobalTable) error) (*GlobalTable, error)
 	Delete(name string) error
+	DeleteIfEmpty(name string) (bool, error)
 	Exists(name string) bool
 	List(marker string, limit int) ([]*GlobalTable, string, error)
-	ARNBuilder() *svcarn.DynamoDBBuilder
 }
 
 // ExportStoreInterface defines operations for managing DynamoDB exports.
 type ExportStoreInterface interface {
 	Get(exportArn string) (*ExportDescription, error)
-	Create(tableArn, tableId, exportFormat string) (*ExportDescription, error)
+	Create(tableArn, tableId string, exportFormat ExportFormat) (*ExportDescription, error)
 	Put(export *ExportDescription) error
 	List(tableArn, marker string, maxItems int) ([]*ExportDescription, string, error)
 }

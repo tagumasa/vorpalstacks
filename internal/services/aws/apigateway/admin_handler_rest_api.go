@@ -62,10 +62,10 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 		Description:        req.Msg.GetDescription(),
 		Version:            req.Msg.GetVersion(),
 		BinaryMediaTypes:   req.Msg.Binarymediatypes,
-		ApiKeySource:       apiKeySourceFromPb(req.Msg.Apikeysource),
+		ApiKeySource:       apiKeySourceFromPb(req.Msg.GetApikeysource()),
 		Policy:             req.Msg.GetPolicy(),
-		SecurityPolicy:     securityPolicyFromPb(req.Msg.Securitypolicy),
-		EndpointAccessMode: endpointAccessModeFromPb(req.Msg.Endpointaccessmode),
+		SecurityPolicy:     securityPolicyFromPb(req.Msg.GetSecuritypolicy()),
+		EndpointAccessMode: endpointAccessModeFromPb(req.Msg.GetEndpointaccessmode()),
 		CloneFrom:          req.Msg.GetClonefrom(),
 	}
 	if req.Msg.Disableexecuteapiendpoint != nil {
@@ -111,7 +111,7 @@ func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[p
 	patches := make([]PatchOperation, 0, len(req.Msg.Patchoperations))
 	for _, po := range req.Msg.Patchoperations {
 		patches = append(patches, PatchOperation{
-			Op:    opFromPb(po.Op),
+			Op:    opFromPb(po.GetOp()),
 			Path:  po.GetPath(),
 			Value: po.GetValue(),
 		})

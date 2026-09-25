@@ -63,7 +63,7 @@ func (s *DynamoDBService) adminDescribeTable(region, tableName string) (*pb.Tabl
 // adminCreateTable resolves the store for the given region, converts the
 // proto request to the transport-agnostic CreateTableInput, delegates to
 // createTableCore, and returns a proto TableDescription.
-func (s *DynamoDBService) adminCreateTable(region string, req *pb.CreateTableInput) (*pb.TableDescription, error) {
+func (s *DynamoDBService) adminCreateTable(ctx context.Context, region string, req *pb.CreateTableInput) (*pb.TableDescription, error) {
 	store, err := s.GetCachedStoreForRegion(region)
 	if err != nil {
 		return nil, err
@@ -72,19 +72,33 @@ func (s *DynamoDBService) adminCreateTable(region string, req *pb.CreateTableInp
 	keySchema := protoKeySchemaToStore(req.GetKeyschema())
 	attrDefs := protoAttrDefsToStore(req.GetAttributedefinitions())
 
-	billingMode := dbstore.BillingModePayPerRequest
-	var provThroughput *dbstore.ProvisionedThroughput
-	if req.GetBillingmode() == pb.BillingMode_BILLING_MODE_PROVISIONED {
+	// The proto enum's values map onto the store values directly. The
+	// member carries explicit presence (a non-required enum is emitted
+	// optional), so an omitted mode arrives as a nil member: it routes
+	// through the same empty value the HTTP plane's omission produces,
+	// and the core's shared creation contract applies the documented
+	// default (PROVISIONED) and its mode/throughput pairing rules — the
+	// same contract the HTTP plane's CreateTable resolves through. An
+	// explicit PAY_PER_REQUEST is the zero-value enum constant and is
+	// told apart from the omission by the member's presence alone.
+	var billingMode dbstore.BillingMode
+	switch {
+	case req.Billingmode == nil:
+		// Omitted member: the shared default applies in the core.
+	case req.GetBillingmode() == pb.BillingMode_BILLING_MODE_PROVISIONED:
 		billingMode = dbstore.BillingModeProvisioned
-		if pt := req.GetProvisionedthroughput(); pt != nil {
-			provThroughput = &dbstore.ProvisionedThroughput{
-				ReadCapacityUnits:  pt.GetReadcapacityunits(),
-				WriteCapacityUnits: pt.GetWritecapacityunits(),
-			}
+	case req.GetBillingmode() == pb.BillingMode_BILLING_MODE_PAY_PER_REQUEST:
+		billingMode = dbstore.BillingModePayPerRequest
+	}
+	var provThroughput *dbstore.ProvisionedThroughput
+	if pt := req.GetProvisionedthroughput(); pt != nil {
+		provThroughput = &dbstore.ProvisionedThroughput{
+			ReadCapacityUnits:  pt.GetReadcapacityunits(),
+			WriteCapacityUnits: pt.GetWritecapacityunits(),
 		}
 	}
 
-	table, err := s.createTableCore(store, CreateTableInput{
+	table, err := s.createTableCore(ctx, nil, store, CreateTableInput{
 		TableName:             req.GetTablename(),
 		KeySchema:             keySchema,
 		AttributeDefinitions:  attrDefs,
@@ -106,7 +120,7 @@ func (s *DynamoDBService) adminDeleteTable(ctx context.Context, region, tableNam
 		return nil, err
 	}
 
-	deletedTable, err := s.deleteTableCore(ctx, store, tableName)
+	deletedTable, err := s.deleteTableCore(ctx, store, region, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +208,7 @@ func (s *DynamoDBService) adminGetItem(ctx context.Context, region, tableName st
 		return nil, err
 	}
 
-	item, err := s.getItemCore(ctx, store, table, protoAVMapToStore(pbKey))
+	result, err := s.getItemCore(ctx, store, table, protoAVMapToStore(pbKey), false, "")
 	if err != nil {
 		if dbstore.IsItemNotFound(err) {
 			return map[string]*pb.AttributeValue{}, nil
@@ -202,7 +216,7 @@ func (s *DynamoDBService) adminGetItem(ctx context.Context, region, tableName st
 		return nil, err
 	}
 
-	return storeAVMapToProto(item.Attributes), nil
+	return storeAVMapToProto(result.Item.Attributes), nil
 }
 
 // adminScanResult holds the proto-ready result of an admin scan operation.

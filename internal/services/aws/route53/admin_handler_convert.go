@@ -7,6 +7,7 @@ import (
 
 	route53store "vorpalstacks/internal/store/aws/route53"
 
+	"vorpalstacks/internal/common/pbutil"
 	pb "vorpalstacks/internal/pb/aws/route53"
 )
 
@@ -34,7 +35,7 @@ func toPbHostedZone(z *route53store.HostedZone) *pb.HostedZone {
 		for i, vpc := range z.VPCs {
 			pbZone.Vpcs[i] = &pb.VPC{
 				Vpcid:     proto.String(vpc.VPCID),
-				Vpcregion: awsVPCRegionToProto(vpc.VPCRegion),
+				Vpcregion: pbutil.Enum(awsVPCRegionToProto(vpc.VPCRegion)),
 			}
 		}
 	}

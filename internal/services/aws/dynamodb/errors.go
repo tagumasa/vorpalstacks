@@ -25,6 +25,18 @@ func NewAPIError(code, message string, httpStatus int) *APIError {
 	}
 }
 
+// errMixedStatementPlanes is the validation error both multi-statement
+// planes answer when a request mixes read and write statements: the model
+// requires the entire transaction (or batch) to consist of either read
+// statements or write statements. The violation is the request's own
+// shape — a validation error naming the rule, never a transaction
+// conflict on an item.
+func errMixedStatementPlanes(plane string) error {
+	return NewAPIError("com.amazon.coral.validate#ValidationException",
+		fmt.Sprintf("The entire %s must consist of either read statements or write statements, you cannot mix both in one %s", plane, plane),
+		http.StatusBadRequest)
+}
+
 // TransactionCanceledError represents a transaction cancellation error.
 type TransactionCanceledError struct {
 	*APIError
@@ -75,6 +87,46 @@ func (e *TransactionCanceledError) ToJSON() string {
 		Type:                e.APIError.AWSError.Code,
 		Message:             e.APIError.AWSError.Message,
 		CancellationReasons: reasons,
+	}
+
+	b, err := json.Marshal(resp)
+	if err != nil {
+		return fmt.Sprintf(`{"__type":"%s","message":"%s"}`, e.APIError.AWSError.Code, e.APIError.AWSError.Message)
+	}
+	return string(b)
+}
+
+// ConditionalCheckFailedError is the ConditionalCheckFailedException
+// enriched with the item the failure is about. The model's exception shape
+// carries an Item member alongside the message, populated when the request
+// sets ReturnValuesOnConditionCheckFailure to ALL_OLD; the sentinel serves
+// every other failure.
+type ConditionalCheckFailedError struct {
+	*APIError
+	Item map[string]interface{}
+}
+
+// NewConditionalCheckFailedError creates a ConditionalCheckFailedError
+// carrying the failing item's attribute map.
+func NewConditionalCheckFailedError(item map[string]interface{}) *ConditionalCheckFailedError {
+	return &ConditionalCheckFailedError{
+		APIError: ErrConditionalCheckFailed,
+		Item:     item,
+	}
+}
+
+// ToJSON serialises the error to JSON format.
+func (e *ConditionalCheckFailedError) ToJSON() string {
+	type errorJSON struct {
+		Type    string                 `json:"__type"`
+		Message string                 `json:"message"`
+		Item    map[string]interface{} `json:"Item,omitempty"`
+	}
+
+	resp := errorJSON{
+		Type:    e.APIError.AWSError.Code,
+		Message: e.APIError.AWSError.Message,
+		Item:    e.Item,
 	}
 
 	b, err := json.Marshal(resp)
@@ -147,6 +199,11 @@ var (
 	ErrTableDeletionProtected = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceInUseException", "Table is protected from deletion", http.StatusBadRequest)
 	// ErrConditionalCheckFailed is returned when a conditional write operation fails.
 	ErrConditionalCheckFailed = NewAPIError("com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException", "The conditional request failed", http.StatusBadRequest)
+	// ErrDuplicateItem is the standalone ExecuteStatement answer for a
+	// PartiQL INSERT whose primary key an existing item already carries;
+	// the transactional plane keeps the ConditionalCheckFailed cancellation
+	// reason, whose documented code list defines no DuplicateItem code.
+	ErrDuplicateItem = NewAPIError("com.amazonaws.dynamodb.v20120810#DuplicateItemException", "There was an attempt to insert an item with the same primary key as an item that already exists", http.StatusBadRequest)
 	// ErrItemNotFound is returned when the specified item does not exist in the table.
 	ErrItemNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceNotFoundException", "Item not found", http.StatusBadRequest)
 	// ErrInvalidKey is returned when the provided key is invalid.
@@ -155,8 +212,11 @@ var (
 	ErrMissingKey = NewAPIError("com.amazon.coral.validate#ValidationException", "Missing required key in request", http.StatusBadRequest)
 	// ErrBackupNotFound is returned when the specified backup does not exist.
 	ErrBackupNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#BackupNotFoundException", "Backup not found", http.StatusBadRequest)
-	// ErrBackupAlreadyExists is returned when a backup already exists with the same name.
-	ErrBackupAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#BackupInUseException", "Backup already exists", http.StatusBadRequest)
+	// ErrBackupNotAvailable is returned when a restore targets a backup that
+	// is not AVAILABLE. The model documents BackupInUseException as "The
+	// backup is either being created, deleted or restored to a table", which
+	// is the declared shape for a control-plane conflict on the backup.
+	ErrBackupNotAvailable = NewAPIError("com.amazonaws.dynamodb.v20120810#BackupInUseException", "Backup is not available for restore", http.StatusBadRequest)
 	// ErrGlobalTableNotFound is returned when the specified global table does not exist.
 	ErrGlobalTableNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#GlobalTableNotFoundException", "Global table not found", http.StatusBadRequest)
 	// ErrGlobalTableAlreadyExists is returned when a global table already exists with the same name.
@@ -165,8 +225,17 @@ var (
 	ErrReplicaAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicaAlreadyExistsException", "Replica already exists", http.StatusBadRequest)
 	// ErrReplicaNotFound is returned when the specified replica does not exist on the global table.
 	ErrReplicaNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicaNotFoundException", "Replica not found", http.StatusBadRequest)
+	// transactionConflictMessage is the SDK-documented message of the
+	// standalone TransactionConflictException a single-item write over
+	// an ongoing transaction receives.
+	transactionConflictMessage = "Operation was rejected because there is an ongoing transaction for the item"
+	// transactionConflictReasonMessage is the documented wording of the
+	// CancellationReasons entry a transaction request answers when an
+	// item it targets is under an ongoing transaction — the reason
+	// table's own message, distinct from the standalone exception's.
+	transactionConflictReasonMessage = "Transaction is ongoing for the item."
 	// ErrTransactionConflict is returned when an operation conflicts with an ongoing transaction for the item.
-	ErrTransactionConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionConflictException", "TransactionConflict", http.StatusBadRequest)
+	ErrTransactionConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionConflictException", transactionConflictMessage, http.StatusBadRequest)
 	// ErrTransactionCanceled is returned when a transaction request is cancelled.
 	ErrTransactionCanceled = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionCanceledException", "Transaction canceled", http.StatusBadRequest)
 	// ErrIdempotentParameterMismatch is returned when a retried request has a different payload but the same idempotency token.

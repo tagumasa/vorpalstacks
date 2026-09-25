@@ -63,8 +63,17 @@ func (b *KMSBuilder) ParseAliasName(aliasOrArn string) string {
 	return aliasOrArn
 }
 
-// IsAlias returns true if the given name is a KMS alias.
-func (b *KMSBuilder) IsAlias(name string) bool { return strings.HasPrefix(name, "alias/") }
+// IsAlias returns true if the given name is a KMS alias — either the alias
+// name form (alias/...) or a full alias ARN. The ARN detection is
+// structural, matching ParseCertificateID: only ARNs naming the kms
+// service whose resource carries the alias/ prefix count; a kms key ARN
+// and a non-kms ARN both answer false.
+func (b *KMSBuilder) IsAlias(name string) bool {
+	if _, service, _, _, resource := SplitARN(name); service == "kms" {
+		return strings.HasPrefix(resource, "alias/")
+	}
+	return strings.HasPrefix(name, "alias/")
+}
 
 // ACMBuilder provides methods for constructing ACM (AWS Certificate Manager) ARNs.
 type ACMBuilder struct{ *ARNBuilder }

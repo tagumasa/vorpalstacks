@@ -18,12 +18,24 @@ type setAssignment struct {
 }
 
 // updateClauses holds parsed SET/REMOVE/ADD/DELETE clauses from a
-// DynamoDB PartiQL UPDATE statement.
+// DynamoDB PartiQL UPDATE statement, plus the statement's RETURNING
+// clause value in its canonical form when one is present.
 type updateClauses struct {
 	setAssignments    []setAssignment
 	removeAttrs       []string
 	addAssignments    []setAssignment
 	deleteAssignments []setAssignment
+	returning         string
+}
+
+// updateClauseSegment is one keyword-delimited action segment of a manual
+// UPDATE parse, kept in statement order: an UPDATE may repeat an action
+// keyword (the reference documents a two-SET statement), so collecting the
+// segments in a keyword-keyed map would let a later clause overwrite the
+// earlier one's intent.
+type updateClauseSegment struct {
+	keyword string
+	text    string
 }
 
 func parsePartiQLParams(params map[string]interface{}) *partiQLParams {
@@ -146,13 +158,13 @@ func parseInsertStatementWithParams(statement string, params *partiQLParams) (ta
 }
 
 // findClauseKeywordPositions scans s for top-level (non-quoted) occurrences
-// of PartiQL UPDATE clause keywords: SET, REMOVE, ADD, DELETE, WHERE.
-// Keywords inside single-quoted string literals or double-quoted identifiers
-// are skipped. The result is a slice of [start, end] byte offsets, matching
-// the semantics of regexp FindAllStringIndex so callers can use the same
-// indexing logic.
+// of PartiQL UPDATE clause keywords: SET, REMOVE, ADD, DELETE, WHERE,
+// RETURNING. Keywords inside single-quoted string literals or double-quoted
+// identifiers are skipped. The result is a slice of [start, end] byte
+// offsets, matching the semantics of regexp FindAllStringIndex so callers
+// can use the same indexing logic.
 func findClauseKeywordPositions(s string) [][2]int {
-	keywords := []string{"SET", "REMOVE", "ADD", "DELETE", "WHERE"}
+	keywords := []string{"SET", "REMOVE", "ADD", "DELETE", "WHERE", "RETURNING"}
 
 	upperS := strings.ToUpper(s)
 	n := len(s)
@@ -215,14 +227,14 @@ func findClauseKeywordPositions(s string) [][2]int {
 	return result
 }
 
-func parseUpdateStatement(statement string) (tableName string, clauses updateClauses, whereExpr sqlparser.Expr) {
+func parseUpdateStatement(statement string) (tableName string, clauses updateClauses, whereExpr sqlparser.Expr, err error) {
 	// First try the standard sqlparser — handles SET-only UPDATE.
-	stmt, err := sqlparser.ParseWithOptions(statement, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
-	if err == nil {
+	stmt, parseErr := sqlparser.ParseWithOptions(statement, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
+	if parseErr == nil {
 		if upd, ok := stmt.(*sqlparser.Update); ok {
 			tableName = extractTableNameFromExprs(upd.TableExprs)
 			for _, expr := range upd.Exprs {
-				name := trimQuotes(sqlparser.String(expr.Name))
+				name := colNameDocumentPath(expr.Name)
 				clauses.setAssignments = append(clauses.setAssignments, setAssignment{
 					attrName: name,
 					value:    expr.Expr,
@@ -231,7 +243,7 @@ func parseUpdateStatement(statement string) (tableName string, clauses updateCla
 			if upd.Where != nil {
 				whereExpr = upd.Where.Expr
 			}
-			return tableName, clauses, whereExpr
+			return tableName, clauses, whereExpr, nil
 		}
 	}
 
@@ -240,14 +252,18 @@ func parseUpdateStatement(statement string) (tableName string, clauses updateCla
 }
 
 // parseUpdateStatementManual splits the statement on top-level keywords
-// and extracts table name, clause segments, and WHERE expression.
-func parseUpdateStatementManual(statement string) (tableName string, clauses updateClauses, whereExpr sqlparser.Expr) {
+// and extracts table name, clause segments, and WHERE expression. Any
+// segment value or WHERE that fails its reparse fails the whole statement
+// — a partially-parsed UPDATE must never execute with dropped intent —
+// and every failure returns an empty table name, so lock-key derivation
+// locks nothing for a statement the engine is about to reject.
+func parseUpdateStatementManual(statement string) (tableName string, clauses updateClauses, whereExpr sqlparser.Expr, err error) {
 	upper := strings.ToUpper(statement)
 
 	// Find the UPDATE keyword.
 	updateIdx := strings.Index(upper, "UPDATE")
 	if updateIdx != 0 {
-		return "", clauses, nil
+		return "", clauses, nil, ErrInvalidParameter
 	}
 	rest := statement[updateIdx+6:]
 
@@ -255,16 +271,18 @@ func parseUpdateStatementManual(statement string) (tableName string, clauses upd
 	matches := findClauseKeywordPositions(rest)
 
 	if len(matches) == 0 {
-		return "", clauses, nil
+		return "", clauses, nil, ErrInvalidParameter
 	}
 
 	// Table name is between UPDATE and the first keyword.
 	firstKW := matches[0][0]
 	tableName = trimQuotes(strings.TrimSpace(rest[:firstKW]))
 
-	// Extract WHERE expression separately.
+	// Extract WHERE and RETURNING expressions separately; action segments
+	// keep their statement order.
 	whereText := ""
-	clauseTexts := make(map[string]string)
+	returningText := ""
+	var actionSegments []updateClauseSegment
 	for i, m := range matches {
 		kwStart := m[0]
 		kwEnd := m[1]
@@ -277,59 +295,96 @@ func parseUpdateStatementManual(statement string) (tableName string, clauses upd
 		}
 		segment := strings.TrimSpace(rest[kwEnd:segEnd])
 
-		if kw == "WHERE" {
+		switch kw {
+		case "WHERE":
 			whereText = segment
-		} else {
-			clauseTexts[kw] = segment
+		case "RETURNING":
+			returningText = segment
+		default:
+			actionSegments = append(actionSegments, updateClauseSegment{keyword: kw, text: segment})
 		}
 	}
 
-	// Parse the WHERE clause with the sqlparser expression engine.
+	// The RETURNING clause value is part of the statement grammar: a value
+	// outside the documented set fails the statement before anything
+	// executes, never executes with the requested return dropped.
+	if returningText != "" {
+		returning, rErr := parseReturningClause(returningText)
+		if rErr != nil {
+			return "", clauses, nil, rErr
+		}
+		clauses.returning = returning
+	}
+
+	// Parse the WHERE clause with the sqlparser expression engine. A WHERE
+	// that fails its reparse fails the statement: executing the update with
+	// no filter would be the opposite of the request's intent.
 	if whereText != "" {
 		// Wrap in a fake SELECT to parse the WHERE expression.
 		fakeStmt := "SELECT * FROM t WHERE " + whereText
-		if parsed, pErr := sqlparser.ParseWithOptions(fakeStmt, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL}); pErr == nil {
-			if sel, ok := parsed.(*sqlparser.Select); ok && sel.Where != nil {
-				whereExpr = sel.Where.Expr
+		parsed, pErr := sqlparser.ParseWithOptions(fakeStmt, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
+		if pErr != nil {
+			return "", clauses, nil, ErrInvalidParameter
+		}
+		sel, ok := parsed.(*sqlparser.Select)
+		if !ok || sel.Where == nil {
+			return "", clauses, nil, ErrInvalidParameter
+		}
+		whereExpr = sel.Where.Expr
+	}
+
+	// Parse each action segment in statement order: a repeated keyword
+	// appends its assignments to the same clause list, so a two-SET
+	// statement keeps both clauses' writes.
+	for _, seg := range actionSegments {
+		switch seg.keyword {
+		case "SET":
+			assignments, segErr := parseSetSegment(seg.text)
+			if segErr != nil {
+				return "", clauses, nil, segErr
 			}
+			clauses.setAssignments = append(clauses.setAssignments, assignments...)
+		case "REMOVE":
+			clauses.removeAttrs = append(clauses.removeAttrs, parseRemoveSegment(seg.text)...)
+		case "ADD":
+			assignments, segErr := parseAddDeleteSegment(seg.text)
+			if segErr != nil {
+				return "", clauses, nil, segErr
+			}
+			clauses.addAssignments = append(clauses.addAssignments, assignments...)
+		case "DELETE":
+			assignments, segErr := parseAddDeleteSegment(seg.text)
+			if segErr != nil {
+				return "", clauses, nil, segErr
+			}
+			clauses.deleteAssignments = append(clauses.deleteAssignments, assignments...)
 		}
 	}
 
-	// Parse each clause segment.
-	if seg, ok := clauseTexts["SET"]; ok {
-		clauses.setAssignments = parseSetSegment(seg)
-	}
-	if seg, ok := clauseTexts["REMOVE"]; ok {
-		clauses.removeAttrs = parseRemoveSegment(seg)
-	}
-	if seg, ok := clauseTexts["ADD"]; ok {
-		clauses.addAssignments = parseAddDeleteSegment(seg)
-	}
-	if seg, ok := clauseTexts["DELETE"]; ok {
-		clauses.deleteAssignments = parseAddDeleteSegment(seg)
-	}
-
-	return tableName, clauses, whereExpr
+	return tableName, clauses, whereExpr, nil
 }
 
 // parseSetSegment parses "col = expr, col = expr" into setAssignments.
-func parseSetSegment(seg string) []setAssignment {
+// A segment the expression engine cannot parse fails the statement —
+// returning no assignments would let the update execute without the
+// requested writes.
+func parseSetSegment(seg string) ([]setAssignment, error) {
 	// Use sqlparser to parse a fake UPDATE to extract expressions.
 	fakeStmt := `UPDATE "t" SET ` + seg
 	stmt, err := sqlparser.ParseWithOptions(fakeStmt, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
 	if err != nil {
-		return nil
+		return nil, ErrInvalidParameter
 	}
 	upd, ok := stmt.(*sqlparser.Update)
 	if !ok {
-		return nil
+		return nil, ErrInvalidParameter
 	}
 	var result []setAssignment
 	for _, expr := range upd.Exprs {
-		name := trimQuotes(sqlparser.String(expr.Name))
+		name := colNameDocumentPath(expr.Name)
 		result = append(result, setAssignment{attrName: name, value: expr.Expr})
 	}
-	return result
+	return result, nil
 }
 
 // parseRemoveSegment parses "col, col, col" into a list of attribute names.
@@ -337,7 +392,7 @@ func parseRemoveSegment(seg string) []string {
 	parts := strings.Split(seg, ",")
 	var result []string
 	for _, p := range parts {
-		name := trimQuotes(strings.TrimSpace(p))
+		name := renderPathText(strings.TrimSpace(p))
 		if name != "" {
 			result = append(result, name)
 		}
@@ -346,8 +401,11 @@ func parseRemoveSegment(seg string) []string {
 }
 
 // parseAddDeleteSegment parses "col expr, col expr" into setAssignments.
-// ADD and DELETE both use the same col + value syntax.
-func parseAddDeleteSegment(seg string) []setAssignment {
+// ADD and DELETE both use the same col + value syntax. A value that fails
+// its reparse — or a target carrying no value at all — fails the segment:
+// silently dropping it would execute the statement without the requested
+// action.
+func parseAddDeleteSegment(seg string) ([]setAssignment, error) {
 	// Parse by splitting on commas that are NOT inside parentheses.
 	var pairs []string
 	depth := 0
@@ -373,35 +431,100 @@ func parseAddDeleteSegment(seg string) []setAssignment {
 		// Split into name and value on the first space.
 		spaceIdx := strings.IndexAny(pair, " \t")
 		if spaceIdx < 0 {
-			continue
+			return nil, ErrInvalidParameter
 		}
-		name := trimQuotes(strings.TrimSpace(pair[:spaceIdx]))
+		name := renderPathText(strings.TrimSpace(pair[:spaceIdx]))
 		valStr := strings.TrimSpace(pair[spaceIdx+1:])
 
 		// Parse the value via a fake SET UPDATE.
 		fakeStmt := `UPDATE "t" SET "fake" = ` + valStr
 		stmt, err := sqlparser.ParseWithOptions(fakeStmt, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
 		if err != nil {
-			continue
+			return nil, ErrInvalidParameter
 		}
 		upd, ok := stmt.(*sqlparser.Update)
 		if !ok || len(upd.Exprs) == 0 {
-			continue
+			return nil, ErrInvalidParameter
 		}
 		result = append(result, setAssignment{attrName: name, value: upd.Exprs[0].Expr})
 	}
-	return result
+	return result, nil
 }
 
-func parseDeleteStatement(statement string) (tableName string, whereExpr sqlparser.Expr) {
-	stmt, err := sqlparser.ParseWithOptions(statement, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
+// parseReturningClause validates one RETURNING clause value against the
+// documented grammar and returns its canonical form: the four UPDATE values
+// built from ALL/MODIFIED and OLD/NEW plus the closing star. The value is
+// case-insensitive like every PartiQL keyword; anything outside the set
+// fails the statement.
+func parseReturningClause(text string) (string, error) {
+	canonical := strings.ToUpper(strings.Join(strings.Fields(text), " "))
+	switch canonical {
+	case "ALL OLD *", "MODIFIED OLD *", "ALL NEW *", "MODIFIED NEW *":
+		return canonical, nil
+	}
+	return "", ErrInvalidParameter
+}
+
+// splitReturningSuffix splits a statement into its body and the text of a
+// trailing top-level RETURNING clause, if one is present. The scan skips
+// single-quoted string literals and double-quoted identifiers, so a literal
+// 'RETURNING' inside a value never splits the statement.
+func splitReturningSuffix(statement string) (body, returning string) {
+	isWordChar := func(b byte) bool {
+		return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') || b == '_'
+	}
+	n := len(statement)
+	i := 0
+	for i < n {
+		c := statement[i]
+		if c == '\'' || c == '"' {
+			quote := c
+			i++
+			for i < n {
+				if statement[i] == '\\' && i+1 < n {
+					i += 2
+					continue
+				}
+				if statement[i] == quote {
+					i++
+					break
+				}
+				i++
+			}
+			continue
+		}
+		if i+9 <= n && strings.EqualFold(statement[i:i+9], "RETURNING") &&
+			(i == 0 || !isWordChar(statement[i-1])) &&
+			(i+9 >= n || !isWordChar(statement[i+9])) {
+			return strings.TrimSpace(statement[:i]), strings.TrimSpace(statement[i+9:])
+		}
+		i++
+	}
+	return statement, ""
+}
+
+// parseDeleteStatement parses a PartiQL DELETE FROM statement. The DELETE
+// grammar carries one optional RETURNING clause whose only documented value
+// is ALL OLD * — a returnvalues value outside that set fails the statement,
+// which then yields an empty table name so lock-key derivation locks
+// nothing for it.
+func parseDeleteStatement(statement string) (tableName string, whereExpr sqlparser.Expr, returning string) {
+	body, returningText := splitReturningSuffix(statement)
+	if returningText != "" {
+		parsed, rErr := parseReturningClause(returningText)
+		if rErr != nil || parsed != "ALL OLD *" {
+			return "", nil, ""
+		}
+		returning = parsed
+	}
+	stmt, err := sqlparser.ParseWithOptions(body, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
 	if err != nil {
-		return "", nil
+		return "", nil, ""
 	}
 
 	del, ok := stmt.(*sqlparser.Delete)
 	if !ok {
-		return "", nil
+		return "", nil, ""
 	}
 
 	tableName = extractTableNameFromExprs(del.TableExprs)
@@ -410,7 +533,7 @@ func parseDeleteStatement(statement string) (tableName string, whereExpr sqlpars
 		whereExpr = del.Where.Expr
 	}
 
-	return tableName, whereExpr
+	return tableName, whereExpr, returning
 }
 
 func extractTableNameFromExprs(tableExprs sqlparser.TableExprs) string {
@@ -445,6 +568,49 @@ func trimQuotes(name string) string {
 	return name
 }
 
+// selectExprName renders a SELECT-plane name expression — an order key or a
+// projection — as the attribute name it addresses: a column reference
+// renders its raw segment values (an identifier the printer would escape, a
+// keyword or a non-ASCII name, keeps its name), and any other expression
+// keeps its printed form.
+func selectExprName(expr sqlparser.Expr) string {
+	if col, ok := expr.(*sqlparser.ColName); ok {
+		return colNameDocumentPath(col)
+	}
+	return trimQuotes(sqlparser.String(expr))
+}
+
+// renderPathText renders a clause target's statement text as the document
+// path it names: the strip runs per segment after a quote-aware split,
+// because a qualified target carries one quote pair per segment — stripping
+// the whole text's outer pair alone would leave the inner segments quoted.
+// A segment keeps any bracket index it carries; the doc-path grammar parses
+// the suffix on its own.
+func renderPathText(text string) string {
+	segments := make([]string, 0, strings.Count(text, ".")+1)
+	var current strings.Builder
+	var quote rune
+	for _, r := range text {
+		switch {
+		case quote != 0:
+			current.WriteRune(r)
+			if r == quote {
+				quote = 0
+			}
+		case r == '"' || r == '`':
+			quote = r
+			current.WriteRune(r)
+		case r == '.':
+			segments = append(segments, trimQuotes(current.String()))
+			current.Reset()
+		default:
+			current.WriteRune(r)
+		}
+	}
+	segments = append(segments, trimQuotes(current.String()))
+	return strings.Join(segments, ".")
+}
+
 type orderByClause struct {
 	column    string
 	direction string
@@ -470,7 +636,7 @@ func parseSelectStatementWithOrderBy(statement string) (tableName string, whereE
 
 	if len(sel.OrderBy) > 0 {
 		orderBy = &orderByClause{
-			column:    sqlparser.String(sel.OrderBy[0].Expr),
+			column:    selectExprName(sel.OrderBy[0].Expr),
 			direction: "ASC",
 		}
 		if sel.OrderBy[0].Direction == sqlparser.DescScr {
@@ -483,9 +649,7 @@ func parseSelectStatementWithOrderBy(statement string) (tableName string, whereE
 		case *sqlparser.StarExpr:
 			selectCols = nil
 		case *sqlparser.AliasedExpr:
-			colName := sqlparser.String(e.Expr)
-			colName = trimQuotes(colName)
-			selectCols = append(selectCols, colName)
+			selectCols = append(selectCols, selectExprName(e.Expr))
 		}
 	}
 	if len(selectCols) == 0 {

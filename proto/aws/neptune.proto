@@ -2225,7 +2225,7 @@ message DescribeEventsMessage {
 
   optional string sourceidentifier = 190015756;
 
-  SourceType sourcetype = 195731217;
+  optional SourceType sourcetype = 195731217;
 
   optional string starttime = 370760303;
 
@@ -2377,7 +2377,7 @@ message Event {
 
   optional string sourceidentifier = 190015756;
 
-  SourceType sourcetype = 195731217;
+  optional SourceType sourcetype = 195731217;
 
 }
 
@@ -2509,7 +2509,7 @@ message FailoverState {
 
   optional bool isdatalossallowed = 28895927;
 
-  FailoverStatus status = 6222352;
+  optional FailoverStatus status = 6222352;
 
   optional string todbclusterarn = 469618472;
 
@@ -3223,7 +3223,7 @@ message Parameter {
 
   optional string allowedvalues = 294513354;
 
-  ApplyMethod applymethod = 521377563;
+  optional ApplyMethod applymethod = 521377563;
 
   optional string applytype = 65384676;
 

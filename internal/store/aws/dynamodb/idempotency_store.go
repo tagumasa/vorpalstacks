@@ -28,11 +28,14 @@ func NewIdempotencyStore(store storage.BasicStorage, region string) *Idempotency
 	}
 }
 
-// Idempotency record states: a token is claimed as in-progress before the
-// transaction executes and promoted to completed once it has committed.
+// IdempotencyState distinguishes the two record states of a client request
+// token: a token is claimed as in-progress before the transaction executes
+// and promoted to completed once it has committed.
+type IdempotencyState string
+
 const (
-	IdempotencyStateInProgress = "in_progress"
-	IdempotencyStateCompleted  = "completed"
+	IdempotencyStateInProgress IdempotencyState = "in_progress"
+	IdempotencyStateCompleted  IdempotencyState = "completed"
 )
 
 // idempotencyRecord is the in-memory form of one token: the hash of the
@@ -41,7 +44,7 @@ const (
 // read capacity units a same-token replay reports.
 type idempotencyRecord struct {
 	RequestHash string
-	State       string
+	State       IdempotencyState
 	ExpiresAt   int64
 	ReadUnits   map[string]float64
 }
@@ -55,7 +58,7 @@ func idempotencyRecordFromBytes(data []byte) (*idempotencyRecord, error) {
 	}
 	return &idempotencyRecord{
 		RequestHash: pbRecord.RequestHash,
-		State:       pbRecord.State,
+		State:       IdempotencyState(pbRecord.State),
 		ExpiresAt:   pbRecord.ExpiresAt,
 		ReadUnits:   pbRecord.ReplayReadUnits,
 	}, nil
@@ -67,7 +70,7 @@ func idempotencyRecordFromBytes(data []byte) (*idempotencyRecord, error) {
 // failure — and undecodable record bytes — is returned as an error: treating
 // corruption as absence would silently re-execute a request the caller
 // believes is deduplicated.
-func (s *IdempotencyStore) Lookup(token string) (string, string, map[string]float64, bool, error) {
+func (s *IdempotencyStore) Lookup(token string) (string, IdempotencyState, map[string]float64, bool, error) {
 	data, err := s.BaseStore.GetRaw(token)
 	if err != nil {
 		if commonstore.IsNotFound(err) {
@@ -89,10 +92,10 @@ func (s *IdempotencyStore) Lookup(token string) (string, string, map[string]floa
 // Record stores the token with its request hash, claim state, expiry, and —
 // for completed TransactWriteItems records — the per-table read units a
 // replay reports (nil leaves the record without replay units).
-func (s *IdempotencyStore) Record(token, requestHash, state string, expiresAt time.Time, readUnits map[string]float64) error {
+func (s *IdempotencyStore) Record(token, requestHash string, state IdempotencyState, expiresAt time.Time, readUnits map[string]float64) error {
 	data, err := proto.Marshal(&pb.IdempotencyRecord{
 		RequestHash:     requestHash,
-		State:           state,
+		State:           string(state),
 		ExpiresAt:       expiresAt.Unix(),
 		ReplayReadUnits: readUnits,
 	})

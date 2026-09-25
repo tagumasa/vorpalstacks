@@ -896,7 +896,7 @@ message AliasICPRecordal {
 
   optional string cname = 420235386;
 
-  ICPRecordalStatus icprecordalstatus = 230990942;
+  optional ICPRecordalStatus icprecordalstatus = 230990942;
 
 }
 
@@ -938,7 +938,7 @@ message AnycastIpList {
 
   string id = 384350465;
 
-  IpAddressType ipaddresstype = 459110693;
+  optional IpAddressType ipaddresstype = 459110693;
 
   int32 ipcount = 475138532;
 
@@ -984,7 +984,7 @@ message AnycastIpListSummary {
 
   string id = 384350465;
 
-  IpAddressType ipaddresstype = 459110693;
+  optional IpAddressType ipaddresstype = 459110693;
 
   int32 ipcount = 475138532;
 
@@ -1858,7 +1858,7 @@ message CopyDistributionResult {
 
 message CreateAnycastIpListRequest {
 
-  IpAddressType ipaddresstype = 459110693;
+  optional IpAddressType ipaddresstype = 459110693;
 
   int32 ipcount = 475138532;
 
@@ -2498,7 +2498,7 @@ message CustomOriginConfig {
 
   int32 httpsport = 153043918;
 
-  IpAddressType ipaddresstype = 459110693;
+  optional IpAddressType ipaddresstype = 459110693;
 
   optional int32 originkeepalivetimeout = 214128603;
 
@@ -2836,7 +2836,7 @@ message DescribeConnectionFunctionRequest {
 
   string identifier = 41865311;
 
-  FunctionStage stage = 236325838;
+  optional FunctionStage stage = 236325838;
 
 }
 
@@ -2856,7 +2856,7 @@ message DescribeFunctionRequest {
 
   string name = 266367751;
 
-  FunctionStage stage = 236325838;
+  optional FunctionStage stage = 236325838;
 
 }
 
@@ -2986,7 +2986,7 @@ message DistributionConfig {
 
   ConnectionFunctionAssociation connectionfunctionassociation = 253879893;
 
-  ConnectionMode connectionmode = 82068023;
+  optional ConnectionMode connectionmode = 82068023;
 
   optional string continuousdeploymentpolicyid = 370023231;
 
@@ -2998,7 +2998,7 @@ message DistributionConfig {
 
   optional bool enabled = 478602303;
 
-  HttpVersion httpversion = 390398520;
+  optional HttpVersion httpversion = 390398520;
 
   optional bool isipv6enabled = 526764378;
 
@@ -3008,7 +3008,7 @@ message DistributionConfig {
 
   Origins origins = 277391381;
 
-  PriceClass priceclass = 488692315;
+  optional PriceClass priceclass = 488692315;
 
   Restrictions restrictions = 521105179;
 
@@ -3160,7 +3160,7 @@ message DistributionSummary {
 
   ConnectionFunctionAssociation connectionfunctionassociation = 253879893;
 
-  ConnectionMode connectionmode = 82068023;
+  optional ConnectionMode connectionmode = 82068023;
 
   CustomErrorResponses customerrorresponses = 306704557;
 
@@ -3338,7 +3338,7 @@ message DomainResult {
 
   string domain = 505186578;
 
-  DomainStatus status = 6222352;
+  optional DomainStatus status = 6222352;
 
 }
 
@@ -3754,7 +3754,7 @@ message FunctionMetadata {
 
   string lastmodifiedtime = 236912992;
 
-  FunctionStage stage = 236325838;
+  optional FunctionStage stage = 236325838;
 
 }
 
@@ -3946,7 +3946,7 @@ message GetConnectionFunctionRequest {
 
   string identifier = 41865311;
 
-  FunctionStage stage = 236325838;
+  optional FunctionStage stage = 236325838;
 
 }
 
@@ -4192,7 +4192,7 @@ message GetFunctionRequest {
 
   string name = 266367751;
 
-  FunctionStage stage = 236325838;
+  optional FunctionStage stage = 236325838;
 
 }
 
@@ -5050,7 +5050,7 @@ message IpamCidrConfig {
 
   string ipampoolarn = 116678828;
 
-  IpamCidrStatus status = 6222352;
+  optional IpamCidrStatus status = 6222352;
 
 }
 
@@ -5318,7 +5318,7 @@ message ListCachePoliciesRequest {
 
   optional int32 maxitems = 506899220;
 
-  CachePolicyType type = 290836590;
+  optional CachePolicyType type = 290836590;
 
 }
 
@@ -5382,7 +5382,7 @@ message ListConnectionFunctionsRequest {
 
   optional int32 maxitems = 506899220;
 
-  FunctionStage stage = 236325838;
+  optional FunctionStage stage = 236325838;
 
 }
 
@@ -5818,7 +5818,7 @@ message ListFunctionsRequest {
 
   optional int32 maxitems = 506899220;
 
-  FunctionStage stage = 236325838;
+  optional FunctionStage stage = 236325838;
 
 }
 
@@ -5938,7 +5938,7 @@ message ListOriginRequestPoliciesRequest {
 
   optional int32 maxitems = 506899220;
 
-  OriginRequestPolicyType type = 290836590;
+  optional OriginRequestPolicyType type = 290836590;
 
 }
 
@@ -5994,7 +5994,7 @@ message ListResponseHeadersPoliciesRequest {
 
   optional int32 maxitems = 506899220;
 
-  ResponseHeadersPolicyType type = 290836590;
+  optional ResponseHeadersPolicyType type = 290836590;
 
 }
 
@@ -6110,11 +6110,11 @@ message ManagedCertificateDetails {
 
   optional string certificatearn = 92693880;
 
-  ManagedCertificateStatus certificatestatus = 508638899;
+  optional ManagedCertificateStatus certificatestatus = 508638899;
 
   repeated ValidationTokenDetail validationtokendetails = 370214280;
 
-  ValidationTokenHost validationtokenhost = 521935290;
+  optional ValidationTokenHost validationtokenhost = 521935290;
 
 }
 
@@ -6124,7 +6124,7 @@ message ManagedCertificateDetails {
 
 message ManagedCertificateRequest {
 
-  CertificateTransparencyLoggingPreference certificatetransparencyloggingpreference = 414636075;
+  optional CertificateTransparencyLoggingPreference certificatetransparencyloggingpreference = 414636075;
 
   optional string primarydomainname = 229268599;
 
@@ -6578,7 +6578,7 @@ message OriginGroup {
 
   OriginGroupMembers members = 222074545;
 
-  OriginGroupSelectionCriteria selectioncriteria = 3089005;
+  optional OriginGroupSelectionCriteria selectioncriteria = 3089005;
 
 }
 
@@ -7798,7 +7798,7 @@ message StreamingDistributionConfig {
 
   StreamingLoggingConfig logging = 65655615;
 
-  PriceClass priceclass = 488692315;
+  optional PriceClass priceclass = 488692315;
 
   S3Origin s3origin = 197642510;
 
@@ -7970,7 +7970,7 @@ message TestConnectionFunctionRequest {
 
   string ifmatch = 93178704;
 
-  FunctionStage stage = 236325838;
+  optional FunctionStage stage = 236325838;
 
 }
 
@@ -8002,7 +8002,7 @@ message TestFunctionRequest {
 
   string name = 266367751;
 
-  FunctionStage stage = 236325838;
+  optional FunctionStage stage = 236325838;
 
 }
 
@@ -8584,7 +8584,7 @@ message TrustStore {
 
   optional string reason = 20005178;
 
-  TrustStoreStatus status = 6222352;
+  optional TrustStoreStatus status = 6222352;
 
   optional bool useclientcertificateocspendpoint = 275801979;
 
@@ -8718,7 +8718,7 @@ message UpdateAnycastIpListRequest {
 
   string ifmatch = 93178704;
 
-  IpAddressType ipaddresstype = 459110693;
+  optional IpAddressType ipaddresstype = 459110693;
 
   repeated IpamCidrConfig ipamcidrconfigs = 314539184;
 
@@ -9308,15 +9308,15 @@ message ViewerCertificate {
 
   optional string certificate = 198060817;
 
-  CertificateSource certificatesource = 63765974;
+  optional CertificateSource certificatesource = 63765974;
 
   optional bool cloudfrontdefaultcertificate = 529306422;
 
   optional string iamcertificateid = 92232821;
 
-  MinimumProtocolVersion minimumprotocolversion = 367416622;
+  optional MinimumProtocolVersion minimumprotocolversion = 367416622;
 
-  SSLSupportMethod sslsupportmethod = 441557986;
+  optional SSLSupportMethod sslsupportmethod = 441557986;
 
 }
 
@@ -9326,7 +9326,7 @@ message ViewerCertificate {
 
 message ViewerMtlsConfig {
 
-  ViewerMtlsMode mode = 323909427;
+  optional ViewerMtlsMode mode = 323909427;
 
   TrustStoreConfig truststoreconfig = 397230249;
 

@@ -82,11 +82,11 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 
 	in := &CreateFunctionInput{
 		FunctionName: req.Msg.Functionname,
-		Runtime:      protoToStoreRuntime(req.Msg.Runtime),
+		Runtime:      protoToStoreRuntime(req.Msg.GetRuntime()),
 		Role:         req.Msg.Role,
 		Handler:      req.Msg.GetHandler(),
 		Description:  req.Msg.GetDescription(),
-		PackageType:  protoToPackageType(req.Msg.Packagetype),
+		PackageType:  protoToPackageType(req.Msg.GetPackagetype()),
 		MemorySize:   req.Msg.GetMemorysize(),
 		Timeout:      req.Msg.GetTimeout(),
 		Region:       defaults.GetRegionFromHeader(req.Header()),

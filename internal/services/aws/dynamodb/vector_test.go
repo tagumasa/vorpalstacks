@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -160,7 +161,7 @@ func TestCreateTableCoreRejectsExcessVectorIndexes(t *testing.T) {
 		BillingMode:          dbstore.BillingModePayPerRequest,
 		VectorIndexes:        indexes,
 	}
-	if _, err := svc.createTableCore(nil, in); !errors.Is(err, ErrInvalidParameter) {
+	if _, err := svc.createTableCore(context.Background(), nil, nil, in); !errors.Is(err, ErrInvalidParameter) {
 		t.Fatalf("%d vector indexes: expected ErrInvalidParameter, got %v", len(indexes), err)
 	}
 }
@@ -170,7 +171,7 @@ func TestApplyVectorIndexUpdates(t *testing.T) {
 		{IndexName: "old-idx", VectorAttributeName: "embedding", Dimensions: 3, DistanceFunction: "COSINE"},
 	}
 
-	created, createdNames, deletedNames, err := applyVectorIndexUpdates("arn:aws:dynamodb:us-east-1:123456789012:table/t", existing, []interface{}{
+	created, createdNames, deletedNames, err := applyVectorIndexUpdates(testARNBuilder(), "t", existing, []interface{}{
 		map[string]interface{}{"Create": vectorIndexParams("new-idx", "embedding", float64(3), "EUCLIDEAN")},
 	})
 	if err != nil {
@@ -189,7 +190,7 @@ func TestApplyVectorIndexUpdates(t *testing.T) {
 		t.Errorf("created index ARN: %+v", createdIdx)
 	}
 
-	afterDelete, _, deletedNames, err := applyVectorIndexUpdates("arn", existing, []interface{}{
+	afterDelete, _, deletedNames, err := applyVectorIndexUpdates(testARNBuilder(), "t", existing, []interface{}{
 		map[string]interface{}{"Delete": map[string]interface{}{"IndexName": "old-idx"}},
 	})
 	if err != nil {
@@ -199,20 +200,20 @@ func TestApplyVectorIndexUpdates(t *testing.T) {
 		t.Fatalf("delete result: idx=%v deleted=%v", afterDelete, deletedNames)
 	}
 
-	if _, _, _, err := applyVectorIndexUpdates("arn", existing, []interface{}{
+	if _, _, _, err := applyVectorIndexUpdates(testARNBuilder(), "t", existing, []interface{}{
 		map[string]interface{}{"Delete": map[string]interface{}{"IndexName": "old-idx"}},
 		map[string]interface{}{"Delete": map[string]interface{}{"IndexName": "other"}},
 	}); err == nil {
 		t.Errorf("two updates in one request: expected rejection")
 	}
 
-	if _, _, _, err := applyVectorIndexUpdates("arn", existing, []interface{}{
+	if _, _, _, err := applyVectorIndexUpdates(testARNBuilder(), "t", existing, []interface{}{
 		map[string]interface{}{"Create": vectorIndexParams("old-idx", "embedding", float64(3), "COSINE")},
 	}); err == nil {
 		t.Errorf("create over existing name: expected rejection")
 	}
 
-	if _, _, _, err := applyVectorIndexUpdates("arn", existing, []interface{}{
+	if _, _, _, err := applyVectorIndexUpdates(testARNBuilder(), "t", existing, []interface{}{
 		map[string]interface{}{"Delete": map[string]interface{}{"IndexName": "absent"}},
 	}); err == nil {
 		t.Errorf("delete of absent index: expected rejection")

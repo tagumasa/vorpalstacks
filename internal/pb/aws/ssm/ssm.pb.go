@@ -6452,7 +6452,7 @@ type AssociationDescription struct {
 	Associationversion            *string                            `protobuf:"bytes,447890705,opt,name=associationversion,proto3,oneof" json:"associationversion,omitempty"`
 	Automationtargetparametername *string                            `protobuf:"bytes,348584826,opt,name=automationtargetparametername,proto3,oneof" json:"automationtargetparametername,omitempty"`
 	Calendarnames                 []string                           `protobuf:"bytes,36075966,rep,name=calendarnames,proto3" json:"calendarnames,omitempty"`
-	Complianceseverity            AssociationComplianceSeverity      `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity" json:"complianceseverity,omitempty"`
+	Complianceseverity            *AssociationComplianceSeverity     `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity,oneof" json:"complianceseverity,omitempty"`
 	Date                          *string                            `protobuf:"bytes,458388346,opt,name=date,proto3,oneof" json:"date,omitempty"`
 	Documentversion               *string                            `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Duration                      *int32                             `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
@@ -6469,7 +6469,7 @@ type AssociationDescription struct {
 	Scheduleexpression            *string                            `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
 	Scheduleoffset                *int32                             `protobuf:"varint,156928216,opt,name=scheduleoffset,proto3,oneof" json:"scheduleoffset,omitempty"`
 	Status                        *AssociationStatus                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
-	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
+	Synccompliance                *AssociationSyncCompliance         `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance,oneof" json:"synccompliance,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
 	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets                       []*Target                          `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
@@ -6565,8 +6565,8 @@ func (x *AssociationDescription) GetCalendarnames() []string {
 }
 
 func (x *AssociationDescription) GetComplianceseverity() AssociationComplianceSeverity {
-	if x != nil {
-		return x.Complianceseverity
+	if x != nil && x.Complianceseverity != nil {
+		return *x.Complianceseverity
 	}
 	return AssociationComplianceSeverity_ASSOCIATION_COMPLIANCE_SEVERITY_MEDIUM
 }
@@ -6684,8 +6684,8 @@ func (x *AssociationDescription) GetStatus() *AssociationStatus {
 }
 
 func (x *AssociationDescription) GetSynccompliance() AssociationSyncCompliance {
-	if x != nil {
-		return x.Synccompliance
+	if x != nil && x.Synccompliance != nil {
+		return *x.Synccompliance
 	}
 	return AssociationSyncCompliance_ASSOCIATION_SYNC_COMPLIANCE_MANUAL
 }
@@ -7366,7 +7366,7 @@ type AssociationVersionInfo struct {
 	Associationname               *string                            `protobuf:"bytes,313608216,opt,name=associationname,proto3,oneof" json:"associationname,omitempty"`
 	Associationversion            *string                            `protobuf:"bytes,447890705,opt,name=associationversion,proto3,oneof" json:"associationversion,omitempty"`
 	Calendarnames                 []string                           `protobuf:"bytes,36075966,rep,name=calendarnames,proto3" json:"calendarnames,omitempty"`
-	Complianceseverity            AssociationComplianceSeverity      `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity" json:"complianceseverity,omitempty"`
+	Complianceseverity            *AssociationComplianceSeverity     `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity,oneof" json:"complianceseverity,omitempty"`
 	Createddate                   *string                            `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
 	Documentversion               *string                            `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Duration                      *int32                             `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
@@ -7377,7 +7377,7 @@ type AssociationVersionInfo struct {
 	Parameters                    map[string]string                  `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Scheduleexpression            *string                            `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
 	Scheduleoffset                *int32                             `protobuf:"varint,156928216,opt,name=scheduleoffset,proto3,oneof" json:"scheduleoffset,omitempty"`
-	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
+	Synccompliance                *AssociationSyncCompliance         `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance,oneof" json:"synccompliance,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
 	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets                       []*Target                          `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
@@ -7458,8 +7458,8 @@ func (x *AssociationVersionInfo) GetCalendarnames() []string {
 }
 
 func (x *AssociationVersionInfo) GetComplianceseverity() AssociationComplianceSeverity {
-	if x != nil {
-		return x.Complianceseverity
+	if x != nil && x.Complianceseverity != nil {
+		return *x.Complianceseverity
 	}
 	return AssociationComplianceSeverity_ASSOCIATION_COMPLIANCE_SEVERITY_MEDIUM
 }
@@ -7535,8 +7535,8 @@ func (x *AssociationVersionInfo) GetScheduleoffset() int32 {
 }
 
 func (x *AssociationVersionInfo) GetSynccompliance() AssociationSyncCompliance {
-	if x != nil {
-		return x.Synccompliance
+	if x != nil && x.Synccompliance != nil {
+		return *x.Synccompliance
 	}
 	return AssociationSyncCompliance_ASSOCIATION_SYNC_COMPLIANCE_MANUAL
 }
@@ -7609,7 +7609,7 @@ func (x *AssociationVersionLimitExceeded) GetMessage() string {
 type AttachmentContent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Hash          *string                `protobuf:"bytes,250828530,opt,name=hash,proto3,oneof" json:"hash,omitempty"`
-	Hashtype      AttachmentHashType     `protobuf:"varint,172838330,opt,name=hashtype,proto3,enum=ssm.AttachmentHashType" json:"hashtype,omitempty"`
+	Hashtype      *AttachmentHashType    `protobuf:"varint,172838330,opt,name=hashtype,proto3,enum=ssm.AttachmentHashType,oneof" json:"hashtype,omitempty"`
 	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Size          *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	Url           *string                `protobuf:"bytes,354018239,opt,name=url,proto3,oneof" json:"url,omitempty"`
@@ -7655,8 +7655,8 @@ func (x *AttachmentContent) GetHash() string {
 }
 
 func (x *AttachmentContent) GetHashtype() AttachmentHashType {
-	if x != nil {
-		return x.Hashtype
+	if x != nil && x.Hashtype != nil {
+		return *x.Hashtype
 	}
 	return AttachmentHashType_ATTACHMENT_HASH_TYPE_SHA256
 }
@@ -7728,7 +7728,7 @@ func (x *AttachmentInformation) GetName() string {
 
 type AttachmentsSource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           AttachmentsSourceKey   `protobuf:"varint,219859213,opt,name=key,proto3,enum=ssm.AttachmentsSourceKey" json:"key,omitempty"`
+	Key           *AttachmentsSourceKey  `protobuf:"varint,219859213,opt,name=key,proto3,enum=ssm.AttachmentsSourceKey,oneof" json:"key,omitempty"`
 	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Values        []string               `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -7766,8 +7766,8 @@ func (*AttachmentsSource) Descriptor() ([]byte, []int) {
 }
 
 func (x *AttachmentsSource) GetKey() AttachmentsSourceKey {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return AttachmentsSourceKey_ATTACHMENTS_SOURCE_KEY_ATTACHMENTREFERENCE
 }
@@ -7919,43 +7919,43 @@ func (x *AutomationDefinitionVersionNotFoundException) GetMessage() string {
 }
 
 type AutomationExecution struct {
-	state                       protoimpl.MessageState    `protogen:"open.v1"`
-	Alarmconfiguration          *AlarmConfiguration       `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
-	Associationid               *string                   `protobuf:"bytes,138771986,opt,name=associationid,proto3,oneof" json:"associationid,omitempty"`
-	Automationexecutionid       *string                   `protobuf:"bytes,12449766,opt,name=automationexecutionid,proto3,oneof" json:"automationexecutionid,omitempty"`
-	Automationexecutionstatus   AutomationExecutionStatus `protobuf:"varint,531364411,opt,name=automationexecutionstatus,proto3,enum=ssm.AutomationExecutionStatus" json:"automationexecutionstatus,omitempty"`
-	Automationsubtype           AutomationSubtype         `protobuf:"varint,153542097,opt,name=automationsubtype,proto3,enum=ssm.AutomationSubtype" json:"automationsubtype,omitempty"`
-	Changerequestname           *string                   `protobuf:"bytes,468779362,opt,name=changerequestname,proto3,oneof" json:"changerequestname,omitempty"`
-	Currentaction               *string                   `protobuf:"bytes,337681497,opt,name=currentaction,proto3,oneof" json:"currentaction,omitempty"`
-	Currentstepname             *string                   `protobuf:"bytes,126991996,opt,name=currentstepname,proto3,oneof" json:"currentstepname,omitempty"`
-	Documentname                *string                   `protobuf:"bytes,120705488,opt,name=documentname,proto3,oneof" json:"documentname,omitempty"`
-	Documentversion             *string                   `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
-	Executedby                  *string                   `protobuf:"bytes,186546754,opt,name=executedby,proto3,oneof" json:"executedby,omitempty"`
-	Executionendtime            *string                   `protobuf:"bytes,139859196,opt,name=executionendtime,proto3,oneof" json:"executionendtime,omitempty"`
-	Executionstarttime          *string                   `protobuf:"bytes,429847391,opt,name=executionstarttime,proto3,oneof" json:"executionstarttime,omitempty"`
-	Failuremessage              *string                   `protobuf:"bytes,353556937,opt,name=failuremessage,proto3,oneof" json:"failuremessage,omitempty"`
-	Maxconcurrency              *string                   `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
-	Maxerrors                   *string                   `protobuf:"bytes,129851691,opt,name=maxerrors,proto3,oneof" json:"maxerrors,omitempty"`
-	Mode                        ExecutionMode             `protobuf:"varint,323909427,opt,name=mode,proto3,enum=ssm.ExecutionMode" json:"mode,omitempty"`
-	Opsitemid                   *string                   `protobuf:"bytes,25520466,opt,name=opsitemid,proto3,oneof" json:"opsitemid,omitempty"`
-	Outputs                     map[string]string         `protobuf:"bytes,455868918,rep,name=outputs,proto3" json:"outputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Parameters                  map[string]string         `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Parentautomationexecutionid *string                   `protobuf:"bytes,232537390,opt,name=parentautomationexecutionid,proto3,oneof" json:"parentautomationexecutionid,omitempty"`
-	Progresscounters            *ProgressCounters         `protobuf:"bytes,162419216,opt,name=progresscounters,proto3" json:"progresscounters,omitempty"`
-	Resolvedtargets             *ResolvedTargets          `protobuf:"bytes,361325602,opt,name=resolvedtargets,proto3" json:"resolvedtargets,omitempty"`
-	Runbooks                    []*Runbook                `protobuf:"bytes,514418725,rep,name=runbooks,proto3" json:"runbooks,omitempty"`
-	Scheduledtime               *string                   `protobuf:"bytes,334708242,opt,name=scheduledtime,proto3,oneof" json:"scheduledtime,omitempty"`
-	Stepexecutions              []*StepExecution          `protobuf:"bytes,164157981,rep,name=stepexecutions,proto3" json:"stepexecutions,omitempty"`
-	Stepexecutionstruncated     *bool                     `protobuf:"varint,472961151,opt,name=stepexecutionstruncated,proto3,oneof" json:"stepexecutionstruncated,omitempty"`
-	Target                      *string                   `protobuf:"bytes,191361385,opt,name=target,proto3,oneof" json:"target,omitempty"`
-	Targetlocations             []*TargetLocation         `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
-	Targetlocationsurl          *string                   `protobuf:"bytes,107583422,opt,name=targetlocationsurl,proto3,oneof" json:"targetlocationsurl,omitempty"`
-	Targetmaps                  []*TargetMapsEntry        `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
-	Targetparametername         *string                   `protobuf:"bytes,351056597,opt,name=targetparametername,proto3,oneof" json:"targetparametername,omitempty"`
-	Targets                     []*Target                 `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
-	Triggeredalarms             []*AlarmStateInformation  `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
-	Variables                   map[string]string         `protobuf:"bytes,429322339,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Warningmessage              *string                   `protobuf:"bytes,497413775,opt,name=warningmessage,proto3,oneof" json:"warningmessage,omitempty"`
+	state                       protoimpl.MessageState     `protogen:"open.v1"`
+	Alarmconfiguration          *AlarmConfiguration        `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
+	Associationid               *string                    `protobuf:"bytes,138771986,opt,name=associationid,proto3,oneof" json:"associationid,omitempty"`
+	Automationexecutionid       *string                    `protobuf:"bytes,12449766,opt,name=automationexecutionid,proto3,oneof" json:"automationexecutionid,omitempty"`
+	Automationexecutionstatus   *AutomationExecutionStatus `protobuf:"varint,531364411,opt,name=automationexecutionstatus,proto3,enum=ssm.AutomationExecutionStatus,oneof" json:"automationexecutionstatus,omitempty"`
+	Automationsubtype           *AutomationSubtype         `protobuf:"varint,153542097,opt,name=automationsubtype,proto3,enum=ssm.AutomationSubtype,oneof" json:"automationsubtype,omitempty"`
+	Changerequestname           *string                    `protobuf:"bytes,468779362,opt,name=changerequestname,proto3,oneof" json:"changerequestname,omitempty"`
+	Currentaction               *string                    `protobuf:"bytes,337681497,opt,name=currentaction,proto3,oneof" json:"currentaction,omitempty"`
+	Currentstepname             *string                    `protobuf:"bytes,126991996,opt,name=currentstepname,proto3,oneof" json:"currentstepname,omitempty"`
+	Documentname                *string                    `protobuf:"bytes,120705488,opt,name=documentname,proto3,oneof" json:"documentname,omitempty"`
+	Documentversion             *string                    `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
+	Executedby                  *string                    `protobuf:"bytes,186546754,opt,name=executedby,proto3,oneof" json:"executedby,omitempty"`
+	Executionendtime            *string                    `protobuf:"bytes,139859196,opt,name=executionendtime,proto3,oneof" json:"executionendtime,omitempty"`
+	Executionstarttime          *string                    `protobuf:"bytes,429847391,opt,name=executionstarttime,proto3,oneof" json:"executionstarttime,omitempty"`
+	Failuremessage              *string                    `protobuf:"bytes,353556937,opt,name=failuremessage,proto3,oneof" json:"failuremessage,omitempty"`
+	Maxconcurrency              *string                    `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
+	Maxerrors                   *string                    `protobuf:"bytes,129851691,opt,name=maxerrors,proto3,oneof" json:"maxerrors,omitempty"`
+	Mode                        *ExecutionMode             `protobuf:"varint,323909427,opt,name=mode,proto3,enum=ssm.ExecutionMode,oneof" json:"mode,omitempty"`
+	Opsitemid                   *string                    `protobuf:"bytes,25520466,opt,name=opsitemid,proto3,oneof" json:"opsitemid,omitempty"`
+	Outputs                     map[string]string          `protobuf:"bytes,455868918,rep,name=outputs,proto3" json:"outputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Parameters                  map[string]string          `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Parentautomationexecutionid *string                    `protobuf:"bytes,232537390,opt,name=parentautomationexecutionid,proto3,oneof" json:"parentautomationexecutionid,omitempty"`
+	Progresscounters            *ProgressCounters          `protobuf:"bytes,162419216,opt,name=progresscounters,proto3" json:"progresscounters,omitempty"`
+	Resolvedtargets             *ResolvedTargets           `protobuf:"bytes,361325602,opt,name=resolvedtargets,proto3" json:"resolvedtargets,omitempty"`
+	Runbooks                    []*Runbook                 `protobuf:"bytes,514418725,rep,name=runbooks,proto3" json:"runbooks,omitempty"`
+	Scheduledtime               *string                    `protobuf:"bytes,334708242,opt,name=scheduledtime,proto3,oneof" json:"scheduledtime,omitempty"`
+	Stepexecutions              []*StepExecution           `protobuf:"bytes,164157981,rep,name=stepexecutions,proto3" json:"stepexecutions,omitempty"`
+	Stepexecutionstruncated     *bool                      `protobuf:"varint,472961151,opt,name=stepexecutionstruncated,proto3,oneof" json:"stepexecutionstruncated,omitempty"`
+	Target                      *string                    `protobuf:"bytes,191361385,opt,name=target,proto3,oneof" json:"target,omitempty"`
+	Targetlocations             []*TargetLocation          `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
+	Targetlocationsurl          *string                    `protobuf:"bytes,107583422,opt,name=targetlocationsurl,proto3,oneof" json:"targetlocationsurl,omitempty"`
+	Targetmaps                  []*TargetMapsEntry         `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
+	Targetparametername         *string                    `protobuf:"bytes,351056597,opt,name=targetparametername,proto3,oneof" json:"targetparametername,omitempty"`
+	Targets                     []*Target                  `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
+	Triggeredalarms             []*AlarmStateInformation   `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
+	Variables                   map[string]string          `protobuf:"bytes,429322339,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Warningmessage              *string                    `protobuf:"bytes,497413775,opt,name=warningmessage,proto3,oneof" json:"warningmessage,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -8012,15 +8012,15 @@ func (x *AutomationExecution) GetAutomationexecutionid() string {
 }
 
 func (x *AutomationExecution) GetAutomationexecutionstatus() AutomationExecutionStatus {
-	if x != nil {
-		return x.Automationexecutionstatus
+	if x != nil && x.Automationexecutionstatus != nil {
+		return *x.Automationexecutionstatus
 	}
 	return AutomationExecutionStatus_AUTOMATION_EXECUTION_STATUS_PENDING_CHANGE_CALENDAR_OVERRIDE
 }
 
 func (x *AutomationExecution) GetAutomationsubtype() AutomationSubtype {
-	if x != nil {
-		return x.Automationsubtype
+	if x != nil && x.Automationsubtype != nil {
+		return *x.Automationsubtype
 	}
 	return AutomationSubtype_AUTOMATION_SUBTYPE_ACCESSREQUEST
 }
@@ -8103,8 +8103,8 @@ func (x *AutomationExecution) GetMaxerrors() string {
 }
 
 func (x *AutomationExecution) GetMode() ExecutionMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return ExecutionMode_EXECUTION_MODE_AUTO
 }
@@ -8423,39 +8423,39 @@ func (x *AutomationExecutionLimitExceededException) GetMessage() string {
 }
 
 type AutomationExecutionMetadata struct {
-	state                       protoimpl.MessageState    `protogen:"open.v1"`
-	Alarmconfiguration          *AlarmConfiguration       `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
-	Associationid               *string                   `protobuf:"bytes,138771986,opt,name=associationid,proto3,oneof" json:"associationid,omitempty"`
-	Automationexecutionid       *string                   `protobuf:"bytes,12449766,opt,name=automationexecutionid,proto3,oneof" json:"automationexecutionid,omitempty"`
-	Automationexecutionstatus   AutomationExecutionStatus `protobuf:"varint,531364411,opt,name=automationexecutionstatus,proto3,enum=ssm.AutomationExecutionStatus" json:"automationexecutionstatus,omitempty"`
-	Automationsubtype           AutomationSubtype         `protobuf:"varint,153542097,opt,name=automationsubtype,proto3,enum=ssm.AutomationSubtype" json:"automationsubtype,omitempty"`
-	Automationtype              AutomationType            `protobuf:"varint,72473291,opt,name=automationtype,proto3,enum=ssm.AutomationType" json:"automationtype,omitempty"`
-	Changerequestname           *string                   `protobuf:"bytes,468779362,opt,name=changerequestname,proto3,oneof" json:"changerequestname,omitempty"`
-	Currentaction               *string                   `protobuf:"bytes,337681497,opt,name=currentaction,proto3,oneof" json:"currentaction,omitempty"`
-	Currentstepname             *string                   `protobuf:"bytes,126991996,opt,name=currentstepname,proto3,oneof" json:"currentstepname,omitempty"`
-	Documentname                *string                   `protobuf:"bytes,120705488,opt,name=documentname,proto3,oneof" json:"documentname,omitempty"`
-	Documentversion             *string                   `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
-	Executedby                  *string                   `protobuf:"bytes,186546754,opt,name=executedby,proto3,oneof" json:"executedby,omitempty"`
-	Executionendtime            *string                   `protobuf:"bytes,139859196,opt,name=executionendtime,proto3,oneof" json:"executionendtime,omitempty"`
-	Executionstarttime          *string                   `protobuf:"bytes,429847391,opt,name=executionstarttime,proto3,oneof" json:"executionstarttime,omitempty"`
-	Failuremessage              *string                   `protobuf:"bytes,353556937,opt,name=failuremessage,proto3,oneof" json:"failuremessage,omitempty"`
-	Logfile                     *string                   `protobuf:"bytes,13056280,opt,name=logfile,proto3,oneof" json:"logfile,omitempty"`
-	Maxconcurrency              *string                   `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
-	Maxerrors                   *string                   `protobuf:"bytes,129851691,opt,name=maxerrors,proto3,oneof" json:"maxerrors,omitempty"`
-	Mode                        ExecutionMode             `protobuf:"varint,323909427,opt,name=mode,proto3,enum=ssm.ExecutionMode" json:"mode,omitempty"`
-	Opsitemid                   *string                   `protobuf:"bytes,25520466,opt,name=opsitemid,proto3,oneof" json:"opsitemid,omitempty"`
-	Outputs                     map[string]string         `protobuf:"bytes,455868918,rep,name=outputs,proto3" json:"outputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Parentautomationexecutionid *string                   `protobuf:"bytes,232537390,opt,name=parentautomationexecutionid,proto3,oneof" json:"parentautomationexecutionid,omitempty"`
-	Resolvedtargets             *ResolvedTargets          `protobuf:"bytes,361325602,opt,name=resolvedtargets,proto3" json:"resolvedtargets,omitempty"`
-	Runbooks                    []*Runbook                `protobuf:"bytes,514418725,rep,name=runbooks,proto3" json:"runbooks,omitempty"`
-	Scheduledtime               *string                   `protobuf:"bytes,334708242,opt,name=scheduledtime,proto3,oneof" json:"scheduledtime,omitempty"`
-	Target                      *string                   `protobuf:"bytes,191361385,opt,name=target,proto3,oneof" json:"target,omitempty"`
-	Targetlocationsurl          *string                   `protobuf:"bytes,107583422,opt,name=targetlocationsurl,proto3,oneof" json:"targetlocationsurl,omitempty"`
-	Targetmaps                  []*TargetMapsEntry        `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
-	Targetparametername         *string                   `protobuf:"bytes,351056597,opt,name=targetparametername,proto3,oneof" json:"targetparametername,omitempty"`
-	Targets                     []*Target                 `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
-	Triggeredalarms             []*AlarmStateInformation  `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
-	Warningmessage              *string                   `protobuf:"bytes,497413775,opt,name=warningmessage,proto3,oneof" json:"warningmessage,omitempty"`
+	state                       protoimpl.MessageState     `protogen:"open.v1"`
+	Alarmconfiguration          *AlarmConfiguration        `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
+	Associationid               *string                    `protobuf:"bytes,138771986,opt,name=associationid,proto3,oneof" json:"associationid,omitempty"`
+	Automationexecutionid       *string                    `protobuf:"bytes,12449766,opt,name=automationexecutionid,proto3,oneof" json:"automationexecutionid,omitempty"`
+	Automationexecutionstatus   *AutomationExecutionStatus `protobuf:"varint,531364411,opt,name=automationexecutionstatus,proto3,enum=ssm.AutomationExecutionStatus,oneof" json:"automationexecutionstatus,omitempty"`
+	Automationsubtype           *AutomationSubtype         `protobuf:"varint,153542097,opt,name=automationsubtype,proto3,enum=ssm.AutomationSubtype,oneof" json:"automationsubtype,omitempty"`
+	Automationtype              *AutomationType            `protobuf:"varint,72473291,opt,name=automationtype,proto3,enum=ssm.AutomationType,oneof" json:"automationtype,omitempty"`
+	Changerequestname           *string                    `protobuf:"bytes,468779362,opt,name=changerequestname,proto3,oneof" json:"changerequestname,omitempty"`
+	Currentaction               *string                    `protobuf:"bytes,337681497,opt,name=currentaction,proto3,oneof" json:"currentaction,omitempty"`
+	Currentstepname             *string                    `protobuf:"bytes,126991996,opt,name=currentstepname,proto3,oneof" json:"currentstepname,omitempty"`
+	Documentname                *string                    `protobuf:"bytes,120705488,opt,name=documentname,proto3,oneof" json:"documentname,omitempty"`
+	Documentversion             *string                    `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
+	Executedby                  *string                    `protobuf:"bytes,186546754,opt,name=executedby,proto3,oneof" json:"executedby,omitempty"`
+	Executionendtime            *string                    `protobuf:"bytes,139859196,opt,name=executionendtime,proto3,oneof" json:"executionendtime,omitempty"`
+	Executionstarttime          *string                    `protobuf:"bytes,429847391,opt,name=executionstarttime,proto3,oneof" json:"executionstarttime,omitempty"`
+	Failuremessage              *string                    `protobuf:"bytes,353556937,opt,name=failuremessage,proto3,oneof" json:"failuremessage,omitempty"`
+	Logfile                     *string                    `protobuf:"bytes,13056280,opt,name=logfile,proto3,oneof" json:"logfile,omitempty"`
+	Maxconcurrency              *string                    `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
+	Maxerrors                   *string                    `protobuf:"bytes,129851691,opt,name=maxerrors,proto3,oneof" json:"maxerrors,omitempty"`
+	Mode                        *ExecutionMode             `protobuf:"varint,323909427,opt,name=mode,proto3,enum=ssm.ExecutionMode,oneof" json:"mode,omitempty"`
+	Opsitemid                   *string                    `protobuf:"bytes,25520466,opt,name=opsitemid,proto3,oneof" json:"opsitemid,omitempty"`
+	Outputs                     map[string]string          `protobuf:"bytes,455868918,rep,name=outputs,proto3" json:"outputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Parentautomationexecutionid *string                    `protobuf:"bytes,232537390,opt,name=parentautomationexecutionid,proto3,oneof" json:"parentautomationexecutionid,omitempty"`
+	Resolvedtargets             *ResolvedTargets           `protobuf:"bytes,361325602,opt,name=resolvedtargets,proto3" json:"resolvedtargets,omitempty"`
+	Runbooks                    []*Runbook                 `protobuf:"bytes,514418725,rep,name=runbooks,proto3" json:"runbooks,omitempty"`
+	Scheduledtime               *string                    `protobuf:"bytes,334708242,opt,name=scheduledtime,proto3,oneof" json:"scheduledtime,omitempty"`
+	Target                      *string                    `protobuf:"bytes,191361385,opt,name=target,proto3,oneof" json:"target,omitempty"`
+	Targetlocationsurl          *string                    `protobuf:"bytes,107583422,opt,name=targetlocationsurl,proto3,oneof" json:"targetlocationsurl,omitempty"`
+	Targetmaps                  []*TargetMapsEntry         `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
+	Targetparametername         *string                    `protobuf:"bytes,351056597,opt,name=targetparametername,proto3,oneof" json:"targetparametername,omitempty"`
+	Targets                     []*Target                  `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
+	Triggeredalarms             []*AlarmStateInformation   `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
+	Warningmessage              *string                    `protobuf:"bytes,497413775,opt,name=warningmessage,proto3,oneof" json:"warningmessage,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -8512,22 +8512,22 @@ func (x *AutomationExecutionMetadata) GetAutomationexecutionid() string {
 }
 
 func (x *AutomationExecutionMetadata) GetAutomationexecutionstatus() AutomationExecutionStatus {
-	if x != nil {
-		return x.Automationexecutionstatus
+	if x != nil && x.Automationexecutionstatus != nil {
+		return *x.Automationexecutionstatus
 	}
 	return AutomationExecutionStatus_AUTOMATION_EXECUTION_STATUS_PENDING_CHANGE_CALENDAR_OVERRIDE
 }
 
 func (x *AutomationExecutionMetadata) GetAutomationsubtype() AutomationSubtype {
-	if x != nil {
-		return x.Automationsubtype
+	if x != nil && x.Automationsubtype != nil {
+		return *x.Automationsubtype
 	}
 	return AutomationSubtype_AUTOMATION_SUBTYPE_ACCESSREQUEST
 }
 
 func (x *AutomationExecutionMetadata) GetAutomationtype() AutomationType {
-	if x != nil {
-		return x.Automationtype
+	if x != nil && x.Automationtype != nil {
+		return *x.Automationtype
 	}
 	return AutomationType_AUTOMATION_TYPE_LOCAL
 }
@@ -8617,8 +8617,8 @@ func (x *AutomationExecutionMetadata) GetMaxerrors() string {
 }
 
 func (x *AutomationExecutionMetadata) GetMode() ExecutionMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return ExecutionMode_EXECUTION_MODE_AUTO
 }
@@ -9002,13 +9002,13 @@ type BaselineOverride struct {
 	state                                    protoimpl.MessageState `protogen:"open.v1"`
 	Approvalrules                            *PatchRuleGroup        `protobuf:"bytes,71466346,opt,name=approvalrules,proto3" json:"approvalrules,omitempty"`
 	Approvedpatches                          []string               `protobuf:"bytes,199384709,rep,name=approvedpatches,proto3" json:"approvedpatches,omitempty"`
-	Approvedpatchescompliancelevel           PatchComplianceLevel   `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel" json:"approvedpatchescompliancelevel,omitempty"`
+	Approvedpatchescompliancelevel           *PatchComplianceLevel  `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel,oneof" json:"approvedpatchescompliancelevel,omitempty"`
 	Approvedpatchesenablenonsecurity         *bool                  `protobuf:"varint,295555901,opt,name=approvedpatchesenablenonsecurity,proto3,oneof" json:"approvedpatchesenablenonsecurity,omitempty"`
-	Availablesecurityupdatescompliancestatus PatchComplianceStatus  `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus" json:"availablesecurityupdatescompliancestatus,omitempty"`
+	Availablesecurityupdatescompliancestatus *PatchComplianceStatus `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus,oneof" json:"availablesecurityupdatescompliancestatus,omitempty"`
 	Globalfilters                            *PatchFilterGroup      `protobuf:"bytes,263302754,opt,name=globalfilters,proto3" json:"globalfilters,omitempty"`
-	Operatingsystem                          OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
+	Operatingsystem                          *OperatingSystem       `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem,oneof" json:"operatingsystem,omitempty"`
 	Rejectedpatches                          []string               `protobuf:"bytes,309657116,rep,name=rejectedpatches,proto3" json:"rejectedpatches,omitempty"`
-	Rejectedpatchesaction                    PatchAction            `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction" json:"rejectedpatchesaction,omitempty"`
+	Rejectedpatchesaction                    *PatchAction           `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction,oneof" json:"rejectedpatchesaction,omitempty"`
 	Sources                                  []*PatchSource         `protobuf:"bytes,46625746,rep,name=sources,proto3" json:"sources,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
 	sizeCache                                protoimpl.SizeCache
@@ -9059,8 +9059,8 @@ func (x *BaselineOverride) GetApprovedpatches() []string {
 }
 
 func (x *BaselineOverride) GetApprovedpatchescompliancelevel() PatchComplianceLevel {
-	if x != nil {
-		return x.Approvedpatchescompliancelevel
+	if x != nil && x.Approvedpatchescompliancelevel != nil {
+		return *x.Approvedpatchescompliancelevel
 	}
 	return PatchComplianceLevel_PATCH_COMPLIANCE_LEVEL_INFORMATIONAL
 }
@@ -9073,8 +9073,8 @@ func (x *BaselineOverride) GetApprovedpatchesenablenonsecurity() bool {
 }
 
 func (x *BaselineOverride) GetAvailablesecurityupdatescompliancestatus() PatchComplianceStatus {
-	if x != nil {
-		return x.Availablesecurityupdatescompliancestatus
+	if x != nil && x.Availablesecurityupdatescompliancestatus != nil {
+		return *x.Availablesecurityupdatescompliancestatus
 	}
 	return PatchComplianceStatus_PATCH_COMPLIANCE_STATUS_COMPLIANT
 }
@@ -9087,8 +9087,8 @@ func (x *BaselineOverride) GetGlobalfilters() *PatchFilterGroup {
 }
 
 func (x *BaselineOverride) GetOperatingsystem() OperatingSystem {
-	if x != nil {
-		return x.Operatingsystem
+	if x != nil && x.Operatingsystem != nil {
+		return *x.Operatingsystem
 	}
 	return OperatingSystem_OPERATING_SYSTEM_MACOS
 }
@@ -9101,8 +9101,8 @@ func (x *BaselineOverride) GetRejectedpatches() []string {
 }
 
 func (x *BaselineOverride) GetRejectedpatchesaction() PatchAction {
-	if x != nil {
-		return x.Rejectedpatchesaction
+	if x != nil && x.Rejectedpatchesaction != nil {
+		return *x.Rejectedpatchesaction
 	}
 	return PatchAction_PATCH_ACTION_ALLOWASDEPENDENCY
 }
@@ -9335,9 +9335,9 @@ func (x *CloudConnectorConfiguration) GetAzureconfiguration() *AzureConfiguratio
 }
 
 type CloudConnectorFilter struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Filterkey     CloudConnectorFilterKey `protobuf:"varint,300347055,opt,name=filterkey,proto3,enum=ssm.CloudConnectorFilterKey" json:"filterkey,omitempty"`
-	Filtervalues  []string                `protobuf:"bytes,471484302,rep,name=filtervalues,proto3" json:"filtervalues,omitempty"`
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Filterkey     *CloudConnectorFilterKey `protobuf:"varint,300347055,opt,name=filterkey,proto3,enum=ssm.CloudConnectorFilterKey,oneof" json:"filterkey,omitempty"`
+	Filtervalues  []string                 `protobuf:"bytes,471484302,rep,name=filtervalues,proto3" json:"filtervalues,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9373,8 +9373,8 @@ func (*CloudConnectorFilter) Descriptor() ([]byte, []int) {
 }
 
 func (x *CloudConnectorFilter) GetFilterkey() CloudConnectorFilterKey {
-	if x != nil {
-		return x.Filterkey
+	if x != nil && x.Filterkey != nil {
+		return *x.Filterkey
 	}
 	return CloudConnectorFilterKey_CLOUD_CONNECTOR_FILTER_KEY_SUBSCRIPTIONID
 }
@@ -9544,7 +9544,7 @@ type Command struct {
 	Parameters             map[string]string        `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Requesteddatetime      *string                  `protobuf:"bytes,111054087,opt,name=requesteddatetime,proto3,oneof" json:"requesteddatetime,omitempty"`
 	Servicerole            *string                  `protobuf:"bytes,47807725,opt,name=servicerole,proto3,oneof" json:"servicerole,omitempty"`
-	Status                 CommandStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.CommandStatus" json:"status,omitempty"`
+	Status                 *CommandStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.CommandStatus,oneof" json:"status,omitempty"`
 	Statusdetails          *string                  `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
 	Targetcount            *int32                   `protobuf:"varint,525114440,opt,name=targetcount,proto3,oneof" json:"targetcount,omitempty"`
 	Targets                []*Target                `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
@@ -9725,8 +9725,8 @@ func (x *Command) GetServicerole() string {
 }
 
 func (x *Command) GetStatus() CommandStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CommandStatus_COMMAND_STATUS_PENDING
 }
@@ -9819,23 +9819,23 @@ func (x *CommandFilter) GetValue() string {
 }
 
 type CommandInvocation struct {
-	state                  protoimpl.MessageState  `protogen:"open.v1"`
-	Cloudwatchoutputconfig *CloudWatchOutputConfig `protobuf:"bytes,21186555,opt,name=cloudwatchoutputconfig,proto3" json:"cloudwatchoutputconfig,omitempty"`
-	Commandid              *string                 `protobuf:"bytes,159395200,opt,name=commandid,proto3,oneof" json:"commandid,omitempty"`
-	Commandplugins         []*CommandPlugin        `protobuf:"bytes,508176155,rep,name=commandplugins,proto3" json:"commandplugins,omitempty"`
-	Comment                *string                 `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
-	Documentname           *string                 `protobuf:"bytes,120705488,opt,name=documentname,proto3,oneof" json:"documentname,omitempty"`
-	Documentversion        *string                 `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
-	Instanceid             *string                 `protobuf:"bytes,49567392,opt,name=instanceid,proto3,oneof" json:"instanceid,omitempty"`
-	Instancename           *string                 `protobuf:"bytes,281444442,opt,name=instancename,proto3,oneof" json:"instancename,omitempty"`
-	Notificationconfig     *NotificationConfig     `protobuf:"bytes,346074145,opt,name=notificationconfig,proto3" json:"notificationconfig,omitempty"`
-	Requesteddatetime      *string                 `protobuf:"bytes,111054087,opt,name=requesteddatetime,proto3,oneof" json:"requesteddatetime,omitempty"`
-	Servicerole            *string                 `protobuf:"bytes,47807725,opt,name=servicerole,proto3,oneof" json:"servicerole,omitempty"`
-	Standarderrorurl       *string                 `protobuf:"bytes,403407680,opt,name=standarderrorurl,proto3,oneof" json:"standarderrorurl,omitempty"`
-	Standardoutputurl      *string                 `protobuf:"bytes,347642271,opt,name=standardoutputurl,proto3,oneof" json:"standardoutputurl,omitempty"`
-	Status                 CommandInvocationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.CommandInvocationStatus" json:"status,omitempty"`
-	Statusdetails          *string                 `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
-	Traceoutput            *string                 `protobuf:"bytes,519666568,opt,name=traceoutput,proto3,oneof" json:"traceoutput,omitempty"`
+	state                  protoimpl.MessageState   `protogen:"open.v1"`
+	Cloudwatchoutputconfig *CloudWatchOutputConfig  `protobuf:"bytes,21186555,opt,name=cloudwatchoutputconfig,proto3" json:"cloudwatchoutputconfig,omitempty"`
+	Commandid              *string                  `protobuf:"bytes,159395200,opt,name=commandid,proto3,oneof" json:"commandid,omitempty"`
+	Commandplugins         []*CommandPlugin         `protobuf:"bytes,508176155,rep,name=commandplugins,proto3" json:"commandplugins,omitempty"`
+	Comment                *string                  `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
+	Documentname           *string                  `protobuf:"bytes,120705488,opt,name=documentname,proto3,oneof" json:"documentname,omitempty"`
+	Documentversion        *string                  `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
+	Instanceid             *string                  `protobuf:"bytes,49567392,opt,name=instanceid,proto3,oneof" json:"instanceid,omitempty"`
+	Instancename           *string                  `protobuf:"bytes,281444442,opt,name=instancename,proto3,oneof" json:"instancename,omitempty"`
+	Notificationconfig     *NotificationConfig      `protobuf:"bytes,346074145,opt,name=notificationconfig,proto3" json:"notificationconfig,omitempty"`
+	Requesteddatetime      *string                  `protobuf:"bytes,111054087,opt,name=requesteddatetime,proto3,oneof" json:"requesteddatetime,omitempty"`
+	Servicerole            *string                  `protobuf:"bytes,47807725,opt,name=servicerole,proto3,oneof" json:"servicerole,omitempty"`
+	Standarderrorurl       *string                  `protobuf:"bytes,403407680,opt,name=standarderrorurl,proto3,oneof" json:"standarderrorurl,omitempty"`
+	Standardoutputurl      *string                  `protobuf:"bytes,347642271,opt,name=standardoutputurl,proto3,oneof" json:"standardoutputurl,omitempty"`
+	Status                 *CommandInvocationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.CommandInvocationStatus,oneof" json:"status,omitempty"`
+	Statusdetails          *string                  `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
+	Traceoutput            *string                  `protobuf:"bytes,519666568,opt,name=traceoutput,proto3,oneof" json:"traceoutput,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -9962,8 +9962,8 @@ func (x *CommandInvocation) GetStandardoutputurl() string {
 }
 
 func (x *CommandInvocation) GetStatus() CommandInvocationStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CommandInvocationStatus_COMMAND_INVOCATION_STATUS_PENDING
 }
@@ -9994,7 +9994,7 @@ type CommandPlugin struct {
 	Responsestartdatetime  *string                `protobuf:"bytes,382241276,opt,name=responsestartdatetime,proto3,oneof" json:"responsestartdatetime,omitempty"`
 	Standarderrorurl       *string                `protobuf:"bytes,403407680,opt,name=standarderrorurl,proto3,oneof" json:"standarderrorurl,omitempty"`
 	Standardoutputurl      *string                `protobuf:"bytes,347642271,opt,name=standardoutputurl,proto3,oneof" json:"standardoutputurl,omitempty"`
-	Status                 CommandPluginStatus    `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.CommandPluginStatus" json:"status,omitempty"`
+	Status                 *CommandPluginStatus   `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.CommandPluginStatus,oneof" json:"status,omitempty"`
 	Statusdetails          *string                `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -10101,8 +10101,8 @@ func (x *CommandPlugin) GetStandardoutputurl() string {
 }
 
 func (x *CommandPlugin) GetStatus() CommandPluginStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CommandPluginStatus_COMMAND_PLUGIN_STATUS_PENDING
 }
@@ -10182,8 +10182,8 @@ type ComplianceItem struct {
 	Id               *string                     `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Resourceid       *string                     `protobuf:"bytes,526146833,opt,name=resourceid,proto3,oneof" json:"resourceid,omitempty"`
 	Resourcetype     *string                     `protobuf:"bytes,301342558,opt,name=resourcetype,proto3,oneof" json:"resourcetype,omitempty"`
-	Severity         ComplianceSeverity          `protobuf:"varint,276886227,opt,name=severity,proto3,enum=ssm.ComplianceSeverity" json:"severity,omitempty"`
-	Status           ComplianceStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ComplianceStatus" json:"status,omitempty"`
+	Severity         *ComplianceSeverity         `protobuf:"varint,276886227,opt,name=severity,proto3,enum=ssm.ComplianceSeverity,oneof" json:"severity,omitempty"`
+	Status           *ComplianceStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ComplianceStatus,oneof" json:"status,omitempty"`
 	Title            *string                     `protobuf:"bytes,81031594,opt,name=title,proto3,oneof" json:"title,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -10262,15 +10262,15 @@ func (x *ComplianceItem) GetResourcetype() string {
 }
 
 func (x *ComplianceItem) GetSeverity() ComplianceSeverity {
-	if x != nil {
-		return x.Severity
+	if x != nil && x.Severity != nil {
+		return *x.Severity
 	}
 	return ComplianceSeverity_COMPLIANCE_SEVERITY_INFORMATIONAL
 }
 
 func (x *ComplianceItem) GetStatus() ComplianceStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ComplianceStatus_COMPLIANCE_STATUS_COMPLIANT
 }
@@ -10359,10 +10359,10 @@ func (x *ComplianceItemEntry) GetTitle() string {
 }
 
 type ComplianceStringFilter struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Key           *string                     `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
-	Type          ComplianceQueryOperatorType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ComplianceQueryOperatorType" json:"type,omitempty"`
-	Values        []string                    `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Key           *string                      `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Type          *ComplianceQueryOperatorType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ComplianceQueryOperatorType,oneof" json:"type,omitempty"`
+	Values        []string                     `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10405,8 +10405,8 @@ func (x *ComplianceStringFilter) GetKey() string {
 }
 
 func (x *ComplianceStringFilter) GetType() ComplianceQueryOperatorType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ComplianceQueryOperatorType_COMPLIANCE_QUERY_OPERATOR_TYPE_NOTEQUAL
 }
@@ -10865,7 +10865,7 @@ type CreateAssociationBatchRequestEntry struct {
 	Associationname               *string                            `protobuf:"bytes,313608216,opt,name=associationname,proto3,oneof" json:"associationname,omitempty"`
 	Automationtargetparametername *string                            `protobuf:"bytes,348584826,opt,name=automationtargetparametername,proto3,oneof" json:"automationtargetparametername,omitempty"`
 	Calendarnames                 []string                           `protobuf:"bytes,36075966,rep,name=calendarnames,proto3" json:"calendarnames,omitempty"`
-	Complianceseverity            AssociationComplianceSeverity      `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity" json:"complianceseverity,omitempty"`
+	Complianceseverity            *AssociationComplianceSeverity     `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity,oneof" json:"complianceseverity,omitempty"`
 	Documentversion               *string                            `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Duration                      *int32                             `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
 	Instanceid                    *string                            `protobuf:"bytes,49567392,opt,name=instanceid,proto3,oneof" json:"instanceid,omitempty"`
@@ -10876,7 +10876,7 @@ type CreateAssociationBatchRequestEntry struct {
 	Parameters                    map[string]string                  `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Scheduleexpression            *string                            `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
 	Scheduleoffset                *int32                             `protobuf:"varint,156928216,opt,name=scheduleoffset,proto3,oneof" json:"scheduleoffset,omitempty"`
-	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
+	Synccompliance                *AssociationSyncCompliance         `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance,oneof" json:"synccompliance,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
 	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets                       []*Target                          `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
@@ -10950,8 +10950,8 @@ func (x *CreateAssociationBatchRequestEntry) GetCalendarnames() []string {
 }
 
 func (x *CreateAssociationBatchRequestEntry) GetComplianceseverity() AssociationComplianceSeverity {
-	if x != nil {
-		return x.Complianceseverity
+	if x != nil && x.Complianceseverity != nil {
+		return *x.Complianceseverity
 	}
 	return AssociationComplianceSeverity_ASSOCIATION_COMPLIANCE_SEVERITY_MEDIUM
 }
@@ -11027,8 +11027,8 @@ func (x *CreateAssociationBatchRequestEntry) GetScheduleoffset() int32 {
 }
 
 func (x *CreateAssociationBatchRequestEntry) GetSynccompliance() AssociationSyncCompliance {
-	if x != nil {
-		return x.Synccompliance
+	if x != nil && x.Synccompliance != nil {
+		return *x.Synccompliance
 	}
 	return AssociationSyncCompliance_ASSOCIATION_SYNC_COMPLIANCE_MANUAL
 }
@@ -11114,7 +11114,7 @@ type CreateAssociationRequest struct {
 	Associationname               *string                            `protobuf:"bytes,313608216,opt,name=associationname,proto3,oneof" json:"associationname,omitempty"`
 	Automationtargetparametername *string                            `protobuf:"bytes,348584826,opt,name=automationtargetparametername,proto3,oneof" json:"automationtargetparametername,omitempty"`
 	Calendarnames                 []string                           `protobuf:"bytes,36075966,rep,name=calendarnames,proto3" json:"calendarnames,omitempty"`
-	Complianceseverity            AssociationComplianceSeverity      `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity" json:"complianceseverity,omitempty"`
+	Complianceseverity            *AssociationComplianceSeverity     `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity,oneof" json:"complianceseverity,omitempty"`
 	Documentversion               *string                            `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Duration                      *int32                             `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
 	Instanceid                    *string                            `protobuf:"bytes,49567392,opt,name=instanceid,proto3,oneof" json:"instanceid,omitempty"`
@@ -11125,7 +11125,7 @@ type CreateAssociationRequest struct {
 	Parameters                    map[string]string                  `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Scheduleexpression            *string                            `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
 	Scheduleoffset                *int32                             `protobuf:"varint,156928216,opt,name=scheduleoffset,proto3,oneof" json:"scheduleoffset,omitempty"`
-	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
+	Synccompliance                *AssociationSyncCompliance         `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance,oneof" json:"synccompliance,omitempty"`
 	Tags                          []*Tag                             `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
 	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
@@ -11207,8 +11207,8 @@ func (x *CreateAssociationRequest) GetCalendarnames() []string {
 }
 
 func (x *CreateAssociationRequest) GetComplianceseverity() AssociationComplianceSeverity {
-	if x != nil {
-		return x.Complianceseverity
+	if x != nil && x.Complianceseverity != nil {
+		return *x.Complianceseverity
 	}
 	return AssociationComplianceSeverity_ASSOCIATION_COMPLIANCE_SEVERITY_MEDIUM
 }
@@ -11284,8 +11284,8 @@ func (x *CreateAssociationRequest) GetScheduleoffset() int32 {
 }
 
 func (x *CreateAssociationRequest) GetSynccompliance() AssociationSyncCompliance {
-	if x != nil {
-		return x.Synccompliance
+	if x != nil && x.Synccompliance != nil {
+		return *x.Synccompliance
 	}
 	return AssociationSyncCompliance_ASSOCIATION_SYNC_COMPLIANCE_MANUAL
 }
@@ -11495,8 +11495,8 @@ type CreateDocumentRequest struct {
 	Attachments    []*AttachmentsSource   `protobuf:"bytes,498946338,rep,name=attachments,proto3" json:"attachments,omitempty"`
 	Content        string                 `protobuf:"bytes,23568227,opt,name=content,proto3" json:"content,omitempty"`
 	Displayname    *string                `protobuf:"bytes,418161847,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
-	Documentformat DocumentFormat         `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat" json:"documentformat,omitempty"`
-	Documenttype   DocumentType           `protobuf:"varint,457084477,opt,name=documenttype,proto3,enum=ssm.DocumentType" json:"documenttype,omitempty"`
+	Documentformat *DocumentFormat        `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat,oneof" json:"documentformat,omitempty"`
+	Documenttype   *DocumentType          `protobuf:"varint,457084477,opt,name=documenttype,proto3,enum=ssm.DocumentType,oneof" json:"documenttype,omitempty"`
 	Name           string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Requires       []*DocumentRequires    `protobuf:"bytes,149214838,rep,name=requires,proto3" json:"requires,omitempty"`
 	Tags           []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -11558,15 +11558,15 @@ func (x *CreateDocumentRequest) GetDisplayname() string {
 }
 
 func (x *CreateDocumentRequest) GetDocumentformat() DocumentFormat {
-	if x != nil {
-		return x.Documentformat
+	if x != nil && x.Documentformat != nil {
+		return *x.Documentformat
 	}
 	return DocumentFormat_DOCUMENT_FORMAT_JSON
 }
 
 func (x *CreateDocumentRequest) GetDocumenttype() DocumentType {
-	if x != nil {
-		return x.Documenttype
+	if x != nil && x.Documenttype != nil {
+		return *x.Documenttype
 	}
 	return DocumentType_DOCUMENT_TYPE_PROBLEMANALYSISTEMPLATE
 }
@@ -12150,16 +12150,16 @@ type CreatePatchBaselineRequest struct {
 	state                                    protoimpl.MessageState `protogen:"open.v1"`
 	Approvalrules                            *PatchRuleGroup        `protobuf:"bytes,71466346,opt,name=approvalrules,proto3" json:"approvalrules,omitempty"`
 	Approvedpatches                          []string               `protobuf:"bytes,199384709,rep,name=approvedpatches,proto3" json:"approvedpatches,omitempty"`
-	Approvedpatchescompliancelevel           PatchComplianceLevel   `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel" json:"approvedpatchescompliancelevel,omitempty"`
+	Approvedpatchescompliancelevel           *PatchComplianceLevel  `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel,oneof" json:"approvedpatchescompliancelevel,omitempty"`
 	Approvedpatchesenablenonsecurity         *bool                  `protobuf:"varint,295555901,opt,name=approvedpatchesenablenonsecurity,proto3,oneof" json:"approvedpatchesenablenonsecurity,omitempty"`
-	Availablesecurityupdatescompliancestatus PatchComplianceStatus  `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus" json:"availablesecurityupdatescompliancestatus,omitempty"`
+	Availablesecurityupdatescompliancestatus *PatchComplianceStatus `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus,oneof" json:"availablesecurityupdatescompliancestatus,omitempty"`
 	Clienttoken                              *string                `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
 	Description                              *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Globalfilters                            *PatchFilterGroup      `protobuf:"bytes,263302754,opt,name=globalfilters,proto3" json:"globalfilters,omitempty"`
 	Name                                     string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Operatingsystem                          OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
+	Operatingsystem                          *OperatingSystem       `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem,oneof" json:"operatingsystem,omitempty"`
 	Rejectedpatches                          []string               `protobuf:"bytes,309657116,rep,name=rejectedpatches,proto3" json:"rejectedpatches,omitempty"`
-	Rejectedpatchesaction                    PatchAction            `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction" json:"rejectedpatchesaction,omitempty"`
+	Rejectedpatchesaction                    *PatchAction           `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction,oneof" json:"rejectedpatchesaction,omitempty"`
 	Sources                                  []*PatchSource         `protobuf:"bytes,46625746,rep,name=sources,proto3" json:"sources,omitempty"`
 	Tags                                     []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
@@ -12211,8 +12211,8 @@ func (x *CreatePatchBaselineRequest) GetApprovedpatches() []string {
 }
 
 func (x *CreatePatchBaselineRequest) GetApprovedpatchescompliancelevel() PatchComplianceLevel {
-	if x != nil {
-		return x.Approvedpatchescompliancelevel
+	if x != nil && x.Approvedpatchescompliancelevel != nil {
+		return *x.Approvedpatchescompliancelevel
 	}
 	return PatchComplianceLevel_PATCH_COMPLIANCE_LEVEL_INFORMATIONAL
 }
@@ -12225,8 +12225,8 @@ func (x *CreatePatchBaselineRequest) GetApprovedpatchesenablenonsecurity() bool 
 }
 
 func (x *CreatePatchBaselineRequest) GetAvailablesecurityupdatescompliancestatus() PatchComplianceStatus {
-	if x != nil {
-		return x.Availablesecurityupdatescompliancestatus
+	if x != nil && x.Availablesecurityupdatescompliancestatus != nil {
+		return *x.Availablesecurityupdatescompliancestatus
 	}
 	return PatchComplianceStatus_PATCH_COMPLIANCE_STATUS_COMPLIANT
 }
@@ -12260,8 +12260,8 @@ func (x *CreatePatchBaselineRequest) GetName() string {
 }
 
 func (x *CreatePatchBaselineRequest) GetOperatingsystem() OperatingSystem {
-	if x != nil {
-		return x.Operatingsystem
+	if x != nil && x.Operatingsystem != nil {
+		return *x.Operatingsystem
 	}
 	return OperatingSystem_OPERATING_SYSTEM_MACOS
 }
@@ -12274,8 +12274,8 @@ func (x *CreatePatchBaselineRequest) GetRejectedpatches() []string {
 }
 
 func (x *CreatePatchBaselineRequest) GetRejectedpatchesaction() PatchAction {
-	if x != nil {
-		return x.Rejectedpatchesaction
+	if x != nil && x.Rejectedpatchesaction != nil {
+		return *x.Rejectedpatchesaction
 	}
 	return PatchAction_PATCH_ACTION_ALLOWASDEPENDENCY
 }
@@ -12923,11 +12923,11 @@ func (*DeleteDocumentResult) Descriptor() ([]byte, []int) {
 }
 
 type DeleteInventoryRequest struct {
-	state              protoimpl.MessageState      `protogen:"open.v1"`
-	Clienttoken        *string                     `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
-	Dryrun             *bool                       `protobuf:"varint,92204984,opt,name=dryrun,proto3,oneof" json:"dryrun,omitempty"`
-	Schemadeleteoption InventorySchemaDeleteOption `protobuf:"varint,105711169,opt,name=schemadeleteoption,proto3,enum=ssm.InventorySchemaDeleteOption" json:"schemadeleteoption,omitempty"`
-	Typename           string                      `protobuf:"bytes,446064463,opt,name=typename,proto3" json:"typename,omitempty"`
+	state              protoimpl.MessageState       `protogen:"open.v1"`
+	Clienttoken        *string                      `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
+	Dryrun             *bool                        `protobuf:"varint,92204984,opt,name=dryrun,proto3,oneof" json:"dryrun,omitempty"`
+	Schemadeleteoption *InventorySchemaDeleteOption `protobuf:"varint,105711169,opt,name=schemadeleteoption,proto3,enum=ssm.InventorySchemaDeleteOption,oneof" json:"schemadeleteoption,omitempty"`
+	Typename           string                       `protobuf:"bytes,446064463,opt,name=typename,proto3" json:"typename,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -12977,8 +12977,8 @@ func (x *DeleteInventoryRequest) GetDryrun() bool {
 }
 
 func (x *DeleteInventoryRequest) GetSchemadeleteoption() InventorySchemaDeleteOption {
-	if x != nil {
-		return x.Schemadeleteoption
+	if x != nil && x.Schemadeleteoption != nil {
+		return *x.Schemadeleteoption
 	}
 	return InventorySchemaDeleteOption_INVENTORY_SCHEMA_DELETE_OPTION_DISABLE_SCHEMA
 }
@@ -14147,9 +14147,9 @@ func (x *DeregisterTaskFromMaintenanceWindowResult) GetWindowtaskid() string {
 }
 
 type DescribeActivationsFilter struct {
-	state         protoimpl.MessageState        `protogen:"open.v1"`
-	Filterkey     DescribeActivationsFilterKeys `protobuf:"varint,300347055,opt,name=filterkey,proto3,enum=ssm.DescribeActivationsFilterKeys" json:"filterkey,omitempty"`
-	Filtervalues  []string                      `protobuf:"bytes,471484302,rep,name=filtervalues,proto3" json:"filtervalues,omitempty"`
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Filterkey     *DescribeActivationsFilterKeys `protobuf:"varint,300347055,opt,name=filterkey,proto3,enum=ssm.DescribeActivationsFilterKeys,oneof" json:"filterkey,omitempty"`
+	Filtervalues  []string                       `protobuf:"bytes,471484302,rep,name=filtervalues,proto3" json:"filtervalues,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14185,8 +14185,8 @@ func (*DescribeActivationsFilter) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeActivationsFilter) GetFilterkey() DescribeActivationsFilterKeys {
-	if x != nil {
-		return x.Filterkey
+	if x != nil && x.Filterkey != nil {
+		return *x.Filterkey
 	}
 	return DescribeActivationsFilterKeys_DESCRIBE_ACTIVATIONS_FILTER_KEYS_ACTIVATION_IDS
 }
@@ -16663,13 +16663,13 @@ func (x *DescribeMaintenanceWindowExecutionsResult) GetWindowexecutions() []*Mai
 }
 
 type DescribeMaintenanceWindowScheduleRequest struct {
-	state         protoimpl.MessageState        `protogen:"open.v1"`
-	Filters       []*PatchOrchestratorFilter    `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Maxresults    *int32                        `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     *string                       `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Resourcetype  MaintenanceWindowResourceType `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=ssm.MaintenanceWindowResourceType" json:"resourcetype,omitempty"`
-	Targets       []*Target                     `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
-	Windowid      *string                       `protobuf:"bytes,19001897,opt,name=windowid,proto3,oneof" json:"windowid,omitempty"`
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Filters       []*PatchOrchestratorFilter     `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
+	Maxresults    *int32                         `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                        `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Resourcetype  *MaintenanceWindowResourceType `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=ssm.MaintenanceWindowResourceType,oneof" json:"resourcetype,omitempty"`
+	Targets       []*Target                      `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
+	Windowid      *string                        `protobuf:"bytes,19001897,opt,name=windowid,proto3,oneof" json:"windowid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -16726,8 +16726,8 @@ func (x *DescribeMaintenanceWindowScheduleRequest) GetNexttoken() string {
 }
 
 func (x *DescribeMaintenanceWindowScheduleRequest) GetResourcetype() MaintenanceWindowResourceType {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return MaintenanceWindowResourceType_MAINTENANCE_WINDOW_RESOURCE_TYPE_RESOURCEGROUP
 }
@@ -17923,7 +17923,7 @@ type DescribePatchPropertiesRequest struct {
 	Maxresults      *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Operatingsystem OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
-	Patchset        PatchSet               `protobuf:"varint,254208192,opt,name=patchset,proto3,enum=ssm.PatchSet" json:"patchset,omitempty"`
+	Patchset        *PatchSet              `protobuf:"varint,254208192,opt,name=patchset,proto3,enum=ssm.PatchSet,oneof" json:"patchset,omitempty"`
 	Property        PatchProperty          `protobuf:"varint,304216553,opt,name=property,proto3,enum=ssm.PatchProperty" json:"property,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -17981,8 +17981,8 @@ func (x *DescribePatchPropertiesRequest) GetOperatingsystem() OperatingSystem {
 }
 
 func (x *DescribePatchPropertiesRequest) GetPatchset() PatchSet {
-	if x != nil {
-		return x.Patchset
+	if x != nil && x.Patchset != nil {
+		return *x.Patchset
 	}
 	return PatchSet_PATCH_SET_OS
 }
@@ -18369,11 +18369,11 @@ type DocumentDescription struct {
 	Defaultversion         *string                  `protobuf:"bytes,161172483,opt,name=defaultversion,proto3,oneof" json:"defaultversion,omitempty"`
 	Description            *string                  `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Displayname            *string                  `protobuf:"bytes,418161847,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
-	Documentformat         DocumentFormat           `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat" json:"documentformat,omitempty"`
-	Documenttype           DocumentType             `protobuf:"varint,457084477,opt,name=documenttype,proto3,enum=ssm.DocumentType" json:"documenttype,omitempty"`
+	Documentformat         *DocumentFormat          `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat,oneof" json:"documentformat,omitempty"`
+	Documenttype           *DocumentType            `protobuf:"varint,457084477,opt,name=documenttype,proto3,enum=ssm.DocumentType,oneof" json:"documenttype,omitempty"`
 	Documentversion        *string                  `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Hash                   *string                  `protobuf:"bytes,250828530,opt,name=hash,proto3,oneof" json:"hash,omitempty"`
-	Hashtype               DocumentHashType         `protobuf:"varint,172838330,opt,name=hashtype,proto3,enum=ssm.DocumentHashType" json:"hashtype,omitempty"`
+	Hashtype               *DocumentHashType        `protobuf:"varint,172838330,opt,name=hashtype,proto3,enum=ssm.DocumentHashType,oneof" json:"hashtype,omitempty"`
 	Latestversion          *string                  `protobuf:"bytes,424864587,opt,name=latestversion,proto3,oneof" json:"latestversion,omitempty"`
 	Name                   *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Owner                  *string                  `protobuf:"bytes,455261813,opt,name=owner,proto3,oneof" json:"owner,omitempty"`
@@ -18382,10 +18382,10 @@ type DocumentDescription struct {
 	Platformtypes          []PlatformType           `protobuf:"varint,447196676,rep,packed,name=platformtypes,proto3,enum=ssm.PlatformType" json:"platformtypes,omitempty"`
 	Requires               []*DocumentRequires      `protobuf:"bytes,149214838,rep,name=requires,proto3" json:"requires,omitempty"`
 	Reviewinformation      []*ReviewInformation     `protobuf:"bytes,512648418,rep,name=reviewinformation,proto3" json:"reviewinformation,omitempty"`
-	Reviewstatus           ReviewStatus             `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus" json:"reviewstatus,omitempty"`
+	Reviewstatus           *ReviewStatus            `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus,oneof" json:"reviewstatus,omitempty"`
 	Schemaversion          *string                  `protobuf:"bytes,371681851,opt,name=schemaversion,proto3,oneof" json:"schemaversion,omitempty"`
 	Sha1                   *string                  `protobuf:"bytes,462897589,opt,name=sha1,proto3,oneof" json:"sha1,omitempty"`
-	Status                 DocumentStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.DocumentStatus" json:"status,omitempty"`
+	Status                 *DocumentStatus          `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.DocumentStatus,oneof" json:"status,omitempty"`
 	Statusinformation      *string                  `protobuf:"bytes,14795748,opt,name=statusinformation,proto3,oneof" json:"statusinformation,omitempty"`
 	Tags                   []*Tag                   `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Targettype             *string                  `protobuf:"bytes,397256481,opt,name=targettype,proto3,oneof" json:"targettype,omitempty"`
@@ -18488,15 +18488,15 @@ func (x *DocumentDescription) GetDisplayname() string {
 }
 
 func (x *DocumentDescription) GetDocumentformat() DocumentFormat {
-	if x != nil {
-		return x.Documentformat
+	if x != nil && x.Documentformat != nil {
+		return *x.Documentformat
 	}
 	return DocumentFormat_DOCUMENT_FORMAT_JSON
 }
 
 func (x *DocumentDescription) GetDocumenttype() DocumentType {
-	if x != nil {
-		return x.Documenttype
+	if x != nil && x.Documenttype != nil {
+		return *x.Documenttype
 	}
 	return DocumentType_DOCUMENT_TYPE_PROBLEMANALYSISTEMPLATE
 }
@@ -18516,8 +18516,8 @@ func (x *DocumentDescription) GetHash() string {
 }
 
 func (x *DocumentDescription) GetHashtype() DocumentHashType {
-	if x != nil {
-		return x.Hashtype
+	if x != nil && x.Hashtype != nil {
+		return *x.Hashtype
 	}
 	return DocumentHashType_DOCUMENT_HASH_TYPE_SHA256
 }
@@ -18579,8 +18579,8 @@ func (x *DocumentDescription) GetReviewinformation() []*ReviewInformation {
 }
 
 func (x *DocumentDescription) GetReviewstatus() ReviewStatus {
-	if x != nil {
-		return x.Reviewstatus
+	if x != nil && x.Reviewstatus != nil {
+		return *x.Reviewstatus
 	}
 	return ReviewStatus_REVIEW_STATUS_PENDING
 }
@@ -18600,8 +18600,8 @@ func (x *DocumentDescription) GetSha1() string {
 }
 
 func (x *DocumentDescription) GetStatus() DocumentStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DocumentStatus_DOCUMENT_STATUS_ACTIVE
 }
@@ -18691,14 +18691,14 @@ type DocumentIdentifier struct {
 	Author          *string                `protobuf:"bytes,361744247,opt,name=author,proto3,oneof" json:"author,omitempty"`
 	Createddate     *string                `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
 	Displayname     *string                `protobuf:"bytes,418161847,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
-	Documentformat  DocumentFormat         `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat" json:"documentformat,omitempty"`
-	Documenttype    DocumentType           `protobuf:"varint,457084477,opt,name=documenttype,proto3,enum=ssm.DocumentType" json:"documenttype,omitempty"`
+	Documentformat  *DocumentFormat        `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat,oneof" json:"documentformat,omitempty"`
+	Documenttype    *DocumentType          `protobuf:"varint,457084477,opt,name=documenttype,proto3,enum=ssm.DocumentType,oneof" json:"documenttype,omitempty"`
 	Documentversion *string                `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Name            *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Owner           *string                `protobuf:"bytes,455261813,opt,name=owner,proto3,oneof" json:"owner,omitempty"`
 	Platformtypes   []PlatformType         `protobuf:"varint,447196676,rep,packed,name=platformtypes,proto3,enum=ssm.PlatformType" json:"platformtypes,omitempty"`
 	Requires        []*DocumentRequires    `protobuf:"bytes,149214838,rep,name=requires,proto3" json:"requires,omitempty"`
-	Reviewstatus    ReviewStatus           `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus" json:"reviewstatus,omitempty"`
+	Reviewstatus    *ReviewStatus          `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus,oneof" json:"reviewstatus,omitempty"`
 	Schemaversion   *string                `protobuf:"bytes,371681851,opt,name=schemaversion,proto3,oneof" json:"schemaversion,omitempty"`
 	Tags            []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Targettype      *string                `protobuf:"bytes,397256481,opt,name=targettype,proto3,oneof" json:"targettype,omitempty"`
@@ -18759,15 +18759,15 @@ func (x *DocumentIdentifier) GetDisplayname() string {
 }
 
 func (x *DocumentIdentifier) GetDocumentformat() DocumentFormat {
-	if x != nil {
-		return x.Documentformat
+	if x != nil && x.Documentformat != nil {
+		return *x.Documentformat
 	}
 	return DocumentFormat_DOCUMENT_FORMAT_JSON
 }
 
 func (x *DocumentIdentifier) GetDocumenttype() DocumentType {
-	if x != nil {
-		return x.Documenttype
+	if x != nil && x.Documenttype != nil {
+		return *x.Documenttype
 	}
 	return DocumentType_DOCUMENT_TYPE_PROBLEMANALYSISTEMPLATE
 }
@@ -18808,8 +18808,8 @@ func (x *DocumentIdentifier) GetRequires() []*DocumentRequires {
 }
 
 func (x *DocumentIdentifier) GetReviewstatus() ReviewStatus {
-	if x != nil {
-		return x.Reviewstatus
+	if x != nil && x.Reviewstatus != nil {
+		return *x.Reviewstatus
 	}
 	return ReviewStatus_REVIEW_STATUS_PENDING
 }
@@ -18987,7 +18987,7 @@ type DocumentParameter struct {
 	Defaultvalue  *string                `protobuf:"bytes,218709920,opt,name=defaultvalue,proto3,oneof" json:"defaultvalue,omitempty"`
 	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Type          DocumentParameterType  `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.DocumentParameterType" json:"type,omitempty"`
+	Type          *DocumentParameterType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.DocumentParameterType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -19044,8 +19044,8 @@ func (x *DocumentParameter) GetName() string {
 }
 
 func (x *DocumentParameter) GetType() DocumentParameterType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return DocumentParameterType_DOCUMENT_PARAMETER_TYPE_STRINGLIST
 }
@@ -19163,9 +19163,9 @@ func (x *DocumentRequires) GetVersionname() string {
 }
 
 type DocumentReviewCommentSource struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Content       *string                   `protobuf:"bytes,23568227,opt,name=content,proto3,oneof" json:"content,omitempty"`
-	Type          DocumentReviewCommentType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.DocumentReviewCommentType" json:"type,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Content       *string                    `protobuf:"bytes,23568227,opt,name=content,proto3,oneof" json:"content,omitempty"`
+	Type          *DocumentReviewCommentType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.DocumentReviewCommentType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -19208,8 +19208,8 @@ func (x *DocumentReviewCommentSource) GetContent() string {
 }
 
 func (x *DocumentReviewCommentSource) GetType() DocumentReviewCommentType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return DocumentReviewCommentType_DOCUMENT_REVIEW_COMMENT_TYPE_COMMENT
 }
@@ -19218,7 +19218,7 @@ type DocumentReviewerResponseSource struct {
 	state         protoimpl.MessageState         `protogen:"open.v1"`
 	Comment       []*DocumentReviewCommentSource `protobuf:"bytes,407871487,rep,name=comment,proto3" json:"comment,omitempty"`
 	Createtime    *string                        `protobuf:"bytes,490895933,opt,name=createtime,proto3,oneof" json:"createtime,omitempty"`
-	Reviewstatus  ReviewStatus                   `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus" json:"reviewstatus,omitempty"`
+	Reviewstatus  *ReviewStatus                  `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus,oneof" json:"reviewstatus,omitempty"`
 	Reviewer      *string                        `protobuf:"bytes,436444219,opt,name=reviewer,proto3,oneof" json:"reviewer,omitempty"`
 	Updatedtime   *string                        `protobuf:"bytes,156274570,opt,name=updatedtime,proto3,oneof" json:"updatedtime,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -19270,8 +19270,8 @@ func (x *DocumentReviewerResponseSource) GetCreatetime() string {
 }
 
 func (x *DocumentReviewerResponseSource) GetReviewstatus() ReviewStatus {
-	if x != nil {
-		return x.Reviewstatus
+	if x != nil && x.Reviewstatus != nil {
+		return *x.Reviewstatus
 	}
 	return ReviewStatus_REVIEW_STATUS_PENDING
 }
@@ -19346,12 +19346,12 @@ type DocumentVersionInfo struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Createddate       *string                `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
 	Displayname       *string                `protobuf:"bytes,418161847,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
-	Documentformat    DocumentFormat         `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat" json:"documentformat,omitempty"`
+	Documentformat    *DocumentFormat        `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat,oneof" json:"documentformat,omitempty"`
 	Documentversion   *string                `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Isdefaultversion  *bool                  `protobuf:"varint,465655635,opt,name=isdefaultversion,proto3,oneof" json:"isdefaultversion,omitempty"`
 	Name              *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Reviewstatus      ReviewStatus           `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus" json:"reviewstatus,omitempty"`
-	Status            DocumentStatus         `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.DocumentStatus" json:"status,omitempty"`
+	Reviewstatus      *ReviewStatus          `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus,oneof" json:"reviewstatus,omitempty"`
+	Status            *DocumentStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.DocumentStatus,oneof" json:"status,omitempty"`
 	Statusinformation *string                `protobuf:"bytes,14795748,opt,name=statusinformation,proto3,oneof" json:"statusinformation,omitempty"`
 	Versionname       *string                `protobuf:"bytes,227348949,opt,name=versionname,proto3,oneof" json:"versionname,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -19403,8 +19403,8 @@ func (x *DocumentVersionInfo) GetDisplayname() string {
 }
 
 func (x *DocumentVersionInfo) GetDocumentformat() DocumentFormat {
-	if x != nil {
-		return x.Documentformat
+	if x != nil && x.Documentformat != nil {
+		return *x.Documentformat
 	}
 	return DocumentFormat_DOCUMENT_FORMAT_JSON
 }
@@ -19431,15 +19431,15 @@ func (x *DocumentVersionInfo) GetName() string {
 }
 
 func (x *DocumentVersionInfo) GetReviewstatus() ReviewStatus {
-	if x != nil {
-		return x.Reviewstatus
+	if x != nil && x.Reviewstatus != nil {
+		return *x.Reviewstatus
 	}
 	return ReviewStatus_REVIEW_STATUS_PENDING
 }
 
 func (x *DocumentVersionInfo) GetStatus() DocumentStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DocumentStatus_DOCUMENT_STATUS_ACTIVE
 }
@@ -19813,7 +19813,7 @@ func (x *ExecutionPreview) GetAutomation() *AutomationExecutionPreview {
 type FailedCreateAssociation struct {
 	state         protoimpl.MessageState              `protogen:"open.v1"`
 	Entry         *CreateAssociationBatchRequestEntry `protobuf:"bytes,482340148,opt,name=entry,proto3" json:"entry,omitempty"`
-	Fault         Fault                               `protobuf:"varint,460759072,opt,name=fault,proto3,enum=ssm.Fault" json:"fault,omitempty"`
+	Fault         *Fault                              `protobuf:"varint,460759072,opt,name=fault,proto3,enum=ssm.Fault,oneof" json:"fault,omitempty"`
 	Message       *string                             `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -19857,8 +19857,8 @@ func (x *FailedCreateAssociation) GetEntry() *CreateAssociationBatchRequestEntry
 }
 
 func (x *FailedCreateAssociation) GetFault() Fault {
-	if x != nil {
-		return x.Fault
+	if x != nil && x.Fault != nil {
+		return *x.Fault
 	}
 	return Fault_FAULT_CLIENT
 }
@@ -20020,7 +20020,7 @@ func (x *GetAccessTokenRequest) GetAccessrequestid() string {
 
 type GetAccessTokenResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Accessrequeststatus AccessRequestStatus    `protobuf:"varint,425567007,opt,name=accessrequeststatus,proto3,enum=ssm.AccessRequestStatus" json:"accessrequeststatus,omitempty"`
+	Accessrequeststatus *AccessRequestStatus   `protobuf:"varint,425567007,opt,name=accessrequeststatus,proto3,enum=ssm.AccessRequestStatus,oneof" json:"accessrequeststatus,omitempty"`
 	Credentials         *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -20057,8 +20057,8 @@ func (*GetAccessTokenResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetAccessTokenResponse) GetAccessrequeststatus() AccessRequestStatus {
-	if x != nil {
-		return x.Accessrequeststatus
+	if x != nil && x.Accessrequeststatus != nil {
+		return *x.Accessrequeststatus
 	}
 	return AccessRequestStatus_ACCESS_REQUEST_STATUS_PENDING
 }
@@ -20214,7 +20214,7 @@ type GetCalendarStateResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Attime             *string                `protobuf:"bytes,404952130,opt,name=attime,proto3,oneof" json:"attime,omitempty"`
 	Nexttransitiontime *string                `protobuf:"bytes,426659123,opt,name=nexttransitiontime,proto3,oneof" json:"nexttransitiontime,omitempty"`
-	State              CalendarState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=ssm.CalendarState" json:"state,omitempty"`
+	State              *CalendarState         `protobuf:"varint,502047895,opt,name=state,proto3,enum=ssm.CalendarState,oneof" json:"state,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -20264,8 +20264,8 @@ func (x *GetCalendarStateResponse) GetNexttransitiontime() string {
 }
 
 func (x *GetCalendarStateResponse) GetState() CalendarState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return CalendarState_CALENDAR_STATE_CLOSED
 }
@@ -20475,24 +20475,24 @@ func (x *GetCommandInvocationRequest) GetPluginname() string {
 }
 
 type GetCommandInvocationResult struct {
-	state                  protoimpl.MessageState  `protogen:"open.v1"`
-	Cloudwatchoutputconfig *CloudWatchOutputConfig `protobuf:"bytes,21186555,opt,name=cloudwatchoutputconfig,proto3" json:"cloudwatchoutputconfig,omitempty"`
-	Commandid              *string                 `protobuf:"bytes,159395200,opt,name=commandid,proto3,oneof" json:"commandid,omitempty"`
-	Comment                *string                 `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
-	Documentname           *string                 `protobuf:"bytes,120705488,opt,name=documentname,proto3,oneof" json:"documentname,omitempty"`
-	Documentversion        *string                 `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
-	Executionelapsedtime   *string                 `protobuf:"bytes,71300547,opt,name=executionelapsedtime,proto3,oneof" json:"executionelapsedtime,omitempty"`
-	Executionenddatetime   *string                 `protobuf:"bytes,521894840,opt,name=executionenddatetime,proto3,oneof" json:"executionenddatetime,omitempty"`
-	Executionstartdatetime *string                 `protobuf:"bytes,309261539,opt,name=executionstartdatetime,proto3,oneof" json:"executionstartdatetime,omitempty"`
-	Instanceid             *string                 `protobuf:"bytes,49567392,opt,name=instanceid,proto3,oneof" json:"instanceid,omitempty"`
-	Pluginname             *string                 `protobuf:"bytes,115989314,opt,name=pluginname,proto3,oneof" json:"pluginname,omitempty"`
-	Responsecode           *int32                  `protobuf:"varint,447553700,opt,name=responsecode,proto3,oneof" json:"responsecode,omitempty"`
-	Standarderrorcontent   *string                 `protobuf:"bytes,473735696,opt,name=standarderrorcontent,proto3,oneof" json:"standarderrorcontent,omitempty"`
-	Standarderrorurl       *string                 `protobuf:"bytes,403407680,opt,name=standarderrorurl,proto3,oneof" json:"standarderrorurl,omitempty"`
-	Standardoutputcontent  *string                 `protobuf:"bytes,294611267,opt,name=standardoutputcontent,proto3,oneof" json:"standardoutputcontent,omitempty"`
-	Standardoutputurl      *string                 `protobuf:"bytes,347642271,opt,name=standardoutputurl,proto3,oneof" json:"standardoutputurl,omitempty"`
-	Status                 CommandInvocationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.CommandInvocationStatus" json:"status,omitempty"`
-	Statusdetails          *string                 `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
+	state                  protoimpl.MessageState   `protogen:"open.v1"`
+	Cloudwatchoutputconfig *CloudWatchOutputConfig  `protobuf:"bytes,21186555,opt,name=cloudwatchoutputconfig,proto3" json:"cloudwatchoutputconfig,omitempty"`
+	Commandid              *string                  `protobuf:"bytes,159395200,opt,name=commandid,proto3,oneof" json:"commandid,omitempty"`
+	Comment                *string                  `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
+	Documentname           *string                  `protobuf:"bytes,120705488,opt,name=documentname,proto3,oneof" json:"documentname,omitempty"`
+	Documentversion        *string                  `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
+	Executionelapsedtime   *string                  `protobuf:"bytes,71300547,opt,name=executionelapsedtime,proto3,oneof" json:"executionelapsedtime,omitempty"`
+	Executionenddatetime   *string                  `protobuf:"bytes,521894840,opt,name=executionenddatetime,proto3,oneof" json:"executionenddatetime,omitempty"`
+	Executionstartdatetime *string                  `protobuf:"bytes,309261539,opt,name=executionstartdatetime,proto3,oneof" json:"executionstartdatetime,omitempty"`
+	Instanceid             *string                  `protobuf:"bytes,49567392,opt,name=instanceid,proto3,oneof" json:"instanceid,omitempty"`
+	Pluginname             *string                  `protobuf:"bytes,115989314,opt,name=pluginname,proto3,oneof" json:"pluginname,omitempty"`
+	Responsecode           *int32                   `protobuf:"varint,447553700,opt,name=responsecode,proto3,oneof" json:"responsecode,omitempty"`
+	Standarderrorcontent   *string                  `protobuf:"bytes,473735696,opt,name=standarderrorcontent,proto3,oneof" json:"standarderrorcontent,omitempty"`
+	Standarderrorurl       *string                  `protobuf:"bytes,403407680,opt,name=standarderrorurl,proto3,oneof" json:"standarderrorurl,omitempty"`
+	Standardoutputcontent  *string                  `protobuf:"bytes,294611267,opt,name=standardoutputcontent,proto3,oneof" json:"standardoutputcontent,omitempty"`
+	Standardoutputurl      *string                  `protobuf:"bytes,347642271,opt,name=standardoutputurl,proto3,oneof" json:"standardoutputurl,omitempty"`
+	Status                 *CommandInvocationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.CommandInvocationStatus,oneof" json:"status,omitempty"`
+	Statusdetails          *string                  `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -20633,8 +20633,8 @@ func (x *GetCommandInvocationResult) GetStandardoutputurl() string {
 }
 
 func (x *GetCommandInvocationResult) GetStatus() CommandInvocationStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CommandInvocationStatus_COMMAND_INVOCATION_STATUS_PENDING
 }
@@ -20692,7 +20692,7 @@ func (x *GetConnectionStatusRequest) GetTarget() string {
 
 type GetConnectionStatusResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        ConnectionStatus       `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ConnectionStatus" json:"status,omitempty"`
+	Status        *ConnectionStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ConnectionStatus,oneof" json:"status,omitempty"`
 	Target        *string                `protobuf:"bytes,191361385,opt,name=target,proto3,oneof" json:"target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -20729,8 +20729,8 @@ func (*GetConnectionStatusResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetConnectionStatusResponse) GetStatus() ConnectionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ConnectionStatus_CONNECTION_STATUS_NOT_CONNECTED
 }
@@ -20744,7 +20744,7 @@ func (x *GetConnectionStatusResponse) GetTarget() string {
 
 type GetDefaultPatchBaselineRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Operatingsystem OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
+	Operatingsystem *OperatingSystem       `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem,oneof" json:"operatingsystem,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -20780,8 +20780,8 @@ func (*GetDefaultPatchBaselineRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetDefaultPatchBaselineRequest) GetOperatingsystem() OperatingSystem {
-	if x != nil {
-		return x.Operatingsystem
+	if x != nil && x.Operatingsystem != nil {
+		return *x.Operatingsystem
 	}
 	return OperatingSystem_OPERATING_SYSTEM_MACOS
 }
@@ -20789,7 +20789,7 @@ func (x *GetDefaultPatchBaselineRequest) GetOperatingsystem() OperatingSystem {
 type GetDefaultPatchBaselineResult struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Baselineid      *string                `protobuf:"bytes,85389904,opt,name=baselineid,proto3,oneof" json:"baselineid,omitempty"`
-	Operatingsystem OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
+	Operatingsystem *OperatingSystem       `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem,oneof" json:"operatingsystem,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -20832,8 +20832,8 @@ func (x *GetDefaultPatchBaselineResult) GetBaselineid() string {
 }
 
 func (x *GetDefaultPatchBaselineResult) GetOperatingsystem() OperatingSystem {
-	if x != nil {
-		return x.Operatingsystem
+	if x != nil && x.Operatingsystem != nil {
+		return *x.Operatingsystem
 	}
 	return OperatingSystem_OPERATING_SYSTEM_MACOS
 }
@@ -20976,7 +20976,7 @@ func (x *GetDeployablePatchSnapshotForInstanceResult) GetSnapshotid() string {
 
 type GetDocumentRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Documentformat  DocumentFormat         `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat" json:"documentformat,omitempty"`
+	Documentformat  *DocumentFormat        `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat,oneof" json:"documentformat,omitempty"`
 	Documentversion *string                `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Name            string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Versionname     *string                `protobuf:"bytes,227348949,opt,name=versionname,proto3,oneof" json:"versionname,omitempty"`
@@ -21015,8 +21015,8 @@ func (*GetDocumentRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetDocumentRequest) GetDocumentformat() DocumentFormat {
-	if x != nil {
-		return x.Documentformat
+	if x != nil && x.Documentformat != nil {
+		return *x.Documentformat
 	}
 	return DocumentFormat_DOCUMENT_FORMAT_JSON
 }
@@ -21048,13 +21048,13 @@ type GetDocumentResult struct {
 	Content            *string                `protobuf:"bytes,23568227,opt,name=content,proto3,oneof" json:"content,omitempty"`
 	Createddate        *string                `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
 	Displayname        *string                `protobuf:"bytes,418161847,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
-	Documentformat     DocumentFormat         `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat" json:"documentformat,omitempty"`
-	Documenttype       DocumentType           `protobuf:"varint,457084477,opt,name=documenttype,proto3,enum=ssm.DocumentType" json:"documenttype,omitempty"`
+	Documentformat     *DocumentFormat        `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat,oneof" json:"documentformat,omitempty"`
+	Documenttype       *DocumentType          `protobuf:"varint,457084477,opt,name=documenttype,proto3,enum=ssm.DocumentType,oneof" json:"documenttype,omitempty"`
 	Documentversion    *string                `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Name               *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Requires           []*DocumentRequires    `protobuf:"bytes,149214838,rep,name=requires,proto3" json:"requires,omitempty"`
-	Reviewstatus       ReviewStatus           `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus" json:"reviewstatus,omitempty"`
-	Status             DocumentStatus         `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.DocumentStatus" json:"status,omitempty"`
+	Reviewstatus       *ReviewStatus          `protobuf:"varint,34562404,opt,name=reviewstatus,proto3,enum=ssm.ReviewStatus,oneof" json:"reviewstatus,omitempty"`
+	Status             *DocumentStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.DocumentStatus,oneof" json:"status,omitempty"`
 	Statusinformation  *string                `protobuf:"bytes,14795748,opt,name=statusinformation,proto3,oneof" json:"statusinformation,omitempty"`
 	Versionname        *string                `protobuf:"bytes,227348949,opt,name=versionname,proto3,oneof" json:"versionname,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -21120,15 +21120,15 @@ func (x *GetDocumentResult) GetDisplayname() string {
 }
 
 func (x *GetDocumentResult) GetDocumentformat() DocumentFormat {
-	if x != nil {
-		return x.Documentformat
+	if x != nil && x.Documentformat != nil {
+		return *x.Documentformat
 	}
 	return DocumentFormat_DOCUMENT_FORMAT_JSON
 }
 
 func (x *GetDocumentResult) GetDocumenttype() DocumentType {
-	if x != nil {
-		return x.Documenttype
+	if x != nil && x.Documenttype != nil {
+		return *x.Documenttype
 	}
 	return DocumentType_DOCUMENT_TYPE_PROBLEMANALYSISTEMPLATE
 }
@@ -21155,15 +21155,15 @@ func (x *GetDocumentResult) GetRequires() []*DocumentRequires {
 }
 
 func (x *GetDocumentResult) GetReviewstatus() ReviewStatus {
-	if x != nil {
-		return x.Reviewstatus
+	if x != nil && x.Reviewstatus != nil {
+		return *x.Reviewstatus
 	}
 	return ReviewStatus_REVIEW_STATUS_PENDING
 }
 
 func (x *GetDocumentResult) GetStatus() DocumentStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DocumentStatus_DOCUMENT_STATUS_ACTIVE
 }
@@ -21227,12 +21227,12 @@ func (x *GetExecutionPreviewRequest) GetExecutionpreviewid() string {
 }
 
 type GetExecutionPreviewResponse struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	Endedat            *string                `protobuf:"bytes,104122351,opt,name=endedat,proto3,oneof" json:"endedat,omitempty"`
-	Executionpreview   *ExecutionPreview      `protobuf:"bytes,108797384,opt,name=executionpreview,proto3" json:"executionpreview,omitempty"`
-	Executionpreviewid *string                `protobuf:"bytes,35285163,opt,name=executionpreviewid,proto3,oneof" json:"executionpreviewid,omitempty"`
-	Status             ExecutionPreviewStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ExecutionPreviewStatus" json:"status,omitempty"`
-	Statusmessage      *string                `protobuf:"bytes,72590095,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
+	state              protoimpl.MessageState  `protogen:"open.v1"`
+	Endedat            *string                 `protobuf:"bytes,104122351,opt,name=endedat,proto3,oneof" json:"endedat,omitempty"`
+	Executionpreview   *ExecutionPreview       `protobuf:"bytes,108797384,opt,name=executionpreview,proto3" json:"executionpreview,omitempty"`
+	Executionpreviewid *string                 `protobuf:"bytes,35285163,opt,name=executionpreviewid,proto3,oneof" json:"executionpreviewid,omitempty"`
+	Status             *ExecutionPreviewStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ExecutionPreviewStatus,oneof" json:"status,omitempty"`
+	Statusmessage      *string                 `protobuf:"bytes,72590095,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -21289,8 +21289,8 @@ func (x *GetExecutionPreviewResponse) GetExecutionpreviewid() string {
 }
 
 func (x *GetExecutionPreviewResponse) GetStatus() ExecutionPreviewStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ExecutionPreviewStatus_EXECUTION_PREVIEW_STATUS_PENDING
 }
@@ -21603,13 +21603,13 @@ func (x *GetMaintenanceWindowExecutionRequest) GetWindowexecutionid() string {
 }
 
 type GetMaintenanceWindowExecutionResult struct {
-	state             protoimpl.MessageState           `protogen:"open.v1"`
-	Endtime           *string                          `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
-	Starttime         *string                          `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
-	Status            MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus" json:"status,omitempty"`
-	Statusdetails     *string                          `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
-	Taskids           []string                         `protobuf:"bytes,254419607,rep,name=taskids,proto3" json:"taskids,omitempty"`
-	Windowexecutionid *string                          `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
+	state             protoimpl.MessageState            `protogen:"open.v1"`
+	Endtime           *string                           `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
+	Starttime         *string                           `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
+	Status            *MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus,oneof" json:"status,omitempty"`
+	Statusdetails     *string                           `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
+	Taskids           []string                          `protobuf:"bytes,254419607,rep,name=taskids,proto3" json:"taskids,omitempty"`
+	Windowexecutionid *string                           `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -21659,8 +21659,8 @@ func (x *GetMaintenanceWindowExecutionResult) GetStarttime() string {
 }
 
 func (x *GetMaintenanceWindowExecutionResult) GetStatus() MaintenanceWindowExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return MaintenanceWindowExecutionStatus_MAINTENANCE_WINDOW_EXECUTION_STATUS_TIMEDOUT
 }
@@ -21747,19 +21747,19 @@ func (x *GetMaintenanceWindowExecutionTaskInvocationRequest) GetWindowexecutioni
 }
 
 type GetMaintenanceWindowExecutionTaskInvocationResult struct {
-	state             protoimpl.MessageState           `protogen:"open.v1"`
-	Endtime           *string                          `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
-	Executionid       *string                          `protobuf:"bytes,147580849,opt,name=executionid,proto3,oneof" json:"executionid,omitempty"`
-	Invocationid      *string                          `protobuf:"bytes,116064639,opt,name=invocationid,proto3,oneof" json:"invocationid,omitempty"`
-	Ownerinformation  *string                          `protobuf:"bytes,68242691,opt,name=ownerinformation,proto3,oneof" json:"ownerinformation,omitempty"`
-	Parameters        *string                          `protobuf:"bytes,494900218,opt,name=parameters,proto3,oneof" json:"parameters,omitempty"`
-	Starttime         *string                          `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
-	Status            MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus" json:"status,omitempty"`
-	Statusdetails     *string                          `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
-	Taskexecutionid   *string                          `protobuf:"bytes,474180408,opt,name=taskexecutionid,proto3,oneof" json:"taskexecutionid,omitempty"`
-	Tasktype          MaintenanceWindowTaskType        `protobuf:"varint,370407909,opt,name=tasktype,proto3,enum=ssm.MaintenanceWindowTaskType" json:"tasktype,omitempty"`
-	Windowexecutionid *string                          `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
-	Windowtargetid    *string                          `protobuf:"bytes,259696478,opt,name=windowtargetid,proto3,oneof" json:"windowtargetid,omitempty"`
+	state             protoimpl.MessageState            `protogen:"open.v1"`
+	Endtime           *string                           `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
+	Executionid       *string                           `protobuf:"bytes,147580849,opt,name=executionid,proto3,oneof" json:"executionid,omitempty"`
+	Invocationid      *string                           `protobuf:"bytes,116064639,opt,name=invocationid,proto3,oneof" json:"invocationid,omitempty"`
+	Ownerinformation  *string                           `protobuf:"bytes,68242691,opt,name=ownerinformation,proto3,oneof" json:"ownerinformation,omitempty"`
+	Parameters        *string                           `protobuf:"bytes,494900218,opt,name=parameters,proto3,oneof" json:"parameters,omitempty"`
+	Starttime         *string                           `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
+	Status            *MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus,oneof" json:"status,omitempty"`
+	Statusdetails     *string                           `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
+	Taskexecutionid   *string                           `protobuf:"bytes,474180408,opt,name=taskexecutionid,proto3,oneof" json:"taskexecutionid,omitempty"`
+	Tasktype          *MaintenanceWindowTaskType        `protobuf:"varint,370407909,opt,name=tasktype,proto3,enum=ssm.MaintenanceWindowTaskType,oneof" json:"tasktype,omitempty"`
+	Windowexecutionid *string                           `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
+	Windowtargetid    *string                           `protobuf:"bytes,259696478,opt,name=windowtargetid,proto3,oneof" json:"windowtargetid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -21837,8 +21837,8 @@ func (x *GetMaintenanceWindowExecutionTaskInvocationResult) GetStarttime() strin
 }
 
 func (x *GetMaintenanceWindowExecutionTaskInvocationResult) GetStatus() MaintenanceWindowExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return MaintenanceWindowExecutionStatus_MAINTENANCE_WINDOW_EXECUTION_STATUS_TIMEDOUT
 }
@@ -21858,8 +21858,8 @@ func (x *GetMaintenanceWindowExecutionTaskInvocationResult) GetTaskexecutionid()
 }
 
 func (x *GetMaintenanceWindowExecutionTaskInvocationResult) GetTasktype() MaintenanceWindowTaskType {
-	if x != nil {
-		return x.Tasktype
+	if x != nil && x.Tasktype != nil {
+		return *x.Tasktype
 	}
 	return MaintenanceWindowTaskType_MAINTENANCE_WINDOW_TASK_TYPE_STEPFUNCTIONS
 }
@@ -21939,13 +21939,13 @@ type GetMaintenanceWindowExecutionTaskResult struct {
 	Priority           *int32                                      `protobuf:"varint,109944618,opt,name=priority,proto3,oneof" json:"priority,omitempty"`
 	Servicerole        *string                                     `protobuf:"bytes,47807725,opt,name=servicerole,proto3,oneof" json:"servicerole,omitempty"`
 	Starttime          *string                                     `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
-	Status             MaintenanceWindowExecutionStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus" json:"status,omitempty"`
+	Status             *MaintenanceWindowExecutionStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus,oneof" json:"status,omitempty"`
 	Statusdetails      *string                                     `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
 	Taskarn            *string                                     `protobuf:"bytes,312386788,opt,name=taskarn,proto3,oneof" json:"taskarn,omitempty"`
 	Taskexecutionid    *string                                     `protobuf:"bytes,474180408,opt,name=taskexecutionid,proto3,oneof" json:"taskexecutionid,omitempty"`
 	Taskparameters     []*MaintenanceWindowTaskParametersListEntry `protobuf:"bytes,385451905,rep,name=taskparameters,proto3" json:"taskparameters,omitempty"`
 	Triggeredalarms    []*AlarmStateInformation                    `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
-	Type               MaintenanceWindowTaskType                   `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.MaintenanceWindowTaskType" json:"type,omitempty"`
+	Type               *MaintenanceWindowTaskType                  `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.MaintenanceWindowTaskType,oneof" json:"type,omitempty"`
 	Windowexecutionid  *string                                     `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -22031,8 +22031,8 @@ func (x *GetMaintenanceWindowExecutionTaskResult) GetStarttime() string {
 }
 
 func (x *GetMaintenanceWindowExecutionTaskResult) GetStatus() MaintenanceWindowExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return MaintenanceWindowExecutionStatus_MAINTENANCE_WINDOW_EXECUTION_STATUS_TIMEDOUT
 }
@@ -22073,8 +22073,8 @@ func (x *GetMaintenanceWindowExecutionTaskResult) GetTriggeredalarms() []*AlarmS
 }
 
 func (x *GetMaintenanceWindowExecutionTaskResult) GetType() MaintenanceWindowTaskType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return MaintenanceWindowTaskType_MAINTENANCE_WINDOW_TASK_TYPE_STEPFUNCTIONS
 }
@@ -22341,7 +22341,7 @@ func (x *GetMaintenanceWindowTaskRequest) GetWindowtaskid() string {
 type GetMaintenanceWindowTaskResult struct {
 	state                    protoimpl.MessageState                                    `protogen:"open.v1"`
 	Alarmconfiguration       *AlarmConfiguration                                       `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
-	Cutoffbehavior           MaintenanceWindowTaskCutoffBehavior                       `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior" json:"cutoffbehavior,omitempty"`
+	Cutoffbehavior           *MaintenanceWindowTaskCutoffBehavior                      `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior,oneof" json:"cutoffbehavior,omitempty"`
 	Description              *string                                                   `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Logginginfo              *LoggingInfo                                              `protobuf:"bytes,448312415,opt,name=logginginfo,proto3" json:"logginginfo,omitempty"`
 	Maxconcurrency           *string                                                   `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
@@ -22353,7 +22353,7 @@ type GetMaintenanceWindowTaskResult struct {
 	Taskarn                  *string                                                   `protobuf:"bytes,312386788,opt,name=taskarn,proto3,oneof" json:"taskarn,omitempty"`
 	Taskinvocationparameters *MaintenanceWindowTaskInvocationParameters                `protobuf:"bytes,347127635,opt,name=taskinvocationparameters,proto3" json:"taskinvocationparameters,omitempty"`
 	Taskparameters           map[string]*MaintenanceWindowTaskParameterValueExpression `protobuf:"bytes,385451905,rep,name=taskparameters,proto3" json:"taskparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Tasktype                 MaintenanceWindowTaskType                                 `protobuf:"varint,370407909,opt,name=tasktype,proto3,enum=ssm.MaintenanceWindowTaskType" json:"tasktype,omitempty"`
+	Tasktype                 *MaintenanceWindowTaskType                                `protobuf:"varint,370407909,opt,name=tasktype,proto3,enum=ssm.MaintenanceWindowTaskType,oneof" json:"tasktype,omitempty"`
 	Windowid                 *string                                                   `protobuf:"bytes,19001897,opt,name=windowid,proto3,oneof" json:"windowid,omitempty"`
 	Windowtaskid             *string                                                   `protobuf:"bytes,323765978,opt,name=windowtaskid,proto3,oneof" json:"windowtaskid,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -22398,8 +22398,8 @@ func (x *GetMaintenanceWindowTaskResult) GetAlarmconfiguration() *AlarmConfigura
 }
 
 func (x *GetMaintenanceWindowTaskResult) GetCutoffbehavior() MaintenanceWindowTaskCutoffBehavior {
-	if x != nil {
-		return x.Cutoffbehavior
+	if x != nil && x.Cutoffbehavior != nil {
+		return *x.Cutoffbehavior
 	}
 	return MaintenanceWindowTaskCutoffBehavior_MAINTENANCE_WINDOW_TASK_CUTOFF_BEHAVIOR_CANCELTASK
 }
@@ -22482,8 +22482,8 @@ func (x *GetMaintenanceWindowTaskResult) GetTaskparameters() map[string]*Mainten
 }
 
 func (x *GetMaintenanceWindowTaskResult) GetTasktype() MaintenanceWindowTaskType {
-	if x != nil {
-		return x.Tasktype
+	if x != nil && x.Tasktype != nil {
+		return *x.Tasktype
 	}
 	return MaintenanceWindowTaskType_MAINTENANCE_WINDOW_TASK_TYPE_STEPFUNCTIONS
 }
@@ -23312,7 +23312,7 @@ func (x *GetParametersResult) GetParameters() []*Parameter {
 
 type GetPatchBaselineForPatchGroupRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Operatingsystem OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
+	Operatingsystem *OperatingSystem       `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem,oneof" json:"operatingsystem,omitempty"`
 	Patchgroup      string                 `protobuf:"bytes,518806497,opt,name=patchgroup,proto3" json:"patchgroup,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -23349,8 +23349,8 @@ func (*GetPatchBaselineForPatchGroupRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetPatchBaselineForPatchGroupRequest) GetOperatingsystem() OperatingSystem {
-	if x != nil {
-		return x.Operatingsystem
+	if x != nil && x.Operatingsystem != nil {
+		return *x.Operatingsystem
 	}
 	return OperatingSystem_OPERATING_SYSTEM_MACOS
 }
@@ -23365,7 +23365,7 @@ func (x *GetPatchBaselineForPatchGroupRequest) GetPatchgroup() string {
 type GetPatchBaselineForPatchGroupResult struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Baselineid      *string                `protobuf:"bytes,85389904,opt,name=baselineid,proto3,oneof" json:"baselineid,omitempty"`
-	Operatingsystem OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
+	Operatingsystem *OperatingSystem       `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem,oneof" json:"operatingsystem,omitempty"`
 	Patchgroup      *string                `protobuf:"bytes,518806497,opt,name=patchgroup,proto3,oneof" json:"patchgroup,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -23409,8 +23409,8 @@ func (x *GetPatchBaselineForPatchGroupResult) GetBaselineid() string {
 }
 
 func (x *GetPatchBaselineForPatchGroupResult) GetOperatingsystem() OperatingSystem {
-	if x != nil {
-		return x.Operatingsystem
+	if x != nil && x.Operatingsystem != nil {
+		return *x.Operatingsystem
 	}
 	return OperatingSystem_OPERATING_SYSTEM_MACOS
 }
@@ -23470,19 +23470,19 @@ type GetPatchBaselineResult struct {
 	state                                    protoimpl.MessageState `protogen:"open.v1"`
 	Approvalrules                            *PatchRuleGroup        `protobuf:"bytes,71466346,opt,name=approvalrules,proto3" json:"approvalrules,omitempty"`
 	Approvedpatches                          []string               `protobuf:"bytes,199384709,rep,name=approvedpatches,proto3" json:"approvedpatches,omitempty"`
-	Approvedpatchescompliancelevel           PatchComplianceLevel   `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel" json:"approvedpatchescompliancelevel,omitempty"`
+	Approvedpatchescompliancelevel           *PatchComplianceLevel  `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel,oneof" json:"approvedpatchescompliancelevel,omitempty"`
 	Approvedpatchesenablenonsecurity         *bool                  `protobuf:"varint,295555901,opt,name=approvedpatchesenablenonsecurity,proto3,oneof" json:"approvedpatchesenablenonsecurity,omitempty"`
-	Availablesecurityupdatescompliancestatus PatchComplianceStatus  `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus" json:"availablesecurityupdatescompliancestatus,omitempty"`
+	Availablesecurityupdatescompliancestatus *PatchComplianceStatus `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus,oneof" json:"availablesecurityupdatescompliancestatus,omitempty"`
 	Baselineid                               *string                `protobuf:"bytes,85389904,opt,name=baselineid,proto3,oneof" json:"baselineid,omitempty"`
 	Createddate                              *string                `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
 	Description                              *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Globalfilters                            *PatchFilterGroup      `protobuf:"bytes,263302754,opt,name=globalfilters,proto3" json:"globalfilters,omitempty"`
 	Modifieddate                             *string                `protobuf:"bytes,210609143,opt,name=modifieddate,proto3,oneof" json:"modifieddate,omitempty"`
 	Name                                     *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Operatingsystem                          OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
+	Operatingsystem                          *OperatingSystem       `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem,oneof" json:"operatingsystem,omitempty"`
 	Patchgroups                              []string               `protobuf:"bytes,18098282,rep,name=patchgroups,proto3" json:"patchgroups,omitempty"`
 	Rejectedpatches                          []string               `protobuf:"bytes,309657116,rep,name=rejectedpatches,proto3" json:"rejectedpatches,omitempty"`
-	Rejectedpatchesaction                    PatchAction            `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction" json:"rejectedpatchesaction,omitempty"`
+	Rejectedpatchesaction                    *PatchAction           `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction,oneof" json:"rejectedpatchesaction,omitempty"`
 	Sources                                  []*PatchSource         `protobuf:"bytes,46625746,rep,name=sources,proto3" json:"sources,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
 	sizeCache                                protoimpl.SizeCache
@@ -23533,8 +23533,8 @@ func (x *GetPatchBaselineResult) GetApprovedpatches() []string {
 }
 
 func (x *GetPatchBaselineResult) GetApprovedpatchescompliancelevel() PatchComplianceLevel {
-	if x != nil {
-		return x.Approvedpatchescompliancelevel
+	if x != nil && x.Approvedpatchescompliancelevel != nil {
+		return *x.Approvedpatchescompliancelevel
 	}
 	return PatchComplianceLevel_PATCH_COMPLIANCE_LEVEL_INFORMATIONAL
 }
@@ -23547,8 +23547,8 @@ func (x *GetPatchBaselineResult) GetApprovedpatchesenablenonsecurity() bool {
 }
 
 func (x *GetPatchBaselineResult) GetAvailablesecurityupdatescompliancestatus() PatchComplianceStatus {
-	if x != nil {
-		return x.Availablesecurityupdatescompliancestatus
+	if x != nil && x.Availablesecurityupdatescompliancestatus != nil {
+		return *x.Availablesecurityupdatescompliancestatus
 	}
 	return PatchComplianceStatus_PATCH_COMPLIANCE_STATUS_COMPLIANT
 }
@@ -23596,8 +23596,8 @@ func (x *GetPatchBaselineResult) GetName() string {
 }
 
 func (x *GetPatchBaselineResult) GetOperatingsystem() OperatingSystem {
-	if x != nil {
-		return x.Operatingsystem
+	if x != nil && x.Operatingsystem != nil {
+		return *x.Operatingsystem
 	}
 	return OperatingSystem_OPERATING_SYSTEM_MACOS
 }
@@ -23617,8 +23617,8 @@ func (x *GetPatchBaselineResult) GetRejectedpatches() []string {
 }
 
 func (x *GetPatchBaselineResult) GetRejectedpatchesaction() PatchAction {
-	if x != nil {
-		return x.Rejectedpatchesaction
+	if x != nil && x.Rejectedpatchesaction != nil {
+		return *x.Rejectedpatchesaction
 	}
 	return PatchAction_PATCH_ACTION_ALLOWASDEPENDENCY
 }
@@ -24415,15 +24415,15 @@ type InstanceInfo struct {
 	Computername       *string                `protobuf:"bytes,67735292,opt,name=computername,proto3,oneof" json:"computername,omitempty"`
 	Instancestatus     *string                `protobuf:"bytes,29604317,opt,name=instancestatus,proto3,oneof" json:"instancestatus,omitempty"`
 	Ipaddress          *string                `protobuf:"bytes,1800397,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
-	Managedstatus      ManagedStatus          `protobuf:"varint,200879673,opt,name=managedstatus,proto3,enum=ssm.ManagedStatus" json:"managedstatus,omitempty"`
+	Managedstatus      *ManagedStatus         `protobuf:"varint,200879673,opt,name=managedstatus,proto3,enum=ssm.ManagedStatus,oneof" json:"managedstatus,omitempty"`
 	Name               *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Platformname       *string                `protobuf:"bytes,188917178,opt,name=platformname,proto3,oneof" json:"platformname,omitempty"`
-	Platformtype       PlatformType           `protobuf:"varint,378742691,opt,name=platformtype,proto3,enum=ssm.PlatformType" json:"platformtype,omitempty"`
+	Platformtype       *PlatformType          `protobuf:"varint,378742691,opt,name=platformtype,proto3,enum=ssm.PlatformType,oneof" json:"platformtype,omitempty"`
 	Platformversion    *string                `protobuf:"bytes,139924287,opt,name=platformversion,proto3,oneof" json:"platformversion,omitempty"`
-	Resourcetype       ResourceType           `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=ssm.ResourceType" json:"resourcetype,omitempty"`
+	Resourcetype       *ResourceType          `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=ssm.ResourceType,oneof" json:"resourcetype,omitempty"`
 	Sourceid           *string                `protobuf:"bytes,425309766,opt,name=sourceid,proto3,oneof" json:"sourceid,omitempty"`
 	Sourcelocation     *string                `protobuf:"bytes,72879408,opt,name=sourcelocation,proto3,oneof" json:"sourcelocation,omitempty"`
-	Sourcetype         SourceType             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=ssm.SourceType" json:"sourcetype,omitempty"`
+	Sourcetype         *SourceType            `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=ssm.SourceType,oneof" json:"sourcetype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -24508,8 +24508,8 @@ func (x *InstanceInfo) GetIpaddress() string {
 }
 
 func (x *InstanceInfo) GetManagedstatus() ManagedStatus {
-	if x != nil {
-		return x.Managedstatus
+	if x != nil && x.Managedstatus != nil {
+		return *x.Managedstatus
 	}
 	return ManagedStatus_MANAGED_STATUS_UNMANAGED
 }
@@ -24529,8 +24529,8 @@ func (x *InstanceInfo) GetPlatformname() string {
 }
 
 func (x *InstanceInfo) GetPlatformtype() PlatformType {
-	if x != nil {
-		return x.Platformtype
+	if x != nil && x.Platformtype != nil {
+		return *x.Platformtype
 	}
 	return PlatformType_PLATFORM_TYPE_LINUX
 }
@@ -24543,8 +24543,8 @@ func (x *InstanceInfo) GetPlatformversion() string {
 }
 
 func (x *InstanceInfo) GetResourcetype() ResourceType {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return ResourceType_RESOURCE_TYPE_EC2_INSTANCE
 }
@@ -24564,8 +24564,8 @@ func (x *InstanceInfo) GetSourcelocation() string {
 }
 
 func (x *InstanceInfo) GetSourcetype() SourceType {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return SourceType_SOURCE_TYPE_AWS_SSM_MANAGEDINSTANCE
 }
@@ -24585,15 +24585,15 @@ type InstanceInformation struct {
 	Lastpingdatetime                       *string                                `protobuf:"bytes,49842265,opt,name=lastpingdatetime,proto3,oneof" json:"lastpingdatetime,omitempty"`
 	Lastsuccessfulassociationexecutiondate *string                                `protobuf:"bytes,162380165,opt,name=lastsuccessfulassociationexecutiondate,proto3,oneof" json:"lastsuccessfulassociationexecutiondate,omitempty"`
 	Name                                   *string                                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Pingstatus                             PingStatus                             `protobuf:"varint,282358380,opt,name=pingstatus,proto3,enum=ssm.PingStatus" json:"pingstatus,omitempty"`
+	Pingstatus                             *PingStatus                            `protobuf:"varint,282358380,opt,name=pingstatus,proto3,enum=ssm.PingStatus,oneof" json:"pingstatus,omitempty"`
 	Platformname                           *string                                `protobuf:"bytes,188917178,opt,name=platformname,proto3,oneof" json:"platformname,omitempty"`
-	Platformtype                           PlatformType                           `protobuf:"varint,378742691,opt,name=platformtype,proto3,enum=ssm.PlatformType" json:"platformtype,omitempty"`
+	Platformtype                           *PlatformType                          `protobuf:"varint,378742691,opt,name=platformtype,proto3,enum=ssm.PlatformType,oneof" json:"platformtype,omitempty"`
 	Platformversion                        *string                                `protobuf:"bytes,139924287,opt,name=platformversion,proto3,oneof" json:"platformversion,omitempty"`
 	Registrationdate                       *string                                `protobuf:"bytes,370887405,opt,name=registrationdate,proto3,oneof" json:"registrationdate,omitempty"`
-	Resourcetype                           ResourceType                           `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=ssm.ResourceType" json:"resourcetype,omitempty"`
+	Resourcetype                           *ResourceType                          `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=ssm.ResourceType,oneof" json:"resourcetype,omitempty"`
 	Sourceid                               *string                                `protobuf:"bytes,425309766,opt,name=sourceid,proto3,oneof" json:"sourceid,omitempty"`
 	Sourcelocation                         *string                                `protobuf:"bytes,72879408,opt,name=sourcelocation,proto3,oneof" json:"sourcelocation,omitempty"`
-	Sourcetype                             SourceType                             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=ssm.SourceType" json:"sourcetype,omitempty"`
+	Sourcetype                             *SourceType                            `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=ssm.SourceType,oneof" json:"sourcetype,omitempty"`
 	unknownFields                          protoimpl.UnknownFields
 	sizeCache                              protoimpl.SizeCache
 }
@@ -24720,8 +24720,8 @@ func (x *InstanceInformation) GetName() string {
 }
 
 func (x *InstanceInformation) GetPingstatus() PingStatus {
-	if x != nil {
-		return x.Pingstatus
+	if x != nil && x.Pingstatus != nil {
+		return *x.Pingstatus
 	}
 	return PingStatus_PING_STATUS_ONLINE
 }
@@ -24734,8 +24734,8 @@ func (x *InstanceInformation) GetPlatformname() string {
 }
 
 func (x *InstanceInformation) GetPlatformtype() PlatformType {
-	if x != nil {
-		return x.Platformtype
+	if x != nil && x.Platformtype != nil {
+		return *x.Platformtype
 	}
 	return PlatformType_PLATFORM_TYPE_LINUX
 }
@@ -24755,8 +24755,8 @@ func (x *InstanceInformation) GetRegistrationdate() string {
 }
 
 func (x *InstanceInformation) GetResourcetype() ResourceType {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return ResourceType_RESOURCE_TYPE_EC2_INSTANCE
 }
@@ -24776,8 +24776,8 @@ func (x *InstanceInformation) GetSourcelocation() string {
 }
 
 func (x *InstanceInformation) GetSourcetype() SourceType {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return SourceType_SOURCE_TYPE_AWS_SSM_MANAGEDINSTANCE
 }
@@ -24907,7 +24907,7 @@ type InstancePatchState struct {
 	Othernoncompliantcount           *int32                 `protobuf:"varint,22394029,opt,name=othernoncompliantcount,proto3,oneof" json:"othernoncompliantcount,omitempty"`
 	Ownerinformation                 *string                `protobuf:"bytes,68242691,opt,name=ownerinformation,proto3,oneof" json:"ownerinformation,omitempty"`
 	Patchgroup                       string                 `protobuf:"bytes,518806497,opt,name=patchgroup,proto3" json:"patchgroup,omitempty"`
-	Rebootoption                     RebootOption           `protobuf:"varint,106110930,opt,name=rebootoption,proto3,enum=ssm.RebootOption" json:"rebootoption,omitempty"`
+	Rebootoption                     *RebootOption          `protobuf:"varint,106110930,opt,name=rebootoption,proto3,enum=ssm.RebootOption,oneof" json:"rebootoption,omitempty"`
 	Securitynoncompliantcount        *int32                 `protobuf:"varint,500346499,opt,name=securitynoncompliantcount,proto3,oneof" json:"securitynoncompliantcount,omitempty"`
 	Snapshotid                       *string                `protobuf:"bytes,99585817,opt,name=snapshotid,proto3,oneof" json:"snapshotid,omitempty"`
 	Unreportednotapplicablecount     *int32                 `protobuf:"varint,295417459,opt,name=unreportednotapplicablecount,proto3,oneof" json:"unreportednotapplicablecount,omitempty"`
@@ -25079,8 +25079,8 @@ func (x *InstancePatchState) GetPatchgroup() string {
 }
 
 func (x *InstancePatchState) GetRebootoption() RebootOption {
-	if x != nil {
-		return x.Rebootoption
+	if x != nil && x.Rebootoption != nil {
+		return *x.Rebootoption
 	}
 	return RebootOption_REBOOT_OPTION_REBOOT_IF_NEEDED
 }
@@ -25187,15 +25187,15 @@ type InstanceProperty struct {
 	Lastsuccessfulassociationexecutiondate *string                                `protobuf:"bytes,162380165,opt,name=lastsuccessfulassociationexecutiondate,proto3,oneof" json:"lastsuccessfulassociationexecutiondate,omitempty"`
 	Launchtime                             *string                                `protobuf:"bytes,338860032,opt,name=launchtime,proto3,oneof" json:"launchtime,omitempty"`
 	Name                                   *string                                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Pingstatus                             PingStatus                             `protobuf:"varint,282358380,opt,name=pingstatus,proto3,enum=ssm.PingStatus" json:"pingstatus,omitempty"`
+	Pingstatus                             *PingStatus                            `protobuf:"varint,282358380,opt,name=pingstatus,proto3,enum=ssm.PingStatus,oneof" json:"pingstatus,omitempty"`
 	Platformname                           *string                                `protobuf:"bytes,188917178,opt,name=platformname,proto3,oneof" json:"platformname,omitempty"`
-	Platformtype                           PlatformType                           `protobuf:"varint,378742691,opt,name=platformtype,proto3,enum=ssm.PlatformType" json:"platformtype,omitempty"`
+	Platformtype                           *PlatformType                          `protobuf:"varint,378742691,opt,name=platformtype,proto3,enum=ssm.PlatformType,oneof" json:"platformtype,omitempty"`
 	Platformversion                        *string                                `protobuf:"bytes,139924287,opt,name=platformversion,proto3,oneof" json:"platformversion,omitempty"`
 	Registrationdate                       *string                                `protobuf:"bytes,370887405,opt,name=registrationdate,proto3,oneof" json:"registrationdate,omitempty"`
 	Resourcetype                           *string                                `protobuf:"bytes,301342558,opt,name=resourcetype,proto3,oneof" json:"resourcetype,omitempty"`
 	Sourceid                               *string                                `protobuf:"bytes,425309766,opt,name=sourceid,proto3,oneof" json:"sourceid,omitempty"`
 	Sourcelocation                         *string                                `protobuf:"bytes,72879408,opt,name=sourcelocation,proto3,oneof" json:"sourcelocation,omitempty"`
-	Sourcetype                             SourceType                             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=ssm.SourceType" json:"sourcetype,omitempty"`
+	Sourcetype                             *SourceType                            `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=ssm.SourceType,oneof" json:"sourcetype,omitempty"`
 	unknownFields                          protoimpl.UnknownFields
 	sizeCache                              protoimpl.SizeCache
 }
@@ -25364,8 +25364,8 @@ func (x *InstanceProperty) GetName() string {
 }
 
 func (x *InstanceProperty) GetPingstatus() PingStatus {
-	if x != nil {
-		return x.Pingstatus
+	if x != nil && x.Pingstatus != nil {
+		return *x.Pingstatus
 	}
 	return PingStatus_PING_STATUS_ONLINE
 }
@@ -25378,8 +25378,8 @@ func (x *InstanceProperty) GetPlatformname() string {
 }
 
 func (x *InstanceProperty) GetPlatformtype() PlatformType {
-	if x != nil {
-		return x.Platformtype
+	if x != nil && x.Platformtype != nil {
+		return *x.Platformtype
 	}
 	return PlatformType_PLATFORM_TYPE_LINUX
 }
@@ -25420,8 +25420,8 @@ func (x *InstanceProperty) GetSourcelocation() string {
 }
 
 func (x *InstanceProperty) GetSourcetype() SourceType {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return SourceType_SOURCE_TYPE_AWS_SSM_MANAGEDINSTANCE
 }
@@ -25479,10 +25479,10 @@ func (x *InstancePropertyFilter) GetValueset() []string {
 }
 
 type InstancePropertyStringFilter struct {
-	state         protoimpl.MessageState         `protogen:"open.v1"`
-	Key           string                         `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Operator      InstancePropertyFilterOperator `protobuf:"varint,31807518,opt,name=operator,proto3,enum=ssm.InstancePropertyFilterOperator" json:"operator,omitempty"`
-	Values        []string                       `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
+	state         protoimpl.MessageState          `protogen:"open.v1"`
+	Key           string                          `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
+	Operator      *InstancePropertyFilterOperator `protobuf:"varint,31807518,opt,name=operator,proto3,enum=ssm.InstancePropertyFilterOperator,oneof" json:"operator,omitempty"`
+	Values        []string                        `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -25525,8 +25525,8 @@ func (x *InstancePropertyStringFilter) GetKey() string {
 }
 
 func (x *InstancePropertyStringFilter) GetOperator() InstancePropertyFilterOperator {
-	if x != nil {
-		return x.Operator
+	if x != nil && x.Operator != nil {
+		return *x.Operator
 	}
 	return InstancePropertyFilterOperator_INSTANCE_PROPERTY_FILTER_OPERATOR_LESS_THAN
 }
@@ -27799,7 +27799,7 @@ type InventoryDeletionStatusItem struct {
 	Deletionid           *string                   `protobuf:"bytes,126693587,opt,name=deletionid,proto3,oneof" json:"deletionid,omitempty"`
 	Deletionstarttime    *string                   `protobuf:"bytes,413142901,opt,name=deletionstarttime,proto3,oneof" json:"deletionstarttime,omitempty"`
 	Deletionsummary      *InventoryDeletionSummary `protobuf:"bytes,189954074,opt,name=deletionsummary,proto3" json:"deletionsummary,omitempty"`
-	Laststatus           InventoryDeletionStatus   `protobuf:"varint,163326556,opt,name=laststatus,proto3,enum=ssm.InventoryDeletionStatus" json:"laststatus,omitempty"`
+	Laststatus           *InventoryDeletionStatus  `protobuf:"varint,163326556,opt,name=laststatus,proto3,enum=ssm.InventoryDeletionStatus,oneof" json:"laststatus,omitempty"`
 	Laststatusmessage    *string                   `protobuf:"bytes,59961987,opt,name=laststatusmessage,proto3,oneof" json:"laststatusmessage,omitempty"`
 	Laststatusupdatetime *string                   `protobuf:"bytes,66342972,opt,name=laststatusupdatetime,proto3,oneof" json:"laststatusupdatetime,omitempty"`
 	Typename             *string                   `protobuf:"bytes,446064463,opt,name=typename,proto3,oneof" json:"typename,omitempty"`
@@ -27859,8 +27859,8 @@ func (x *InventoryDeletionStatusItem) GetDeletionsummary() *InventoryDeletionSum
 }
 
 func (x *InventoryDeletionStatusItem) GetLaststatus() InventoryDeletionStatus {
-	if x != nil {
-		return x.Laststatus
+	if x != nil && x.Laststatus != nil {
+		return *x.Laststatus
 	}
 	return InventoryDeletionStatus_INVENTORY_DELETION_STATUS_IN_PROGRESS
 }
@@ -28007,10 +28007,10 @@ func (x *InventoryDeletionSummaryItem) GetVersion() string {
 }
 
 type InventoryFilter struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Key           string                     `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Type          InventoryQueryOperatorType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.InventoryQueryOperatorType" json:"type,omitempty"`
-	Values        []string                   `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Key           string                      `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
+	Type          *InventoryQueryOperatorType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.InventoryQueryOperatorType,oneof" json:"type,omitempty"`
+	Values        []string                    `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -28053,8 +28053,8 @@ func (x *InventoryFilter) GetKey() string {
 }
 
 func (x *InventoryFilter) GetType() InventoryQueryOperatorType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return InventoryQueryOperatorType_INVENTORY_QUERY_OPERATOR_TYPE_LESS_THAN
 }
@@ -31111,13 +31111,13 @@ func (x *MaintenanceWindowAutomationParameters) GetParameters() map[string]strin
 }
 
 type MaintenanceWindowExecution struct {
-	state             protoimpl.MessageState           `protogen:"open.v1"`
-	Endtime           *string                          `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
-	Starttime         *string                          `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
-	Status            MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus" json:"status,omitempty"`
-	Statusdetails     *string                          `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
-	Windowexecutionid *string                          `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
-	Windowid          *string                          `protobuf:"bytes,19001897,opt,name=windowid,proto3,oneof" json:"windowid,omitempty"`
+	state             protoimpl.MessageState            `protogen:"open.v1"`
+	Endtime           *string                           `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
+	Starttime         *string                           `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
+	Status            *MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus,oneof" json:"status,omitempty"`
+	Statusdetails     *string                           `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
+	Windowexecutionid *string                           `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
+	Windowid          *string                           `protobuf:"bytes,19001897,opt,name=windowid,proto3,oneof" json:"windowid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -31167,8 +31167,8 @@ func (x *MaintenanceWindowExecution) GetStarttime() string {
 }
 
 func (x *MaintenanceWindowExecution) GetStatus() MaintenanceWindowExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return MaintenanceWindowExecutionStatus_MAINTENANCE_WINDOW_EXECUTION_STATUS_TIMEDOUT
 }
@@ -31195,17 +31195,17 @@ func (x *MaintenanceWindowExecution) GetWindowid() string {
 }
 
 type MaintenanceWindowExecutionTaskIdentity struct {
-	state              protoimpl.MessageState           `protogen:"open.v1"`
-	Alarmconfiguration *AlarmConfiguration              `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
-	Endtime            *string                          `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
-	Starttime          *string                          `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
-	Status             MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus" json:"status,omitempty"`
-	Statusdetails      *string                          `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
-	Taskarn            *string                          `protobuf:"bytes,312386788,opt,name=taskarn,proto3,oneof" json:"taskarn,omitempty"`
-	Taskexecutionid    *string                          `protobuf:"bytes,474180408,opt,name=taskexecutionid,proto3,oneof" json:"taskexecutionid,omitempty"`
-	Tasktype           MaintenanceWindowTaskType        `protobuf:"varint,370407909,opt,name=tasktype,proto3,enum=ssm.MaintenanceWindowTaskType" json:"tasktype,omitempty"`
-	Triggeredalarms    []*AlarmStateInformation         `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
-	Windowexecutionid  *string                          `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
+	state              protoimpl.MessageState            `protogen:"open.v1"`
+	Alarmconfiguration *AlarmConfiguration               `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
+	Endtime            *string                           `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
+	Starttime          *string                           `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
+	Status             *MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus,oneof" json:"status,omitempty"`
+	Statusdetails      *string                           `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
+	Taskarn            *string                           `protobuf:"bytes,312386788,opt,name=taskarn,proto3,oneof" json:"taskarn,omitempty"`
+	Taskexecutionid    *string                           `protobuf:"bytes,474180408,opt,name=taskexecutionid,proto3,oneof" json:"taskexecutionid,omitempty"`
+	Tasktype           *MaintenanceWindowTaskType        `protobuf:"varint,370407909,opt,name=tasktype,proto3,enum=ssm.MaintenanceWindowTaskType,oneof" json:"tasktype,omitempty"`
+	Triggeredalarms    []*AlarmStateInformation          `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
+	Windowexecutionid  *string                           `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -31262,8 +31262,8 @@ func (x *MaintenanceWindowExecutionTaskIdentity) GetStarttime() string {
 }
 
 func (x *MaintenanceWindowExecutionTaskIdentity) GetStatus() MaintenanceWindowExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return MaintenanceWindowExecutionStatus_MAINTENANCE_WINDOW_EXECUTION_STATUS_TIMEDOUT
 }
@@ -31290,8 +31290,8 @@ func (x *MaintenanceWindowExecutionTaskIdentity) GetTaskexecutionid() string {
 }
 
 func (x *MaintenanceWindowExecutionTaskIdentity) GetTasktype() MaintenanceWindowTaskType {
-	if x != nil {
-		return x.Tasktype
+	if x != nil && x.Tasktype != nil {
+		return *x.Tasktype
 	}
 	return MaintenanceWindowTaskType_MAINTENANCE_WINDOW_TASK_TYPE_STEPFUNCTIONS
 }
@@ -31311,19 +31311,19 @@ func (x *MaintenanceWindowExecutionTaskIdentity) GetWindowexecutionid() string {
 }
 
 type MaintenanceWindowExecutionTaskInvocationIdentity struct {
-	state             protoimpl.MessageState           `protogen:"open.v1"`
-	Endtime           *string                          `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
-	Executionid       *string                          `protobuf:"bytes,147580849,opt,name=executionid,proto3,oneof" json:"executionid,omitempty"`
-	Invocationid      *string                          `protobuf:"bytes,116064639,opt,name=invocationid,proto3,oneof" json:"invocationid,omitempty"`
-	Ownerinformation  *string                          `protobuf:"bytes,68242691,opt,name=ownerinformation,proto3,oneof" json:"ownerinformation,omitempty"`
-	Parameters        *string                          `protobuf:"bytes,494900218,opt,name=parameters,proto3,oneof" json:"parameters,omitempty"`
-	Starttime         *string                          `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
-	Status            MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus" json:"status,omitempty"`
-	Statusdetails     *string                          `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
-	Taskexecutionid   *string                          `protobuf:"bytes,474180408,opt,name=taskexecutionid,proto3,oneof" json:"taskexecutionid,omitempty"`
-	Tasktype          MaintenanceWindowTaskType        `protobuf:"varint,370407909,opt,name=tasktype,proto3,enum=ssm.MaintenanceWindowTaskType" json:"tasktype,omitempty"`
-	Windowexecutionid *string                          `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
-	Windowtargetid    *string                          `protobuf:"bytes,259696478,opt,name=windowtargetid,proto3,oneof" json:"windowtargetid,omitempty"`
+	state             protoimpl.MessageState            `protogen:"open.v1"`
+	Endtime           *string                           `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
+	Executionid       *string                           `protobuf:"bytes,147580849,opt,name=executionid,proto3,oneof" json:"executionid,omitempty"`
+	Invocationid      *string                           `protobuf:"bytes,116064639,opt,name=invocationid,proto3,oneof" json:"invocationid,omitempty"`
+	Ownerinformation  *string                           `protobuf:"bytes,68242691,opt,name=ownerinformation,proto3,oneof" json:"ownerinformation,omitempty"`
+	Parameters        *string                           `protobuf:"bytes,494900218,opt,name=parameters,proto3,oneof" json:"parameters,omitempty"`
+	Starttime         *string                           `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
+	Status            *MaintenanceWindowExecutionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.MaintenanceWindowExecutionStatus,oneof" json:"status,omitempty"`
+	Statusdetails     *string                           `protobuf:"bytes,372263208,opt,name=statusdetails,proto3,oneof" json:"statusdetails,omitempty"`
+	Taskexecutionid   *string                           `protobuf:"bytes,474180408,opt,name=taskexecutionid,proto3,oneof" json:"taskexecutionid,omitempty"`
+	Tasktype          *MaintenanceWindowTaskType        `protobuf:"varint,370407909,opt,name=tasktype,proto3,enum=ssm.MaintenanceWindowTaskType,oneof" json:"tasktype,omitempty"`
+	Windowexecutionid *string                           `protobuf:"bytes,357168521,opt,name=windowexecutionid,proto3,oneof" json:"windowexecutionid,omitempty"`
+	Windowtargetid    *string                           `protobuf:"bytes,259696478,opt,name=windowtargetid,proto3,oneof" json:"windowtargetid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -31401,8 +31401,8 @@ func (x *MaintenanceWindowExecutionTaskInvocationIdentity) GetStarttime() string
 }
 
 func (x *MaintenanceWindowExecutionTaskInvocationIdentity) GetStatus() MaintenanceWindowExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return MaintenanceWindowExecutionStatus_MAINTENANCE_WINDOW_EXECUTION_STATUS_TIMEDOUT
 }
@@ -31422,8 +31422,8 @@ func (x *MaintenanceWindowExecutionTaskInvocationIdentity) GetTaskexecutionid() 
 }
 
 func (x *MaintenanceWindowExecutionTaskInvocationIdentity) GetTasktype() MaintenanceWindowTaskType {
-	if x != nil {
-		return x.Tasktype
+	if x != nil && x.Tasktype != nil {
+		return *x.Tasktype
 	}
 	return MaintenanceWindowTaskType_MAINTENANCE_WINDOW_TASK_TYPE_STEPFUNCTIONS
 }
@@ -31743,7 +31743,7 @@ type MaintenanceWindowRunCommandParameters struct {
 	Cloudwatchoutputconfig *CloudWatchOutputConfig `protobuf:"bytes,21186555,opt,name=cloudwatchoutputconfig,proto3" json:"cloudwatchoutputconfig,omitempty"`
 	Comment                *string                 `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Documenthash           *string                 `protobuf:"bytes,251248469,opt,name=documenthash,proto3,oneof" json:"documenthash,omitempty"`
-	Documenthashtype       DocumentHashType        `protobuf:"varint,93041117,opt,name=documenthashtype,proto3,enum=ssm.DocumentHashType" json:"documenthashtype,omitempty"`
+	Documenthashtype       *DocumentHashType       `protobuf:"varint,93041117,opt,name=documenthashtype,proto3,enum=ssm.DocumentHashType,oneof" json:"documenthashtype,omitempty"`
 	Documentversion        *string                 `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Notificationconfig     *NotificationConfig     `protobuf:"bytes,346074145,opt,name=notificationconfig,proto3" json:"notificationconfig,omitempty"`
 	Outputs3Bucketname     *string                 `protobuf:"bytes,186756480,opt,name=outputs3bucketname,proto3,oneof" json:"outputs3bucketname,omitempty"`
@@ -31807,8 +31807,8 @@ func (x *MaintenanceWindowRunCommandParameters) GetDocumenthash() string {
 }
 
 func (x *MaintenanceWindowRunCommandParameters) GetDocumenthashtype() DocumentHashType {
-	if x != nil {
-		return x.Documenthashtype
+	if x != nil && x.Documenthashtype != nil {
+		return *x.Documenthashtype
 	}
 	return DocumentHashType_DOCUMENT_HASH_TYPE_SHA256
 }
@@ -31915,14 +31915,14 @@ func (x *MaintenanceWindowStepFunctionsParameters) GetName() string {
 }
 
 type MaintenanceWindowTarget struct {
-	state            protoimpl.MessageState        `protogen:"open.v1"`
-	Description      *string                       `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Name             *string                       `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Ownerinformation *string                       `protobuf:"bytes,68242691,opt,name=ownerinformation,proto3,oneof" json:"ownerinformation,omitempty"`
-	Resourcetype     MaintenanceWindowResourceType `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=ssm.MaintenanceWindowResourceType" json:"resourcetype,omitempty"`
-	Targets          []*Target                     `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
-	Windowid         *string                       `protobuf:"bytes,19001897,opt,name=windowid,proto3,oneof" json:"windowid,omitempty"`
-	Windowtargetid   *string                       `protobuf:"bytes,259696478,opt,name=windowtargetid,proto3,oneof" json:"windowtargetid,omitempty"`
+	state            protoimpl.MessageState         `protogen:"open.v1"`
+	Description      *string                        `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Name             *string                        `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Ownerinformation *string                        `protobuf:"bytes,68242691,opt,name=ownerinformation,proto3,oneof" json:"ownerinformation,omitempty"`
+	Resourcetype     *MaintenanceWindowResourceType `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=ssm.MaintenanceWindowResourceType,oneof" json:"resourcetype,omitempty"`
+	Targets          []*Target                      `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
+	Windowid         *string                        `protobuf:"bytes,19001897,opt,name=windowid,proto3,oneof" json:"windowid,omitempty"`
+	Windowtargetid   *string                        `protobuf:"bytes,259696478,opt,name=windowtargetid,proto3,oneof" json:"windowtargetid,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -31979,8 +31979,8 @@ func (x *MaintenanceWindowTarget) GetOwnerinformation() string {
 }
 
 func (x *MaintenanceWindowTarget) GetResourcetype() MaintenanceWindowResourceType {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return MaintenanceWindowResourceType_MAINTENANCE_WINDOW_RESOURCE_TYPE_RESOURCEGROUP
 }
@@ -32009,7 +32009,7 @@ func (x *MaintenanceWindowTarget) GetWindowtargetid() string {
 type MaintenanceWindowTask struct {
 	state              protoimpl.MessageState                                    `protogen:"open.v1"`
 	Alarmconfiguration *AlarmConfiguration                                       `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
-	Cutoffbehavior     MaintenanceWindowTaskCutoffBehavior                       `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior" json:"cutoffbehavior,omitempty"`
+	Cutoffbehavior     *MaintenanceWindowTaskCutoffBehavior                      `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior,oneof" json:"cutoffbehavior,omitempty"`
 	Description        *string                                                   `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Logginginfo        *LoggingInfo                                              `protobuf:"bytes,448312415,opt,name=logginginfo,proto3" json:"logginginfo,omitempty"`
 	Maxconcurrency     *string                                                   `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
@@ -32020,7 +32020,7 @@ type MaintenanceWindowTask struct {
 	Targets            []*Target                                                 `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
 	Taskarn            *string                                                   `protobuf:"bytes,312386788,opt,name=taskarn,proto3,oneof" json:"taskarn,omitempty"`
 	Taskparameters     map[string]*MaintenanceWindowTaskParameterValueExpression `protobuf:"bytes,385451905,rep,name=taskparameters,proto3" json:"taskparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Type               MaintenanceWindowTaskType                                 `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.MaintenanceWindowTaskType" json:"type,omitempty"`
+	Type               *MaintenanceWindowTaskType                                `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.MaintenanceWindowTaskType,oneof" json:"type,omitempty"`
 	Windowid           *string                                                   `protobuf:"bytes,19001897,opt,name=windowid,proto3,oneof" json:"windowid,omitempty"`
 	Windowtaskid       *string                                                   `protobuf:"bytes,323765978,opt,name=windowtaskid,proto3,oneof" json:"windowtaskid,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -32065,8 +32065,8 @@ func (x *MaintenanceWindowTask) GetAlarmconfiguration() *AlarmConfiguration {
 }
 
 func (x *MaintenanceWindowTask) GetCutoffbehavior() MaintenanceWindowTaskCutoffBehavior {
-	if x != nil {
-		return x.Cutoffbehavior
+	if x != nil && x.Cutoffbehavior != nil {
+		return *x.Cutoffbehavior
 	}
 	return MaintenanceWindowTaskCutoffBehavior_MAINTENANCE_WINDOW_TASK_CUTOFF_BEHAVIOR_CANCELTASK
 }
@@ -32142,8 +32142,8 @@ func (x *MaintenanceWindowTask) GetTaskparameters() map[string]*MaintenanceWindo
 }
 
 func (x *MaintenanceWindowTask) GetType() MaintenanceWindowTaskType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return MaintenanceWindowTaskType_MAINTENANCE_WINDOW_TASK_TYPE_STEPFUNCTIONS
 }
@@ -32707,10 +32707,10 @@ func (x *NodeAggregator) GetTypename() NodeTypeName {
 }
 
 type NodeFilter struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           NodeFilterKey          `protobuf:"varint,219859213,opt,name=key,proto3,enum=ssm.NodeFilterKey" json:"key,omitempty"`
-	Type          NodeFilterOperatorType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.NodeFilterOperatorType" json:"type,omitempty"`
-	Values        []string               `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Key           NodeFilterKey           `protobuf:"varint,219859213,opt,name=key,proto3,enum=ssm.NodeFilterKey" json:"key,omitempty"`
+	Type          *NodeFilterOperatorType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.NodeFilterOperatorType,oneof" json:"type,omitempty"`
+	Values        []string                `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -32753,8 +32753,8 @@ func (x *NodeFilter) GetKey() NodeFilterKey {
 }
 
 func (x *NodeFilter) GetType() NodeFilterOperatorType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return NodeFilterOperatorType_NODE_FILTER_OPERATOR_TYPE_BEGIN_WITH
 }
@@ -32926,7 +32926,7 @@ type NotificationConfig struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Notificationarn    *string                `protobuf:"bytes,192280642,opt,name=notificationarn,proto3,oneof" json:"notificationarn,omitempty"`
 	Notificationevents []NotificationEvent    `protobuf:"varint,16584116,rep,packed,name=notificationevents,proto3,enum=ssm.NotificationEvent" json:"notificationevents,omitempty"`
-	Notificationtype   NotificationType       `protobuf:"varint,43601335,opt,name=notificationtype,proto3,enum=ssm.NotificationType" json:"notificationtype,omitempty"`
+	Notificationtype   *NotificationType      `protobuf:"varint,43601335,opt,name=notificationtype,proto3,enum=ssm.NotificationType,oneof" json:"notificationtype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -32976,8 +32976,8 @@ func (x *NotificationConfig) GetNotificationevents() []NotificationEvent {
 }
 
 func (x *NotificationConfig) GetNotificationtype() NotificationType {
-	if x != nil {
-		return x.Notificationtype
+	if x != nil && x.Notificationtype != nil {
+		return *x.Notificationtype
 	}
 	return NotificationType_NOTIFICATION_TYPE_INVOCATION
 }
@@ -33173,7 +33173,7 @@ func (x *OpsEntityItem) GetContent() []*OpsEntityItemEntryListEntry {
 type OpsFilter struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Type          OpsFilterOperatorType  `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.OpsFilterOperatorType" json:"type,omitempty"`
+	Type          *OpsFilterOperatorType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.OpsFilterOperatorType,oneof" json:"type,omitempty"`
 	Values        []string               `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -33217,8 +33217,8 @@ func (x *OpsFilter) GetKey() string {
 }
 
 func (x *OpsFilter) GetType() OpsFilterOperatorType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return OpsFilterOperatorType_OPS_FILTER_OPERATOR_TYPE_LESS_THAN
 }
@@ -33251,7 +33251,7 @@ type OpsItem struct {
 	Relatedopsitems  []*RelatedOpsItem            `protobuf:"bytes,287082393,rep,name=relatedopsitems,proto3" json:"relatedopsitems,omitempty"`
 	Severity         *string                      `protobuf:"bytes,276886227,opt,name=severity,proto3,oneof" json:"severity,omitempty"`
 	Source           *string                      `protobuf:"bytes,31630329,opt,name=source,proto3,oneof" json:"source,omitempty"`
-	Status           OpsItemStatus                `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.OpsItemStatus" json:"status,omitempty"`
+	Status           *OpsItemStatus               `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.OpsItemStatus,oneof" json:"status,omitempty"`
 	Title            *string                      `protobuf:"bytes,81031594,opt,name=title,proto3,oneof" json:"title,omitempty"`
 	Version          *string                      `protobuf:"bytes,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -33422,8 +33422,8 @@ func (x *OpsItem) GetSource() string {
 }
 
 func (x *OpsItem) GetStatus() OpsItemStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return OpsItemStatus_OPS_ITEM_STATUS_PENDING_CHANGE_CALENDAR_OVERRIDE
 }
@@ -33584,7 +33584,7 @@ func (x *OpsItemConflictException) GetMessage() string {
 
 type OpsItemDataValue struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          OpsItemDataType        `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.OpsItemDataType" json:"type,omitempty"`
+	Type          *OpsItemDataType       `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.OpsItemDataType,oneof" json:"type,omitempty"`
 	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -33621,8 +33621,8 @@ func (*OpsItemDataValue) Descriptor() ([]byte, []int) {
 }
 
 func (x *OpsItemDataValue) GetType() OpsItemDataType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return OpsItemDataType_OPS_ITEM_DATA_TYPE_SEARCHABLE_STRING
 }
@@ -34387,7 +34387,7 @@ type OpsItemSummary struct {
 	Priority         *int32                       `protobuf:"varint,109944618,opt,name=priority,proto3,oneof" json:"priority,omitempty"`
 	Severity         *string                      `protobuf:"bytes,276886227,opt,name=severity,proto3,oneof" json:"severity,omitempty"`
 	Source           *string                      `protobuf:"bytes,31630329,opt,name=source,proto3,oneof" json:"source,omitempty"`
-	Status           OpsItemStatus                `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.OpsItemStatus" json:"status,omitempty"`
+	Status           *OpsItemStatus               `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.OpsItemStatus,oneof" json:"status,omitempty"`
 	Title            *string                      `protobuf:"bytes,81031594,opt,name=title,proto3,oneof" json:"title,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -34529,8 +34529,8 @@ func (x *OpsItemSummary) GetSource() string {
 }
 
 func (x *OpsItemSummary) GetStatus() OpsItemStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return OpsItemStatus_OPS_ITEM_STATUS_PENDING_CHANGE_CALENDAR_OVERRIDE
 }
@@ -35038,7 +35038,7 @@ type Parameter struct {
 	Name             *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Selector         *string                `protobuf:"bytes,353735197,opt,name=selector,proto3,oneof" json:"selector,omitempty"`
 	Sourceresult     *string                `protobuf:"bytes,320048386,opt,name=sourceresult,proto3,oneof" json:"sourceresult,omitempty"`
-	Type             ParameterType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ParameterType" json:"type,omitempty"`
+	Type             *ParameterType         `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ParameterType,oneof" json:"type,omitempty"`
 	Value            *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	Version          *int64                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -35118,8 +35118,8 @@ func (x *Parameter) GetSourceresult() string {
 }
 
 func (x *Parameter) GetType() ParameterType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ParameterType_PARAMETER_TYPE_SECURE_STRING
 }
@@ -35193,8 +35193,8 @@ type ParameterHistory struct {
 	Lastmodifieduser *string                  `protobuf:"bytes,215822778,opt,name=lastmodifieduser,proto3,oneof" json:"lastmodifieduser,omitempty"`
 	Name             *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Policies         []*ParameterInlinePolicy `protobuf:"bytes,40015384,rep,name=policies,proto3" json:"policies,omitempty"`
-	Tier             ParameterTier            `protobuf:"varint,519596586,opt,name=tier,proto3,enum=ssm.ParameterTier" json:"tier,omitempty"`
-	Type             ParameterType            `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ParameterType" json:"type,omitempty"`
+	Tier             *ParameterTier           `protobuf:"varint,519596586,opt,name=tier,proto3,enum=ssm.ParameterTier,oneof" json:"tier,omitempty"`
+	Type             *ParameterType           `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ParameterType,oneof" json:"type,omitempty"`
 	Value            *string                  `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	Version          *int64                   `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -35295,15 +35295,15 @@ func (x *ParameterHistory) GetPolicies() []*ParameterInlinePolicy {
 }
 
 func (x *ParameterHistory) GetTier() ParameterTier {
-	if x != nil {
-		return x.Tier
+	if x != nil && x.Tier != nil {
+		return *x.Tier
 	}
 	return ParameterTier_PARAMETER_TIER_STANDARD
 }
 
 func (x *ParameterHistory) GetType() ParameterType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ParameterType_PARAMETER_TYPE_SECURE_STRING
 }
@@ -35481,8 +35481,8 @@ type ParameterMetadata struct {
 	Lastmodifieduser *string                  `protobuf:"bytes,215822778,opt,name=lastmodifieduser,proto3,oneof" json:"lastmodifieduser,omitempty"`
 	Name             *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Policies         []*ParameterInlinePolicy `protobuf:"bytes,40015384,rep,name=policies,proto3" json:"policies,omitempty"`
-	Tier             ParameterTier            `protobuf:"varint,519596586,opt,name=tier,proto3,enum=ssm.ParameterTier" json:"tier,omitempty"`
-	Type             ParameterType            `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ParameterType" json:"type,omitempty"`
+	Tier             *ParameterTier           `protobuf:"varint,519596586,opt,name=tier,proto3,enum=ssm.ParameterTier,oneof" json:"tier,omitempty"`
+	Type             *ParameterType           `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ParameterType,oneof" json:"type,omitempty"`
 	Version          *int64                   `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -35582,15 +35582,15 @@ func (x *ParameterMetadata) GetPolicies() []*ParameterInlinePolicy {
 }
 
 func (x *ParameterMetadata) GetTier() ParameterTier {
-	if x != nil {
-		return x.Tier
+	if x != nil && x.Tier != nil {
+		return *x.Tier
 	}
 	return ParameterTier_PARAMETER_TIER_STANDARD
 }
 
 func (x *ParameterMetadata) GetType() ParameterType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ParameterType_PARAMETER_TYPE_SECURE_STRING
 }
@@ -36192,7 +36192,7 @@ type PatchBaselineIdentity struct {
 	Baselineid          *string                `protobuf:"bytes,85389904,opt,name=baselineid,proto3,oneof" json:"baselineid,omitempty"`
 	Baselinename        *string                `protobuf:"bytes,226231050,opt,name=baselinename,proto3,oneof" json:"baselinename,omitempty"`
 	Defaultbaseline     *bool                  `protobuf:"varint,511737610,opt,name=defaultbaseline,proto3,oneof" json:"defaultbaseline,omitempty"`
-	Operatingsystem     OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
+	Operatingsystem     *OperatingSystem       `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem,oneof" json:"operatingsystem,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -36256,8 +36256,8 @@ func (x *PatchBaselineIdentity) GetDefaultbaseline() bool {
 }
 
 func (x *PatchBaselineIdentity) GetOperatingsystem() OperatingSystem {
-	if x != nil {
-		return x.Operatingsystem
+	if x != nil && x.Operatingsystem != nil {
+		return *x.Operatingsystem
 	}
 	return OperatingSystem_OPERATING_SYSTEM_MACOS
 }
@@ -36558,7 +36558,7 @@ type PatchRule struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Approveafterdays  *int32                 `protobuf:"varint,303775484,opt,name=approveafterdays,proto3,oneof" json:"approveafterdays,omitempty"`
 	Approveuntildate  *string                `protobuf:"bytes,472356791,opt,name=approveuntildate,proto3,oneof" json:"approveuntildate,omitempty"`
-	Compliancelevel   PatchComplianceLevel   `protobuf:"varint,200031721,opt,name=compliancelevel,proto3,enum=ssm.PatchComplianceLevel" json:"compliancelevel,omitempty"`
+	Compliancelevel   *PatchComplianceLevel  `protobuf:"varint,200031721,opt,name=compliancelevel,proto3,enum=ssm.PatchComplianceLevel,oneof" json:"compliancelevel,omitempty"`
 	Enablenonsecurity *bool                  `protobuf:"varint,135632920,opt,name=enablenonsecurity,proto3,oneof" json:"enablenonsecurity,omitempty"`
 	Patchfiltergroup  *PatchFilterGroup      `protobuf:"bytes,432583347,opt,name=patchfiltergroup,proto3" json:"patchfiltergroup,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -36610,8 +36610,8 @@ func (x *PatchRule) GetApproveuntildate() string {
 }
 
 func (x *PatchRule) GetCompliancelevel() PatchComplianceLevel {
-	if x != nil {
-		return x.Compliancelevel
+	if x != nil && x.Compliancelevel != nil {
+		return *x.Compliancelevel
 	}
 	return PatchComplianceLevel_PATCH_COMPLIANCE_LEVEL_INFORMATIONAL
 }
@@ -36737,8 +36737,8 @@ func (x *PatchSource) GetProducts() []string {
 type PatchStatus struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Approvaldate     *string                `protobuf:"bytes,140150963,opt,name=approvaldate,proto3,oneof" json:"approvaldate,omitempty"`
-	Compliancelevel  PatchComplianceLevel   `protobuf:"varint,200031721,opt,name=compliancelevel,proto3,enum=ssm.PatchComplianceLevel" json:"compliancelevel,omitempty"`
-	Deploymentstatus PatchDeploymentStatus  `protobuf:"varint,440218913,opt,name=deploymentstatus,proto3,enum=ssm.PatchDeploymentStatus" json:"deploymentstatus,omitempty"`
+	Compliancelevel  *PatchComplianceLevel  `protobuf:"varint,200031721,opt,name=compliancelevel,proto3,enum=ssm.PatchComplianceLevel,oneof" json:"compliancelevel,omitempty"`
+	Deploymentstatus *PatchDeploymentStatus `protobuf:"varint,440218913,opt,name=deploymentstatus,proto3,enum=ssm.PatchDeploymentStatus,oneof" json:"deploymentstatus,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -36781,15 +36781,15 @@ func (x *PatchStatus) GetApprovaldate() string {
 }
 
 func (x *PatchStatus) GetCompliancelevel() PatchComplianceLevel {
-	if x != nil {
-		return x.Compliancelevel
+	if x != nil && x.Compliancelevel != nil {
+		return *x.Compliancelevel
 	}
 	return PatchComplianceLevel_PATCH_COMPLIANCE_LEVEL_INFORMATIONAL
 }
 
 func (x *PatchStatus) GetDeploymentstatus() PatchDeploymentStatus {
-	if x != nil {
-		return x.Deploymentstatus
+	if x != nil && x.Deploymentstatus != nil {
+		return *x.Deploymentstatus
 	}
 	return PatchDeploymentStatus_PATCH_DEPLOYMENT_STATUS_APPROVED
 }
@@ -36922,7 +36922,7 @@ type PutComplianceItemsRequest struct {
 	Items            []*ComplianceItemEntry      `protobuf:"bytes,3553328,rep,name=items,proto3" json:"items,omitempty"`
 	Resourceid       string                      `protobuf:"bytes,526146833,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
 	Resourcetype     string                      `protobuf:"bytes,301342558,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
-	Uploadtype       ComplianceUploadType        `protobuf:"varint,454755573,opt,name=uploadtype,proto3,enum=ssm.ComplianceUploadType" json:"uploadtype,omitempty"`
+	Uploadtype       *ComplianceUploadType       `protobuf:"varint,454755573,opt,name=uploadtype,proto3,enum=ssm.ComplianceUploadType,oneof" json:"uploadtype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -37000,8 +37000,8 @@ func (x *PutComplianceItemsRequest) GetResourcetype() string {
 }
 
 func (x *PutComplianceItemsRequest) GetUploadtype() ComplianceUploadType {
-	if x != nil {
-		return x.Uploadtype
+	if x != nil && x.Uploadtype != nil {
+		return *x.Uploadtype
 	}
 	return ComplianceUploadType_COMPLIANCE_UPLOAD_TYPE_PARTIAL
 }
@@ -37148,8 +37148,8 @@ type PutParameterRequest struct {
 	Overwrite      *bool                  `protobuf:"varint,419368595,opt,name=overwrite,proto3,oneof" json:"overwrite,omitempty"`
 	Policies       *string                `protobuf:"bytes,40015384,opt,name=policies,proto3,oneof" json:"policies,omitempty"`
 	Tags           []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Tier           ParameterTier          `protobuf:"varint,519596586,opt,name=tier,proto3,enum=ssm.ParameterTier" json:"tier,omitempty"`
-	Type           ParameterType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ParameterType" json:"type,omitempty"`
+	Tier           *ParameterTier         `protobuf:"varint,519596586,opt,name=tier,proto3,enum=ssm.ParameterTier,oneof" json:"tier,omitempty"`
+	Type           *ParameterType         `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ParameterType,oneof" json:"type,omitempty"`
 	Value          string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -37242,15 +37242,15 @@ func (x *PutParameterRequest) GetTags() []*Tag {
 }
 
 func (x *PutParameterRequest) GetTier() ParameterTier {
-	if x != nil {
-		return x.Tier
+	if x != nil && x.Tier != nil {
+		return *x.Tier
 	}
 	return ParameterTier_PARAMETER_TIER_STANDARD
 }
 
 func (x *PutParameterRequest) GetType() ParameterType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ParameterType_PARAMETER_TYPE_SECURE_STRING
 }
@@ -37264,7 +37264,7 @@ func (x *PutParameterRequest) GetValue() string {
 
 type PutParameterResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Tier          ParameterTier          `protobuf:"varint,519596586,opt,name=tier,proto3,enum=ssm.ParameterTier" json:"tier,omitempty"`
+	Tier          *ParameterTier         `protobuf:"varint,519596586,opt,name=tier,proto3,enum=ssm.ParameterTier,oneof" json:"tier,omitempty"`
 	Version       *int64                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -37301,8 +37301,8 @@ func (*PutParameterResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutParameterResult) GetTier() ParameterTier {
-	if x != nil {
-		return x.Tier
+	if x != nil && x.Tier != nil {
+		return *x.Tier
 	}
 	return ParameterTier_PARAMETER_TIER_STANDARD
 }
@@ -37766,7 +37766,7 @@ type RegisterTaskWithMaintenanceWindowRequest struct {
 	state                    protoimpl.MessageState                                    `protogen:"open.v1"`
 	Alarmconfiguration       *AlarmConfiguration                                       `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
 	Clienttoken              *string                                                   `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
-	Cutoffbehavior           MaintenanceWindowTaskCutoffBehavior                       `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior" json:"cutoffbehavior,omitempty"`
+	Cutoffbehavior           *MaintenanceWindowTaskCutoffBehavior                      `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior,oneof" json:"cutoffbehavior,omitempty"`
 	Description              *string                                                   `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Logginginfo              *LoggingInfo                                              `protobuf:"bytes,448312415,opt,name=logginginfo,proto3" json:"logginginfo,omitempty"`
 	Maxconcurrency           *string                                                   `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
@@ -37829,8 +37829,8 @@ func (x *RegisterTaskWithMaintenanceWindowRequest) GetClienttoken() string {
 }
 
 func (x *RegisterTaskWithMaintenanceWindowRequest) GetCutoffbehavior() MaintenanceWindowTaskCutoffBehavior {
-	if x != nil {
-		return x.Cutoffbehavior
+	if x != nil && x.Cutoffbehavior != nil {
+		return *x.Cutoffbehavior
 	}
 	return MaintenanceWindowTaskCutoffBehavior_MAINTENANCE_WINDOW_TASK_CUTOFF_BEHAVIOR_CANCELTASK
 }
@@ -38308,10 +38308,10 @@ type ResourceComplianceSummaryItem struct {
 	Compliantsummary    *CompliantSummary           `protobuf:"bytes,133218055,opt,name=compliantsummary,proto3" json:"compliantsummary,omitempty"`
 	Executionsummary    *ComplianceExecutionSummary `protobuf:"bytes,71480964,opt,name=executionsummary,proto3" json:"executionsummary,omitempty"`
 	Noncompliantsummary *NonCompliantSummary        `protobuf:"bytes,294594444,opt,name=noncompliantsummary,proto3" json:"noncompliantsummary,omitempty"`
-	Overallseverity     ComplianceSeverity          `protobuf:"varint,74875526,opt,name=overallseverity,proto3,enum=ssm.ComplianceSeverity" json:"overallseverity,omitempty"`
+	Overallseverity     *ComplianceSeverity         `protobuf:"varint,74875526,opt,name=overallseverity,proto3,enum=ssm.ComplianceSeverity,oneof" json:"overallseverity,omitempty"`
 	Resourceid          *string                     `protobuf:"bytes,526146833,opt,name=resourceid,proto3,oneof" json:"resourceid,omitempty"`
 	Resourcetype        *string                     `protobuf:"bytes,301342558,opt,name=resourcetype,proto3,oneof" json:"resourcetype,omitempty"`
-	Status              ComplianceStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ComplianceStatus" json:"status,omitempty"`
+	Status              *ComplianceStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ComplianceStatus,oneof" json:"status,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -38375,8 +38375,8 @@ func (x *ResourceComplianceSummaryItem) GetNoncompliantsummary() *NonCompliantSu
 }
 
 func (x *ResourceComplianceSummaryItem) GetOverallseverity() ComplianceSeverity {
-	if x != nil {
-		return x.Overallseverity
+	if x != nil && x.Overallseverity != nil {
+		return *x.Overallseverity
 	}
 	return ComplianceSeverity_COMPLIANCE_SEVERITY_INFORMATIONAL
 }
@@ -38396,8 +38396,8 @@ func (x *ResourceComplianceSummaryItem) GetResourcetype() string {
 }
 
 func (x *ResourceComplianceSummaryItem) GetStatus() ComplianceStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ComplianceStatus_COMPLIANCE_STATUS_COMPLIANT
 }
@@ -38676,7 +38676,7 @@ func (x *ResourceDataSyncInvalidConfigurationException) GetMessage() string {
 
 type ResourceDataSyncItem struct {
 	state                  protoimpl.MessageState           `protogen:"open.v1"`
-	Laststatus             LastResourceDataSyncStatus       `protobuf:"varint,163326556,opt,name=laststatus,proto3,enum=ssm.LastResourceDataSyncStatus" json:"laststatus,omitempty"`
+	Laststatus             *LastResourceDataSyncStatus      `protobuf:"varint,163326556,opt,name=laststatus,proto3,enum=ssm.LastResourceDataSyncStatus,oneof" json:"laststatus,omitempty"`
 	Lastsuccessfulsynctime *string                          `protobuf:"bytes,94157050,opt,name=lastsuccessfulsynctime,proto3,oneof" json:"lastsuccessfulsynctime,omitempty"`
 	Lastsyncstatusmessage  *string                          `protobuf:"bytes,70064880,opt,name=lastsyncstatusmessage,proto3,oneof" json:"lastsyncstatusmessage,omitempty"`
 	Lastsynctime           *string                          `protobuf:"bytes,125896272,opt,name=lastsynctime,proto3,oneof" json:"lastsynctime,omitempty"`
@@ -38721,8 +38721,8 @@ func (*ResourceDataSyncItem) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceDataSyncItem) GetLaststatus() LastResourceDataSyncStatus {
-	if x != nil {
-		return x.Laststatus
+	if x != nil && x.Laststatus != nil {
+		return *x.Laststatus
 	}
 	return LastResourceDataSyncStatus_LAST_RESOURCE_DATA_SYNC_STATUS_SUCCESSFUL
 }
@@ -39622,7 +39622,7 @@ type ReviewInformation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Reviewedtime  *string                `protobuf:"bytes,277736338,opt,name=reviewedtime,proto3,oneof" json:"reviewedtime,omitempty"`
 	Reviewer      *string                `protobuf:"bytes,436444219,opt,name=reviewer,proto3,oneof" json:"reviewer,omitempty"`
-	Status        ReviewStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ReviewStatus" json:"status,omitempty"`
+	Status        *ReviewStatus          `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.ReviewStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -39672,8 +39672,8 @@ func (x *ReviewInformation) GetReviewer() string {
 }
 
 func (x *ReviewInformation) GetStatus() ReviewStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ReviewStatus_REVIEW_STATUS_PENDING
 }
@@ -40052,7 +40052,7 @@ type SendCommandRequest struct {
 	Cloudwatchoutputconfig *CloudWatchOutputConfig `protobuf:"bytes,21186555,opt,name=cloudwatchoutputconfig,proto3" json:"cloudwatchoutputconfig,omitempty"`
 	Comment                *string                 `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Documenthash           *string                 `protobuf:"bytes,251248469,opt,name=documenthash,proto3,oneof" json:"documenthash,omitempty"`
-	Documenthashtype       DocumentHashType        `protobuf:"varint,93041117,opt,name=documenthashtype,proto3,enum=ssm.DocumentHashType" json:"documenthashtype,omitempty"`
+	Documenthashtype       *DocumentHashType       `protobuf:"varint,93041117,opt,name=documenthashtype,proto3,enum=ssm.DocumentHashType,oneof" json:"documenthashtype,omitempty"`
 	Documentname           string                  `protobuf:"bytes,120705488,opt,name=documentname,proto3" json:"documentname,omitempty"`
 	Documentversion        *string                 `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Instanceids            []string                `protobuf:"bytes,312792453,rep,name=instanceids,proto3" json:"instanceids,omitempty"`
@@ -40129,8 +40129,8 @@ func (x *SendCommandRequest) GetDocumenthash() string {
 }
 
 func (x *SendCommandRequest) GetDocumenthashtype() DocumentHashType {
-	if x != nil {
-		return x.Documenthashtype
+	if x != nil && x.Documenthashtype != nil {
+		return *x.Documenthashtype
 	}
 	return DocumentHashType_DOCUMENT_HASH_TYPE_SHA256
 }
@@ -40476,7 +40476,7 @@ func (x *ServiceSettingNotFound) GetMessage() string {
 
 type Session struct {
 	state              protoimpl.MessageState   `protogen:"open.v1"`
-	Accesstype         AccessType               `protobuf:"varint,14019508,opt,name=accesstype,proto3,enum=ssm.AccessType" json:"accesstype,omitempty"`
+	Accesstype         *AccessType              `protobuf:"varint,14019508,opt,name=accesstype,proto3,enum=ssm.AccessType,oneof" json:"accesstype,omitempty"`
 	Details            *string                  `protobuf:"bytes,247611974,opt,name=details,proto3,oneof" json:"details,omitempty"`
 	Documentname       *string                  `protobuf:"bytes,120705488,opt,name=documentname,proto3,oneof" json:"documentname,omitempty"`
 	Enddate            *string                  `protobuf:"bytes,77486543,opt,name=enddate,proto3,oneof" json:"enddate,omitempty"`
@@ -40486,7 +40486,7 @@ type Session struct {
 	Reason             *string                  `protobuf:"bytes,20005178,opt,name=reason,proto3,oneof" json:"reason,omitempty"`
 	Sessionid          *string                  `protobuf:"bytes,20529723,opt,name=sessionid,proto3,oneof" json:"sessionid,omitempty"`
 	Startdate          *string                  `protobuf:"bytes,445135996,opt,name=startdate,proto3,oneof" json:"startdate,omitempty"`
-	Status             SessionStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.SessionStatus" json:"status,omitempty"`
+	Status             *SessionStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.SessionStatus,oneof" json:"status,omitempty"`
 	Target             *string                  `protobuf:"bytes,191361385,opt,name=target,proto3,oneof" json:"target,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -40523,8 +40523,8 @@ func (*Session) Descriptor() ([]byte, []int) {
 }
 
 func (x *Session) GetAccesstype() AccessType {
-	if x != nil {
-		return x.Accesstype
+	if x != nil && x.Accesstype != nil {
+		return *x.Accesstype
 	}
 	return AccessType_ACCESS_TYPE_JUSTINTIME
 }
@@ -40593,8 +40593,8 @@ func (x *Session) GetStartdate() string {
 }
 
 func (x *Session) GetStatus() SessionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SessionStatus_SESSION_STATUS_TERMINATING
 }
@@ -40986,7 +40986,7 @@ type StartAutomationExecutionRequest struct {
 	Documentversion     *string                `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Maxconcurrency      *string                `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
 	Maxerrors           *string                `protobuf:"bytes,129851691,opt,name=maxerrors,proto3,oneof" json:"maxerrors,omitempty"`
-	Mode                ExecutionMode          `protobuf:"varint,323909427,opt,name=mode,proto3,enum=ssm.ExecutionMode" json:"mode,omitempty"`
+	Mode                *ExecutionMode         `protobuf:"varint,323909427,opt,name=mode,proto3,enum=ssm.ExecutionMode,oneof" json:"mode,omitempty"`
 	Parameters          map[string]string      `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Tags                []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Targetlocations     []*TargetLocation      `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
@@ -41071,8 +41071,8 @@ func (x *StartAutomationExecutionRequest) GetMaxerrors() string {
 }
 
 func (x *StartAutomationExecutionRequest) GetMode() ExecutionMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return ExecutionMode_EXECUTION_MODE_AUTO
 }
@@ -41607,32 +41607,32 @@ func (*StatusUnchanged) Descriptor() ([]byte, []int) {
 }
 
 type StepExecution struct {
-	state                protoimpl.MessageState    `protogen:"open.v1"`
-	Action               *string                   `protobuf:"bytes,175614240,opt,name=action,proto3,oneof" json:"action,omitempty"`
-	Executionendtime     *string                   `protobuf:"bytes,139859196,opt,name=executionendtime,proto3,oneof" json:"executionendtime,omitempty"`
-	Executionstarttime   *string                   `protobuf:"bytes,429847391,opt,name=executionstarttime,proto3,oneof" json:"executionstarttime,omitempty"`
-	Failuredetails       *FailureDetails           `protobuf:"bytes,409582698,opt,name=failuredetails,proto3" json:"failuredetails,omitempty"`
-	Failuremessage       *string                   `protobuf:"bytes,353556937,opt,name=failuremessage,proto3,oneof" json:"failuremessage,omitempty"`
-	Inputs               map[string]string         `protobuf:"bytes,499898041,rep,name=inputs,proto3" json:"inputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Iscritical           *bool                     `protobuf:"varint,250154393,opt,name=iscritical,proto3,oneof" json:"iscritical,omitempty"`
-	Isend                *bool                     `protobuf:"varint,276967899,opt,name=isend,proto3,oneof" json:"isend,omitempty"`
-	Maxattempts          *int32                    `protobuf:"varint,233732372,opt,name=maxattempts,proto3,oneof" json:"maxattempts,omitempty"`
-	Nextstep             *string                   `protobuf:"bytes,346442571,opt,name=nextstep,proto3,oneof" json:"nextstep,omitempty"`
-	Onfailure            *string                   `protobuf:"bytes,424696739,opt,name=onfailure,proto3,oneof" json:"onfailure,omitempty"`
-	Outputs              map[string]string         `protobuf:"bytes,455868918,rep,name=outputs,proto3" json:"outputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Overriddenparameters map[string]string         `protobuf:"bytes,423965710,rep,name=overriddenparameters,proto3" json:"overriddenparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Parentstepdetails    *ParentStepDetails        `protobuf:"bytes,428116240,opt,name=parentstepdetails,proto3" json:"parentstepdetails,omitempty"`
-	Response             *string                   `protobuf:"bytes,363430655,opt,name=response,proto3,oneof" json:"response,omitempty"`
-	Responsecode         *string                   `protobuf:"bytes,447553700,opt,name=responsecode,proto3,oneof" json:"responsecode,omitempty"`
-	Stepexecutionid      *string                   `protobuf:"bytes,47252075,opt,name=stepexecutionid,proto3,oneof" json:"stepexecutionid,omitempty"`
-	Stepname             *string                   `protobuf:"bytes,394700557,opt,name=stepname,proto3,oneof" json:"stepname,omitempty"`
-	Stepstatus           AutomationExecutionStatus `protobuf:"varint,49235738,opt,name=stepstatus,proto3,enum=ssm.AutomationExecutionStatus" json:"stepstatus,omitempty"`
-	Targetlocation       *TargetLocation           `protobuf:"bytes,475808320,opt,name=targetlocation,proto3" json:"targetlocation,omitempty"`
-	Targets              []*Target                 `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
-	Timeoutseconds       *int64                    `protobuf:"varint,336148022,opt,name=timeoutseconds,proto3,oneof" json:"timeoutseconds,omitempty"`
-	Triggeredalarms      []*AlarmStateInformation  `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
-	Validnextsteps       []string                  `protobuf:"bytes,403306152,rep,name=validnextsteps,proto3" json:"validnextsteps,omitempty"`
-	Warningmessage       *string                   `protobuf:"bytes,497413775,opt,name=warningmessage,proto3,oneof" json:"warningmessage,omitempty"`
+	state                protoimpl.MessageState     `protogen:"open.v1"`
+	Action               *string                    `protobuf:"bytes,175614240,opt,name=action,proto3,oneof" json:"action,omitempty"`
+	Executionendtime     *string                    `protobuf:"bytes,139859196,opt,name=executionendtime,proto3,oneof" json:"executionendtime,omitempty"`
+	Executionstarttime   *string                    `protobuf:"bytes,429847391,opt,name=executionstarttime,proto3,oneof" json:"executionstarttime,omitempty"`
+	Failuredetails       *FailureDetails            `protobuf:"bytes,409582698,opt,name=failuredetails,proto3" json:"failuredetails,omitempty"`
+	Failuremessage       *string                    `protobuf:"bytes,353556937,opt,name=failuremessage,proto3,oneof" json:"failuremessage,omitempty"`
+	Inputs               map[string]string          `protobuf:"bytes,499898041,rep,name=inputs,proto3" json:"inputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Iscritical           *bool                      `protobuf:"varint,250154393,opt,name=iscritical,proto3,oneof" json:"iscritical,omitempty"`
+	Isend                *bool                      `protobuf:"varint,276967899,opt,name=isend,proto3,oneof" json:"isend,omitempty"`
+	Maxattempts          *int32                     `protobuf:"varint,233732372,opt,name=maxattempts,proto3,oneof" json:"maxattempts,omitempty"`
+	Nextstep             *string                    `protobuf:"bytes,346442571,opt,name=nextstep,proto3,oneof" json:"nextstep,omitempty"`
+	Onfailure            *string                    `protobuf:"bytes,424696739,opt,name=onfailure,proto3,oneof" json:"onfailure,omitempty"`
+	Outputs              map[string]string          `protobuf:"bytes,455868918,rep,name=outputs,proto3" json:"outputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Overriddenparameters map[string]string          `protobuf:"bytes,423965710,rep,name=overriddenparameters,proto3" json:"overriddenparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Parentstepdetails    *ParentStepDetails         `protobuf:"bytes,428116240,opt,name=parentstepdetails,proto3" json:"parentstepdetails,omitempty"`
+	Response             *string                    `protobuf:"bytes,363430655,opt,name=response,proto3,oneof" json:"response,omitempty"`
+	Responsecode         *string                    `protobuf:"bytes,447553700,opt,name=responsecode,proto3,oneof" json:"responsecode,omitempty"`
+	Stepexecutionid      *string                    `protobuf:"bytes,47252075,opt,name=stepexecutionid,proto3,oneof" json:"stepexecutionid,omitempty"`
+	Stepname             *string                    `protobuf:"bytes,394700557,opt,name=stepname,proto3,oneof" json:"stepname,omitempty"`
+	Stepstatus           *AutomationExecutionStatus `protobuf:"varint,49235738,opt,name=stepstatus,proto3,enum=ssm.AutomationExecutionStatus,oneof" json:"stepstatus,omitempty"`
+	Targetlocation       *TargetLocation            `protobuf:"bytes,475808320,opt,name=targetlocation,proto3" json:"targetlocation,omitempty"`
+	Targets              []*Target                  `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
+	Timeoutseconds       *int64                     `protobuf:"varint,336148022,opt,name=timeoutseconds,proto3,oneof" json:"timeoutseconds,omitempty"`
+	Triggeredalarms      []*AlarmStateInformation   `protobuf:"bytes,263222917,rep,name=triggeredalarms,proto3" json:"triggeredalarms,omitempty"`
+	Validnextsteps       []string                   `protobuf:"bytes,403306152,rep,name=validnextsteps,proto3" json:"validnextsteps,omitempty"`
+	Warningmessage       *string                    `protobuf:"bytes,497413775,opt,name=warningmessage,proto3,oneof" json:"warningmessage,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -41794,8 +41794,8 @@ func (x *StepExecution) GetStepname() string {
 }
 
 func (x *StepExecution) GetStepstatus() AutomationExecutionStatus {
-	if x != nil {
-		return x.Stepstatus
+	if x != nil && x.Stepstatus != nil {
+		return *x.Stepstatus
 	}
 	return AutomationExecutionStatus_AUTOMATION_EXECUTION_STATUS_PENDING_CHANGE_CALENDAR_OVERRIDE
 }
@@ -41897,7 +41897,7 @@ func (x *StepExecutionFilter) GetValues() []string {
 type StopAutomationExecutionRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Automationexecutionid string                 `protobuf:"bytes,12449766,opt,name=automationexecutionid,proto3" json:"automationexecutionid,omitempty"`
-	Type                  StopType               `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.StopType" json:"type,omitempty"`
+	Type                  *StopType              `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.StopType,oneof" json:"type,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -41940,8 +41940,8 @@ func (x *StopAutomationExecutionRequest) GetAutomationexecutionid() string {
 }
 
 func (x *StopAutomationExecutionRequest) GetType() StopType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return StopType_STOP_TYPE_COMPLETE
 }
@@ -43148,7 +43148,7 @@ type UpdateAssociationRequest struct {
 	Associationversion            *string                            `protobuf:"bytes,447890705,opt,name=associationversion,proto3,oneof" json:"associationversion,omitempty"`
 	Automationtargetparametername *string                            `protobuf:"bytes,348584826,opt,name=automationtargetparametername,proto3,oneof" json:"automationtargetparametername,omitempty"`
 	Calendarnames                 []string                           `protobuf:"bytes,36075966,rep,name=calendarnames,proto3" json:"calendarnames,omitempty"`
-	Complianceseverity            AssociationComplianceSeverity      `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity" json:"complianceseverity,omitempty"`
+	Complianceseverity            *AssociationComplianceSeverity     `protobuf:"varint,278891158,opt,name=complianceseverity,proto3,enum=ssm.AssociationComplianceSeverity,oneof" json:"complianceseverity,omitempty"`
 	Documentversion               *string                            `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Duration                      *int32                             `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
 	Maxconcurrency                *string                            `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
@@ -43158,7 +43158,7 @@ type UpdateAssociationRequest struct {
 	Parameters                    map[string]string                  `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Scheduleexpression            *string                            `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
 	Scheduleoffset                *int32                             `protobuf:"varint,156928216,opt,name=scheduleoffset,proto3,oneof" json:"scheduleoffset,omitempty"`
-	Synccompliance                AssociationSyncCompliance          `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance" json:"synccompliance,omitempty"`
+	Synccompliance                *AssociationSyncCompliance         `protobuf:"varint,500469318,opt,name=synccompliance,proto3,enum=ssm.AssociationSyncCompliance,oneof" json:"synccompliance,omitempty"`
 	Targetlocations               []*TargetLocation                  `protobuf:"bytes,289168805,rep,name=targetlocations,proto3" json:"targetlocations,omitempty"`
 	Targetmaps                    []*TargetMapsEntry                 `protobuf:"bytes,74800696,rep,name=targetmaps,proto3" json:"targetmaps,omitempty"`
 	Targets                       []*Target                          `protobuf:"bytes,262180226,rep,name=targets,proto3" json:"targets,omitempty"`
@@ -43253,8 +43253,8 @@ func (x *UpdateAssociationRequest) GetCalendarnames() []string {
 }
 
 func (x *UpdateAssociationRequest) GetComplianceseverity() AssociationComplianceSeverity {
-	if x != nil {
-		return x.Complianceseverity
+	if x != nil && x.Complianceseverity != nil {
+		return *x.Complianceseverity
 	}
 	return AssociationComplianceSeverity_ASSOCIATION_COMPLIANCE_SEVERITY_MEDIUM
 }
@@ -43323,8 +43323,8 @@ func (x *UpdateAssociationRequest) GetScheduleoffset() int32 {
 }
 
 func (x *UpdateAssociationRequest) GetSynccompliance() AssociationSyncCompliance {
-	if x != nil {
-		return x.Synccompliance
+	if x != nil && x.Synccompliance != nil {
+		return *x.Synccompliance
 	}
 	return AssociationSyncCompliance_ASSOCIATION_SYNC_COMPLIANCE_MANUAL
 }
@@ -43807,7 +43807,7 @@ type UpdateDocumentRequest struct {
 	Attachments     []*AttachmentsSource   `protobuf:"bytes,498946338,rep,name=attachments,proto3" json:"attachments,omitempty"`
 	Content         string                 `protobuf:"bytes,23568227,opt,name=content,proto3" json:"content,omitempty"`
 	Displayname     *string                `protobuf:"bytes,418161847,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
-	Documentformat  DocumentFormat         `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat" json:"documentformat,omitempty"`
+	Documentformat  *DocumentFormat        `protobuf:"varint,516934792,opt,name=documentformat,proto3,enum=ssm.DocumentFormat,oneof" json:"documentformat,omitempty"`
 	Documentversion *string                `protobuf:"bytes,84572105,opt,name=documentversion,proto3,oneof" json:"documentversion,omitempty"`
 	Name            string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Targettype      *string                `protobuf:"bytes,397256481,opt,name=targettype,proto3,oneof" json:"targettype,omitempty"`
@@ -43868,8 +43868,8 @@ func (x *UpdateDocumentRequest) GetDisplayname() string {
 }
 
 func (x *UpdateDocumentRequest) GetDocumentformat() DocumentFormat {
-	if x != nil {
-		return x.Documentformat
+	if x != nil && x.Documentformat != nil {
+		return *x.Documentformat
 	}
 	return DocumentFormat_DOCUMENT_FORMAT_JSON
 }
@@ -44397,7 +44397,7 @@ func (x *UpdateMaintenanceWindowTargetResult) GetWindowtargetid() string {
 type UpdateMaintenanceWindowTaskRequest struct {
 	state                    protoimpl.MessageState                                    `protogen:"open.v1"`
 	Alarmconfiguration       *AlarmConfiguration                                       `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
-	Cutoffbehavior           MaintenanceWindowTaskCutoffBehavior                       `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior" json:"cutoffbehavior,omitempty"`
+	Cutoffbehavior           *MaintenanceWindowTaskCutoffBehavior                      `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior,oneof" json:"cutoffbehavior,omitempty"`
 	Description              *string                                                   `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Logginginfo              *LoggingInfo                                              `protobuf:"bytes,448312415,opt,name=logginginfo,proto3" json:"logginginfo,omitempty"`
 	Maxconcurrency           *string                                                   `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
@@ -44454,8 +44454,8 @@ func (x *UpdateMaintenanceWindowTaskRequest) GetAlarmconfiguration() *AlarmConfi
 }
 
 func (x *UpdateMaintenanceWindowTaskRequest) GetCutoffbehavior() MaintenanceWindowTaskCutoffBehavior {
-	if x != nil {
-		return x.Cutoffbehavior
+	if x != nil && x.Cutoffbehavior != nil {
+		return *x.Cutoffbehavior
 	}
 	return MaintenanceWindowTaskCutoffBehavior_MAINTENANCE_WINDOW_TASK_CUTOFF_BEHAVIOR_CANCELTASK
 }
@@ -44561,7 +44561,7 @@ func (x *UpdateMaintenanceWindowTaskRequest) GetWindowtaskid() string {
 type UpdateMaintenanceWindowTaskResult struct {
 	state                    protoimpl.MessageState                                    `protogen:"open.v1"`
 	Alarmconfiguration       *AlarmConfiguration                                       `protobuf:"bytes,70143113,opt,name=alarmconfiguration,proto3" json:"alarmconfiguration,omitempty"`
-	Cutoffbehavior           MaintenanceWindowTaskCutoffBehavior                       `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior" json:"cutoffbehavior,omitempty"`
+	Cutoffbehavior           *MaintenanceWindowTaskCutoffBehavior                      `protobuf:"varint,120608587,opt,name=cutoffbehavior,proto3,enum=ssm.MaintenanceWindowTaskCutoffBehavior,oneof" json:"cutoffbehavior,omitempty"`
 	Description              *string                                                   `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Logginginfo              *LoggingInfo                                              `protobuf:"bytes,448312415,opt,name=logginginfo,proto3" json:"logginginfo,omitempty"`
 	Maxconcurrency           *string                                                   `protobuf:"bytes,29597949,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
@@ -44617,8 +44617,8 @@ func (x *UpdateMaintenanceWindowTaskResult) GetAlarmconfiguration() *AlarmConfig
 }
 
 func (x *UpdateMaintenanceWindowTaskResult) GetCutoffbehavior() MaintenanceWindowTaskCutoffBehavior {
-	if x != nil {
-		return x.Cutoffbehavior
+	if x != nil && x.Cutoffbehavior != nil {
+		return *x.Cutoffbehavior
 	}
 	return MaintenanceWindowTaskCutoffBehavior_MAINTENANCE_WINDOW_TASK_CUTOFF_BEHAVIOR_CANCELTASK
 }
@@ -44818,7 +44818,7 @@ type UpdateOpsItemRequest struct {
 	Priority                *int32                       `protobuf:"varint,109944618,opt,name=priority,proto3,oneof" json:"priority,omitempty"`
 	Relatedopsitems         []*RelatedOpsItem            `protobuf:"bytes,287082393,rep,name=relatedopsitems,proto3" json:"relatedopsitems,omitempty"`
 	Severity                *string                      `protobuf:"bytes,276886227,opt,name=severity,proto3,oneof" json:"severity,omitempty"`
-	Status                  OpsItemStatus                `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.OpsItemStatus" json:"status,omitempty"`
+	Status                  *OpsItemStatus               `protobuf:"varint,6222352,opt,name=status,proto3,enum=ssm.OpsItemStatus,oneof" json:"status,omitempty"`
 	Title                   *string                      `protobuf:"bytes,81031594,opt,name=title,proto3,oneof" json:"title,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -44953,8 +44953,8 @@ func (x *UpdateOpsItemRequest) GetSeverity() string {
 }
 
 func (x *UpdateOpsItemRequest) GetStatus() OpsItemStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return OpsItemStatus_OPS_ITEM_STATUS_PENDING_CHANGE_CALENDAR_OVERRIDE
 }
@@ -45110,15 +45110,15 @@ type UpdatePatchBaselineRequest struct {
 	state                                    protoimpl.MessageState `protogen:"open.v1"`
 	Approvalrules                            *PatchRuleGroup        `protobuf:"bytes,71466346,opt,name=approvalrules,proto3" json:"approvalrules,omitempty"`
 	Approvedpatches                          []string               `protobuf:"bytes,199384709,rep,name=approvedpatches,proto3" json:"approvedpatches,omitempty"`
-	Approvedpatchescompliancelevel           PatchComplianceLevel   `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel" json:"approvedpatchescompliancelevel,omitempty"`
+	Approvedpatchescompliancelevel           *PatchComplianceLevel  `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel,oneof" json:"approvedpatchescompliancelevel,omitempty"`
 	Approvedpatchesenablenonsecurity         *bool                  `protobuf:"varint,295555901,opt,name=approvedpatchesenablenonsecurity,proto3,oneof" json:"approvedpatchesenablenonsecurity,omitempty"`
-	Availablesecurityupdatescompliancestatus PatchComplianceStatus  `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus" json:"availablesecurityupdatescompliancestatus,omitempty"`
+	Availablesecurityupdatescompliancestatus *PatchComplianceStatus `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus,oneof" json:"availablesecurityupdatescompliancestatus,omitempty"`
 	Baselineid                               string                 `protobuf:"bytes,85389904,opt,name=baselineid,proto3" json:"baselineid,omitempty"`
 	Description                              *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Globalfilters                            *PatchFilterGroup      `protobuf:"bytes,263302754,opt,name=globalfilters,proto3" json:"globalfilters,omitempty"`
 	Name                                     *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Rejectedpatches                          []string               `protobuf:"bytes,309657116,rep,name=rejectedpatches,proto3" json:"rejectedpatches,omitempty"`
-	Rejectedpatchesaction                    PatchAction            `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction" json:"rejectedpatchesaction,omitempty"`
+	Rejectedpatchesaction                    *PatchAction           `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction,oneof" json:"rejectedpatchesaction,omitempty"`
 	Replace                                  *bool                  `protobuf:"varint,81088356,opt,name=replace,proto3,oneof" json:"replace,omitempty"`
 	Sources                                  []*PatchSource         `protobuf:"bytes,46625746,rep,name=sources,proto3" json:"sources,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
@@ -45170,8 +45170,8 @@ func (x *UpdatePatchBaselineRequest) GetApprovedpatches() []string {
 }
 
 func (x *UpdatePatchBaselineRequest) GetApprovedpatchescompliancelevel() PatchComplianceLevel {
-	if x != nil {
-		return x.Approvedpatchescompliancelevel
+	if x != nil && x.Approvedpatchescompliancelevel != nil {
+		return *x.Approvedpatchescompliancelevel
 	}
 	return PatchComplianceLevel_PATCH_COMPLIANCE_LEVEL_INFORMATIONAL
 }
@@ -45184,8 +45184,8 @@ func (x *UpdatePatchBaselineRequest) GetApprovedpatchesenablenonsecurity() bool 
 }
 
 func (x *UpdatePatchBaselineRequest) GetAvailablesecurityupdatescompliancestatus() PatchComplianceStatus {
-	if x != nil {
-		return x.Availablesecurityupdatescompliancestatus
+	if x != nil && x.Availablesecurityupdatescompliancestatus != nil {
+		return *x.Availablesecurityupdatescompliancestatus
 	}
 	return PatchComplianceStatus_PATCH_COMPLIANCE_STATUS_COMPLIANT
 }
@@ -45226,8 +45226,8 @@ func (x *UpdatePatchBaselineRequest) GetRejectedpatches() []string {
 }
 
 func (x *UpdatePatchBaselineRequest) GetRejectedpatchesaction() PatchAction {
-	if x != nil {
-		return x.Rejectedpatchesaction
+	if x != nil && x.Rejectedpatchesaction != nil {
+		return *x.Rejectedpatchesaction
 	}
 	return PatchAction_PATCH_ACTION_ALLOWASDEPENDENCY
 }
@@ -45250,18 +45250,18 @@ type UpdatePatchBaselineResult struct {
 	state                                    protoimpl.MessageState `protogen:"open.v1"`
 	Approvalrules                            *PatchRuleGroup        `protobuf:"bytes,71466346,opt,name=approvalrules,proto3" json:"approvalrules,omitempty"`
 	Approvedpatches                          []string               `protobuf:"bytes,199384709,rep,name=approvedpatches,proto3" json:"approvedpatches,omitempty"`
-	Approvedpatchescompliancelevel           PatchComplianceLevel   `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel" json:"approvedpatchescompliancelevel,omitempty"`
+	Approvedpatchescompliancelevel           *PatchComplianceLevel  `protobuf:"varint,63924432,opt,name=approvedpatchescompliancelevel,proto3,enum=ssm.PatchComplianceLevel,oneof" json:"approvedpatchescompliancelevel,omitempty"`
 	Approvedpatchesenablenonsecurity         *bool                  `protobuf:"varint,295555901,opt,name=approvedpatchesenablenonsecurity,proto3,oneof" json:"approvedpatchesenablenonsecurity,omitempty"`
-	Availablesecurityupdatescompliancestatus PatchComplianceStatus  `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus" json:"availablesecurityupdatescompliancestatus,omitempty"`
+	Availablesecurityupdatescompliancestatus *PatchComplianceStatus `protobuf:"varint,187471858,opt,name=availablesecurityupdatescompliancestatus,proto3,enum=ssm.PatchComplianceStatus,oneof" json:"availablesecurityupdatescompliancestatus,omitempty"`
 	Baselineid                               *string                `protobuf:"bytes,85389904,opt,name=baselineid,proto3,oneof" json:"baselineid,omitempty"`
 	Createddate                              *string                `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
 	Description                              *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Globalfilters                            *PatchFilterGroup      `protobuf:"bytes,263302754,opt,name=globalfilters,proto3" json:"globalfilters,omitempty"`
 	Modifieddate                             *string                `protobuf:"bytes,210609143,opt,name=modifieddate,proto3,oneof" json:"modifieddate,omitempty"`
 	Name                                     *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Operatingsystem                          OperatingSystem        `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem" json:"operatingsystem,omitempty"`
+	Operatingsystem                          *OperatingSystem       `protobuf:"varint,38829802,opt,name=operatingsystem,proto3,enum=ssm.OperatingSystem,oneof" json:"operatingsystem,omitempty"`
 	Rejectedpatches                          []string               `protobuf:"bytes,309657116,rep,name=rejectedpatches,proto3" json:"rejectedpatches,omitempty"`
-	Rejectedpatchesaction                    PatchAction            `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction" json:"rejectedpatchesaction,omitempty"`
+	Rejectedpatchesaction                    *PatchAction           `protobuf:"varint,356538330,opt,name=rejectedpatchesaction,proto3,enum=ssm.PatchAction,oneof" json:"rejectedpatchesaction,omitempty"`
 	Sources                                  []*PatchSource         `protobuf:"bytes,46625746,rep,name=sources,proto3" json:"sources,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
 	sizeCache                                protoimpl.SizeCache
@@ -45312,8 +45312,8 @@ func (x *UpdatePatchBaselineResult) GetApprovedpatches() []string {
 }
 
 func (x *UpdatePatchBaselineResult) GetApprovedpatchescompliancelevel() PatchComplianceLevel {
-	if x != nil {
-		return x.Approvedpatchescompliancelevel
+	if x != nil && x.Approvedpatchescompliancelevel != nil {
+		return *x.Approvedpatchescompliancelevel
 	}
 	return PatchComplianceLevel_PATCH_COMPLIANCE_LEVEL_INFORMATIONAL
 }
@@ -45326,8 +45326,8 @@ func (x *UpdatePatchBaselineResult) GetApprovedpatchesenablenonsecurity() bool {
 }
 
 func (x *UpdatePatchBaselineResult) GetAvailablesecurityupdatescompliancestatus() PatchComplianceStatus {
-	if x != nil {
-		return x.Availablesecurityupdatescompliancestatus
+	if x != nil && x.Availablesecurityupdatescompliancestatus != nil {
+		return *x.Availablesecurityupdatescompliancestatus
 	}
 	return PatchComplianceStatus_PATCH_COMPLIANCE_STATUS_COMPLIANT
 }
@@ -45375,8 +45375,8 @@ func (x *UpdatePatchBaselineResult) GetName() string {
 }
 
 func (x *UpdatePatchBaselineResult) GetOperatingsystem() OperatingSystem {
-	if x != nil {
-		return x.Operatingsystem
+	if x != nil && x.Operatingsystem != nil {
+		return *x.Operatingsystem
 	}
 	return OperatingSystem_OPERATING_SYSTEM_MACOS
 }
@@ -45389,8 +45389,8 @@ func (x *UpdatePatchBaselineResult) GetRejectedpatches() []string {
 }
 
 func (x *UpdatePatchBaselineResult) GetRejectedpatchesaction() PatchAction {
-	if x != nil {
-		return x.Rejectedpatchesaction
+	if x != nil && x.Rejectedpatchesaction != nil {
+		return *x.Rejectedpatchesaction
 	}
 	return PatchAction_PATCH_ACTION_ALLOWASDEPENDENCY
 }
@@ -45752,11 +45752,11 @@ func (x *ValidationException) GetReasoncode() string {
 
 type ValidationFinding struct {
 	state           protoimpl.MessageState  `protogen:"open.v1"`
-	Code            ValidationFindingCode   `protobuf:"varint,425572629,opt,name=code,proto3,enum=ssm.ValidationFindingCode" json:"code,omitempty"`
+	Code            *ValidationFindingCode  `protobuf:"varint,425572629,opt,name=code,proto3,enum=ssm.ValidationFindingCode,oneof" json:"code,omitempty"`
 	Message         *string                 `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Providermessage *string                 `protobuf:"bytes,311475868,opt,name=providermessage,proto3,oneof" json:"providermessage,omitempty"`
 	Scope           *ValidationFindingScope `protobuf:"bytes,65430924,opt,name=scope,proto3" json:"scope,omitempty"`
-	Type            ValidationFindingType   `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ValidationFindingType" json:"type,omitempty"`
+	Type            *ValidationFindingType  `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ValidationFindingType,oneof" json:"type,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -45792,8 +45792,8 @@ func (*ValidationFinding) Descriptor() ([]byte, []int) {
 }
 
 func (x *ValidationFinding) GetCode() ValidationFindingCode {
-	if x != nil {
-		return x.Code
+	if x != nil && x.Code != nil {
+		return *x.Code
 	}
 	return ValidationFindingCode_VALIDATION_FINDING_CODE_TARGET_INACCESSIBLE
 }
@@ -45820,16 +45820,16 @@ func (x *ValidationFinding) GetScope() *ValidationFindingScope {
 }
 
 func (x *ValidationFinding) GetType() ValidationFindingType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ValidationFindingType_VALIDATION_FINDING_TYPE_WARN
 }
 
 type ValidationFindingScope struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Id            *string                    `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
-	Type          ValidationFindingScopeType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ValidationFindingScopeType" json:"type,omitempty"`
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Id            *string                     `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Type          *ValidationFindingScopeType `protobuf:"varint,290836590,opt,name=type,proto3,enum=ssm.ValidationFindingScopeType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -45872,10 +45872,54 @@ func (x *ValidationFindingScope) GetId() string {
 }
 
 func (x *ValidationFindingScope) GetType() ValidationFindingScopeType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ValidationFindingScopeType_VALIDATION_FINDING_SCOPE_TYPE_AZURE_TENANT
+}
+
+type NodeSummaryListEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         map[string]string      `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NodeSummaryListEntry) Reset() {
+	*x = NodeSummaryListEntry{}
+	mi := &file_ssm_proto_msgTypes[621]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodeSummaryListEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodeSummaryListEntry) ProtoMessage() {}
+
+func (x *NodeSummaryListEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ssm_proto_msgTypes[621]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodeSummaryListEntry.ProtoReflect.Descriptor instead.
+func (*NodeSummaryListEntry) Descriptor() ([]byte, []int) {
+	return file_ssm_proto_rawDescGZIP(), []int{621}
+}
+
+func (x *NodeSummaryListEntry) GetValue() map[string]string {
+	if x != nil {
+		return x.Value
+	}
+	return nil
 }
 
 type OpsEntityItemEntryListEntry struct {
@@ -45887,7 +45931,7 @@ type OpsEntityItemEntryListEntry struct {
 
 func (x *OpsEntityItemEntryListEntry) Reset() {
 	*x = OpsEntityItemEntryListEntry{}
-	mi := &file_ssm_proto_msgTypes[621]
+	mi := &file_ssm_proto_msgTypes[622]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45899,7 +45943,7 @@ func (x *OpsEntityItemEntryListEntry) String() string {
 func (*OpsEntityItemEntryListEntry) ProtoMessage() {}
 
 func (x *OpsEntityItemEntryListEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ssm_proto_msgTypes[621]
+	mi := &file_ssm_proto_msgTypes[622]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -45912,7 +45956,7 @@ func (x *OpsEntityItemEntryListEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpsEntityItemEntryListEntry.ProtoReflect.Descriptor instead.
 func (*OpsEntityItemEntryListEntry) Descriptor() ([]byte, []int) {
-	return file_ssm_proto_rawDescGZIP(), []int{621}
+	return file_ssm_proto_rawDescGZIP(), []int{622}
 }
 
 func (x *OpsEntityItemEntryListEntry) GetValue() map[string]string {
@@ -45931,7 +45975,7 @@ type TargetMapsEntry struct {
 
 func (x *TargetMapsEntry) Reset() {
 	*x = TargetMapsEntry{}
-	mi := &file_ssm_proto_msgTypes[622]
+	mi := &file_ssm_proto_msgTypes[623]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45943,7 +45987,7 @@ func (x *TargetMapsEntry) String() string {
 func (*TargetMapsEntry) ProtoMessage() {}
 
 func (x *TargetMapsEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ssm_proto_msgTypes[622]
+	mi := &file_ssm_proto_msgTypes[623]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -45956,7 +46000,7 @@ func (x *TargetMapsEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TargetMapsEntry.ProtoReflect.Descriptor instead.
 func (*TargetMapsEntry) Descriptor() ([]byte, []int) {
-	return file_ssm_proto_rawDescGZIP(), []int{622}
+	return file_ssm_proto_rawDescGZIP(), []int{623}
 }
 
 func (x *TargetMapsEntry) GetValue() map[string]string {
@@ -45975,7 +46019,7 @@ type PatchPropertiesListEntry struct {
 
 func (x *PatchPropertiesListEntry) Reset() {
 	*x = PatchPropertiesListEntry{}
-	mi := &file_ssm_proto_msgTypes[623]
+	mi := &file_ssm_proto_msgTypes[624]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45987,7 +46031,7 @@ func (x *PatchPropertiesListEntry) String() string {
 func (*PatchPropertiesListEntry) ProtoMessage() {}
 
 func (x *PatchPropertiesListEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ssm_proto_msgTypes[623]
+	mi := &file_ssm_proto_msgTypes[624]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -46000,7 +46044,7 @@ func (x *PatchPropertiesListEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PatchPropertiesListEntry.ProtoReflect.Descriptor instead.
 func (*PatchPropertiesListEntry) Descriptor() ([]byte, []int) {
-	return file_ssm_proto_rawDescGZIP(), []int{623}
+	return file_ssm_proto_rawDescGZIP(), []int{624}
 }
 
 func (x *PatchPropertiesListEntry) GetValue() map[string]string {
@@ -46019,7 +46063,7 @@ type MaintenanceWindowTaskParametersListEntry struct {
 
 func (x *MaintenanceWindowTaskParametersListEntry) Reset() {
 	*x = MaintenanceWindowTaskParametersListEntry{}
-	mi := &file_ssm_proto_msgTypes[624]
+	mi := &file_ssm_proto_msgTypes[625]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46031,7 +46075,7 @@ func (x *MaintenanceWindowTaskParametersListEntry) String() string {
 func (*MaintenanceWindowTaskParametersListEntry) ProtoMessage() {}
 
 func (x *MaintenanceWindowTaskParametersListEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ssm_proto_msgTypes[624]
+	mi := &file_ssm_proto_msgTypes[625]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -46044,7 +46088,7 @@ func (x *MaintenanceWindowTaskParametersListEntry) ProtoReflect() protoreflect.M
 
 // Deprecated: Use MaintenanceWindowTaskParametersListEntry.ProtoReflect.Descriptor instead.
 func (*MaintenanceWindowTaskParametersListEntry) Descriptor() ([]byte, []int) {
-	return file_ssm_proto_rawDescGZIP(), []int{624}
+	return file_ssm_proto_rawDescGZIP(), []int{625}
 }
 
 func (x *MaintenanceWindowTaskParametersListEntry) GetValue() map[string]*MaintenanceWindowTaskParameterValueExpression {
@@ -46063,7 +46107,7 @@ type InventoryItemEntryListEntry struct {
 
 func (x *InventoryItemEntryListEntry) Reset() {
 	*x = InventoryItemEntryListEntry{}
-	mi := &file_ssm_proto_msgTypes[625]
+	mi := &file_ssm_proto_msgTypes[626]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46075,7 +46119,7 @@ func (x *InventoryItemEntryListEntry) String() string {
 func (*InventoryItemEntryListEntry) ProtoMessage() {}
 
 func (x *InventoryItemEntryListEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ssm_proto_msgTypes[625]
+	mi := &file_ssm_proto_msgTypes[626]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -46088,54 +46132,10 @@ func (x *InventoryItemEntryListEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InventoryItemEntryListEntry.ProtoReflect.Descriptor instead.
 func (*InventoryItemEntryListEntry) Descriptor() ([]byte, []int) {
-	return file_ssm_proto_rawDescGZIP(), []int{625}
-}
-
-func (x *InventoryItemEntryListEntry) GetValue() map[string]string {
-	if x != nil {
-		return x.Value
-	}
-	return nil
-}
-
-type NodeSummaryListEntry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Value         map[string]string      `protobuf:"bytes,1,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *NodeSummaryListEntry) Reset() {
-	*x = NodeSummaryListEntry{}
-	mi := &file_ssm_proto_msgTypes[626]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NodeSummaryListEntry) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NodeSummaryListEntry) ProtoMessage() {}
-
-func (x *NodeSummaryListEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_ssm_proto_msgTypes[626]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use NodeSummaryListEntry.ProtoReflect.Descriptor instead.
-func (*NodeSummaryListEntry) Descriptor() ([]byte, []int) {
 	return file_ssm_proto_rawDescGZIP(), []int{626}
 }
 
-func (x *NodeSummaryListEntry) GetValue() map[string]string {
+func (x *InventoryItemEntryListEntry) GetValue() map[string]string {
 	if x != nil {
 		return x.Value
 	}
@@ -46236,7 +46236,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x05_nameB\x15\n" +
 	"\x13_scheduleexpressionB\x11\n" +
 	"\x0f_scheduleoffset\"\x1a\n" +
-	"\x18AssociationAlreadyExists\"\xa6\x11\n" +
+	"\x18AssociationAlreadyExists\"\xda\x11\n" +
 	"\x16AssociationDescription\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12A\n" +
 	"\x17applyonlyatcroninterval\x18\x96\xf9\xa7\x88\x01 \x01(\bH\x00R\x17applyonlyatcroninterval\x88\x01\x01\x12M\n" +
@@ -46245,30 +46245,30 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0fassociationname\x18\x98\x90ŕ\x01 \x01(\tH\x03R\x0fassociationname\x88\x01\x01\x127\n" +
 	"\x12associationversion\x18\x91\x8a\xc9\xd5\x01 \x01(\tH\x04R\x12associationversion\x88\x01\x01\x12M\n" +
 	"\x1dautomationtargetparametername\x18\xfa\xf6\x9b\xa6\x01 \x01(\tH\x05R\x1dautomationtargetparametername\x88\x01\x01\x12'\n" +
-	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12V\n" +
-	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityR\x12complianceseverity\x12\x1b\n" +
-	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tH\x06R\x04date\x88\x01\x01\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\aR\x0fdocumentversion\x88\x01\x01\x12#\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\bR\bduration\x88\x01\x01\x12&\n" +
+	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12[\n" +
+	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityH\x06R\x12complianceseverity\x88\x01\x01\x12\x1b\n" +
+	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tH\aR\x04date\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\bR\x0fdocumentversion\x88\x01\x01\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\tR\bduration\x88\x01\x01\x12&\n" +
 	"\n" +
-	"instanceid\x18\xa0\xad\xd1\x17 \x01(\tH\tR\n" +
+	"instanceid\x18\xa0\xad\xd1\x17 \x01(\tH\n" +
+	"R\n" +
 	"instanceid\x88\x01\x01\x125\n" +
-	"\x11lastexecutiondate\x18\xee\xb0\xdf\xea\x01 \x01(\tH\n" +
-	"R\x11lastexecutiondate\x88\x01\x01\x12H\n" +
-	"\x1blastsuccessfulexecutiondate\x18̑\xadL \x01(\tH\vR\x1blastsuccessfulexecutiondate\x88\x01\x01\x12D\n" +
-	"\x19lastupdateassociationdate\x18\xa4\xaf\xc8j \x01(\tH\fR\x19lastupdateassociationdate\x88\x01\x01\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\rR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x0eR\tmaxerrors\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x0fR\x04name\x88\x01\x01\x12Q\n" +
+	"\x11lastexecutiondate\x18\xee\xb0\xdf\xea\x01 \x01(\tH\vR\x11lastexecutiondate\x88\x01\x01\x12H\n" +
+	"\x1blastsuccessfulexecutiondate\x18̑\xadL \x01(\tH\fR\x1blastsuccessfulexecutiondate\x88\x01\x01\x12D\n" +
+	"\x19lastupdateassociationdate\x18\xa4\xaf\xc8j \x01(\tH\rR\x19lastupdateassociationdate\x88\x01\x01\x12.\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x0eR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x0fR\tmaxerrors\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x10R\x04name\x88\x01\x01\x12Q\n" +
 	"\x0eoutputlocation\x18\xf4\xeb\xb5  \x01(\v2&.ssm.InstanceAssociationOutputLocationR\x0eoutputlocation\x127\n" +
 	"\boverview\x18\xbb\x9f\xa5R \x01(\v2\x18.ssm.AssociationOverviewR\boverview\x12O\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2+.ssm.AssociationDescription.ParametersEntryR\n" +
 	"parameters\x127\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\x10R\x12scheduleexpression\x88\x01\x01\x12.\n" +
-	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\x11R\x0escheduleoffset\x88\x01\x01\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\v2\x16.ssm.AssociationStatusR\x06status\x12J\n" +
-	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12A\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\x11R\x12scheduleexpression\x88\x01\x01\x12.\n" +
+	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\x12R\x0escheduleoffset\x88\x01\x01\x121\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\v2\x16.ssm.AssociationStatusR\x06status\x12O\n" +
+	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceH\x13R\x0esynccompliance\x88\x01\x01\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
 	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
@@ -46283,7 +46283,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0e_associationidB\x12\n" +
 	"\x10_associationnameB\x15\n" +
 	"\x13_associationversionB \n" +
-	"\x1e_automationtargetparameternameB\a\n" +
+	"\x1e_automationtargetparameternameB\x15\n" +
+	"\x13_complianceseverityB\a\n" +
 	"\x05_dateB\x12\n" +
 	"\x10_documentversionB\v\n" +
 	"\t_durationB\r\n" +
@@ -46296,7 +46297,8 @@ const file_ssm_proto_rawDesc = "" +
 	"_maxerrorsB\a\n" +
 	"\x05_nameB\x15\n" +
 	"\x13_scheduleexpressionB\x11\n" +
-	"\x0f_scheduleoffset\"G\n" +
+	"\x0f_scheduleoffsetB\x11\n" +
+	"\x0f_synccompliance\"G\n" +
 	"\x17AssociationDoesNotExist\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -46369,29 +46371,29 @@ const file_ssm_proto_rawDesc = "" +
 	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x121\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x1a.ssm.AssociationStatusNameR\x04nameB\x11\n" +
-	"\x0f_additionalinfo\"\xf7\v\n" +
+	"\x0f_additionalinfo\"\xab\f\n" +
 	"\x16AssociationVersionInfo\x12A\n" +
 	"\x17applyonlyatcroninterval\x18\x96\xf9\xa7\x88\x01 \x01(\bH\x00R\x17applyonlyatcroninterval\x88\x01\x01\x12M\n" +
 	"\x1dassociationdispatchassumerole\x18\xa1\x96\xa5\x86\x01 \x01(\tH\x01R\x1dassociationdispatchassumerole\x88\x01\x01\x12,\n" +
 	"\rassociationid\x18\x92\xfc\x95B \x01(\tH\x02R\rassociationid\x88\x01\x01\x121\n" +
 	"\x0fassociationname\x18\x98\x90ŕ\x01 \x01(\tH\x03R\x0fassociationname\x88\x01\x01\x127\n" +
 	"\x12associationversion\x18\x91\x8a\xc9\xd5\x01 \x01(\tH\x04R\x12associationversion\x88\x01\x01\x12'\n" +
-	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12V\n" +
-	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityR\x12complianceseverity\x12)\n" +
-	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x05R\vcreateddate\x88\x01\x01\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x06R\x0fdocumentversion\x88\x01\x01\x12#\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\aR\bduration\x88\x01\x01\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\bR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\tR\tmaxerrors\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\n" +
-	"R\x04name\x88\x01\x01\x12Q\n" +
+	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12[\n" +
+	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityH\x05R\x12complianceseverity\x88\x01\x01\x12)\n" +
+	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x06R\vcreateddate\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\aR\x0fdocumentversion\x88\x01\x01\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\bR\bduration\x88\x01\x01\x12.\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\tR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\n" +
+	"R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\vR\x04name\x88\x01\x01\x12Q\n" +
 	"\x0eoutputlocation\x18\xf4\xeb\xb5  \x01(\v2&.ssm.InstanceAssociationOutputLocationR\x0eoutputlocation\x12O\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2+.ssm.AssociationVersionInfo.ParametersEntryR\n" +
 	"parameters\x127\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\vR\x12scheduleexpression\x88\x01\x01\x12.\n" +
-	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\fR\x0escheduleoffset\x88\x01\x01\x12J\n" +
-	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12A\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\fR\x12scheduleexpression\x88\x01\x01\x12.\n" +
+	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\rR\x0escheduleoffset\x88\x01\x01\x12O\n" +
+	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceH\x0eR\x0esynccompliance\x88\x01\x01\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
 	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
@@ -46404,7 +46406,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x1e_associationdispatchassumeroleB\x10\n" +
 	"\x0e_associationidB\x12\n" +
 	"\x10_associationnameB\x15\n" +
-	"\x13_associationversionB\x0e\n" +
+	"\x13_associationversionB\x15\n" +
+	"\x13_complianceseverityB\x0e\n" +
 	"\f_createddateB\x12\n" +
 	"\x10_documentversionB\v\n" +
 	"\t_durationB\x11\n" +
@@ -46413,28 +46416,31 @@ const file_ssm_proto_rawDesc = "" +
 	"_maxerrorsB\a\n" +
 	"\x05_nameB\x15\n" +
 	"\x13_scheduleexpressionB\x11\n" +
-	"\x0f_scheduleoffset\"O\n" +
+	"\x0f_scheduleoffsetB\x11\n" +
+	"\x0f_synccompliance\"O\n" +
 	"\x1fAssociationVersionLimitExceeded\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xdd\x01\n" +
+	"\b_message\"\xef\x01\n" +
 	"\x11AttachmentContent\x12\x1a\n" +
-	"\x04hash\x18\xf2\xad\xcdw \x01(\tH\x00R\x04hash\x88\x01\x01\x126\n" +
-	"\bhashtype\x18\xba\x9b\xb5R \x01(\x0e2\x17.ssm.AttachmentHashTypeR\bhashtype\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12\x1a\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x02R\x04size\x88\x01\x01\x12\x19\n" +
-	"\x03url\x18\xbf\xc7\xe7\xa8\x01 \x01(\tH\x03R\x03url\x88\x01\x01B\a\n" +
-	"\x05_hashB\a\n" +
+	"\x04hash\x18\xf2\xad\xcdw \x01(\tH\x00R\x04hash\x88\x01\x01\x12;\n" +
+	"\bhashtype\x18\xba\x9b\xb5R \x01(\x0e2\x17.ssm.AttachmentHashTypeH\x01R\bhashtype\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x03R\x04size\x88\x01\x01\x12\x19\n" +
+	"\x03url\x18\xbf\xc7\xe7\xa8\x01 \x01(\tH\x04R\x03url\x88\x01\x01B\a\n" +
+	"\x05_hashB\v\n" +
+	"\t_hashtypeB\a\n" +
 	"\x05_nameB\a\n" +
 	"\x05_sizeB\x06\n" +
 	"\x04_url\"<\n" +
 	"\x15AttachmentInformation\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01B\a\n" +
-	"\x05_name\"\x83\x01\n" +
-	"\x11AttachmentsSource\x12.\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\x0e2\x19.ssm.AttachmentsSourceKeyR\x03key\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\a\n" +
+	"\x05_name\"\x90\x01\n" +
+	"\x11AttachmentsSource\x123\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\x0e2\x19.ssm.AttachmentsSourceKeyH\x00R\x03key\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12\x19\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\x06\n" +
+	"\x04_keyB\a\n" +
 	"\x05_name\"X\n" +
 	"(AutomationDefinitionNotApprovedException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -46447,51 +46453,51 @@ const file_ssm_proto_rawDesc = "" +
 	",AutomationDefinitionVersionNotFoundException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xfe\x14\n" +
+	"\b_message\"\xca\x15\n" +
 	"\x13AutomationExecution\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12,\n" +
 	"\rassociationid\x18\x92\xfc\x95B \x01(\tH\x00R\rassociationid\x88\x01\x01\x12<\n" +
-	"\x15automationexecutionid\x18\xe6\xef\xf7\x05 \x01(\tH\x01R\x15automationexecutionid\x88\x01\x01\x12`\n" +
-	"\x19automationexecutionstatus\x18\xbb\xf4\xaf\xfd\x01 \x01(\x0e2\x1e.ssm.AutomationExecutionStatusR\x19automationexecutionstatus\x12G\n" +
-	"\x11automationsubtype\x18ѻ\x9bI \x01(\x0e2\x16.ssm.AutomationSubtypeR\x11automationsubtype\x125\n" +
-	"\x11changerequestname\x18\xe2\x82\xc4\xdf\x01 \x01(\tH\x02R\x11changerequestname\x88\x01\x01\x12-\n" +
-	"\rcurrentaction\x18ٸ\x82\xa1\x01 \x01(\tH\x03R\rcurrentaction\x88\x01\x01\x120\n" +
-	"\x0fcurrentstepname\x18\xfc\xfc\xc6< \x01(\tH\x04R\x0fcurrentstepname\x88\x01\x01\x12*\n" +
-	"\fdocumentname\x18У\xc79 \x01(\tH\x05R\fdocumentname\x88\x01\x01\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x06R\x0fdocumentversion\x88\x01\x01\x12&\n" +
+	"\x15automationexecutionid\x18\xe6\xef\xf7\x05 \x01(\tH\x01R\x15automationexecutionid\x88\x01\x01\x12e\n" +
+	"\x19automationexecutionstatus\x18\xbb\xf4\xaf\xfd\x01 \x01(\x0e2\x1e.ssm.AutomationExecutionStatusH\x02R\x19automationexecutionstatus\x88\x01\x01\x12L\n" +
+	"\x11automationsubtype\x18ѻ\x9bI \x01(\x0e2\x16.ssm.AutomationSubtypeH\x03R\x11automationsubtype\x88\x01\x01\x125\n" +
+	"\x11changerequestname\x18\xe2\x82\xc4\xdf\x01 \x01(\tH\x04R\x11changerequestname\x88\x01\x01\x12-\n" +
+	"\rcurrentaction\x18ٸ\x82\xa1\x01 \x01(\tH\x05R\rcurrentaction\x88\x01\x01\x120\n" +
+	"\x0fcurrentstepname\x18\xfc\xfc\xc6< \x01(\tH\x06R\x0fcurrentstepname\x88\x01\x01\x12*\n" +
+	"\fdocumentname\x18У\xc79 \x01(\tH\aR\fdocumentname\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\bR\x0fdocumentversion\x88\x01\x01\x12&\n" +
 	"\n" +
-	"executedby\x18\xc2\xf4\xf9X \x01(\tH\aR\n" +
+	"executedby\x18\xc2\xf4\xf9X \x01(\tH\tR\n" +
 	"executedby\x88\x01\x01\x122\n" +
-	"\x10executionendtime\x18\xfc\xa9\xd8B \x01(\tH\bR\x10executionendtime\x88\x01\x01\x127\n" +
-	"\x12executionstarttime\x18\xdf\xe6\xfb\xcc\x01 \x01(\tH\tR\x12executionstarttime\x88\x01\x01\x12/\n" +
-	"\x0efailuremessage\x18ɳ˨\x01 \x01(\tH\n" +
-	"R\x0efailuremessage\x88\x01\x01\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\vR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\fR\tmaxerrors\x88\x01\x01\x12*\n" +
-	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x12.ssm.ExecutionModeR\x04mode\x12$\n" +
-	"\topsitemid\x18\xd2ҕ\f \x01(\tH\rR\topsitemid\x88\x01\x01\x12C\n" +
+	"\x10executionendtime\x18\xfc\xa9\xd8B \x01(\tH\n" +
+	"R\x10executionendtime\x88\x01\x01\x127\n" +
+	"\x12executionstarttime\x18\xdf\xe6\xfb\xcc\x01 \x01(\tH\vR\x12executionstarttime\x88\x01\x01\x12/\n" +
+	"\x0efailuremessage\x18ɳ˨\x01 \x01(\tH\fR\x0efailuremessage\x88\x01\x01\x12.\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\rR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x0eR\tmaxerrors\x88\x01\x01\x12/\n" +
+	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x12.ssm.ExecutionModeH\x0fR\x04mode\x88\x01\x01\x12$\n" +
+	"\topsitemid\x18\xd2ҕ\f \x01(\tH\x10R\topsitemid\x88\x01\x01\x12C\n" +
 	"\aoutputs\x18\xf6\x83\xb0\xd9\x01 \x03(\v2%.ssm.AutomationExecution.OutputsEntryR\aoutputs\x12L\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2(.ssm.AutomationExecution.ParametersEntryR\n" +
 	"parameters\x12H\n" +
-	"\x1bparentautomationexecutionid\x18\xae\xfa\xf0n \x01(\tH\x0eR\x1bparentautomationexecutionid\x88\x01\x01\x12D\n" +
+	"\x1bparentautomationexecutionid\x18\xae\xfa\xf0n \x01(\tH\x11R\x1bparentautomationexecutionid\x88\x01\x01\x12D\n" +
 	"\x10progresscounters\x18\x90\xa4\xb9M \x01(\v2\x15.ssm.ProgressCountersR\x10progresscounters\x12B\n" +
 	"\x0fresolvedtargets\x18\xa2ȥ\xac\x01 \x01(\v2\x14.ssm.ResolvedTargetsR\x0fresolvedtargets\x12,\n" +
 	"\brunbooks\x18\xa5Х\xf5\x01 \x03(\v2\f.ssm.RunbookR\brunbooks\x12-\n" +
-	"\rscheduledtime\x18\x92\xfc̟\x01 \x01(\tH\x0fR\rscheduledtime\x88\x01\x01\x12=\n" +
+	"\rscheduledtime\x18\x92\xfc̟\x01 \x01(\tH\x12R\rscheduledtime\x88\x01\x01\x12=\n" +
 	"\x0estepexecutions\x18\x9d\xb4\xa3N \x03(\v2\x12.ssm.StepExecutionR\x0estepexecutions\x12A\n" +
-	"\x17stepexecutionstruncated\x18\xff\xa0\xc3\xe1\x01 \x01(\bH\x10R\x17stepexecutionstruncated\x88\x01\x01\x12\x1e\n" +
-	"\x06target\x18\xe9\xe2\x9f[ \x01(\tH\x11R\x06target\x88\x01\x01\x12A\n" +
+	"\x17stepexecutionstruncated\x18\xff\xa0\xc3\xe1\x01 \x01(\bH\x13R\x17stepexecutionstruncated\x88\x01\x01\x12\x1e\n" +
+	"\x06target\x18\xe9\xe2\x9f[ \x01(\tH\x14R\x06target\x88\x01\x01\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x126\n" +
-	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tH\x12R\x12targetlocationsurl\x88\x01\x01\x127\n" +
+	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tH\x15R\x12targetlocationsurl\x88\x01\x01\x127\n" +
 	"\n" +
 	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x129\n" +
-	"\x13targetparametername\x18\xd5岧\x01 \x01(\tH\x13R\x13targetparametername\x88\x01\x01\x12(\n" +
+	"\x13targetparametername\x18\xd5岧\x01 \x01(\tH\x16R\x13targetparametername\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12G\n" +
 	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x12I\n" +
 	"\tvariables\x18\xe3\xe0\xdb\xcc\x01 \x03(\v2'.ssm.AutomationExecution.VariablesEntryR\tvariables\x12/\n" +
-	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tH\x14R\x0ewarningmessage\x88\x01\x01\x1a:\n" +
+	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tH\x17R\x0ewarningmessage\x88\x01\x01\x1a:\n" +
 	"\fOutputsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
@@ -46502,7 +46508,9 @@ const file_ssm_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
 	"\x0e_associationidB\x18\n" +
-	"\x16_automationexecutionidB\x14\n" +
+	"\x16_automationexecutionidB\x1c\n" +
+	"\x1a_automationexecutionstatusB\x14\n" +
+	"\x12_automationsubtypeB\x14\n" +
 	"\x12_changerequestnameB\x10\n" +
 	"\x0e_currentactionB\x12\n" +
 	"\x10_currentstepnameB\x0f\n" +
@@ -46514,7 +46522,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0f_failuremessageB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
 	"\n" +
-	"_maxerrorsB\f\n" +
+	"_maxerrorsB\a\n" +
+	"\x05_modeB\f\n" +
 	"\n" +
 	"_opsitemidB\x1e\n" +
 	"\x1c_parentautomationexecutionidB\x10\n" +
@@ -46546,50 +46555,53 @@ const file_ssm_proto_rawDesc = "" +
 	")AutomationExecutionLimitExceededException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xbf\x11\n" +
+	"\b_message\"\xa3\x12\n" +
 	"\x1bAutomationExecutionMetadata\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12,\n" +
 	"\rassociationid\x18\x92\xfc\x95B \x01(\tH\x00R\rassociationid\x88\x01\x01\x12<\n" +
-	"\x15automationexecutionid\x18\xe6\xef\xf7\x05 \x01(\tH\x01R\x15automationexecutionid\x88\x01\x01\x12`\n" +
-	"\x19automationexecutionstatus\x18\xbb\xf4\xaf\xfd\x01 \x01(\x0e2\x1e.ssm.AutomationExecutionStatusR\x19automationexecutionstatus\x12G\n" +
-	"\x11automationsubtype\x18ѻ\x9bI \x01(\x0e2\x16.ssm.AutomationSubtypeR\x11automationsubtype\x12>\n" +
-	"\x0eautomationtype\x18˵\xc7\" \x01(\x0e2\x13.ssm.AutomationTypeR\x0eautomationtype\x125\n" +
-	"\x11changerequestname\x18\xe2\x82\xc4\xdf\x01 \x01(\tH\x02R\x11changerequestname\x88\x01\x01\x12-\n" +
-	"\rcurrentaction\x18ٸ\x82\xa1\x01 \x01(\tH\x03R\rcurrentaction\x88\x01\x01\x120\n" +
-	"\x0fcurrentstepname\x18\xfc\xfc\xc6< \x01(\tH\x04R\x0fcurrentstepname\x88\x01\x01\x12*\n" +
-	"\fdocumentname\x18У\xc79 \x01(\tH\x05R\fdocumentname\x88\x01\x01\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x06R\x0fdocumentversion\x88\x01\x01\x12&\n" +
+	"\x15automationexecutionid\x18\xe6\xef\xf7\x05 \x01(\tH\x01R\x15automationexecutionid\x88\x01\x01\x12e\n" +
+	"\x19automationexecutionstatus\x18\xbb\xf4\xaf\xfd\x01 \x01(\x0e2\x1e.ssm.AutomationExecutionStatusH\x02R\x19automationexecutionstatus\x88\x01\x01\x12L\n" +
+	"\x11automationsubtype\x18ѻ\x9bI \x01(\x0e2\x16.ssm.AutomationSubtypeH\x03R\x11automationsubtype\x88\x01\x01\x12C\n" +
+	"\x0eautomationtype\x18˵\xc7\" \x01(\x0e2\x13.ssm.AutomationTypeH\x04R\x0eautomationtype\x88\x01\x01\x125\n" +
+	"\x11changerequestname\x18\xe2\x82\xc4\xdf\x01 \x01(\tH\x05R\x11changerequestname\x88\x01\x01\x12-\n" +
+	"\rcurrentaction\x18ٸ\x82\xa1\x01 \x01(\tH\x06R\rcurrentaction\x88\x01\x01\x120\n" +
+	"\x0fcurrentstepname\x18\xfc\xfc\xc6< \x01(\tH\aR\x0fcurrentstepname\x88\x01\x01\x12*\n" +
+	"\fdocumentname\x18У\xc79 \x01(\tH\bR\fdocumentname\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\tR\x0fdocumentversion\x88\x01\x01\x12&\n" +
 	"\n" +
-	"executedby\x18\xc2\xf4\xf9X \x01(\tH\aR\n" +
+	"executedby\x18\xc2\xf4\xf9X \x01(\tH\n" +
+	"R\n" +
 	"executedby\x88\x01\x01\x122\n" +
-	"\x10executionendtime\x18\xfc\xa9\xd8B \x01(\tH\bR\x10executionendtime\x88\x01\x01\x127\n" +
-	"\x12executionstarttime\x18\xdf\xe6\xfb\xcc\x01 \x01(\tH\tR\x12executionstarttime\x88\x01\x01\x12/\n" +
-	"\x0efailuremessage\x18ɳ˨\x01 \x01(\tH\n" +
-	"R\x0efailuremessage\x88\x01\x01\x12 \n" +
-	"\alogfile\x18\x98\xf2\x9c\x06 \x01(\tH\vR\alogfile\x88\x01\x01\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\fR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\rR\tmaxerrors\x88\x01\x01\x12*\n" +
-	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x12.ssm.ExecutionModeR\x04mode\x12$\n" +
-	"\topsitemid\x18\xd2ҕ\f \x01(\tH\x0eR\topsitemid\x88\x01\x01\x12K\n" +
+	"\x10executionendtime\x18\xfc\xa9\xd8B \x01(\tH\vR\x10executionendtime\x88\x01\x01\x127\n" +
+	"\x12executionstarttime\x18\xdf\xe6\xfb\xcc\x01 \x01(\tH\fR\x12executionstarttime\x88\x01\x01\x12/\n" +
+	"\x0efailuremessage\x18ɳ˨\x01 \x01(\tH\rR\x0efailuremessage\x88\x01\x01\x12 \n" +
+	"\alogfile\x18\x98\xf2\x9c\x06 \x01(\tH\x0eR\alogfile\x88\x01\x01\x12.\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x0fR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x10R\tmaxerrors\x88\x01\x01\x12/\n" +
+	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x12.ssm.ExecutionModeH\x11R\x04mode\x88\x01\x01\x12$\n" +
+	"\topsitemid\x18\xd2ҕ\f \x01(\tH\x12R\topsitemid\x88\x01\x01\x12K\n" +
 	"\aoutputs\x18\xf6\x83\xb0\xd9\x01 \x03(\v2-.ssm.AutomationExecutionMetadata.OutputsEntryR\aoutputs\x12H\n" +
-	"\x1bparentautomationexecutionid\x18\xae\xfa\xf0n \x01(\tH\x0fR\x1bparentautomationexecutionid\x88\x01\x01\x12B\n" +
+	"\x1bparentautomationexecutionid\x18\xae\xfa\xf0n \x01(\tH\x13R\x1bparentautomationexecutionid\x88\x01\x01\x12B\n" +
 	"\x0fresolvedtargets\x18\xa2ȥ\xac\x01 \x01(\v2\x14.ssm.ResolvedTargetsR\x0fresolvedtargets\x12,\n" +
 	"\brunbooks\x18\xa5Х\xf5\x01 \x03(\v2\f.ssm.RunbookR\brunbooks\x12-\n" +
-	"\rscheduledtime\x18\x92\xfc̟\x01 \x01(\tH\x10R\rscheduledtime\x88\x01\x01\x12\x1e\n" +
-	"\x06target\x18\xe9\xe2\x9f[ \x01(\tH\x11R\x06target\x88\x01\x01\x126\n" +
-	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tH\x12R\x12targetlocationsurl\x88\x01\x01\x127\n" +
+	"\rscheduledtime\x18\x92\xfc̟\x01 \x01(\tH\x14R\rscheduledtime\x88\x01\x01\x12\x1e\n" +
+	"\x06target\x18\xe9\xe2\x9f[ \x01(\tH\x15R\x06target\x88\x01\x01\x126\n" +
+	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tH\x16R\x12targetlocationsurl\x88\x01\x01\x127\n" +
 	"\n" +
 	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x129\n" +
-	"\x13targetparametername\x18\xd5岧\x01 \x01(\tH\x13R\x13targetparametername\x88\x01\x01\x12(\n" +
+	"\x13targetparametername\x18\xd5岧\x01 \x01(\tH\x17R\x13targetparametername\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12G\n" +
 	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x12/\n" +
-	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tH\x14R\x0ewarningmessage\x88\x01\x01\x1a:\n" +
+	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tH\x18R\x0ewarningmessage\x88\x01\x01\x1a:\n" +
 	"\fOutputsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
 	"\x0e_associationidB\x18\n" +
-	"\x16_automationexecutionidB\x14\n" +
+	"\x16_automationexecutionidB\x1c\n" +
+	"\x1a_automationexecutionstatusB\x14\n" +
+	"\x12_automationsubtypeB\x11\n" +
+	"\x0f_automationtypeB\x14\n" +
 	"\x12_changerequestnameB\x10\n" +
 	"\x0e_currentactionB\x12\n" +
 	"\x10_currentstepnameB\x0f\n" +
@@ -46603,7 +46615,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\b_logfileB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
 	"\n" +
-	"_maxerrorsB\f\n" +
+	"_maxerrorsB\a\n" +
+	"\x05_modeB\f\n" +
 	"\n" +
 	"_opsitemidB\x1e\n" +
 	"\x1c_parentautomationexecutionidB\x10\n" +
@@ -46640,19 +46653,23 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11AzureSubscription\x12)\n" +
 	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x00R\vdisplayname\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x0e\n" +
-	"\f_displayname\"\x84\x06\n" +
+	"\f_displayname\"\x96\a\n" +
 	"\x10BaselineOverride\x12<\n" +
 	"\rapprovalrules\x18\xea\xfa\x89\" \x01(\v2\x13.ssm.PatchRuleGroupR\rapprovalrules\x12+\n" +
-	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12d\n" +
-	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelR\x1eapprovedpatchescompliancelevel\x12S\n" +
-	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x00R approvedpatchesenablenonsecurity\x88\x01\x01\x12y\n" +
-	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusR(availablesecurityupdatescompliancestatus\x12>\n" +
-	"\rglobalfilters\x18\xe2\xdc\xc6} \x01(\v2\x15.ssm.PatchFilterGroupR\rglobalfilters\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\x12,\n" +
-	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12J\n" +
-	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionR\x15rejectedpatchesaction\x12-\n" +
-	"\asources\x18\xd2\xe7\x9d\x16 \x03(\v2\x10.ssm.PatchSourceR\asourcesB#\n" +
-	"!_approvedpatchesenablenonsecurity\"]\n" +
+	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12i\n" +
+	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelH\x00R\x1eapprovedpatchescompliancelevel\x88\x01\x01\x12S\n" +
+	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x01R approvedpatchesenablenonsecurity\x88\x01\x01\x12~\n" +
+	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusH\x02R(availablesecurityupdatescompliancestatus\x88\x01\x01\x12>\n" +
+	"\rglobalfilters\x18\xe2\xdc\xc6} \x01(\v2\x15.ssm.PatchFilterGroupR\rglobalfilters\x12F\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemH\x03R\x0foperatingsystem\x88\x01\x01\x12,\n" +
+	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12O\n" +
+	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionH\x04R\x15rejectedpatchesaction\x88\x01\x01\x12-\n" +
+	"\asources\x18\xd2\xe7\x9d\x16 \x03(\v2\x10.ssm.PatchSourceR\asourcesB!\n" +
+	"\x1f_approvedpatchescompliancelevelB#\n" +
+	"!_approvedpatchesenablenonsecurityB+\n" +
+	")_availablesecurityupdatescompliancestatusB\x12\n" +
+	"\x10_operatingsystemB\x18\n" +
+	"\x16_rejectedpatchesaction\"]\n" +
 	"\x14CancelCommandRequest\x12\x1f\n" +
 	"\tcommandid\x18\x80ۀL \x01(\tR\tcommandid\x12$\n" +
 	"\vinstanceids\x18\x85\xab\x93\x95\x01 \x03(\tR\vinstanceids\"\x15\n" +
@@ -46663,10 +46680,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\x00R\x11windowexecutionid\x88\x01\x01B\x14\n" +
 	"\x12_windowexecutionid\"j\n" +
 	"\x1bCloudConnectorConfiguration\x12K\n" +
-	"\x12azureconfiguration\x18\xb3\x84\x9b\xc7\x01 \x01(\v2\x17.ssm.AzureConfigurationR\x12azureconfiguration\"~\n" +
-	"\x14CloudConnectorFilter\x12>\n" +
-	"\tfilterkey\x18\xafݛ\x8f\x01 \x01(\x0e2\x1c.ssm.CloudConnectorFilterKeyR\tfilterkey\x12&\n" +
-	"\ffiltervalues\x18\x8e\x8f\xe9\xe0\x01 \x03(\tR\ffiltervalues\"\xed\x02\n" +
+	"\x12azureconfiguration\x18\xb3\x84\x9b\xc7\x01 \x01(\v2\x17.ssm.AzureConfigurationR\x12azureconfiguration\"\x91\x01\n" +
+	"\x14CloudConnectorFilter\x12C\n" +
+	"\tfilterkey\x18\xafݛ\x8f\x01 \x01(\x0e2\x1c.ssm.CloudConnectorFilterKeyH\x00R\tfilterkey\x88\x01\x01\x12&\n" +
+	"\ffiltervalues\x18\x8e\x8f\xe9\xe0\x01 \x03(\tR\ffiltervaluesB\f\n" +
+	"\n" +
+	"_filterkey\"\xed\x02\n" +
 	"\x15CloudConnectorSummary\x123\n" +
 	"\x10cloudconnectorid\x18\xe5\xc9\xfd\x87\x01 \x01(\tH\x00R\x10cloudconnectorid\x88\x01\x01\x12$\n" +
 	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x01R\tcreatedat\x88\x01\x01\x12(\n" +
@@ -46687,7 +46706,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x16cloudwatchloggroupname\x18\x94ݍ\x01 \x01(\tH\x00R\x16cloudwatchloggroupname\x88\x01\x01\x12@\n" +
 	"\x17cloudwatchoutputenabled\x18\xfe\xad\xc1\x0e \x01(\bH\x01R\x17cloudwatchoutputenabled\x88\x01\x01B\x19\n" +
 	"\x17_cloudwatchloggroupnameB\x1a\n" +
-	"\x18_cloudwatchoutputenabled\"\xd6\r\n" +
+	"\x18_cloudwatchoutputenabled\"\xe6\r\n" +
 	"\aCommand\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12V\n" +
 	"\x16cloudwatchoutputconfig\x18\xfb\x8f\x8d\n" +
@@ -46714,12 +46733,12 @@ const file_ssm_proto_rawDesc = "" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x1c.ssm.Command.ParametersEntryR\n" +
 	"parameters\x124\n" +
 	"\x11requesteddatetime\x18\x87\x9a\xfa4 \x01(\tH\rR\x11requesteddatetime\x88\x01\x01\x12(\n" +
-	"\vservicerole\x18\xed\xf9\xe5\x16 \x01(\tH\x0eR\vservicerole\x88\x01\x01\x12-\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.CommandStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x0fR\rstatusdetails\x88\x01\x01\x12)\n" +
-	"\vtargetcount\x18ȸ\xb2\xfa\x01 \x01(\x05H\x10R\vtargetcount\x88\x01\x01\x12(\n" +
+	"\vservicerole\x18\xed\xf9\xe5\x16 \x01(\tH\x0eR\vservicerole\x88\x01\x01\x122\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.CommandStatusH\x0fR\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x10R\rstatusdetails\x88\x01\x01\x12)\n" +
+	"\vtargetcount\x18ȸ\xb2\xfa\x01 \x01(\x05H\x11R\vtargetcount\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12/\n" +
-	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x05H\x11R\x0etimeoutseconds\x88\x01\x01\x12G\n" +
+	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x05H\x12R\x0etimeoutseconds\x88\x01\x01\x12G\n" +
 	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -46741,13 +46760,14 @@ const file_ssm_proto_rawDesc = "" +
 	"\x12_outputs3keyprefixB\x11\n" +
 	"\x0f_outputs3regionB\x14\n" +
 	"\x12_requesteddatetimeB\x0e\n" +
-	"\f_serviceroleB\x10\n" +
+	"\f_serviceroleB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetailsB\x0e\n" +
 	"\f_targetcountB\x11\n" +
 	"\x0f_timeoutseconds\"T\n" +
 	"\rCommandFilter\x12*\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\x0e2\x15.ssm.CommandFilterKeyR\x03key\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\xa5\b\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\xb5\b\n" +
 	"\x11CommandInvocation\x12V\n" +
 	"\x16cloudwatchoutputconfig\x18\xfb\x8f\x8d\n" +
 	" \x01(\v2\x1b.ssm.CloudWatchOutputConfigR\x16cloudwatchoutputconfig\x12$\n" +
@@ -46764,11 +46784,11 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11requesteddatetime\x18\x87\x9a\xfa4 \x01(\tH\x06R\x11requesteddatetime\x88\x01\x01\x12(\n" +
 	"\vservicerole\x18\xed\xf9\xe5\x16 \x01(\tH\aR\vservicerole\x88\x01\x01\x123\n" +
 	"\x10standarderrorurl\x18\xc0\x86\xae\xc0\x01 \x01(\tH\bR\x10standarderrorurl\x88\x01\x01\x125\n" +
-	"\x11standardoutputurl\x18\x9f\xb3\xe2\xa5\x01 \x01(\tH\tR\x11standardoutputurl\x88\x01\x01\x127\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.ssm.CommandInvocationStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\n" +
-	"R\rstatusdetails\x88\x01\x01\x12)\n" +
-	"\vtraceoutput\x18\x88\xf7\xe5\xf7\x01 \x01(\tH\vR\vtraceoutput\x88\x01\x01B\f\n" +
+	"\x11standardoutputurl\x18\x9f\xb3\xe2\xa5\x01 \x01(\tH\tR\x11standardoutputurl\x88\x01\x01\x12<\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.ssm.CommandInvocationStatusH\n" +
+	"R\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\vR\rstatusdetails\x88\x01\x01\x12)\n" +
+	"\vtraceoutput\x18\x88\xf7\xe5\xf7\x01 \x01(\tH\fR\vtraceoutput\x88\x01\x01B\f\n" +
 	"\n" +
 	"_commandidB\n" +
 	"\n" +
@@ -46780,9 +46800,10 @@ const file_ssm_proto_rawDesc = "" +
 	"\x12_requesteddatetimeB\x0e\n" +
 	"\f_serviceroleB\x13\n" +
 	"\x11_standarderrorurlB\x14\n" +
-	"\x12_standardoutputurlB\x10\n" +
+	"\x12_standardoutputurlB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetailsB\x0e\n" +
-	"\f_traceoutput\"\xbd\x06\n" +
+	"\f_traceoutput\"\xcd\x06\n" +
 	"\rCommandPlugin\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1e\n" +
 	"\x06output\x18\xa5\x86\xd9s \x01(\tH\x01R\x06output\x88\x01\x01\x126\n" +
@@ -46793,10 +46814,10 @@ const file_ssm_proto_rawDesc = "" +
 	"\x16responsefinishdatetime\x18\x85\x94\xc3{ \x01(\tH\x06R\x16responsefinishdatetime\x88\x01\x01\x12=\n" +
 	"\x15responsestartdatetime\x18\xfc\x93\xa2\xb6\x01 \x01(\tH\aR\x15responsestartdatetime\x88\x01\x01\x123\n" +
 	"\x10standarderrorurl\x18\xc0\x86\xae\xc0\x01 \x01(\tH\bR\x10standarderrorurl\x88\x01\x01\x125\n" +
-	"\x11standardoutputurl\x18\x9f\xb3\xe2\xa5\x01 \x01(\tH\tR\x11standardoutputurl\x88\x01\x01\x123\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x18.ssm.CommandPluginStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\n" +
-	"R\rstatusdetails\x88\x01\x01B\a\n" +
+	"\x11standardoutputurl\x18\x9f\xb3\xe2\xa5\x01 \x01(\tH\tR\x11standardoutputurl\x88\x01\x01\x128\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x18.ssm.CommandPluginStatusH\n" +
+	"R\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\vR\rstatusdetails\x88\x01\x01B\a\n" +
 	"\x05_nameB\t\n" +
 	"\a_outputB\x15\n" +
 	"\x13_outputs3bucketnameB\x14\n" +
@@ -46806,14 +46827,15 @@ const file_ssm_proto_rawDesc = "" +
 	"\x17_responsefinishdatetimeB\x18\n" +
 	"\x16_responsestartdatetimeB\x13\n" +
 	"\x11_standarderrorurlB\x14\n" +
-	"\x12_standardoutputurlB\x10\n" +
+	"\x12_standardoutputurlB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetails\"\xc0\x01\n" +
 	"\x1aComplianceExecutionSummary\x12(\n" +
 	"\vexecutionid\x18\xb1ϯF \x01(\tH\x00R\vexecutionid\x88\x01\x01\x12(\n" +
 	"\rexecutiontime\x18Ճ\x88\xb5\x01 \x01(\tR\rexecutiontime\x12,\n" +
 	"\rexecutiontype\x18\xfe\xf7\x9ck \x01(\tH\x01R\rexecutiontype\x88\x01\x01B\x0e\n" +
 	"\f_executionidB\x10\n" +
-	"\x0e_executiontype\"\xc8\x04\n" +
+	"\x0e_executiontype\"\xea\x04\n" +
 	"\x0eComplianceItem\x12/\n" +
 	"\x0ecompliancetype\x18˯\x9e\xd7\x01 \x01(\tH\x00R\x0ecompliancetype\x88\x01\x01\x12=\n" +
 	"\adetails\x18Ƅ\x89v \x03(\v2 .ssm.ComplianceItem.DetailsEntryR\adetails\x12N\n" +
@@ -46822,17 +46844,19 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tH\x02R\n" +
 	"resourceid\x88\x01\x01\x12+\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\tH\x03R\fresourcetype\x88\x01\x01\x127\n" +
-	"\bseverity\x18\xd3僄\x01 \x01(\x0e2\x17.ssm.ComplianceSeverityR\bseverity\x120\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.ssm.ComplianceStatusR\x06status\x12\x1c\n" +
-	"\x05title\x18\xaa\xe3\xd1& \x01(\tH\x04R\x05title\x88\x01\x01\x1a:\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\tH\x03R\fresourcetype\x88\x01\x01\x12<\n" +
+	"\bseverity\x18\xd3僄\x01 \x01(\x0e2\x17.ssm.ComplianceSeverityH\x04R\bseverity\x88\x01\x01\x125\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.ssm.ComplianceStatusH\x05R\x06status\x88\x01\x01\x12\x1c\n" +
+	"\x05title\x18\xaa\xe3\xd1& \x01(\tH\x06R\x05title\x88\x01\x01\x1a:\n" +
 	"\fDetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
 	"\x0f_compliancetypeB\x05\n" +
 	"\x03_idB\r\n" +
 	"\v_resourceidB\x0f\n" +
-	"\r_resourcetypeB\b\n" +
+	"\r_resourcetypeB\v\n" +
+	"\t_severityB\t\n" +
+	"\a_statusB\b\n" +
 	"\x06_title\"\xc8\x02\n" +
 	"\x13ComplianceItemEntry\x12B\n" +
 	"\adetails\x18Ƅ\x89v \x03(\v2%.ssm.ComplianceItemEntry.DetailsEntryR\adetails\x12\x17\n" +
@@ -46844,12 +46868,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x05\n" +
 	"\x03_idB\b\n" +
-	"\x06_title\"\x8f\x01\n" +
+	"\x06_title\"\x9d\x01\n" +
 	"\x16ComplianceStringFilter\x12\x18\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tH\x00R\x03key\x88\x01\x01\x128\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2 .ssm.ComplianceQueryOperatorTypeR\x04type\x12\x19\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x00R\x03key\x88\x01\x01\x12=\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2 .ssm.ComplianceQueryOperatorTypeH\x01R\x04type\x88\x01\x01\x12\x19\n" +
 	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\x06\n" +
-	"\x04_key\"\xf1\x01\n" +
+	"\x04_keyB\a\n" +
+	"\x05_type\"\xf1\x01\n" +
 	"\x15ComplianceSummaryItem\x12/\n" +
 	"\x0ecompliancetype\x18˯\x9e\xd7\x01 \x01(\tH\x00R\x0ecompliancetype\x88\x01\x01\x12D\n" +
 	"\x10compliantsummary\x18\x87\xfe\xc2? \x01(\v2\x15.ssm.CompliantSummaryR\x10compliantsummary\x12N\n" +
@@ -46889,29 +46914,30 @@ const file_ssm_proto_rawDesc = "" +
 	"\x1dCreateAssociationBatchRequest\x12M\n" +
 	"\x1dassociationdispatchassumerole\x18\xa1\x96\xa5\x86\x01 \x01(\tH\x00R\x1dassociationdispatchassumerole\x88\x01\x01\x12E\n" +
 	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2'.ssm.CreateAssociationBatchRequestEntryR\aentriesB \n" +
-	"\x1e_associationdispatchassumerole\"\xb9\v\n" +
+	"\x1e_associationdispatchassumerole\"\xed\v\n" +
 	"\"CreateAssociationBatchRequestEntry\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12A\n" +
 	"\x17applyonlyatcroninterval\x18\x96\xf9\xa7\x88\x01 \x01(\bH\x00R\x17applyonlyatcroninterval\x88\x01\x01\x121\n" +
 	"\x0fassociationname\x18\x98\x90ŕ\x01 \x01(\tH\x01R\x0fassociationname\x88\x01\x01\x12M\n" +
 	"\x1dautomationtargetparametername\x18\xfa\xf6\x9b\xa6\x01 \x01(\tH\x02R\x1dautomationtargetparametername\x88\x01\x01\x12'\n" +
-	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12V\n" +
-	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityR\x12complianceseverity\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x03R\x0fdocumentversion\x88\x01\x01\x12#\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x04R\bduration\x88\x01\x01\x12&\n" +
+	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12[\n" +
+	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityH\x03R\x12complianceseverity\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x04R\x0fdocumentversion\x88\x01\x01\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x05R\bduration\x88\x01\x01\x12&\n" +
 	"\n" +
-	"instanceid\x18\xa0\xad\xd1\x17 \x01(\tH\x05R\n" +
+	"instanceid\x18\xa0\xad\xd1\x17 \x01(\tH\x06R\n" +
 	"instanceid\x88\x01\x01\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x06R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\aR\tmaxerrors\x88\x01\x01\x12\x15\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\aR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\bR\tmaxerrors\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12Q\n" +
 	"\x0eoutputlocation\x18\xf4\xeb\xb5  \x01(\v2&.ssm.InstanceAssociationOutputLocationR\x0eoutputlocation\x12[\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v27.ssm.CreateAssociationBatchRequestEntry.ParametersEntryR\n" +
 	"parameters\x127\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\bR\x12scheduleexpression\x88\x01\x01\x12.\n" +
-	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\tR\x0escheduleoffset\x88\x01\x01\x12J\n" +
-	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12A\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\tR\x12scheduleexpression\x88\x01\x01\x12.\n" +
+	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\n" +
+	"R\x0escheduleoffset\x88\x01\x01\x12O\n" +
+	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceH\vR\x0esynccompliance\x88\x01\x01\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
 	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
@@ -46922,7 +46948,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x1a\n" +
 	"\x18_applyonlyatcronintervalB\x12\n" +
 	"\x10_associationnameB \n" +
-	"\x1e_automationtargetparameternameB\x12\n" +
+	"\x1e_automationtargetparameternameB\x15\n" +
+	"\x13_complianceseverityB\x12\n" +
 	"\x10_documentversionB\v\n" +
 	"\t_durationB\r\n" +
 	"\v_instanceidB\x11\n" +
@@ -46930,36 +46957,37 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"_maxerrorsB\x15\n" +
 	"\x13_scheduleexpressionB\x11\n" +
-	"\x0f_scheduleoffset\"\x99\x01\n" +
+	"\x0f_scheduleoffsetB\x11\n" +
+	"\x0f_synccompliance\"\x99\x01\n" +
 	"\x1cCreateAssociationBatchResult\x128\n" +
 	"\x06failed\x18Շ\xe7\xab\x01 \x03(\v2\x1c.ssm.FailedCreateAssociationR\x06failed\x12?\n" +
 	"\n" +
 	"successful\x18\x9c\xbb\xec\xc4\x01 \x03(\v2\x1b.ssm.AssociationDescriptionR\n" +
-	"successful\"\xb8\f\n" +
+	"successful\"\xec\f\n" +
 	"\x18CreateAssociationRequest\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12A\n" +
 	"\x17applyonlyatcroninterval\x18\x96\xf9\xa7\x88\x01 \x01(\bH\x00R\x17applyonlyatcroninterval\x88\x01\x01\x12M\n" +
 	"\x1dassociationdispatchassumerole\x18\xa1\x96\xa5\x86\x01 \x01(\tH\x01R\x1dassociationdispatchassumerole\x88\x01\x01\x121\n" +
 	"\x0fassociationname\x18\x98\x90ŕ\x01 \x01(\tH\x02R\x0fassociationname\x88\x01\x01\x12M\n" +
 	"\x1dautomationtargetparametername\x18\xfa\xf6\x9b\xa6\x01 \x01(\tH\x03R\x1dautomationtargetparametername\x88\x01\x01\x12'\n" +
-	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12V\n" +
-	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityR\x12complianceseverity\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x04R\x0fdocumentversion\x88\x01\x01\x12#\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x05R\bduration\x88\x01\x01\x12&\n" +
+	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12[\n" +
+	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityH\x04R\x12complianceseverity\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x05R\x0fdocumentversion\x88\x01\x01\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x06R\bduration\x88\x01\x01\x12&\n" +
 	"\n" +
-	"instanceid\x18\xa0\xad\xd1\x17 \x01(\tH\x06R\n" +
+	"instanceid\x18\xa0\xad\xd1\x17 \x01(\tH\aR\n" +
 	"instanceid\x88\x01\x01\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\aR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\bR\tmaxerrors\x88\x01\x01\x12\x15\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\bR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\tR\tmaxerrors\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12Q\n" +
 	"\x0eoutputlocation\x18\xf4\xeb\xb5  \x01(\v2&.ssm.InstanceAssociationOutputLocationR\x0eoutputlocation\x12Q\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2-.ssm.CreateAssociationRequest.ParametersEntryR\n" +
 	"parameters\x127\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\tR\x12scheduleexpression\x88\x01\x01\x12.\n" +
-	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\n" +
-	"R\x0escheduleoffset\x88\x01\x01\x12J\n" +
-	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12 \n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\n" +
+	"R\x12scheduleexpression\x88\x01\x01\x12.\n" +
+	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\vR\x0escheduleoffset\x88\x01\x01\x12O\n" +
+	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceH\fR\x0esynccompliance\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tags\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
@@ -46972,7 +47000,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x18_applyonlyatcronintervalB \n" +
 	"\x1e_associationdispatchassumeroleB\x12\n" +
 	"\x10_associationnameB \n" +
-	"\x1e_automationtargetparameternameB\x12\n" +
+	"\x1e_automationtargetparameternameB\x15\n" +
+	"\x13_complianceseverityB\x12\n" +
 	"\x10_documentversionB\v\n" +
 	"\t_durationB\r\n" +
 	"\v_instanceidB\x11\n" +
@@ -46980,7 +47009,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"_maxerrorsB\x15\n" +
 	"\x13_scheduleexpressionB\x11\n" +
-	"\x0f_scheduleoffset\"r\n" +
+	"\x0f_scheduleoffsetB\x11\n" +
+	"\x0f_synccompliance\"r\n" +
 	"\x17CreateAssociationResult\x12W\n" +
 	"\x16associationdescription\x18\x97\x9d\xb2\xa4\x01 \x01(\v2\x1b.ssm.AssociationDescriptionR\x16associationdescription\"\xbd\x02\n" +
 	"\x1bCreateCloudConnectorRequest\x122\n" +
@@ -46993,21 +47023,23 @@ const file_ssm_proto_rawDesc = "" +
 	"\f_description\"f\n" +
 	"\x1aCreateCloudConnectorResult\x123\n" +
 	"\x10cloudconnectorid\x18\xe5\xc9\xfd\x87\x01 \x01(\tH\x00R\x10cloudconnectorid\x88\x01\x01B\x13\n" +
-	"\x11_cloudconnectorid\"\x8a\x04\n" +
+	"\x11_cloudconnectorid\"\xb8\x04\n" +
 	"\x15CreateDocumentRequest\x12<\n" +
 	"\vattachments\x18\xa2\xa2\xf5\xed\x01 \x03(\v2\x16.ssm.AttachmentsSourceR\vattachments\x12\x1b\n" +
 	"\acontent\x18㾞\v \x01(\tR\acontent\x12)\n" +
-	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x00R\vdisplayname\x88\x01\x01\x12?\n" +
-	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatR\x0edocumentformat\x129\n" +
-	"\fdocumenttype\x18\xbd\x9c\xfa\xd9\x01 \x01(\x0e2\x11.ssm.DocumentTypeR\fdocumenttype\x12\x15\n" +
+	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x00R\vdisplayname\x88\x01\x01\x12D\n" +
+	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatH\x01R\x0edocumentformat\x88\x01\x01\x12>\n" +
+	"\fdocumenttype\x18\xbd\x9c\xfa\xd9\x01 \x01(\x0e2\x11.ssm.DocumentTypeH\x02R\fdocumenttype\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x124\n" +
 	"\brequires\x18\xf6\xac\x93G \x03(\v2\x15.ssm.DocumentRequiresR\brequires\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tags\x12'\n" +
 	"\n" +
-	"targettype\x18\xa1ζ\xbd\x01 \x01(\tH\x01R\n" +
+	"targettype\x18\xa1ζ\xbd\x01 \x01(\tH\x03R\n" +
 	"targettype\x88\x01\x01\x12(\n" +
-	"\vversionname\x18գ\xb4l \x01(\tH\x02R\vversionname\x88\x01\x01B\x0e\n" +
-	"\f_displaynameB\r\n" +
+	"\vversionname\x18գ\xb4l \x01(\tH\x04R\vversionname\x88\x01\x01B\x0e\n" +
+	"\f_displaynameB\x11\n" +
+	"\x0f_documentformatB\x0f\n" +
+	"\r_documenttypeB\r\n" +
 	"\v_targettypeB\x0e\n" +
 	"\f_versionname\"f\n" +
 	"\x14CreateDocumentResult\x12N\n" +
@@ -47086,25 +47118,29 @@ const file_ssm_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x12.ssm.MetadataValueR\x05value:\x028\x01\"]\n" +
 	"\x17CreateOpsMetadataResult\x12/\n" +
 	"\x0eopsmetadataarn\x18\xa2\xbe\x82\xe6\x01 \x01(\tH\x00R\x0eopsmetadataarn\x88\x01\x01B\x11\n" +
-	"\x0f_opsmetadataarn\"\xbb\a\n" +
+	"\x0f_opsmetadataarn\"\xcd\b\n" +
 	"\x1aCreatePatchBaselineRequest\x12<\n" +
 	"\rapprovalrules\x18\xea\xfa\x89\" \x01(\v2\x13.ssm.PatchRuleGroupR\rapprovalrules\x12+\n" +
-	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12d\n" +
-	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelR\x1eapprovedpatchescompliancelevel\x12S\n" +
-	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x00R approvedpatchesenablenonsecurity\x88\x01\x01\x12y\n" +
-	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusR(availablesecurityupdatescompliancestatus\x12(\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x01R\vclienttoken\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x02R\vdescription\x88\x01\x01\x12>\n" +
+	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12i\n" +
+	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelH\x00R\x1eapprovedpatchescompliancelevel\x88\x01\x01\x12S\n" +
+	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x01R approvedpatchesenablenonsecurity\x88\x01\x01\x12~\n" +
+	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusH\x02R(availablesecurityupdatescompliancestatus\x88\x01\x01\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x03R\vclienttoken\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x04R\vdescription\x88\x01\x01\x12>\n" +
 	"\rglobalfilters\x18\xe2\xdc\xc6} \x01(\v2\x15.ssm.PatchFilterGroupR\rglobalfilters\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\x12,\n" +
-	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12J\n" +
-	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionR\x15rejectedpatchesaction\x12-\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12F\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemH\x05R\x0foperatingsystem\x88\x01\x01\x12,\n" +
+	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12O\n" +
+	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionH\x06R\x15rejectedpatchesaction\x88\x01\x01\x12-\n" +
 	"\asources\x18\xd2\xe7\x9d\x16 \x03(\v2\x10.ssm.PatchSourceR\asources\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tagsB#\n" +
-	"!_approvedpatchesenablenonsecurityB\x0e\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tagsB!\n" +
+	"\x1f_approvedpatchescompliancelevelB#\n" +
+	"!_approvedpatchesenablenonsecurityB+\n" +
+	")_availablesecurityupdatescompliancestatusB\x0e\n" +
 	"\f_clienttokenB\x0e\n" +
-	"\f_description\"R\n" +
+	"\f_descriptionB\x12\n" +
+	"\x10_operatingsystemB\x18\n" +
+	"\x16_rejectedpatchesaction\"R\n" +
 	"\x19CreatePatchBaselineResult\x12&\n" +
 	"\n" +
 	"baselineid\x18\xd0\xe4\xdb( \x01(\tH\x00R\n" +
@@ -47154,14 +47190,15 @@ const file_ssm_proto_rawDesc = "" +
 	"\x10_documentversionB\b\n" +
 	"\x06_forceB\x0e\n" +
 	"\f_versionname\"\x16\n" +
-	"\x14DeleteDocumentResult\"\xf2\x01\n" +
+	"\x14DeleteDocumentResult\"\x8e\x02\n" +
 	"\x16DeleteInventoryRequest\x12(\n" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12\x1e\n" +
-	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x01R\x06dryrun\x88\x01\x01\x12S\n" +
-	"\x12schemadeleteoption\x18\xc1\x8c\xb42 \x01(\x0e2 .ssm.InventorySchemaDeleteOptionR\x12schemadeleteoption\x12\x1e\n" +
+	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x01R\x06dryrun\x88\x01\x01\x12X\n" +
+	"\x12schemadeleteoption\x18\xc1\x8c\xb42 \x01(\x0e2 .ssm.InventorySchemaDeleteOptionH\x02R\x12schemadeleteoption\x88\x01\x01\x12\x1e\n" +
 	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tR\btypenameB\x0e\n" +
 	"\f_clienttokenB\t\n" +
-	"\a_dryrun\"\xcc\x01\n" +
+	"\a_dryrunB\x15\n" +
+	"\x13_schemadeleteoption\"\xcc\x01\n" +
 	"\x15DeleteInventoryResult\x12&\n" +
 	"\n" +
 	"deletionid\x18\xd3\xe1\xb4< \x01(\tH\x00R\n" +
@@ -47248,10 +47285,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\x00R\bwindowid\x88\x01\x01\x12+\n" +
 	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tH\x01R\fwindowtaskid\x88\x01\x01B\v\n" +
 	"\t_windowidB\x0f\n" +
-	"\r_windowtaskid\"\x89\x01\n" +
-	"\x19DescribeActivationsFilter\x12D\n" +
-	"\tfilterkey\x18\xafݛ\x8f\x01 \x01(\x0e2\".ssm.DescribeActivationsFilterKeysR\tfilterkey\x12&\n" +
-	"\ffiltervalues\x18\x8e\x8f\xe9\xe0\x01 \x03(\tR\ffiltervalues\"\xc5\x01\n" +
+	"\r_windowtaskid\"\x9c\x01\n" +
+	"\x19DescribeActivationsFilter\x12I\n" +
+	"\tfilterkey\x18\xafݛ\x8f\x01 \x01(\x0e2\".ssm.DescribeActivationsFilterKeysH\x00R\tfilterkey\x88\x01\x01\x12&\n" +
+	"\ffiltervalues\x18\x8e\x8f\xe9\xe0\x01 \x03(\tR\ffiltervaluesB\f\n" +
+	"\n" +
+	"_filterkey\"\xc5\x01\n" +
 	"\x1aDescribeActivationsRequest\x12;\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x1e.ssm.DescribeActivationsFilterR\afilters\x12'\n" +
 	"\n" +
@@ -47570,19 +47609,20 @@ const file_ssm_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12N\n" +
 	"\x10windowexecutions\x18\xab\xe4\xffN \x03(\v2\x1f.ssm.MaintenanceWindowExecutionR\x10windowexecutionsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xf8\x02\n" +
+	"_nexttoken\"\x8e\x03\n" +
 	"(DescribeMaintenanceWindowScheduleRequest\x129\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x1c.ssm.PatchOrchestratorFilterR\afilters\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12J\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\".ssm.MaintenanceWindowResourceTypeR\fresourcetype\x12(\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12O\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\".ssm.MaintenanceWindowResourceTypeH\x02R\fresourcetype\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12\"\n" +
-	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\x02R\bwindowid\x88\x01\x01B\r\n" +
+	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\x03R\bwindowid\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttokenB\v\n" +
+	"_nexttokenB\x0f\n" +
+	"\r_resourcetypeB\v\n" +
 	"\t_windowid\"\xbe\x01\n" +
 	"'DescribeMaintenanceWindowScheduleResult\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12_\n" +
@@ -47741,18 +47781,19 @@ const file_ssm_proto_rawDesc = "" +
 	"\bmappings\x18\xe3̢\x04 \x03(\v2#.ssm.PatchGroupPatchBaselineMappingR\bmappings\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xb1\x02\n" +
+	"_nexttoken\"\xc3\x02\n" +
 	"\x1eDescribePatchPropertiesRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\x12,\n" +
-	"\bpatchset\x18\xc0ћy \x01(\x0e2\r.ssm.PatchSetR\bpatchset\x122\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\x121\n" +
+	"\bpatchset\x18\xc0ћy \x01(\x0e2\r.ssm.PatchSetH\x02R\bpatchset\x88\x01\x01\x122\n" +
 	"\bproperty\x18\xe9\xf3\x87\x91\x01 \x01(\x0e2\x12.ssm.PatchPropertyR\bpropertyB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x95\x01\n" +
+	"_nexttokenB\v\n" +
+	"\t_patchset\"\x95\x01\n" +
 	"\x1dDescribePatchPropertiesResult\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12@\n" +
 	"\n" +
@@ -47789,7 +47830,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01B\x11\n" +
 	"\x0f_defaultversionB\x15\n" +
 	"\x13_defaultversionnameB\a\n" +
-	"\x05_name\"\xc4\r\n" +
+	"\x05_name\"\xaa\x0e\n" +
 	"\x13DocumentDescription\x121\n" +
 	"\x0fapprovedversion\x18癢\xda\x01 \x01(\tH\x00R\x0fapprovedversion\x88\x01\x01\x12V\n" +
 	"\x16attachmentsinformation\x18²\x8d\x9c\x01 \x03(\v2\x1a.ssm.AttachmentInformationR\x16attachmentsinformation\x12\x1f\n" +
@@ -47799,77 +47840,86 @@ const file_ssm_proto_rawDesc = "" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x02R\vcreateddate\x88\x01\x01\x12.\n" +
 	"\x0edefaultversion\x18\x83\x98\xedL \x01(\tH\x03R\x0edefaultversion\x88\x01\x01\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x04R\vdescription\x88\x01\x01\x12)\n" +
-	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x05R\vdisplayname\x88\x01\x01\x12?\n" +
-	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatR\x0edocumentformat\x129\n" +
-	"\fdocumenttype\x18\xbd\x9c\xfa\xd9\x01 \x01(\x0e2\x11.ssm.DocumentTypeR\fdocumenttype\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x06R\x0fdocumentversion\x88\x01\x01\x12\x1a\n" +
-	"\x04hash\x18\xf2\xad\xcdw \x01(\tH\aR\x04hash\x88\x01\x01\x124\n" +
-	"\bhashtype\x18\xba\x9b\xb5R \x01(\x0e2\x15.ssm.DocumentHashTypeR\bhashtype\x12-\n" +
-	"\rlatestversion\x18\xcb\xd6\xcb\xca\x01 \x01(\tH\bR\rlatestversion\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\tR\x04name\x88\x01\x01\x12\x1d\n" +
-	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\tH\n" +
-	"R\x05owner\x88\x01\x01\x12:\n" +
+	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x05R\vdisplayname\x88\x01\x01\x12D\n" +
+	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatH\x06R\x0edocumentformat\x88\x01\x01\x12>\n" +
+	"\fdocumenttype\x18\xbd\x9c\xfa\xd9\x01 \x01(\x0e2\x11.ssm.DocumentTypeH\aR\fdocumenttype\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\bR\x0fdocumentversion\x88\x01\x01\x12\x1a\n" +
+	"\x04hash\x18\xf2\xad\xcdw \x01(\tH\tR\x04hash\x88\x01\x01\x129\n" +
+	"\bhashtype\x18\xba\x9b\xb5R \x01(\x0e2\x15.ssm.DocumentHashTypeH\n" +
+	"R\bhashtype\x88\x01\x01\x12-\n" +
+	"\rlatestversion\x18\xcb\xd6\xcb\xca\x01 \x01(\tH\vR\rlatestversion\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\fR\x04name\x88\x01\x01\x12\x1d\n" +
+	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\tH\rR\x05owner\x88\x01\x01\x12:\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x16.ssm.DocumentParameterR\n" +
 	"parameters\x12:\n" +
-	"\x14pendingreviewversion\x18\xed\xc9\xe2L \x01(\tH\vR\x14pendingreviewversion\x88\x01\x01\x12;\n" +
+	"\x14pendingreviewversion\x18\xed\xc9\xe2L \x01(\tH\x0eR\x14pendingreviewversion\x88\x01\x01\x12;\n" +
 	"\rplatformtypes\x18\x84ܞ\xd5\x01 \x03(\x0e2\x11.ssm.PlatformTypeR\rplatformtypes\x124\n" +
 	"\brequires\x18\xf6\xac\x93G \x03(\v2\x15.ssm.DocumentRequiresR\brequires\x12H\n" +
-	"\x11reviewinformation\x18\xe2ɹ\xf4\x01 \x03(\v2\x16.ssm.ReviewInformationR\x11reviewinformation\x128\n" +
-	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusR\freviewstatus\x12-\n" +
-	"\rschemaversion\x18\xbbԝ\xb1\x01 \x01(\tH\fR\rschemaversion\x88\x01\x01\x12\x1b\n" +
-	"\x04sha1\x18\xb5\x83\xdd\xdc\x01 \x01(\tH\rR\x04sha1\x88\x01\x01\x12.\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.ssm.DocumentStatusR\x06status\x124\n" +
-	"\x11statusinformation\x18䇇\a \x01(\tH\x0eR\x11statusinformation\x88\x01\x01\x12 \n" +
+	"\x11reviewinformation\x18\xe2ɹ\xf4\x01 \x03(\v2\x16.ssm.ReviewInformationR\x11reviewinformation\x12=\n" +
+	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusH\x0fR\freviewstatus\x88\x01\x01\x12-\n" +
+	"\rschemaversion\x18\xbbԝ\xb1\x01 \x01(\tH\x10R\rschemaversion\x88\x01\x01\x12\x1b\n" +
+	"\x04sha1\x18\xb5\x83\xdd\xdc\x01 \x01(\tH\x11R\x04sha1\x88\x01\x01\x123\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.ssm.DocumentStatusH\x12R\x06status\x88\x01\x01\x124\n" +
+	"\x11statusinformation\x18䇇\a \x01(\tH\x13R\x11statusinformation\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tags\x12'\n" +
 	"\n" +
-	"targettype\x18\xa1ζ\xbd\x01 \x01(\tH\x0fR\n" +
+	"targettype\x18\xa1ζ\xbd\x01 \x01(\tH\x14R\n" +
 	"targettype\x88\x01\x01\x12(\n" +
-	"\vversionname\x18գ\xb4l \x01(\tH\x10R\vversionname\x88\x01\x01B\x12\n" +
+	"\vversionname\x18գ\xb4l \x01(\tH\x15R\vversionname\x88\x01\x01B\x12\n" +
 	"\x10_approvedversionB\t\n" +
 	"\a_authorB\x0e\n" +
 	"\f_createddateB\x11\n" +
 	"\x0f_defaultversionB\x0e\n" +
 	"\f_descriptionB\x0e\n" +
-	"\f_displaynameB\x12\n" +
+	"\f_displaynameB\x11\n" +
+	"\x0f_documentformatB\x0f\n" +
+	"\r_documenttypeB\x12\n" +
 	"\x10_documentversionB\a\n" +
-	"\x05_hashB\x10\n" +
+	"\x05_hashB\v\n" +
+	"\t_hashtypeB\x10\n" +
 	"\x0e_latestversionB\a\n" +
 	"\x05_nameB\b\n" +
 	"\x06_ownerB\x17\n" +
-	"\x15_pendingreviewversionB\x10\n" +
+	"\x15_pendingreviewversionB\x0f\n" +
+	"\r_reviewstatusB\x10\n" +
 	"\x0e_schemaversionB\a\n" +
-	"\x05_sha1B\x14\n" +
+	"\x05_sha1B\t\n" +
+	"\a_statusB\x14\n" +
 	"\x12_statusinformationB\r\n" +
 	"\v_targettypeB\x0e\n" +
 	"\f_versionname\"V\n" +
 	"\x0eDocumentFilter\x12+\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\x0e2\x16.ssm.DocumentFilterKeyR\x03key\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\xc8\x06\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\x8c\a\n" +
 	"\x12DocumentIdentifier\x12\x1f\n" +
 	"\x06author\x18\xf7\x8e\xbf\xac\x01 \x01(\tH\x00R\x06author\x88\x01\x01\x12)\n" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x01R\vcreateddate\x88\x01\x01\x12)\n" +
-	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x02R\vdisplayname\x88\x01\x01\x12?\n" +
-	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatR\x0edocumentformat\x129\n" +
-	"\fdocumenttype\x18\xbd\x9c\xfa\xd9\x01 \x01(\x0e2\x11.ssm.DocumentTypeR\fdocumenttype\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x03R\x0fdocumentversion\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12\x1d\n" +
-	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\tH\x05R\x05owner\x88\x01\x01\x12;\n" +
+	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x02R\vdisplayname\x88\x01\x01\x12D\n" +
+	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatH\x03R\x0edocumentformat\x88\x01\x01\x12>\n" +
+	"\fdocumenttype\x18\xbd\x9c\xfa\xd9\x01 \x01(\x0e2\x11.ssm.DocumentTypeH\x04R\fdocumenttype\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x05R\x0fdocumentversion\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x06R\x04name\x88\x01\x01\x12\x1d\n" +
+	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\tH\aR\x05owner\x88\x01\x01\x12;\n" +
 	"\rplatformtypes\x18\x84ܞ\xd5\x01 \x03(\x0e2\x11.ssm.PlatformTypeR\rplatformtypes\x124\n" +
-	"\brequires\x18\xf6\xac\x93G \x03(\v2\x15.ssm.DocumentRequiresR\brequires\x128\n" +
-	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusR\freviewstatus\x12-\n" +
-	"\rschemaversion\x18\xbbԝ\xb1\x01 \x01(\tH\x06R\rschemaversion\x88\x01\x01\x12 \n" +
+	"\brequires\x18\xf6\xac\x93G \x03(\v2\x15.ssm.DocumentRequiresR\brequires\x12=\n" +
+	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusH\bR\freviewstatus\x88\x01\x01\x12-\n" +
+	"\rschemaversion\x18\xbbԝ\xb1\x01 \x01(\tH\tR\rschemaversion\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tags\x12'\n" +
 	"\n" +
-	"targettype\x18\xa1ζ\xbd\x01 \x01(\tH\aR\n" +
+	"targettype\x18\xa1ζ\xbd\x01 \x01(\tH\n" +
+	"R\n" +
 	"targettype\x88\x01\x01\x12(\n" +
-	"\vversionname\x18գ\xb4l \x01(\tH\bR\vversionname\x88\x01\x01B\t\n" +
+	"\vversionname\x18գ\xb4l \x01(\tH\vR\vversionname\x88\x01\x01B\t\n" +
 	"\a_authorB\x0e\n" +
 	"\f_createddateB\x0e\n" +
-	"\f_displaynameB\x12\n" +
+	"\f_displaynameB\x11\n" +
+	"\x0f_documentformatB\x0f\n" +
+	"\r_documenttypeB\x12\n" +
 	"\x10_documentversionB\a\n" +
 	"\x05_nameB\b\n" +
-	"\x06_ownerB\x10\n" +
+	"\x06_ownerB\x0f\n" +
+	"\r_reviewstatusB\x10\n" +
 	"\x0e_schemaversionB\r\n" +
 	"\v_targettypeB\x0e\n" +
 	"\f_versionname\"V\n" +
@@ -47882,15 +47932,16 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"\b_message\"s\n" +
 	"\x1cDocumentMetadataResponseInfo\x12S\n" +
-	"\x10reviewerresponse\x18\xce\xfa\xbe\xa0\x01 \x03(\v2#.ssm.DocumentReviewerResponseSourceR\x10reviewerresponse\"\xe3\x01\n" +
+	"\x10reviewerresponse\x18\xce\xfa\xbe\xa0\x01 \x03(\v2#.ssm.DocumentReviewerResponseSourceR\x10reviewerresponse\"\xf1\x01\n" +
 	"\x11DocumentParameter\x12*\n" +
 	"\fdefaultvalue\x18\xa0\xff\xa4h \x01(\tH\x00R\fdefaultvalue\x88\x01\x01\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x122\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1a.ssm.DocumentParameterTypeR\x04typeB\x0f\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x127\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1a.ssm.DocumentParameterTypeH\x03R\x04type\x88\x01\x01B\x0f\n" +
 	"\r_defaultvalueB\x0e\n" +
 	"\f_descriptionB\a\n" +
-	"\x05_name\"G\n" +
+	"\x05_nameB\a\n" +
+	"\x05_type\"G\n" +
 	"\x17DocumentPermissionLimit\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -47903,42 +47954,47 @@ const file_ssm_proto_rawDesc = "" +
 	"\f_requiretypeB\n" +
 	"\n" +
 	"\b_versionB\x0e\n" +
-	"\f_versionname\"\x83\x01\n" +
+	"\f_versionname\"\x91\x01\n" +
 	"\x1bDocumentReviewCommentSource\x12 \n" +
-	"\acontent\x18㾞\v \x01(\tH\x00R\acontent\x88\x01\x01\x126\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1e.ssm.DocumentReviewCommentTypeR\x04typeB\n" +
+	"\acontent\x18㾞\v \x01(\tH\x00R\acontent\x88\x01\x01\x12;\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1e.ssm.DocumentReviewCommentTypeH\x01R\x04type\x88\x01\x01B\n" +
 	"\n" +
-	"\b_content\"\xbe\x02\n" +
+	"\b_contentB\a\n" +
+	"\x05_type\"\xd4\x02\n" +
 	"\x1eDocumentReviewerResponseSource\x12>\n" +
 	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x03(\v2 .ssm.DocumentReviewCommentSourceR\acomment\x12'\n" +
 	"\n" +
 	"createtime\x18\xbd\xf4\x89\xea\x01 \x01(\tH\x00R\n" +
-	"createtime\x88\x01\x01\x128\n" +
-	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusR\freviewstatus\x12#\n" +
-	"\breviewer\x18\xbb\xb8\x8e\xd0\x01 \x01(\tH\x01R\breviewer\x88\x01\x01\x12(\n" +
-	"\vupdatedtime\x18\x8a\x9f\xc2J \x01(\tH\x02R\vupdatedtime\x88\x01\x01B\r\n" +
-	"\v_createtimeB\v\n" +
+	"createtime\x88\x01\x01\x12=\n" +
+	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusH\x01R\freviewstatus\x88\x01\x01\x12#\n" +
+	"\breviewer\x18\xbb\xb8\x8e\xd0\x01 \x01(\tH\x02R\breviewer\x88\x01\x01\x12(\n" +
+	"\vupdatedtime\x18\x8a\x9f\xc2J \x01(\tH\x03R\vupdatedtime\x88\x01\x01B\r\n" +
+	"\v_createtimeB\x0f\n" +
+	"\r_reviewstatusB\v\n" +
 	"\t_reviewerB\x0e\n" +
 	"\f_updatedtime\"\x87\x01\n" +
 	"\x0fDocumentReviews\x124\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x19.ssm.DocumentReviewActionR\x06action\x12>\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x03(\v2 .ssm.DocumentReviewCommentSourceR\acomment\"\xf1\x04\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x03(\v2 .ssm.DocumentReviewCommentSourceR\acomment\"\xaf\x05\n" +
 	"\x13DocumentVersionInfo\x12)\n" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x00R\vcreateddate\x88\x01\x01\x12)\n" +
-	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x01R\vdisplayname\x88\x01\x01\x12?\n" +
-	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatR\x0edocumentformat\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x02R\x0fdocumentversion\x88\x01\x01\x123\n" +
-	"\x10isdefaultversion\x18Ӯ\x85\xde\x01 \x01(\bH\x03R\x10isdefaultversion\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x128\n" +
-	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusR\freviewstatus\x12.\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.ssm.DocumentStatusR\x06status\x124\n" +
-	"\x11statusinformation\x18䇇\a \x01(\tH\x05R\x11statusinformation\x88\x01\x01\x12(\n" +
-	"\vversionname\x18գ\xb4l \x01(\tH\x06R\vversionname\x88\x01\x01B\x0e\n" +
+	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x01R\vdisplayname\x88\x01\x01\x12D\n" +
+	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatH\x02R\x0edocumentformat\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x03R\x0fdocumentversion\x88\x01\x01\x123\n" +
+	"\x10isdefaultversion\x18Ӯ\x85\xde\x01 \x01(\bH\x04R\x10isdefaultversion\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x12=\n" +
+	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusH\x06R\freviewstatus\x88\x01\x01\x123\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.ssm.DocumentStatusH\aR\x06status\x88\x01\x01\x124\n" +
+	"\x11statusinformation\x18䇇\a \x01(\tH\bR\x11statusinformation\x88\x01\x01\x12(\n" +
+	"\vversionname\x18գ\xb4l \x01(\tH\tR\vversionname\x88\x01\x01B\x0e\n" +
 	"\f_createddateB\x0e\n" +
-	"\f_displaynameB\x12\n" +
+	"\f_displaynameB\x11\n" +
+	"\x0f_documentformatB\x12\n" +
 	"\x10_documentversionB\x13\n" +
 	"\x11_isdefaultversionB\a\n" +
-	"\x05_nameB\x14\n" +
+	"\x05_nameB\x0f\n" +
+	"\r_reviewstatusB\t\n" +
+	"\a_statusB\x14\n" +
 	"\x12_statusinformationB\x0e\n" +
 	"\f_versionname\"L\n" +
 	"\x1cDocumentVersionLimitExceeded\x12 \n" +
@@ -47969,12 +48025,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\x10ExecutionPreview\x12B\n" +
 	"\n" +
 	"automation\x18ˀ\x8e# \x01(\v2\x1f.ssm.AutomationExecutionPreviewR\n" +
-	"automation\"\xb0\x01\n" +
+	"automation\"\xbf\x01\n" +
 	"\x17FailedCreateAssociation\x12A\n" +
-	"\x05entry\x18\xb4\xda\xff\xe5\x01 \x01(\v2'.ssm.CreateAssociationBatchRequestEntryR\x05entry\x12$\n" +
+	"\x05entry\x18\xb4\xda\xff\xe5\x01 \x01(\v2'.ssm.CreateAssociationBatchRequestEntryR\x05entry\x12)\n" +
 	"\x05fault\x18\xa0\xc0\xda\xdb\x01 \x01(\x0e2\n" +
-	".ssm.FaultR\x05fault\x12 \n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	".ssm.FaultH\x00R\x05fault\x88\x01\x01\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x01R\amessage\x88\x01\x01B\b\n" +
+	"\x06_faultB\n" +
 	"\n" +
 	"\b_message\"\x83\x02\n" +
 	"\x0eFailureDetails\x12=\n" +
@@ -47991,10 +48048,11 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"\b_message\"E\n" +
 	"\x15GetAccessTokenRequest\x12,\n" +
-	"\x0faccessrequestid\x18\xfa\x97\xe8\xb3\x01 \x01(\tR\x0faccessrequestid\"\xa0\x01\n" +
-	"\x16GetAccessTokenResponse\x12N\n" +
-	"\x13accessrequeststatus\x18\x9f\xc6\xf6\xca\x01 \x01(\x0e2\x18.ssm.AccessRequestStatusR\x13accessrequeststatus\x126\n" +
-	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.ssm.CredentialsR\vcredentials\"X\n" +
+	"\x0faccessrequestid\x18\xfa\x97\xe8\xb3\x01 \x01(\tR\x0faccessrequestid\"\xbd\x01\n" +
+	"\x16GetAccessTokenResponse\x12S\n" +
+	"\x13accessrequeststatus\x18\x9f\xc6\xf6\xca\x01 \x01(\x0e2\x18.ssm.AccessRequestStatusH\x00R\x13accessrequeststatus\x88\x01\x01\x126\n" +
+	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.ssm.CredentialsR\vcredentialsB\x16\n" +
+	"\x14_accessrequeststatus\"X\n" +
 	"\x1dGetAutomationExecutionRequest\x127\n" +
 	"\x15automationexecutionid\x18\xe6\xef\xf7\x05 \x01(\tR\x15automationexecutionid\"m\n" +
 	"\x1cGetAutomationExecutionResult\x12M\n" +
@@ -48002,13 +48060,14 @@ const file_ssm_proto_rawDesc = "" +
 	"\x17GetCalendarStateRequest\x12\x1f\n" +
 	"\x06attime\x18¨\x8c\xc1\x01 \x01(\tH\x00R\x06attime\x88\x01\x01\x12'\n" +
 	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnamesB\t\n" +
-	"\a_attime\"\xc4\x01\n" +
+	"\a_attime\"\xd3\x01\n" +
 	"\x18GetCalendarStateResponse\x12\x1f\n" +
 	"\x06attime\x18¨\x8c\xc1\x01 \x01(\tH\x00R\x06attime\x88\x01\x01\x127\n" +
-	"\x12nexttransitiontime\x18\xb3\x9a\xb9\xcb\x01 \x01(\tH\x01R\x12nexttransitiontime\x88\x01\x01\x12,\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x12.ssm.CalendarStateR\x05stateB\t\n" +
+	"\x12nexttransitiontime\x18\xb3\x9a\xb9\xcb\x01 \x01(\tH\x01R\x12nexttransitiontime\x88\x01\x01\x121\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x12.ssm.CalendarStateH\x02R\x05state\x88\x01\x01B\t\n" +
 	"\a_attimeB\x15\n" +
-	"\x13_nexttransitiontime\"J\n" +
+	"\x13_nexttransitiontimeB\b\n" +
+	"\x06_state\"J\n" +
 	"\x18GetCloudConnectorRequest\x12.\n" +
 	"\x10cloudconnectorid\x18\xe5\xc9\xfd\x87\x01 \x01(\tR\x10cloudconnectorid\"\x8d\x04\n" +
 	"\x17GetCloudConnectorResult\x124\n" +
@@ -48038,7 +48097,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"pluginname\x18¶\xa77 \x01(\tH\x00R\n" +
 	"pluginname\x88\x01\x01B\r\n" +
-	"\v_pluginname\"\xcd\t\n" +
+	"\v_pluginname\"\xdd\t\n" +
 	"\x1aGetCommandInvocationResult\x12V\n" +
 	"\x16cloudwatchoutputconfig\x18\xfb\x8f\x8d\n" +
 	" \x01(\v2\x1b.ssm.CloudWatchOutputConfigR\x16cloudwatchoutputconfig\x12$\n" +
@@ -48060,9 +48119,9 @@ const file_ssm_proto_rawDesc = "" +
 	"R\x14standarderrorcontent\x88\x01\x01\x123\n" +
 	"\x10standarderrorurl\x18\xc0\x86\xae\xc0\x01 \x01(\tH\vR\x10standarderrorurl\x88\x01\x01\x12=\n" +
 	"\x15standardoutputcontent\x18\xc3ҽ\x8c\x01 \x01(\tH\fR\x15standardoutputcontent\x88\x01\x01\x125\n" +
-	"\x11standardoutputurl\x18\x9f\xb3\xe2\xa5\x01 \x01(\tH\rR\x11standardoutputurl\x88\x01\x01\x127\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.ssm.CommandInvocationStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x0eR\rstatusdetails\x88\x01\x01B\f\n" +
+	"\x11standardoutputurl\x18\x9f\xb3\xe2\xa5\x01 \x01(\tH\rR\x11standardoutputurl\x88\x01\x01\x12<\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.ssm.CommandInvocationStatusH\x0eR\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x0fR\rstatusdetails\x88\x01\x01B\f\n" +
 	"\n" +
 	"_commandidB\n" +
 	"\n" +
@@ -48078,22 +48137,26 @@ const file_ssm_proto_rawDesc = "" +
 	"\x15_standarderrorcontentB\x13\n" +
 	"\x11_standarderrorurlB\x18\n" +
 	"\x16_standardoutputcontentB\x14\n" +
-	"\x12_standardoutputurlB\x10\n" +
+	"\x12_standardoutputurlB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetails\"7\n" +
 	"\x1aGetConnectionStatusRequest\x12\x19\n" +
-	"\x06target\x18\xe9\xe2\x9f[ \x01(\tR\x06target\"z\n" +
-	"\x1bGetConnectionStatusResponse\x120\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.ssm.ConnectionStatusR\x06status\x12\x1e\n" +
-	"\x06target\x18\xe9\xe2\x9f[ \x01(\tH\x00R\x06target\x88\x01\x01B\t\n" +
-	"\a_target\"c\n" +
-	"\x1eGetDefaultPatchBaselineRequest\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\"\x99\x01\n" +
+	"\x06target\x18\xe9\xe2\x9f[ \x01(\tR\x06target\"\x8a\x01\n" +
+	"\x1bGetConnectionStatusResponse\x125\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.ssm.ConnectionStatusH\x00R\x06status\x88\x01\x01\x12\x1e\n" +
+	"\x06target\x18\xe9\xe2\x9f[ \x01(\tH\x01R\x06target\x88\x01\x01B\t\n" +
+	"\a_statusB\t\n" +
+	"\a_target\"|\n" +
+	"\x1eGetDefaultPatchBaselineRequest\x12F\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemH\x00R\x0foperatingsystem\x88\x01\x01B\x12\n" +
+	"\x10_operatingsystem\"\xb2\x01\n" +
 	"\x1dGetDefaultPatchBaselineResult\x12&\n" +
 	"\n" +
 	"baselineid\x18\xd0\xe4\xdb( \x01(\tH\x00R\n" +
-	"baselineid\x88\x01\x01\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystemB\r\n" +
-	"\v_baselineid\"\x97\x02\n" +
+	"baselineid\x88\x01\x01\x12F\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemH\x01R\x0foperatingsystem\x88\x01\x01B\r\n" +
+	"\v_baselineidB\x12\n" +
+	"\x10_operatingsystem\"\x97\x02\n" +
 	",GetDeployablePatchSnapshotForInstanceRequest\x12E\n" +
 	"\x10baselineoverride\x18\xfbƅ\xac\x01 \x01(\v2\x15.ssm.BaselineOverrideR\x10baselineoverride\x12!\n" +
 	"\n" +
@@ -48117,47 +48180,54 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"\b_productB\x16\n" +
 	"\x14_snapshotdownloadurlB\r\n" +
-	"\v_snapshotid\"\xec\x01\n" +
-	"\x12GetDocumentRequest\x12?\n" +
-	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatR\x0edocumentformat\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x00R\x0fdocumentversion\x88\x01\x01\x12\x15\n" +
+	"\v_snapshotid\"\x84\x02\n" +
+	"\x12GetDocumentRequest\x12D\n" +
+	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatH\x00R\x0edocumentformat\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x01R\x0fdocumentversion\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12(\n" +
-	"\vversionname\x18գ\xb4l \x01(\tH\x01R\vversionname\x88\x01\x01B\x12\n" +
+	"\vversionname\x18գ\xb4l \x01(\tH\x02R\vversionname\x88\x01\x01B\x11\n" +
+	"\x0f_documentformatB\x12\n" +
 	"\x10_documentversionB\x0e\n" +
-	"\f_versionname\"\x90\x06\n" +
+	"\f_versionname\"\xe4\x06\n" +
 	"\x11GetDocumentResult\x12J\n" +
 	"\x12attachmentscontent\x18灍\xdf\x01 \x03(\v2\x16.ssm.AttachmentContentR\x12attachmentscontent\x12 \n" +
 	"\acontent\x18㾞\v \x01(\tH\x00R\acontent\x88\x01\x01\x12)\n" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x01R\vcreateddate\x88\x01\x01\x12)\n" +
-	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x02R\vdisplayname\x88\x01\x01\x12?\n" +
-	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatR\x0edocumentformat\x129\n" +
-	"\fdocumenttype\x18\xbd\x9c\xfa\xd9\x01 \x01(\x0e2\x11.ssm.DocumentTypeR\fdocumenttype\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x03R\x0fdocumentversion\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x124\n" +
-	"\brequires\x18\xf6\xac\x93G \x03(\v2\x15.ssm.DocumentRequiresR\brequires\x128\n" +
-	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusR\freviewstatus\x12.\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.ssm.DocumentStatusR\x06status\x124\n" +
-	"\x11statusinformation\x18䇇\a \x01(\tH\x05R\x11statusinformation\x88\x01\x01\x12(\n" +
-	"\vversionname\x18գ\xb4l \x01(\tH\x06R\vversionname\x88\x01\x01B\n" +
+	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x02R\vdisplayname\x88\x01\x01\x12D\n" +
+	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatH\x03R\x0edocumentformat\x88\x01\x01\x12>\n" +
+	"\fdocumenttype\x18\xbd\x9c\xfa\xd9\x01 \x01(\x0e2\x11.ssm.DocumentTypeH\x04R\fdocumenttype\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x05R\x0fdocumentversion\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x06R\x04name\x88\x01\x01\x124\n" +
+	"\brequires\x18\xf6\xac\x93G \x03(\v2\x15.ssm.DocumentRequiresR\brequires\x12=\n" +
+	"\freviewstatus\x18\xe4½\x10 \x01(\x0e2\x11.ssm.ReviewStatusH\aR\freviewstatus\x88\x01\x01\x123\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.ssm.DocumentStatusH\bR\x06status\x88\x01\x01\x124\n" +
+	"\x11statusinformation\x18䇇\a \x01(\tH\tR\x11statusinformation\x88\x01\x01\x12(\n" +
+	"\vversionname\x18գ\xb4l \x01(\tH\n" +
+	"R\vversionname\x88\x01\x01B\n" +
 	"\n" +
 	"\b_contentB\x0e\n" +
 	"\f_createddateB\x0e\n" +
-	"\f_displaynameB\x12\n" +
+	"\f_displaynameB\x11\n" +
+	"\x0f_documentformatB\x0f\n" +
+	"\r_documenttypeB\x12\n" +
 	"\x10_documentversionB\a\n" +
-	"\x05_nameB\x14\n" +
+	"\x05_nameB\x0f\n" +
+	"\r_reviewstatusB\t\n" +
+	"\a_statusB\x14\n" +
 	"\x12_statusinformationB\x0e\n" +
 	"\f_versionname\"O\n" +
 	"\x1aGetExecutionPreviewRequest\x121\n" +
-	"\x12executionpreviewid\x18\xab\xd1\xe9\x10 \x01(\tR\x12executionpreviewid\"\xd8\x02\n" +
+	"\x12executionpreviewid\x18\xab\xd1\xe9\x10 \x01(\tR\x12executionpreviewid\"\xe8\x02\n" +
 	"\x1bGetExecutionPreviewResponse\x12 \n" +
 	"\aendedat\x18\xef\x8f\xd31 \x01(\tH\x00R\aendedat\x88\x01\x01\x12D\n" +
 	"\x10executionpreview\x18Ȼ\xf03 \x01(\v2\x15.ssm.ExecutionPreviewR\x10executionpreview\x126\n" +
-	"\x12executionpreviewid\x18\xab\xd1\xe9\x10 \x01(\tH\x01R\x12executionpreviewid\x88\x01\x01\x126\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1b.ssm.ExecutionPreviewStatusR\x06status\x12,\n" +
-	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x02R\rstatusmessage\x88\x01\x01B\n" +
+	"\x12executionpreviewid\x18\xab\xd1\xe9\x10 \x01(\tH\x01R\x12executionpreviewid\x88\x01\x01\x12;\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1b.ssm.ExecutionPreviewStatusH\x02R\x06status\x88\x01\x01\x12,\n" +
+	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x03R\rstatusmessage\x88\x01\x01B\n" +
 	"\n" +
 	"\b_endedatB\x15\n" +
-	"\x13_executionpreviewidB\x10\n" +
+	"\x13_executionpreviewidB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusmessage\"\xb9\x02\n" +
 	"\x13GetInventoryRequest\x12=\n" +
 	"\vaggregators\x18\x8e\xfd\x83M \x03(\v2\x18.ssm.InventoryAggregatorR\vaggregators\x121\n" +
@@ -48198,24 +48268,25 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"_nexttoken\"X\n" +
 	"$GetMaintenanceWindowExecutionRequest\x120\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\"\xf5\x02\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\"\x85\x03\n" +
 	"#GetMaintenanceWindowExecutionResult\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x01R\tstarttime\x88\x01\x01\x12@\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x02R\rstatusdetails\x88\x01\x01\x12\x1b\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x01R\tstarttime\x88\x01\x01\x12E\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusH\x02R\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x03R\rstatusdetails\x88\x01\x01\x12\x1b\n" +
 	"\ataskids\x18\x97Ũy \x03(\tR\ataskids\x125\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\x03R\x11windowexecutionid\x88\x01\x01B\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\x04R\x11windowexecutionid\x88\x01\x01B\n" +
 	"\n" +
 	"\b_endtimeB\f\n" +
 	"\n" +
-	"_starttimeB\x10\n" +
+	"_starttimeB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetailsB\x14\n" +
 	"\x12_windowexecutionid\"\xa8\x01\n" +
 	"2GetMaintenanceWindowExecutionTaskInvocationRequest\x12%\n" +
 	"\finvocationid\x18\xff\x82\xac7 \x01(\tR\finvocationid\x12\x19\n" +
 	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tR\x06taskid\x120\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\"\xa8\x06\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\"\xca\x06\n" +
 	"1GetMaintenanceWindowExecutionTaskInvocationResult\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12(\n" +
 	"\vexecutionid\x18\xb1ϯF \x01(\tH\x01R\vexecutionid\x88\x01\x01\x12*\n" +
@@ -48224,13 +48295,14 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x01(\tH\x04R\n" +
 	"parameters\x88\x01\x01\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01\x12@\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x06R\rstatusdetails\x88\x01\x01\x121\n" +
-	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tH\aR\x0ftaskexecutionid\x88\x01\x01\x12>\n" +
-	"\btasktype\x18\xe5\xf3ϰ\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeR\btasktype\x125\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\bR\x11windowexecutionid\x88\x01\x01\x12.\n" +
-	"\x0ewindowtargetid\x18\xde\xce\xea{ \x01(\tH\tR\x0ewindowtargetid\x88\x01\x01B\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01\x12E\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusH\x06R\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\aR\rstatusdetails\x88\x01\x01\x121\n" +
+	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tH\bR\x0ftaskexecutionid\x88\x01\x01\x12C\n" +
+	"\btasktype\x18\xe5\xf3ϰ\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeH\tR\btasktype\x88\x01\x01\x125\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\n" +
+	"R\x11windowexecutionid\x88\x01\x01\x12.\n" +
+	"\x0ewindowtargetid\x18\xde\xce\xea{ \x01(\tH\vR\x0ewindowtargetid\x88\x01\x01B\n" +
 	"\n" +
 	"\b_endtimeB\x0e\n" +
 	"\f_executionidB\x0f\n" +
@@ -48238,14 +48310,16 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11_ownerinformationB\r\n" +
 	"\v_parametersB\f\n" +
 	"\n" +
-	"_starttimeB\x10\n" +
+	"_starttimeB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetailsB\x12\n" +
-	"\x10_taskexecutionidB\x14\n" +
+	"\x10_taskexecutionidB\v\n" +
+	"\t_tasktypeB\x14\n" +
 	"\x12_windowexecutionidB\x11\n" +
 	"\x0f_windowtargetid\"w\n" +
 	"(GetMaintenanceWindowExecutionTaskRequest\x12\x19\n" +
 	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tR\x06taskid\x120\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\"\xdc\a\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tR\x11windowexecutionid\"\xfa\a\n" +
 	"'GetMaintenanceWindowExecutionTaskResult\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12.\n" +
@@ -48253,15 +48327,16 @@ const file_ssm_proto_rawDesc = "" +
 	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x02R\tmaxerrors\x88\x01\x01\x12\"\n" +
 	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x03R\bpriority\x88\x01\x01\x12(\n" +
 	"\vservicerole\x18\xed\xf9\xe5\x16 \x01(\tH\x04R\vservicerole\x88\x01\x01\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01\x12@\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x06R\rstatusdetails\x88\x01\x01\x12!\n" +
-	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\aR\ataskarn\x88\x01\x01\x121\n" +
-	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tH\bR\x0ftaskexecutionid\x88\x01\x01\x12Y\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01\x12E\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusH\x06R\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\aR\rstatusdetails\x88\x01\x01\x12!\n" +
+	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\bR\ataskarn\x88\x01\x01\x121\n" +
+	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tH\tR\x0ftaskexecutionid\x88\x01\x01\x12Y\n" +
 	"\x0etaskparameters\x18\x81\x8f\xe6\xb7\x01 \x03(\v2-.ssm.MaintenanceWindowTaskParametersListEntryR\x0etaskparameters\x12G\n" +
-	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x126\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeR\x04type\x125\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\tR\x11windowexecutionid\x88\x01\x01B\n" +
+	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x12;\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeH\n" +
+	"R\x04type\x88\x01\x01\x125\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\vR\x11windowexecutionid\x88\x01\x01B\n" +
 	"\n" +
 	"\b_endtimeB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
@@ -48270,11 +48345,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\t_priorityB\x0e\n" +
 	"\f_serviceroleB\f\n" +
 	"\n" +
-	"_starttimeB\x10\n" +
+	"_starttimeB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetailsB\n" +
 	"\n" +
 	"\b_taskarnB\x12\n" +
-	"\x10_taskexecutionidB\x14\n" +
+	"\x10_taskexecutionidB\a\n" +
+	"\x05_typeB\x14\n" +
 	"\x12_windowexecutionid\"<\n" +
 	"\x1bGetMaintenanceWindowRequest\x12\x1d\n" +
 	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tR\bwindowid\"\xff\x06\n" +
@@ -48315,27 +48392,29 @@ const file_ssm_proto_rawDesc = "" +
 	"\t_windowid\"h\n" +
 	"\x1fGetMaintenanceWindowTaskRequest\x12\x1d\n" +
 	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tR\bwindowid\x12&\n" +
-	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tR\fwindowtaskid\"\x98\t\n" +
+	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tR\fwindowtaskid\"\xc2\t\n" +
 	"\x1eGetMaintenanceWindowTaskResult\x12J\n" +
-	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12S\n" +
-	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorR\x0ecutoffbehavior\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x126\n" +
+	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12X\n" +
+	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorH\x00R\x0ecutoffbehavior\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x126\n" +
 	"\vlogginginfo\x18\xdf\xe8\xe2\xd5\x01 \x01(\v2\x10.ssm.LoggingInfoR\vlogginginfo\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x01R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x02R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x12\"\n" +
-	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x04R\bpriority\x88\x01\x01\x12/\n" +
-	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x05R\x0eservicerolearn\x88\x01\x01\x12(\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x02R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x03R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12\"\n" +
+	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x05R\bpriority\x88\x01\x01\x12/\n" +
+	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x06R\x0eservicerolearn\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12!\n" +
-	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\x06R\ataskarn\x88\x01\x01\x12n\n" +
+	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\aR\ataskarn\x88\x01\x01\x12n\n" +
 	"\x18taskinvocationparameters\x18\xd3\xfe¥\x01 \x01(\v2..ssm.MaintenanceWindowTaskInvocationParametersR\x18taskinvocationparameters\x12c\n" +
-	"\x0etaskparameters\x18\x81\x8f\xe6\xb7\x01 \x03(\v27.ssm.GetMaintenanceWindowTaskResult.TaskparametersEntryR\x0etaskparameters\x12>\n" +
-	"\btasktype\x18\xe5\xf3ϰ\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeR\btasktype\x12\"\n" +
-	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\aR\bwindowid\x88\x01\x01\x12+\n" +
-	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tH\bR\fwindowtaskid\x88\x01\x01\x1au\n" +
+	"\x0etaskparameters\x18\x81\x8f\xe6\xb7\x01 \x03(\v27.ssm.GetMaintenanceWindowTaskResult.TaskparametersEntryR\x0etaskparameters\x12C\n" +
+	"\btasktype\x18\xe5\xf3ϰ\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeH\bR\btasktype\x88\x01\x01\x12\"\n" +
+	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\tR\bwindowid\x88\x01\x01\x12+\n" +
+	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tH\n" +
+	"R\fwindowtaskid\x88\x01\x01\x1au\n" +
 	"\x13TaskparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12H\n" +
-	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01B\x11\n" +
+	"\x0f_cutoffbehaviorB\x0e\n" +
 	"\f_descriptionB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
 	"\n" +
@@ -48345,6 +48424,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0f_servicerolearnB\n" +
 	"\n" +
 	"\b_taskarnB\v\n" +
+	"\t_tasktypeB\v\n" +
 	"\t_windowidB\x0f\n" +
 	"\r_windowtaskid\"k\n" +
 	"\x11GetOpsItemRequest\x12&\n" +
@@ -48448,51 +48528,57 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11invalidparameters\x18\xe5杝\x01 \x03(\tR\x11invalidparameters\x122\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x0e.ssm.ParameterR\n" +
-	"parameters\"\x8d\x01\n" +
-	"$GetPatchBaselineForPatchGroupRequest\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\x12\"\n" +
+	"parameters\"\xa6\x01\n" +
+	"$GetPatchBaselineForPatchGroupRequest\x12F\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemH\x00R\x0foperatingsystem\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"patchgroup\x18ᷱ\xf7\x01 \x01(\tR\n" +
-	"patchgroup\"\xd7\x01\n" +
+	"patchgroupB\x12\n" +
+	"\x10_operatingsystem\"\xf0\x01\n" +
 	"#GetPatchBaselineForPatchGroupResult\x12&\n" +
 	"\n" +
 	"baselineid\x18\xd0\xe4\xdb( \x01(\tH\x00R\n" +
-	"baselineid\x88\x01\x01\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\x12'\n" +
+	"baselineid\x88\x01\x01\x12F\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemH\x01R\x0foperatingsystem\x88\x01\x01\x12'\n" +
 	"\n" +
-	"patchgroup\x18ᷱ\xf7\x01 \x01(\tH\x01R\n" +
+	"patchgroup\x18ᷱ\xf7\x01 \x01(\tH\x02R\n" +
 	"patchgroup\x88\x01\x01B\r\n" +
-	"\v_baselineidB\r\n" +
+	"\v_baselineidB\x12\n" +
+	"\x10_operatingsystemB\r\n" +
 	"\v_patchgroup\"<\n" +
 	"\x17GetPatchBaselineRequest\x12!\n" +
 	"\n" +
 	"baselineid\x18\xd0\xe4\xdb( \x01(\tR\n" +
-	"baselineid\"\xbd\b\n" +
+	"baselineid\"\xcf\t\n" +
 	"\x16GetPatchBaselineResult\x12<\n" +
 	"\rapprovalrules\x18\xea\xfa\x89\" \x01(\v2\x13.ssm.PatchRuleGroupR\rapprovalrules\x12+\n" +
-	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12d\n" +
-	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelR\x1eapprovedpatchescompliancelevel\x12S\n" +
-	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x00R approvedpatchesenablenonsecurity\x88\x01\x01\x12y\n" +
-	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusR(availablesecurityupdatescompliancestatus\x12&\n" +
+	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12i\n" +
+	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelH\x00R\x1eapprovedpatchescompliancelevel\x88\x01\x01\x12S\n" +
+	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x01R approvedpatchesenablenonsecurity\x88\x01\x01\x12~\n" +
+	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusH\x02R(availablesecurityupdatescompliancestatus\x88\x01\x01\x12&\n" +
 	"\n" +
-	"baselineid\x18\xd0\xe4\xdb( \x01(\tH\x01R\n" +
+	"baselineid\x18\xd0\xe4\xdb( \x01(\tH\x03R\n" +
 	"baselineid\x88\x01\x01\x12)\n" +
-	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x02R\vcreateddate\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12>\n" +
+	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x04R\vcreateddate\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x05R\vdescription\x88\x01\x01\x12>\n" +
 	"\rglobalfilters\x18\xe2\xdc\xc6} \x01(\v2\x15.ssm.PatchFilterGroupR\rglobalfilters\x12*\n" +
-	"\fmodifieddate\x18\xf7Ƕd \x01(\tH\x04R\fmodifieddate\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\x12#\n" +
+	"\fmodifieddate\x18\xf7Ƕd \x01(\tH\x06R\fmodifieddate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\aR\x04name\x88\x01\x01\x12F\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemH\bR\x0foperatingsystem\x88\x01\x01\x12#\n" +
 	"\vpatchgroups\x18\xea\xd0\xd0\b \x03(\tR\vpatchgroups\x12,\n" +
-	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12J\n" +
-	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionR\x15rejectedpatchesaction\x12-\n" +
-	"\asources\x18\xd2\xe7\x9d\x16 \x03(\v2\x10.ssm.PatchSourceR\asourcesB#\n" +
-	"!_approvedpatchesenablenonsecurityB\r\n" +
+	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12O\n" +
+	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionH\tR\x15rejectedpatchesaction\x88\x01\x01\x12-\n" +
+	"\asources\x18\xd2\xe7\x9d\x16 \x03(\v2\x10.ssm.PatchSourceR\asourcesB!\n" +
+	"\x1f_approvedpatchescompliancelevelB#\n" +
+	"!_approvedpatchesenablenonsecurityB+\n" +
+	")_availablesecurityupdatescompliancestatusB\r\n" +
 	"\v_baselineidB\x0e\n" +
 	"\f_createddateB\x0e\n" +
 	"\f_descriptionB\x0f\n" +
 	"\r_modifieddateB\a\n" +
-	"\x05_name\"\xae\x01\n" +
+	"\x05_nameB\x12\n" +
+	"\x10_operatingsystemB\x18\n" +
+	"\x16_rejectedpatchesaction\"\xae\x01\n" +
 	"\x1aGetResourcePoliciesRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
@@ -48588,7 +48674,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11_executionsummaryB\r\n" +
 	"\v_instanceidB\a\n" +
 	"\x05_nameB\t\n" +
-	"\a_status\"\xd0\a\n" +
+	"\a_status\"\xa7\b\n" +
 	"\fInstanceInfo\x12%\n" +
 	"\tagenttype\x18\u05cf\xfd\xc2\x01 \x01(\tH\x00R\tagenttype\x88\x01\x01\x12*\n" +
 	"\fagentversion\x18\xeb\x81\xe8R \x01(\tH\x01R\fagentversion\x88\x01\x01\x123\n" +
@@ -48596,19 +48682,19 @@ const file_ssm_proto_rawDesc = "" +
 	"\x12availabilityzoneid\x18\xc6Ǣ\x02 \x01(\tH\x03R\x12availabilityzoneid\x88\x01\x01\x12*\n" +
 	"\fcomputername\x18\xfc\x9d\xa6  \x01(\tH\x04R\fcomputername\x88\x01\x01\x12.\n" +
 	"\x0einstancestatus\x18\xdd\xf3\x8e\x0e \x01(\tH\x05R\x0einstancestatus\x88\x01\x01\x12#\n" +
-	"\tipaddress\x18\xcd\xf1m \x01(\tH\x06R\tipaddress\x88\x01\x01\x12;\n" +
-	"\rmanagedstatus\x18\xb9\xdc\xe4_ \x01(\x0e2\x12.ssm.ManagedStatusR\rmanagedstatus\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\aR\x04name\x88\x01\x01\x12*\n" +
-	"\fplatformname\x18\xbaˊZ \x01(\tH\bR\fplatformname\x88\x01\x01\x129\n" +
-	"\fplatformtype\x18\xa3\xcf̴\x01 \x01(\x0e2\x11.ssm.PlatformTypeR\fplatformtype\x120\n" +
-	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tH\tR\x0fplatformversion\x88\x01\x01\x129\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x11.ssm.ResourceTypeR\fresourcetype\x12#\n" +
-	"\bsourceid\x18\xc6\xec\xe6\xca\x01 \x01(\tH\n" +
-	"R\bsourceid\x88\x01\x01\x12.\n" +
-	"\x0esourcelocation\x18\xb0\x9a\xe0\" \x01(\tH\vR\x0esourcelocation\x88\x01\x01\x122\n" +
+	"\tipaddress\x18\xcd\xf1m \x01(\tH\x06R\tipaddress\x88\x01\x01\x12@\n" +
+	"\rmanagedstatus\x18\xb9\xdc\xe4_ \x01(\x0e2\x12.ssm.ManagedStatusH\aR\rmanagedstatus\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\bR\x04name\x88\x01\x01\x12*\n" +
+	"\fplatformname\x18\xbaˊZ \x01(\tH\tR\fplatformname\x88\x01\x01\x12>\n" +
+	"\fplatformtype\x18\xa3\xcf̴\x01 \x01(\x0e2\x11.ssm.PlatformTypeH\n" +
+	"R\fplatformtype\x88\x01\x01\x120\n" +
+	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tH\vR\x0fplatformversion\x88\x01\x01\x12>\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x11.ssm.ResourceTypeH\fR\fresourcetype\x88\x01\x01\x12#\n" +
+	"\bsourceid\x18\xc6\xec\xe6\xca\x01 \x01(\tH\rR\bsourceid\x88\x01\x01\x12.\n" +
+	"\x0esourcelocation\x18\xb0\x9a\xe0\" \x01(\tH\x0eR\x0esourcelocation\x88\x01\x01\x127\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.ssm.SourceTypeR\n" +
-	"sourcetypeB\f\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.ssm.SourceTypeH\x0fR\n" +
+	"sourcetype\x88\x01\x01B\f\n" +
 	"\n" +
 	"_agenttypeB\x0f\n" +
 	"\r_agentversionB\x13\n" +
@@ -48617,12 +48703,16 @@ const file_ssm_proto_rawDesc = "" +
 	"\r_computernameB\x11\n" +
 	"\x0f_instancestatusB\f\n" +
 	"\n" +
-	"_ipaddressB\a\n" +
+	"_ipaddressB\x10\n" +
+	"\x0e_managedstatusB\a\n" +
 	"\x05_nameB\x0f\n" +
-	"\r_platformnameB\x12\n" +
-	"\x10_platformversionB\v\n" +
+	"\r_platformnameB\x0f\n" +
+	"\r_platformtypeB\x12\n" +
+	"\x10_platformversionB\x0f\n" +
+	"\r_resourcetypeB\v\n" +
 	"\t_sourceidB\x11\n" +
-	"\x0f_sourcelocation\"\xe1\v\n" +
+	"\x0f_sourcelocationB\r\n" +
+	"\v_sourcetype\"\xb5\f\n" +
 	"\x13InstanceInformation\x12*\n" +
 	"\factivationid\x18\xe9ăF \x01(\tH\x00R\factivationid\x88\x01\x01\x12*\n" +
 	"\fagentversion\x18\xeb\x81\xe8R \x01(\tH\x01R\fagentversion\x88\x01\x01\x12`\n" +
@@ -48639,20 +48729,20 @@ const file_ssm_proto_rawDesc = "" +
 	"\x10lastpingdatetime\x18ِ\xe2\x17 \x01(\tH\tR\x10lastpingdatetime\x88\x01\x01\x12^\n" +
 	"&lastsuccessfulassociationexecutiondate\x18\x85\xf3\xb6M \x01(\tH\n" +
 	"R&lastsuccessfulassociationexecutiondate\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\vR\x04name\x88\x01\x01\x123\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\vR\x04name\x88\x01\x01\x128\n" +
 	"\n" +
-	"pingstatus\x18\xec\xe4ц\x01 \x01(\x0e2\x0f.ssm.PingStatusR\n" +
-	"pingstatus\x12*\n" +
-	"\fplatformname\x18\xbaˊZ \x01(\tH\fR\fplatformname\x88\x01\x01\x129\n" +
-	"\fplatformtype\x18\xa3\xcf̴\x01 \x01(\x0e2\x11.ssm.PlatformTypeR\fplatformtype\x120\n" +
-	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tH\rR\x0fplatformversion\x88\x01\x01\x123\n" +
-	"\x10registrationdate\x18\xed\x95\xed\xb0\x01 \x01(\tH\x0eR\x10registrationdate\x88\x01\x01\x129\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x11.ssm.ResourceTypeR\fresourcetype\x12#\n" +
-	"\bsourceid\x18\xc6\xec\xe6\xca\x01 \x01(\tH\x0fR\bsourceid\x88\x01\x01\x12.\n" +
-	"\x0esourcelocation\x18\xb0\x9a\xe0\" \x01(\tH\x10R\x0esourcelocation\x88\x01\x01\x122\n" +
+	"pingstatus\x18\xec\xe4ц\x01 \x01(\x0e2\x0f.ssm.PingStatusH\fR\n" +
+	"pingstatus\x88\x01\x01\x12*\n" +
+	"\fplatformname\x18\xbaˊZ \x01(\tH\rR\fplatformname\x88\x01\x01\x12>\n" +
+	"\fplatformtype\x18\xa3\xcf̴\x01 \x01(\x0e2\x11.ssm.PlatformTypeH\x0eR\fplatformtype\x88\x01\x01\x120\n" +
+	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tH\x0fR\x0fplatformversion\x88\x01\x01\x123\n" +
+	"\x10registrationdate\x18\xed\x95\xed\xb0\x01 \x01(\tH\x10R\x10registrationdate\x88\x01\x01\x12>\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x11.ssm.ResourceTypeH\x11R\fresourcetype\x88\x01\x01\x12#\n" +
+	"\bsourceid\x18\xc6\xec\xe6\xca\x01 \x01(\tH\x12R\bsourceid\x88\x01\x01\x12.\n" +
+	"\x0esourcelocation\x18\xb0\x9a\xe0\" \x01(\tH\x13R\x0esourcelocation\x88\x01\x01\x127\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.ssm.SourceTypeR\n" +
-	"sourcetypeB\x0f\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.ssm.SourceTypeH\x14R\n" +
+	"sourcetype\x88\x01\x01B\x0f\n" +
 	"\r_activationidB\x0f\n" +
 	"\r_agentversionB\x14\n" +
 	"\x12_associationstatusB\x0f\n" +
@@ -48666,18 +48756,22 @@ const file_ssm_proto_rawDesc = "" +
 	"\x1d_lastassociationexecutiondateB\x13\n" +
 	"\x11_lastpingdatetimeB)\n" +
 	"'_lastsuccessfulassociationexecutiondateB\a\n" +
-	"\x05_nameB\x0f\n" +
-	"\r_platformnameB\x12\n" +
+	"\x05_nameB\r\n" +
+	"\v_pingstatusB\x0f\n" +
+	"\r_platformnameB\x0f\n" +
+	"\r_platformtypeB\x12\n" +
 	"\x10_platformversionB\x13\n" +
-	"\x11_registrationdateB\v\n" +
+	"\x11_registrationdateB\x0f\n" +
+	"\r_resourcetypeB\v\n" +
 	"\t_sourceidB\x11\n" +
-	"\x0f_sourcelocation\"r\n" +
+	"\x0f_sourcelocationB\r\n" +
+	"\v_sourcetype\"r\n" +
 	"\x19InstanceInformationFilter\x126\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\x0e2!.ssm.InstanceInformationFilterKeyR\x03key\x12\x1d\n" +
 	"\bvalueset\x18\xab\xbe\xaaw \x03(\tR\bvalueset\"Q\n" +
 	"\x1fInstanceInformationStringFilter\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xc5\r\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xdb\r\n" +
 	"\x12InstancePatchState\x12J\n" +
 	"\x1cavailablesecurityupdatecount\x18\xef\x8c\xfb\x02 \x01(\x05H\x00R\x1cavailablesecurityupdatecount\x88\x01\x01\x12!\n" +
 	"\n" +
@@ -48705,13 +48799,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\x10ownerinformation\x18\x83\x9a\xc5  \x01(\tH\fR\x10ownerinformation\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"patchgroup\x18ᷱ\xf7\x01 \x01(\tR\n" +
-	"patchgroup\x128\n" +
-	"\frebootoption\x18ҿ\xcc2 \x01(\x0e2\x11.ssm.RebootOptionR\frebootoption\x12E\n" +
-	"\x19securitynoncompliantcount\x18\x83\xdd\xca\xee\x01 \x01(\x05H\rR\x19securitynoncompliantcount\x88\x01\x01\x12&\n" +
+	"patchgroup\x12=\n" +
+	"\frebootoption\x18ҿ\xcc2 \x01(\x0e2\x11.ssm.RebootOptionH\rR\frebootoption\x88\x01\x01\x12E\n" +
+	"\x19securitynoncompliantcount\x18\x83\xdd\xca\xee\x01 \x01(\x05H\x0eR\x19securitynoncompliantcount\x88\x01\x01\x12&\n" +
 	"\n" +
-	"snapshotid\x18\x99\x9e\xbe/ \x01(\tH\x0eR\n" +
+	"snapshotid\x18\x99\x9e\xbe/ \x01(\tH\x0fR\n" +
 	"snapshotid\x88\x01\x01\x12K\n" +
-	"\x1cunreportednotapplicablecount\x18\xf3\xec\xee\x8c\x01 \x01(\x05H\x0fR\x1cunreportednotapplicablecount\x88\x01\x01B\x1f\n" +
+	"\x1cunreportednotapplicablecount\x18\xf3\xec\xee\x8c\x01 \x01(\x05H\x10R\x1cunreportednotapplicablecount\x88\x01\x01B\x1f\n" +
 	"\x1d_availablesecurityupdatecountB\x1c\n" +
 	"\x1a_criticalnoncompliantcountB\x0e\n" +
 	"\f_failedcountB\x16\n" +
@@ -48724,14 +48818,15 @@ const file_ssm_proto_rawDesc = "" +
 	"\r_missingcountB\x15\n" +
 	"\x13_notapplicablecountB\x19\n" +
 	"\x17_othernoncompliantcountB\x13\n" +
-	"\x11_ownerinformationB\x1c\n" +
+	"\x11_ownerinformationB\x0f\n" +
+	"\r_rebootoptionB\x1c\n" +
 	"\x1a_securitynoncompliantcountB\r\n" +
 	"\v_snapshotidB\x1f\n" +
 	"\x1d_unreportednotapplicablecount\"\x87\x01\n" +
 	"\x18InstancePatchStateFilter\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12;\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2#.ssm.InstancePatchStateOperatorTypeR\x04type\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xc3\x0e\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\x81\x0f\n" +
 	"\x10InstanceProperty\x12*\n" +
 	"\factivationid\x18\xe9ăF \x01(\tH\x00R\factivationid\x88\x01\x01\x12*\n" +
 	"\fagentversion\x18\xeb\x81\xe8R \x01(\tH\x01R\fagentversion\x88\x01\x01\x12+\n" +
@@ -48756,20 +48851,20 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"launchtime\x18\x80\xb0ʡ\x01 \x01(\tH\x10R\n" +
 	"launchtime\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x11R\x04name\x88\x01\x01\x123\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x11R\x04name\x88\x01\x01\x128\n" +
 	"\n" +
-	"pingstatus\x18\xec\xe4ц\x01 \x01(\x0e2\x0f.ssm.PingStatusR\n" +
-	"pingstatus\x12*\n" +
-	"\fplatformname\x18\xbaˊZ \x01(\tH\x12R\fplatformname\x88\x01\x01\x129\n" +
-	"\fplatformtype\x18\xa3\xcf̴\x01 \x01(\x0e2\x11.ssm.PlatformTypeR\fplatformtype\x120\n" +
-	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tH\x13R\x0fplatformversion\x88\x01\x01\x123\n" +
-	"\x10registrationdate\x18\xed\x95\xed\xb0\x01 \x01(\tH\x14R\x10registrationdate\x88\x01\x01\x12+\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\tH\x15R\fresourcetype\x88\x01\x01\x12#\n" +
-	"\bsourceid\x18\xc6\xec\xe6\xca\x01 \x01(\tH\x16R\bsourceid\x88\x01\x01\x12.\n" +
-	"\x0esourcelocation\x18\xb0\x9a\xe0\" \x01(\tH\x17R\x0esourcelocation\x88\x01\x01\x122\n" +
+	"pingstatus\x18\xec\xe4ц\x01 \x01(\x0e2\x0f.ssm.PingStatusH\x12R\n" +
+	"pingstatus\x88\x01\x01\x12*\n" +
+	"\fplatformname\x18\xbaˊZ \x01(\tH\x13R\fplatformname\x88\x01\x01\x12>\n" +
+	"\fplatformtype\x18\xa3\xcf̴\x01 \x01(\x0e2\x11.ssm.PlatformTypeH\x14R\fplatformtype\x88\x01\x01\x120\n" +
+	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tH\x15R\x0fplatformversion\x88\x01\x01\x123\n" +
+	"\x10registrationdate\x18\xed\x95\xed\xb0\x01 \x01(\tH\x16R\x10registrationdate\x88\x01\x01\x12+\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\tH\x17R\fresourcetype\x88\x01\x01\x12#\n" +
+	"\bsourceid\x18\xc6\xec\xe6\xca\x01 \x01(\tH\x18R\bsourceid\x88\x01\x01\x12.\n" +
+	"\x0esourcelocation\x18\xb0\x9a\xe0\" \x01(\tH\x19R\x0esourcelocation\x88\x01\x01\x127\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.ssm.SourceTypeR\n" +
-	"sourcetypeB\x0f\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.ssm.SourceTypeH\x1aR\n" +
+	"sourcetype\x88\x01\x01B\x0f\n" +
 	"\r_activationidB\x0f\n" +
 	"\r_agentversionB\x0f\n" +
 	"\r_architectureB\x14\n" +
@@ -48790,20 +48885,24 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11_lastpingdatetimeB)\n" +
 	"'_lastsuccessfulassociationexecutiondateB\r\n" +
 	"\v_launchtimeB\a\n" +
-	"\x05_nameB\x0f\n" +
-	"\r_platformnameB\x12\n" +
+	"\x05_nameB\r\n" +
+	"\v_pingstatusB\x0f\n" +
+	"\r_platformnameB\x0f\n" +
+	"\r_platformtypeB\x12\n" +
 	"\x10_platformversionB\x13\n" +
 	"\x11_registrationdateB\x0f\n" +
 	"\r_resourcetypeB\v\n" +
 	"\t_sourceidB\x11\n" +
-	"\x0f_sourcelocation\"l\n" +
+	"\x0f_sourcelocationB\r\n" +
+	"\v_sourcetype\"l\n" +
 	"\x16InstancePropertyFilter\x123\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\x0e2\x1e.ssm.InstancePropertyFilterKeyR\x03key\x12\x1d\n" +
-	"\bvalueset\x18\xab\xbe\xaaw \x03(\tR\bvalueset\"\x92\x01\n" +
+	"\bvalueset\x18\xab\xbe\xaaw \x03(\tR\bvalueset\"\xa4\x01\n" +
 	"\x1cInstancePropertyStringFilter\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12B\n" +
-	"\boperator\x18\x9e\xb0\x95\x0f \x01(\x0e2#.ssm.InstancePropertyFilterOperatorR\boperator\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"C\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12G\n" +
+	"\boperator\x18\x9e\xb0\x95\x0f \x01(\x0e2#.ssm.InstancePropertyFilterOperatorH\x00R\boperator\x88\x01\x01\x12\x19\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\v\n" +
+	"\t_operator\"C\n" +
 	"\x13InternalServerError\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -48996,21 +49095,22 @@ const file_ssm_proto_rawDesc = "" +
 	"expression\x18\x8c\xfa\x86\\ \x01(\tH\x00R\n" +
 	"expression\x88\x01\x01\x12/\n" +
 	"\x06groups\x18\x8e\x8b\xfd\xab\x01 \x03(\v2\x13.ssm.InventoryGroupR\x06groupsB\r\n" +
-	"\v_expression\"\x81\x04\n" +
+	"\v_expression\"\x95\x04\n" +
 	"\x1bInventoryDeletionStatusItem\x12&\n" +
 	"\n" +
 	"deletionid\x18\xd3\xe1\xb4< \x01(\tH\x00R\n" +
 	"deletionid\x88\x01\x01\x125\n" +
 	"\x11deletionstarttime\x18\xf5\x9e\x80\xc5\x01 \x01(\tH\x01R\x11deletionstarttime\x88\x01\x01\x12J\n" +
-	"\x0fdeletionsummary\x18\x9a\xf0\xc9Z \x01(\v2\x1d.ssm.InventoryDeletionSummaryR\x0fdeletionsummary\x12?\n" +
+	"\x0fdeletionsummary\x18\x9a\xf0\xc9Z \x01(\v2\x1d.ssm.InventoryDeletionSummaryR\x0fdeletionsummary\x12D\n" +
 	"\n" +
-	"laststatus\x18\xdc\xd4\xf0M \x01(\x0e2\x1c.ssm.InventoryDeletionStatusR\n" +
-	"laststatus\x124\n" +
-	"\x11laststatusmessage\x18\x83\xe5\xcb\x1c \x01(\tH\x02R\x11laststatusmessage\x88\x01\x01\x12:\n" +
-	"\x14laststatusupdatetime\x18\xbc\xa0\xd1\x1f \x01(\tH\x03R\x14laststatusupdatetime\x88\x01\x01\x12#\n" +
-	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tH\x04R\btypename\x88\x01\x01B\r\n" +
+	"laststatus\x18\xdc\xd4\xf0M \x01(\x0e2\x1c.ssm.InventoryDeletionStatusH\x02R\n" +
+	"laststatus\x88\x01\x01\x124\n" +
+	"\x11laststatusmessage\x18\x83\xe5\xcb\x1c \x01(\tH\x03R\x11laststatusmessage\x88\x01\x01\x12:\n" +
+	"\x14laststatusupdatetime\x18\xbc\xa0\xd1\x1f \x01(\tH\x04R\x14laststatusupdatetime\x88\x01\x01\x12#\n" +
+	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\tH\x05R\btypename\x88\x01\x01B\r\n" +
 	"\v_deletionidB\x14\n" +
-	"\x12_deletionstarttimeB\x14\n" +
+	"\x12_deletionstarttimeB\r\n" +
+	"\v_laststatusB\x14\n" +
 	"\x12_laststatusmessageB\x17\n" +
 	"\x15_laststatusupdatetimeB\v\n" +
 	"\t_typename\"\xdf\x01\n" +
@@ -49029,11 +49129,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\x06_countB\x11\n" +
 	"\x0f_remainingcountB\n" +
 	"\n" +
-	"\b_version\"z\n" +
+	"\b_version\"\x88\x01\n" +
 	"\x0fInventoryFilter\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x127\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1f.ssm.InventoryQueryOperatorTypeR\x04type\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"Z\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12<\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1f.ssm.InventoryQueryOperatorTypeH\x00R\x04type\x88\x01\x01\x12\x19\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\a\n" +
+	"\x05_type\"Z\n" +
 	"\x0eInventoryGroup\x121\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x14.ssm.InventoryFilterR\afilters\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xf2\x02\n" +
@@ -49423,41 +49524,44 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
-	"\x10_documentversion\"\x80\x03\n" +
+	"\x10_documentversion\"\x90\x03\n" +
 	"\x1aMaintenanceWindowExecution\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x01R\tstarttime\x88\x01\x01\x12@\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x02R\rstatusdetails\x88\x01\x01\x125\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\x03R\x11windowexecutionid\x88\x01\x01\x12\"\n" +
-	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\x04R\bwindowid\x88\x01\x01B\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x01R\tstarttime\x88\x01\x01\x12E\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusH\x02R\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x03R\rstatusdetails\x88\x01\x01\x125\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\x04R\x11windowexecutionid\x88\x01\x01\x12\"\n" +
+	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\x05R\bwindowid\x88\x01\x01B\n" +
 	"\n" +
 	"\b_endtimeB\f\n" +
 	"\n" +
-	"_starttimeB\x10\n" +
+	"_starttimeB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetailsB\x14\n" +
 	"\x12_windowexecutionidB\v\n" +
-	"\t_windowid\"\xa6\x05\n" +
+	"\t_windowid\"\xc8\x05\n" +
 	"&MaintenanceWindowExecutionTaskIdentity\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x01R\tstarttime\x88\x01\x01\x12@\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x02R\rstatusdetails\x88\x01\x01\x12!\n" +
-	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\x03R\ataskarn\x88\x01\x01\x121\n" +
-	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tH\x04R\x0ftaskexecutionid\x88\x01\x01\x12>\n" +
-	"\btasktype\x18\xe5\xf3ϰ\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeR\btasktype\x12G\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x01R\tstarttime\x88\x01\x01\x12E\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusH\x02R\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x03R\rstatusdetails\x88\x01\x01\x12!\n" +
+	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\x04R\ataskarn\x88\x01\x01\x121\n" +
+	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tH\x05R\x0ftaskexecutionid\x88\x01\x01\x12C\n" +
+	"\btasktype\x18\xe5\xf3ϰ\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeH\x06R\btasktype\x88\x01\x01\x12G\n" +
 	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x125\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\x05R\x11windowexecutionid\x88\x01\x01B\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\aR\x11windowexecutionid\x88\x01\x01B\n" +
 	"\n" +
 	"\b_endtimeB\f\n" +
 	"\n" +
-	"_starttimeB\x10\n" +
+	"_starttimeB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetailsB\n" +
 	"\n" +
 	"\b_taskarnB\x12\n" +
-	"\x10_taskexecutionidB\x14\n" +
-	"\x12_windowexecutionid\"\xa7\x06\n" +
+	"\x10_taskexecutionidB\v\n" +
+	"\t_tasktypeB\x14\n" +
+	"\x12_windowexecutionid\"\xc9\x06\n" +
 	"0MaintenanceWindowExecutionTaskInvocationIdentity\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12(\n" +
 	"\vexecutionid\x18\xb1ϯF \x01(\tH\x01R\vexecutionid\x88\x01\x01\x12*\n" +
@@ -49466,13 +49570,14 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x01(\tH\x04R\n" +
 	"parameters\x88\x01\x01\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01\x12@\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusR\x06status\x12-\n" +
-	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\x06R\rstatusdetails\x88\x01\x01\x121\n" +
-	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tH\aR\x0ftaskexecutionid\x88\x01\x01\x12>\n" +
-	"\btasktype\x18\xe5\xf3ϰ\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeR\btasktype\x125\n" +
-	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\bR\x11windowexecutionid\x88\x01\x01\x12.\n" +
-	"\x0ewindowtargetid\x18\xde\xce\xea{ \x01(\tH\tR\x0ewindowtargetid\x88\x01\x01B\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01\x12E\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2%.ssm.MaintenanceWindowExecutionStatusH\x06R\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusdetails\x18\xa8\x92\xc1\xb1\x01 \x01(\tH\aR\rstatusdetails\x88\x01\x01\x121\n" +
+	"\x0ftaskexecutionid\x18\xb8֍\xe2\x01 \x01(\tH\bR\x0ftaskexecutionid\x88\x01\x01\x12C\n" +
+	"\btasktype\x18\xe5\xf3ϰ\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeH\tR\btasktype\x88\x01\x01\x125\n" +
+	"\x11windowexecutionid\x18\x89맪\x01 \x01(\tH\n" +
+	"R\x11windowexecutionid\x88\x01\x01\x12.\n" +
+	"\x0ewindowtargetid\x18\xde\xce\xea{ \x01(\tH\vR\x0ewindowtargetid\x88\x01\x01B\n" +
 	"\n" +
 	"\b_endtimeB\x0e\n" +
 	"\f_executionidB\x0f\n" +
@@ -49480,9 +49585,11 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11_ownerinformationB\r\n" +
 	"\v_parametersB\f\n" +
 	"\n" +
-	"_starttimeB\x10\n" +
+	"_starttimeB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusdetailsB\x12\n" +
-	"\x10_taskexecutionidB\x14\n" +
+	"\x10_taskexecutionidB\v\n" +
+	"\t_tasktypeB\x14\n" +
 	"\x12_windowexecutionidB\x11\n" +
 	"\x0f_windowtargetid\"V\n" +
 	"\x17MaintenanceWindowFilter\x12\x18\n" +
@@ -49531,28 +49638,29 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"\b_payloadB\f\n" +
 	"\n" +
-	"_qualifier\"\x86\a\n" +
+	"_qualifier\"\xa0\a\n" +
 	"%MaintenanceWindowRunCommandParameters\x12V\n" +
 	"\x16cloudwatchoutputconfig\x18\xfb\x8f\x8d\n" +
 	" \x01(\v2\x1b.ssm.CloudWatchOutputConfigR\x16cloudwatchoutputconfig\x12!\n" +
 	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12*\n" +
-	"\fdocumenthash\x18\xd5\xfe\xe6w \x01(\tH\x01R\fdocumenthash\x88\x01\x01\x12D\n" +
-	"\x10documenthashtype\x18\xdd\xe3\xae, \x01(\x0e2\x15.ssm.DocumentHashTypeR\x10documenthashtype\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x02R\x0fdocumentversion\x88\x01\x01\x12K\n" +
+	"\fdocumenthash\x18\xd5\xfe\xe6w \x01(\tH\x01R\fdocumenthash\x88\x01\x01\x12I\n" +
+	"\x10documenthashtype\x18\xdd\xe3\xae, \x01(\x0e2\x15.ssm.DocumentHashTypeH\x02R\x10documenthashtype\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x03R\x0fdocumentversion\x88\x01\x01\x12K\n" +
 	"\x12notificationconfig\x18\xa1\u0602\xa5\x01 \x01(\v2\x17.ssm.NotificationConfigR\x12notificationconfig\x126\n" +
-	"\x12outputs3bucketname\x18\x80ۆY \x01(\tH\x03R\x12outputs3bucketname\x88\x01\x01\x124\n" +
-	"\x11outputs3keyprefix\x18\xce\xf6\xc0\b \x01(\tH\x04R\x11outputs3keyprefix\x88\x01\x01\x12^\n" +
+	"\x12outputs3bucketname\x18\x80ۆY \x01(\tH\x04R\x12outputs3bucketname\x88\x01\x01\x124\n" +
+	"\x11outputs3keyprefix\x18\xce\xf6\xc0\b \x01(\tH\x05R\x11outputs3keyprefix\x88\x01\x01\x12^\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2:.ssm.MaintenanceWindowRunCommandParameters.ParametersEntryR\n" +
 	"parameters\x12/\n" +
-	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x05R\x0eservicerolearn\x88\x01\x01\x12/\n" +
-	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x05H\x06R\x0etimeoutseconds\x88\x01\x01\x1a=\n" +
+	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x06R\x0eservicerolearn\x88\x01\x01\x12/\n" +
+	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x05H\aR\x0etimeoutseconds\x88\x01\x01\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
 	"\n" +
 	"\b_commentB\x0f\n" +
-	"\r_documenthashB\x12\n" +
+	"\r_documenthashB\x13\n" +
+	"\x11_documenthashtypeB\x12\n" +
 	"\x10_documentversionB\x15\n" +
 	"\x13_outputs3bucketnameB\x14\n" +
 	"\x12_outputs3keyprefixB\x11\n" +
@@ -49562,39 +49670,42 @@ const file_ssm_proto_rawDesc = "" +
 	"\x05input\x18\x9c\xc2\xcf\xfc\x01 \x01(\tH\x00R\x05input\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01B\b\n" +
 	"\x06_inputB\a\n" +
-	"\x05_name\"\xab\x03\n" +
+	"\x05_name\"\xc1\x03\n" +
 	"\x17MaintenanceWindowTarget\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x122\n" +
-	"\x10ownerinformation\x18\x83\x9a\xc5  \x01(\tH\x02R\x10ownerinformation\x88\x01\x01\x12J\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\".ssm.MaintenanceWindowResourceTypeR\fresourcetype\x12(\n" +
+	"\x10ownerinformation\x18\x83\x9a\xc5  \x01(\tH\x02R\x10ownerinformation\x88\x01\x01\x12O\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\".ssm.MaintenanceWindowResourceTypeH\x03R\fresourcetype\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12\"\n" +
-	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\x03R\bwindowid\x88\x01\x01\x12.\n" +
-	"\x0ewindowtargetid\x18\xde\xce\xea{ \x01(\tH\x04R\x0ewindowtargetid\x88\x01\x01B\x0e\n" +
+	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\x04R\bwindowid\x88\x01\x01\x12.\n" +
+	"\x0ewindowtargetid\x18\xde\xce\xea{ \x01(\tH\x05R\x0ewindowtargetid\x88\x01\x01B\x0e\n" +
 	"\f_descriptionB\a\n" +
 	"\x05_nameB\x13\n" +
-	"\x11_ownerinformationB\v\n" +
+	"\x11_ownerinformationB\x0f\n" +
+	"\r_resourcetypeB\v\n" +
 	"\t_windowidB\x11\n" +
-	"\x0f_windowtargetid\"\x8e\b\n" +
+	"\x0f_windowtargetid\"\xb4\b\n" +
 	"\x15MaintenanceWindowTask\x12J\n" +
-	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12S\n" +
-	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorR\x0ecutoffbehavior\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x126\n" +
+	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12X\n" +
+	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorH\x00R\x0ecutoffbehavior\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x126\n" +
 	"\vlogginginfo\x18\xdf\xe8\xe2\xd5\x01 \x01(\v2\x10.ssm.LoggingInfoR\vlogginginfo\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x01R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x02R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x12\"\n" +
-	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x04R\bpriority\x88\x01\x01\x12/\n" +
-	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x05R\x0eservicerolearn\x88\x01\x01\x12(\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x02R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x03R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12\"\n" +
+	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x05R\bpriority\x88\x01\x01\x12/\n" +
+	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x06R\x0eservicerolearn\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12!\n" +
-	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\x06R\ataskarn\x88\x01\x01\x12Z\n" +
-	"\x0etaskparameters\x18\x81\x8f\xe6\xb7\x01 \x03(\v2..ssm.MaintenanceWindowTask.TaskparametersEntryR\x0etaskparameters\x126\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeR\x04type\x12\"\n" +
-	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\aR\bwindowid\x88\x01\x01\x12+\n" +
-	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tH\bR\fwindowtaskid\x88\x01\x01\x1au\n" +
+	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\aR\ataskarn\x88\x01\x01\x12Z\n" +
+	"\x0etaskparameters\x18\x81\x8f\xe6\xb7\x01 \x03(\v2..ssm.MaintenanceWindowTask.TaskparametersEntryR\x0etaskparameters\x12;\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1e.ssm.MaintenanceWindowTaskTypeH\bR\x04type\x88\x01\x01\x12\"\n" +
+	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\tR\bwindowid\x88\x01\x01\x12+\n" +
+	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tH\n" +
+	"R\fwindowtaskid\x88\x01\x01\x1au\n" +
 	"\x13TaskparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12H\n" +
-	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01B\x11\n" +
+	"\x0f_cutoffbehaviorB\x0e\n" +
 	"\f_descriptionB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
 	"\n" +
@@ -49603,7 +49714,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\t_priorityB\x11\n" +
 	"\x0f_servicerolearnB\n" +
 	"\n" +
-	"\b_taskarnB\v\n" +
+	"\b_taskarnB\a\n" +
+	"\x05_typeB\v\n" +
 	"\t_windowidB\x0f\n" +
 	"\r_windowtaskid\"\xe6\x02\n" +
 	")MaintenanceWindowTaskInvocationParameters\x12M\n" +
@@ -49653,12 +49765,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0eaggregatortype\x18Š\xe2\x9c\x01 \x01(\x0e2\x17.ssm.NodeAggregatorTypeR\x0eaggregatortype\x128\n" +
 	"\vaggregators\x18\x8e\xfd\x83M \x03(\v2\x13.ssm.NodeAggregatorR\vaggregators\x12@\n" +
 	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\x0e2\x16.ssm.NodeAttributeNameR\rattributename\x121\n" +
-	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\x0e2\x11.ssm.NodeTypeNameR\btypename\"\x85\x01\n" +
+	"\btypename\x18\xcf\xce\xd9\xd4\x01 \x01(\x0e2\x11.ssm.NodeTypeNameR\btypename\"\x93\x01\n" +
 	"\n" +
 	"NodeFilter\x12'\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\x0e2\x12.ssm.NodeFilterKeyR\x03key\x123\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1b.ssm.NodeFilterOperatorTypeR\x04type\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xf4\x01\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\x0e2\x12.ssm.NodeFilterKeyR\x03key\x128\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1b.ssm.NodeFilterOperatorTypeH\x00R\x04type\x88\x01\x01\x12\x19\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\a\n" +
+	"\x05_type\"\xf4\x01\n" +
 	"\rNodeOwnerInfo\x12$\n" +
 	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tH\x00R\taccountid\x88\x01\x01\x12:\n" +
 	"\x14organizationalunitid\x18\xc1\xdf\xf6_ \x01(\tH\x01R\x14organizationalunitid\x88\x01\x01\x12?\n" +
@@ -49672,12 +49785,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\x13NonCompliantSummary\x125\n" +
 	"\x11noncompliantcount\x18\xbd\x84\xe4\xfb\x01 \x01(\x05H\x00R\x11noncompliantcount\x88\x01\x01\x12A\n" +
 	"\x0fseveritysummary\x18\x9f\xb5\xde\t \x01(\v2\x14.ssm.SeveritySummaryR\x0fseveritysummaryB\x14\n" +
-	"\x12_noncompliantcount\"\xeb\x01\n" +
+	"\x12_noncompliantcount\"\x85\x02\n" +
 	"\x12NotificationConfig\x120\n" +
 	"\x0fnotificationarn\x18\xc2\xf0\xd7[ \x01(\tH\x00R\x0fnotificationarn\x88\x01\x01\x12I\n" +
-	"\x12notificationevents\x18\xb4\x9b\xf4\a \x03(\x0e2\x16.ssm.NotificationEventR\x12notificationevents\x12D\n" +
-	"\x10notificationtype\x18\xb7\x9b\xe5\x14 \x01(\x0e2\x15.ssm.NotificationTypeR\x10notificationtypeB\x12\n" +
-	"\x10_notificationarn\"\xa2\x03\n" +
+	"\x12notificationevents\x18\xb4\x9b\xf4\a \x03(\x0e2\x16.ssm.NotificationEventR\x12notificationevents\x12I\n" +
+	"\x10notificationtype\x18\xb7\x9b\xe5\x14 \x01(\x0e2\x15.ssm.NotificationTypeH\x01R\x10notificationtype\x88\x01\x01B\x12\n" +
+	"\x10_notificationarnB\x13\n" +
+	"\x11_notificationtype\"\xa2\x03\n" +
 	"\rOpsAggregator\x12/\n" +
 	"\x0eaggregatortype\x18Š\xe2\x9c\x01 \x01(\tH\x00R\x0eaggregatortype\x88\x01\x01\x127\n" +
 	"\vaggregators\x18\x8e\xfd\x83M \x03(\v2\x12.ssm.OpsAggregatorR\vaggregators\x12-\n" +
@@ -49701,12 +49815,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\rOpsEntityItem\x12(\n" +
 	"\vcapturetime\x18\xf9\xb0\xbb\" \x01(\tH\x00R\vcapturetime\x88\x01\x01\x12=\n" +
 	"\acontent\x18㾞\v \x03(\v2 .ssm.OpsEntityItemEntryListEntryR\acontentB\x0e\n" +
-	"\f_capturetime\"o\n" +
+	"\f_capturetime\"}\n" +
 	"\tOpsFilter\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x122\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1a.ssm.OpsFilterOperatorTypeR\x04type\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xf0\n" +
-	"\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x127\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1a.ssm.OpsFilterOperatorTypeH\x00R\x04type\x88\x01\x01\x12\x19\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\a\n" +
+	"\x05_type\"\x80\v\n" +
 	"\aOpsItem\x12-\n" +
 	"\ractualendtime\x18\xc6\xfa\xf3\xd7\x01 \x01(\tH\x00R\ractualendtime\x88\x01\x01\x121\n" +
 	"\x0factualstarttime\x18\xfd\xe2\x8a\xfe\x01 \x01(\tH\x01R\x0factualstarttime\x88\x01\x01\x12\"\n" +
@@ -49729,10 +49843,10 @@ const file_ssm_proto_rawDesc = "" +
 	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\rR\bpriority\x88\x01\x01\x12A\n" +
 	"\x0frelatedopsitems\x18\x99\x8f\xf2\x88\x01 \x03(\v2\x13.ssm.RelatedOpsItemR\x0frelatedopsitems\x12#\n" +
 	"\bseverity\x18\xd3僄\x01 \x01(\tH\x0eR\bseverity\x88\x01\x01\x12\x1e\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\x0fR\x06source\x88\x01\x01\x12-\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.OpsItemStatusR\x06status\x12\x1c\n" +
-	"\x05title\x18\xaa\xe3\xd1& \x01(\tH\x10R\x05title\x88\x01\x01\x12!\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tH\x11R\aversion\x88\x01\x01\x1aY\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\x0fR\x06source\x88\x01\x01\x122\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.OpsItemStatusH\x10R\x06status\x88\x01\x01\x12\x1c\n" +
+	"\x05title\x18\xaa\xe3\xd1& \x01(\tH\x11R\x05title\x88\x01\x01\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tH\x12R\aversion\x88\x01\x01\x1aY\n" +
 	"\x14OperationaldataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12+\n" +
 	"\x05value\x18\x02 \x01(\v2\x15.ssm.OpsItemDataValueR\x05value:\x028\x01B\x10\n" +
@@ -49753,7 +49867,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11_plannedstarttimeB\v\n" +
 	"\t_priorityB\v\n" +
 	"\t_severityB\t\n" +
-	"\a_sourceB\b\n" +
+	"\a_sourceB\t\n" +
+	"\a_statusB\b\n" +
 	"\x06_titleB\n" +
 	"\n" +
 	"\b_version\"L\n" +
@@ -49771,10 +49886,11 @@ const file_ssm_proto_rawDesc = "" +
 	"\x18OpsItemConflictException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"i\n" +
-	"\x10OpsItemDataValue\x12,\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.ssm.OpsItemDataTypeR\x04type\x12\x1d\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
+	"\b_message\"w\n" +
+	"\x10OpsItemDataValue\x121\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.ssm.OpsItemDataTypeH\x00R\x04type\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\a\n" +
+	"\x05_typeB\b\n" +
 	"\x06_value\"\xa0\x01\n" +
 	"\x12OpsItemEventFilter\x12/\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\x0e2\x1a.ssm.OpsItemEventFilterKeyR\x03key\x12>\n" +
@@ -49861,7 +49977,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x19OpsItemRelatedItemsFilter\x126\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\x0e2!.ssm.OpsItemRelatedItemsFilterKeyR\x03key\x12E\n" +
 	"\boperator\x18\x9e\xb0\x95\x0f \x01(\x0e2&.ssm.OpsItemRelatedItemsFilterOperatorR\boperator\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xd7\b\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xe7\b\n" +
 	"\x0eOpsItemSummary\x12-\n" +
 	"\ractualendtime\x18\xc6\xfa\xf3\xd7\x01 \x01(\tH\x00R\ractualendtime\x88\x01\x01\x121\n" +
 	"\x0factualstarttime\x18\xfd\xe2\x8a\xfe\x01 \x01(\tH\x01R\x0factualstarttime\x88\x01\x01\x12\"\n" +
@@ -49878,9 +49994,9 @@ const file_ssm_proto_rawDesc = "" +
 	"R\x10plannedstarttime\x88\x01\x01\x12\"\n" +
 	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\vR\bpriority\x88\x01\x01\x12#\n" +
 	"\bseverity\x18\xd3僄\x01 \x01(\tH\fR\bseverity\x88\x01\x01\x12\x1e\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\rR\x06source\x88\x01\x01\x12-\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.OpsItemStatusR\x06status\x12\x1c\n" +
-	"\x05title\x18\xaa\xe3\xd1& \x01(\tH\x0eR\x05title\x88\x01\x01\x1aY\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\rR\x06source\x88\x01\x01\x122\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.OpsItemStatusH\x0eR\x06status\x88\x01\x01\x12\x1c\n" +
+	"\x05title\x18\xaa\xe3\xd1& \x01(\tH\x0fR\x05title\x88\x01\x01\x1aY\n" +
 	"\x14OperationaldataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12+\n" +
 	"\x05value\x18\x02 \x01(\v2\x15.ssm.OpsItemDataValueR\x05value:\x028\x01B\x10\n" +
@@ -49899,7 +50015,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11_plannedstarttimeB\v\n" +
 	"\t_priorityB\v\n" +
 	"\t_severityB\t\n" +
-	"\a_sourceB\b\n" +
+	"\a_sourceB\t\n" +
+	"\a_statusB\b\n" +
 	"\x06_title\"\xd9\x02\n" +
 	"\vOpsMetadata\x12+\n" +
 	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x00R\fcreationdate\x88\x01\x01\x122\n" +
@@ -49947,30 +50064,31 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0eoutputsourceid\x18\xb5\x98\xbc\x91\x01 \x01(\tH\x00R\x0eoutputsourceid\x88\x01\x01\x123\n" +
 	"\x10outputsourcetype\x18\xaa\xbc\xc2\xea\x01 \x01(\tH\x01R\x10outputsourcetype\x88\x01\x01B\x11\n" +
 	"\x0f_outputsourceidB\x13\n" +
-	"\x11_outputsourcetype\"\xc1\x03\n" +
+	"\x11_outputsourcetype\"\xcf\x03\n" +
 	"\tParameter\x12\x19\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\"\n" +
 	"\bdatatype\x18\xeeص  \x01(\tH\x01R\bdatatype\x88\x01\x01\x122\n" +
 	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tH\x02R\x10lastmodifieddate\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x12#\n" +
 	"\bselector\x18\x9d\xa4֨\x01 \x01(\tH\x04R\bselector\x88\x01\x01\x12+\n" +
-	"\fsourceresult\x18\x82\x9aΘ\x01 \x01(\tH\x05R\fsourceresult\x88\x01\x01\x12*\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x12.ssm.ParameterTypeR\x04type\x12\x1d\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x06R\x05value\x88\x01\x01\x12!\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\aR\aversion\x88\x01\x01B\x06\n" +
+	"\fsourceresult\x18\x82\x9aΘ\x01 \x01(\tH\x05R\fsourceresult\x88\x01\x01\x12/\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x12.ssm.ParameterTypeH\x06R\x04type\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\aR\x05value\x88\x01\x01\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\bR\aversion\x88\x01\x01B\x06\n" +
 	"\x04_arnB\v\n" +
 	"\t_datatypeB\x13\n" +
 	"\x11_lastmodifieddateB\a\n" +
 	"\x05_nameB\v\n" +
 	"\t_selectorB\x0f\n" +
-	"\r_sourceresultB\b\n" +
+	"\r_sourceresultB\a\n" +
+	"\x05_typeB\b\n" +
 	"\x06_valueB\n" +
 	"\n" +
 	"\b_version\"F\n" +
 	"\x16ParameterAlreadyExists\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xa7\x05\n" +
+	"\b_message\"\xc3\x05\n" +
 	"\x10ParameterHistory\x12/\n" +
 	"\x0eallowedpattern\x18\xccƵ\x8a\x01 \x01(\tH\x00R\x0eallowedpattern\x88\x01\x01\x12\"\n" +
 	"\bdatatype\x18\xeeص  \x01(\tH\x01R\bdatatype\x88\x01\x01\x12(\n" +
@@ -49980,18 +50098,21 @@ const file_ssm_proto_rawDesc = "" +
 	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tH\x04R\x10lastmodifieddate\x88\x01\x01\x122\n" +
 	"\x10lastmodifieduser\x18\xba\xe3\xf4f \x01(\tH\x05R\x10lastmodifieduser\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x06R\x04name\x88\x01\x01\x129\n" +
-	"\bpolicies\x18\x98\xac\x8a\x13 \x03(\v2\x1a.ssm.ParameterInlinePolicyR\bpolicies\x12*\n" +
-	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\x12.ssm.ParameterTierR\x04tier\x12*\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x12.ssm.ParameterTypeR\x04type\x12\x1d\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\aR\x05value\x88\x01\x01\x12!\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\bR\aversion\x88\x01\x01B\x11\n" +
+	"\bpolicies\x18\x98\xac\x8a\x13 \x03(\v2\x1a.ssm.ParameterInlinePolicyR\bpolicies\x12/\n" +
+	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\x12.ssm.ParameterTierH\aR\x04tier\x88\x01\x01\x12/\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x12.ssm.ParameterTypeH\bR\x04type\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\tR\x05value\x88\x01\x01\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\n" +
+	"R\aversion\x88\x01\x01B\x11\n" +
 	"\x0f_allowedpatternB\v\n" +
 	"\t_datatypeB\x0e\n" +
 	"\f_descriptionB\b\n" +
 	"\x06_keyidB\x13\n" +
 	"\x11_lastmodifieddateB\x13\n" +
 	"\x11_lastmodifieduserB\a\n" +
-	"\x05_nameB\b\n" +
+	"\x05_nameB\a\n" +
+	"\x05_tierB\a\n" +
+	"\x05_typeB\b\n" +
 	"\x06_valueB\n" +
 	"\n" +
 	"\b_version\"\xc3\x01\n" +
@@ -50013,7 +50134,7 @@ const file_ssm_proto_rawDesc = "" +
 	" ParameterMaxVersionLimitExceeded\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x87\x05\n" +
+	"\b_message\"\xa3\x05\n" +
 	"\x11ParameterMetadata\x12\x19\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12/\n" +
 	"\x0eallowedpattern\x18\xccƵ\x8a\x01 \x01(\tH\x01R\x0eallowedpattern\x88\x01\x01\x12\"\n" +
@@ -50023,10 +50144,11 @@ const file_ssm_proto_rawDesc = "" +
 	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tH\x05R\x10lastmodifieddate\x88\x01\x01\x122\n" +
 	"\x10lastmodifieduser\x18\xba\xe3\xf4f \x01(\tH\x06R\x10lastmodifieduser\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\aR\x04name\x88\x01\x01\x129\n" +
-	"\bpolicies\x18\x98\xac\x8a\x13 \x03(\v2\x1a.ssm.ParameterInlinePolicyR\bpolicies\x12*\n" +
-	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\x12.ssm.ParameterTierR\x04tier\x12*\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x12.ssm.ParameterTypeR\x04type\x12!\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\bR\aversion\x88\x01\x01B\x06\n" +
+	"\bpolicies\x18\x98\xac\x8a\x13 \x03(\v2\x1a.ssm.ParameterInlinePolicyR\bpolicies\x12/\n" +
+	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\x12.ssm.ParameterTierH\bR\x04tier\x88\x01\x01\x12/\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x12.ssm.ParameterTypeH\tR\x04type\x88\x01\x01\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\n" +
+	"R\aversion\x88\x01\x01B\x06\n" +
 	"\x04_arnB\x11\n" +
 	"\x0f_allowedpatternB\v\n" +
 	"\t_datatypeB\x0e\n" +
@@ -50034,7 +50156,9 @@ const file_ssm_proto_rawDesc = "" +
 	"\x06_keyidB\x13\n" +
 	"\x11_lastmodifieddateB\x13\n" +
 	"\x11_lastmodifieduserB\a\n" +
-	"\x05_nameB\n" +
+	"\x05_nameB\a\n" +
+	"\x05_tierB\a\n" +
+	"\x05_typeB\n" +
 	"\n" +
 	"\b_version\"A\n" +
 	"\x11ParameterNotFound\x12 \n" +
@@ -50127,19 +50251,20 @@ const file_ssm_proto_rawDesc = "" +
 	"\x06_titleB\t\n" +
 	"\a_vendorB\n" +
 	"\n" +
-	"\b_version\"\xe7\x02\n" +
+	"\b_version\"\x80\x03\n" +
 	"\x15PatchBaselineIdentity\x128\n" +
 	"\x13baselinedescription\x18\x95\xf5\x90\x0e \x01(\tH\x00R\x13baselinedescription\x88\x01\x01\x12&\n" +
 	"\n" +
 	"baselineid\x18\xd0\xe4\xdb( \x01(\tH\x01R\n" +
 	"baselineid\x88\x01\x01\x12*\n" +
 	"\fbaselinename\x18\x8a\x86\xf0k \x01(\tH\x02R\fbaselinename\x88\x01\x01\x121\n" +
-	"\x0fdefaultbaseline\x18\x8a\xfe\x81\xf4\x01 \x01(\bH\x03R\x0fdefaultbaseline\x88\x01\x01\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystemB\x16\n" +
+	"\x0fdefaultbaseline\x18\x8a\xfe\x81\xf4\x01 \x01(\bH\x03R\x0fdefaultbaseline\x88\x01\x01\x12F\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemH\x04R\x0foperatingsystem\x88\x01\x01B\x16\n" +
 	"\x14_baselinedescriptionB\r\n" +
 	"\v_baselineidB\x0f\n" +
 	"\r_baselinenameB\x12\n" +
-	"\x10_defaultbaseline\"\x9e\x02\n" +
+	"\x10_defaultbaselineB\x12\n" +
+	"\x10_operatingsystem\"\x9e\x02\n" +
 	"\x13PatchComplianceData\x12\x1e\n" +
 	"\x06cveids\x18\x90\xdd\xf9\n" +
 	" \x01(\tH\x00R\x06cveids\x88\x01\x01\x12)\n" +
@@ -50164,15 +50289,16 @@ const file_ssm_proto_rawDesc = "" +
 	"\x17PatchOrchestratorFilter\x12\x18\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tH\x00R\x03key\x88\x01\x01\x12\x19\n" +
 	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\x06\n" +
-	"\x04_key\"\xfa\x02\n" +
+	"\x04_key\"\x93\x03\n" +
 	"\tPatchRule\x123\n" +
 	"\x10approveafterdays\x18\xfc\xfd\xec\x90\x01 \x01(\x05H\x00R\x10approveafterdays\x88\x01\x01\x123\n" +
-	"\x10approveuntildate\x18\xb7\xaf\x9e\xe1\x01 \x01(\tH\x01R\x10approveuntildate\x88\x01\x01\x12F\n" +
-	"\x0fcompliancelevel\x18\xe9\xfb\xb0_ \x01(\x0e2\x19.ssm.PatchComplianceLevelR\x0fcompliancelevel\x124\n" +
-	"\x11enablenonsecurity\x18\x98\xb0\xd6@ \x01(\bH\x02R\x11enablenonsecurity\x88\x01\x01\x12E\n" +
+	"\x10approveuntildate\x18\xb7\xaf\x9e\xe1\x01 \x01(\tH\x01R\x10approveuntildate\x88\x01\x01\x12K\n" +
+	"\x0fcompliancelevel\x18\xe9\xfb\xb0_ \x01(\x0e2\x19.ssm.PatchComplianceLevelH\x02R\x0fcompliancelevel\x88\x01\x01\x124\n" +
+	"\x11enablenonsecurity\x18\x98\xb0\xd6@ \x01(\bH\x03R\x11enablenonsecurity\x88\x01\x01\x12E\n" +
 	"\x10patchfiltergroup\x18\xb3\xe5\xa2\xce\x01 \x01(\v2\x15.ssm.PatchFilterGroupR\x10patchfiltergroupB\x13\n" +
 	"\x11_approveafterdaysB\x13\n" +
-	"\x11_approveuntildateB\x14\n" +
+	"\x11_approveuntildateB\x12\n" +
+	"\x10_compliancelevelB\x14\n" +
 	"\x12_enablenonsecurity\"D\n" +
 	"\x0ePatchRuleGroup\x122\n" +
 	"\n" +
@@ -50181,12 +50307,14 @@ const file_ssm_proto_rawDesc = "" +
 	"\vPatchSource\x12(\n" +
 	"\rconfiguration\x18\xda\xc8\xfb\xd2\x01 \x01(\tR\rconfiguration\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1d\n" +
-	"\bproducts\x18\xae\x99\xb1Y \x03(\tR\bproducts\"\xde\x01\n" +
+	"\bproducts\x18\xae\x99\xb1Y \x03(\tR\bproducts\"\x91\x02\n" +
 	"\vPatchStatus\x12*\n" +
-	"\fapprovaldate\x18\xb3\x91\xeaB \x01(\tH\x00R\fapprovaldate\x88\x01\x01\x12F\n" +
-	"\x0fcompliancelevel\x18\xe9\xfb\xb0_ \x01(\x0e2\x19.ssm.PatchComplianceLevelR\x0fcompliancelevel\x12J\n" +
-	"\x10deploymentstatus\x18\xa1\xea\xf4\xd1\x01 \x01(\x0e2\x1a.ssm.PatchDeploymentStatusR\x10deploymentstatusB\x0f\n" +
-	"\r_approvaldate\"N\n" +
+	"\fapprovaldate\x18\xb3\x91\xeaB \x01(\tH\x00R\fapprovaldate\x88\x01\x01\x12K\n" +
+	"\x0fcompliancelevel\x18\xe9\xfb\xb0_ \x01(\x0e2\x19.ssm.PatchComplianceLevelH\x01R\x0fcompliancelevel\x88\x01\x01\x12O\n" +
+	"\x10deploymentstatus\x18\xa1\xea\xf4\xd1\x01 \x01(\x0e2\x1a.ssm.PatchDeploymentStatusH\x02R\x10deploymentstatus\x88\x01\x01B\x0f\n" +
+	"\r_approvaldateB\x12\n" +
+	"\x10_compliancelevelB\x13\n" +
+	"\x11_deploymentstatus\"N\n" +
 	"\x1ePoliciesLimitExceededException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -50203,7 +50331,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\f_failedstepsB\x0f\n" +
 	"\r_successstepsB\x10\n" +
 	"\x0e_timedoutstepsB\r\n" +
-	"\v_totalsteps\"\x9c\x03\n" +
+	"\v_totalsteps\"\xb0\x03\n" +
 	"\x19PutComplianceItemsRequest\x12*\n" +
 	"\x0ecompliancetype\x18˯\x9e\xd7\x01 \x01(\tR\x0ecompliancetype\x12N\n" +
 	"\x10executionsummary\x18\x84\xed\x8a\" \x01(\v2\x1f.ssm.ComplianceExecutionSummaryR\x10executionsummary\x121\n" +
@@ -50212,11 +50340,12 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tR\n" +
 	"resourceid\x12&\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\tR\fresourcetype\x12=\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\tR\fresourcetype\x12B\n" +
 	"\n" +
-	"uploadtype\x18\xf5\x89\xec\xd8\x01 \x01(\x0e2\x19.ssm.ComplianceUploadTypeR\n" +
-	"uploadtypeB\x12\n" +
-	"\x10_itemcontenthash\"\x1a\n" +
+	"uploadtype\x18\xf5\x89\xec\xd8\x01 \x01(\x0e2\x19.ssm.ComplianceUploadTypeH\x01R\n" +
+	"uploadtype\x88\x01\x01B\x12\n" +
+	"\x10_itemcontenthashB\r\n" +
+	"\v_uploadtype\"\x1a\n" +
 	"\x18PutComplianceItemsResult\"e\n" +
 	"\x13PutInventoryRequest\x12!\n" +
 	"\n" +
@@ -50226,7 +50355,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x12PutInventoryResult\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xfe\x03\n" +
+	"\b_message\"\x9a\x04\n" +
 	"\x13PutParameterRequest\x12/\n" +
 	"\x0eallowedpattern\x18\xccƵ\x8a\x01 \x01(\tH\x00R\x0eallowedpattern\x88\x01\x01\x12\"\n" +
 	"\bdatatype\x18\xeeص  \x01(\tH\x01R\bdatatype\x88\x01\x01\x12(\n" +
@@ -50235,9 +50364,9 @@ const file_ssm_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
 	"\toverwrite\x18\x93\x9d\xfc\xc7\x01 \x01(\bH\x04R\toverwrite\x88\x01\x01\x12\"\n" +
 	"\bpolicies\x18\x98\xac\x8a\x13 \x01(\tH\x05R\bpolicies\x88\x01\x01\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tags\x12*\n" +
-	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\x12.ssm.ParameterTierR\x04tier\x12*\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x12.ssm.ParameterTypeR\x04type\x12\x18\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tags\x12/\n" +
+	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\x12.ssm.ParameterTierH\x06R\x04tier\x88\x01\x01\x12/\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x12.ssm.ParameterTypeH\aR\x04type\x88\x01\x01\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05valueB\x11\n" +
 	"\x0f_allowedpatternB\v\n" +
 	"\t_datatypeB\x0e\n" +
@@ -50245,10 +50374,13 @@ const file_ssm_proto_rawDesc = "" +
 	"\x06_keyidB\f\n" +
 	"\n" +
 	"_overwriteB\v\n" +
-	"\t_policies\"o\n" +
-	"\x12PutParameterResult\x12*\n" +
-	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\x12.ssm.ParameterTierR\x04tier\x12!\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x00R\aversion\x88\x01\x01B\n" +
+	"\t_policiesB\a\n" +
+	"\x05_tierB\a\n" +
+	"\x05_type\"}\n" +
+	"\x12PutParameterResult\x12/\n" +
+	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\x12.ssm.ParameterTierH\x00R\x04tier\x88\x01\x01\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x01R\aversion\x88\x01\x01B\a\n" +
+	"\x05_tierB\n" +
 	"\n" +
 	"\b_version\"\xc5\x01\n" +
 	"\x18PutResourcePolicyRequest\x12\x1a\n" +
@@ -50306,18 +50438,18 @@ const file_ssm_proto_rawDesc = "" +
 	"\x11_ownerinformation\"n\n" +
 	")RegisterTargetWithMaintenanceWindowResult\x12.\n" +
 	"\x0ewindowtargetid\x18\xde\xce\xea{ \x01(\tH\x00R\x0ewindowtargetid\x88\x01\x01B\x11\n" +
-	"\x0f_windowtargetid\"\x85\t\n" +
+	"\x0f_windowtargetid\"\x9d\t\n" +
 	"(RegisterTaskWithMaintenanceWindowRequest\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12(\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12S\n" +
-	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorR\x0ecutoffbehavior\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x126\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12X\n" +
+	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorH\x01R\x0ecutoffbehavior\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x02R\vdescription\x88\x01\x01\x126\n" +
 	"\vlogginginfo\x18\xdf\xe8\xe2\xd5\x01 \x01(\v2\x10.ssm.LoggingInfoR\vlogginginfo\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x02R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x03R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12\"\n" +
-	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x05R\bpriority\x88\x01\x01\x12/\n" +
-	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x06R\x0eservicerolearn\x88\x01\x01\x12(\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x03R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x04R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x12\"\n" +
+	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x06R\bpriority\x88\x01\x01\x12/\n" +
+	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\aR\x0eservicerolearn\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12\x1c\n" +
 	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tR\ataskarn\x12n\n" +
 	"\x18taskinvocationparameters\x18\xd3\xfe¥\x01 \x01(\v2..ssm.MaintenanceWindowTaskInvocationParametersR\x18taskinvocationparameters\x12m\n" +
@@ -50327,7 +50459,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x13TaskparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12H\n" +
 	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01B\x0e\n" +
-	"\f_clienttokenB\x0e\n" +
+	"\f_clienttokenB\x11\n" +
+	"\x0f_cutoffbehaviorB\x0e\n" +
 	"\f_descriptionB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
 	"\n" +
@@ -50358,21 +50491,23 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0fparametervalues\x18\xb7\xb9\xa1d \x03(\tR\x0fparametervalues\x12$\n" +
 	"\ttruncated\x18\xca\xef\xd8H \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"\xb7\x04\n" +
+	"_truncated\"\xe0\x04\n" +
 	"\x1dResourceComplianceSummaryItem\x12/\n" +
 	"\x0ecompliancetype\x18˯\x9e\xd7\x01 \x01(\tH\x00R\x0ecompliancetype\x88\x01\x01\x12D\n" +
 	"\x10compliantsummary\x18\x87\xfe\xc2? \x01(\v2\x15.ssm.CompliantSummaryR\x10compliantsummary\x12N\n" +
 	"\x10executionsummary\x18\x84\xed\x8a\" \x01(\v2\x1f.ssm.ComplianceExecutionSummaryR\x10executionsummary\x12N\n" +
-	"\x13noncompliantsummary\x18\x8cϼ\x8c\x01 \x01(\v2\x18.ssm.NonCompliantSummaryR\x13noncompliantsummary\x12D\n" +
-	"\x0foverallseverity\x18\x86\x85\xda# \x01(\x0e2\x17.ssm.ComplianceSeverityR\x0foverallseverity\x12'\n" +
+	"\x13noncompliantsummary\x18\x8cϼ\x8c\x01 \x01(\v2\x18.ssm.NonCompliantSummaryR\x13noncompliantsummary\x12I\n" +
+	"\x0foverallseverity\x18\x86\x85\xda# \x01(\x0e2\x17.ssm.ComplianceSeverityH\x01R\x0foverallseverity\x88\x01\x01\x12'\n" +
 	"\n" +
-	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tH\x01R\n" +
+	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tH\x02R\n" +
 	"resourceid\x88\x01\x01\x12+\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\tH\x02R\fresourcetype\x88\x01\x01\x120\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.ssm.ComplianceStatusR\x06statusB\x11\n" +
-	"\x0f_compliancetypeB\r\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\tH\x03R\fresourcetype\x88\x01\x01\x125\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.ssm.ComplianceStatusH\x04R\x06status\x88\x01\x01B\x11\n" +
+	"\x0f_compliancetypeB\x12\n" +
+	"\x10_overallseverityB\r\n" +
 	"\v_resourceidB\x0f\n" +
-	"\r_resourcetype\"Z\n" +
+	"\r_resourcetypeB\t\n" +
+	"\a_status\"Z\n" +
 	"&ResourceDataSyncAlreadyExistsException\x12#\n" +
 	"\bsyncname\x18\xa2\x96\xb2\xb0\x01 \x01(\tH\x00R\bsyncname\x88\x01\x01B\v\n" +
 	"\t_syncname\"\xc1\x01\n" +
@@ -50393,22 +50528,23 @@ const file_ssm_proto_rawDesc = "" +
 	"-ResourceDataSyncInvalidConfigurationException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xe0\x05\n" +
-	"\x14ResourceDataSyncItem\x12B\n" +
+	"\b_message\"\xf4\x05\n" +
+	"\x14ResourceDataSyncItem\x12G\n" +
 	"\n" +
-	"laststatus\x18\xdc\xd4\xf0M \x01(\x0e2\x1f.ssm.LastResourceDataSyncStatusR\n" +
-	"laststatus\x12>\n" +
-	"\x16lastsuccessfulsynctime\x18\xfa\xf1\xf2, \x01(\tH\x00R\x16lastsuccessfulsynctime\x88\x01\x01\x12<\n" +
-	"\x15lastsyncstatusmessage\x18\xf0\xb5\xb4! \x01(\tH\x01R\x15lastsyncstatusmessage\x88\x01\x01\x12*\n" +
-	"\flastsynctime\x18Ќ\x84< \x01(\tH\x02R\flastsynctime\x88\x01\x01\x12L\n" +
+	"laststatus\x18\xdc\xd4\xf0M \x01(\x0e2\x1f.ssm.LastResourceDataSyncStatusH\x00R\n" +
+	"laststatus\x88\x01\x01\x12>\n" +
+	"\x16lastsuccessfulsynctime\x18\xfa\xf1\xf2, \x01(\tH\x01R\x16lastsuccessfulsynctime\x88\x01\x01\x12<\n" +
+	"\x15lastsyncstatusmessage\x18\xf0\xb5\xb4! \x01(\tH\x02R\x15lastsyncstatusmessage\x88\x01\x01\x12*\n" +
+	"\flastsynctime\x18Ќ\x84< \x01(\tH\x03R\flastsynctime\x88\x01\x01\x12L\n" +
 	"\rs3destination\x18\x9a\xe7\xf6\xfa\x01 \x01(\v2\".ssm.ResourceDataSyncS3DestinationR\rs3destination\x120\n" +
-	"\x0fsynccreatedtime\x18\xd8\xf9\xb9\x02 \x01(\tH\x03R\x0fsynccreatedtime\x88\x01\x01\x12:\n" +
-	"\x14synclastmodifiedtime\x18\xa5ܔT \x01(\tH\x04R\x14synclastmodifiedtime\x88\x01\x01\x12#\n" +
-	"\bsyncname\x18\xa2\x96\xb2\xb0\x01 \x01(\tH\x05R\bsyncname\x88\x01\x01\x12H\n" +
+	"\x0fsynccreatedtime\x18\xd8\xf9\xb9\x02 \x01(\tH\x04R\x0fsynccreatedtime\x88\x01\x01\x12:\n" +
+	"\x14synclastmodifiedtime\x18\xa5ܔT \x01(\tH\x05R\x14synclastmodifiedtime\x88\x01\x01\x12#\n" +
+	"\bsyncname\x18\xa2\x96\xb2\xb0\x01 \x01(\tH\x06R\bsyncname\x88\x01\x01\x12H\n" +
 	"\n" +
 	"syncsource\x18\xa8\xe2͈\x01 \x01(\v2$.ssm.ResourceDataSyncSourceWithStateR\n" +
 	"syncsource\x12\"\n" +
-	"\bsynctype\x18\xdb\xe6\xaa: \x01(\tH\x06R\bsynctype\x88\x01\x01B\x19\n" +
+	"\bsynctype\x18\xdb\xe6\xaa: \x01(\tH\aR\bsynctype\x88\x01\x01B\r\n" +
+	"\v_laststatusB\x19\n" +
 	"\x17_lastsuccessfulsynctimeB\x18\n" +
 	"\x16_lastsyncstatusmessageB\x0f\n" +
 	"\r_lastsynctimeB\x12\n" +
@@ -50511,13 +50647,14 @@ const file_ssm_proto_rawDesc = "" +
 	"_sessionidB\f\n" +
 	"\n" +
 	"_streamurlB\r\n" +
-	"\v_tokenvalue\"\xb1\x01\n" +
+	"\v_tokenvalue\"\xc1\x01\n" +
 	"\x11ReviewInformation\x12+\n" +
 	"\freviewedtime\x18\x92\u05f7\x84\x01 \x01(\tH\x00R\freviewedtime\x88\x01\x01\x12#\n" +
-	"\breviewer\x18\xbb\xb8\x8e\xd0\x01 \x01(\tH\x01R\breviewer\x88\x01\x01\x12,\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.ssm.ReviewStatusR\x06statusB\x0f\n" +
+	"\breviewer\x18\xbb\xb8\x8e\xd0\x01 \x01(\tH\x01R\breviewer\x88\x01\x01\x121\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.ssm.ReviewStatusH\x02R\x06status\x88\x01\x01B\x0f\n" +
 	"\r_reviewedtimeB\v\n" +
-	"\t_reviewer\"\xe7\x04\n" +
+	"\t_reviewerB\t\n" +
+	"\a_status\"\xe7\x04\n" +
 	"\aRunbook\x12%\n" +
 	"\fdocumentname\x18У\xc79 \x01(\tR\fdocumentname\x120\n" +
 	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x00R\x0fdocumentversion\x88\x01\x01\x12.\n" +
@@ -50567,35 +50704,37 @@ const file_ssm_proto_rawDesc = "" +
 	"\fPayloadEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x1c\n" +
-	"\x1aSendAutomationSignalResult\"\xde\t\n" +
+	"\x1aSendAutomationSignalResult\"\xf8\t\n" +
 	"\x12SendCommandRequest\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12V\n" +
 	"\x16cloudwatchoutputconfig\x18\xfb\x8f\x8d\n" +
 	" \x01(\v2\x1b.ssm.CloudWatchOutputConfigR\x16cloudwatchoutputconfig\x12!\n" +
 	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12*\n" +
-	"\fdocumenthash\x18\xd5\xfe\xe6w \x01(\tH\x01R\fdocumenthash\x88\x01\x01\x12D\n" +
-	"\x10documenthashtype\x18\xdd\xe3\xae, \x01(\x0e2\x15.ssm.DocumentHashTypeR\x10documenthashtype\x12%\n" +
+	"\fdocumenthash\x18\xd5\xfe\xe6w \x01(\tH\x01R\fdocumenthash\x88\x01\x01\x12I\n" +
+	"\x10documenthashtype\x18\xdd\xe3\xae, \x01(\x0e2\x15.ssm.DocumentHashTypeH\x02R\x10documenthashtype\x88\x01\x01\x12%\n" +
 	"\fdocumentname\x18У\xc79 \x01(\tR\fdocumentname\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x02R\x0fdocumentversion\x88\x01\x01\x12$\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x03R\x0fdocumentversion\x88\x01\x01\x12$\n" +
 	"\vinstanceids\x18\x85\xab\x93\x95\x01 \x03(\tR\vinstanceids\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x03R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x04R\tmaxerrors\x88\x01\x01\x12K\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x04R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x05R\tmaxerrors\x88\x01\x01\x12K\n" +
 	"\x12notificationconfig\x18\xa1\u0602\xa5\x01 \x01(\v2\x17.ssm.NotificationConfigR\x12notificationconfig\x126\n" +
-	"\x12outputs3bucketname\x18\x80ۆY \x01(\tH\x05R\x12outputs3bucketname\x88\x01\x01\x124\n" +
-	"\x11outputs3keyprefix\x18\xce\xf6\xc0\b \x01(\tH\x06R\x11outputs3keyprefix\x88\x01\x01\x12/\n" +
-	"\x0eoutputs3region\x18\xcf鏾\x01 \x01(\tH\aR\x0eoutputs3region\x88\x01\x01\x12K\n" +
+	"\x12outputs3bucketname\x18\x80ۆY \x01(\tH\x06R\x12outputs3bucketname\x88\x01\x01\x124\n" +
+	"\x11outputs3keyprefix\x18\xce\xf6\xc0\b \x01(\tH\aR\x11outputs3keyprefix\x88\x01\x01\x12/\n" +
+	"\x0eoutputs3region\x18\xcf鏾\x01 \x01(\tH\bR\x0eoutputs3region\x88\x01\x01\x12K\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2'.ssm.SendCommandRequest.ParametersEntryR\n" +
 	"parameters\x12/\n" +
-	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\bR\x0eservicerolearn\x88\x01\x01\x12(\n" +
+	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\tR\x0eservicerolearn\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12/\n" +
-	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x05H\tR\x0etimeoutseconds\x88\x01\x01\x1a=\n" +
+	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x05H\n" +
+	"R\x0etimeoutseconds\x88\x01\x01\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
 	"\n" +
 	"\b_commentB\x0f\n" +
-	"\r_documenthashB\x12\n" +
+	"\r_documenthashB\x13\n" +
+	"\x11_documenthashtypeB\x12\n" +
 	"\x10_documentversionB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
 	"\n" +
@@ -50634,22 +50773,24 @@ const file_ssm_proto_rawDesc = "" +
 	"\x16ServiceSettingNotFound\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xfc\x04\n" +
-	"\aSession\x122\n" +
+	"\b_message\"\xa0\x05\n" +
+	"\aSession\x127\n" +
 	"\n" +
-	"accesstype\x18\xb4\xd7\xd7\x06 \x01(\x0e2\x0f.ssm.AccessTypeR\n" +
-	"accesstype\x12 \n" +
-	"\adetails\x18Ƅ\x89v \x01(\tH\x00R\adetails\x88\x01\x01\x12*\n" +
-	"\fdocumentname\x18У\xc79 \x01(\tH\x01R\fdocumentname\x88\x01\x01\x12 \n" +
-	"\aenddate\x18ϳ\xf9$ \x01(\tH\x02R\aenddate\x88\x01\x01\x127\n" +
-	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\tH\x03R\x12maxsessionduration\x88\x01\x01\x12=\n" +
+	"accesstype\x18\xb4\xd7\xd7\x06 \x01(\x0e2\x0f.ssm.AccessTypeH\x00R\n" +
+	"accesstype\x88\x01\x01\x12 \n" +
+	"\adetails\x18Ƅ\x89v \x01(\tH\x01R\adetails\x88\x01\x01\x12*\n" +
+	"\fdocumentname\x18У\xc79 \x01(\tH\x02R\fdocumentname\x88\x01\x01\x12 \n" +
+	"\aenddate\x18ϳ\xf9$ \x01(\tH\x03R\aenddate\x88\x01\x01\x127\n" +
+	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\tH\x04R\x12maxsessionduration\x88\x01\x01\x12=\n" +
 	"\toutputurl\x18\xfeߡ\x14 \x01(\v2\x1c.ssm.SessionManagerOutputUrlR\toutputurl\x12\x1d\n" +
-	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\tH\x04R\x05owner\x88\x01\x01\x12\x1e\n" +
-	"\x06reason\x18\xba\x82\xc5\t \x01(\tH\x05R\x06reason\x88\x01\x01\x12$\n" +
-	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tH\x06R\tsessionid\x88\x01\x01\x12%\n" +
-	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tH\aR\tstartdate\x88\x01\x01\x12-\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.SessionStatusR\x06status\x12\x1e\n" +
-	"\x06target\x18\xe9\xe2\x9f[ \x01(\tH\bR\x06target\x88\x01\x01B\n" +
+	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\tH\x05R\x05owner\x88\x01\x01\x12\x1e\n" +
+	"\x06reason\x18\xba\x82\xc5\t \x01(\tH\x06R\x06reason\x88\x01\x01\x12$\n" +
+	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tH\aR\tsessionid\x88\x01\x01\x12%\n" +
+	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tH\bR\tstartdate\x88\x01\x01\x122\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.SessionStatusH\tR\x06status\x88\x01\x01\x12\x1e\n" +
+	"\x06target\x18\xe9\xe2\x9f[ \x01(\tH\n" +
+	"R\x06target\x88\x01\x01B\r\n" +
+	"\v_accesstypeB\n" +
 	"\n" +
 	"\b_detailsB\x0f\n" +
 	"\r_documentnameB\n" +
@@ -50662,6 +50803,7 @@ const file_ssm_proto_rawDesc = "" +
 	"_sessionidB\f\n" +
 	"\n" +
 	"_startdateB\t\n" +
+	"\a_statusB\t\n" +
 	"\a_target\"T\n" +
 	"\rSessionFilter\x12*\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\x0e2\x15.ssm.SessionFilterKeyR\x03key\x12\x17\n" +
@@ -50694,25 +50836,25 @@ const file_ssm_proto_rawDesc = "" +
 	"\x10_accessrequestid\"I\n" +
 	"\x1cStartAssociationsOnceRequest\x12)\n" +
 	"\x0eassociationids\x18\xc7\xe8\x97; \x03(\tR\x0eassociationids\"\x1d\n" +
-	"\x1bStartAssociationsOnceResult\"\xba\a\n" +
+	"\x1bStartAssociationsOnceResult\"\xc8\a\n" +
 	"\x1fStartAutomationExecutionRequest\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12(\n" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12%\n" +
 	"\fdocumentname\x18У\xc79 \x01(\tR\fdocumentname\x120\n" +
 	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x01R\x0fdocumentversion\x88\x01\x01\x12.\n" +
 	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x02R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x03R\tmaxerrors\x88\x01\x01\x12*\n" +
-	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x12.ssm.ExecutionModeR\x04mode\x12X\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x03R\tmaxerrors\x88\x01\x01\x12/\n" +
+	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x12.ssm.ExecutionModeH\x04R\x04mode\x88\x01\x01\x12X\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v24.ssm.StartAutomationExecutionRequest.ParametersEntryR\n" +
 	"parameters\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.ssm.TagR\x04tags\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x126\n" +
-	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tH\x04R\x12targetlocationsurl\x88\x01\x01\x127\n" +
+	"\x12targetlocationsurl\x18\xbe\xaf\xa63 \x01(\tH\x05R\x12targetlocationsurl\x88\x01\x01\x127\n" +
 	"\n" +
 	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
 	"targetmaps\x129\n" +
-	"\x13targetparametername\x18\xd5岧\x01 \x01(\tH\x05R\x13targetparametername\x88\x01\x01\x12(\n" +
+	"\x13targetparametername\x18\xd5岧\x01 \x01(\tH\x06R\x13targetparametername\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -50721,7 +50863,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x10_documentversionB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
 	"\n" +
-	"_maxerrorsB\x15\n" +
+	"_maxerrorsB\a\n" +
+	"\x05_modeB\x15\n" +
 	"\x13_targetlocationsurlB\x16\n" +
 	"\x14_targetparametername\"x\n" +
 	"\x1eStartAutomationExecutionResult\x12<\n" +
@@ -50785,7 +50928,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"_streamurlB\r\n" +
 	"\v_tokenvalue\"\x11\n" +
-	"\x0fStatusUnchanged\"\xd7\r\n" +
+	"\x0fStatusUnchanged\"\xeb\r\n" +
 	"\rStepExecution\x12\x1e\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\tH\x00R\x06action\x88\x01\x01\x122\n" +
 	"\x10executionendtime\x18\xfc\xa9\xd8B \x01(\tH\x01R\x10executionendtime\x88\x01\x01\x127\n" +
@@ -50807,16 +50950,16 @@ const file_ssm_proto_rawDesc = "" +
 	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\tH\n" +
 	"R\fresponsecode\x88\x01\x01\x120\n" +
 	"\x0fstepexecutionid\x18\xeb\x84\xc4\x16 \x01(\tH\vR\x0fstepexecutionid\x88\x01\x01\x12#\n" +
-	"\bstepname\x18\x8dΚ\xbc\x01 \x01(\tH\fR\bstepname\x88\x01\x01\x12A\n" +
+	"\bstepname\x18\x8dΚ\xbc\x01 \x01(\tH\fR\bstepname\x88\x01\x01\x12F\n" +
 	"\n" +
-	"stepstatus\x18\x9a\x8e\xbd\x17 \x01(\x0e2\x1e.ssm.AutomationExecutionStatusR\n" +
-	"stepstatus\x12?\n" +
+	"stepstatus\x18\x9a\x8e\xbd\x17 \x01(\x0e2\x1e.ssm.AutomationExecutionStatusH\rR\n" +
+	"stepstatus\x88\x01\x01\x12?\n" +
 	"\x0etargetlocation\x18\xc0\x84\xf1\xe2\x01 \x01(\v2\x13.ssm.TargetLocationR\x0etargetlocation\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12/\n" +
-	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x03H\rR\x0etimeoutseconds\x88\x01\x01\x12G\n" +
+	"\x0etimeoutseconds\x18\xb6줠\x01 \x01(\x03H\x0eR\x0etimeoutseconds\x88\x01\x01\x12G\n" +
 	"\x0ftriggeredalarms\x18\x85\xed\xc1} \x03(\v2\x1a.ssm.AlarmStateInformationR\x0ftriggeredalarms\x12*\n" +
 	"\x0evalidnextsteps\x18\xa8\xed\xa7\xc0\x01 \x03(\tR\x0evalidnextsteps\x12/\n" +
-	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tH\x0eR\x0ewarningmessage\x88\x01\x01\x1a9\n" +
+	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tH\x0fR\x0ewarningmessage\x88\x01\x01\x1a9\n" +
 	"\vInputsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a:\n" +
@@ -50839,15 +50982,17 @@ const file_ssm_proto_rawDesc = "" +
 	"\t_responseB\x0f\n" +
 	"\r_responsecodeB\x12\n" +
 	"\x10_stepexecutionidB\v\n" +
-	"\t_stepnameB\x11\n" +
+	"\t_stepnameB\r\n" +
+	"\v_stepstatusB\x11\n" +
 	"\x0f_timeoutsecondsB\x11\n" +
 	"\x0f_warningmessage\"b\n" +
 	"\x13StepExecutionFilter\x120\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\x0e2\x1b.ssm.StepExecutionFilterKeyR\x03key\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\x80\x01\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\x8e\x01\n" +
 	"\x1eStopAutomationExecutionRequest\x127\n" +
-	"\x15automationexecutionid\x18\xe6\xef\xf7\x05 \x01(\tR\x15automationexecutionid\x12%\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\r.ssm.StopTypeR\x04type\"\x1f\n" +
+	"\x15automationexecutionid\x18\xe6\xef\xf7\x05 \x01(\tR\x15automationexecutionid\x12*\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\r.ssm.StopTypeH\x00R\x04type\x88\x01\x01B\a\n" +
+	"\x05_type\"\x1f\n" +
 	"\x1dStopAutomationExecutionResult\"R\n" +
 	"\"SubTypeCountLimitExceededException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -50955,7 +51100,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\x17UnsupportedPlatformType\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xe6\f\n" +
+	"\b_message\"\x9a\r\n" +
 	"\x18UpdateAssociationRequest\x12J\n" +
 	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12A\n" +
 	"\x17applyonlyatcroninterval\x18\x96\xf9\xa7\x88\x01 \x01(\bH\x00R\x17applyonlyatcroninterval\x88\x01\x01\x12M\n" +
@@ -50964,21 +51109,21 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0fassociationname\x18\x98\x90ŕ\x01 \x01(\tH\x02R\x0fassociationname\x88\x01\x01\x127\n" +
 	"\x12associationversion\x18\x91\x8a\xc9\xd5\x01 \x01(\tH\x03R\x12associationversion\x88\x01\x01\x12M\n" +
 	"\x1dautomationtargetparametername\x18\xfa\xf6\x9b\xa6\x01 \x01(\tH\x04R\x1dautomationtargetparametername\x88\x01\x01\x12'\n" +
-	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12V\n" +
-	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityR\x12complianceseverity\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x05R\x0fdocumentversion\x88\x01\x01\x12#\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x06R\bduration\x88\x01\x01\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\aR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\bR\tmaxerrors\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\tR\x04name\x88\x01\x01\x12Q\n" +
+	"\rcalendarnames\x18\xbe\xf3\x99\x11 \x03(\tR\rcalendarnames\x12[\n" +
+	"\x12complianceseverity\x18\x96\x95\xfe\x84\x01 \x01(\x0e2\".ssm.AssociationComplianceSeverityH\x05R\x12complianceseverity\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x06R\x0fdocumentversion\x88\x01\x01\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\aR\bduration\x88\x01\x01\x12.\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\bR\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\tR\tmaxerrors\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\n" +
+	"R\x04name\x88\x01\x01\x12Q\n" +
 	"\x0eoutputlocation\x18\xf4\xeb\xb5  \x01(\v2&.ssm.InstanceAssociationOutputLocationR\x0eoutputlocation\x12Q\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2-.ssm.UpdateAssociationRequest.ParametersEntryR\n" +
 	"parameters\x127\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\n" +
-	"R\x12scheduleexpression\x88\x01\x01\x12.\n" +
-	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\vR\x0escheduleoffset\x88\x01\x01\x12J\n" +
-	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceR\x0esynccompliance\x12A\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\vR\x12scheduleexpression\x88\x01\x01\x12.\n" +
+	"\x0escheduleoffset\x18ؑ\xeaJ \x01(\x05H\fR\x0escheduleoffset\x88\x01\x01\x12O\n" +
+	"\x0esynccompliance\x18Ɯ\xd2\xee\x01 \x01(\x0e2\x1e.ssm.AssociationSyncComplianceH\rR\x0esynccompliance\x88\x01\x01\x12A\n" +
 	"\x0ftargetlocations\x18\xa5\xbb\xf1\x89\x01 \x03(\v2\x13.ssm.TargetLocationR\x0ftargetlocations\x127\n" +
 	"\n" +
 	"targetmaps\x18\xb8\xbc\xd5# \x03(\v2\x14.ssm.TargetMapsEntryR\n" +
@@ -50991,7 +51136,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x1e_associationdispatchassumeroleB\x12\n" +
 	"\x10_associationnameB\x15\n" +
 	"\x13_associationversionB \n" +
-	"\x1e_automationtargetparameternameB\x12\n" +
+	"\x1e_automationtargetparameternameB\x15\n" +
+	"\x13_complianceseverityB\x12\n" +
 	"\x10_documentversionB\v\n" +
 	"\t_durationB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
@@ -50999,7 +51145,8 @@ const file_ssm_proto_rawDesc = "" +
 	"_maxerrorsB\a\n" +
 	"\x05_nameB\x15\n" +
 	"\x13_scheduleexpressionB\x11\n" +
-	"\x0f_scheduleoffset\"r\n" +
+	"\x0f_scheduleoffsetB\x11\n" +
+	"\x0f_synccompliance\"r\n" +
 	"\x17UpdateAssociationResult\x12W\n" +
 	"\x16associationdescription\x18\x97\x9d\xb2\xa4\x01 \x01(\v2\x1b.ssm.AssociationDescriptionR\x16associationdescription\"\xa4\x01\n" +
 	"\x1eUpdateAssociationStatusRequest\x12H\n" +
@@ -51030,19 +51177,20 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x00R\x0fdocumentversion\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x12\n" +
 	"\x10_documentversion\" \n" +
-	"\x1eUpdateDocumentMetadataResponse\"\xbd\x03\n" +
+	"\x1eUpdateDocumentMetadataResponse\"\xd5\x03\n" +
 	"\x15UpdateDocumentRequest\x12<\n" +
 	"\vattachments\x18\xa2\xa2\xf5\xed\x01 \x03(\v2\x16.ssm.AttachmentsSourceR\vattachments\x12\x1b\n" +
 	"\acontent\x18㾞\v \x01(\tR\acontent\x12)\n" +
-	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x00R\vdisplayname\x88\x01\x01\x12?\n" +
-	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatR\x0edocumentformat\x120\n" +
-	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x01R\x0fdocumentversion\x88\x01\x01\x12\x15\n" +
+	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x00R\vdisplayname\x88\x01\x01\x12D\n" +
+	"\x0edocumentformat\x18\x88\x99\xbf\xf6\x01 \x01(\x0e2\x13.ssm.DocumentFormatH\x01R\x0edocumentformat\x88\x01\x01\x120\n" +
+	"\x0fdocumentversion\x18\xc9\xef\xa9( \x01(\tH\x02R\x0fdocumentversion\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12'\n" +
 	"\n" +
-	"targettype\x18\xa1ζ\xbd\x01 \x01(\tH\x02R\n" +
+	"targettype\x18\xa1ζ\xbd\x01 \x01(\tH\x03R\n" +
 	"targettype\x88\x01\x01\x12(\n" +
-	"\vversionname\x18գ\xb4l \x01(\tH\x03R\vversionname\x88\x01\x01B\x0e\n" +
-	"\f_displaynameB\x12\n" +
+	"\vversionname\x18գ\xb4l \x01(\tH\x04R\vversionname\x88\x01\x01B\x0e\n" +
+	"\f_displaynameB\x11\n" +
+	"\x0f_documentformatB\x12\n" +
 	"\x10_documentversionB\r\n" +
 	"\v_targettypeB\x0e\n" +
 	"\f_versionname\"f\n" +
@@ -51132,27 +51280,28 @@ const file_ssm_proto_rawDesc = "" +
 	"\x05_nameB\x13\n" +
 	"\x11_ownerinformationB\v\n" +
 	"\t_windowidB\x11\n" +
-	"\x0f_windowtargetid\"\xe6\b\n" +
+	"\x0f_windowtargetid\"\xfe\b\n" +
 	"\"UpdateMaintenanceWindowTaskRequest\x12J\n" +
-	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12S\n" +
-	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorR\x0ecutoffbehavior\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x126\n" +
+	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12X\n" +
+	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorH\x00R\x0ecutoffbehavior\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x126\n" +
 	"\vlogginginfo\x18\xdf\xe8\xe2\xd5\x01 \x01(\v2\x10.ssm.LoggingInfoR\vlogginginfo\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x01R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x02R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x12\"\n" +
-	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x04R\bpriority\x88\x01\x01\x12 \n" +
-	"\areplace\x18\xe4\x9e\xd5& \x01(\bH\x05R\areplace\x88\x01\x01\x12/\n" +
-	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x06R\x0eservicerolearn\x88\x01\x01\x12(\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x02R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x03R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12\"\n" +
+	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x05R\bpriority\x88\x01\x01\x12 \n" +
+	"\areplace\x18\xe4\x9e\xd5& \x01(\bH\x06R\areplace\x88\x01\x01\x12/\n" +
+	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\aR\x0eservicerolearn\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12!\n" +
-	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\aR\ataskarn\x88\x01\x01\x12n\n" +
+	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\bR\ataskarn\x88\x01\x01\x12n\n" +
 	"\x18taskinvocationparameters\x18\xd3\xfe¥\x01 \x01(\v2..ssm.MaintenanceWindowTaskInvocationParametersR\x18taskinvocationparameters\x12g\n" +
 	"\x0etaskparameters\x18\x81\x8f\xe6\xb7\x01 \x03(\v2;.ssm.UpdateMaintenanceWindowTaskRequest.TaskparametersEntryR\x0etaskparameters\x12\x1d\n" +
 	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tR\bwindowid\x12&\n" +
 	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tR\fwindowtaskid\x1au\n" +
 	"\x13TaskparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12H\n" +
-	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01B\x11\n" +
+	"\x0f_cutoffbehaviorB\x0e\n" +
 	"\f_descriptionB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
 	"\n" +
@@ -51163,26 +51312,27 @@ const file_ssm_proto_rawDesc = "" +
 	"\b_replaceB\x11\n" +
 	"\x0f_servicerolearnB\n" +
 	"\n" +
-	"\b_taskarn\"\xde\b\n" +
+	"\b_taskarn\"\xf6\b\n" +
 	"!UpdateMaintenanceWindowTaskResult\x12J\n" +
-	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12S\n" +
-	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorR\x0ecutoffbehavior\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x126\n" +
+	"\x12alarmconfiguration\x18\x89\x99\xb9! \x01(\v2\x17.ssm.AlarmConfigurationR\x12alarmconfiguration\x12X\n" +
+	"\x0ecutoffbehavior\x18ˮ\xc19 \x01(\x0e2(.ssm.MaintenanceWindowTaskCutoffBehaviorH\x00R\x0ecutoffbehavior\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x126\n" +
 	"\vlogginginfo\x18\xdf\xe8\xe2\xd5\x01 \x01(\v2\x10.ssm.LoggingInfoR\vlogginginfo\x12.\n" +
-	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x01R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
-	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x02R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x12\"\n" +
-	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x04R\bpriority\x88\x01\x01\x12/\n" +
-	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x05R\x0eservicerolearn\x88\x01\x01\x12(\n" +
+	"\x0emaxconcurrency\x18\xfd\xc1\x8e\x0e \x01(\tH\x02R\x0emaxconcurrency\x88\x01\x01\x12$\n" +
+	"\tmaxerrors\x18\xab\xc2\xf5= \x01(\tH\x03R\tmaxerrors\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12\"\n" +
+	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x05R\bpriority\x88\x01\x01\x12/\n" +
+	"\x0eservicerolearn\x18\x84\xe3ڶ\x01 \x01(\tH\x06R\x0eservicerolearn\x88\x01\x01\x12(\n" +
 	"\atargets\x18\x82\x9b\x82} \x03(\v2\v.ssm.TargetR\atargets\x12!\n" +
-	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\x06R\ataskarn\x88\x01\x01\x12n\n" +
+	"\ataskarn\x18\xe4\xc9\xfa\x94\x01 \x01(\tH\aR\ataskarn\x88\x01\x01\x12n\n" +
 	"\x18taskinvocationparameters\x18\xd3\xfe¥\x01 \x01(\v2..ssm.MaintenanceWindowTaskInvocationParametersR\x18taskinvocationparameters\x12f\n" +
 	"\x0etaskparameters\x18\x81\x8f\xe6\xb7\x01 \x03(\v2:.ssm.UpdateMaintenanceWindowTaskResult.TaskparametersEntryR\x0etaskparameters\x12\"\n" +
-	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\aR\bwindowid\x88\x01\x01\x12+\n" +
-	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tH\bR\fwindowtaskid\x88\x01\x01\x1au\n" +
+	"\bwindowid\x18\xa9\xe4\x87\t \x01(\tH\bR\bwindowid\x88\x01\x01\x12+\n" +
+	"\fwindowtaskid\x18ڍ\xb1\x9a\x01 \x01(\tH\tR\fwindowtaskid\x88\x01\x01\x1au\n" +
 	"\x13TaskparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12H\n" +
-	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01B\x11\n" +
+	"\x0f_cutoffbehaviorB\x0e\n" +
 	"\f_descriptionB\x11\n" +
 	"\x0f_maxconcurrencyB\f\n" +
 	"\n" +
@@ -51199,7 +51349,7 @@ const file_ssm_proto_rawDesc = "" +
 	"\n" +
 	"instanceid\x18\xa0\xad\xd1\x17 \x01(\tR\n" +
 	"instanceid\"!\n" +
-	"\x1fUpdateManagedInstanceRoleResult\"\xa6\b\n" +
+	"\x1fUpdateManagedInstanceRoleResult\"\xb6\b\n" +
 	"\x14UpdateOpsItemRequest\x12-\n" +
 	"\ractualendtime\x18\xc6\xfa\xf3\xd7\x01 \x01(\tH\x00R\ractualendtime\x88\x01\x01\x121\n" +
 	"\x0factualstarttime\x18\xfd\xe2\x8a\xfe\x01 \x01(\tH\x01R\x0factualstarttime\x88\x01\x01\x12\"\n" +
@@ -51216,9 +51366,10 @@ const file_ssm_proto_rawDesc = "" +
 	"\x10plannedstarttime\x18\xef\xd1\xfb\xe3\x01 \x01(\tH\x06R\x10plannedstarttime\x88\x01\x01\x12\"\n" +
 	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\aR\bpriority\x88\x01\x01\x12A\n" +
 	"\x0frelatedopsitems\x18\x99\x8f\xf2\x88\x01 \x03(\v2\x13.ssm.RelatedOpsItemR\x0frelatedopsitems\x12#\n" +
-	"\bseverity\x18\xd3僄\x01 \x01(\tH\bR\bseverity\x88\x01\x01\x12-\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.OpsItemStatusR\x06status\x12\x1c\n" +
-	"\x05title\x18\xaa\xe3\xd1& \x01(\tH\tR\x05title\x88\x01\x01\x1aY\n" +
+	"\bseverity\x18\xd3僄\x01 \x01(\tH\bR\bseverity\x88\x01\x01\x122\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.ssm.OpsItemStatusH\tR\x06status\x88\x01\x01\x12\x1c\n" +
+	"\x05title\x18\xaa\xe3\xd1& \x01(\tH\n" +
+	"R\x05title\x88\x01\x01\x1aY\n" +
 	"\x14OperationaldataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12+\n" +
 	"\x05value\x18\x02 \x01(\v2\x15.ssm.OpsItemDataValueR\x05value:\x028\x01B\x10\n" +
@@ -51230,7 +51381,8 @@ const file_ssm_proto_rawDesc = "" +
 	"\x0f_plannedendtimeB\x13\n" +
 	"\x11_plannedstarttimeB\v\n" +
 	"\t_priorityB\v\n" +
-	"\t_severityB\b\n" +
+	"\t_severityB\t\n" +
+	"\a_statusB\b\n" +
 	"\x06_title\"\x17\n" +
 	"\x15UpdateOpsItemResponse\"\xaa\x02\n" +
 	"\x18UpdateOpsMetadataRequest\x12%\n" +
@@ -51242,52 +51394,59 @@ const file_ssm_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x12.ssm.MetadataValueR\x05value:\x028\x01\"]\n" +
 	"\x17UpdateOpsMetadataResult\x12/\n" +
 	"\x0eopsmetadataarn\x18\xa2\xbe\x82\xe6\x01 \x01(\tH\x00R\x0eopsmetadataarn\x88\x01\x01B\x11\n" +
-	"\x0f_opsmetadataarn\"\xfb\x06\n" +
+	"\x0f_opsmetadataarn\"\xf4\a\n" +
 	"\x1aUpdatePatchBaselineRequest\x12<\n" +
 	"\rapprovalrules\x18\xea\xfa\x89\" \x01(\v2\x13.ssm.PatchRuleGroupR\rapprovalrules\x12+\n" +
-	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12d\n" +
-	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelR\x1eapprovedpatchescompliancelevel\x12S\n" +
-	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x00R approvedpatchesenablenonsecurity\x88\x01\x01\x12y\n" +
-	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusR(availablesecurityupdatescompliancestatus\x12!\n" +
+	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12i\n" +
+	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelH\x00R\x1eapprovedpatchescompliancelevel\x88\x01\x01\x12S\n" +
+	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x01R approvedpatchesenablenonsecurity\x88\x01\x01\x12~\n" +
+	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusH\x02R(availablesecurityupdatescompliancestatus\x88\x01\x01\x12!\n" +
 	"\n" +
 	"baselineid\x18\xd0\xe4\xdb( \x01(\tR\n" +
 	"baselineid\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12>\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12>\n" +
 	"\rglobalfilters\x18\xe2\xdc\xc6} \x01(\v2\x15.ssm.PatchFilterGroupR\rglobalfilters\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12,\n" +
-	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12J\n" +
-	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionR\x15rejectedpatchesaction\x12 \n" +
-	"\areplace\x18\xe4\x9e\xd5& \x01(\bH\x03R\areplace\x88\x01\x01\x12-\n" +
-	"\asources\x18\xd2\xe7\x9d\x16 \x03(\v2\x10.ssm.PatchSourceR\asourcesB#\n" +
-	"!_approvedpatchesenablenonsecurityB\x0e\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12,\n" +
+	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12O\n" +
+	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionH\x05R\x15rejectedpatchesaction\x88\x01\x01\x12 \n" +
+	"\areplace\x18\xe4\x9e\xd5& \x01(\bH\x06R\areplace\x88\x01\x01\x12-\n" +
+	"\asources\x18\xd2\xe7\x9d\x16 \x03(\v2\x10.ssm.PatchSourceR\asourcesB!\n" +
+	"\x1f_approvedpatchescompliancelevelB#\n" +
+	"!_approvedpatchesenablenonsecurityB+\n" +
+	")_availablesecurityupdatescompliancestatusB\x0e\n" +
 	"\f_descriptionB\a\n" +
-	"\x05_nameB\n" +
+	"\x05_nameB\x18\n" +
+	"\x16_rejectedpatchesactionB\n" +
 	"\n" +
-	"\b_replace\"\x9b\b\n" +
+	"\b_replace\"\xad\t\n" +
 	"\x19UpdatePatchBaselineResult\x12<\n" +
 	"\rapprovalrules\x18\xea\xfa\x89\" \x01(\v2\x13.ssm.PatchRuleGroupR\rapprovalrules\x12+\n" +
-	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12d\n" +
-	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelR\x1eapprovedpatchescompliancelevel\x12S\n" +
-	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x00R approvedpatchesenablenonsecurity\x88\x01\x01\x12y\n" +
-	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusR(availablesecurityupdatescompliancestatus\x12&\n" +
+	"\x0fapprovedpatches\x18\x85\xbd\x89_ \x03(\tR\x0fapprovedpatches\x12i\n" +
+	"\x1eapprovedpatchescompliancelevel\x18\xd0ѽ\x1e \x01(\x0e2\x19.ssm.PatchComplianceLevelH\x00R\x1eapprovedpatchescompliancelevel\x88\x01\x01\x12S\n" +
+	" approvedpatchesenablenonsecurity\x18\xbd\xa6\xf7\x8c\x01 \x01(\bH\x01R approvedpatchesenablenonsecurity\x88\x01\x01\x12~\n" +
+	"(availablesecurityupdatescompliancestatus\x18\xf2\xaf\xb2Y \x01(\x0e2\x1a.ssm.PatchComplianceStatusH\x02R(availablesecurityupdatescompliancestatus\x88\x01\x01\x12&\n" +
 	"\n" +
-	"baselineid\x18\xd0\xe4\xdb( \x01(\tH\x01R\n" +
+	"baselineid\x18\xd0\xe4\xdb( \x01(\tH\x03R\n" +
 	"baselineid\x88\x01\x01\x12)\n" +
-	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x02R\vcreateddate\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12>\n" +
+	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x04R\vcreateddate\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x05R\vdescription\x88\x01\x01\x12>\n" +
 	"\rglobalfilters\x18\xe2\xdc\xc6} \x01(\v2\x15.ssm.PatchFilterGroupR\rglobalfilters\x12*\n" +
-	"\fmodifieddate\x18\xf7Ƕd \x01(\tH\x04R\fmodifieddate\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x12A\n" +
-	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemR\x0foperatingsystem\x12,\n" +
-	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12J\n" +
-	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionR\x15rejectedpatchesaction\x12-\n" +
-	"\asources\x18\xd2\xe7\x9d\x16 \x03(\v2\x10.ssm.PatchSourceR\asourcesB#\n" +
-	"!_approvedpatchesenablenonsecurityB\r\n" +
+	"\fmodifieddate\x18\xf7Ƕd \x01(\tH\x06R\fmodifieddate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\aR\x04name\x88\x01\x01\x12F\n" +
+	"\x0foperatingsystem\x18\xea\xfd\xc1\x12 \x01(\x0e2\x14.ssm.OperatingSystemH\bR\x0foperatingsystem\x88\x01\x01\x12,\n" +
+	"\x0frejectedpatches\x18\x9c\xfcӓ\x01 \x03(\tR\x0frejectedpatches\x12O\n" +
+	"\x15rejectedpatchesaction\x18گ\x81\xaa\x01 \x01(\x0e2\x10.ssm.PatchActionH\tR\x15rejectedpatchesaction\x88\x01\x01\x12-\n" +
+	"\asources\x18\xd2\xe7\x9d\x16 \x03(\v2\x10.ssm.PatchSourceR\asourcesB!\n" +
+	"\x1f_approvedpatchescompliancelevelB#\n" +
+	"!_approvedpatchesenablenonsecurityB+\n" +
+	")_availablesecurityupdatescompliancestatusB\r\n" +
 	"\v_baselineidB\x0e\n" +
 	"\f_createddateB\x0e\n" +
 	"\f_descriptionB\x0f\n" +
 	"\r_modifieddateB\a\n" +
-	"\x05_name\"\x9f\x01\n" +
+	"\x05_nameB\x12\n" +
+	"\x10_operatingsystemB\x18\n" +
+	"\x16_rejectedpatchesaction\"\x9f\x01\n" +
 	"\x1dUpdateResourceDataSyncRequest\x12\x1e\n" +
 	"\bsyncname\x18\xa2\x96\xb2\xb0\x01 \x01(\tR\bsyncname\x12?\n" +
 	"\n" +
@@ -51320,20 +51479,29 @@ const file_ssm_proto_rawDesc = "" +
 	"reasoncode\x88\x01\x01B\n" +
 	"\n" +
 	"\b_messageB\r\n" +
-	"\v_reasoncode\"\xa6\x02\n" +
-	"\x11ValidationFinding\x122\n" +
-	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\x0e2\x1a.ssm.ValidationFindingCodeR\x04code\x12 \n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x121\n" +
-	"\x0fprovidermessage\x18\x9c\xfd\u0094\x01 \x01(\tH\x01R\x0fprovidermessage\x88\x01\x01\x124\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\v2\x1b.ssm.ValidationFindingScopeR\x05scope\x122\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1a.ssm.ValidationFindingTypeR\x04typeB\n" +
+	"\v_reasoncode\"\xc2\x02\n" +
+	"\x11ValidationFinding\x127\n" +
+	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\x0e2\x1a.ssm.ValidationFindingCodeH\x00R\x04code\x88\x01\x01\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x01R\amessage\x88\x01\x01\x121\n" +
+	"\x0fprovidermessage\x18\x9c\xfd\u0094\x01 \x01(\tH\x02R\x0fprovidermessage\x88\x01\x01\x124\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\v2\x1b.ssm.ValidationFindingScopeR\x05scope\x127\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1a.ssm.ValidationFindingTypeH\x03R\x04type\x88\x01\x01B\a\n" +
+	"\x05_codeB\n" +
 	"\n" +
 	"\b_messageB\x12\n" +
-	"\x10_providermessage\"q\n" +
+	"\x10_providermessageB\a\n" +
+	"\x05_type\"\x7f\n" +
 	"\x16ValidationFindingScope\x12\x17\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x127\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1f.ssm.ValidationFindingScopeTypeR\x04typeB\x05\n" +
-	"\x03_id\"\x9a\x01\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12<\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1f.ssm.ValidationFindingScopeTypeH\x01R\x04type\x88\x01\x01B\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_type\"\x8c\x01\n" +
+	"\x14NodeSummaryListEntry\x12:\n" +
+	"\x05value\x18\x01 \x03(\v2$.ssm.NodeSummaryListEntry.ValueEntryR\x05value\x1a8\n" +
+	"\n" +
+	"ValueEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9a\x01\n" +
 	"\x1bOpsEntityItemEntryListEntry\x12A\n" +
 	"\x05value\x18\x01 \x03(\v2+.ssm.OpsEntityItemEntryListEntry.ValueEntryR\x05value\x1a8\n" +
 	"\n" +
@@ -51360,12 +51528,6 @@ const file_ssm_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v22.ssm.MaintenanceWindowTaskParameterValueExpressionR\x05value:\x028\x01\"\x9a\x01\n" +
 	"\x1bInventoryItemEntryListEntry\x12A\n" +
 	"\x05value\x18\x01 \x03(\v2+.ssm.InventoryItemEntryListEntry.ValueEntryR\x05value\x1a8\n" +
-	"\n" +
-	"ValueEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8c\x01\n" +
-	"\x14NodeSummaryListEntry\x12:\n" +
-	"\x05value\x18\x01 \x03(\v2$.ssm.NodeSummaryListEntry.ValueEntryR\x05value\x1a8\n" +
 	"\n" +
 	"ValueEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -52883,12 +53045,12 @@ var file_ssm_proto_goTypes = []any{
 	(*ValidationException)(nil),                        // 720: ssm.ValidationException
 	(*ValidationFinding)(nil),                          // 721: ssm.ValidationFinding
 	(*ValidationFindingScope)(nil),                     // 722: ssm.ValidationFindingScope
-	(*OpsEntityItemEntryListEntry)(nil),                // 723: ssm.OpsEntityItemEntryListEntry
-	(*TargetMapsEntry)(nil),                            // 724: ssm.TargetMapsEntry
-	(*PatchPropertiesListEntry)(nil),                   // 725: ssm.PatchPropertiesListEntry
-	(*MaintenanceWindowTaskParametersListEntry)(nil),   // 726: ssm.MaintenanceWindowTaskParametersListEntry
-	(*InventoryItemEntryListEntry)(nil),                // 727: ssm.InventoryItemEntryListEntry
-	(*NodeSummaryListEntry)(nil),                       // 728: ssm.NodeSummaryListEntry
+	(*NodeSummaryListEntry)(nil),                       // 723: ssm.NodeSummaryListEntry
+	(*OpsEntityItemEntryListEntry)(nil),                // 724: ssm.OpsEntityItemEntryListEntry
+	(*TargetMapsEntry)(nil),                            // 725: ssm.TargetMapsEntry
+	(*PatchPropertiesListEntry)(nil),                   // 726: ssm.PatchPropertiesListEntry
+	(*MaintenanceWindowTaskParametersListEntry)(nil),   // 727: ssm.MaintenanceWindowTaskParametersListEntry
+	(*InventoryItemEntryListEntry)(nil),                // 728: ssm.InventoryItemEntryListEntry
 	nil,                                                // 729: ssm.AssociationDescription.ParametersEntry
 	nil,                                                // 730: ssm.AssociationOverview.AssociationstatusaggregatedcountEntry
 	nil,                                                // 731: ssm.AssociationVersionInfo.ParametersEntry
@@ -52933,12 +53095,12 @@ var file_ssm_proto_goTypes = []any{
 	nil,                                                // 770: ssm.UpdateMaintenanceWindowTaskResult.TaskparametersEntry
 	nil,                                                // 771: ssm.UpdateOpsItemRequest.OperationaldataEntry
 	nil,                                                // 772: ssm.UpdateOpsMetadataRequest.MetadatatoupdateEntry
-	nil,                                                // 773: ssm.OpsEntityItemEntryListEntry.ValueEntry
-	nil,                                                // 774: ssm.TargetMapsEntry.ValueEntry
-	nil,                                                // 775: ssm.PatchPropertiesListEntry.ValueEntry
-	nil,                                                // 776: ssm.MaintenanceWindowTaskParametersListEntry.ValueEntry
-	nil,                                                // 777: ssm.InventoryItemEntryListEntry.ValueEntry
-	nil,                                                // 778: ssm.NodeSummaryListEntry.ValueEntry
+	nil,                                                // 773: ssm.NodeSummaryListEntry.ValueEntry
+	nil,                                                // 774: ssm.OpsEntityItemEntryListEntry.ValueEntry
+	nil,                                                // 775: ssm.TargetMapsEntry.ValueEntry
+	nil,                                                // 776: ssm.PatchPropertiesListEntry.ValueEntry
+	nil,                                                // 777: ssm.MaintenanceWindowTaskParametersListEntry.ValueEntry
+	nil,                                                // 778: ssm.InventoryItemEntryListEntry.ValueEntry
 }
 var file_ssm_proto_depIdxs = []int32{
 	666, // 0: ssm.Activation.tags:type_name -> ssm.Tag
@@ -52947,7 +53109,7 @@ var file_ssm_proto_depIdxs = []int32{
 	107, // 3: ssm.AlarmConfiguration.alarms:type_name -> ssm.Alarm
 	39,  // 4: ssm.AlarmStateInformation.state:type_name -> ssm.ExternalAlarmState
 	125, // 5: ssm.Association.overview:type_name -> ssm.AssociationOverview
-	724, // 6: ssm.Association.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 6: ssm.Association.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 7: ssm.Association.targets:type_name -> ssm.Target
 	108, // 8: ssm.AssociationDescription.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	2,   // 9: ssm.AssociationDescription.complianceseverity:type_name -> ssm.AssociationComplianceSeverity
@@ -52957,7 +53119,7 @@ var file_ssm_proto_depIdxs = []int32{
 	126, // 13: ssm.AssociationDescription.status:type_name -> ssm.AssociationStatus
 	8,   // 14: ssm.AssociationDescription.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	669, // 15: ssm.AssociationDescription.targetlocations:type_name -> ssm.TargetLocation
-	724, // 16: ssm.AssociationDescription.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 16: ssm.AssociationDescription.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 17: ssm.AssociationDescription.targets:type_name -> ssm.Target
 	109, // 18: ssm.AssociationDescription.triggeredalarms:type_name -> ssm.AlarmStateInformation
 	108, // 19: ssm.AssociationExecution.alarmconfiguration:type_name -> ssm.AlarmConfiguration
@@ -52974,7 +53136,7 @@ var file_ssm_proto_depIdxs = []int32{
 	731, // 30: ssm.AssociationVersionInfo.parameters:type_name -> ssm.AssociationVersionInfo.ParametersEntry
 	8,   // 31: ssm.AssociationVersionInfo.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	669, // 32: ssm.AssociationVersionInfo.targetlocations:type_name -> ssm.TargetLocation
-	724, // 33: ssm.AssociationVersionInfo.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 33: ssm.AssociationVersionInfo.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 34: ssm.AssociationVersionInfo.targets:type_name -> ssm.Target
 	9,   // 35: ssm.AttachmentContent.hashtype:type_name -> ssm.AttachmentHashType
 	10,  // 36: ssm.AttachmentsSource.key:type_name -> ssm.AttachmentsSourceKey
@@ -52989,14 +53151,14 @@ var file_ssm_proto_depIdxs = []int32{
 	633, // 45: ssm.AutomationExecution.runbooks:type_name -> ssm.Runbook
 	661, // 46: ssm.AutomationExecution.stepexecutions:type_name -> ssm.StepExecution
 	669, // 47: ssm.AutomationExecution.targetlocations:type_name -> ssm.TargetLocation
-	724, // 48: ssm.AutomationExecution.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 48: ssm.AutomationExecution.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 49: ssm.AutomationExecution.targets:type_name -> ssm.Target
 	109, // 50: ssm.AutomationExecution.triggeredalarms:type_name -> ssm.AlarmStateInformation
 	734, // 51: ssm.AutomationExecution.variables:type_name -> ssm.AutomationExecution.VariablesEntry
 	11,  // 52: ssm.AutomationExecutionFilter.key:type_name -> ssm.AutomationExecutionFilterKey
 	735, // 53: ssm.AutomationExecutionInputs.parameters:type_name -> ssm.AutomationExecutionInputs.ParametersEntry
 	669, // 54: ssm.AutomationExecutionInputs.targetlocations:type_name -> ssm.TargetLocation
-	724, // 55: ssm.AutomationExecutionInputs.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 55: ssm.AutomationExecutionInputs.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 56: ssm.AutomationExecutionInputs.targets:type_name -> ssm.Target
 	108, // 57: ssm.AutomationExecutionMetadata.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	12,  // 58: ssm.AutomationExecutionMetadata.automationexecutionstatus:type_name -> ssm.AutomationExecutionStatus
@@ -53006,7 +53168,7 @@ var file_ssm_proto_depIdxs = []int32{
 	736, // 62: ssm.AutomationExecutionMetadata.outputs:type_name -> ssm.AutomationExecutionMetadata.OutputsEntry
 	608, // 63: ssm.AutomationExecutionMetadata.resolvedtargets:type_name -> ssm.ResolvedTargets
 	633, // 64: ssm.AutomationExecutionMetadata.runbooks:type_name -> ssm.Runbook
-	724, // 65: ssm.AutomationExecutionMetadata.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 65: ssm.AutomationExecutionMetadata.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 66: ssm.AutomationExecutionMetadata.targets:type_name -> ssm.Target
 	109, // 67: ssm.AutomationExecutionMetadata.triggeredalarms:type_name -> ssm.AlarmStateInformation
 	737, // 68: ssm.AutomationExecutionPreview.steppreviews:type_name -> ssm.AutomationExecutionPreview.SteppreviewsEntry
@@ -53055,7 +53217,7 @@ var file_ssm_proto_depIdxs = []int32{
 	741, // 111: ssm.CreateAssociationBatchRequestEntry.parameters:type_name -> ssm.CreateAssociationBatchRequestEntry.ParametersEntry
 	8,   // 112: ssm.CreateAssociationBatchRequestEntry.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	669, // 113: ssm.CreateAssociationBatchRequestEntry.targetlocations:type_name -> ssm.TargetLocation
-	724, // 114: ssm.CreateAssociationBatchRequestEntry.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 114: ssm.CreateAssociationBatchRequestEntry.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 115: ssm.CreateAssociationBatchRequestEntry.targets:type_name -> ssm.Target
 	316, // 116: ssm.CreateAssociationBatchResult.failed:type_name -> ssm.FailedCreateAssociation
 	116, // 117: ssm.CreateAssociationBatchResult.successful:type_name -> ssm.AssociationDescription
@@ -53066,7 +53228,7 @@ var file_ssm_proto_depIdxs = []int32{
 	8,   // 122: ssm.CreateAssociationRequest.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	666, // 123: ssm.CreateAssociationRequest.tags:type_name -> ssm.Tag
 	669, // 124: ssm.CreateAssociationRequest.targetlocations:type_name -> ssm.TargetLocation
-	724, // 125: ssm.CreateAssociationRequest.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 125: ssm.CreateAssociationRequest.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 126: ssm.CreateAssociationRequest.targets:type_name -> ssm.Target
 	116, // 127: ssm.CreateAssociationResult.associationdescription:type_name -> ssm.AssociationDescription
 	150, // 128: ssm.CreateCloudConnectorRequest.configuration:type_name -> ssm.CloudConnectorConfiguration
@@ -53159,7 +53321,7 @@ var file_ssm_proto_depIdxs = []int32{
 	63,  // 215: ssm.DescribePatchPropertiesRequest.operatingsystem:type_name -> ssm.OperatingSystem
 	84,  // 216: ssm.DescribePatchPropertiesRequest.patchset:type_name -> ssm.PatchSet
 	83,  // 217: ssm.DescribePatchPropertiesRequest.property:type_name -> ssm.PatchProperty
-	725, // 218: ssm.DescribePatchPropertiesResult.properties:type_name -> ssm.PatchPropertiesListEntry
+	726, // 218: ssm.DescribePatchPropertiesResult.properties:type_name -> ssm.PatchPropertiesListEntry
 	645, // 219: ssm.DescribeSessionsRequest.filters:type_name -> ssm.SessionFilter
 	93,  // 220: ssm.DescribeSessionsRequest.state:type_name -> ssm.SessionState
 	644, // 221: ssm.DescribeSessionsResponse.sessions:type_name -> ssm.Session
@@ -53228,7 +53390,7 @@ var file_ssm_proto_depIdxs = []int32{
 	54,  // 284: ssm.GetMaintenanceWindowExecutionTaskInvocationResult.tasktype:type_name -> ssm.MaintenanceWindowTaskType
 	108, // 285: ssm.GetMaintenanceWindowExecutionTaskResult.alarmconfiguration:type_name -> ssm.AlarmConfiguration
 	51,  // 286: ssm.GetMaintenanceWindowExecutionTaskResult.status:type_name -> ssm.MaintenanceWindowExecutionStatus
-	726, // 287: ssm.GetMaintenanceWindowExecutionTaskResult.taskparameters:type_name -> ssm.MaintenanceWindowTaskParametersListEntry
+	727, // 287: ssm.GetMaintenanceWindowExecutionTaskResult.taskparameters:type_name -> ssm.MaintenanceWindowTaskParametersListEntry
 	109, // 288: ssm.GetMaintenanceWindowExecutionTaskResult.triggeredalarms:type_name -> ssm.AlarmStateInformation
 	54,  // 289: ssm.GetMaintenanceWindowExecutionTaskResult.type:type_name -> ssm.MaintenanceWindowTaskType
 	108, // 290: ssm.GetMaintenanceWindowTaskResult.alarmconfiguration:type_name -> ssm.AlarmConfiguration
@@ -53290,12 +53452,12 @@ var file_ssm_proto_depIdxs = []int32{
 	448, // 346: ssm.InventoryDeletionSummary.summaryitems:type_name -> ssm.InventoryDeletionSummaryItem
 	48,  // 347: ssm.InventoryFilter.type:type_name -> ssm.InventoryQueryOperatorType
 	449, // 348: ssm.InventoryGroup.filters:type_name -> ssm.InventoryFilter
-	727, // 349: ssm.InventoryItem.content:type_name -> ssm.InventoryItemEntryListEntry
+	728, // 349: ssm.InventoryItem.content:type_name -> ssm.InventoryItemEntryListEntry
 	749, // 350: ssm.InventoryItem.context:type_name -> ssm.InventoryItem.ContextEntry
 	46,  // 351: ssm.InventoryItemAttribute.datatype:type_name -> ssm.InventoryAttributeDataType
 	452, // 352: ssm.InventoryItemSchema.attributes:type_name -> ssm.InventoryItemAttribute
 	750, // 353: ssm.InventoryResultEntity.data:type_name -> ssm.InventoryResultEntity.DataEntry
-	727, // 354: ssm.InventoryResultItem.content:type_name -> ssm.InventoryItemEntryListEntry
+	728, // 354: ssm.InventoryResultItem.content:type_name -> ssm.InventoryItemEntryListEntry
 	127, // 355: ssm.ListAssociationVersionsResult.associationversions:type_name -> ssm.AssociationVersionInfo
 	123, // 356: ssm.ListAssociationsRequest.associationfilterlist:type_name -> ssm.AssociationFilter
 	114, // 357: ssm.ListAssociationsResult.associations:type_name -> ssm.Association
@@ -53316,12 +53478,12 @@ var file_ssm_proto_depIdxs = []int32{
 	298, // 372: ssm.ListDocumentsRequest.filters:type_name -> ssm.DocumentKeyValuesFilter
 	297, // 373: ssm.ListDocumentsResult.documentidentifiers:type_name -> ssm.DocumentIdentifier
 	449, // 374: ssm.ListInventoryEntriesRequest.filters:type_name -> ssm.InventoryFilter
-	727, // 375: ssm.ListInventoryEntriesResult.entries:type_name -> ssm.InventoryItemEntryListEntry
+	728, // 375: ssm.ListInventoryEntriesResult.entries:type_name -> ssm.InventoryItemEntryListEntry
 	522, // 376: ssm.ListNodesRequest.filters:type_name -> ssm.NodeFilter
 	520, // 377: ssm.ListNodesResult.nodes:type_name -> ssm.Node
 	521, // 378: ssm.ListNodesSummaryRequest.aggregators:type_name -> ssm.NodeAggregator
 	522, // 379: ssm.ListNodesSummaryRequest.filters:type_name -> ssm.NodeFilter
-	728, // 380: ssm.ListNodesSummaryResult.summary:type_name -> ssm.NodeSummaryListEntry
+	723, // 380: ssm.ListNodesSummaryResult.summary:type_name -> ssm.NodeSummaryListEntry
 	536, // 381: ssm.ListOpsItemEventsRequest.filters:type_name -> ssm.OpsItemEventFilter
 	537, // 382: ssm.ListOpsItemEventsResponse.summaries:type_name -> ssm.OpsItemEventSummary
 	547, // 383: ssm.ListOpsItemRelatedItemsRequest.filters:type_name -> ssm.OpsItemRelatedItemsFilter
@@ -53374,7 +53536,7 @@ var file_ssm_proto_depIdxs = []int32{
 	530, // 430: ssm.OpsAggregator.filters:type_name -> ssm.OpsFilter
 	754, // 431: ssm.OpsAggregator.values:type_name -> ssm.OpsAggregator.ValuesEntry
 	755, // 432: ssm.OpsEntity.data:type_name -> ssm.OpsEntity.DataEntry
-	723, // 433: ssm.OpsEntityItem.content:type_name -> ssm.OpsEntityItemEntryListEntry
+	724, // 433: ssm.OpsEntityItem.content:type_name -> ssm.OpsEntityItemEntryListEntry
 	64,  // 434: ssm.OpsFilter.type:type_name -> ssm.OpsFilterOperatorType
 	543, // 435: ssm.OpsItem.notifications:type_name -> ssm.OpsItemNotification
 	756, // 436: ssm.OpsItem.operationaldata:type_name -> ssm.OpsItem.OperationaldataEntry
@@ -53445,7 +53607,7 @@ var file_ssm_proto_depIdxs = []int32{
 	91,  // 501: ssm.ReviewInformation.status:type_name -> ssm.ReviewStatus
 	759, // 502: ssm.Runbook.parameters:type_name -> ssm.Runbook.ParametersEntry
 	669, // 503: ssm.Runbook.targetlocations:type_name -> ssm.TargetLocation
-	724, // 504: ssm.Runbook.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 504: ssm.Runbook.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 505: ssm.Runbook.targets:type_name -> ssm.Target
 	760, // 506: ssm.SendAutomationSignalRequest.payload:type_name -> ssm.SendAutomationSignalRequest.PayloadEntry
 	95,  // 507: ssm.SendAutomationSignalRequest.signaltype:type_name -> ssm.SignalType
@@ -53467,7 +53629,7 @@ var file_ssm_proto_depIdxs = []int32{
 	762, // 523: ssm.StartAutomationExecutionRequest.parameters:type_name -> ssm.StartAutomationExecutionRequest.ParametersEntry
 	666, // 524: ssm.StartAutomationExecutionRequest.tags:type_name -> ssm.Tag
 	669, // 525: ssm.StartAutomationExecutionRequest.targetlocations:type_name -> ssm.TargetLocation
-	724, // 526: ssm.StartAutomationExecutionRequest.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 526: ssm.StartAutomationExecutionRequest.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 527: ssm.StartAutomationExecutionRequest.targets:type_name -> ssm.Target
 	763, // 528: ssm.StartChangeRequestExecutionRequest.parameters:type_name -> ssm.StartChangeRequestExecutionRequest.ParametersEntry
 	633, // 529: ssm.StartChangeRequestExecutionRequest.runbooks:type_name -> ssm.Runbook
@@ -53493,7 +53655,7 @@ var file_ssm_proto_depIdxs = []int32{
 	768, // 549: ssm.UpdateAssociationRequest.parameters:type_name -> ssm.UpdateAssociationRequest.ParametersEntry
 	8,   // 550: ssm.UpdateAssociationRequest.synccompliance:type_name -> ssm.AssociationSyncCompliance
 	669, // 551: ssm.UpdateAssociationRequest.targetlocations:type_name -> ssm.TargetLocation
-	724, // 552: ssm.UpdateAssociationRequest.targetmaps:type_name -> ssm.TargetMapsEntry
+	725, // 552: ssm.UpdateAssociationRequest.targetmaps:type_name -> ssm.TargetMapsEntry
 	667, // 553: ssm.UpdateAssociationRequest.targets:type_name -> ssm.Target
 	116, // 554: ssm.UpdateAssociationResult.associationdescription:type_name -> ssm.AssociationDescription
 	126, // 555: ssm.UpdateAssociationStatusRequest.associationstatus:type_name -> ssm.AssociationStatus
@@ -53542,12 +53704,12 @@ var file_ssm_proto_depIdxs = []int32{
 	722, // 598: ssm.ValidationFinding.scope:type_name -> ssm.ValidationFindingScope
 	101, // 599: ssm.ValidationFinding.type:type_name -> ssm.ValidationFindingType
 	100, // 600: ssm.ValidationFindingScope.type:type_name -> ssm.ValidationFindingScopeType
-	773, // 601: ssm.OpsEntityItemEntryListEntry.value:type_name -> ssm.OpsEntityItemEntryListEntry.ValueEntry
-	774, // 602: ssm.TargetMapsEntry.value:type_name -> ssm.TargetMapsEntry.ValueEntry
-	775, // 603: ssm.PatchPropertiesListEntry.value:type_name -> ssm.PatchPropertiesListEntry.ValueEntry
-	776, // 604: ssm.MaintenanceWindowTaskParametersListEntry.value:type_name -> ssm.MaintenanceWindowTaskParametersListEntry.ValueEntry
-	777, // 605: ssm.InventoryItemEntryListEntry.value:type_name -> ssm.InventoryItemEntryListEntry.ValueEntry
-	778, // 606: ssm.NodeSummaryListEntry.value:type_name -> ssm.NodeSummaryListEntry.ValueEntry
+	773, // 601: ssm.NodeSummaryListEntry.value:type_name -> ssm.NodeSummaryListEntry.ValueEntry
+	774, // 602: ssm.OpsEntityItemEntryListEntry.value:type_name -> ssm.OpsEntityItemEntryListEntry.ValueEntry
+	775, // 603: ssm.TargetMapsEntry.value:type_name -> ssm.TargetMapsEntry.ValueEntry
+	776, // 604: ssm.PatchPropertiesListEntry.value:type_name -> ssm.PatchPropertiesListEntry.ValueEntry
+	777, // 605: ssm.MaintenanceWindowTaskParametersListEntry.value:type_name -> ssm.MaintenanceWindowTaskParametersListEntry.ValueEntry
+	778, // 606: ssm.InventoryItemEntryListEntry.value:type_name -> ssm.InventoryItemEntryListEntry.ValueEntry
 	535, // 607: ssm.CreateOpsItemRequest.OperationaldataEntry.value:type_name -> ssm.OpsItemDataValue
 	516, // 608: ssm.CreateOpsMetadataRequest.MetadataEntry.value:type_name -> ssm.MetadataValue
 	513, // 609: ssm.GetMaintenanceWindowTaskResult.TaskparametersEntry.value:type_name -> ssm.MaintenanceWindowTaskParameterValueExpression
@@ -53911,6 +54073,7 @@ func file_ssm_proto_init() {
 	file_ssm_proto_msgTypes[42].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[43].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[47].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[49].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[50].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[51].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[52].OneofWrappers = []any{}
@@ -53953,6 +54116,7 @@ func file_ssm_proto_init() {
 	file_ssm_proto_msgTypes[118].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[119].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[121].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[122].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[123].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[124].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[125].OneofWrappers = []any{}
@@ -54035,12 +54199,14 @@ func file_ssm_proto_init() {
 	file_ssm_proto_msgTypes[214].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[215].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[216].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[218].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[221].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[222].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[224].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[225].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[226].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[228].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[229].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[230].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[231].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[232].OneofWrappers = []any{}
@@ -54067,6 +54233,7 @@ func file_ssm_proto_init() {
 	file_ssm_proto_msgTypes[261].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[262].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[263].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[265].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[266].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[268].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[269].OneofWrappers = []any{}
@@ -54083,6 +54250,7 @@ func file_ssm_proto_init() {
 	file_ssm_proto_msgTypes[284].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[287].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[289].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[291].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[292].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[293].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[294].OneofWrappers = []any{}
@@ -54131,6 +54299,7 @@ func file_ssm_proto_init() {
 	file_ssm_proto_msgTypes[344].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[345].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[346].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[347].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[349].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[351].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[352].OneofWrappers = []any{}
@@ -54194,12 +54363,14 @@ func file_ssm_proto_init() {
 	file_ssm_proto_msgTypes[415].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[417].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[418].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[420].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[421].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[423].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[424].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[425].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[426].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[427].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[428].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[429].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[430].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[431].OneofWrappers = []any{}
@@ -54300,6 +54471,7 @@ func file_ssm_proto_init() {
 	file_ssm_proto_msgTypes[556].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[557].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[559].OneofWrappers = []any{}
+	file_ssm_proto_msgTypes[561].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[563].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[565].OneofWrappers = []any{}
 	file_ssm_proto_msgTypes[566].OneofWrappers = []any{}

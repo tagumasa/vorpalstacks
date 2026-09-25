@@ -4061,8 +4061,8 @@ func (x *GetPropertygraphStatisticsOutput) GetStatus() string {
 type GetPropertygraphStreamInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Commitnum     *string                `protobuf:"bytes,254685821,opt,name=commitnum,proto3,oneof" json:"commitnum,omitempty"`
-	Encoding      Encoding               `protobuf:"varint,519819761,opt,name=encoding,proto3,enum=neptunedata.Encoding" json:"encoding,omitempty"`
-	Iteratortype  IteratorType           `protobuf:"varint,141085528,opt,name=iteratortype,proto3,enum=neptunedata.IteratorType" json:"iteratortype,omitempty"`
+	Encoding      *Encoding              `protobuf:"varint,519819761,opt,name=encoding,proto3,enum=neptunedata.Encoding,oneof" json:"encoding,omitempty"`
+	Iteratortype  *IteratorType          `protobuf:"varint,141085528,opt,name=iteratortype,proto3,enum=neptunedata.IteratorType,oneof" json:"iteratortype,omitempty"`
 	Limit         *string                `protobuf:"bytes,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Opnum         *string                `protobuf:"bytes,347515011,opt,name=opnum,proto3,oneof" json:"opnum,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -4107,15 +4107,15 @@ func (x *GetPropertygraphStreamInput) GetCommitnum() string {
 }
 
 func (x *GetPropertygraphStreamInput) GetEncoding() Encoding {
-	if x != nil {
-		return x.Encoding
+	if x != nil && x.Encoding != nil {
+		return *x.Encoding
 	}
 	return Encoding_ENCODING_GZIP
 }
 
 func (x *GetPropertygraphStreamInput) GetIteratortype() IteratorType {
-	if x != nil {
-		return x.Iteratortype
+	if x != nil && x.Iteratortype != nil {
+		return *x.Iteratortype
 	}
 	return IteratorType_ITERATOR_TYPE_TRIM_HORIZON
 }
@@ -4212,7 +4212,7 @@ func (x *GetPropertygraphStreamOutput) GetTotalrecords() string {
 
 type GetPropertygraphSummaryInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Mode          GraphSummaryType       `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.GraphSummaryType" json:"mode,omitempty"`
+	Mode          *GraphSummaryType      `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.GraphSummaryType,oneof" json:"mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4248,8 +4248,8 @@ func (*GetPropertygraphSummaryInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetPropertygraphSummaryInput) GetMode() GraphSummaryType {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return GraphSummaryType_GRAPH_SUMMARY_TYPE_DETAILED
 }
@@ -4308,7 +4308,7 @@ func (x *GetPropertygraphSummaryOutput) GetStatuscode() string {
 
 type GetRDFGraphSummaryInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Mode          GraphSummaryType       `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.GraphSummaryType" json:"mode,omitempty"`
+	Mode          *GraphSummaryType      `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.GraphSummaryType,oneof" json:"mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4344,8 +4344,8 @@ func (*GetRDFGraphSummaryInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRDFGraphSummaryInput) GetMode() GraphSummaryType {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return GraphSummaryType_GRAPH_SUMMARY_TYPE_DETAILED
 }
@@ -4457,8 +4457,8 @@ func (x *GetSparqlStatisticsOutput) GetStatus() string {
 type GetSparqlStreamInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Commitnum     *string                `protobuf:"bytes,254685821,opt,name=commitnum,proto3,oneof" json:"commitnum,omitempty"`
-	Encoding      Encoding               `protobuf:"varint,519819761,opt,name=encoding,proto3,enum=neptunedata.Encoding" json:"encoding,omitempty"`
-	Iteratortype  IteratorType           `protobuf:"varint,141085528,opt,name=iteratortype,proto3,enum=neptunedata.IteratorType" json:"iteratortype,omitempty"`
+	Encoding      *Encoding              `protobuf:"varint,519819761,opt,name=encoding,proto3,enum=neptunedata.Encoding,oneof" json:"encoding,omitempty"`
+	Iteratortype  *IteratorType          `protobuf:"varint,141085528,opt,name=iteratortype,proto3,enum=neptunedata.IteratorType,oneof" json:"iteratortype,omitempty"`
 	Limit         *string                `protobuf:"bytes,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Opnum         *string                `protobuf:"bytes,347515011,opt,name=opnum,proto3,oneof" json:"opnum,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -4503,15 +4503,15 @@ func (x *GetSparqlStreamInput) GetCommitnum() string {
 }
 
 func (x *GetSparqlStreamInput) GetEncoding() Encoding {
-	if x != nil {
-		return x.Encoding
+	if x != nil && x.Encoding != nil {
+		return *x.Encoding
 	}
 	return Encoding_ENCODING_GZIP
 }
 
 func (x *GetSparqlStreamInput) GetIteratortype() IteratorType {
-	if x != nil {
-		return x.Iteratortype
+	if x != nil && x.Iteratortype != nil {
+		return *x.Iteratortype
 	}
 	return IteratorType_ITERATOR_TYPE_TRIM_HORIZON
 }
@@ -5947,8 +5947,8 @@ func (x *MalformedQueryException) GetRequestid() string {
 }
 
 type ManagePropertygraphStatisticsInput struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Mode          StatisticsAutoGenerationMode `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.StatisticsAutoGenerationMode" json:"mode,omitempty"`
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Mode          *StatisticsAutoGenerationMode `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.StatisticsAutoGenerationMode,oneof" json:"mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5984,8 +5984,8 @@ func (*ManagePropertygraphStatisticsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ManagePropertygraphStatisticsInput) GetMode() StatisticsAutoGenerationMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return StatisticsAutoGenerationMode_STATISTICS_AUTO_GENERATION_MODE_DISABLE_AUTOCOMPUTE
 }
@@ -6043,8 +6043,8 @@ func (x *ManagePropertygraphStatisticsOutput) GetStatus() string {
 }
 
 type ManageSparqlStatisticsInput struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Mode          StatisticsAutoGenerationMode `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.StatisticsAutoGenerationMode" json:"mode,omitempty"`
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Mode          *StatisticsAutoGenerationMode `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.StatisticsAutoGenerationMode,oneof" json:"mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6080,8 +6080,8 @@ func (*ManageSparqlStatisticsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ManageSparqlStatisticsInput) GetMode() StatisticsAutoGenerationMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return StatisticsAutoGenerationMode_STATISTICS_AUTO_GENERATION_MODE_DISABLE_AUTOCOMPUTE
 }
@@ -7797,8 +7797,8 @@ type StartLoaderJobInput struct {
 	Failonerror                       *string                `protobuf:"bytes,437165343,opt,name=failonerror,proto3,oneof" json:"failonerror,omitempty"`
 	Format                            Format                 `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunedata.Format" json:"format,omitempty"`
 	Iamrolearn                        string                 `protobuf:"bytes,316257434,opt,name=iamrolearn,proto3" json:"iamrolearn,omitempty"`
-	Mode                              Mode                   `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.Mode" json:"mode,omitempty"`
-	Parallelism                       Parallelism            `protobuf:"varint,150642114,opt,name=parallelism,proto3,enum=neptunedata.Parallelism" json:"parallelism,omitempty"`
+	Mode                              *Mode                  `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.Mode,oneof" json:"mode,omitempty"`
+	Parallelism                       *Parallelism           `protobuf:"varint,150642114,opt,name=parallelism,proto3,enum=neptunedata.Parallelism,oneof" json:"parallelism,omitempty"`
 	Parserconfiguration               map[string]string      `protobuf:"bytes,258205897,rep,name=parserconfiguration,proto3" json:"parserconfiguration,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Queuerequest                      *string                `protobuf:"bytes,126330314,opt,name=queuerequest,proto3,oneof" json:"queuerequest,omitempty"`
 	S3Bucketregion                    S3BucketRegion         `protobuf:"varint,163436306,opt,name=s3bucketregion,proto3,enum=neptunedata.S3BucketRegion" json:"s3bucketregion,omitempty"`
@@ -7875,15 +7875,15 @@ func (x *StartLoaderJobInput) GetIamrolearn() string {
 }
 
 func (x *StartLoaderJobInput) GetMode() Mode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return Mode_MODE_AUTO
 }
 
 func (x *StartLoaderJobInput) GetParallelism() Parallelism {
-	if x != nil {
-		return x.Parallelism
+	if x != nil && x.Parallelism != nil {
+		return *x.Parallelism
 	}
 	return Parallelism_PARALLELISM_MEDIUM
 }
@@ -9582,15 +9582,17 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\f_querystring\"u\n" +
 	" GetPropertygraphStatisticsOutput\x125\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2\x17.neptunedata.StatisticsR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x9c\x02\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\xc4\x02\n" +
 	"\x1bGetPropertygraphStreamInput\x12$\n" +
-	"\tcommitnum\x18\xfd\xe4\xb8y \x01(\tH\x00R\tcommitnum\x88\x01\x01\x125\n" +
-	"\bencoding\x18\xf1\xa3\xef\xf7\x01 \x01(\x0e2\x15.neptunedata.EncodingR\bencoding\x12@\n" +
-	"\fiteratortype\x18ؖ\xa3C \x01(\x0e2\x19.neptunedata.IteratorTypeR\fiteratortype\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\tH\x01R\x05limit\x88\x01\x01\x12\x1d\n" +
-	"\x05opnum\x18\x83\xd1ڥ\x01 \x01(\tH\x02R\x05opnum\x88\x01\x01B\f\n" +
+	"\tcommitnum\x18\xfd\xe4\xb8y \x01(\tH\x00R\tcommitnum\x88\x01\x01\x12:\n" +
+	"\bencoding\x18\xf1\xa3\xef\xf7\x01 \x01(\x0e2\x15.neptunedata.EncodingH\x01R\bencoding\x88\x01\x01\x12E\n" +
+	"\fiteratortype\x18ؖ\xa3C \x01(\x0e2\x19.neptunedata.IteratorTypeH\x02R\fiteratortype\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\tH\x03R\x05limit\x88\x01\x01\x12\x1d\n" +
+	"\x05opnum\x18\x83\xd1ڥ\x01 \x01(\tH\x04R\x05opnum\x88\x01\x01B\f\n" +
 	"\n" +
-	"_commitnumB\b\n" +
+	"_commitnumB\v\n" +
+	"\t_encodingB\x0f\n" +
+	"\r_iteratortypeB\b\n" +
 	"\x06_limitB\b\n" +
 	"\x06_opnum\"\x82\x03\n" +
 	"\x1cGetPropertygraphStreamOutput\x12\x1a\n" +
@@ -9601,17 +9603,19 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\ftotalrecords\x18\xc6\xd9\xdb\xfb\x01 \x01(\tR\ftotalrecords\x1a>\n" +
 	"\x10LasteventidEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"T\n" +
-	"\x1cGetPropertygraphSummaryInput\x124\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1d.neptunedata.GraphSummaryTypeR\x04mode\"\xa0\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"b\n" +
+	"\x1cGetPropertygraphSummaryInput\x129\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1d.neptunedata.GraphSummaryTypeH\x00R\x04mode\x88\x01\x01B\a\n" +
+	"\x05_mode\"\xa0\x01\n" +
 	"\x1dGetPropertygraphSummaryOutput\x12G\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2).neptunedata.PropertygraphSummaryValueMapR\apayload\x12'\n" +
 	"\n" +
 	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x00R\n" +
 	"statuscode\x88\x01\x01B\r\n" +
-	"\v_statuscode\"O\n" +
-	"\x17GetRDFGraphSummaryInput\x124\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1d.neptunedata.GraphSummaryTypeR\x04mode\"\x96\x01\n" +
+	"\v_statuscode\"]\n" +
+	"\x17GetRDFGraphSummaryInput\x129\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1d.neptunedata.GraphSummaryTypeH\x00R\x04mode\x88\x01\x01B\a\n" +
+	"\x05_mode\"\x96\x01\n" +
 	"\x18GetRDFGraphSummaryOutput\x12B\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2$.neptunedata.RDFGraphSummaryValueMapR\apayload\x12'\n" +
 	"\n" +
@@ -9620,15 +9624,17 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\v_statuscode\"n\n" +
 	"\x19GetSparqlStatisticsOutput\x125\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2\x17.neptunedata.StatisticsR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x95\x02\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\xbd\x02\n" +
 	"\x14GetSparqlStreamInput\x12$\n" +
-	"\tcommitnum\x18\xfd\xe4\xb8y \x01(\tH\x00R\tcommitnum\x88\x01\x01\x125\n" +
-	"\bencoding\x18\xf1\xa3\xef\xf7\x01 \x01(\x0e2\x15.neptunedata.EncodingR\bencoding\x12@\n" +
-	"\fiteratortype\x18ؖ\xa3C \x01(\x0e2\x19.neptunedata.IteratorTypeR\fiteratortype\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\tH\x01R\x05limit\x88\x01\x01\x12\x1d\n" +
-	"\x05opnum\x18\x83\xd1ڥ\x01 \x01(\tH\x02R\x05opnum\x88\x01\x01B\f\n" +
+	"\tcommitnum\x18\xfd\xe4\xb8y \x01(\tH\x00R\tcommitnum\x88\x01\x01\x12:\n" +
+	"\bencoding\x18\xf1\xa3\xef\xf7\x01 \x01(\x0e2\x15.neptunedata.EncodingH\x01R\bencoding\x88\x01\x01\x12E\n" +
+	"\fiteratortype\x18ؖ\xa3C \x01(\x0e2\x19.neptunedata.IteratorTypeH\x02R\fiteratortype\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\tH\x03R\x05limit\x88\x01\x01\x12\x1d\n" +
+	"\x05opnum\x18\x83\xd1ڥ\x01 \x01(\tH\x04R\x05opnum\x88\x01\x01B\f\n" +
 	"\n" +
-	"_commitnumB\b\n" +
+	"_commitnumB\v\n" +
+	"\t_encodingB\x0f\n" +
+	"\r_iteratortypeB\b\n" +
 	"\x06_limitB\b\n" +
 	"\x06_opnum\"\xed\x02\n" +
 	"\x15GetSparqlStreamOutput\x12\x1a\n" +
@@ -9744,14 +9750,16 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x17MalformedQueryException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"f\n" +
-	"\"ManagePropertygraphStatisticsInput\x12@\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2).neptunedata.StatisticsAutoGenerationModeR\x04mode\"\x84\x01\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"t\n" +
+	"\"ManagePropertygraphStatisticsInput\x12E\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2).neptunedata.StatisticsAutoGenerationModeH\x00R\x04mode\x88\x01\x01B\a\n" +
+	"\x05_mode\"\x84\x01\n" +
 	"#ManagePropertygraphStatisticsOutput\x12A\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2#.neptunedata.RefreshStatisticsIdMapR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"_\n" +
-	"\x1bManageSparqlStatisticsInput\x12@\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2).neptunedata.StatisticsAutoGenerationModeR\x04mode\"}\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"m\n" +
+	"\x1bManageSparqlStatisticsInput\x12E\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2).neptunedata.StatisticsAutoGenerationModeH\x00R\x04mode\x88\x01\x01B\a\n" +
+	"\x05_mode\"}\n" +
 	"\x1cManageSparqlStatisticsOutput\x12A\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2#.neptunedata.RefreshStatisticsIdMapR\apayload\x12\x1a\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x86\x01\n" +
@@ -9928,7 +9936,7 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\fEventidEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
-	"\t_islastop\"\x99\a\n" +
+	"\t_islastop\"\xbc\a\n" +
 	"\x13StartLoaderJobInput\x12%\n" +
 	"\fdependencies\x18\xe1\xba\xf6) \x03(\tR\fdependencies\x12*\n" +
 	"\fedgeonlyload\x18ש\xc1\x12 \x01(\tH\x00R\fedgeonlyload\x88\x01\x01\x12)\n" +
@@ -9936,20 +9944,22 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x13.neptunedata.FormatR\x06format\x12\"\n" +
 	"\n" +
 	"iamrolearn\x18\x9a\xe9\xe6\x96\x01 \x01(\tR\n" +
-	"iamrolearn\x12(\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x11.neptunedata.ModeR\x04mode\x12=\n" +
-	"\vparallelism\x18»\xeaG \x01(\x0e2\x18.neptunedata.ParallelismR\vparallelism\x12n\n" +
+	"iamrolearn\x12-\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x11.neptunedata.ModeH\x02R\x04mode\x88\x01\x01\x12B\n" +
+	"\vparallelism\x18»\xeaG \x01(\x0e2\x18.neptunedata.ParallelismH\x03R\vparallelism\x88\x01\x01\x12n\n" +
 	"\x13parserconfiguration\x18\xc9я{ \x03(\v29.neptunedata.StartLoaderJobInput.ParserconfigurationEntryR\x13parserconfiguration\x12*\n" +
-	"\fqueuerequest\x18\xca˞< \x01(\tH\x02R\fqueuerequest\x88\x01\x01\x12F\n" +
+	"\fqueuerequest\x18\xca˞< \x01(\tH\x04R\fqueuerequest\x88\x01\x01\x12F\n" +
 	"\x0es3bucketregion\x18\x92\xae\xf7M \x01(\x0e2\x1b.neptunedata.S3BucketRegionR\x0es3bucketregion\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12T\n" +
-	"!updatesinglecardinalityproperties\x18\xb6̣5 \x01(\tH\x03R!updatesinglecardinalityproperties\x88\x01\x01\x128\n" +
-	"\x13userprovidededgeids\x18\x9b\x97\x98\x06 \x01(\tH\x04R\x13userprovidededgeids\x88\x01\x01\x1aF\n" +
+	"!updatesinglecardinalityproperties\x18\xb6̣5 \x01(\tH\x05R!updatesinglecardinalityproperties\x88\x01\x01\x128\n" +
+	"\x13userprovidededgeids\x18\x9b\x97\x98\x06 \x01(\tH\x06R\x13userprovidededgeids\x88\x01\x01\x1aF\n" +
 	"\x18ParserconfigurationEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
 	"\r_edgeonlyloadB\x0e\n" +
-	"\f_failonerrorB\x0f\n" +
+	"\f_failonerrorB\a\n" +
+	"\x05_modeB\x0e\n" +
+	"\f_parallelismB\x0f\n" +
 	"\r_queuerequestB$\n" +
 	"\"_updatesinglecardinalitypropertiesB\x16\n" +
 	"\x14_userprovidededgeids\"\xbc\x01\n" +
@@ -10631,7 +10641,9 @@ func file_neptunedata_proto_init() {
 	file_neptunedata_proto_msgTypes[56].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[58].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[60].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[62].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[63].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[64].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[65].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[67].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[69].OneofWrappers = []any{}
@@ -10645,6 +10657,8 @@ func file_neptunedata_proto_init() {
 	file_neptunedata_proto_msgTypes[86].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[88].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[89].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[94].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[96].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[101].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[102].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[103].OneofWrappers = []any{}

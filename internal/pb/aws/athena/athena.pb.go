@@ -1678,11 +1678,11 @@ func (x *CalculationStatistics) GetProgress() string {
 }
 
 type CalculationStatus struct {
-	state              protoimpl.MessageState    `protogen:"open.v1"`
-	Completiondatetime *string                   `protobuf:"bytes,175822779,opt,name=completiondatetime,proto3,oneof" json:"completiondatetime,omitempty"`
-	State              CalculationExecutionState `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.CalculationExecutionState" json:"state,omitempty"`
-	Statechangereason  *string                   `protobuf:"bytes,228940439,opt,name=statechangereason,proto3,oneof" json:"statechangereason,omitempty"`
-	Submissiondatetime *string                   `protobuf:"bytes,449650437,opt,name=submissiondatetime,proto3,oneof" json:"submissiondatetime,omitempty"`
+	state              protoimpl.MessageState     `protogen:"open.v1"`
+	Completiondatetime *string                    `protobuf:"bytes,175822779,opt,name=completiondatetime,proto3,oneof" json:"completiondatetime,omitempty"`
+	State              *CalculationExecutionState `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.CalculationExecutionState,oneof" json:"state,omitempty"`
+	Statechangereason  *string                    `protobuf:"bytes,228940439,opt,name=statechangereason,proto3,oneof" json:"statechangereason,omitempty"`
+	Submissiondatetime *string                    `protobuf:"bytes,449650437,opt,name=submissiondatetime,proto3,oneof" json:"submissiondatetime,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1725,8 +1725,8 @@ func (x *CalculationStatus) GetCompletiondatetime() string {
 }
 
 func (x *CalculationStatus) GetState() CalculationExecutionState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return CalculationExecutionState_CALCULATION_EXECUTION_STATE_QUEUED
 }
@@ -2327,7 +2327,7 @@ type ColumnInfo struct {
 	Catalogname   *string                `protobuf:"bytes,518825212,opt,name=catalogname,proto3,oneof" json:"catalogname,omitempty"`
 	Label         *string                `protobuf:"bytes,516747934,opt,name=label,proto3,oneof" json:"label,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nullable      ColumnNullable         `protobuf:"varint,373261405,opt,name=nullable,proto3,enum=athena.ColumnNullable" json:"nullable,omitempty"`
+	Nullable      *ColumnNullable        `protobuf:"varint,373261405,opt,name=nullable,proto3,enum=athena.ColumnNullable,oneof" json:"nullable,omitempty"`
 	Precision     *int32                 `protobuf:"varint,110022584,opt,name=precision,proto3,oneof" json:"precision,omitempty"`
 	Scale         *int32                 `protobuf:"varint,139628050,opt,name=scale,proto3,oneof" json:"scale,omitempty"`
 	Schemaname    *string                `protobuf:"bytes,443785942,opt,name=schemaname,proto3,oneof" json:"schemaname,omitempty"`
@@ -2396,8 +2396,8 @@ func (x *ColumnInfo) GetName() string {
 }
 
 func (x *ColumnInfo) GetNullable() ColumnNullable {
-	if x != nil {
-		return x.Nullable
+	if x != nil && x.Nullable != nil {
+		return *x.Nullable
 	}
 	return ColumnNullable_COLUMN_NULLABLE_NOT_NULL
 }
@@ -3243,12 +3243,12 @@ func (x *CustomerContentEncryptionConfiguration) GetKmskey() string {
 
 type DataCatalog struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Connectiontype ConnectionType         `protobuf:"varint,489507282,opt,name=connectiontype,proto3,enum=athena.ConnectionType" json:"connectiontype,omitempty"`
+	Connectiontype *ConnectionType        `protobuf:"varint,489507282,opt,name=connectiontype,proto3,enum=athena.ConnectionType,oneof" json:"connectiontype,omitempty"`
 	Description    *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Error          *string                `protobuf:"bytes,328047858,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Name           string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Parameters     map[string]string      `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Status         DataCatalogStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=athena.DataCatalogStatus" json:"status,omitempty"`
+	Status         *DataCatalogStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=athena.DataCatalogStatus,oneof" json:"status,omitempty"`
 	Type           DataCatalogType        `protobuf:"varint,290836590,opt,name=type,proto3,enum=athena.DataCatalogType" json:"type,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -3285,8 +3285,8 @@ func (*DataCatalog) Descriptor() ([]byte, []int) {
 }
 
 func (x *DataCatalog) GetConnectiontype() ConnectionType {
-	if x != nil {
-		return x.Connectiontype
+	if x != nil && x.Connectiontype != nil {
+		return *x.Connectiontype
 	}
 	return ConnectionType_CONNECTION_TYPE_DB2AS400
 }
@@ -3320,8 +3320,8 @@ func (x *DataCatalog) GetParameters() map[string]string {
 }
 
 func (x *DataCatalog) GetStatus() DataCatalogStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DataCatalogStatus_DATA_CATALOG_STATUS_DELETE_FAILED
 }
@@ -3336,10 +3336,10 @@ func (x *DataCatalog) GetType() DataCatalogType {
 type DataCatalogSummary struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Catalogname    *string                `protobuf:"bytes,518825212,opt,name=catalogname,proto3,oneof" json:"catalogname,omitempty"`
-	Connectiontype ConnectionType         `protobuf:"varint,489507282,opt,name=connectiontype,proto3,enum=athena.ConnectionType" json:"connectiontype,omitempty"`
+	Connectiontype *ConnectionType        `protobuf:"varint,489507282,opt,name=connectiontype,proto3,enum=athena.ConnectionType,oneof" json:"connectiontype,omitempty"`
 	Error          *string                `protobuf:"bytes,328047858,opt,name=error,proto3,oneof" json:"error,omitempty"`
-	Status         DataCatalogStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=athena.DataCatalogStatus" json:"status,omitempty"`
-	Type           DataCatalogType        `protobuf:"varint,290836590,opt,name=type,proto3,enum=athena.DataCatalogType" json:"type,omitempty"`
+	Status         *DataCatalogStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=athena.DataCatalogStatus,oneof" json:"status,omitempty"`
+	Type           *DataCatalogType       `protobuf:"varint,290836590,opt,name=type,proto3,enum=athena.DataCatalogType,oneof" json:"type,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -3382,8 +3382,8 @@ func (x *DataCatalogSummary) GetCatalogname() string {
 }
 
 func (x *DataCatalogSummary) GetConnectiontype() ConnectionType {
-	if x != nil {
-		return x.Connectiontype
+	if x != nil && x.Connectiontype != nil {
+		return *x.Connectiontype
 	}
 	return ConnectionType_CONNECTION_TYPE_DB2AS400
 }
@@ -3396,15 +3396,15 @@ func (x *DataCatalogSummary) GetError() string {
 }
 
 func (x *DataCatalogSummary) GetStatus() DataCatalogStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DataCatalogStatus_DATA_CATALOG_STATUS_DELETE_FAILED
 }
 
 func (x *DataCatalogSummary) GetType() DataCatalogType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return DataCatalogType_DATA_CATALOG_TYPE_FEDERATED
 }
@@ -4217,8 +4217,8 @@ type ExecutorsSummary struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Executorid          string                 `protobuf:"bytes,307566450,opt,name=executorid,proto3" json:"executorid,omitempty"`
 	Executorsize        *int64                 `protobuf:"varint,220298710,opt,name=executorsize,proto3,oneof" json:"executorsize,omitempty"`
-	Executorstate       ExecutorState          `protobuf:"varint,187122914,opt,name=executorstate,proto3,enum=athena.ExecutorState" json:"executorstate,omitempty"`
-	Executortype        ExecutorType           `protobuf:"varint,213715221,opt,name=executortype,proto3,enum=athena.ExecutorType" json:"executortype,omitempty"`
+	Executorstate       *ExecutorState         `protobuf:"varint,187122914,opt,name=executorstate,proto3,enum=athena.ExecutorState,oneof" json:"executorstate,omitempty"`
+	Executortype        *ExecutorType          `protobuf:"varint,213715221,opt,name=executortype,proto3,enum=athena.ExecutorType,oneof" json:"executortype,omitempty"`
 	Startdatetime       *int64                 `protobuf:"varint,88518355,opt,name=startdatetime,proto3,oneof" json:"startdatetime,omitempty"`
 	Terminationdatetime *int64                 `protobuf:"varint,253850405,opt,name=terminationdatetime,proto3,oneof" json:"terminationdatetime,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -4270,15 +4270,15 @@ func (x *ExecutorsSummary) GetExecutorsize() int64 {
 }
 
 func (x *ExecutorsSummary) GetExecutorstate() ExecutorState {
-	if x != nil {
-		return x.Executorstate
+	if x != nil && x.Executorstate != nil {
+		return *x.Executorstate
 	}
 	return ExecutorState_EXECUTOR_STATE_TERMINATING
 }
 
 func (x *ExecutorsSummary) GetExecutortype() ExecutorType {
-	if x != nil {
-		return x.Executortype
+	if x != nil && x.Executortype != nil {
+		return *x.Executortype
 	}
 	return ExecutorType_EXECUTOR_TYPE_GATEWAY
 }
@@ -5498,7 +5498,7 @@ type GetQueryResultsInput struct {
 	Maxresults       *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken        *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queryexecutionid string                 `protobuf:"bytes,467615503,opt,name=queryexecutionid,proto3" json:"queryexecutionid,omitempty"`
-	Queryresulttype  QueryResultType        `protobuf:"varint,3724043,opt,name=queryresulttype,proto3,enum=athena.QueryResultType" json:"queryresulttype,omitempty"`
+	Queryresulttype  *QueryResultType       `protobuf:"varint,3724043,opt,name=queryresulttype,proto3,enum=athena.QueryResultType,oneof" json:"queryresulttype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -5555,8 +5555,8 @@ func (x *GetQueryResultsInput) GetQueryexecutionid() string {
 }
 
 func (x *GetQueryResultsInput) GetQueryresulttype() QueryResultType {
-	if x != nil {
-		return x.Queryresulttype
+	if x != nil && x.Queryresulttype != nil {
+		return *x.Queryresulttype
 	}
 	return QueryResultType_QUERY_RESULT_TYPE_DATA_MANIFEST
 }
@@ -6738,11 +6738,11 @@ func (x *ListApplicationDPUSizesOutput) GetNexttoken() string {
 }
 
 type ListCalculationExecutionsRequest struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Maxresults    *int32                    `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     *string                   `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Sessionid     string                    `protobuf:"bytes,20529723,opt,name=sessionid,proto3" json:"sessionid,omitempty"`
-	Statefilter   CalculationExecutionState `protobuf:"varint,184693297,opt,name=statefilter,proto3,enum=athena.CalculationExecutionState" json:"statefilter,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Maxresults    *int32                     `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                    `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Sessionid     string                     `protobuf:"bytes,20529723,opt,name=sessionid,proto3" json:"sessionid,omitempty"`
+	Statefilter   *CalculationExecutionState `protobuf:"varint,184693297,opt,name=statefilter,proto3,enum=athena.CalculationExecutionState,oneof" json:"statefilter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6799,8 +6799,8 @@ func (x *ListCalculationExecutionsRequest) GetSessionid() string {
 }
 
 func (x *ListCalculationExecutionsRequest) GetStatefilter() CalculationExecutionState {
-	if x != nil {
-		return x.Statefilter
+	if x != nil && x.Statefilter != nil {
+		return *x.Statefilter
 	}
 	return CalculationExecutionState_CALCULATION_EXECUTION_STATE_QUEUED
 }
@@ -7299,7 +7299,7 @@ func (x *ListEngineVersionsOutput) GetNexttoken() string {
 
 type ListExecutorsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Executorstatefilter ExecutorState          `protobuf:"varint,208448852,opt,name=executorstatefilter,proto3,enum=athena.ExecutorState" json:"executorstatefilter,omitempty"`
+	Executorstatefilter *ExecutorState         `protobuf:"varint,208448852,opt,name=executorstatefilter,proto3,enum=athena.ExecutorState,oneof" json:"executorstatefilter,omitempty"`
 	Maxresults          *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken           *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Sessionid           string                 `protobuf:"bytes,20529723,opt,name=sessionid,proto3" json:"sessionid,omitempty"`
@@ -7338,8 +7338,8 @@ func (*ListExecutorsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListExecutorsRequest) GetExecutorstatefilter() ExecutorState {
-	if x != nil {
-		return x.Executorstatefilter
+	if x != nil && x.Executorstatefilter != nil {
+		return *x.Executorstatefilter
 	}
 	return ExecutorState_EXECUTOR_STATE_TERMINATING
 }
@@ -7997,7 +7997,7 @@ type ListSessionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Statefilter   SessionState           `protobuf:"varint,184693297,opt,name=statefilter,proto3,enum=athena.SessionState" json:"statefilter,omitempty"`
+	Statefilter   *SessionState          `protobuf:"varint,184693297,opt,name=statefilter,proto3,enum=athena.SessionState,oneof" json:"statefilter,omitempty"`
 	Workgroup     string                 `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8048,8 +8048,8 @@ func (x *ListSessionsRequest) GetNexttoken() string {
 }
 
 func (x *ListSessionsRequest) GetStatefilter() SessionState {
-	if x != nil {
-		return x.Statefilter
+	if x != nil && x.Statefilter != nil {
+		return *x.Statefilter
 	}
 	return SessionState_SESSION_STATE_TERMINATING
 }
@@ -8867,7 +8867,7 @@ type NotebookMetadata struct {
 	Lastmodifiedtime *string                `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
 	Name             *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Notebookid       *string                `protobuf:"bytes,157637214,opt,name=notebookid,proto3,oneof" json:"notebookid,omitempty"`
-	Type             NotebookType           `protobuf:"varint,290836590,opt,name=type,proto3,enum=athena.NotebookType" json:"type,omitempty"`
+	Type             *NotebookType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=athena.NotebookType,oneof" json:"type,omitempty"`
 	Workgroup        *string                `protobuf:"bytes,505960068,opt,name=workgroup,proto3,oneof" json:"workgroup,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -8932,8 +8932,8 @@ func (x *NotebookMetadata) GetNotebookid() string {
 }
 
 func (x *NotebookMetadata) GetType() NotebookType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return NotebookType_NOTEBOOK_TYPE_IPYNB
 }
@@ -9224,7 +9224,7 @@ type QueryExecution struct {
 	Queryresultss3Accessgrantsconfiguration *QueryResultsS3AccessGrantsConfiguration `protobuf:"bytes,264403639,opt,name=queryresultss3accessgrantsconfiguration,proto3" json:"queryresultss3accessgrantsconfiguration,omitempty"`
 	Resultconfiguration                     *ResultConfiguration                     `protobuf:"bytes,183031503,opt,name=resultconfiguration,proto3" json:"resultconfiguration,omitempty"`
 	Resultreuseconfiguration                *ResultReuseConfiguration                `protobuf:"bytes,482796543,opt,name=resultreuseconfiguration,proto3" json:"resultreuseconfiguration,omitempty"`
-	Statementtype                           StatementType                            `protobuf:"varint,286463655,opt,name=statementtype,proto3,enum=athena.StatementType" json:"statementtype,omitempty"`
+	Statementtype                           *StatementType                           `protobuf:"varint,286463655,opt,name=statementtype,proto3,enum=athena.StatementType,oneof" json:"statementtype,omitempty"`
 	Statistics                              *QueryExecutionStatistics                `protobuf:"bytes,510636075,opt,name=statistics,proto3" json:"statistics,omitempty"`
 	Status                                  *QueryExecutionStatus                    `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
 	Substatementtype                        *string                                  `protobuf:"bytes,504257527,opt,name=substatementtype,proto3,oneof" json:"substatementtype,omitempty"`
@@ -9327,8 +9327,8 @@ func (x *QueryExecution) GetResultreuseconfiguration() *ResultReuseConfiguration
 }
 
 func (x *QueryExecution) GetStatementtype() StatementType {
-	if x != nil {
-		return x.Statementtype
+	if x != nil && x.Statementtype != nil {
+		return *x.Statementtype
 	}
 	return StatementType_STATEMENT_TYPE_UTILITY
 }
@@ -9533,7 +9533,7 @@ type QueryExecutionStatus struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Athenaerror        *AthenaError           `protobuf:"bytes,82066385,opt,name=athenaerror,proto3" json:"athenaerror,omitempty"`
 	Completiondatetime *string                `protobuf:"bytes,175822779,opt,name=completiondatetime,proto3,oneof" json:"completiondatetime,omitempty"`
-	State              QueryExecutionState    `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.QueryExecutionState" json:"state,omitempty"`
+	State              *QueryExecutionState   `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.QueryExecutionState,oneof" json:"state,omitempty"`
 	Statechangereason  *string                `protobuf:"bytes,228940439,opt,name=statechangereason,proto3,oneof" json:"statechangereason,omitempty"`
 	Submissiondatetime *string                `protobuf:"bytes,449650437,opt,name=submissiondatetime,proto3,oneof" json:"submissiondatetime,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -9585,8 +9585,8 @@ func (x *QueryExecutionStatus) GetCompletiondatetime() string {
 }
 
 func (x *QueryExecutionStatus) GetState() QueryExecutionState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return QueryExecutionState_QUERY_EXECUTION_STATE_QUEUED
 }
@@ -10783,7 +10783,7 @@ type SessionStatus struct {
 	Idlesincedatetime    *string                `protobuf:"bytes,454742375,opt,name=idlesincedatetime,proto3,oneof" json:"idlesincedatetime,omitempty"`
 	Lastmodifieddatetime *string                `protobuf:"bytes,406490164,opt,name=lastmodifieddatetime,proto3,oneof" json:"lastmodifieddatetime,omitempty"`
 	Startdatetime        *string                `protobuf:"bytes,88518355,opt,name=startdatetime,proto3,oneof" json:"startdatetime,omitempty"`
-	State                SessionState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.SessionState" json:"state,omitempty"`
+	State                *SessionState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.SessionState,oneof" json:"state,omitempty"`
 	Statechangereason    *string                `protobuf:"bytes,228940439,opt,name=statechangereason,proto3,oneof" json:"statechangereason,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -10848,8 +10848,8 @@ func (x *SessionStatus) GetStartdatetime() string {
 }
 
 func (x *SessionStatus) GetState() SessionState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return SessionState_SESSION_STATE_TERMINATING
 }
@@ -11014,9 +11014,9 @@ func (x *StartCalculationExecutionRequest) GetSessionid() string {
 }
 
 type StartCalculationExecutionResponse struct {
-	state                  protoimpl.MessageState    `protogen:"open.v1"`
-	Calculationexecutionid *string                   `protobuf:"bytes,80028050,opt,name=calculationexecutionid,proto3,oneof" json:"calculationexecutionid,omitempty"`
-	State                  CalculationExecutionState `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.CalculationExecutionState" json:"state,omitempty"`
+	state                  protoimpl.MessageState     `protogen:"open.v1"`
+	Calculationexecutionid *string                    `protobuf:"bytes,80028050,opt,name=calculationexecutionid,proto3,oneof" json:"calculationexecutionid,omitempty"`
+	State                  *CalculationExecutionState `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.CalculationExecutionState,oneof" json:"state,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -11059,8 +11059,8 @@ func (x *StartCalculationExecutionResponse) GetCalculationexecutionid() string {
 }
 
 func (x *StartCalculationExecutionResponse) GetState() CalculationExecutionState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return CalculationExecutionState_CALCULATION_EXECUTION_STATE_QUEUED
 }
@@ -11328,7 +11328,7 @@ func (x *StartSessionRequest) GetWorkgroup() string {
 type StartSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sessionid     *string                `protobuf:"bytes,20529723,opt,name=sessionid,proto3,oneof" json:"sessionid,omitempty"`
-	State         SessionState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.SessionState" json:"state,omitempty"`
+	State         *SessionState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.SessionState,oneof" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11371,8 +11371,8 @@ func (x *StartSessionResponse) GetSessionid() string {
 }
 
 func (x *StartSessionResponse) GetState() SessionState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return SessionState_SESSION_STATE_TERMINATING
 }
@@ -11422,8 +11422,8 @@ func (x *StopCalculationExecutionRequest) GetCalculationexecutionid() string {
 }
 
 type StopCalculationExecutionResponse struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	State         CalculationExecutionState `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.CalculationExecutionState" json:"state,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	State         *CalculationExecutionState `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.CalculationExecutionState,oneof" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11459,8 +11459,8 @@ func (*StopCalculationExecutionResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *StopCalculationExecutionResponse) GetState() CalculationExecutionState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return CalculationExecutionState_CALCULATION_EXECUTION_STATE_QUEUED
 }
@@ -11823,7 +11823,7 @@ func (x *TerminateSessionRequest) GetSessionid() string {
 
 type TerminateSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	State         SessionState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.SessionState" json:"state,omitempty"`
+	State         *SessionState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.SessionState,oneof" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11859,8 +11859,8 @@ func (*TerminateSessionResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *TerminateSessionResponse) GetState() SessionState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return SessionState_SESSION_STATE_TERMINATING
 }
@@ -11868,7 +11868,7 @@ func (x *TerminateSessionResponse) GetState() SessionState {
 type TooManyRequestsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
-	Reason        ThrottleReason         `protobuf:"varint,20005178,opt,name=reason,proto3,enum=athena.ThrottleReason" json:"reason,omitempty"`
+	Reason        *ThrottleReason        `protobuf:"varint,20005178,opt,name=reason,proto3,enum=athena.ThrottleReason,oneof" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11911,8 +11911,8 @@ func (x *TooManyRequestsException) GetMessage() string {
 }
 
 func (x *TooManyRequestsException) GetReason() ThrottleReason {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return ThrottleReason_THROTTLE_REASON_CONCURRENT_QUERY_LIMIT_EXCEEDED
 }
@@ -12797,7 +12797,7 @@ type UpdateWorkGroupInput struct {
 	state                protoimpl.MessageState         `protogen:"open.v1"`
 	Configurationupdates *WorkGroupConfigurationUpdates `protobuf:"bytes,133706738,opt,name=configurationupdates,proto3" json:"configurationupdates,omitempty"`
 	Description          *string                        `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	State                WorkGroupState                 `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.WorkGroupState" json:"state,omitempty"`
+	State                *WorkGroupState                `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.WorkGroupState,oneof" json:"state,omitempty"`
 	Workgroup            string                         `protobuf:"bytes,505960068,opt,name=workgroup,proto3" json:"workgroup,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -12848,8 +12848,8 @@ func (x *UpdateWorkGroupInput) GetDescription() string {
 }
 
 func (x *UpdateWorkGroupInput) GetState() WorkGroupState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return WorkGroupState_WORK_GROUP_STATE_DISABLED
 }
@@ -12904,7 +12904,7 @@ type WorkGroup struct {
 	Description                  *string                 `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Identitycenterapplicationarn *string                 `protobuf:"bytes,338293532,opt,name=identitycenterapplicationarn,proto3,oneof" json:"identitycenterapplicationarn,omitempty"`
 	Name                         string                  `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	State                        WorkGroupState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.WorkGroupState" json:"state,omitempty"`
+	State                        *WorkGroupState         `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.WorkGroupState,oneof" json:"state,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -12975,8 +12975,8 @@ func (x *WorkGroup) GetName() string {
 }
 
 func (x *WorkGroup) GetState() WorkGroupState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return WorkGroupState_WORK_GROUP_STATE_DISABLED
 }
@@ -13308,7 +13308,7 @@ type WorkGroupSummary struct {
 	Engineversion                *EngineVersion         `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
 	Identitycenterapplicationarn *string                `protobuf:"bytes,338293532,opt,name=identitycenterapplicationarn,proto3,oneof" json:"identitycenterapplicationarn,omitempty"`
 	Name                         *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	State                        WorkGroupState         `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.WorkGroupState" json:"state,omitempty"`
+	State                        *WorkGroupState        `protobuf:"varint,502047895,opt,name=state,proto3,enum=athena.WorkGroupState,oneof" json:"state,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -13379,8 +13379,8 @@ func (x *WorkGroupSummary) GetName() string {
 }
 
 func (x *WorkGroupSummary) GetState() WorkGroupState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return WorkGroupState_WORK_GROUP_STATE_DISABLED
 }
@@ -13442,13 +13442,14 @@ const file_athena_proto_rawDesc = "" +
 	"\x14dpuexecutioninmillis\x18н\xb0S \x01(\x03H\x00R\x14dpuexecutioninmillis\x88\x01\x01\x12#\n" +
 	"\bprogress\x18\xe7\xc2\xda\xd1\x01 \x01(\tH\x01R\bprogress\x88\x01\x01B\x17\n" +
 	"\x15_dpuexecutioninmillisB\v\n" +
-	"\t_progress\"\xbb\x02\n" +
+	"\t_progress\"\xca\x02\n" +
 	"\x11CalculationStatus\x126\n" +
-	"\x12completiondatetime\x18\xbb\xaf\xebS \x01(\tH\x00R\x12completiondatetime\x88\x01\x01\x12;\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2!.athena.CalculationExecutionStateR\x05state\x124\n" +
-	"\x11statechangereason\x18\x97\xb5\x95m \x01(\tH\x01R\x11statechangereason\x88\x01\x01\x127\n" +
-	"\x12submissiondatetime\x18\x85\xbe\xb4\xd6\x01 \x01(\tH\x02R\x12submissiondatetime\x88\x01\x01B\x15\n" +
-	"\x13_completiondatetimeB\x14\n" +
+	"\x12completiondatetime\x18\xbb\xaf\xebS \x01(\tH\x00R\x12completiondatetime\x88\x01\x01\x12@\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2!.athena.CalculationExecutionStateH\x01R\x05state\x88\x01\x01\x124\n" +
+	"\x11statechangereason\x18\x97\xb5\x95m \x01(\tH\x02R\x11statechangereason\x88\x01\x01\x127\n" +
+	"\x12submissiondatetime\x18\x85\xbe\xb4\xd6\x01 \x01(\tH\x03R\x12submissiondatetime\x88\x01\x01B\x15\n" +
+	"\x13_completiondatetimeB\b\n" +
+	"\x06_stateB\x14\n" +
 	"\x12_statechangereasonB\x15\n" +
 	"\x13_submissiondatetime\"\xdf\x01\n" +
 	"\x12CalculationSummary\x12>\n" +
@@ -13511,24 +13512,25 @@ const file_athena_proto_rawDesc = "" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tH\x01R\x04type\x88\x01\x01B\n" +
 	"\n" +
 	"\b_commentB\a\n" +
-	"\x05_type\"\xe0\x03\n" +
+	"\x05_type\"\xf2\x03\n" +
 	"\n" +
 	"ColumnInfo\x12,\n" +
 	"\rcasesensitive\x18\x8c\xba\xa4{ \x01(\bH\x00R\rcasesensitive\x88\x01\x01\x12)\n" +
 	"\vcatalogname\x18\xfcɲ\xf7\x01 \x01(\tH\x01R\vcatalogname\x88\x01\x01\x12\x1d\n" +
 	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tH\x02R\x05label\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x126\n" +
-	"\bnullable\x18݈\xfe\xb1\x01 \x01(\x0e2\x16.athena.ColumnNullableR\bnullable\x12$\n" +
-	"\tprecision\x18\xb8\x9f\xbb4 \x01(\x05H\x03R\tprecision\x88\x01\x01\x12\x1c\n" +
-	"\x05scale\x18\x92\x9c\xcaB \x01(\x05H\x04R\x05scale\x88\x01\x01\x12'\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12;\n" +
+	"\bnullable\x18݈\xfe\xb1\x01 \x01(\x0e2\x16.athena.ColumnNullableH\x03R\bnullable\x88\x01\x01\x12$\n" +
+	"\tprecision\x18\xb8\x9f\xbb4 \x01(\x05H\x04R\tprecision\x88\x01\x01\x12\x1c\n" +
+	"\x05scale\x18\x92\x9c\xcaB \x01(\x05H\x05R\x05scale\x88\x01\x01\x12'\n" +
 	"\n" +
-	"schemaname\x18\xd6\xc5\xce\xd3\x01 \x01(\tH\x05R\n" +
+	"schemaname\x18\xd6\xc5\xce\xd3\x01 \x01(\tH\x06R\n" +
 	"schemaname\x88\x01\x01\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x06R\ttablename\x88\x01\x01\x12\x16\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\aR\ttablename\x88\x01\x01\x12\x16\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04typeB\x10\n" +
 	"\x0e_casesensitiveB\x0e\n" +
 	"\f_catalognameB\b\n" +
-	"\x06_labelB\f\n" +
+	"\x06_labelB\v\n" +
+	"\t_nullableB\f\n" +
 	"\n" +
 	"_precisionB\b\n" +
 	"\x06_scaleB\r\n" +
@@ -13602,30 +13604,35 @@ const file_athena_proto_rawDesc = "" +
 	"\f_description\"\x17\n" +
 	"\x15CreateWorkGroupOutput\"C\n" +
 	"&CustomerContentEncryptionConfiguration\x12\x19\n" +
-	"\x06kmskey\x18\xaa\xa1\xd06 \x01(\tR\x06kmskey\"\xba\x03\n" +
-	"\vDataCatalog\x12B\n" +
-	"\x0econnectiontype\x18ғ\xb5\xe9\x01 \x01(\x0e2\x16.athena.ConnectionTypeR\x0econnectiontype\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1d\n" +
-	"\x05error\x18\U000b9d9c\x01 \x01(\tH\x01R\x05error\x88\x01\x01\x12\x15\n" +
+	"\x06kmskey\x18\xaa\xa1\xd06 \x01(\tR\x06kmskey\"\xe2\x03\n" +
+	"\vDataCatalog\x12G\n" +
+	"\x0econnectiontype\x18ғ\xb5\xe9\x01 \x01(\x0e2\x16.athena.ConnectionTypeH\x00R\x0econnectiontype\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x1d\n" +
+	"\x05error\x18\U000b9d9c\x01 \x01(\tH\x02R\x05error\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12G\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2#.athena.DataCatalog.ParametersEntryR\n" +
-	"parameters\x124\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.athena.DataCatalogStatusR\x06status\x12/\n" +
+	"parameters\x129\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.athena.DataCatalogStatusH\x03R\x06status\x88\x01\x01\x12/\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x17.athena.DataCatalogTypeR\x04type\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_connectiontypeB\x0e\n" +
 	"\f_descriptionB\b\n" +
-	"\x06_error\"\xa3\x02\n" +
+	"\x06_errorB\t\n" +
+	"\a_status\"\xd9\x02\n" +
 	"\x12DataCatalogSummary\x12)\n" +
-	"\vcatalogname\x18\xfcɲ\xf7\x01 \x01(\tH\x00R\vcatalogname\x88\x01\x01\x12B\n" +
-	"\x0econnectiontype\x18ғ\xb5\xe9\x01 \x01(\x0e2\x16.athena.ConnectionTypeR\x0econnectiontype\x12\x1d\n" +
-	"\x05error\x18\U000b9d9c\x01 \x01(\tH\x01R\x05error\x88\x01\x01\x124\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.athena.DataCatalogStatusR\x06status\x12/\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x17.athena.DataCatalogTypeR\x04typeB\x0e\n" +
-	"\f_catalognameB\b\n" +
-	"\x06_error\"\xe0\x01\n" +
+	"\vcatalogname\x18\xfcɲ\xf7\x01 \x01(\tH\x00R\vcatalogname\x88\x01\x01\x12G\n" +
+	"\x0econnectiontype\x18ғ\xb5\xe9\x01 \x01(\x0e2\x16.athena.ConnectionTypeH\x01R\x0econnectiontype\x88\x01\x01\x12\x1d\n" +
+	"\x05error\x18\U000b9d9c\x01 \x01(\tH\x02R\x05error\x88\x01\x01\x129\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.athena.DataCatalogStatusH\x03R\x06status\x88\x01\x01\x124\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x17.athena.DataCatalogTypeH\x04R\x04type\x88\x01\x01B\x0e\n" +
+	"\f_catalognameB\x11\n" +
+	"\x0f_connectiontypeB\b\n" +
+	"\x06_errorB\t\n" +
+	"\a_statusB\a\n" +
+	"\x05_type\"\xe0\x01\n" +
 	"\bDatabase\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12D\n" +
@@ -13690,17 +13697,19 @@ const file_athena_proto_rawDesc = "" +
 	"\x16effectiveengineversion\x18\xf5\xafͶ\x01 \x01(\tH\x00R\x16effectiveengineversion\x88\x01\x01\x12<\n" +
 	"\x15selectedengineversion\x18㛗_ \x01(\tH\x01R\x15selectedengineversion\x88\x01\x01B\x19\n" +
 	"\x17_effectiveengineversionB\x18\n" +
-	"\x16_selectedengineversion\"\x82\x03\n" +
+	"\x16_selectedengineversion\"\xaf\x03\n" +
 	"\x10ExecutorsSummary\x12\"\n" +
 	"\n" +
 	"executorid\x18\xf2\xaeԒ\x01 \x01(\tR\n" +
 	"executorid\x12*\n" +
-	"\fexecutorsize\x18\xd6\xfb\x85i \x01(\x03H\x00R\fexecutorsize\x88\x01\x01\x12>\n" +
-	"\rexecutorstate\x18≝Y \x01(\x0e2\x15.athena.ExecutorStateR\rexecutorstate\x12;\n" +
-	"\fexecutortype\x18\x95\x92\xf4e \x01(\x0e2\x14.athena.ExecutorTypeR\fexecutortype\x12,\n" +
-	"\rstartdatetime\x18\xd3ݚ* \x01(\x03H\x01R\rstartdatetime\x88\x01\x01\x128\n" +
-	"\x13terminationdatetime\x18\xa5\xe6\x85y \x01(\x03H\x02R\x13terminationdatetime\x88\x01\x01B\x0f\n" +
+	"\fexecutorsize\x18\xd6\xfb\x85i \x01(\x03H\x00R\fexecutorsize\x88\x01\x01\x12C\n" +
+	"\rexecutorstate\x18≝Y \x01(\x0e2\x15.athena.ExecutorStateH\x01R\rexecutorstate\x88\x01\x01\x12@\n" +
+	"\fexecutortype\x18\x95\x92\xf4e \x01(\x0e2\x14.athena.ExecutorTypeH\x02R\fexecutortype\x88\x01\x01\x12,\n" +
+	"\rstartdatetime\x18\xd3ݚ* \x01(\x03H\x03R\rstartdatetime\x88\x01\x01\x128\n" +
+	"\x13terminationdatetime\x18\xa5\xe6\x85y \x01(\x03H\x04R\x13terminationdatetime\x88\x01\x01B\x0f\n" +
 	"\r_executorsizeB\x10\n" +
+	"\x0e_executorstateB\x0f\n" +
+	"\r_executortypeB\x10\n" +
 	"\x0e_startdatetimeB\x16\n" +
 	"\x14_terminationdatetime\"8\n" +
 	"\x13ExportNotebookInput\x12!\n" +
@@ -13789,17 +13798,18 @@ const file_athena_proto_rawDesc = "" +
 	"\x16GetQueryExecutionInput\x12.\n" +
 	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tR\x10queryexecutionid\"\\\n" +
 	"\x17GetQueryExecutionOutput\x12A\n" +
-	"\x0equeryexecution\x18\xe4\xe2\xd2\x1d \x01(\v2\x16.athena.QueryExecutionR\x0equeryexecution\"\xf8\x01\n" +
+	"\x0equeryexecution\x18\xe4\xe2\xd2\x1d \x01(\v2\x16.athena.QueryExecutionR\x0equeryexecution\"\x91\x02\n" +
 	"\x14GetQueryResultsInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12.\n" +
-	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tR\x10queryexecutionid\x12D\n" +
-	"\x0fqueryresulttype\x18\x8b\xa6\xe3\x01 \x01(\x0e2\x17.athena.QueryResultTypeR\x0fqueryresulttypeB\r\n" +
+	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tR\x10queryexecutionid\x12I\n" +
+	"\x0fqueryresulttype\x18\x8b\xa6\xe3\x01 \x01(\x0e2\x17.athena.QueryResultTypeH\x02R\x0fqueryresulttype\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xba\x01\n" +
+	"_nexttokenB\x12\n" +
+	"\x10_queryresulttype\"\xba\x01\n" +
 	"\x15GetQueryResultsOutput\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x122\n" +
 	"\tresultset\x18\xcdՂF \x01(\v2\x11.athena.ResultSetR\tresultset\x12)\n" +
@@ -13906,17 +13916,18 @@ const file_athena_proto_rawDesc = "" +
 	"\x13applicationdpusizes\x18˽\xdd\x1c \x03(\v2\x1b.athena.ApplicationDPUSizesR\x13applicationdpusizes\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xf7\x01\n" +
+	"_nexttoken\"\x8c\x02\n" +
 	" ListCalculationExecutionsRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12\x1f\n" +
-	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionid\x12F\n" +
-	"\vstatefilter\x18\xb1\xe4\x88X \x01(\x0e2!.athena.CalculationExecutionStateR\vstatefilterB\r\n" +
+	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionid\x12K\n" +
+	"\vstatefilter\x18\xb1\xe4\x88X \x01(\x0e2!.athena.CalculationExecutionStateH\x02R\vstatefilter\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x9b\x01\n" +
+	"_nexttokenB\x0e\n" +
+	"\f_statefilter\"\x9b\x01\n" +
 	"!ListCalculationExecutionsResponse\x12B\n" +
 	"\fcalculations\x18\xe0\xc4\xe0\x9f\x01 \x03(\v2\x1a.athena.CalculationSummaryR\fcalculations\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
@@ -13980,14 +13991,15 @@ const file_athena_proto_rawDesc = "" +
 	"\x0eengineversions\x18\xf3\x8c\xbd\xee\x01 \x03(\v2\x15.athena.EngineVersionR\x0eengineversions\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xef\x01\n" +
-	"\x14ListExecutorsRequest\x12J\n" +
-	"\x13executorstatefilter\x18\xd4ڲc \x01(\x0e2\x15.athena.ExecutorStateR\x13executorstatefilter\x12'\n" +
+	"_nexttoken\"\x8c\x02\n" +
+	"\x14ListExecutorsRequest\x12O\n" +
+	"\x13executorstatefilter\x18\xd4ڲc \x01(\x0e2\x15.athena.ExecutorStateH\x00R\x13executorstatefilter\x88\x01\x01\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12\x1f\n" +
-	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionidB\r\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12\x1f\n" +
+	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionidB\x16\n" +
+	"\x14_executorstatefilterB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
 	"_nexttoken\"\xb6\x01\n" +
@@ -14073,17 +14085,18 @@ const file_athena_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x120\n" +
 	"\x11queryexecutionids\x18\xc8\xe3\xc3\xeb\x01 \x03(\tR\x11queryexecutionidsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xde\x01\n" +
+	"_nexttoken\"\xf3\x01\n" +
 	"\x13ListSessionsRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x129\n" +
-	"\vstatefilter\x18\xb1\xe4\x88X \x01(\x0e2\x14.athena.SessionStateR\vstatefilter\x12 \n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12>\n" +
+	"\vstatefilter\x18\xb1\xe4\x88X \x01(\x0e2\x14.athena.SessionStateH\x02R\vstatefilter\x88\x01\x01\x12 \n" +
 	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x82\x01\n" +
+	"_nexttokenB\x0e\n" +
+	"\f_statefilter\"\x82\x01\n" +
 	"\x14ListSessionsResponse\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x126\n" +
 	"\bsessions\x18\xed\x95\xea\xb4\x01 \x03(\v2\x16.athena.SessionSummaryR\bsessionsB\f\n" +
@@ -14179,20 +14192,21 @@ const file_athena_proto_rawDesc = "" +
 	"\f_descriptionB\x0f\n" +
 	"\r_namedqueryidB\f\n" +
 	"\n" +
-	"_workgroup\"\xd7\x02\n" +
+	"_workgroup\"\xe5\x02\n" +
 	"\x10NotebookMetadata\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x00R\fcreationtime\x88\x01\x01\x122\n" +
 	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x01R\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12&\n" +
 	"\n" +
 	"notebookid\x18\u07b4\x95K \x01(\tH\x03R\n" +
-	"notebookid\x88\x01\x01\x12,\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.athena.NotebookTypeR\x04type\x12%\n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tH\x04R\tworkgroup\x88\x01\x01B\x0f\n" +
+	"notebookid\x88\x01\x01\x121\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.athena.NotebookTypeH\x04R\x04type\x88\x01\x01\x12%\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tH\x05R\tworkgroup\x88\x01\x01B\x0f\n" +
 	"\r_creationtimeB\x13\n" +
 	"\x11_lastmodifiedtimeB\a\n" +
 	"\x05_nameB\r\n" +
-	"\v_notebookidB\f\n" +
+	"\v_notebookidB\a\n" +
+	"\x05_typeB\f\n" +
 	"\n" +
 	"_workgroup\"\x89\x01\n" +
 	"\x16NotebookSessionSummary\x12*\n" +
@@ -14222,7 +14236,7 @@ const file_athena_proto_rawDesc = "" +
 	"'PutCapacityAssignmentConfigurationInput\x12P\n" +
 	"\x13capacityassignments\x18\x86\xa2\xf0\xa4\x01 \x03(\v2\x1a.athena.CapacityAssignmentR\x13capacityassignments\x12<\n" +
 	"\x17capacityreservationname\x18ǒ\x99\x9c\x01 \x01(\tR\x17capacityreservationname\"*\n" +
-	"(PutCapacityAssignmentConfigurationOutput\"\xcc\b\n" +
+	"(PutCapacityAssignmentConfigurationOutput\"\xe3\b\n" +
 	"\x0eQueryExecution\x12>\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\v2\x15.athena.EngineVersionR\rengineversion\x124\n" +
 	"\x13executionparameters\x18\xca\xce\xc9\xfb\x01 \x03(\tR\x13executionparameters\x12w\n" +
@@ -14232,16 +14246,17 @@ const file_athena_proto_rawDesc = "" +
 	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tH\x01R\x10queryexecutionid\x88\x01\x01\x12\x8c\x01\n" +
 	"'queryresultss3accessgrantsconfiguration\x18\xb7\xf5\x89~ \x01(\v2/.athena.QueryResultsS3AccessGrantsConfigurationR'queryresultss3accessgrantsconfiguration\x12P\n" +
 	"\x13resultconfiguration\x18ϭ\xa3W \x01(\v2\x1b.athena.ResultConfigurationR\x13resultconfiguration\x12`\n" +
-	"\x18resultreuseconfiguration\x18\xffǛ\xe6\x01 \x01(\v2 .athena.ResultReuseConfigurationR\x18resultreuseconfiguration\x12?\n" +
-	"\rstatementtype\x18\xa7\xad̈\x01 \x01(\x0e2\x15.athena.StatementTypeR\rstatementtype\x12D\n" +
+	"\x18resultreuseconfiguration\x18\xffǛ\xe6\x01 \x01(\v2 .athena.ResultReuseConfigurationR\x18resultreuseconfiguration\x12D\n" +
+	"\rstatementtype\x18\xa7\xad̈\x01 \x01(\x0e2\x15.athena.StatementTypeH\x02R\rstatementtype\x88\x01\x01\x12D\n" +
 	"\n" +
 	"statistics\x18\xab\xe0\xbe\xf3\x01 \x01(\v2 .athena.QueryExecutionStatisticsR\n" +
 	"statistics\x127\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\v2\x1c.athena.QueryExecutionStatusR\x06status\x123\n" +
-	"\x10substatementtype\x18\xf7\xb7\xb9\xf0\x01 \x01(\tH\x02R\x10substatementtype\x88\x01\x01\x12%\n" +
-	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tH\x03R\tworkgroup\x88\x01\x01B\b\n" +
+	"\x10substatementtype\x18\xf7\xb7\xb9\xf0\x01 \x01(\tH\x03R\x10substatementtype\x88\x01\x01\x12%\n" +
+	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tH\x04R\tworkgroup\x88\x01\x01B\b\n" +
 	"\x06_queryB\x13\n" +
-	"\x11_queryexecutionidB\x13\n" +
+	"\x11_queryexecutionidB\x10\n" +
+	"\x0e_statementtypeB\x13\n" +
 	"\x11_substatementtypeB\f\n" +
 	"\n" +
 	"_workgroup\"w\n" +
@@ -14270,14 +14285,15 @@ const file_athena_proto_rawDesc = "" +
 	"\x17_queryqueuetimeinmillisB#\n" +
 	"!_servicepreprocessingtimeinmillisB \n" +
 	"\x1e_serviceprocessingtimeinmillisB\x1d\n" +
-	"\x1b_totalexecutiontimeinmillis\"\xf2\x02\n" +
+	"\x1b_totalexecutiontimeinmillis\"\x81\x03\n" +
 	"\x14QueryExecutionStatus\x128\n" +
 	"\vathenaerror\x18\xd1\xf7\x90' \x01(\v2\x13.athena.AthenaErrorR\vathenaerror\x126\n" +
-	"\x12completiondatetime\x18\xbb\xaf\xebS \x01(\tH\x00R\x12completiondatetime\x88\x01\x01\x125\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1b.athena.QueryExecutionStateR\x05state\x124\n" +
-	"\x11statechangereason\x18\x97\xb5\x95m \x01(\tH\x01R\x11statechangereason\x88\x01\x01\x127\n" +
-	"\x12submissiondatetime\x18\x85\xbe\xb4\xd6\x01 \x01(\tH\x02R\x12submissiondatetime\x88\x01\x01B\x15\n" +
-	"\x13_completiondatetimeB\x14\n" +
+	"\x12completiondatetime\x18\xbb\xaf\xebS \x01(\tH\x00R\x12completiondatetime\x88\x01\x01\x12:\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1b.athena.QueryExecutionStateH\x01R\x05state\x88\x01\x01\x124\n" +
+	"\x11statechangereason\x18\x97\xb5\x95m \x01(\tH\x02R\x11statechangereason\x88\x01\x01\x127\n" +
+	"\x12submissiondatetime\x18\x85\xbe\xb4\xd6\x01 \x01(\tH\x03R\x12submissiondatetime\x88\x01\x01B\x15\n" +
+	"\x13_completiondatetimeB\b\n" +
+	"\x06_stateB\x14\n" +
 	"\x12_statechangereasonB\x15\n" +
 	"\x13_submissiondatetime\"\xa7\x02\n" +
 	"'QueryResultsS3AccessGrantsConfiguration\x12N\n" +
@@ -14422,18 +14438,19 @@ const file_athena_proto_rawDesc = "" +
 	"\x11_workingdirectory\"h\n" +
 	"\x11SessionStatistics\x12:\n" +
 	"\x14dpuexecutioninmillis\x18н\xb0S \x01(\x03H\x00R\x14dpuexecutioninmillis\x88\x01\x01B\x17\n" +
-	"\x15_dpuexecutioninmillis\"\xa9\x03\n" +
+	"\x15_dpuexecutioninmillis\"\xb8\x03\n" +
 	"\rSessionStatus\x12)\n" +
 	"\venddatetime\x18荱\xb1\x01 \x01(\tH\x00R\venddatetime\x88\x01\x01\x125\n" +
 	"\x11idlesincedatetime\x18\xe7\xa2\xeb\xd8\x01 \x01(\tH\x01R\x11idlesincedatetime\x88\x01\x01\x12;\n" +
 	"\x14lastmodifieddatetime\x18\xb4\x98\xea\xc1\x01 \x01(\tH\x02R\x14lastmodifieddatetime\x88\x01\x01\x12,\n" +
-	"\rstartdatetime\x18\xd3ݚ* \x01(\tH\x03R\rstartdatetime\x88\x01\x01\x12.\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x14.athena.SessionStateR\x05state\x124\n" +
-	"\x11statechangereason\x18\x97\xb5\x95m \x01(\tH\x04R\x11statechangereason\x88\x01\x01B\x0e\n" +
+	"\rstartdatetime\x18\xd3ݚ* \x01(\tH\x03R\rstartdatetime\x88\x01\x01\x123\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x14.athena.SessionStateH\x04R\x05state\x88\x01\x01\x124\n" +
+	"\x11statechangereason\x18\x97\xb5\x95m \x01(\tH\x05R\x11statechangereason\x88\x01\x01B\x0e\n" +
 	"\f_enddatetimeB\x14\n" +
 	"\x12_idlesincedatetimeB\x17\n" +
 	"\x15_lastmodifieddatetimeB\x10\n" +
-	"\x0e_startdatetimeB\x14\n" +
+	"\x0e_startdatetimeB\b\n" +
+	"\x06_stateB\x14\n" +
 	"\x12_statechangereason\"\xb7\x02\n" +
 	"\x0eSessionSummary\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12>\n" +
@@ -14454,11 +14471,12 @@ const file_athena_proto_rawDesc = "" +
 	"\x13_clientrequesttokenB\f\n" +
 	"\n" +
 	"_codeblockB\x0e\n" +
-	"\f_description\"\xbb\x01\n" +
+	"\f_description\"\xca\x01\n" +
 	"!StartCalculationExecutionResponse\x12>\n" +
-	"\x16calculationexecutionid\x18\x92Ô& \x01(\tH\x00R\x16calculationexecutionid\x88\x01\x01\x12;\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2!.athena.CalculationExecutionStateR\x05stateB\x19\n" +
-	"\x17_calculationexecutionid\"\xda\x04\n" +
+	"\x16calculationexecutionid\x18\x92Ô& \x01(\tH\x00R\x16calculationexecutionid\x88\x01\x01\x12@\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2!.athena.CalculationExecutionStateH\x01R\x05state\x88\x01\x01B\x19\n" +
+	"\x17_calculationexecutionidB\b\n" +
+	"\x06_state\"\xda\x04\n" +
 	"\x18StartQueryExecutionInput\x127\n" +
 	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tH\x00R\x12clientrequesttoken\x88\x01\x01\x12Q\n" +
 	"\x13engineconfiguration\x18\xe4\xb3\xf3\xa2\x01 \x01(\v2\x1b.athena.EngineConfigurationR\x13engineconfiguration\x124\n" +
@@ -14490,16 +14508,18 @@ const file_athena_proto_rawDesc = "" +
 	"\f_descriptionB\x10\n" +
 	"\x0e_executionroleB\x12\n" +
 	"\x10_notebookversionB\x1e\n" +
-	"\x1c_sessionidletimeoutinminutes\"z\n" +
+	"\x1c_sessionidletimeoutinminutes\"\x89\x01\n" +
 	"\x14StartSessionResponse\x12$\n" +
-	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tH\x00R\tsessionid\x88\x01\x01\x12.\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x14.athena.SessionStateR\x05stateB\f\n" +
+	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tH\x00R\tsessionid\x88\x01\x01\x123\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x14.athena.SessionStateH\x01R\x05state\x88\x01\x01B\f\n" +
 	"\n" +
-	"_sessionid\"\\\n" +
+	"_sessionidB\b\n" +
+	"\x06_state\"\\\n" +
 	"\x1fStopCalculationExecutionRequest\x129\n" +
-	"\x16calculationexecutionid\x18\x92Ô& \x01(\tR\x16calculationexecutionid\"_\n" +
-	" StopCalculationExecutionResponse\x12;\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2!.athena.CalculationExecutionStateR\x05state\"I\n" +
+	"\x16calculationexecutionid\x18\x92Ô& \x01(\tR\x16calculationexecutionid\"n\n" +
+	" StopCalculationExecutionResponse\x12@\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2!.athena.CalculationExecutionStateH\x00R\x05state\x88\x01\x01B\b\n" +
+	"\x06_state\"I\n" +
 	"\x17StopQueryExecutionInput\x12.\n" +
 	"\x10queryexecutionid\x18\x8f\xfe\xfc\xde\x01 \x01(\tR\x10queryexecutionid\"\x1a\n" +
 	"\x18StopQueryExecutionOutput\"\xc7\x03\n" +
@@ -14532,14 +14552,16 @@ const file_athena_proto_rawDesc = "" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\v.athena.TagR\x04tags\"\x13\n" +
 	"\x11TagResourceOutput\":\n" +
 	"\x17TerminateSessionRequest\x12\x1f\n" +
-	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionid\"J\n" +
-	"\x18TerminateSessionResponse\x12.\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x14.athena.SessionStateR\x05state\"{\n" +
+	"\tsessionid\x18\xbb\x84\xe5\t \x01(\tR\tsessionid\"Y\n" +
+	"\x18TerminateSessionResponse\x123\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x14.athena.SessionStateH\x00R\x05state\x88\x01\x01B\b\n" +
+	"\x06_state\"\x8b\x01\n" +
 	"\x18TooManyRequestsException\x12 \n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x121\n" +
-	"\x06reason\x18\xba\x82\xc5\t \x01(\x0e2\x16.athena.ThrottleReasonR\x06reasonB\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x126\n" +
+	"\x06reason\x18\xba\x82\xc5\t \x01(\x0e2\x16.athena.ThrottleReasonH\x01R\x06reason\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xc9\x01\n" +
+	"\b_messageB\t\n" +
+	"\a_reason\"\xc9\x01\n" +
 	"\x17UnprocessedNamedQueryId\x12$\n" +
 	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tH\x00R\terrorcode\x88\x01\x01\x12+\n" +
 	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tH\x01R\ferrormessage\x88\x01\x01\x12+\n" +
@@ -14621,24 +14643,26 @@ const file_athena_proto_rawDesc = "" +
 	" \x01(\tR\rstatementname\x12 \n" +
 	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\x0e\n" +
 	"\f_description\"\x1f\n" +
-	"\x1dUpdatePreparedStatementOutput\"\x82\x02\n" +
+	"\x1dUpdatePreparedStatementOutput\"\x91\x02\n" +
 	"\x14UpdateWorkGroupInput\x12\\\n" +
 	"\x14configurationupdates\x18\xf2\xe7\xe0? \x01(\v2%.athena.WorkGroupConfigurationUpdatesR\x14configurationupdates\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x120\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x16.athena.WorkGroupStateR\x05state\x12 \n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x125\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x16.athena.WorkGroupStateH\x01R\x05state\x88\x01\x01\x12 \n" +
 	"\tworkgroup\x18\x84\xad\xa1\xf1\x01 \x01(\tR\tworkgroupB\x0e\n" +
-	"\f_description\"\x17\n" +
-	"\x15UpdateWorkGroupOutput\"\x83\x03\n" +
+	"\f_descriptionB\b\n" +
+	"\x06_state\"\x17\n" +
+	"\x15UpdateWorkGroupOutput\"\x92\x03\n" +
 	"\tWorkGroup\x12H\n" +
 	"\rconfiguration\x18\xda\xc8\xfb\xd2\x01 \x01(\v2\x1e.athena.WorkGroupConfigurationR\rconfiguration\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x00R\fcreationtime\x88\x01\x01\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12K\n" +
 	"\x1cidentitycenterapplicationarn\x18\x9c槡\x01 \x01(\tH\x02R\x1cidentitycenterapplicationarn\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x120\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x16.athena.WorkGroupStateR\x05stateB\x0f\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x125\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x16.athena.WorkGroupStateH\x03R\x05state\x88\x01\x01B\x0f\n" +
 	"\r_creationtimeB\x0e\n" +
 	"\f_descriptionB\x1f\n" +
-	"\x1d_identitycenterapplicationarn\"\xa2\f\n" +
+	"\x1d_identitycenterapplicationarnB\b\n" +
+	"\x06_state\"\xa2\f\n" +
 	"\x16WorkGroupConfiguration\x12A\n" +
 	"\x17additionalconfiguration\x18\xf7\xab\xe2\xb9\x01 \x01(\tH\x00R\x17additionalconfiguration\x88\x01\x01\x12F\n" +
 	"\x1abytesscannedcutoffperquery\x18\x89\xe4\xdc~ \x01(\x03H\x01R\x1abytesscannedcutoffperquery\x88\x01\x01\x12\x89\x01\n" +
@@ -14687,18 +14711,19 @@ const file_athena_proto_rawDesc = "" +
 	" _publishcloudwatchmetricsenabledB#\n" +
 	"!_removebytesscannedcutoffperqueryB/\n" +
 	"-_removecustomercontentencryptionconfigurationB\x17\n" +
-	"\x15_requesterpaysenabled\"\x8e\x03\n" +
+	"\x15_requesterpaysenabled\"\x9d\x03\n" +
 	"\x10WorkGroupSummary\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x00R\fcreationtime\x88\x01\x01\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12>\n" +
 	"\rengineversion\x18\xf6\u07b7\x15 \x01(\v2\x15.athena.EngineVersionR\rengineversion\x12K\n" +
 	"\x1cidentitycenterapplicationarn\x18\x9c槡\x01 \x01(\tH\x02R\x1cidentitycenterapplicationarn\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x120\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x16.athena.WorkGroupStateR\x05stateB\x0f\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x125\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x16.athena.WorkGroupStateH\x04R\x05state\x88\x01\x01B\x0f\n" +
 	"\r_creationtimeB\x0e\n" +
 	"\f_descriptionB\x1f\n" +
 	"\x1d_identitycenterapplicationarnB\a\n" +
-	"\x05_name*@\n" +
+	"\x05_nameB\b\n" +
+	"\x06_state*@\n" +
 	"\x12AuthenticationType\x12*\n" +
 	"&AUTHENTICATION_TYPE_DIRECTORY_IDENTITY\x10\x00*\xe7\x02\n" +
 	"\x19CalculationExecutionState\x12&\n" +
@@ -15569,8 +15594,10 @@ func file_athena_proto_init() {
 	file_athena_proto_msgTypes[178].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[179].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[180].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[182].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[185].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[186].OneofWrappers = []any{}
+	file_athena_proto_msgTypes[190].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[191].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[192].OneofWrappers = []any{}
 	file_athena_proto_msgTypes[193].OneofWrappers = []any{}

@@ -18,3 +18,11 @@ type Encryptor interface {
 type Checker interface {
 	CheckKey(ctx context.Context, region, keyID string) error
 }
+
+// Resolver resolves a KMS key identifier (key ID, key ARN, alias name or
+// alias ARN) to the underlying key's ARN — the form descriptions echo for
+// an encryption key (e.g. DynamoDB SSEDescription.KMSMasterKeyArn, which
+// the model documents as "The KMS key ARN used for the KMS encryption").
+type Resolver interface {
+	ResolveKeyArn(ctx context.Context, region, keyID string) (string, error)
+}

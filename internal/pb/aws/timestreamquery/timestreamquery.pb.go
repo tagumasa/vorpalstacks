@@ -1229,7 +1229,7 @@ type DescribeAccountSettingsResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Maxquerytcu       *int32                 `protobuf:"varint,285295370,opt,name=maxquerytcu,proto3,oneof" json:"maxquerytcu,omitempty"`
 	Querycompute      *QueryComputeResponse  `protobuf:"bytes,358277613,opt,name=querycompute,proto3" json:"querycompute,omitempty"`
-	Querypricingmodel QueryPricingModel      `protobuf:"varint,453472445,opt,name=querypricingmodel,proto3,enum=timestreamquery.QueryPricingModel" json:"querypricingmodel,omitempty"`
+	Querypricingmodel *QueryPricingModel     `protobuf:"varint,453472445,opt,name=querypricingmodel,proto3,enum=timestreamquery.QueryPricingModel,oneof" json:"querypricingmodel,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1279,8 +1279,8 @@ func (x *DescribeAccountSettingsResponse) GetQuerycompute() *QueryComputeRespons
 }
 
 func (x *DescribeAccountSettingsResponse) GetQuerypricingmodel() QueryPricingModel {
-	if x != nil {
-		return x.Querypricingmodel
+	if x != nil && x.Querypricingmodel != nil {
+		return *x.Querypricingmodel
 	}
 	return QueryPricingModel_QUERY_PRICING_MODEL_COMPUTE_UNITS
 }
@@ -1887,7 +1887,7 @@ func (x *InvalidEndpointException) GetMessage() string {
 
 type LastUpdate struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Status         LastUpdateStatus       `protobuf:"varint,6222352,opt,name=status,proto3,enum=timestreamquery.LastUpdateStatus" json:"status,omitempty"`
+	Status         *LastUpdateStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=timestreamquery.LastUpdateStatus,oneof" json:"status,omitempty"`
 	Statusmessage  *string                `protobuf:"bytes,72590095,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	Targetquerytcu *int32                 `protobuf:"varint,183880621,opt,name=targetquerytcu,proto3,oneof" json:"targetquerytcu,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -1925,8 +1925,8 @@ func (*LastUpdate) Descriptor() ([]byte, []int) {
 }
 
 func (x *LastUpdate) GetStatus() LastUpdateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return LastUpdateStatus_LAST_UPDATE_STATUS_PENDING
 }
@@ -2671,7 +2671,7 @@ func (x *ProvisionedCapacityResponse) GetNotificationconfiguration() *AccountSet
 
 type QueryComputeRequest struct {
 	state               protoimpl.MessageState      `protogen:"open.v1"`
-	Computemode         ComputeMode                 `protobuf:"varint,205227458,opt,name=computemode,proto3,enum=timestreamquery.ComputeMode" json:"computemode,omitempty"`
+	Computemode         *ComputeMode                `protobuf:"varint,205227458,opt,name=computemode,proto3,enum=timestreamquery.ComputeMode,oneof" json:"computemode,omitempty"`
 	Provisionedcapacity *ProvisionedCapacityRequest `protobuf:"bytes,181400702,opt,name=provisionedcapacity,proto3" json:"provisionedcapacity,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -2708,8 +2708,8 @@ func (*QueryComputeRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryComputeRequest) GetComputemode() ComputeMode {
-	if x != nil {
-		return x.Computemode
+	if x != nil && x.Computemode != nil {
+		return *x.Computemode
 	}
 	return ComputeMode_COMPUTE_MODE_PROVISIONED
 }
@@ -2723,7 +2723,7 @@ func (x *QueryComputeRequest) GetProvisionedcapacity() *ProvisionedCapacityReque
 
 type QueryComputeResponse struct {
 	state               protoimpl.MessageState       `protogen:"open.v1"`
-	Computemode         ComputeMode                  `protobuf:"varint,205227458,opt,name=computemode,proto3,enum=timestreamquery.ComputeMode" json:"computemode,omitempty"`
+	Computemode         *ComputeMode                 `protobuf:"varint,205227458,opt,name=computemode,proto3,enum=timestreamquery.ComputeMode,oneof" json:"computemode,omitempty"`
 	Provisionedcapacity *ProvisionedCapacityResponse `protobuf:"bytes,181400702,opt,name=provisionedcapacity,proto3" json:"provisionedcapacity,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -2760,8 +2760,8 @@ func (*QueryComputeResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryComputeResponse) GetComputemode() ComputeMode {
-	if x != nil {
-		return x.Computemode
+	if x != nil && x.Computemode != nil {
+		return *x.Computemode
 	}
 	return ComputeMode_COMPUTE_MODE_PROVISIONED
 }
@@ -3480,7 +3480,7 @@ func (x *Row) GetData() []*Datum {
 type S3Configuration struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Bucketname       string                 `protobuf:"bytes,208117045,opt,name=bucketname,proto3" json:"bucketname,omitempty"`
-	Encryptionoption S3EncryptionOption     `protobuf:"varint,160833062,opt,name=encryptionoption,proto3,enum=timestreamquery.S3EncryptionOption" json:"encryptionoption,omitempty"`
+	Encryptionoption *S3EncryptionOption    `protobuf:"varint,160833062,opt,name=encryptionoption,proto3,enum=timestreamquery.S3EncryptionOption,oneof" json:"encryptionoption,omitempty"`
 	Objectkeyprefix  *string                `protobuf:"bytes,132617574,opt,name=objectkeyprefix,proto3,oneof" json:"objectkeyprefix,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -3524,8 +3524,8 @@ func (x *S3Configuration) GetBucketname() string {
 }
 
 func (x *S3Configuration) GetEncryptionoption() S3EncryptionOption {
-	if x != nil {
-		return x.Encryptionoption
+	if x != nil && x.Encryptionoption != nil {
+		return *x.Encryptionoption
 	}
 	return S3EncryptionOption_S3_ENCRYPTION_OPTION_SSE_S3
 }
@@ -3638,7 +3638,7 @@ type ScheduledQuery struct {
 	Arn                      string                    `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
 	Creationtime             *string                   `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Errorreportconfiguration *ErrorReportConfiguration `protobuf:"bytes,222039776,opt,name=errorreportconfiguration,proto3" json:"errorreportconfiguration,omitempty"`
-	Lastrunstatus            ScheduledQueryRunStatus   `protobuf:"varint,441976361,opt,name=lastrunstatus,proto3,enum=timestreamquery.ScheduledQueryRunStatus" json:"lastrunstatus,omitempty"`
+	Lastrunstatus            *ScheduledQueryRunStatus  `protobuf:"varint,441976361,opt,name=lastrunstatus,proto3,enum=timestreamquery.ScheduledQueryRunStatus,oneof" json:"lastrunstatus,omitempty"`
 	Name                     string                    `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Nextinvocationtime       *string                   `protobuf:"bytes,424223272,opt,name=nextinvocationtime,proto3,oneof" json:"nextinvocationtime,omitempty"`
 	Previousinvocationtime   *string                   `protobuf:"bytes,7530344,opt,name=previousinvocationtime,proto3,oneof" json:"previousinvocationtime,omitempty"`
@@ -3700,8 +3700,8 @@ func (x *ScheduledQuery) GetErrorreportconfiguration() *ErrorReportConfiguration
 }
 
 func (x *ScheduledQuery) GetLastrunstatus() ScheduledQueryRunStatus {
-	if x != nil {
-		return x.Lastrunstatus
+	if x != nil && x.Lastrunstatus != nil {
+		return *x.Lastrunstatus
 	}
 	return ScheduledQueryRunStatus_SCHEDULED_QUERY_RUN_STATUS_MANUAL_TRIGGER_SUCCESS
 }
@@ -4024,7 +4024,7 @@ type ScheduledQueryRunSummary struct {
 	Failurereason         *string                         `protobuf:"bytes,232322142,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
 	Invocationtime        *string                         `protobuf:"bytes,331845291,opt,name=invocationtime,proto3,oneof" json:"invocationtime,omitempty"`
 	Queryinsightsresponse *ScheduledQueryInsightsResponse `protobuf:"bytes,354278130,opt,name=queryinsightsresponse,proto3" json:"queryinsightsresponse,omitempty"`
-	Runstatus             ScheduledQueryRunStatus         `protobuf:"varint,293822805,opt,name=runstatus,proto3,enum=timestreamquery.ScheduledQueryRunStatus" json:"runstatus,omitempty"`
+	Runstatus             *ScheduledQueryRunStatus        `protobuf:"varint,293822805,opt,name=runstatus,proto3,enum=timestreamquery.ScheduledQueryRunStatus,oneof" json:"runstatus,omitempty"`
 	Triggertime           *string                         `protobuf:"bytes,268796699,opt,name=triggertime,proto3,oneof" json:"triggertime,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -4096,8 +4096,8 @@ func (x *ScheduledQueryRunSummary) GetQueryinsightsresponse() *ScheduledQueryIns
 }
 
 func (x *ScheduledQueryRunSummary) GetRunstatus() ScheduledQueryRunStatus {
-	if x != nil {
-		return x.Runstatus
+	if x != nil && x.Runstatus != nil {
+		return *x.Runstatus
 	}
 	return ScheduledQueryRunStatus_SCHEDULED_QUERY_RUN_STATUS_MANUAL_TRIGGER_SUCCESS
 }
@@ -4745,7 +4745,7 @@ type Type struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
 	Arraycolumninfo                  *ColumnInfo            `protobuf:"bytes,476744353,opt,name=arraycolumninfo,proto3" json:"arraycolumninfo,omitempty"`
 	Rowcolumninfo                    []*ColumnInfo          `protobuf:"bytes,37626042,rep,name=rowcolumninfo,proto3" json:"rowcolumninfo,omitempty"`
-	Scalartype                       ScalarType             `protobuf:"varint,316685622,opt,name=scalartype,proto3,enum=timestreamquery.ScalarType" json:"scalartype,omitempty"`
+	Scalartype                       *ScalarType            `protobuf:"varint,316685622,opt,name=scalartype,proto3,enum=timestreamquery.ScalarType,oneof" json:"scalartype,omitempty"`
 	Timeseriesmeasurevaluecolumninfo *ColumnInfo            `protobuf:"bytes,324829411,opt,name=timeseriesmeasurevaluecolumninfo,proto3" json:"timeseriesmeasurevaluecolumninfo,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
@@ -4796,8 +4796,8 @@ func (x *Type) GetRowcolumninfo() []*ColumnInfo {
 }
 
 func (x *Type) GetScalartype() ScalarType {
-	if x != nil {
-		return x.Scalartype
+	if x != nil && x.Scalartype != nil {
+		return *x.Scalartype
 	}
 	return ScalarType_SCALAR_TYPE_BIGINT
 }
@@ -4901,7 +4901,7 @@ type UpdateAccountSettingsRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Maxquerytcu       *int32                 `protobuf:"varint,285295370,opt,name=maxquerytcu,proto3,oneof" json:"maxquerytcu,omitempty"`
 	Querycompute      *QueryComputeRequest   `protobuf:"bytes,358277613,opt,name=querycompute,proto3" json:"querycompute,omitempty"`
-	Querypricingmodel QueryPricingModel      `protobuf:"varint,453472445,opt,name=querypricingmodel,proto3,enum=timestreamquery.QueryPricingModel" json:"querypricingmodel,omitempty"`
+	Querypricingmodel *QueryPricingModel     `protobuf:"varint,453472445,opt,name=querypricingmodel,proto3,enum=timestreamquery.QueryPricingModel,oneof" json:"querypricingmodel,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -4951,8 +4951,8 @@ func (x *UpdateAccountSettingsRequest) GetQuerycompute() *QueryComputeRequest {
 }
 
 func (x *UpdateAccountSettingsRequest) GetQuerypricingmodel() QueryPricingModel {
-	if x != nil {
-		return x.Querypricingmodel
+	if x != nil && x.Querypricingmodel != nil {
+		return *x.Querypricingmodel
 	}
 	return QueryPricingModel_QUERY_PRICING_MODEL_COMPUTE_UNITS
 }
@@ -4961,7 +4961,7 @@ type UpdateAccountSettingsResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Maxquerytcu       *int32                 `protobuf:"varint,285295370,opt,name=maxquerytcu,proto3,oneof" json:"maxquerytcu,omitempty"`
 	Querycompute      *QueryComputeResponse  `protobuf:"bytes,358277613,opt,name=querycompute,proto3" json:"querycompute,omitempty"`
-	Querypricingmodel QueryPricingModel      `protobuf:"varint,453472445,opt,name=querypricingmodel,proto3,enum=timestreamquery.QueryPricingModel" json:"querypricingmodel,omitempty"`
+	Querypricingmodel *QueryPricingModel     `protobuf:"varint,453472445,opt,name=querypricingmodel,proto3,enum=timestreamquery.QueryPricingModel,oneof" json:"querypricingmodel,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -5011,8 +5011,8 @@ func (x *UpdateAccountSettingsResponse) GetQuerycompute() *QueryComputeResponse 
 }
 
 func (x *UpdateAccountSettingsResponse) GetQuerypricingmodel() QueryPricingModel {
-	if x != nil {
-		return x.Querypricingmodel
+	if x != nil && x.Querypricingmodel != nil {
+		return *x.Querypricingmodel
 	}
 	return QueryPricingModel_QUERY_PRICING_MODEL_COMPUTE_UNITS
 }
@@ -5167,12 +5167,13 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\f_scalarvalue\"N\n" +
 	"\x1bDeleteScheduledQueryRequest\x12/\n" +
 	"\x11scheduledqueryarn\x18ԃ\xefo \x01(\tR\x11scheduledqueryarn\" \n" +
-	"\x1eDescribeAccountSettingsRequest\"\x81\x02\n" +
+	"\x1eDescribeAccountSettingsRequest\"\x9c\x02\n" +
 	"\x1fDescribeAccountSettingsResponse\x12)\n" +
 	"\vmaxquerytcu\x18\x8a\x86\x85\x88\x01 \x01(\x05H\x00R\vmaxquerytcu\x88\x01\x01\x12M\n" +
-	"\fquerycompute\x18\xed\xc3\xeb\xaa\x01 \x01(\v2%.timestreamquery.QueryComputeResponseR\fquerycompute\x12T\n" +
-	"\x11querypricingmodel\x18\xbd\xe1\x9d\xd8\x01 \x01(\x0e2\".timestreamquery.QueryPricingModelR\x11querypricingmodelB\x0e\n" +
-	"\f_maxquerytcu\"\x1a\n" +
+	"\fquerycompute\x18\xed\xc3\xeb\xaa\x01 \x01(\v2%.timestreamquery.QueryComputeResponseR\fquerycompute\x12Y\n" +
+	"\x11querypricingmodel\x18\xbd\xe1\x9d\xd8\x01 \x01(\x0e2\".timestreamquery.QueryPricingModelH\x01R\x11querypricingmodel\x88\x01\x01B\x0e\n" +
+	"\f_maxquerytcuB\x14\n" +
+	"\x12_querypricingmodel\"\x1a\n" +
 	"\x18DescribeEndpointsRequest\"W\n" +
 	"\x19DescribeEndpointsResponse\x12:\n" +
 	"\tendpoints\x18\xbe\xb4\xdd\a \x03(\v2\x19.timestreamquery.EndpointR\tendpoints\"P\n" +
@@ -5218,12 +5219,13 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\x18InvalidEndpointException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xcd\x01\n" +
+	"\b_message\"\xdd\x01\n" +
 	"\n" +
-	"LastUpdate\x12<\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2!.timestreamquery.LastUpdateStatusR\x06status\x12,\n" +
-	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x00R\rstatusmessage\x88\x01\x01\x12.\n" +
-	"\x0etargetquerytcu\x18\xad\x97\xd7W \x01(\x05H\x01R\x0etargetquerytcu\x88\x01\x01B\x10\n" +
+	"LastUpdate\x12A\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2!.timestreamquery.LastUpdateStatusH\x00R\x06status\x88\x01\x01\x12,\n" +
+	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x01R\rstatusmessage\x88\x01\x01\x12.\n" +
+	"\x0etargetquerytcu\x18\xad\x97\xd7W \x01(\x05H\x02R\x0etargetquerytcu\x88\x01\x01B\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusmessageB\x11\n" +
 	"\x0f_targetquerytcu\"\x89\x01\n" +
 	"\x1bListScheduledQueriesRequest\x12'\n" +
@@ -5295,13 +5297,15 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"lastupdate\x18\xb9\xa8\xf2\x9d\x01 \x01(\v2\x1b.timestreamquery.LastUpdateR\n" +
 	"lastupdate\x12{\n" +
 	"\x19notificationconfiguration\x18\xad\xf2\xb0\x8a\x01 \x01(\v29.timestreamquery.AccountSettingsNotificationConfigurationR\x19notificationconfigurationB\x11\n" +
-	"\x0f_activequerytcu\"\xba\x01\n" +
-	"\x13QueryComputeRequest\x12A\n" +
-	"\vcomputemode\x18\u008b\xeea \x01(\x0e2\x1c.timestreamquery.ComputeModeR\vcomputemode\x12`\n" +
-	"\x13provisionedcapacity\x18\xfe\xe8\xbfV \x01(\v2+.timestreamquery.ProvisionedCapacityRequestR\x13provisionedcapacity\"\xbc\x01\n" +
-	"\x14QueryComputeResponse\x12A\n" +
-	"\vcomputemode\x18\u008b\xeea \x01(\x0e2\x1c.timestreamquery.ComputeModeR\vcomputemode\x12a\n" +
-	"\x13provisionedcapacity\x18\xfe\xe8\xbfV \x01(\v2,.timestreamquery.ProvisionedCapacityResponseR\x13provisionedcapacity\"G\n" +
+	"\x0f_activequerytcu\"\xcf\x01\n" +
+	"\x13QueryComputeRequest\x12F\n" +
+	"\vcomputemode\x18\u008b\xeea \x01(\x0e2\x1c.timestreamquery.ComputeModeH\x00R\vcomputemode\x88\x01\x01\x12`\n" +
+	"\x13provisionedcapacity\x18\xfe\xe8\xbfV \x01(\v2+.timestreamquery.ProvisionedCapacityRequestR\x13provisionedcapacityB\x0e\n" +
+	"\f_computemode\"\xd1\x01\n" +
+	"\x14QueryComputeResponse\x12F\n" +
+	"\vcomputemode\x18\u008b\xeea \x01(\x0e2\x1c.timestreamquery.ComputeModeH\x00R\vcomputemode\x88\x01\x01\x12a\n" +
+	"\x13provisionedcapacity\x18\xfe\xe8\xbfV \x01(\v2,.timestreamquery.ProvisionedCapacityResponseR\x13provisionedcapacityB\x0e\n" +
+	"\f_computemode\"G\n" +
 	"\x17QueryExecutionException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -5376,13 +5380,14 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\b_messageB\x14\n" +
 	"\x12_scheduledqueryarn\"5\n" +
 	"\x03Row\x12.\n" +
-	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x03(\v2\x16.timestreamquery.DatumR\x04data\"\xce\x01\n" +
+	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x03(\v2\x16.timestreamquery.DatumR\x04data\"\xe8\x01\n" +
 	"\x0fS3Configuration\x12!\n" +
 	"\n" +
 	"bucketname\x18\xb5\xba\x9ec \x01(\tR\n" +
-	"bucketname\x12R\n" +
-	"\x10encryptionoption\x18\xa6\xbc\xd8L \x01(\x0e2#.timestreamquery.S3EncryptionOptionR\x10encryptionoption\x120\n" +
-	"\x0fobjectkeyprefix\x18檞? \x01(\tH\x00R\x0fobjectkeyprefix\x88\x01\x01B\x12\n" +
+	"bucketname\x12W\n" +
+	"\x10encryptionoption\x18\xa6\xbc\xd8L \x01(\x0e2#.timestreamquery.S3EncryptionOptionH\x00R\x10encryptionoption\x88\x01\x01\x120\n" +
+	"\x0fobjectkeyprefix\x18檞? \x01(\tH\x01R\x0fobjectkeyprefix\x88\x01\x01B\x13\n" +
+	"\x11_encryptionoptionB\x12\n" +
 	"\x10_objectkeyprefix\"~\n" +
 	"\x10S3ReportLocation\x12&\n" +
 	"\n" +
@@ -5393,18 +5398,19 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\n" +
 	"_objectkey\"K\n" +
 	"\x15ScheduleConfiguration\x122\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\"\xf8\x04\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\"\x8f\x05\n" +
 	"\x0eScheduledQuery\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x00R\fcreationtime\x88\x01\x01\x12h\n" +
-	"\x18errorreportconfiguration\x18\xe0\x9d\xf0i \x01(\v2).timestreamquery.ErrorReportConfigurationR\x18errorreportconfiguration\x12R\n" +
-	"\rlastrunstatus\x18\xa9\x8c\xe0\xd2\x01 \x01(\x0e2(.timestreamquery.ScheduledQueryRunStatusR\rlastrunstatus\x12\x15\n" +
+	"\x18errorreportconfiguration\x18\xe0\x9d\xf0i \x01(\v2).timestreamquery.ErrorReportConfigurationR\x18errorreportconfiguration\x12W\n" +
+	"\rlastrunstatus\x18\xa9\x8c\xe0\xd2\x01 \x01(\x0e2(.timestreamquery.ScheduledQueryRunStatusH\x01R\rlastrunstatus\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x127\n" +
-	"\x12nextinvocationtime\x18\xa8Ĥ\xca\x01 \x01(\tH\x01R\x12nextinvocationtime\x88\x01\x01\x12>\n" +
-	"\x16previousinvocationtime\x18\xe8\xce\xcb\x03 \x01(\tH\x02R\x16previousinvocationtime\x88\x01\x01\x12>\n" +
+	"\x12nextinvocationtime\x18\xa8Ĥ\xca\x01 \x01(\tH\x02R\x12nextinvocationtime\x88\x01\x01\x12>\n" +
+	"\x16previousinvocationtime\x18\xe8\xce\xcb\x03 \x01(\tH\x03R\x16previousinvocationtime\x88\x01\x01\x12>\n" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2$.timestreamquery.ScheduledQueryStateR\x05state\x12S\n" +
 	"\x11targetdestination\x18\xc9\xfe\x81: \x01(\v2\".timestreamquery.TargetDestinationR\x11targetdestinationB\x0f\n" +
-	"\r_creationtimeB\x15\n" +
+	"\r_creationtimeB\x10\n" +
+	"\x0e_lastrunstatusB\x15\n" +
 	"\x13_nextinvocationtimeB\x19\n" +
 	"\x17_previousinvocationtime\"\x86\t\n" +
 	"\x19ScheduledQueryDescription\x12\x14\n" +
@@ -5440,17 +5446,19 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\x12querytemporalrange\x18\xe7\xbc\xe9_ \x01(\v2#.timestreamquery.QueryTemporalRangeR\x12querytemporalrangeB\x0e\n" +
 	"\f_outputbytesB\r\n" +
 	"\v_outputrowsB\x12\n" +
-	"\x10_querytablecount\"\xb7\x04\n" +
+	"\x10_querytablecount\"\xca\x04\n" +
 	"\x18ScheduledQueryRunSummary\x12Y\n" +
 	"\x13errorreportlocation\x18\xf9\xcf\xf67 \x01(\v2$.timestreamquery.ErrorReportLocationR\x13errorreportlocation\x12J\n" +
 	"\x0eexecutionstats\x18\x9d\x94\xf7h \x01(\v2\x1f.timestreamquery.ExecutionStatsR\x0eexecutionstats\x12,\n" +
 	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tH\x00R\rfailurereason\x88\x01\x01\x12/\n" +
 	"\x0einvocationtime\x18\xab\x9d\x9e\x9e\x01 \x01(\tH\x01R\x0einvocationtime\x88\x01\x01\x12i\n" +
-	"\x15queryinsightsresponse\x18\xf2\xb5\xf7\xa8\x01 \x01(\v2/.timestreamquery.ScheduledQueryInsightsResponseR\x15queryinsightsresponse\x12J\n" +
-	"\trunstatus\x18\xd5\u008d\x8c\x01 \x01(\x0e2(.timestreamquery.ScheduledQueryRunStatusR\trunstatus\x12)\n" +
-	"\vtriggertime\x18\x9b\x86\x96\x80\x01 \x01(\tH\x02R\vtriggertime\x88\x01\x01B\x10\n" +
+	"\x15queryinsightsresponse\x18\xf2\xb5\xf7\xa8\x01 \x01(\v2/.timestreamquery.ScheduledQueryInsightsResponseR\x15queryinsightsresponse\x12O\n" +
+	"\trunstatus\x18\xd5\u008d\x8c\x01 \x01(\x0e2(.timestreamquery.ScheduledQueryRunStatusH\x02R\trunstatus\x88\x01\x01\x12)\n" +
+	"\vtriggertime\x18\x9b\x86\x96\x80\x01 \x01(\tH\x03R\vtriggertime\x88\x01\x01B\x10\n" +
 	"\x0e_failurereasonB\x11\n" +
-	"\x0f_invocationtimeB\x0e\n" +
+	"\x0f_invocationtimeB\f\n" +
+	"\n" +
+	"_runstatusB\x0e\n" +
 	"\f_triggertime\"\x82\x02\n" +
 	"\fSelectColumn\x12 \n" +
 	"\aaliased\x18\xb7\xb2\xa7K \x01(\bH\x00R\aaliased\x88\x01\x01\x12*\n" +
@@ -5504,28 +5512,31 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x01R\ttablename\x88\x01\x01B\x0f\n" +
 	"\r_databasenameB\f\n" +
 	"\n" +
-	"_tablename\"\xc5\x02\n" +
+	"_tablename\"\xd9\x02\n" +
 	"\x04Type\x12I\n" +
 	"\x0farraycolumninfo\x18\xa1\x95\xaa\xe3\x01 \x01(\v2\x1b.timestreamquery.ColumnInfoR\x0farraycolumninfo\x12D\n" +
-	"\rrowcolumninfo\x18\xba\xc1\xf8\x11 \x03(\v2\x1b.timestreamquery.ColumnInfoR\rrowcolumninfo\x12?\n" +
+	"\rrowcolumninfo\x18\xba\xc1\xf8\x11 \x03(\v2\x1b.timestreamquery.ColumnInfoR\rrowcolumninfo\x12D\n" +
 	"\n" +
-	"scalartype\x18\xb6\xfa\x80\x97\x01 \x01(\x0e2\x1b.timestreamquery.ScalarTypeR\n" +
-	"scalartype\x12k\n" +
-	" timeseriesmeasurevaluecolumninfo\x18\xe3\x81\xf2\x9a\x01 \x01(\v2\x1b.timestreamquery.ColumnInfoR timeseriesmeasurevaluecolumninfo\"Z\n" +
+	"scalartype\x18\xb6\xfa\x80\x97\x01 \x01(\x0e2\x1b.timestreamquery.ScalarTypeH\x00R\n" +
+	"scalartype\x88\x01\x01\x12k\n" +
+	" timeseriesmeasurevaluecolumninfo\x18\xe3\x81\xf2\x9a\x01 \x01(\v2\x1b.timestreamquery.ColumnInfoR timeseriesmeasurevaluecolumninfoB\r\n" +
+	"\v_scalartype\"Z\n" +
 	"\x14UntagResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x17\n" +
-	"\x15UntagResourceResponse\"\xfd\x01\n" +
+	"\x15UntagResourceResponse\"\x98\x02\n" +
 	"\x1cUpdateAccountSettingsRequest\x12)\n" +
 	"\vmaxquerytcu\x18\x8a\x86\x85\x88\x01 \x01(\x05H\x00R\vmaxquerytcu\x88\x01\x01\x12L\n" +
-	"\fquerycompute\x18\xed\xc3\xeb\xaa\x01 \x01(\v2$.timestreamquery.QueryComputeRequestR\fquerycompute\x12T\n" +
-	"\x11querypricingmodel\x18\xbd\xe1\x9d\xd8\x01 \x01(\x0e2\".timestreamquery.QueryPricingModelR\x11querypricingmodelB\x0e\n" +
-	"\f_maxquerytcu\"\xff\x01\n" +
+	"\fquerycompute\x18\xed\xc3\xeb\xaa\x01 \x01(\v2$.timestreamquery.QueryComputeRequestR\fquerycompute\x12Y\n" +
+	"\x11querypricingmodel\x18\xbd\xe1\x9d\xd8\x01 \x01(\x0e2\".timestreamquery.QueryPricingModelH\x01R\x11querypricingmodel\x88\x01\x01B\x0e\n" +
+	"\f_maxquerytcuB\x14\n" +
+	"\x12_querypricingmodel\"\x9a\x02\n" +
 	"\x1dUpdateAccountSettingsResponse\x12)\n" +
 	"\vmaxquerytcu\x18\x8a\x86\x85\x88\x01 \x01(\x05H\x00R\vmaxquerytcu\x88\x01\x01\x12M\n" +
-	"\fquerycompute\x18\xed\xc3\xeb\xaa\x01 \x01(\v2%.timestreamquery.QueryComputeResponseR\fquerycompute\x12T\n" +
-	"\x11querypricingmodel\x18\xbd\xe1\x9d\xd8\x01 \x01(\x0e2\".timestreamquery.QueryPricingModelR\x11querypricingmodelB\x0e\n" +
-	"\f_maxquerytcu\"\x8e\x01\n" +
+	"\fquerycompute\x18\xed\xc3\xeb\xaa\x01 \x01(\v2%.timestreamquery.QueryComputeResponseR\fquerycompute\x12Y\n" +
+	"\x11querypricingmodel\x18\xbd\xe1\x9d\xd8\x01 \x01(\x0e2\".timestreamquery.QueryPricingModelH\x01R\x11querypricingmodel\x88\x01\x01B\x0e\n" +
+	"\f_maxquerytcuB\x14\n" +
+	"\x12_querypricingmodel\"\x8e\x01\n" +
 	"\x1bUpdateScheduledQueryRequest\x12/\n" +
 	"\x11scheduledqueryarn\x18ԃ\xefo \x01(\tR\x11scheduledqueryarn\x12>\n" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2$.timestreamquery.ScheduledQueryStateR\x05state\"C\n" +
@@ -5860,6 +5871,8 @@ func file_timestreamquery_proto_init() {
 	file_timestreamquery_proto_msgTypes[31].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[34].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[37].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[38].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[39].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[40].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[42].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[43].OneofWrappers = []any{}
@@ -5879,6 +5892,7 @@ func file_timestreamquery_proto_init() {
 	file_timestreamquery_proto_msgTypes[68].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[70].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[71].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[72].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[75].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[76].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[78].OneofWrappers = []any{}

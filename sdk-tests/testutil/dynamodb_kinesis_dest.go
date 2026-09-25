@@ -362,13 +362,40 @@ func (r *TestRunner) dynamoDBKinesisDestinationTests(ctx context.Context, client
 			if err != nil {
 				return err
 			}
-			if len(dests) == 0 {
+			if len(dests) == 1 && dests[0].DestinationStatus == dynamodbtypes.DestinationStatusDisabled {
 				break
 			}
 			if time.Now().After(deadline) {
-				return errors.New("destination was not removed after disable")
+				return errors.New("destination never reached DISABLED after disable")
 			}
 			time.Sleep(150 * time.Millisecond)
+		}
+
+		// Re-enabling the disabled stream starts the one live destination
+		// afresh: ENABLING, then ACTIVE, with the precision the re-enable
+		// carries.
+		reenable, err := client.EnableKinesisStreamingDestination(ctx, &dynamodb.EnableKinesisStreamingDestinationInput{
+			TableName: aws.String(f.tableName),
+			StreamArn: aws.String(f.streamArn),
+			EnableKinesisStreamingConfiguration: &dynamodbtypes.EnableKinesisStreamingConfiguration{
+				ApproximateCreationDateTimePrecision: dynamodbtypes.ApproximateCreationDateTimePrecisionMillisecond,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("re-enable after disable: %v", err)
+		}
+		if reenable.DestinationStatus != dynamodbtypes.DestinationStatusEnabling {
+			return fmt.Errorf("re-enable returned %s, want ENABLING", reenable.DestinationStatus)
+		}
+		if err := waitKinesisDestinationStatus(ctx, client, f.tableName, f.streamArn, "ACTIVE"); err != nil {
+			return err
+		}
+		dests, err = describeKinesisDestinations(ctx, client, f.tableName)
+		if err != nil {
+			return err
+		}
+		if len(dests) != 1 || dests[0].ApproximateCreationDateTimePrecision != dynamodbtypes.ApproximateCreationDateTimePrecisionMillisecond {
+			return fmt.Errorf("describe after re-enable = %+v, want the single destination at MILLISECOND precision", dests)
 		}
 		return nil
 	}))
@@ -424,7 +451,10 @@ func (r *TestRunner) dynamoDBKinesisDestinationTests(ctx context.Context, client
 		// Disable while the enable transition is still in flight. The
 		// enable's delayed write-back must not resurrect the destination:
 		// from the moment Disable returns, the observed status only moves
-		// forward (DISABLING, then gone) and never back to ACTIVE.
+		// toward DISABLED (through DISABLING) and never back toward ACTIVE.
+		// The disabled destination stays on the record in the DISABLED
+		// state — the documented DestinationStatus value a later Describe
+		// reports — and holds it.
 		time.Sleep(500 * time.Millisecond)
 		if _, err := client.DisableKinesisStreamingDestination(ctx, &dynamodb.DisableKinesisStreamingDestinationInput{
 			TableName: aws.String(f.tableName),
@@ -433,6 +463,7 @@ func (r *TestRunner) dynamoDBKinesisDestinationTests(ctx context.Context, client
 			return fmt.Errorf("disable during enable transition: %v", err)
 		}
 		deadline := time.Now().Add(2500 * time.Millisecond)
+		settled := false
 		for {
 			dests, err := describeKinesisDestinations(ctx, client, f.tableName)
 			if err != nil {
@@ -442,15 +473,32 @@ func (r *TestRunner) dynamoDBKinesisDestinationTests(ctx context.Context, client
 				if aws.ToString(d.StreamArn) != f.streamArn {
 					continue
 				}
-				if d.DestinationStatus != dynamodbtypes.DestinationStatusDisabling {
+				switch d.DestinationStatus {
+				case dynamodbtypes.DestinationStatusDisabling:
+					// Still tearing down: keep observing.
+				case dynamodbtypes.DestinationStatusDisabled:
+					settled = true
+				default:
 					return fmt.Errorf("disable during enable transition was resurrected: status %s", d.DestinationStatus)
 				}
 			}
-			if len(dests) == 0 {
+			if settled {
+				// The terminal state must hold, not flicker: one further
+				// observation still shows DISABLED.
+				time.Sleep(200 * time.Millisecond)
+				after, err := describeKinesisDestinations(ctx, client, f.tableName)
+				if err != nil {
+					return err
+				}
+				for _, d := range after {
+					if aws.ToString(d.StreamArn) == f.streamArn && d.DestinationStatus != dynamodbtypes.DestinationStatusDisabled {
+						return fmt.Errorf("disabled destination did not hold: status %s", d.DestinationStatus)
+					}
+				}
 				return nil
 			}
 			if time.Now().After(deadline) {
-				return errors.New("destination was not removed after disable")
+				return errors.New("destination never settled at DISABLED")
 			}
 			time.Sleep(100 * time.Millisecond)
 		}

@@ -3,6 +3,8 @@ package dynamodb
 import (
 	"fmt"
 	"math/big"
+	"net/http"
+	"sort"
 	"strings"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -15,7 +17,7 @@ func applyUpdateExpression(attrs map[string]*dbstore.AttributeValue, expr string
 
 // extractUpdatedPaths analyses an UpdateExpression and returns the top-level
 // attribute names that would be modified, without executing the update.
-func extractUpdatedPaths(expr string, names map[string]string) []string {
+func extractUpdatedPaths(expr string, names map[string]string) ([]string, error) {
 	tokens := tokenizeUpdateExpression(expr)
 	var paths []string
 	i := 0
@@ -25,55 +27,72 @@ func extractUpdatedPaths(expr string, names map[string]string) []string {
 		case "SET":
 			i++
 			for i < len(tokens) && tokens[i] != "REMOVE" && tokens[i] != "ADD" && tokens[i] != "DELETE" {
-				path := resolveName(tokens[i], names)
-				paths = append(paths, getTopLevelAttr(path))
+				paths = append(paths, topLevelSegment(tokens[i], names))
 				j := i + 3
 				for j < len(tokens) && (tokens[j] == "+" || tokens[j] == "-" || tokens[j] == "*") && j+1 < len(tokens) {
 					j += 2
 				}
 				i = j
-				if i < len(tokens) && tokens[i] == "," {
-					i++
+				next, sepErr := requireActionSeparator(tokens, i, "SET")
+				if sepErr != nil {
+					return nil, sepErr
 				}
+				i = next
 			}
 		case "REMOVE":
 			i++
 			for i < len(tokens) && tokens[i] != "SET" && tokens[i] != "ADD" && tokens[i] != "DELETE" {
-				path := resolveName(tokens[i], names)
-				paths = append(paths, getTopLevelAttr(path))
+				paths = append(paths, topLevelSegment(tokens[i], names))
 				i++
-				if i < len(tokens) && tokens[i] == "," {
-					i++
+				next, sepErr := requireActionSeparator(tokens, i, "REMOVE")
+				if sepErr != nil {
+					return nil, sepErr
 				}
+				i = next
 			}
 		case "ADD":
 			i++
 			for i < len(tokens) && tokens[i] != "SET" && tokens[i] != "REMOVE" && tokens[i] != "DELETE" {
-				attrName := resolveName(tokens[i], names)
-				paths = append(paths, attrName)
+				// The applier rejects document paths under ADD, so this
+				// reduction is the identity on accepted expressions; it
+				// keeps the key-attribute guard's input shape uniform
+				// across clause types.
+				paths = append(paths, topLevelSegment(tokens[i], names))
 				i += 2
-				if i < len(tokens) && tokens[i] == "," {
-					i++
+				next, sepErr := requireActionSeparator(tokens, i, "ADD")
+				if sepErr != nil {
+					return nil, sepErr
 				}
+				i = next
 			}
 		case "DELETE":
 			i++
 			for i < len(tokens) && tokens[i] != "SET" && tokens[i] != "REMOVE" && tokens[i] != "ADD" {
-				attrName := resolveName(tokens[i], names)
-				paths = append(paths, attrName)
+				// Same uniform-shape rule as ADD.
+				paths = append(paths, topLevelSegment(tokens[i], names))
 				i += 2
-				if i < len(tokens) && tokens[i] == "," {
-					i++
+				next, sepErr := requireActionSeparator(tokens, i, "DELETE")
+				if sepErr != nil {
+					return nil, sepErr
 				}
+				i = next
 			}
 		default:
-			return paths
+			return nil, ErrInvalidParameter
 		}
 	}
-	return paths
+	return paths, nil
 }
 
+// applyUpdateExpressionWithTracking applies an UpdateExpression to attrs
+// and reports the top-level attributes its actions touched. Every action
+// evaluates against the item as it was before the expression — the
+// documented basis ("DynamoDB evaluates every action against the item's
+// attribute values as they were before the update") — so the walk's reads
+// (SET operands, ADD and DELETE bases) resolve against a deep copy taken
+// at entry, while the writes apply to attrs itself in expression order.
 func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) ([]string, error) {
+	before := copyAttributes(attrs)
 	var updatedAttrs []string
 	tokens := tokenizeUpdateExpression(expr)
 	i := 0
@@ -82,6 +101,13 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 		switch action {
 		case "SET":
 			i++
+			// Assignments whose target path ends in a list index are held
+			// until the end of the clause and applied in ascending element
+			// number — the documented ordering when one SET operation adds
+			// multiple list elements, composed with the append-at-end rule
+			// for out-of-range indices. The operand still evaluates at
+			// encounter, exactly as an immediately-applied assignment's.
+			var listAssignments []listElementAssignment
 			for i < len(tokens) && tokens[i] != "REMOVE" && tokens[i] != "ADD" && tokens[i] != "DELETE" {
 				if i >= len(tokens) {
 					return nil, ErrInvalidParameter
@@ -92,9 +118,12 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 				if i+2 >= len(tokens) {
 					return nil, ErrInvalidParameter
 				}
-				path, nameErr := resolveNameStrict(tokens[i], names)
+				pathParts, nameErr := resolveDocPathParts(tokens[i], names)
 				if nameErr != nil {
 					return nil, nameErr
+				}
+				if len(pathParts) == 0 {
+					return nil, ErrInvalidParameter
 				}
 				exprTokens := []string{tokens[i+2]}
 				j := i + 3
@@ -110,24 +139,40 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 					exprTokens = append(exprTokens, tokens[j], tokens[j+1])
 					j += 2
 				}
-				value, valErr := resolveValueWithIfNotExists(strings.Join(exprTokens, " "), values, names, attrs)
+				operand, opErr := parseUpdateOperand(strings.Join(exprTokens, " "), values, names)
+				if opErr != nil {
+					return nil, opErr
+				}
+				value, valErr := operand.eval(before)
 				if valErr != nil {
 					return nil, valErr
 				}
 				if value == nil {
 					// Every operand of a SET action must resolve to a
-					// value; an undefined value placeholder or a reference
-					// to an attribute that does not exist is a validation
-					// error.
+					// value; a reference to an attribute that does not
+					// exist is a validation error.
 					return nil, ErrInvalidParameter
 				}
-				if err := setNestedValue(attrs, path, value); err != nil {
+				if last := pathParts[len(pathParts)-1]; last.isIndex {
+					listAssignments = append(listAssignments, listElementAssignment{path: pathParts, value: value})
+				} else if err := setNestedValue(attrs, pathParts, value); err != nil {
 					return nil, err
 				}
-				updatedAttrs = append(updatedAttrs, getTopLevelAttr(path))
+				updatedAttrs = append(updatedAttrs, pathParts[0].name)
 				i = j
-				if i < len(tokens) && tokens[i] == "," {
-					i++
+				next, sepErr := requireActionSeparator(tokens, i, "SET")
+				if sepErr != nil {
+					return nil, sepErr
+				}
+				i = next
+			}
+			sort.SliceStable(listAssignments, func(a, b int) bool {
+				return listAssignments[a].path[len(listAssignments[a].path)-1].index <
+					listAssignments[b].path[len(listAssignments[b].path)-1].index
+			})
+			for _, la := range listAssignments {
+				if err := setNestedValue(attrs, la.path, la.value); err != nil {
+					return nil, err
 				}
 			}
 		case "REMOVE":
@@ -136,18 +181,23 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 				if i >= len(tokens) {
 					return nil, ErrInvalidParameter
 				}
-				path, nameErr := resolveNameStrict(tokens[i], names)
+				pathParts, nameErr := resolveDocPathParts(tokens[i], names)
 				if nameErr != nil {
 					return nil, nameErr
 				}
-				if rmErr := removeNestedValue(attrs, path); rmErr != nil {
+				if len(pathParts) == 0 {
+					return nil, ErrInvalidParameter
+				}
+				if rmErr := removeNestedValue(attrs, pathParts); rmErr != nil {
 					return nil, rmErr
 				}
-				updatedAttrs = append(updatedAttrs, getTopLevelAttr(path))
+				updatedAttrs = append(updatedAttrs, pathParts[0].name)
 				i++
-				if i < len(tokens) && tokens[i] == "," {
-					i++
+				next, sepErr := requireActionSeparator(tokens, i, "REMOVE")
+				if sepErr != nil {
+					return nil, sepErr
 				}
+				i = next
 			}
 		case "ADD":
 			i++
@@ -155,6 +205,9 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 				if i+1 >= len(tokens) {
 					return nil, ErrInvalidParameter
 				}
+				if isDocumentPathToken(tokens[i]) {
+					return nil, topLevelActionPathError("ADD", tokens[i])
+				}
 				attrName, nameErr := resolveNameStrict(tokens[i], names)
 				if nameErr != nil {
 					return nil, nameErr
@@ -164,15 +217,17 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 					// An undefined value placeholder is a validation error.
 					return nil, ErrInvalidParameter
 				}
-				if changed, err := applyAddActionWithTracking(attrs, attrName, value); err != nil {
+				if changed, err := applyAddAction(attrs, before, attrName, value); err != nil {
 					return nil, err
 				} else if changed {
 					updatedAttrs = append(updatedAttrs, attrName)
 				}
 				i += 2
-				if i < len(tokens) && tokens[i] == "," {
-					i++
+				next, sepErr := requireActionSeparator(tokens, i, "ADD")
+				if sepErr != nil {
+					return nil, sepErr
 				}
+				i = next
 			}
 		case "DELETE":
 			i++
@@ -180,6 +235,9 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 				if i+1 >= len(tokens) {
 					return nil, ErrInvalidParameter
 				}
+				if isDocumentPathToken(tokens[i]) {
+					return nil, topLevelActionPathError("DELETE", tokens[i])
+				}
 				attrName, nameErr := resolveNameStrict(tokens[i], names)
 				if nameErr != nil {
 					return nil, nameErr
@@ -189,7 +247,7 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 					// An undefined value placeholder is a validation error.
 					return nil, ErrInvalidParameter
 				}
-				changed, delErr := applyDeleteActionWithTracking(attrs, attrName, value)
+				changed, delErr := applyDeleteAction(attrs, before, attrName, value)
 				if delErr != nil {
 					return nil, delErr
 				}
@@ -197,9 +255,11 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 					updatedAttrs = append(updatedAttrs, attrName)
 				}
 				i += 2
-				if i < len(tokens) && tokens[i] == "," {
-					i++
+				next, sepErr := requireActionSeparator(tokens, i, "DELETE")
+				if sepErr != nil {
+					return nil, sepErr
 				}
+				i = next
 			}
 		default:
 			return nil, ErrInvalidParameter
@@ -208,14 +268,79 @@ func applyUpdateExpressionWithTracking(attrs map[string]*dbstore.AttributeValue,
 	return updatedAttrs, nil
 }
 
-func getTopLevelAttr(path string) string {
-	if idx := strings.Index(path, "."); idx != -1 {
-		return path[:idx]
+// requireActionSeparator enforces the update-expression grammar between
+// the actions of one clause: a clause's actions are separated by commas,
+// so after one action the next token is the separator (consumed — and the
+// separator itself must be followed by an action of the same clause, so a
+// trailing comma, or one directly before a clause keyword, is a syntax
+// error), another clause's keyword (this clause ends), or the end of the
+// expression. Anything else is a syntax error — including the current
+// clause's own keyword, whose second occurrence the grammar forbids (each
+// action keyword may appear only once).
+func requireActionSeparator(tokens []string, i int, clause string) (int, error) {
+	if i >= len(tokens) {
+		return i, nil
 	}
-	if idx := strings.Index(path, "["); idx != -1 {
-		return path[:idx]
+	if tokens[i] == "," {
+		next := i + 1
+		if next >= len(tokens) || isUpdateClauseKeyword(tokens[next]) {
+			return i, ErrInvalidParameter
+		}
+		return next, nil
 	}
-	return path
+	if tokens[i] != clause && isUpdateClauseKeyword(tokens[i]) {
+		return i, nil
+	}
+	return i, ErrInvalidParameter
+}
+
+func isUpdateClauseKeyword(token string) bool {
+	switch token {
+	case "SET", "REMOVE", "ADD", "DELETE":
+		return true
+	default:
+		return false
+	}
+}
+
+// listElementAssignment holds a SET assignment whose target path ends in a
+// list index until its clause completes; the clause then applies the held
+// assignments in ascending element number.
+type listElementAssignment struct {
+	path  []docPathPart
+	value *dbstore.AttributeValue
+}
+
+// isDocumentPathToken reports whether a raw UpdateExpression path token
+// addresses below the top level: a '.' or '[' separator. Attribute names
+// containing those characters are only expressible through expression
+// attribute names, so any separator in the raw token is a real path step.
+func isDocumentPathToken(token string) bool {
+	return strings.ContainsAny(token, ".[")
+}
+
+// topLevelActionPathError rejects a document path under the ADD and DELETE
+// actions, which address top-level attributes only: indexing the item by
+// the dotted string would create an attribute literally named "a.b".
+func topLevelActionPathError(action, token string) error {
+	return NewAPIError("com.amazon.coral.validate#ValidationException",
+		fmt.Sprintf("One or more parameter values were invalid: %s action requires a top-level attribute path, but %q is a document path", action, token),
+		http.StatusBadRequest)
+}
+
+// topLevelSegment returns the top-level attribute name of a raw
+// document-path token: the first parsed segment with its expression
+// attribute name resolved when defined. Resolution on the parsed segment
+// keeps an alias standing for a name that itself contains '.' or '[' a
+// single top-level attribute. An undefined alias stays literal and an
+// unparseable token is returned as-is — this analysis pass must not
+// pre-empt the apply pass's rejection of either.
+func topLevelSegment(token string, names map[string]string) string {
+	parts, err := resolveDocPathPartsLenient(token, names)
+	if err != nil || len(parts) == 0 {
+		return token
+	}
+	return parts[0].name
 }
 
 func addNumbers(a, b string) (string, error) {
@@ -259,180 +384,215 @@ func normalizeNumber(r *big.Rat) string {
 	return quotient.String() + "." + decimalStr
 }
 
-func applyAddActionWithTracking(attrs map[string]*dbstore.AttributeValue, attrName string, value *dbstore.AttributeValue) (bool, error) {
-	existing, exists := attrs[attrName]
+// combineAddValues returns the ADD action's combination of a stored value
+// and its operand: numbers add numerically, same-kind sets union their
+// members. A nil result with a nil error marks the no-change outcome of an
+// empty set operand. A pair with no compatible type combination answers
+// ErrTypeMismatch, the documented ValidationException wording every
+// update plane answers.
+func combineAddValues(existing, value *dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
+	if value.N != nil && existing.N != nil {
+		result, addErr := addNumbers(*existing.N, *value.N)
+		if addErr != nil {
+			return nil, addErr
+		}
+		return &dbstore.AttributeValue{N: &result}, nil
+	}
+	if value.SS != nil && existing.SS != nil {
+		return dbstore.StringSet(addStringSetMembers(existing.SS, value.SS, stringSetCanonical)), nil
+	}
+	if value.NS != nil && existing.NS != nil {
+		return dbstore.NumberSet(addStringSetMembers(existing.NS, value.NS, normalizeNumberString)), nil
+	}
+	if value.BS != nil && existing.BS != nil {
+		return dbstore.BinarySet(addBinarySetMembers(existing.BS, value.BS)), nil
+	}
+	return nil, ErrTypeMismatch
+}
+
+// applyAddAction applies one DynamoDB ADD action: a number adds
+// numerically, a set unions its members, and an absent attribute is created
+// from the operand. The stored value the action combines against is read
+// from preUpdate — the item as it was before the whole expression, the
+// documented evaluation basis — while the combined result lands in attrs;
+// planes that apply one action at a time pass the same map for both. Every
+// branch assigns a fresh value into attrs — the stored attribute is never
+// mutated in place, so an old-image snapshot taken before the clause
+// application cannot alias the updated item. A pair sharing no compatible
+// type answers ErrTypeMismatch; changed reports whether the action
+// affected the item, for the calling plane's tracking.
+func applyAddAction(attrs, preUpdate map[string]*dbstore.AttributeValue, attrName string, value *dbstore.AttributeValue) (bool, error) {
+	existing, exists := preUpdate[attrName]
 	if !exists {
 		attrs[attrName] = value
 		return true, nil
 	}
-
-	if value.N != nil && existing.N != nil {
-		result, addErr := addNumbers(*existing.N, *value.N)
-		if addErr != nil {
-			return false, addErr
-		}
-		attrs[attrName] = &dbstore.AttributeValue{N: &result}
-		return true, nil
+	combined, err := combineAddValues(existing, value)
+	if err != nil {
+		return false, err
 	}
-
-	if value.SS != nil && existing.SS != nil {
-		existingSet := make(map[string]bool)
-		for _, s := range existing.SS {
-			existingSet[s] = true
-		}
-		for _, s := range value.SS {
-			if !existingSet[s] {
-				existing.SS = append(existing.SS, s)
-			}
-		}
-		return len(value.SS) > 0, nil
+	// An empty set operand leaves the stored set unchanged; every other
+	// combination the core answers is a change.
+	changed := !(value.SS != nil && len(value.SS) == 0) &&
+		!(value.NS != nil && len(value.NS) == 0) &&
+		!(value.BS != nil && len(value.BS) == 0)
+	if combined != nil {
+		attrs[attrName] = combined
 	}
-
-	if value.NS != nil && existing.NS != nil {
-		existingSet := make(map[string]bool)
-		for _, n := range existing.NS {
-			existingSet[normalizeNumberString(n)] = true
-		}
-		for _, n := range value.NS {
-			normalized := normalizeNumberString(n)
-			if !existingSet[normalized] {
-				existing.NS = append(existing.NS, normalized)
-			}
-		}
-		return len(value.NS) > 0, nil
-	}
-
-	if value.BS != nil && existing.BS != nil {
-		existingSet := make(map[string]bool)
-		for _, b := range existing.BS {
-			existingSet[string(b)] = true
-		}
-		for _, b := range value.BS {
-			if !existingSet[string(b)] {
-				existing.BS = append(existing.BS, b)
-			}
-		}
-		return len(value.BS) > 0, nil
-	}
-
-	return false, ErrInvalidParameter
+	return changed, nil
 }
 
-func applyDeleteActionWithTracking(attrs map[string]*dbstore.AttributeValue, attrName string, value *dbstore.AttributeValue) (bool, error) {
-	existing, exists := attrs[attrName]
-	if !exists {
-		return false, nil
-	}
-
+// combineDeleteValues returns the DELETE action's subtraction of the
+// operand set's members from a stored set of the same kind; emptied
+// reports an empty result, which the caller answers by deleting the
+// attribute. A type-incompatible pair answers ErrTypeMismatch, per
+// combineAddValues.
+func combineDeleteValues(existing, value *dbstore.AttributeValue) (result *dbstore.AttributeValue, emptied bool, err error) {
 	// The DELETE action removes elements from a set; the operand must be a
 	// set of the same type as the stored attribute.
 	if (value.SS != nil && existing.SS == nil) || (value.NS != nil && existing.NS == nil) || (value.BS != nil && existing.BS == nil) {
-		return false, ErrInvalidParameter
+		return nil, false, ErrTypeMismatch
 	}
 	if value.SS == nil && value.NS == nil && value.BS == nil {
-		return false, ErrInvalidParameter
+		return nil, false, ErrTypeMismatch
 	}
-
-	if value.SS != nil && existing.SS != nil {
-		toDelete := make(map[string]bool)
-		for _, s := range value.SS {
-			toDelete[s] = true
+	if value.SS != nil {
+		remaining := removeStringSetMembers(existing.SS, value.SS, stringSetCanonical)
+		if len(remaining) == 0 {
+			return nil, true, nil
 		}
-		var newSS []string
-		for _, s := range existing.SS {
-			if !toDelete[s] {
-				newSS = append(newSS, s)
-			}
-		}
-		if len(newSS) == 0 {
-			delete(attrs, attrName)
-		} else {
-			existing.SS = newSS
-		}
-		return true, nil
+		return dbstore.StringSet(remaining), false, nil
 	}
-
-	if value.NS != nil && existing.NS != nil {
-		toDelete := make(map[string]bool)
-		for _, n := range value.NS {
-			toDelete[normalizeNumberString(n)] = true
+	if value.NS != nil {
+		remaining := removeStringSetMembers(existing.NS, value.NS, normalizeNumberString)
+		if len(remaining) == 0 {
+			return nil, true, nil
 		}
-		var newNS []string
-		for _, n := range existing.NS {
-			if !toDelete[normalizeNumberString(n)] {
-				newNS = append(newNS, n)
-			}
-		}
-		if len(newNS) == 0 {
-			delete(attrs, attrName)
-		} else {
-			existing.NS = newNS
-		}
-		return true, nil
+		return dbstore.NumberSet(remaining), false, nil
 	}
-
-	if value.BS != nil && existing.BS != nil {
-		toDelete := make(map[string]bool)
-		for _, b := range value.BS {
-			toDelete[string(b)] = true
-		}
-		var newBS [][]byte
-		for _, b := range existing.BS {
-			if !toDelete[string(b)] {
-				newBS = append(newBS, b)
-			}
-		}
-		if len(newBS) == 0 {
-			delete(attrs, attrName)
-		} else {
-			existing.BS = newBS
-		}
-		return true, nil
+	remaining := removeBinarySetMembers(existing.BS, value.BS)
+	if len(remaining) == 0 {
+		return nil, true, nil
 	}
-	return false, nil
+	return dbstore.BinarySet(remaining), false, nil
 }
 
+// applyDeleteAction applies one DynamoDB DELETE action: it removes the
+// operand set's elements from a stored set of the same type, deletes the
+// attribute when the subtraction empties it, and treats an absent attribute
+// as a no-op. The stored value is read from preUpdate exactly as
+// applyAddAction reads its base; the fresh-assignment rule and the
+// ErrTypeMismatch contract follow it too.
+func applyDeleteAction(attrs, preUpdate map[string]*dbstore.AttributeValue, attrName string, value *dbstore.AttributeValue) (bool, error) {
+	existing, exists := preUpdate[attrName]
+	if !exists {
+		return false, nil
+	}
+	result, emptied, err := combineDeleteValues(existing, value)
+	if err != nil {
+		return false, err
+	}
+	if emptied {
+		delete(attrs, attrName)
+		return true, nil
+	}
+	if result != nil {
+		attrs[attrName] = result
+	}
+	return true, nil
+}
+
+// applyAttributeUpdatesWithTracking applies the legacy AttributeUpdates
+// map. Every member is validated — an unknown Action, a Value missing where
+// the action requires one (Value is optional only for DELETE), or a Value
+// that does not parse rejects the whole update instead of skipping the
+// member or storing a nil attribute. An omitted Action defaults to PUT (the
+// model documents PUT as the default). DELETE removes the attribute when no
+// Value is supplied and subtracts the Value set's elements from the stored
+// set when one is; ADD performs the number/set arithmetic.
 func applyAttributeUpdatesWithTracking(attrs map[string]*dbstore.AttributeValue, updates interface{}) ([]string, error) {
 	updatesMap, ok := updates.(map[string]interface{})
 	if !ok {
 		return nil, ErrInvalidParameter
 	}
 
+	parseUpdateValue := func(attrName, action string, value interface{}) (*dbstore.AttributeValue, error) {
+		av, err := parseAttributeValue(value)
+		if err != nil {
+			return nil, err
+		}
+		if av == nil {
+			return nil, NewAPIError("com.amazon.coral.validate#ValidationException",
+				fmt.Sprintf("One or more parameter values were invalid: missing or malformed Value for AttributeUpdates member %s under action %s", attrName, action),
+				http.StatusBadRequest)
+		}
+		return av, nil
+	}
+
 	var updatedAttrs []string
 	for attrName, update := range updatesMap {
 		updateAction, ok := update.(map[string]interface{})
 		if !ok {
-			continue
+			return nil, ErrInvalidParameter
 		}
 
-		if action, ok := updateAction["Action"].(string); ok {
-			switch action {
-			case "PUT":
-				if value, ok := updateAction["Value"]; ok {
-					attrs[attrName] = parseAttributeValue(value)
+		action, _ := updateAction["Action"].(string)
+		if action == "" {
+			action = "PUT"
+		}
+		switch action {
+		case "PUT":
+			value, hasValue := updateAction["Value"]
+			if !hasValue {
+				return nil, NewAPIError("com.amazon.coral.validate#ValidationException",
+					fmt.Sprintf("One or more parameter values were invalid: Value must be specified for AttributeUpdates action PUT on attribute %s", attrName),
+					http.StatusBadRequest)
+			}
+			av, err := parseUpdateValue(attrName, action, value)
+			if err != nil {
+				return nil, err
+			}
+			attrs[attrName] = av
+			updatedAttrs = append(updatedAttrs, attrName)
+		case "DELETE":
+			if value, hasValue := updateAction["Value"]; hasValue {
+				delValue, err := parseUpdateValue(attrName, action, value)
+				if err != nil {
+					return nil, err
+				}
+				changed, err := applyDeleteAction(attrs, attrs, attrName, delValue)
+				if err != nil {
+					return nil, err
+				}
+				if changed {
 					updatedAttrs = append(updatedAttrs, attrName)
 				}
-			case "DELETE":
+			} else {
 				delete(attrs, attrName)
 				updatedAttrs = append(updatedAttrs, attrName)
-			case "ADD":
-				if value, ok := updateAction["Value"]; ok {
-					addValue := parseAttributeValue(value)
-					if addValue == nil {
-						continue
-					}
-					if _, exists := attrs[attrName]; !exists {
-						attrs[attrName] = addValue
-						updatedAttrs = append(updatedAttrs, attrName)
-						continue
-					}
-					if changed, err := applyAddActionWithTracking(attrs, attrName, addValue); err != nil {
-						return nil, err
-					} else if changed {
-						updatedAttrs = append(updatedAttrs, attrName)
-					}
-				}
 			}
+		case "ADD":
+			value, hasValue := updateAction["Value"]
+			if !hasValue {
+				return nil, NewAPIError("com.amazon.coral.validate#ValidationException",
+					fmt.Sprintf("One or more parameter values were invalid: Value must be specified for AttributeUpdates action ADD on attribute %s", attrName),
+					http.StatusBadRequest)
+			}
+			addValue, err := parseUpdateValue(attrName, action, value)
+			if err != nil {
+				return nil, err
+			}
+			changed, err := applyAddAction(attrs, attrs, attrName, addValue)
+			if err != nil {
+				return nil, err
+			}
+			if changed {
+				updatedAttrs = append(updatedAttrs, attrName)
+			}
+		default:
+			return nil, NewAPIError("com.amazon.coral.validate#ValidationException",
+				fmt.Sprintf("Invalid AttributeUpdates Action value %q: must be one of ADD, DELETE, PUT", action),
+				http.StatusBadRequest)
 		}
 	}
 	return updatedAttrs, nil
@@ -500,73 +660,6 @@ func resolveValue(token string, values map[string]*dbstore.AttributeValue, names
 	return nil
 }
 
-func resolveValueWithIfNotExists(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
-	if result, arithErr := evaluateArithmeticExpression(token, values, names, attrs); arithErr != nil {
-		return nil, arithErr
-	} else if result != nil {
-		return result, nil
-	}
-
-	if strings.HasPrefix(token, "if_not_exists(") {
-		closeParen := strings.Index(token, ")")
-		if closeParen != -1 {
-			inner := token[14:closeParen]
-			parts := strings.SplitN(inner, ",", 2)
-			if len(parts) == 2 {
-				path := strings.TrimSpace(parts[0])
-				defaultVal := strings.TrimSpace(parts[1])
-				attrName := resolveName(path, names)
-				if existing, ok := attrs[attrName]; ok && existing != nil {
-					return existing, nil
-				}
-				return resolveValueWithIfNotExists(defaultVal, values, names, attrs)
-			}
-		}
-	}
-
-	if strings.HasPrefix(token, "list_append(") {
-		closeParen := findMatchingCloseParen(token, 11)
-		if closeParen != -1 {
-			inner := token[12:closeParen]
-			parts := splitListAppendArgs(inner)
-			if len(parts) == 2 {
-				list1, err1 := resolveValueOrPath(strings.TrimSpace(parts[0]), values, names, attrs)
-				if err1 != nil {
-					return nil, err1
-				}
-				list2, err2 := resolveValueOrPath(strings.TrimSpace(parts[1]), values, names, attrs)
-				if err2 != nil {
-					return nil, err2
-				}
-				if list1 != nil && list1.L != nil && list2 != nil && list2.L != nil {
-					combined := make([]*dbstore.AttributeValue, 0, len(list1.L)+len(list2.L))
-					combined = append(combined, list1.L...)
-					combined = append(combined, list2.L...)
-					return dbstore.ListValue(combined), nil
-				}
-				if list1 == nil && list2 != nil && list2.L != nil {
-					return list2, nil
-				}
-				if list1 != nil && list1.L != nil {
-					return list1, nil
-				}
-				if (list1 != nil && list1.L == nil) || (list2 != nil && list2.L == nil) {
-					return nil, ErrTypeMismatch
-				}
-			}
-		}
-	}
-
-	// Bare attribute paths resolve against the item's attributes so that
-	// assignments such as "SET a = b" copy the existing value instead of
-	// silently skipping.
-	return resolveValueOrPath(token, values, names, attrs)
-}
-
-// resolveNameStrict resolves an expression attribute name placeholder,
-// rejecting placeholders that were never defined in
-// ExpressionAttributeNames — an undefined substitution is a validation
-// error, not a literal attribute name.
 func resolveNameStrict(token string, names map[string]string) (string, error) {
 	if strings.HasPrefix(token, "#") {
 		if names == nil {
@@ -578,76 +671,6 @@ func resolveNameStrict(token string, names map[string]string) (string, error) {
 		return "", ErrInvalidParameter
 	}
 	return token, nil
-}
-
-func evaluateArithmeticExpression(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
-	token = strings.TrimSpace(token)
-
-	parts := splitArithmeticExpression(token)
-	if len(parts) == 1 {
-		return nil, nil
-	}
-
-	var result *big.Rat
-	for i := 0; i < len(parts); i++ {
-		part := strings.TrimSpace(parts[i])
-		if part == "" {
-			continue
-		}
-
-		var op string
-		var operand string
-		if i == 0 {
-			op = "+"
-			operand = part
-		} else if part == "+" || part == "-" {
-			op = part
-			i++
-			if i < len(parts) {
-				operand = strings.TrimSpace(parts[i])
-			}
-		} else {
-			operand = part
-			op = "+"
-		}
-
-		if operand == "" {
-			continue
-		}
-
-		var val *big.Rat
-		valAttr, vErr := resolveValueOrPath(operand, values, names, attrs)
-		if vErr != nil {
-			return nil, vErr
-		}
-		if valAttr == nil || valAttr.N == nil {
-			// Arithmetic operands must be numbers present in the item or
-			// the value map.
-			return nil, ErrInvalidParameter
-		}
-		r, ok := new(big.Rat).SetString(*valAttr.N)
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-		val = r
-
-		if result == nil {
-			result = val
-		} else {
-			switch op {
-			case "+":
-				result = new(big.Rat).Add(result, val)
-			case "-":
-				result = new(big.Rat).Sub(result, val)
-			}
-		}
-	}
-
-	if result != nil {
-		str := normalizeNumber(result)
-		return dbstore.NumberValue(str), nil
-	}
-	return nil, nil
 }
 
 func splitArithmeticExpression(expr string) []string {
@@ -711,32 +734,4 @@ func findMatchingCloseParen(s string, openPos int) int {
 		}
 	}
 	return -1
-}
-
-func splitListAppendArgs(s string) []string {
-	depth := 0
-	for i, c := range s {
-		if c == '(' {
-			depth++
-		} else if c == ')' {
-			depth--
-		} else if c == ',' && depth == 0 {
-			return []string{s[:i], s[i+1:]}
-		}
-	}
-	return []string{s}
-}
-
-func resolveValueOrPath(token string, values map[string]*dbstore.AttributeValue, names map[string]string, attrs map[string]*dbstore.AttributeValue) (*dbstore.AttributeValue, error) {
-	if strings.HasPrefix(token, "if_not_exists(") {
-		return resolveValueWithIfNotExists(token, values, names, attrs)
-	}
-	if strings.HasPrefix(token, ":") {
-		return resolveValue(token, values, names), nil
-	}
-	attrName := resolveName(token, names)
-	if existing, ok := attrs[attrName]; ok {
-		return existing, nil
-	}
-	return nil, nil
 }

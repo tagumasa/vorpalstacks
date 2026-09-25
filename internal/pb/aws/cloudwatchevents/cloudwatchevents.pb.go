@@ -781,16 +781,16 @@ func (x *ActivateEventSourceRequest) GetName() string {
 }
 
 type ApiDestination struct {
-	state                        protoimpl.MessageState   `protogen:"open.v1"`
-	Apidestinationarn            *string                  `protobuf:"bytes,90996885,opt,name=apidestinationarn,proto3,oneof" json:"apidestinationarn,omitempty"`
-	Apidestinationstate          ApiDestinationState      `protobuf:"varint,13153343,opt,name=apidestinationstate,proto3,enum=cloudwatchevents.ApiDestinationState" json:"apidestinationstate,omitempty"`
-	Connectionarn                *string                  `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
-	Creationtime                 *string                  `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
-	Httpmethod                   ApiDestinationHttpMethod `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ApiDestinationHttpMethod" json:"httpmethod,omitempty"`
-	Invocationendpoint           *string                  `protobuf:"bytes,411800759,opt,name=invocationendpoint,proto3,oneof" json:"invocationendpoint,omitempty"`
-	Invocationratelimitpersecond *int32                   `protobuf:"varint,295327816,opt,name=invocationratelimitpersecond,proto3,oneof" json:"invocationratelimitpersecond,omitempty"`
-	Lastmodifiedtime             *string                  `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
-	Name                         *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	state                        protoimpl.MessageState    `protogen:"open.v1"`
+	Apidestinationarn            *string                   `protobuf:"bytes,90996885,opt,name=apidestinationarn,proto3,oneof" json:"apidestinationarn,omitempty"`
+	Apidestinationstate          *ApiDestinationState      `protobuf:"varint,13153343,opt,name=apidestinationstate,proto3,enum=cloudwatchevents.ApiDestinationState,oneof" json:"apidestinationstate,omitempty"`
+	Connectionarn                *string                   `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
+	Creationtime                 *string                   `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
+	Httpmethod                   *ApiDestinationHttpMethod `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ApiDestinationHttpMethod,oneof" json:"httpmethod,omitempty"`
+	Invocationendpoint           *string                   `protobuf:"bytes,411800759,opt,name=invocationendpoint,proto3,oneof" json:"invocationendpoint,omitempty"`
+	Invocationratelimitpersecond *int32                    `protobuf:"varint,295327816,opt,name=invocationratelimitpersecond,proto3,oneof" json:"invocationratelimitpersecond,omitempty"`
+	Lastmodifiedtime             *string                   `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
+	Name                         *string                   `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -833,8 +833,8 @@ func (x *ApiDestination) GetApidestinationarn() string {
 }
 
 func (x *ApiDestination) GetApidestinationstate() ApiDestinationState {
-	if x != nil {
-		return x.Apidestinationstate
+	if x != nil && x.Apidestinationstate != nil {
+		return *x.Apidestinationstate
 	}
 	return ApiDestinationState_API_DESTINATION_STATE_ACTIVE
 }
@@ -854,8 +854,8 @@ func (x *ApiDestination) GetCreationtime() string {
 }
 
 func (x *ApiDestination) GetHttpmethod() ApiDestinationHttpMethod {
-	if x != nil {
-		return x.Httpmethod
+	if x != nil && x.Httpmethod != nil {
+		return *x.Httpmethod
 	}
 	return ApiDestinationHttpMethod_API_DESTINATION_HTTP_METHOD_OPTIONS
 }
@@ -896,7 +896,7 @@ type Archive struct {
 	Eventsourcearn *string                `protobuf:"bytes,306357574,opt,name=eventsourcearn,proto3,oneof" json:"eventsourcearn,omitempty"`
 	Retentiondays  *int32                 `protobuf:"varint,267894223,opt,name=retentiondays,proto3,oneof" json:"retentiondays,omitempty"`
 	Sizebytes      *int64                 `protobuf:"varint,486677664,opt,name=sizebytes,proto3,oneof" json:"sizebytes,omitempty"`
-	State          ArchiveState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState" json:"state,omitempty"`
+	State          *ArchiveState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState,oneof" json:"state,omitempty"`
 	Statereason    *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -975,8 +975,8 @@ func (x *Archive) GetSizebytes() int64 {
 }
 
 func (x *Archive) GetState() ArchiveState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ArchiveState_ARCHIVE_STATE_UPDATING
 }
@@ -990,7 +990,7 @@ func (x *Archive) GetStatereason() string {
 
 type AwsVpcConfiguration struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Assignpublicip AssignPublicIp         `protobuf:"varint,461653589,opt,name=assignpublicip,proto3,enum=cloudwatchevents.AssignPublicIp" json:"assignpublicip,omitempty"`
+	Assignpublicip *AssignPublicIp        `protobuf:"varint,461653589,opt,name=assignpublicip,proto3,enum=cloudwatchevents.AssignPublicIp,oneof" json:"assignpublicip,omitempty"`
 	Securitygroups []string               `protobuf:"bytes,515282516,rep,name=securitygroups,proto3" json:"securitygroups,omitempty"`
 	Subnets        []string               `protobuf:"bytes,414921506,rep,name=subnets,proto3" json:"subnets,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -1028,8 +1028,8 @@ func (*AwsVpcConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *AwsVpcConfiguration) GetAssignpublicip() AssignPublicIp {
-	if x != nil {
-		return x.Assignpublicip
+	if x != nil && x.Assignpublicip != nil {
+		return *x.Assignpublicip
 	}
 	return AssignPublicIp_ASSIGN_PUBLIC_IP_DISABLED
 }
@@ -1251,7 +1251,7 @@ func (x *CancelReplayRequest) GetReplayname() string {
 type CancelReplayResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Replayarn     *string                `protobuf:"bytes,361946526,opt,name=replayarn,proto3,oneof" json:"replayarn,omitempty"`
-	State         ReplayState            `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState" json:"state,omitempty"`
+	State         *ReplayState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState,oneof" json:"state,omitempty"`
 	Statereason   *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1295,8 +1295,8 @@ func (x *CancelReplayResponse) GetReplayarn() string {
 }
 
 func (x *CancelReplayResponse) GetState() ReplayState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ReplayState_REPLAY_STATE_STARTING
 }
@@ -1473,15 +1473,15 @@ func (x *Condition) GetValue() string {
 }
 
 type Connection struct {
-	state              protoimpl.MessageState      `protogen:"open.v1"`
-	Authorizationtype  ConnectionAuthorizationType `protobuf:"varint,481976511,opt,name=authorizationtype,proto3,enum=cloudwatchevents.ConnectionAuthorizationType" json:"authorizationtype,omitempty"`
-	Connectionarn      *string                     `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
-	Connectionstate    ConnectionState             `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState" json:"connectionstate,omitempty"`
-	Creationtime       *string                     `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
-	Lastauthorizedtime *string                     `protobuf:"bytes,250638066,opt,name=lastauthorizedtime,proto3,oneof" json:"lastauthorizedtime,omitempty"`
-	Lastmodifiedtime   *string                     `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
-	Name               *string                     `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Statereason        *string                     `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
+	state              protoimpl.MessageState       `protogen:"open.v1"`
+	Authorizationtype  *ConnectionAuthorizationType `protobuf:"varint,481976511,opt,name=authorizationtype,proto3,enum=cloudwatchevents.ConnectionAuthorizationType,oneof" json:"authorizationtype,omitempty"`
+	Connectionarn      *string                      `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
+	Connectionstate    *ConnectionState             `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState,oneof" json:"connectionstate,omitempty"`
+	Creationtime       *string                      `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
+	Lastauthorizedtime *string                      `protobuf:"bytes,250638066,opt,name=lastauthorizedtime,proto3,oneof" json:"lastauthorizedtime,omitempty"`
+	Lastmodifiedtime   *string                      `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
+	Name               *string                      `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Statereason        *string                      `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1517,8 +1517,8 @@ func (*Connection) Descriptor() ([]byte, []int) {
 }
 
 func (x *Connection) GetAuthorizationtype() ConnectionAuthorizationType {
-	if x != nil {
-		return x.Authorizationtype
+	if x != nil && x.Authorizationtype != nil {
+		return *x.Authorizationtype
 	}
 	return ConnectionAuthorizationType_CONNECTION_AUTHORIZATION_TYPE_OAUTH_CLIENT_CREDENTIALS
 }
@@ -1531,8 +1531,8 @@ func (x *Connection) GetConnectionarn() string {
 }
 
 func (x *Connection) GetConnectionstate() ConnectionState {
-	if x != nil {
-		return x.Connectionstate
+	if x != nil && x.Connectionstate != nil {
+		return *x.Connectionstate
 	}
 	return ConnectionState_CONNECTION_STATE_DEAUTHORIZED
 }
@@ -1956,7 +1956,7 @@ type ConnectionOAuthResponseParameters struct {
 	state                 protoimpl.MessageState                   `protogen:"open.v1"`
 	Authorizationendpoint *string                                  `protobuf:"bytes,427938596,opt,name=authorizationendpoint,proto3,oneof" json:"authorizationendpoint,omitempty"`
 	Clientparameters      *ConnectionOAuthClientResponseParameters `protobuf:"bytes,246864127,opt,name=clientparameters,proto3" json:"clientparameters,omitempty"`
-	Httpmethod            ConnectionOAuthHttpMethod                `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ConnectionOAuthHttpMethod" json:"httpmethod,omitempty"`
+	Httpmethod            *ConnectionOAuthHttpMethod               `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ConnectionOAuthHttpMethod,oneof" json:"httpmethod,omitempty"`
 	Oauthhttpparameters   *ConnectionHttpParameters                `protobuf:"bytes,10294537,opt,name=oauthhttpparameters,proto3" json:"oauthhttpparameters,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -2007,8 +2007,8 @@ func (x *ConnectionOAuthResponseParameters) GetClientparameters() *ConnectionOAu
 }
 
 func (x *ConnectionOAuthResponseParameters) GetHttpmethod() ConnectionOAuthHttpMethod {
-	if x != nil {
-		return x.Httpmethod
+	if x != nil && x.Httpmethod != nil {
+		return *x.Httpmethod
 	}
 	return ConnectionOAuthHttpMethod_CONNECTION_O_AUTH_HTTP_METHOD_POST
 }
@@ -2167,7 +2167,7 @@ func (x *CreateApiDestinationRequest) GetName() string {
 type CreateApiDestinationResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Apidestinationarn   *string                `protobuf:"bytes,90996885,opt,name=apidestinationarn,proto3,oneof" json:"apidestinationarn,omitempty"`
-	Apidestinationstate ApiDestinationState    `protobuf:"varint,13153343,opt,name=apidestinationstate,proto3,enum=cloudwatchevents.ApiDestinationState" json:"apidestinationstate,omitempty"`
+	Apidestinationstate *ApiDestinationState   `protobuf:"varint,13153343,opt,name=apidestinationstate,proto3,enum=cloudwatchevents.ApiDestinationState,oneof" json:"apidestinationstate,omitempty"`
 	Creationtime        *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Lastmodifiedtime    *string                `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -2212,8 +2212,8 @@ func (x *CreateApiDestinationResponse) GetApidestinationarn() string {
 }
 
 func (x *CreateApiDestinationResponse) GetApidestinationstate() ApiDestinationState {
-	if x != nil {
-		return x.Apidestinationstate
+	if x != nil && x.Apidestinationstate != nil {
+		return *x.Apidestinationstate
 	}
 	return ApiDestinationState_API_DESTINATION_STATE_ACTIVE
 }
@@ -2312,7 +2312,7 @@ type CreateArchiveResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Archivearn    *string                `protobuf:"bytes,56866685,opt,name=archivearn,proto3,oneof" json:"archivearn,omitempty"`
 	Creationtime  *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
-	State         ArchiveState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState" json:"state,omitempty"`
+	State         *ArchiveState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState,oneof" json:"state,omitempty"`
 	Statereason   *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2363,8 +2363,8 @@ func (x *CreateArchiveResponse) GetCreationtime() string {
 }
 
 func (x *CreateArchiveResponse) GetState() ArchiveState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ArchiveState_ARCHIVE_STATE_UPDATING
 }
@@ -2739,7 +2739,7 @@ func (x *CreateConnectionRequest) GetName() string {
 type CreateConnectionResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Connectionarn    *string                `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
-	Connectionstate  ConnectionState        `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState" json:"connectionstate,omitempty"`
+	Connectionstate  *ConnectionState       `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState,oneof" json:"connectionstate,omitempty"`
 	Creationtime     *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Lastmodifiedtime *string                `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -2784,8 +2784,8 @@ func (x *CreateConnectionResponse) GetConnectionarn() string {
 }
 
 func (x *CreateConnectionResponse) GetConnectionstate() ConnectionState {
-	if x != nil {
-		return x.Connectionstate
+	if x != nil && x.Connectionstate != nil {
+		return *x.Connectionstate
 	}
 	return ConnectionState_CONNECTION_STATE_DEAUTHORIZED
 }
@@ -3139,7 +3139,7 @@ func (x *DeauthorizeConnectionRequest) GetName() string {
 type DeauthorizeConnectionResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Connectionarn      *string                `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
-	Connectionstate    ConnectionState        `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState" json:"connectionstate,omitempty"`
+	Connectionstate    *ConnectionState       `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState,oneof" json:"connectionstate,omitempty"`
 	Creationtime       *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Lastauthorizedtime *string                `protobuf:"bytes,250638066,opt,name=lastauthorizedtime,proto3,oneof" json:"lastauthorizedtime,omitempty"`
 	Lastmodifiedtime   *string                `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
@@ -3185,8 +3185,8 @@ func (x *DeauthorizeConnectionResponse) GetConnectionarn() string {
 }
 
 func (x *DeauthorizeConnectionResponse) GetConnectionstate() ConnectionState {
-	if x != nil {
-		return x.Connectionstate
+	if x != nil && x.Connectionstate != nil {
+		return *x.Connectionstate
 	}
 	return ConnectionState_CONNECTION_STATE_DEAUTHORIZED
 }
@@ -3419,7 +3419,7 @@ func (x *DeleteConnectionRequest) GetName() string {
 type DeleteConnectionResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Connectionarn      *string                `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
-	Connectionstate    ConnectionState        `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState" json:"connectionstate,omitempty"`
+	Connectionstate    *ConnectionState       `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState,oneof" json:"connectionstate,omitempty"`
 	Creationtime       *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Lastauthorizedtime *string                `protobuf:"bytes,250638066,opt,name=lastauthorizedtime,proto3,oneof" json:"lastauthorizedtime,omitempty"`
 	Lastmodifiedtime   *string                `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
@@ -3465,8 +3465,8 @@ func (x *DeleteConnectionResponse) GetConnectionarn() string {
 }
 
 func (x *DeleteConnectionResponse) GetConnectionstate() ConnectionState {
-	if x != nil {
-		return x.Connectionstate
+	if x != nil && x.Connectionstate != nil {
+		return *x.Connectionstate
 	}
 	return ConnectionState_CONNECTION_STATE_DEAUTHORIZED
 }
@@ -3693,17 +3693,17 @@ func (x *DescribeApiDestinationRequest) GetName() string {
 }
 
 type DescribeApiDestinationResponse struct {
-	state                        protoimpl.MessageState   `protogen:"open.v1"`
-	Apidestinationarn            *string                  `protobuf:"bytes,90996885,opt,name=apidestinationarn,proto3,oneof" json:"apidestinationarn,omitempty"`
-	Apidestinationstate          ApiDestinationState      `protobuf:"varint,13153343,opt,name=apidestinationstate,proto3,enum=cloudwatchevents.ApiDestinationState" json:"apidestinationstate,omitempty"`
-	Connectionarn                *string                  `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
-	Creationtime                 *string                  `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
-	Description                  *string                  `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Httpmethod                   ApiDestinationHttpMethod `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ApiDestinationHttpMethod" json:"httpmethod,omitempty"`
-	Invocationendpoint           *string                  `protobuf:"bytes,411800759,opt,name=invocationendpoint,proto3,oneof" json:"invocationendpoint,omitempty"`
-	Invocationratelimitpersecond *int32                   `protobuf:"varint,295327816,opt,name=invocationratelimitpersecond,proto3,oneof" json:"invocationratelimitpersecond,omitempty"`
-	Lastmodifiedtime             *string                  `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
-	Name                         *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	state                        protoimpl.MessageState    `protogen:"open.v1"`
+	Apidestinationarn            *string                   `protobuf:"bytes,90996885,opt,name=apidestinationarn,proto3,oneof" json:"apidestinationarn,omitempty"`
+	Apidestinationstate          *ApiDestinationState      `protobuf:"varint,13153343,opt,name=apidestinationstate,proto3,enum=cloudwatchevents.ApiDestinationState,oneof" json:"apidestinationstate,omitempty"`
+	Connectionarn                *string                   `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
+	Creationtime                 *string                   `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
+	Description                  *string                   `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Httpmethod                   *ApiDestinationHttpMethod `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ApiDestinationHttpMethod,oneof" json:"httpmethod,omitempty"`
+	Invocationendpoint           *string                   `protobuf:"bytes,411800759,opt,name=invocationendpoint,proto3,oneof" json:"invocationendpoint,omitempty"`
+	Invocationratelimitpersecond *int32                    `protobuf:"varint,295327816,opt,name=invocationratelimitpersecond,proto3,oneof" json:"invocationratelimitpersecond,omitempty"`
+	Lastmodifiedtime             *string                   `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
+	Name                         *string                   `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -3746,8 +3746,8 @@ func (x *DescribeApiDestinationResponse) GetApidestinationarn() string {
 }
 
 func (x *DescribeApiDestinationResponse) GetApidestinationstate() ApiDestinationState {
-	if x != nil {
-		return x.Apidestinationstate
+	if x != nil && x.Apidestinationstate != nil {
+		return *x.Apidestinationstate
 	}
 	return ApiDestinationState_API_DESTINATION_STATE_ACTIVE
 }
@@ -3774,8 +3774,8 @@ func (x *DescribeApiDestinationResponse) GetDescription() string {
 }
 
 func (x *DescribeApiDestinationResponse) GetHttpmethod() ApiDestinationHttpMethod {
-	if x != nil {
-		return x.Httpmethod
+	if x != nil && x.Httpmethod != nil {
+		return *x.Httpmethod
 	}
 	return ApiDestinationHttpMethod_API_DESTINATION_HTTP_METHOD_OPTIONS
 }
@@ -3863,7 +3863,7 @@ type DescribeArchiveResponse struct {
 	Eventsourcearn *string                `protobuf:"bytes,306357574,opt,name=eventsourcearn,proto3,oneof" json:"eventsourcearn,omitempty"`
 	Retentiondays  *int32                 `protobuf:"varint,267894223,opt,name=retentiondays,proto3,oneof" json:"retentiondays,omitempty"`
 	Sizebytes      *int64                 `protobuf:"varint,486677664,opt,name=sizebytes,proto3,oneof" json:"sizebytes,omitempty"`
-	State          ArchiveState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState" json:"state,omitempty"`
+	State          *ArchiveState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState,oneof" json:"state,omitempty"`
 	Statereason    *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -3963,8 +3963,8 @@ func (x *DescribeArchiveResponse) GetSizebytes() int64 {
 }
 
 func (x *DescribeArchiveResponse) GetState() ArchiveState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ArchiveState_ARCHIVE_STATE_UPDATING
 }
@@ -4023,9 +4023,9 @@ func (x *DescribeConnectionRequest) GetName() string {
 type DescribeConnectionResponse struct {
 	state              protoimpl.MessageState            `protogen:"open.v1"`
 	Authparameters     *ConnectionAuthResponseParameters `protobuf:"bytes,258276552,opt,name=authparameters,proto3" json:"authparameters,omitempty"`
-	Authorizationtype  ConnectionAuthorizationType       `protobuf:"varint,481976511,opt,name=authorizationtype,proto3,enum=cloudwatchevents.ConnectionAuthorizationType" json:"authorizationtype,omitempty"`
+	Authorizationtype  *ConnectionAuthorizationType      `protobuf:"varint,481976511,opt,name=authorizationtype,proto3,enum=cloudwatchevents.ConnectionAuthorizationType,oneof" json:"authorizationtype,omitempty"`
 	Connectionarn      *string                           `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
-	Connectionstate    ConnectionState                   `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState" json:"connectionstate,omitempty"`
+	Connectionstate    *ConnectionState                  `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState,oneof" json:"connectionstate,omitempty"`
 	Creationtime       *string                           `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Description        *string                           `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Lastauthorizedtime *string                           `protobuf:"bytes,250638066,opt,name=lastauthorizedtime,proto3,oneof" json:"lastauthorizedtime,omitempty"`
@@ -4075,8 +4075,8 @@ func (x *DescribeConnectionResponse) GetAuthparameters() *ConnectionAuthResponse
 }
 
 func (x *DescribeConnectionResponse) GetAuthorizationtype() ConnectionAuthorizationType {
-	if x != nil {
-		return x.Authorizationtype
+	if x != nil && x.Authorizationtype != nil {
+		return *x.Authorizationtype
 	}
 	return ConnectionAuthorizationType_CONNECTION_AUTHORIZATION_TYPE_OAUTH_CLIENT_CREDENTIALS
 }
@@ -4089,8 +4089,8 @@ func (x *DescribeConnectionResponse) GetConnectionarn() string {
 }
 
 func (x *DescribeConnectionResponse) GetConnectionstate() ConnectionState {
-	if x != nil {
-		return x.Connectionstate
+	if x != nil && x.Connectionstate != nil {
+		return *x.Connectionstate
 	}
 	return ConnectionState_CONNECTION_STATE_DEAUTHORIZED
 }
@@ -4299,7 +4299,7 @@ type DescribeEventSourceResponse struct {
 	Creationtime   *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Expirationtime *string                `protobuf:"bytes,93473378,opt,name=expirationtime,proto3,oneof" json:"expirationtime,omitempty"`
 	Name           *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	State          EventSourceState       `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.EventSourceState" json:"state,omitempty"`
+	State          *EventSourceState      `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.EventSourceState,oneof" json:"state,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -4370,8 +4370,8 @@ func (x *DescribeEventSourceResponse) GetName() string {
 }
 
 func (x *DescribeEventSourceResponse) GetState() EventSourceState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return EventSourceState_EVENT_SOURCE_STATE_PENDING
 }
@@ -4528,7 +4528,7 @@ type DescribeReplayResponse struct {
 	Replayendtime         *string                `protobuf:"bytes,304261199,opt,name=replayendtime,proto3,oneof" json:"replayendtime,omitempty"`
 	Replayname            *string                `protobuf:"bytes,442173850,opt,name=replayname,proto3,oneof" json:"replayname,omitempty"`
 	Replaystarttime       *string                `protobuf:"bytes,503580492,opt,name=replaystarttime,proto3,oneof" json:"replaystarttime,omitempty"`
-	State                 ReplayState            `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState" json:"state,omitempty"`
+	State                 *ReplayState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState,oneof" json:"state,omitempty"`
 	Statereason           *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -4635,8 +4635,8 @@ func (x *DescribeReplayResponse) GetReplaystarttime() string {
 }
 
 func (x *DescribeReplayResponse) GetState() ReplayState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ReplayState_REPLAY_STATE_STARTING
 }
@@ -4711,7 +4711,7 @@ type DescribeRuleResponse struct {
 	Name               *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Rolearn            *string                `protobuf:"bytes,322567169,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
 	Scheduleexpression *string                `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
-	State              RuleState              `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.RuleState" json:"state,omitempty"`
+	State              *RuleState             `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.RuleState,oneof" json:"state,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4810,8 +4810,8 @@ func (x *DescribeRuleResponse) GetScheduleexpression() string {
 }
 
 func (x *DescribeRuleResponse) GetState() RuleState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return RuleState_RULE_STATE_DISABLED
 }
@@ -4874,12 +4874,12 @@ type EcsParameters struct {
 	Enableecsmanagedtags     *bool                           `protobuf:"varint,146161174,opt,name=enableecsmanagedtags,proto3,oneof" json:"enableecsmanagedtags,omitempty"`
 	Enableexecutecommand     *bool                           `protobuf:"varint,451374779,opt,name=enableexecutecommand,proto3,oneof" json:"enableexecutecommand,omitempty"`
 	Group                    *string                         `protobuf:"bytes,91525165,opt,name=group,proto3,oneof" json:"group,omitempty"`
-	Launchtype               LaunchType                      `protobuf:"varint,184333335,opt,name=launchtype,proto3,enum=cloudwatchevents.LaunchType" json:"launchtype,omitempty"`
+	Launchtype               *LaunchType                     `protobuf:"varint,184333335,opt,name=launchtype,proto3,enum=cloudwatchevents.LaunchType,oneof" json:"launchtype,omitempty"`
 	Networkconfiguration     *NetworkConfiguration           `protobuf:"bytes,240088634,opt,name=networkconfiguration,proto3" json:"networkconfiguration,omitempty"`
 	Placementconstraints     []*PlacementConstraint          `protobuf:"bytes,248464365,rep,name=placementconstraints,proto3" json:"placementconstraints,omitempty"`
 	Placementstrategy        []*PlacementStrategy            `protobuf:"bytes,25036678,rep,name=placementstrategy,proto3" json:"placementstrategy,omitempty"`
 	Platformversion          *string                         `protobuf:"bytes,139924287,opt,name=platformversion,proto3,oneof" json:"platformversion,omitempty"`
-	Propagatetags            PropagateTags                   `protobuf:"varint,405557622,opt,name=propagatetags,proto3,enum=cloudwatchevents.PropagateTags" json:"propagatetags,omitempty"`
+	Propagatetags            *PropagateTags                  `protobuf:"varint,405557622,opt,name=propagatetags,proto3,enum=cloudwatchevents.PropagateTags,oneof" json:"propagatetags,omitempty"`
 	Referenceid              *string                         `protobuf:"bytes,291739032,opt,name=referenceid,proto3,oneof" json:"referenceid,omitempty"`
 	Tags                     []*Tag                          `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Taskcount                *int32                          `protobuf:"varint,398407508,opt,name=taskcount,proto3,oneof" json:"taskcount,omitempty"`
@@ -4947,8 +4947,8 @@ func (x *EcsParameters) GetGroup() string {
 }
 
 func (x *EcsParameters) GetLaunchtype() LaunchType {
-	if x != nil {
-		return x.Launchtype
+	if x != nil && x.Launchtype != nil {
+		return *x.Launchtype
 	}
 	return LaunchType_LAUNCH_TYPE_FARGATE
 }
@@ -4982,8 +4982,8 @@ func (x *EcsParameters) GetPlatformversion() string {
 }
 
 func (x *EcsParameters) GetPropagatetags() PropagateTags {
-	if x != nil {
-		return x.Propagatetags
+	if x != nil && x.Propagatetags != nil {
+		return *x.Propagatetags
 	}
 	return PropagateTags_PROPAGATE_TAGS_TASK_DEFINITION
 }
@@ -5135,7 +5135,7 @@ type EventSource struct {
 	Creationtime   *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Expirationtime *string                `protobuf:"bytes,93473378,opt,name=expirationtime,proto3,oneof" json:"expirationtime,omitempty"`
 	Name           *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	State          EventSourceState       `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.EventSourceState" json:"state,omitempty"`
+	State          *EventSourceState      `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.EventSourceState,oneof" json:"state,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -5206,8 +5206,8 @@ func (x *EventSource) GetName() string {
 }
 
 func (x *EventSource) GetState() EventSourceState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return EventSourceState_EVENT_SOURCE_STATE_PENDING
 }
@@ -5714,7 +5714,7 @@ type ListArchivesRequest struct {
 	Limit          *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nameprefix     *string                `protobuf:"bytes,361707931,opt,name=nameprefix,proto3,oneof" json:"nameprefix,omitempty"`
 	Nexttoken      *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	State          ArchiveState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState" json:"state,omitempty"`
+	State          *ArchiveState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState,oneof" json:"state,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -5778,8 +5778,8 @@ func (x *ListArchivesRequest) GetNexttoken() string {
 }
 
 func (x *ListArchivesRequest) GetState() ArchiveState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ArchiveState_ARCHIVE_STATE_UPDATING
 }
@@ -5838,7 +5838,7 @@ func (x *ListArchivesResponse) GetNexttoken() string {
 
 type ListConnectionsRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Connectionstate ConnectionState        `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState" json:"connectionstate,omitempty"`
+	Connectionstate *ConnectionState       `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState,oneof" json:"connectionstate,omitempty"`
 	Limit           *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nameprefix      *string                `protobuf:"bytes,361707931,opt,name=nameprefix,proto3,oneof" json:"nameprefix,omitempty"`
 	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
@@ -5877,8 +5877,8 @@ func (*ListConnectionsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListConnectionsRequest) GetConnectionstate() ConnectionState {
-	if x != nil {
-		return x.Connectionstate
+	if x != nil && x.Connectionstate != nil {
+		return *x.Connectionstate
 	}
 	return ConnectionState_CONNECTION_STATE_DEAUTHORIZED
 }
@@ -6410,7 +6410,7 @@ type ListReplaysRequest struct {
 	Limit          *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Nameprefix     *string                `protobuf:"bytes,361707931,opt,name=nameprefix,proto3,oneof" json:"nameprefix,omitempty"`
 	Nexttoken      *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	State          ReplayState            `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState" json:"state,omitempty"`
+	State          *ReplayState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState,oneof" json:"state,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -6474,8 +6474,8 @@ func (x *ListReplaysRequest) GetNexttoken() string {
 }
 
 func (x *ListReplaysRequest) GetState() ReplayState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ReplayState_REPLAY_STATE_STARTING
 }
@@ -7169,7 +7169,7 @@ type PartnerEventSourceAccount struct {
 	Account        *string                `protobuf:"bytes,435725053,opt,name=account,proto3,oneof" json:"account,omitempty"`
 	Creationtime   *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Expirationtime *string                `protobuf:"bytes,93473378,opt,name=expirationtime,proto3,oneof" json:"expirationtime,omitempty"`
-	State          EventSourceState       `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.EventSourceState" json:"state,omitempty"`
+	State          *EventSourceState      `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.EventSourceState,oneof" json:"state,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -7226,16 +7226,16 @@ func (x *PartnerEventSourceAccount) GetExpirationtime() string {
 }
 
 func (x *PartnerEventSourceAccount) GetState() EventSourceState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return EventSourceState_EVENT_SOURCE_STATE_PENDING
 }
 
 type PlacementConstraint struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Expression    *string                 `protobuf:"bytes,253079532,opt,name=expression,proto3,oneof" json:"expression,omitempty"`
-	Type          PlacementConstraintType `protobuf:"varint,287830350,opt,name=type,proto3,enum=cloudwatchevents.PlacementConstraintType" json:"type,omitempty"`
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Expression    *string                  `protobuf:"bytes,253079532,opt,name=expression,proto3,oneof" json:"expression,omitempty"`
+	Type          *PlacementConstraintType `protobuf:"varint,287830350,opt,name=type,proto3,enum=cloudwatchevents.PlacementConstraintType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7278,8 +7278,8 @@ func (x *PlacementConstraint) GetExpression() string {
 }
 
 func (x *PlacementConstraint) GetType() PlacementConstraintType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return PlacementConstraintType_PLACEMENT_CONSTRAINT_TYPE_DISTINCT_INSTANCE
 }
@@ -7287,7 +7287,7 @@ func (x *PlacementConstraint) GetType() PlacementConstraintType {
 type PlacementStrategy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Field         *string                `protobuf:"bytes,125985384,opt,name=field,proto3,oneof" json:"field,omitempty"`
-	Type          PlacementStrategyType  `protobuf:"varint,287830350,opt,name=type,proto3,enum=cloudwatchevents.PlacementStrategyType" json:"type,omitempty"`
+	Type          *PlacementStrategyType `protobuf:"varint,287830350,opt,name=type,proto3,enum=cloudwatchevents.PlacementStrategyType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7330,8 +7330,8 @@ func (x *PlacementStrategy) GetField() string {
 }
 
 func (x *PlacementStrategy) GetType() PlacementStrategyType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return PlacementStrategyType_PLACEMENT_STRATEGY_TYPE_SPREAD
 }
@@ -7952,7 +7952,7 @@ type PutRuleRequest struct {
 	Name               string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Rolearn            *string                `protobuf:"bytes,322567169,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
 	Scheduleexpression *string                `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
-	State              RuleState              `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.RuleState" json:"state,omitempty"`
+	State              *RuleState             `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.RuleState,oneof" json:"state,omitempty"`
 	Tags               []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -8031,8 +8031,8 @@ func (x *PutRuleRequest) GetScheduleexpression() string {
 }
 
 func (x *PutRuleRequest) GetState() RuleState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return RuleState_RULE_STATE_DISABLED
 }
@@ -8593,7 +8593,7 @@ type Replay struct {
 	Replayendtime         *string                `protobuf:"bytes,304261199,opt,name=replayendtime,proto3,oneof" json:"replayendtime,omitempty"`
 	Replayname            *string                `protobuf:"bytes,442173850,opt,name=replayname,proto3,oneof" json:"replayname,omitempty"`
 	Replaystarttime       *string                `protobuf:"bytes,503580492,opt,name=replaystarttime,proto3,oneof" json:"replaystarttime,omitempty"`
-	State                 ReplayState            `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState" json:"state,omitempty"`
+	State                 *ReplayState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState,oneof" json:"state,omitempty"`
 	Statereason           *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -8679,8 +8679,8 @@ func (x *Replay) GetReplaystarttime() string {
 }
 
 func (x *Replay) GetState() ReplayState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ReplayState_REPLAY_STATE_STARTING
 }
@@ -8894,7 +8894,7 @@ type Rule struct {
 	Name               *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Rolearn            *string                `protobuf:"bytes,322567169,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
 	Scheduleexpression *string                `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
-	State              RuleState              `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.RuleState" json:"state,omitempty"`
+	State              *RuleState             `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.RuleState,oneof" json:"state,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -8986,8 +8986,8 @@ func (x *Rule) GetScheduleexpression() string {
 }
 
 func (x *Rule) GetState() RuleState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return RuleState_RULE_STATE_DISABLED
 }
@@ -9316,7 +9316,7 @@ type StartReplayResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Replayarn       *string                `protobuf:"bytes,361946526,opt,name=replayarn,proto3,oneof" json:"replayarn,omitempty"`
 	Replaystarttime *string                `protobuf:"bytes,503580492,opt,name=replaystarttime,proto3,oneof" json:"replaystarttime,omitempty"`
-	State           ReplayState            `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState" json:"state,omitempty"`
+	State           *ReplayState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ReplayState,oneof" json:"state,omitempty"`
 	Statereason     *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -9367,8 +9367,8 @@ func (x *StartReplayResponse) GetReplaystarttime() string {
 }
 
 func (x *StartReplayResponse) GetState() ReplayState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ReplayState_REPLAY_STATE_STARTING
 }
@@ -9869,13 +9869,13 @@ func (*UntagResourceResponse) Descriptor() ([]byte, []int) {
 }
 
 type UpdateApiDestinationRequest struct {
-	state                        protoimpl.MessageState   `protogen:"open.v1"`
-	Connectionarn                *string                  `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
-	Description                  *string                  `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Httpmethod                   ApiDestinationHttpMethod `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ApiDestinationHttpMethod" json:"httpmethod,omitempty"`
-	Invocationendpoint           *string                  `protobuf:"bytes,411800759,opt,name=invocationendpoint,proto3,oneof" json:"invocationendpoint,omitempty"`
-	Invocationratelimitpersecond *int32                   `protobuf:"varint,295327816,opt,name=invocationratelimitpersecond,proto3,oneof" json:"invocationratelimitpersecond,omitempty"`
-	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	state                        protoimpl.MessageState    `protogen:"open.v1"`
+	Connectionarn                *string                   `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
+	Description                  *string                   `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Httpmethod                   *ApiDestinationHttpMethod `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ApiDestinationHttpMethod,oneof" json:"httpmethod,omitempty"`
+	Invocationendpoint           *string                   `protobuf:"bytes,411800759,opt,name=invocationendpoint,proto3,oneof" json:"invocationendpoint,omitempty"`
+	Invocationratelimitpersecond *int32                    `protobuf:"varint,295327816,opt,name=invocationratelimitpersecond,proto3,oneof" json:"invocationratelimitpersecond,omitempty"`
+	Name                         string                    `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -9925,8 +9925,8 @@ func (x *UpdateApiDestinationRequest) GetDescription() string {
 }
 
 func (x *UpdateApiDestinationRequest) GetHttpmethod() ApiDestinationHttpMethod {
-	if x != nil {
-		return x.Httpmethod
+	if x != nil && x.Httpmethod != nil {
+		return *x.Httpmethod
 	}
 	return ApiDestinationHttpMethod_API_DESTINATION_HTTP_METHOD_OPTIONS
 }
@@ -9955,7 +9955,7 @@ func (x *UpdateApiDestinationRequest) GetName() string {
 type UpdateApiDestinationResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Apidestinationarn   *string                `protobuf:"bytes,90996885,opt,name=apidestinationarn,proto3,oneof" json:"apidestinationarn,omitempty"`
-	Apidestinationstate ApiDestinationState    `protobuf:"varint,13153343,opt,name=apidestinationstate,proto3,enum=cloudwatchevents.ApiDestinationState" json:"apidestinationstate,omitempty"`
+	Apidestinationstate *ApiDestinationState   `protobuf:"varint,13153343,opt,name=apidestinationstate,proto3,enum=cloudwatchevents.ApiDestinationState,oneof" json:"apidestinationstate,omitempty"`
 	Creationtime        *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Lastmodifiedtime    *string                `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -10000,8 +10000,8 @@ func (x *UpdateApiDestinationResponse) GetApidestinationarn() string {
 }
 
 func (x *UpdateApiDestinationResponse) GetApidestinationstate() ApiDestinationState {
-	if x != nil {
-		return x.Apidestinationstate
+	if x != nil && x.Apidestinationstate != nil {
+		return *x.Apidestinationstate
 	}
 	return ApiDestinationState_API_DESTINATION_STATE_ACTIVE
 }
@@ -10092,7 +10092,7 @@ type UpdateArchiveResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Archivearn    *string                `protobuf:"bytes,56866685,opt,name=archivearn,proto3,oneof" json:"archivearn,omitempty"`
 	Creationtime  *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
-	State         ArchiveState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState" json:"state,omitempty"`
+	State         *ArchiveState          `protobuf:"varint,502047895,opt,name=state,proto3,enum=cloudwatchevents.ArchiveState,oneof" json:"state,omitempty"`
 	Statereason   *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10143,8 +10143,8 @@ func (x *UpdateArchiveResponse) GetCreationtime() string {
 }
 
 func (x *UpdateArchiveResponse) GetState() ArchiveState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ArchiveState_ARCHIVE_STATE_UPDATING
 }
@@ -10384,7 +10384,7 @@ type UpdateConnectionOAuthRequestParameters struct {
 	state                 protoimpl.MessageState                        `protogen:"open.v1"`
 	Authorizationendpoint *string                                       `protobuf:"bytes,427938596,opt,name=authorizationendpoint,proto3,oneof" json:"authorizationendpoint,omitempty"`
 	Clientparameters      *UpdateConnectionOAuthClientRequestParameters `protobuf:"bytes,246864127,opt,name=clientparameters,proto3" json:"clientparameters,omitempty"`
-	Httpmethod            ConnectionOAuthHttpMethod                     `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ConnectionOAuthHttpMethod" json:"httpmethod,omitempty"`
+	Httpmethod            *ConnectionOAuthHttpMethod                    `protobuf:"varint,398394961,opt,name=httpmethod,proto3,enum=cloudwatchevents.ConnectionOAuthHttpMethod,oneof" json:"httpmethod,omitempty"`
 	Oauthhttpparameters   *ConnectionHttpParameters                     `protobuf:"bytes,10294537,opt,name=oauthhttpparameters,proto3" json:"oauthhttpparameters,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -10435,8 +10435,8 @@ func (x *UpdateConnectionOAuthRequestParameters) GetClientparameters() *UpdateCo
 }
 
 func (x *UpdateConnectionOAuthRequestParameters) GetHttpmethod() ConnectionOAuthHttpMethod {
-	if x != nil {
-		return x.Httpmethod
+	if x != nil && x.Httpmethod != nil {
+		return *x.Httpmethod
 	}
 	return ConnectionOAuthHttpMethod_CONNECTION_O_AUTH_HTTP_METHOD_POST
 }
@@ -10451,7 +10451,7 @@ func (x *UpdateConnectionOAuthRequestParameters) GetOauthhttpparameters() *Conne
 type UpdateConnectionRequest struct {
 	state             protoimpl.MessageState                 `protogen:"open.v1"`
 	Authparameters    *UpdateConnectionAuthRequestParameters `protobuf:"bytes,258276552,opt,name=authparameters,proto3" json:"authparameters,omitempty"`
-	Authorizationtype ConnectionAuthorizationType            `protobuf:"varint,481976511,opt,name=authorizationtype,proto3,enum=cloudwatchevents.ConnectionAuthorizationType" json:"authorizationtype,omitempty"`
+	Authorizationtype *ConnectionAuthorizationType           `protobuf:"varint,481976511,opt,name=authorizationtype,proto3,enum=cloudwatchevents.ConnectionAuthorizationType,oneof" json:"authorizationtype,omitempty"`
 	Description       *string                                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Name              string                                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -10496,8 +10496,8 @@ func (x *UpdateConnectionRequest) GetAuthparameters() *UpdateConnectionAuthReque
 }
 
 func (x *UpdateConnectionRequest) GetAuthorizationtype() ConnectionAuthorizationType {
-	if x != nil {
-		return x.Authorizationtype
+	if x != nil && x.Authorizationtype != nil {
+		return *x.Authorizationtype
 	}
 	return ConnectionAuthorizationType_CONNECTION_AUTHORIZATION_TYPE_OAUTH_CLIENT_CREDENTIALS
 }
@@ -10519,7 +10519,7 @@ func (x *UpdateConnectionRequest) GetName() string {
 type UpdateConnectionResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Connectionarn      *string                `protobuf:"bytes,187631553,opt,name=connectionarn,proto3,oneof" json:"connectionarn,omitempty"`
-	Connectionstate    ConnectionState        `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState" json:"connectionstate,omitempty"`
+	Connectionstate    *ConnectionState       `protobuf:"varint,404323675,opt,name=connectionstate,proto3,enum=cloudwatchevents.ConnectionState,oneof" json:"connectionstate,omitempty"`
 	Creationtime       *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Lastauthorizedtime *string                `protobuf:"bytes,250638066,opt,name=lastauthorizedtime,proto3,oneof" json:"lastauthorizedtime,omitempty"`
 	Lastmodifiedtime   *string                `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
@@ -10565,8 +10565,8 @@ func (x *UpdateConnectionResponse) GetConnectionarn() string {
 }
 
 func (x *UpdateConnectionResponse) GetConnectionstate() ConnectionState {
-	if x != nil {
-		return x.Connectionstate
+	if x != nil && x.Connectionstate != nil {
+		return *x.Connectionstate
 	}
 	return ConnectionState_CONNECTION_STATE_DEAUTHORIZED
 }
@@ -10598,26 +10598,28 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\n" +
 	"\x16cloudwatchevents.proto\x12\x10cloudwatchevents\x1a\fcommon.proto\x1a\taws.proto\"3\n" +
 	"\x1aActivateEventSourceRequest\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xb1\x05\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xe2\x05\n" +
 	"\x0eApiDestination\x124\n" +
-	"\x11apidestinationarn\x18\x95\x81\xb2+ \x01(\tH\x00R\x11apidestinationarn\x88\x01\x01\x12Z\n" +
-	"\x13apidestinationstate\x18\xbf\xe8\xa2\x06 \x01(\x0e2%.cloudwatchevents.ApiDestinationStateR\x13apidestinationstate\x12,\n" +
-	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x01R\rconnectionarn\x88\x01\x01\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x12N\n" +
+	"\x11apidestinationarn\x18\x95\x81\xb2+ \x01(\tH\x00R\x11apidestinationarn\x88\x01\x01\x12_\n" +
+	"\x13apidestinationstate\x18\xbf\xe8\xa2\x06 \x01(\x0e2%.cloudwatchevents.ApiDestinationStateH\x01R\x13apidestinationstate\x88\x01\x01\x12,\n" +
+	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x02R\rconnectionarn\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x03R\fcreationtime\x88\x01\x01\x12S\n" +
 	"\n" +
-	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2*.cloudwatchevents.ApiDestinationHttpMethodR\n" +
-	"httpmethod\x127\n" +
-	"\x12invocationendpoint\x18\xb7\xa9\xae\xc4\x01 \x01(\tH\x03R\x12invocationendpoint\x88\x01\x01\x12K\n" +
-	"\x1cinvocationratelimitpersecond\x18Ȱ\xe9\x8c\x01 \x01(\x05H\x04R\x1cinvocationratelimitpersecond\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x05R\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x06R\x04name\x88\x01\x01B\x14\n" +
-	"\x12_apidestinationarnB\x10\n" +
+	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2*.cloudwatchevents.ApiDestinationHttpMethodH\x04R\n" +
+	"httpmethod\x88\x01\x01\x127\n" +
+	"\x12invocationendpoint\x18\xb7\xa9\xae\xc4\x01 \x01(\tH\x05R\x12invocationendpoint\x88\x01\x01\x12K\n" +
+	"\x1cinvocationratelimitpersecond\x18Ȱ\xe9\x8c\x01 \x01(\x05H\x06R\x1cinvocationratelimitpersecond\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\aR\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\bR\x04name\x88\x01\x01B\x14\n" +
+	"\x12_apidestinationarnB\x16\n" +
+	"\x14_apidestinationstateB\x10\n" +
 	"\x0e_connectionarnB\x0f\n" +
-	"\r_creationtimeB\x15\n" +
+	"\r_creationtimeB\r\n" +
+	"\v_httpmethodB\x15\n" +
 	"\x13_invocationendpointB\x1f\n" +
 	"\x1d_invocationratelimitpersecondB\x13\n" +
 	"\x11_lastmodifiedtimeB\a\n" +
-	"\x05_name\"\xe5\x03\n" +
+	"\x05_name\"\xf4\x03\n" +
 	"\aArchive\x12(\n" +
 	"\varchivename\x18\xe7\x86\xfe) \x01(\tH\x00R\varchivename\x88\x01\x01\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x12&\n" +
@@ -10626,21 +10628,23 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"eventcount\x88\x01\x01\x12/\n" +
 	"\x0eeventsourcearn\x18\xc6ʊ\x92\x01 \x01(\tH\x03R\x0eeventsourcearn\x88\x01\x01\x12,\n" +
 	"\rretentiondays\x18\xcf\xfb\xde\x7f \x01(\x05H\x04R\rretentiondays\x88\x01\x01\x12%\n" +
-	"\tsizebytes\x18\xa0\xb9\x88\xe8\x01 \x01(\x03H\x05R\tsizebytes\x88\x01\x01\x128\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateR\x05state\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x06R\vstatereason\x88\x01\x01B\x0e\n" +
+	"\tsizebytes\x18\xa0\xb9\x88\xe8\x01 \x01(\x03H\x05R\tsizebytes\x88\x01\x01\x12=\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateH\x06R\x05state\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\aR\vstatereason\x88\x01\x01B\x0e\n" +
 	"\f_archivenameB\x0f\n" +
 	"\r_creationtimeB\r\n" +
 	"\v_eventcountB\x11\n" +
 	"\x0f_eventsourcearnB\x10\n" +
 	"\x0e_retentiondaysB\f\n" +
 	"\n" +
-	"_sizebytesB\x0e\n" +
-	"\f_statereason\"\xad\x01\n" +
-	"\x13AwsVpcConfiguration\x12L\n" +
-	"\x0eassignpublicip\x18Ռ\x91\xdc\x01 \x01(\x0e2 .cloudwatchevents.AssignPublicIpR\x0eassignpublicip\x12*\n" +
+	"_sizebytesB\b\n" +
+	"\x06_stateB\x0e\n" +
+	"\f_statereason\"\xc5\x01\n" +
+	"\x13AwsVpcConfiguration\x12Q\n" +
+	"\x0eassignpublicip\x18Ռ\x91\xdc\x01 \x01(\x0e2 .cloudwatchevents.AssignPublicIpH\x00R\x0eassignpublicip\x88\x01\x01\x12*\n" +
 	"\x0esecuritygroups\x18Ԭ\xda\xf5\x01 \x03(\tR\x0esecuritygroups\x12\x1c\n" +
-	"\asubnets\x18\xa2\xe6\xec\xc5\x01 \x03(\tR\asubnets\";\n" +
+	"\asubnets\x18\xa2\xe6\xec\xc5\x01 \x03(\tR\asubnetsB\x11\n" +
+	"\x0f_assignpublicip\";\n" +
 	"\x14BatchArrayProperties\x12\x1a\n" +
 	"\x04size\x18\xfd\x9c\x9e2 \x01(\x05H\x00R\x04size\x88\x01\x01B\a\n" +
 	"\x05_size\"\xfd\x01\n" +
@@ -10655,13 +10659,14 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x13CancelReplayRequest\x12\"\n" +
 	"\n" +
 	"replayname\x18\x9a\x93\xec\xd2\x01 \x01(\tR\n" +
-	"replayname\"\xbf\x01\n" +
+	"replayname\"\xce\x01\n" +
 	"\x14CancelReplayResponse\x12%\n" +
-	"\treplayarn\x18\x9e\xbbˬ\x01 \x01(\tH\x00R\treplayarn\x88\x01\x01\x127\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateR\x05state\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x01R\vstatereason\x88\x01\x01B\f\n" +
+	"\treplayarn\x18\x9e\xbbˬ\x01 \x01(\tH\x00R\treplayarn\x88\x01\x01\x12<\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateH\x01R\x05state\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x02R\vstatereason\x88\x01\x01B\f\n" +
 	"\n" +
-	"_replayarnB\x0e\n" +
+	"_replayarnB\b\n" +
+	"\x06_stateB\x0e\n" +
 	"\f_statereason\"\x9f\x01\n" +
 	"\x1cCapacityProviderStrategyItem\x12\x1b\n" +
 	"\x04base\x18٩\xf2\xee\x01 \x01(\x05H\x00R\x04base\x88\x01\x01\x12-\n" +
@@ -10676,18 +10681,20 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\tCondition\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x16\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xb3\x04\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xe7\x04\n" +
 	"\n" +
-	"Connection\x12_\n" +
-	"\x11authorizationtype\x18\xbf\xc1\xe9\xe5\x01 \x01(\x0e2-.cloudwatchevents.ConnectionAuthorizationTypeR\x11authorizationtype\x12,\n" +
-	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12O\n" +
-	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateR\x0fconnectionstate\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x126\n" +
-	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x02R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x03R\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x05R\vstatereason\x88\x01\x01B\x10\n" +
-	"\x0e_connectionarnB\x0f\n" +
+	"Connection\x12d\n" +
+	"\x11authorizationtype\x18\xbf\xc1\xe9\xe5\x01 \x01(\x0e2-.cloudwatchevents.ConnectionAuthorizationTypeH\x00R\x11authorizationtype\x88\x01\x01\x12,\n" +
+	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x01R\rconnectionarn\x88\x01\x01\x12T\n" +
+	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateH\x02R\x0fconnectionstate\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x03R\fcreationtime\x88\x01\x01\x126\n" +
+	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x04R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x05R\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x06R\x04name\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\aR\vstatereason\x88\x01\x01B\x14\n" +
+	"\x12_authorizationtypeB\x10\n" +
+	"\x0e_connectionarnB\x12\n" +
+	"\x10_connectionstateB\x0f\n" +
 	"\r_creationtimeB\x15\n" +
 	"\x13_lastauthorizedtimeB\x13\n" +
 	"\x11_lastmodifiedtimeB\a\n" +
@@ -10726,15 +10733,16 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x15querystringparameters\x18ך\x83{ \x03(\v20.cloudwatchevents.ConnectionQueryStringParameterR\x15querystringparameters\"[\n" +
 	"'ConnectionOAuthClientResponseParameters\x12#\n" +
 	"\bclientid\x18ă\x86\xd6\x01 \x01(\tH\x00R\bclientid\x88\x01\x01B\v\n" +
-	"\t_clientid\"\x98\x03\n" +
+	"\t_clientid\"\xac\x03\n" +
 	"!ConnectionOAuthResponseParameters\x12=\n" +
 	"\x15authorizationendpoint\x18\xa4\xa6\x87\xcc\x01 \x01(\tH\x00R\x15authorizationendpoint\x88\x01\x01\x12h\n" +
-	"\x10clientparameters\x18\xff\xb1\xdbu \x01(\v29.cloudwatchevents.ConnectionOAuthClientResponseParametersR\x10clientparameters\x12O\n" +
+	"\x10clientparameters\x18\xff\xb1\xdbu \x01(\v29.cloudwatchevents.ConnectionOAuthClientResponseParametersR\x10clientparameters\x12T\n" +
 	"\n" +
-	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2+.cloudwatchevents.ConnectionOAuthHttpMethodR\n" +
-	"httpmethod\x12_\n" +
+	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2+.cloudwatchevents.ConnectionOAuthHttpMethodH\x01R\n" +
+	"httpmethod\x88\x01\x01\x12_\n" +
 	"\x13oauthhttpparameters\x18\x89\xaa\xf4\x04 \x01(\v2*.cloudwatchevents.ConnectionHttpParametersR\x13oauthhttpparametersB\x18\n" +
-	"\x16_authorizationendpoint\"\xab\x01\n" +
+	"\x16_authorizationendpointB\r\n" +
+	"\v_httpmethod\"\xab\x01\n" +
 	"\x1eConnectionQueryStringParameter\x12,\n" +
 	"\risvaluesecret\x18\xebäK \x01(\bH\x00R\risvaluesecret\x88\x01\x01\x12\x18\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tH\x01R\x03key\x88\x01\x01\x12\x1d\n" +
@@ -10752,13 +10760,14 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x1cinvocationratelimitpersecond\x18Ȱ\xe9\x8c\x01 \x01(\x05H\x01R\x1cinvocationratelimitpersecond\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x0e\n" +
 	"\f_descriptionB\x1f\n" +
-	"\x1d_invocationratelimitpersecond\"\xcc\x02\n" +
+	"\x1d_invocationratelimitpersecond\"\xe9\x02\n" +
 	"\x1cCreateApiDestinationResponse\x124\n" +
-	"\x11apidestinationarn\x18\x95\x81\xb2+ \x01(\tH\x00R\x11apidestinationarn\x88\x01\x01\x12Z\n" +
-	"\x13apidestinationstate\x18\xbf\xe8\xa2\x06 \x01(\x0e2%.cloudwatchevents.ApiDestinationStateR\x13apidestinationstate\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x02R\x10lastmodifiedtime\x88\x01\x01B\x14\n" +
-	"\x12_apidestinationarnB\x0f\n" +
+	"\x11apidestinationarn\x18\x95\x81\xb2+ \x01(\tH\x00R\x11apidestinationarn\x88\x01\x01\x12_\n" +
+	"\x13apidestinationstate\x18\xbf\xe8\xa2\x06 \x01(\x0e2%.cloudwatchevents.ApiDestinationStateH\x01R\x13apidestinationstate\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x03R\x10lastmodifiedtime\x88\x01\x01B\x14\n" +
+	"\x12_apidestinationarnB\x16\n" +
+	"\x14_apidestinationstateB\x0f\n" +
 	"\r_creationtimeB\x13\n" +
 	"\x11_lastmodifiedtime\"\x9e\x02\n" +
 	"\x14CreateArchiveRequest\x12#\n" +
@@ -10769,16 +10778,17 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\rretentiondays\x18\xcf\xfb\xde\x7f \x01(\x05H\x02R\rretentiondays\x88\x01\x01B\x0e\n" +
 	"\f_descriptionB\x0f\n" +
 	"\r_eventpatternB\x10\n" +
-	"\x0e_retentiondays\"\x80\x02\n" +
+	"\x0e_retentiondays\"\x8f\x02\n" +
 	"\x15CreateArchiveResponse\x12&\n" +
 	"\n" +
 	"archivearn\x18\xfd\xee\x8e\x1b \x01(\tH\x00R\n" +
 	"archivearn\x88\x01\x01\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x128\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateR\x05state\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x02R\vstatereason\x88\x01\x01B\r\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x12=\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateH\x02R\x05state\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x03R\vstatereason\x88\x01\x01B\r\n" +
 	"\v_archivearnB\x0f\n" +
-	"\r_creationtimeB\x0e\n" +
+	"\r_creationtimeB\b\n" +
+	"\x06_stateB\x0e\n" +
 	"\f_statereason\"u\n" +
 	"+CreateConnectionApiKeyAuthRequestParameters\x12!\n" +
 	"\n" +
@@ -10808,13 +10818,14 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x11authorizationtype\x18\xbf\xc1\xe9\xe5\x01 \x01(\x0e2-.cloudwatchevents.ConnectionAuthorizationTypeR\x11authorizationtype\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x0e\n" +
-	"\f_description\"\xb1\x02\n" +
+	"\f_description\"\xca\x02\n" +
 	"\x18CreateConnectionResponse\x12,\n" +
-	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12O\n" +
-	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateR\x0fconnectionstate\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x02R\x10lastmodifiedtime\x88\x01\x01B\x10\n" +
-	"\x0e_connectionarnB\x0f\n" +
+	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12T\n" +
+	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateH\x01R\x0fconnectionstate\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x03R\x10lastmodifiedtime\x88\x01\x01B\x10\n" +
+	"\x0e_connectionarnB\x12\n" +
+	"\x10_connectionstateB\x0f\n" +
 	"\r_creationtimeB\x13\n" +
 	"\x11_lastmodifiedtime\"\xa4\x01\n" +
 	"\x15CreateEventBusRequest\x121\n" +
@@ -10837,14 +10848,15 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01B\x06\n" +
 	"\x04_arn\"5\n" +
 	"\x1cDeauthorizeConnectionRequest\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x85\x03\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x9e\x03\n" +
 	"\x1dDeauthorizeConnectionResponse\x12,\n" +
-	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12O\n" +
-	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateR\x0fconnectionstate\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x126\n" +
-	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x02R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x03R\x10lastmodifiedtime\x88\x01\x01B\x10\n" +
-	"\x0e_connectionarnB\x0f\n" +
+	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12T\n" +
+	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateH\x01R\x0fconnectionstate\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x126\n" +
+	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x03R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x04R\x10lastmodifiedtime\x88\x01\x01B\x10\n" +
+	"\x0e_connectionarnB\x12\n" +
+	"\x10_connectionstateB\x0f\n" +
 	"\r_creationtimeB\x15\n" +
 	"\x13_lastauthorizedtimeB\x13\n" +
 	"\x11_lastmodifiedtime\"4\n" +
@@ -10855,14 +10867,15 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\varchivename\x18\xe7\x86\xfe) \x01(\tR\varchivename\"\x17\n" +
 	"\x15DeleteArchiveResponse\"0\n" +
 	"\x17DeleteConnectionRequest\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x80\x03\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x99\x03\n" +
 	"\x18DeleteConnectionResponse\x12,\n" +
-	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12O\n" +
-	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateR\x0fconnectionstate\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x126\n" +
-	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x02R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x03R\x10lastmodifiedtime\x88\x01\x01B\x10\n" +
-	"\x0e_connectionarnB\x0f\n" +
+	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12T\n" +
+	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateH\x01R\x0fconnectionstate\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x126\n" +
+	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x03R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x04R\x10lastmodifiedtime\x88\x01\x01B\x10\n" +
+	"\x0e_connectionarnB\x12\n" +
+	"\x10_connectionstateB\x0f\n" +
 	"\r_creationtimeB\x15\n" +
 	"\x13_lastauthorizedtimeB\x13\n" +
 	"\x11_lastmodifiedtime\".\n" +
@@ -10878,30 +10891,32 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\r_eventbusnameB\b\n" +
 	"\x06_force\"6\n" +
 	"\x1dDescribeApiDestinationRequest\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xfb\x05\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xac\x06\n" +
 	"\x1eDescribeApiDestinationResponse\x124\n" +
-	"\x11apidestinationarn\x18\x95\x81\xb2+ \x01(\tH\x00R\x11apidestinationarn\x88\x01\x01\x12Z\n" +
-	"\x13apidestinationstate\x18\xbf\xe8\xa2\x06 \x01(\x0e2%.cloudwatchevents.ApiDestinationStateR\x13apidestinationstate\x12,\n" +
-	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x01R\rconnectionarn\x88\x01\x01\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12N\n" +
+	"\x11apidestinationarn\x18\x95\x81\xb2+ \x01(\tH\x00R\x11apidestinationarn\x88\x01\x01\x12_\n" +
+	"\x13apidestinationstate\x18\xbf\xe8\xa2\x06 \x01(\x0e2%.cloudwatchevents.ApiDestinationStateH\x01R\x13apidestinationstate\x88\x01\x01\x12,\n" +
+	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x02R\rconnectionarn\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x03R\fcreationtime\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x04R\vdescription\x88\x01\x01\x12S\n" +
 	"\n" +
-	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2*.cloudwatchevents.ApiDestinationHttpMethodR\n" +
-	"httpmethod\x127\n" +
-	"\x12invocationendpoint\x18\xb7\xa9\xae\xc4\x01 \x01(\tH\x04R\x12invocationendpoint\x88\x01\x01\x12K\n" +
-	"\x1cinvocationratelimitpersecond\x18Ȱ\xe9\x8c\x01 \x01(\x05H\x05R\x1cinvocationratelimitpersecond\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x06R\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\aR\x04name\x88\x01\x01B\x14\n" +
-	"\x12_apidestinationarnB\x10\n" +
+	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2*.cloudwatchevents.ApiDestinationHttpMethodH\x05R\n" +
+	"httpmethod\x88\x01\x01\x127\n" +
+	"\x12invocationendpoint\x18\xb7\xa9\xae\xc4\x01 \x01(\tH\x06R\x12invocationendpoint\x88\x01\x01\x12K\n" +
+	"\x1cinvocationratelimitpersecond\x18Ȱ\xe9\x8c\x01 \x01(\x05H\aR\x1cinvocationratelimitpersecond\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\bR\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\tR\x04name\x88\x01\x01B\x14\n" +
+	"\x12_apidestinationarnB\x16\n" +
+	"\x14_apidestinationstateB\x10\n" +
 	"\x0e_connectionarnB\x0f\n" +
 	"\r_creationtimeB\x0e\n" +
-	"\f_descriptionB\x15\n" +
+	"\f_descriptionB\r\n" +
+	"\v_httpmethodB\x15\n" +
 	"\x13_invocationendpointB\x1f\n" +
 	"\x1d_invocationratelimitpersecondB\x13\n" +
 	"\x11_lastmodifiedtimeB\a\n" +
 	"\x05_name\"=\n" +
 	"\x16DescribeArchiveRequest\x12#\n" +
-	"\varchivename\x18\xe7\x86\xfe) \x01(\tR\varchivename\"\xa3\x05\n" +
+	"\varchivename\x18\xe7\x86\xfe) \x01(\tR\varchivename\"\xb2\x05\n" +
 	"\x17DescribeArchiveResponse\x12&\n" +
 	"\n" +
 	"archivearn\x18\xfd\xee\x8e\x1b \x01(\tH\x00R\n" +
@@ -10915,9 +10930,10 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\feventpattern\x18\x80\xf7\xaao \x01(\tH\x05R\feventpattern\x88\x01\x01\x12/\n" +
 	"\x0eeventsourcearn\x18\xc6ʊ\x92\x01 \x01(\tH\x06R\x0eeventsourcearn\x88\x01\x01\x12,\n" +
 	"\rretentiondays\x18\xcf\xfb\xde\x7f \x01(\x05H\aR\rretentiondays\x88\x01\x01\x12%\n" +
-	"\tsizebytes\x18\xa0\xb9\x88\xe8\x01 \x01(\x03H\bR\tsizebytes\x88\x01\x01\x128\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateR\x05state\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\tR\vstatereason\x88\x01\x01B\r\n" +
+	"\tsizebytes\x18\xa0\xb9\x88\xe8\x01 \x01(\x03H\bR\tsizebytes\x88\x01\x01\x12=\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateH\tR\x05state\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\n" +
+	"R\vstatereason\x88\x01\x01B\r\n" +
 	"\v_archivearnB\x0e\n" +
 	"\f_archivenameB\x0f\n" +
 	"\r_creationtimeB\x0e\n" +
@@ -10927,23 +10943,26 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x0f_eventsourcearnB\x10\n" +
 	"\x0e_retentiondaysB\f\n" +
 	"\n" +
-	"_sizebytesB\x0e\n" +
+	"_sizebytesB\b\n" +
+	"\x06_stateB\x0e\n" +
 	"\f_statereason\"2\n" +
 	"\x19DescribeConnectionRequest\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x90\x06\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xc4\x06\n" +
 	"\x1aDescribeConnectionResponse\x12]\n" +
-	"\x0eauthparameters\x18\xc8\xf9\x93{ \x01(\v22.cloudwatchevents.ConnectionAuthResponseParametersR\x0eauthparameters\x12_\n" +
-	"\x11authorizationtype\x18\xbf\xc1\xe9\xe5\x01 \x01(\x0e2-.cloudwatchevents.ConnectionAuthorizationTypeR\x11authorizationtype\x12,\n" +
-	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12O\n" +
-	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateR\x0fconnectionstate\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x02R\vdescription\x88\x01\x01\x126\n" +
-	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x03R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x04R\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x12$\n" +
-	"\tsecretarn\x18\xb9\x9a\xf6r \x01(\tH\x06R\tsecretarn\x88\x01\x01\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\aR\vstatereason\x88\x01\x01B\x10\n" +
-	"\x0e_connectionarnB\x0f\n" +
+	"\x0eauthparameters\x18\xc8\xf9\x93{ \x01(\v22.cloudwatchevents.ConnectionAuthResponseParametersR\x0eauthparameters\x12d\n" +
+	"\x11authorizationtype\x18\xbf\xc1\xe9\xe5\x01 \x01(\x0e2-.cloudwatchevents.ConnectionAuthorizationTypeH\x00R\x11authorizationtype\x88\x01\x01\x12,\n" +
+	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x01R\rconnectionarn\x88\x01\x01\x12T\n" +
+	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateH\x02R\x0fconnectionstate\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x03R\fcreationtime\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x04R\vdescription\x88\x01\x01\x126\n" +
+	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x05R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x06R\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\aR\x04name\x88\x01\x01\x12$\n" +
+	"\tsecretarn\x18\xb9\x9a\xf6r \x01(\tH\bR\tsecretarn\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\tR\vstatereason\x88\x01\x01B\x14\n" +
+	"\x12_authorizationtypeB\x10\n" +
+	"\x0e_connectionarnB\x12\n" +
+	"\x10_connectionstateB\x0f\n" +
 	"\r_creationtimeB\x0e\n" +
 	"\f_descriptionB\x15\n" +
 	"\x13_lastauthorizedtimeB\x13\n" +
@@ -10963,20 +10982,21 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x05_nameB\t\n" +
 	"\a_policy\"3\n" +
 	"\x1aDescribeEventSourceRequest\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xd7\x02\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xe6\x02\n" +
 	"\x1bDescribeEventSourceResponse\x12\x19\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12$\n" +
 	"\tcreatedby\x18\x87˅# \x01(\tH\x01R\tcreatedby\x88\x01\x01\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x12.\n" +
 	"\x0eexpirationtime\x18\xe2\x94\xc9, \x01(\tH\x03R\x0eexpirationtime\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12<\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\".cloudwatchevents.EventSourceStateR\x05stateB\x06\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12A\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\".cloudwatchevents.EventSourceStateH\x05R\x05state\x88\x01\x01B\x06\n" +
 	"\x04_arnB\f\n" +
 	"\n" +
 	"_createdbyB\x0f\n" +
 	"\r_creationtimeB\x11\n" +
 	"\x0f_expirationtimeB\a\n" +
-	"\x05_name\":\n" +
+	"\x05_nameB\b\n" +
+	"\x06_state\":\n" +
 	"!DescribePartnerEventSourceRequest\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"l\n" +
 	"\"DescribePartnerEventSourceResponse\x12\x19\n" +
@@ -10987,7 +11007,7 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x15DescribeReplayRequest\x12\"\n" +
 	"\n" +
 	"replayname\x18\x9a\x93\xec\xd2\x01 \x01(\tR\n" +
-	"replayname\"\xa2\x06\n" +
+	"replayname\"\xb1\x06\n" +
 	"\x16DescribeReplayResponse\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12I\n" +
 	"\vdestination\x18\xe0\x92\x90\xda\x01 \x01(\v2#.cloudwatchevents.ReplayDestinationR\vdestination\x12*\n" +
@@ -11000,9 +11020,10 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\n" +
 	"replayname\x18\x9a\x93\xec\xd2\x01 \x01(\tH\aR\n" +
 	"replayname\x88\x01\x01\x121\n" +
-	"\x0freplaystarttime\x18̎\x90\xf0\x01 \x01(\tH\bR\x0freplaystarttime\x88\x01\x01\x127\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateR\x05state\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\tR\vstatereason\x88\x01\x01B\x0e\n" +
+	"\x0freplaystarttime\x18̎\x90\xf0\x01 \x01(\tH\bR\x0freplaystarttime\x88\x01\x01\x12<\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateH\tR\x05state\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\n" +
+	"R\vstatereason\x88\x01\x01B\x0e\n" +
 	"\f_descriptionB\x0f\n" +
 	"\r_eventendtimeB\x18\n" +
 	"\x16_eventlastreplayedtimeB\x11\n" +
@@ -11012,12 +11033,13 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"_replayarnB\x10\n" +
 	"\x0e_replayendtimeB\r\n" +
 	"\v_replaynameB\x12\n" +
-	"\x10_replaystarttimeB\x0e\n" +
+	"\x10_replaystarttimeB\b\n" +
+	"\x06_stateB\x0e\n" +
 	"\f_statereason\"j\n" +
 	"\x13DescribeRuleRequest\x12+\n" +
 	"\feventbusname\x18\xbd\x99\xeb\xd5\x01 \x01(\tH\x00R\feventbusname\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x0f\n" +
-	"\r_eventbusname\"\xb2\x04\n" +
+	"\r_eventbusname\"\xc1\x04\n" +
 	"\x14DescribeRuleResponse\x12\x19\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12$\n" +
 	"\tcreatedby\x18\x87˅# \x01(\tH\x01R\tcreatedby\x88\x01\x01\x12(\n" +
@@ -11027,8 +11049,8 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\tH\x05R\tmanagedby\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x06R\x04name\x88\x01\x01\x12!\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\aR\arolearn\x88\x01\x01\x127\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\bR\x12scheduleexpression\x88\x01\x01\x125\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1b.cloudwatchevents.RuleStateR\x05stateB\x06\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\bR\x12scheduleexpression\x88\x01\x01\x12:\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1b.cloudwatchevents.RuleStateH\tR\x05state\x88\x01\x01B\x06\n" +
 	"\x04_arnB\f\n" +
 	"\n" +
 	"_createdbyB\x0e\n" +
@@ -11040,32 +11062,35 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x05_nameB\n" +
 	"\n" +
 	"\b_rolearnB\x15\n" +
-	"\x13_scheduleexpression\"i\n" +
+	"\x13_scheduleexpressionB\b\n" +
+	"\x06_state\"i\n" +
 	"\x12DisableRuleRequest\x12+\n" +
 	"\feventbusname\x18\xbd\x99\xeb\xd5\x01 \x01(\tH\x00R\feventbusname\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x0f\n" +
-	"\r_eventbusname\"\x87\b\n" +
+	"\r_eventbusname\"\xb2\b\n" +
 	"\rEcsParameters\x12n\n" +
 	"\x18capacityproviderstrategy\x18ւт\x01 \x03(\v2..cloudwatchevents.CapacityProviderStrategyItemR\x18capacityproviderstrategy\x12:\n" +
 	"\x14enableecsmanagedtags\x18\x96\xfc\xd8E \x01(\bH\x00R\x14enableecsmanagedtags\x88\x01\x01\x12;\n" +
 	"\x14enableexecutecommand\x18\xbbݝ\xd7\x01 \x01(\bH\x01R\x14enableexecutecommand\x88\x01\x01\x12\x1c\n" +
-	"\x05group\x18\xad\xa0\xd2+ \x01(\tH\x02R\x05group\x88\x01\x01\x12?\n" +
+	"\x05group\x18\xad\xa0\xd2+ \x01(\tH\x02R\x05group\x88\x01\x01\x12D\n" +
 	"\n" +
-	"launchtype\x18\x97\xe8\xf2W \x01(\x0e2\x1c.cloudwatchevents.LaunchTypeR\n" +
-	"launchtype\x12]\n" +
+	"launchtype\x18\x97\xe8\xf2W \x01(\x0e2\x1c.cloudwatchevents.LaunchTypeH\x03R\n" +
+	"launchtype\x88\x01\x01\x12]\n" +
 	"\x14networkconfiguration\x18\xba\xec\xbdr \x01(\v2&.cloudwatchevents.NetworkConfigurationR\x14networkconfiguration\x12\\\n" +
 	"\x14placementconstraints\x18퇽v \x03(\v2%.cloudwatchevents.PlacementConstraintR\x14placementconstraints\x12T\n" +
 	"\x11placementstrategy\x18\x86\x8f\xf8\v \x03(\v2#.cloudwatchevents.PlacementStrategyR\x11placementstrategy\x120\n" +
-	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tH\x03R\x0fplatformversion\x88\x01\x01\x12I\n" +
-	"\rpropagatetags\x18\xf6\xa2\xb1\xc1\x01 \x01(\x0e2\x1f.cloudwatchevents.PropagateTagsR\rpropagatetags\x12)\n" +
-	"\vreferenceid\x18\x98\xab\x8e\x8b\x01 \x01(\tH\x04R\vreferenceid\x88\x01\x01\x12-\n" +
+	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tH\x04R\x0fplatformversion\x88\x01\x01\x12N\n" +
+	"\rpropagatetags\x18\xf6\xa2\xb1\xc1\x01 \x01(\x0e2\x1f.cloudwatchevents.PropagateTagsH\x05R\rpropagatetags\x88\x01\x01\x12)\n" +
+	"\vreferenceid\x18\x98\xab\x8e\x8b\x01 \x01(\tH\x06R\vreferenceid\x88\x01\x01\x12-\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x15.cloudwatchevents.TagR\x04tags\x12%\n" +
-	"\ttaskcount\x18\xd4\xee\xfc\xbd\x01 \x01(\x05H\x05R\ttaskcount\x88\x01\x01\x12/\n" +
+	"\ttaskcount\x18\xd4\xee\xfc\xbd\x01 \x01(\x05H\aR\ttaskcount\x88\x01\x01\x12/\n" +
 	"\x11taskdefinitionarn\x18혛' \x01(\tR\x11taskdefinitionarnB\x17\n" +
 	"\x15_enableecsmanagedtagsB\x17\n" +
 	"\x15_enableexecutecommandB\b\n" +
-	"\x06_groupB\x12\n" +
-	"\x10_platformversionB\x0e\n" +
+	"\x06_groupB\r\n" +
+	"\v_launchtypeB\x12\n" +
+	"\x10_platformversionB\x10\n" +
+	"\x0e_propagatetagsB\x0e\n" +
 	"\f_referenceidB\f\n" +
 	"\n" +
 	"_taskcount\"h\n" +
@@ -11079,20 +11104,21 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tH\x02R\x06policy\x88\x01\x01B\x06\n" +
 	"\x04_arnB\a\n" +
 	"\x05_nameB\t\n" +
-	"\a_policy\"\xc7\x02\n" +
+	"\a_policy\"\xd6\x02\n" +
 	"\vEventSource\x12\x19\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12$\n" +
 	"\tcreatedby\x18\x87˅# \x01(\tH\x01R\tcreatedby\x88\x01\x01\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x12.\n" +
 	"\x0eexpirationtime\x18\xe2\x94\xc9, \x01(\tH\x03R\x0eexpirationtime\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12<\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\".cloudwatchevents.EventSourceStateR\x05stateB\x06\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12A\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\".cloudwatchevents.EventSourceStateH\x05R\x05state\x88\x01\x01B\x06\n" +
 	"\x04_arnB\f\n" +
 	"\n" +
 	"_createdbyB\x0f\n" +
 	"\r_creationtimeB\x11\n" +
 	"\x0f_expirationtimeB\a\n" +
-	"\x05_name\"\xb2\x03\n" +
+	"\x05_nameB\b\n" +
+	"\x06_state\"\xb2\x03\n" +
 	"\x0eHttpParameters\x12e\n" +
 	"\x10headerparameters\x18\xf5\xee\x82G \x03(\v26.cloudwatchevents.HttpParameters.HeaderparametersEntryR\x10headerparameters\x124\n" +
 	"\x13pathparametervalues\x18،\xb1\xe9\x01 \x03(\tR\x13pathparametervalues\x12t\n" +
@@ -11147,32 +11173,34 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x0fapidestinations\x18\x8bˡ\x99\x01 \x03(\v2 .cloudwatchevents.ApiDestinationR\x0fapidestinations\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xa8\x02\n" +
+	"_nexttoken\"\xb7\x02\n" +
 	"\x13ListArchivesRequest\x12/\n" +
 	"\x0eeventsourcearn\x18\xc6ʊ\x92\x01 \x01(\tH\x00R\x0eeventsourcearn\x88\x01\x01\x12\x1d\n" +
 	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
 	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tH\x02R\n" +
 	"nameprefix\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01\x128\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateR\x05stateB\x11\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01\x12=\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateH\x04R\x05state\x88\x01\x01B\x11\n" +
 	"\x0f_eventsourcearnB\b\n" +
 	"\x06_limitB\r\n" +
 	"\v_nameprefixB\f\n" +
 	"\n" +
-	"_nexttoken\"\x84\x01\n" +
+	"_nexttokenB\b\n" +
+	"\x06_state\"\x84\x01\n" +
 	"\x14ListArchivesResponse\x128\n" +
 	"\barchives\x18\xa3\xe7\xf1\" \x03(\v2\x19.cloudwatchevents.ArchiveR\barchives\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xfe\x01\n" +
-	"\x16ListConnectionsRequest\x12O\n" +
-	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateR\x0fconnectionstate\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
+	"_nexttoken\"\x97\x02\n" +
+	"\x16ListConnectionsRequest\x12T\n" +
+	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateH\x00R\x0fconnectionstate\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tH\x01R\n" +
+	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tH\x02R\n" +
 	"nameprefix\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01B\b\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01B\x12\n" +
+	"\x10_connectionstateB\b\n" +
 	"\x06_limitB\r\n" +
 	"\v_nameprefixB\f\n" +
 	"\n" +
@@ -11239,20 +11267,21 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12Z\n" +
 	"\x13partnereventsources\x18\x90\x99\xe2\xef\x01 \x03(\v2$.cloudwatchevents.PartnerEventSourceR\x13partnereventsourcesB\f\n" +
 	"\n" +
-	"_nexttoken\"\xa6\x02\n" +
+	"_nexttoken\"\xb5\x02\n" +
 	"\x12ListReplaysRequest\x12/\n" +
 	"\x0eeventsourcearn\x18\xc6ʊ\x92\x01 \x01(\tH\x00R\x0eeventsourcearn\x88\x01\x01\x12\x1d\n" +
 	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
 	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tH\x02R\n" +
 	"nameprefix\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01\x127\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateR\x05stateB\x11\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01\x12<\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateH\x04R\x05state\x88\x01\x01B\x11\n" +
 	"\x0f_eventsourcearnB\b\n" +
 	"\x06_limitB\r\n" +
 	"\v_nameprefixB\f\n" +
 	"\n" +
-	"_nexttoken\"\x81\x01\n" +
+	"_nexttokenB\b\n" +
+	"\x06_state\"\x81\x01\n" +
 	"\x13ListReplaysResponse\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x126\n" +
 	"\areplays\x18\x94\x8c\xf6\x94\x01 \x03(\v2\x18.cloudwatchevents.ReplayR\areplaysB\f\n" +
@@ -11321,26 +11350,29 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01B\x06\n" +
 	"\x04_arnB\a\n" +
-	"\x05_name\"\x88\x02\n" +
+	"\x05_name\"\x97\x02\n" +
 	"\x19PartnerEventSourceAccount\x12!\n" +
 	"\aaccount\x18\xfd\xc5\xe2\xcf\x01 \x01(\tH\x00R\aaccount\x88\x01\x01\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x12.\n" +
-	"\x0eexpirationtime\x18\xe2\x94\xc9, \x01(\tH\x02R\x0eexpirationtime\x88\x01\x01\x12<\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\".cloudwatchevents.EventSourceStateR\x05stateB\n" +
+	"\x0eexpirationtime\x18\xe2\x94\xc9, \x01(\tH\x02R\x0eexpirationtime\x88\x01\x01\x12A\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\".cloudwatchevents.EventSourceStateH\x03R\x05state\x88\x01\x01B\n" +
 	"\n" +
 	"\b_accountB\x0f\n" +
 	"\r_creationtimeB\x11\n" +
-	"\x0f_expirationtime\"\x8f\x01\n" +
+	"\x0f_expirationtimeB\b\n" +
+	"\x06_state\"\x9d\x01\n" +
 	"\x13PlacementConstraint\x12&\n" +
 	"\n" +
 	"expression\x18\xec\xdf\xd6x \x01(\tH\x00R\n" +
-	"expression\x88\x01\x01\x12A\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2).cloudwatchevents.PlacementConstraintTypeR\x04typeB\r\n" +
-	"\v_expression\"|\n" +
+	"expression\x88\x01\x01\x12F\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2).cloudwatchevents.PlacementConstraintTypeH\x01R\x04type\x88\x01\x01B\r\n" +
+	"\v_expressionB\a\n" +
+	"\x05_type\"\x8a\x01\n" +
 	"\x11PlacementStrategy\x12\x1c\n" +
-	"\x05field\x18\xe8ĉ< \x01(\tH\x00R\x05field\x88\x01\x01\x12?\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2'.cloudwatchevents.PlacementStrategyTypeR\x04typeB\b\n" +
-	"\x06_field\"M\n" +
+	"\x05field\x18\xe8ĉ< \x01(\tH\x00R\x05field\x88\x01\x01\x12D\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2'.cloudwatchevents.PlacementStrategyTypeH\x01R\x04type\x88\x01\x01B\b\n" +
+	"\x06_fieldB\a\n" +
+	"\x05_type\"M\n" +
 	"\x1dPolicyLengthExceededException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -11415,22 +11447,23 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\a_policyB\f\n" +
 	"\n" +
 	"_principalB\x0e\n" +
-	"\f_statementid\"\xc1\x03\n" +
+	"\f_statementid\"\xd0\x03\n" +
 	"\x0ePutRuleRequest\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12+\n" +
 	"\feventbusname\x18\xbd\x99\xeb\xd5\x01 \x01(\tH\x01R\feventbusname\x88\x01\x01\x12*\n" +
 	"\feventpattern\x18\x80\xf7\xaao \x01(\tH\x02R\feventpattern\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12!\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\x03R\arolearn\x88\x01\x01\x127\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\x04R\x12scheduleexpression\x88\x01\x01\x125\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1b.cloudwatchevents.RuleStateR\x05state\x12-\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\x04R\x12scheduleexpression\x88\x01\x01\x12:\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1b.cloudwatchevents.RuleStateH\x05R\x05state\x88\x01\x01\x12-\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x15.cloudwatchevents.TagR\x04tagsB\x0e\n" +
 	"\f_descriptionB\x0f\n" +
 	"\r_eventbusnameB\x0f\n" +
 	"\r_eventpatternB\n" +
 	"\n" +
 	"\b_rolearnB\x15\n" +
-	"\x13_scheduleexpression\"?\n" +
+	"\x13_scheduleexpressionB\b\n" +
+	"\x06_state\"?\n" +
 	"\x0fPutRuleResponse\x12 \n" +
 	"\arulearn\x18\xc7\xce\xdbg \x01(\tH\x00R\arulearn\x88\x01\x01B\n" +
 	"\n" +
@@ -11490,7 +11523,7 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\n" +
 	"_errorcodeB\x0f\n" +
 	"\r_errormessageB\v\n" +
-	"\t_targetid\"\xd8\x04\n" +
+	"\t_targetid\"\xe7\x04\n" +
 	"\x06Replay\x12*\n" +
 	"\feventendtime\x18Έ\xb5\x0e \x01(\tH\x00R\feventendtime\x88\x01\x01\x12<\n" +
 	"\x15eventlastreplayedtime\x18\xe1\xc9\xd9\x03 \x01(\tH\x01R\x15eventlastreplayedtime\x88\x01\x01\x12/\n" +
@@ -11500,16 +11533,17 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\n" +
 	"replayname\x18\x9a\x93\xec\xd2\x01 \x01(\tH\x05R\n" +
 	"replayname\x88\x01\x01\x121\n" +
-	"\x0freplaystarttime\x18̎\x90\xf0\x01 \x01(\tH\x06R\x0freplaystarttime\x88\x01\x01\x127\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateR\x05state\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\aR\vstatereason\x88\x01\x01B\x0f\n" +
+	"\x0freplaystarttime\x18̎\x90\xf0\x01 \x01(\tH\x06R\x0freplaystarttime\x88\x01\x01\x12<\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateH\aR\x05state\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\bR\vstatereason\x88\x01\x01B\x0f\n" +
 	"\r_eventendtimeB\x18\n" +
 	"\x16_eventlastreplayedtimeB\x11\n" +
 	"\x0f_eventsourcearnB\x11\n" +
 	"\x0f_eventstarttimeB\x10\n" +
 	"\x0e_replayendtimeB\r\n" +
 	"\v_replaynameB\x12\n" +
-	"\x10_replaystarttimeB\x0e\n" +
+	"\x10_replaystarttimeB\b\n" +
+	"\x06_stateB\x0e\n" +
 	"\f_statereason\"L\n" +
 	"\x11ReplayDestination\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12!\n" +
@@ -11528,7 +11562,7 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x18maximumeventageinseconds\x18\x9b\xad\xb5\xbb\x01 \x01(\x05H\x00R\x18maximumeventageinseconds\x88\x01\x01\x12:\n" +
 	"\x14maximumretryattempts\x18\xc0\xa8\xb95 \x01(\x05H\x01R\x14maximumretryattempts\x88\x01\x01B\x1b\n" +
 	"\x19_maximumeventageinsecondsB\x17\n" +
-	"\x15_maximumretryattempts\"\xee\x03\n" +
+	"\x15_maximumretryattempts\"\xfd\x03\n" +
 	"\x04Rule\x12\x19\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12+\n" +
@@ -11537,8 +11571,8 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\tH\x04R\tmanagedby\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x12!\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\x06R\arolearn\x88\x01\x01\x127\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\aR\x12scheduleexpression\x88\x01\x01\x125\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1b.cloudwatchevents.RuleStateR\x05stateB\x06\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\aR\x12scheduleexpression\x88\x01\x01\x12:\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1b.cloudwatchevents.RuleStateH\bR\x05state\x88\x01\x01B\x06\n" +
 	"\x04_arnB\x0e\n" +
 	"\f_descriptionB\x0f\n" +
 	"\r_eventbusnameB\x0f\n" +
@@ -11548,7 +11582,8 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x05_nameB\n" +
 	"\n" +
 	"\b_rolearnB\x15\n" +
-	"\x13_scheduleexpression\"l\n" +
+	"\x13_scheduleexpressionB\b\n" +
+	"\x06_state\"l\n" +
 	"\x14RunCommandParameters\x12T\n" +
 	"\x11runcommandtargets\x18\xb8߳\xc9\x01 \x03(\v2\".cloudwatchevents.RunCommandTargetR\x11runcommandtargets\"B\n" +
 	"\x10RunCommandTarget\x12\x13\n" +
@@ -11571,15 +11606,16 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\n" +
 	"replayname\x18\x9a\x93\xec\xd2\x01 \x01(\tR\n" +
 	"replaynameB\x0e\n" +
-	"\f_description\"\x85\x02\n" +
+	"\f_description\"\x94\x02\n" +
 	"\x13StartReplayResponse\x12%\n" +
 	"\treplayarn\x18\x9e\xbbˬ\x01 \x01(\tH\x00R\treplayarn\x88\x01\x01\x121\n" +
-	"\x0freplaystarttime\x18̎\x90\xf0\x01 \x01(\tH\x01R\x0freplaystarttime\x88\x01\x01\x127\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateR\x05state\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x02R\vstatereason\x88\x01\x01B\f\n" +
+	"\x0freplaystarttime\x18̎\x90\xf0\x01 \x01(\tH\x01R\x0freplaystarttime\x88\x01\x01\x12<\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1d.cloudwatchevents.ReplayStateH\x02R\x05state\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x03R\vstatereason\x88\x01\x01B\f\n" +
 	"\n" +
 	"_replayarnB\x12\n" +
-	"\x10_replaystarttimeB\x0e\n" +
+	"\x10_replaystarttimeB\b\n" +
+	"\x06_stateB\x0e\n" +
 	"\f_statereason\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
@@ -11619,26 +11655,28 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\x14UntagResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x17\n" +
-	"\x15UntagResourceResponse\"\xbc\x03\n" +
+	"\x15UntagResourceResponse\"\xd0\x03\n" +
 	"\x1bUpdateApiDestinationRequest\x12,\n" +
 	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12N\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12S\n" +
 	"\n" +
-	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2*.cloudwatchevents.ApiDestinationHttpMethodR\n" +
-	"httpmethod\x127\n" +
-	"\x12invocationendpoint\x18\xb7\xa9\xae\xc4\x01 \x01(\tH\x02R\x12invocationendpoint\x88\x01\x01\x12K\n" +
-	"\x1cinvocationratelimitpersecond\x18Ȱ\xe9\x8c\x01 \x01(\x05H\x03R\x1cinvocationratelimitpersecond\x88\x01\x01\x12\x15\n" +
+	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2*.cloudwatchevents.ApiDestinationHttpMethodH\x02R\n" +
+	"httpmethod\x88\x01\x01\x127\n" +
+	"\x12invocationendpoint\x18\xb7\xa9\xae\xc4\x01 \x01(\tH\x03R\x12invocationendpoint\x88\x01\x01\x12K\n" +
+	"\x1cinvocationratelimitpersecond\x18Ȱ\xe9\x8c\x01 \x01(\x05H\x04R\x1cinvocationratelimitpersecond\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x10\n" +
 	"\x0e_connectionarnB\x0e\n" +
-	"\f_descriptionB\x15\n" +
+	"\f_descriptionB\r\n" +
+	"\v_httpmethodB\x15\n" +
 	"\x13_invocationendpointB\x1f\n" +
-	"\x1d_invocationratelimitpersecond\"\xcc\x02\n" +
+	"\x1d_invocationratelimitpersecond\"\xe9\x02\n" +
 	"\x1cUpdateApiDestinationResponse\x124\n" +
-	"\x11apidestinationarn\x18\x95\x81\xb2+ \x01(\tH\x00R\x11apidestinationarn\x88\x01\x01\x12Z\n" +
-	"\x13apidestinationstate\x18\xbf\xe8\xa2\x06 \x01(\x0e2%.cloudwatchevents.ApiDestinationStateR\x13apidestinationstate\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x02R\x10lastmodifiedtime\x88\x01\x01B\x14\n" +
-	"\x12_apidestinationarnB\x0f\n" +
+	"\x11apidestinationarn\x18\x95\x81\xb2+ \x01(\tH\x00R\x11apidestinationarn\x88\x01\x01\x12_\n" +
+	"\x13apidestinationstate\x18\xbf\xe8\xa2\x06 \x01(\x0e2%.cloudwatchevents.ApiDestinationStateH\x01R\x13apidestinationstate\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x03R\x10lastmodifiedtime\x88\x01\x01B\x14\n" +
+	"\x12_apidestinationarnB\x16\n" +
+	"\x14_apidestinationstateB\x0f\n" +
 	"\r_creationtimeB\x13\n" +
 	"\x11_lastmodifiedtime\"\xf2\x01\n" +
 	"\x14UpdateArchiveRequest\x12#\n" +
@@ -11648,16 +11686,17 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\rretentiondays\x18\xcf\xfb\xde\x7f \x01(\x05H\x02R\rretentiondays\x88\x01\x01B\x0e\n" +
 	"\f_descriptionB\x0f\n" +
 	"\r_eventpatternB\x10\n" +
-	"\x0e_retentiondays\"\x80\x02\n" +
+	"\x0e_retentiondays\"\x8f\x02\n" +
 	"\x15UpdateArchiveResponse\x12&\n" +
 	"\n" +
 	"archivearn\x18\xfd\xee\x8e\x1b \x01(\tH\x00R\n" +
 	"archivearn\x88\x01\x01\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x128\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateR\x05state\x12)\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x02R\vstatereason\x88\x01\x01B\r\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x12=\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x1e.cloudwatchevents.ArchiveStateH\x02R\x05state\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\x03R\vstatereason\x88\x01\x01B\r\n" +
 	"\v_archivearnB\x0f\n" +
-	"\r_creationtimeB\x0e\n" +
+	"\r_creationtimeB\b\n" +
+	"\x06_stateB\x0e\n" +
 	"\f_statereason\"\x9e\x01\n" +
 	"+UpdateConnectionApiKeyAuthRequestParameters\x12&\n" +
 	"\n" +
@@ -11680,28 +11719,31 @@ const file_cloudwatchevents_proto_rawDesc = "" +
 	"\bclientid\x18ă\x86\xd6\x01 \x01(\tH\x00R\bclientid\x88\x01\x01\x12+\n" +
 	"\fclientsecret\x18\xf7\xb5\xe2\xee\x01 \x01(\tH\x01R\fclientsecret\x88\x01\x01B\v\n" +
 	"\t_clientidB\x0f\n" +
-	"\r_clientsecret\"\xa2\x03\n" +
+	"\r_clientsecret\"\xb6\x03\n" +
 	"&UpdateConnectionOAuthRequestParameters\x12=\n" +
 	"\x15authorizationendpoint\x18\xa4\xa6\x87\xcc\x01 \x01(\tH\x00R\x15authorizationendpoint\x88\x01\x01\x12m\n" +
-	"\x10clientparameters\x18\xff\xb1\xdbu \x01(\v2>.cloudwatchevents.UpdateConnectionOAuthClientRequestParametersR\x10clientparameters\x12O\n" +
+	"\x10clientparameters\x18\xff\xb1\xdbu \x01(\v2>.cloudwatchevents.UpdateConnectionOAuthClientRequestParametersR\x10clientparameters\x12T\n" +
 	"\n" +
-	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2+.cloudwatchevents.ConnectionOAuthHttpMethodR\n" +
-	"httpmethod\x12_\n" +
+	"httpmethod\x18ь\xfc\xbd\x01 \x01(\x0e2+.cloudwatchevents.ConnectionOAuthHttpMethodH\x01R\n" +
+	"httpmethod\x88\x01\x01\x12_\n" +
 	"\x13oauthhttpparameters\x18\x89\xaa\xf4\x04 \x01(\v2*.cloudwatchevents.ConnectionHttpParametersR\x13oauthhttpparametersB\x18\n" +
-	"\x16_authorizationendpoint\"\xaf\x02\n" +
+	"\x16_authorizationendpointB\r\n" +
+	"\v_httpmethod\"\xca\x02\n" +
 	"\x17UpdateConnectionRequest\x12b\n" +
-	"\x0eauthparameters\x18\xc8\xf9\x93{ \x01(\v27.cloudwatchevents.UpdateConnectionAuthRequestParametersR\x0eauthparameters\x12_\n" +
-	"\x11authorizationtype\x18\xbf\xc1\xe9\xe5\x01 \x01(\x0e2-.cloudwatchevents.ConnectionAuthorizationTypeR\x11authorizationtype\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x0e\n" +
-	"\f_description\"\x80\x03\n" +
+	"\x0eauthparameters\x18\xc8\xf9\x93{ \x01(\v27.cloudwatchevents.UpdateConnectionAuthRequestParametersR\x0eauthparameters\x12d\n" +
+	"\x11authorizationtype\x18\xbf\xc1\xe9\xe5\x01 \x01(\x0e2-.cloudwatchevents.ConnectionAuthorizationTypeH\x00R\x11authorizationtype\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x14\n" +
+	"\x12_authorizationtypeB\x0e\n" +
+	"\f_description\"\x99\x03\n" +
 	"\x18UpdateConnectionResponse\x12,\n" +
-	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12O\n" +
-	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateR\x0fconnectionstate\x12*\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x126\n" +
-	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x02R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x03R\x10lastmodifiedtime\x88\x01\x01B\x10\n" +
-	"\x0e_connectionarnB\x0f\n" +
+	"\rconnectionarn\x18\xc1\x8f\xbcY \x01(\tH\x00R\rconnectionarn\x88\x01\x01\x12T\n" +
+	"\x0fconnectionstate\x18\xdb\xfa\xe5\xc0\x01 \x01(\x0e2!.cloudwatchevents.ConnectionStateH\x01R\x0fconnectionstate\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x02R\fcreationtime\x88\x01\x01\x126\n" +
+	"\x12lastauthorizedtime\x18\xf2\xdd\xc1w \x01(\tH\x03R\x12lastauthorizedtime\x88\x01\x01\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x04R\x10lastmodifiedtime\x88\x01\x01B\x10\n" +
+	"\x0e_connectionarnB\x12\n" +
+	"\x10_connectionstateB\x0f\n" +
 	"\r_creationtimeB\x15\n" +
 	"\x13_lastauthorizedtimeB\x13\n" +
 	"\x11_lastmodifiedtime*\xa8\x02\n" +
@@ -12254,6 +12296,7 @@ func file_cloudwatchevents_proto_init() {
 	}
 	file_cloudwatchevents_proto_msgTypes[1].OneofWrappers = []any{}
 	file_cloudwatchevents_proto_msgTypes[2].OneofWrappers = []any{}
+	file_cloudwatchevents_proto_msgTypes[3].OneofWrappers = []any{}
 	file_cloudwatchevents_proto_msgTypes[4].OneofWrappers = []any{}
 	file_cloudwatchevents_proto_msgTypes[6].OneofWrappers = []any{}
 	file_cloudwatchevents_proto_msgTypes[8].OneofWrappers = []any{}

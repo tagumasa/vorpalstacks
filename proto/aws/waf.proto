@@ -416,7 +416,7 @@ message ActivatedRule {
 
   string ruleid = 430449567;
 
-  WafRuleType type = 290836590;
+  optional WafRuleType type = 290836590;
 
 }
 
@@ -1682,7 +1682,7 @@ message GetChangeTokenStatusRequest {
 
 message GetChangeTokenStatusResponse {
 
-  ChangeTokenStatus changetokenstatus = 37644373;
+  optional ChangeTokenStatus changetokenstatus = 37644373;
 
 }
 
@@ -3262,7 +3262,7 @@ message WAFEntityMigrationException {
 
   optional string migrationerrorreason = 351537368;
 
-  MigrationErrorType migrationerrortype = 53702508;
+  optional MigrationErrorType migrationerrortype = 53702508;
 
   optional string message = 82970853;
 
@@ -3302,11 +3302,11 @@ message WAFInvalidOperationException {
 
 message WAFInvalidParameterException {
 
-  ParameterExceptionField field = 125985384;
+  optional ParameterExceptionField field = 125985384;
 
   optional string parameter = 363921681;
 
-  ParameterExceptionReason reason = 413359642;
+  optional ParameterExceptionReason reason = 413359642;
 
 }
 

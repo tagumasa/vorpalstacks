@@ -2,8 +2,6 @@ package dynamodb
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/binary"
 	"net/http"
 
 	"vorpalstacks/internal/common/request"
@@ -39,8 +37,8 @@ type readIndexPreamble struct {
 
 // resolveReadIndexPreamble applies the validation prefix the Scan and Query
 // data planes share, in the order both planes apply it: index resolution,
-// the ConsistentRead GSI rejection, the Limit presence check and clamp, and
-// the exclusive-start-key parse with its shape validation.
+// the ConsistentRead GSI rejection, the Limit presence check, and the
+// exclusive-start-key parse with its shape validation.
 func resolveReadIndexPreamble(table *dbstore.Table, params map[string]interface{}) (*readIndexPreamble, error) {
 	indexName := request.GetStringParam(params, "IndexName")
 	if indexName != "" {
@@ -57,7 +55,10 @@ func resolveReadIndexPreamble(table *dbstore.Table, params map[string]interface{
 	// relax consistency because there is no replica lag. Global secondary
 	// indexes are eventually consistent in the AWS contract, so a strongly
 	// consistent read against one is rejected.
-	consistentRead := request.GetBoolParam(params, "ConsistentRead")
+	consistentRead, crErr := validateBoolParam(params, "ConsistentRead", false)
+	if crErr != nil {
+		return nil, crErr
+	}
 	if indexName != "" && isGSI(table, indexName) && consistentRead {
 		return nil, NewAPIError("com.amazon.coral.validate#ValidationException",
 			"Consistent reads are not supported on global secondary indexes", http.StatusBadRequest)
@@ -72,9 +73,6 @@ func resolveReadIndexPreamble(table *dbstore.Table, params map[string]interface{
 	if limit <= 0 {
 		limit = dataPlaneQueryDefaultLimit
 	}
-	if limit > dataPlaneQueryMaxLimit {
-		limit = dataPlaneQueryMaxLimit
-	}
 	exclusiveStartKey, eskErr := parseExclusiveStartKey(params)
 	if eskErr != nil {
 		return nil, eskErr
@@ -82,6 +80,13 @@ func resolveReadIndexPreamble(table *dbstore.Table, params map[string]interface{
 	if exclusiveStartKey != nil {
 		if err := validateKeyTypes(table, exclusiveStartKey); err != nil {
 			return nil, err
+		}
+		// An index read's start key carries the index keys alongside the
+		// primary key; both halves are type-checked against their schemas.
+		if indexName != "" {
+			if err := validateIndexStartKeyTypes(table, indexName, exclusiveStartKey); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return &readIndexPreamble{
@@ -95,8 +100,8 @@ func resolveReadIndexPreamble(table *dbstore.Table, params map[string]interface{
 // resolveProjectionSelection applies the projection/Select validation the
 // Scan and Query data planes share: the projection expression parse, the
 // Select resolution, and the GSI projection rules.
-func resolveProjectionSelection(table *dbstore.Table, indexName string, params map[string]interface{}) (projection []string, countOnly, allProjected bool, err error) {
-	projection, projErr := parseProjectionExpression(params)
+func resolveProjectionSelection(table *dbstore.Table, indexName string, params map[string]interface{}) (projection [][]docPathPart, countOnly, allProjected bool, err error) {
+	projection, projErr := resolveProjectionMembers(params)
 	if projErr != nil {
 		return nil, false, false, projErr
 	}
@@ -124,6 +129,12 @@ func resolveProjectionSelection(table *dbstore.Table, indexName string, params m
 func (s *DynamoDBService) scanCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, table *dbstore.Table, params map[string]interface{}) (*scanCoreResult, error) {
 	tableName := table.Name
 
+	// Response-shaping enums are request validation: an unknown value is
+	// rejected before anything executes.
+	if _, err := getReturnConsumedCapacity(params); err != nil {
+		return nil, err
+	}
+
 	preamble, preErr := resolveReadIndexPreamble(table, params)
 	if preErr != nil {
 		return nil, preErr
@@ -147,7 +158,8 @@ func (s *DynamoDBService) scanCore(ctx context.Context, store dbstore.DynamoDBSt
 
 	// Validate parallel Scan parameters (Smithy ScanSegment: range 0-999999,
 	// ScanTotalSegments: range 1-1000000). The two parameters form a pair:
-	// specifying one without the other is a validation error.
+	// specifying one without the other is a validation error, and a segment
+	// index at or beyond the segment count can address no segment at all.
 	_, hasSegment := params["Segment"]
 	_, hasTotalSegments := params["TotalSegments"]
 	if hasSegment != hasTotalSegments {
@@ -167,10 +179,22 @@ func (s *DynamoDBService) scanCore(ctx context.Context, store dbstore.DynamoDBSt
 			return nil, ErrInvalidParameter
 		}
 	}
+	if hasSegment && segment >= totalSegments {
+		return nil, ErrInvalidParameter
+	}
 
 	projection, countOnly, allProjected, projErr := resolveProjectionSelection(table, indexName, params)
 	if projErr != nil {
 		return nil, projErr
+	}
+
+	// The filter is request validation: whichever family carried it —
+	// FilterExpression or the legacy ScanFilter — it parses and its
+	// substitutions resolve before the page walk executes, so a malformed
+	// filter answers ValidationException, never a silently empty page.
+	filterCond, filterErr := resolveFilterCondition(params, "ScanFilter", request.GetStringParam(params, "FilterExpression"))
+	if filterErr != nil {
+		return nil, filterErr
 	}
 
 	// The page is built during iteration — segment filtering and secondary
@@ -192,20 +216,24 @@ func (s *DynamoDBService) scanCore(ctx context.Context, store dbstore.DynamoDBSt
 	scannedItems := page.items
 	scannedCount := len(scannedItems)
 
-	filterExpr := request.GetStringParam(params, "FilterExpression")
 	var items []*dbstore.Item
-	if filterExpr != "" {
-		scanNames, namesErr := parseExpressionAttributeNames(params)
-		if namesErr != nil {
-			return nil, namesErr
-		}
-		scanValues, scanValsErr := parseExpressionAttributeValues(params)
-		if scanValsErr != nil {
-			return nil, scanValsErr
-		}
-		items = filterByExpression(scannedItems, filterExpr, scanNames, scanValues)
+	if filterCond != nil {
+		items = filterByCondition(scannedItems, filterCond)
 	} else {
 		items = scannedItems
+	}
+
+	// The LastEvaluatedKey names the read target's full key schema — the
+	// table primary key plus the index keys of an index read — regardless
+	// of the projection. It must be composed before a projection replaces
+	// the item attributes the key merge reads from; a key emitted from
+	// trimmed attributes cannot resume the walk. A truncated page holds
+	// exactly limit items and the preamble guarantees limit >= 1, so
+	// hasMore alone says the key exists.
+	hasLEK := page.hasMore
+	var lastEvaluatedKey map[string]*dbstore.AttributeValue
+	if hasLEK {
+		lastEvaluatedKey = mergeIndexKey(scannedItems[len(scannedItems)-1], table, indexName)
 	}
 
 	if projection != nil {
@@ -218,16 +246,24 @@ func (s *DynamoDBService) scanCore(ctx context.Context, store dbstore.DynamoDBSt
 		}
 	}
 
+	// The charge sums each evaluated item's size-granular read units — the
+	// engine reads the full stored item for every scanned entry, before any
+	// filter or projection narrows the returned page.
+	scannedUnits := 0.0
+	for _, item := range scannedItems {
+		scannedUnits += itemReadUnits(dbstore.CalculateItemSize(item.Attributes), readIsStronglyConsistent(consistentRead, indexName, table))
+	}
+
 	result := &scanCoreResult{
 		Items:         items,
 		IncludeItems:  !countOnly,
 		Count:         len(items),
 		ScannedCount:  scannedCount,
 		IndexName:     indexName,
-		CapacityUnits: float64(scannedCount) * rcuPerItem(consistentRead, indexName, table),
+		CapacityUnits: scannedUnits,
 	}
-	if page.hasMore && len(scannedItems) > 0 {
-		result.LastEvaluatedKey = mergeIndexKey(scannedItems[len(scannedItems)-1], table, indexName)
+	if hasLEK {
+		result.LastEvaluatedKey = lastEvaluatedKey
 	}
 
 	// Every item the page read counts as one read event per tracked key
@@ -239,23 +275,4 @@ func (s *DynamoDBService) scanCore(ctx context.Context, store dbstore.DynamoDBSt
 	s.recordContributorReads(ctx, store, tableName, scanReadKeys)
 
 	return result, nil
-}
-
-// md5SegmentHash computes the MD5 hash of an AttributeValue for parallel
-// scan segment assignment. AWS does not document how segments are
-// assigned, so any deterministic hash over the partition value is
-// behaviour-compatible; the hash covers the raw value bytes (S string,
-// N number string, or B binary) and the first 4 bytes are interpreted as
-// a big-endian uint32.
-func md5SegmentHash(av *dbstore.AttributeValue) uint32 {
-	h := md5.New()
-	if av.S != nil {
-		h.Write([]byte(*av.S))
-	} else if av.N != nil {
-		h.Write([]byte(*av.N))
-	} else if av.B != nil {
-		h.Write(av.B)
-	}
-	sum := h.Sum(nil)
-	return binary.BigEndian.Uint32(sum[:4])
 }

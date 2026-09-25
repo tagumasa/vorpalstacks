@@ -257,17 +257,52 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 	}))
 
 	// --- Global table settings ------------------------------------------
+	// A global table links replica tables over two or more regions: the
+	// backing tables below are created in both member regions and the
+	// groups span both.
+	replicaClient, replicaRegion, cfgErr := r.replicaRegionClient()
+	if cfgErr != nil {
+		return setupErr("GlobalTableSettings_DescribeAndUpdate", fmt.Errorf("load replica config: %v", cfgErr))
+	}
+	replicaSetting := func(settings []dynamodbtypes.ReplicaSettingsDescription, region string) dynamodbtypes.ReplicaSettingsDescription {
+		for _, rs := range settings {
+			if aws.ToString(rs.RegionName) == region {
+				return rs
+			}
+		}
+		return dynamodbtypes.ReplicaSettingsDescription{}
+	}
 	gtName := fmt.Sprintf("baseline-gt-settings-%d", suffix)
 	// A global table links existing replica tables, so the backing table
-	// shares the global table's name.
-	if err := createGlobalTableTestTable(ctx, client, gtName, false); err != nil {
-		return setupErr("GlobalTableSettings_DescribeAndUpdate", fmt.Errorf("create backing table: %v", err))
+	// shares the global table's name. The settings updates this family
+	// drives carry provisioned capacity members, so the backing table is
+	// provisioned: the members configure the mode the table is already in,
+	// with the capacity pairs the update can complete from.
+	for _, c := range []*dynamodb.Client{client, replicaClient} {
+		if _, err := c.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(gtName),
+			AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
+			},
+			KeySchema: []dynamodbtypes.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
+			},
+			BillingMode:           dynamodbtypes.BillingModeProvisioned,
+			ProvisionedThroughput: &dynamodbtypes.ProvisionedThroughput{ReadCapacityUnits: aws.Int64(5), WriteCapacityUnits: aws.Int64(5)},
+			StreamSpecification: &dynamodbtypes.StreamSpecification{
+				StreamEnabled:  aws.Bool(true),
+				StreamViewType: dynamodbtypes.StreamViewTypeNewAndOldImages,
+			},
+		}); err != nil {
+			return setupErr("GlobalTableSettings_DescribeAndUpdate", fmt.Errorf("create backing table: %v", err))
+		}
+		defer c.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(gtName)})
 	}
-	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(gtName)})
 	if _, err := client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
 		GlobalTableName: aws.String(gtName),
 		ReplicationGroup: []dynamodbtypes.Replica{
 			{RegionName: aws.String(r.region)},
+			{RegionName: aws.String(replicaRegion)},
 		},
 	}); err != nil {
 		return setupErr("GlobalTableSettings_DescribeAndUpdate", fmt.Errorf("create global table: %v", err))
@@ -283,8 +318,11 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		if aws.ToString(desc.GlobalTableName) != gtName {
 			return fmt.Errorf("expected GlobalTableName=%s, got %v", gtName, desc.GlobalTableName)
 		}
-		if len(desc.ReplicaSettings) != 1 || aws.ToString(desc.ReplicaSettings[0].RegionName) != r.region {
-			return fmt.Errorf("expected one replica in %s, got %+v", r.region, desc.ReplicaSettings)
+		if len(desc.ReplicaSettings) != 2 {
+			return fmt.Errorf("expected two replicas, got %+v", desc.ReplicaSettings)
+		}
+		if got := aws.ToString(replicaSetting(desc.ReplicaSettings, r.region).RegionName); got != r.region {
+			return fmt.Errorf("expected a replica in %s, got %+v", r.region, desc.ReplicaSettings)
 		}
 
 		updated, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
@@ -309,8 +347,8 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		if err != nil {
 			return err
 		}
-		if aws.ToInt64(after.ReplicaSettings[0].ReplicaProvisionedReadCapacityUnits) != 7 {
-			return fmt.Errorf("expected read units 7 after update, got %v", after.ReplicaSettings[0].ReplicaProvisionedReadCapacityUnits)
+		if aws.ToInt64(replicaSetting(after.ReplicaSettings, r.region).ReplicaProvisionedReadCapacityUnits) != 7 {
+			return fmt.Errorf("expected read units 7 after update, got %v", replicaSetting(after.ReplicaSettings, r.region).ReplicaProvisionedReadCapacityUnits)
 		}
 		return nil
 	}))
@@ -340,18 +378,23 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		if err != nil {
 			return err
 		}
-		if len(after.ReplicaSettings) != 1 {
-			return fmt.Errorf("expected one replica, got %+v", after.ReplicaSettings)
+		if len(after.ReplicaSettings) != 2 {
+			return fmt.Errorf("expected two replicas, got %+v", after.ReplicaSettings)
 		}
-		rs := after.ReplicaSettings[0]
-		if rs.ReplicaBillingModeSummary == nil || rs.ReplicaBillingModeSummary.BillingMode != dynamodbtypes.BillingModeProvisioned {
-			return fmt.Errorf("expected PROVISIONED billing mode summary, got %+v", rs.ReplicaBillingModeSummary)
+		// The global members (billing mode, write units) apply to every
+		// replica; the replica-scoped read units to the region's entry
+		// alone.
+		for _, region := range []string{r.region, replicaRegion} {
+			rs := replicaSetting(after.ReplicaSettings, region)
+			if rs.ReplicaBillingModeSummary == nil || rs.ReplicaBillingModeSummary.BillingMode != dynamodbtypes.BillingModeProvisioned {
+				return fmt.Errorf("expected PROVISIONED billing mode summary for %s, got %+v", region, rs.ReplicaBillingModeSummary)
+			}
+			if aws.ToInt64(rs.ReplicaProvisionedWriteCapacityUnits) != 9 {
+				return fmt.Errorf("expected write units 9 for %s, got %v", region, rs.ReplicaProvisionedWriteCapacityUnits)
+			}
 		}
-		if aws.ToInt64(rs.ReplicaProvisionedWriteCapacityUnits) != 9 {
-			return fmt.Errorf("expected write units 9, got %v", rs.ReplicaProvisionedWriteCapacityUnits)
-		}
-		if aws.ToInt64(rs.ReplicaProvisionedReadCapacityUnits) != 5 {
-			return fmt.Errorf("expected read units 5, got %v", rs.ReplicaProvisionedReadCapacityUnits)
+		if aws.ToInt64(replicaSetting(after.ReplicaSettings, r.region).ReplicaProvisionedReadCapacityUnits) != 5 {
+			return fmt.Errorf("expected read units 5, got %v", replicaSetting(after.ReplicaSettings, r.region).ReplicaProvisionedReadCapacityUnits)
 		}
 		return nil
 	}))
@@ -405,10 +448,10 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		if err != nil {
 			return err
 		}
-		if len(after.ReplicaSettings) != 1 {
-			return fmt.Errorf("expected one replica, got %+v", after.ReplicaSettings)
+		if len(after.ReplicaSettings) != 2 {
+			return fmt.Errorf("expected two replicas, got %+v", after.ReplicaSettings)
 		}
-		as := after.ReplicaSettings[0].ReplicaProvisionedWriteCapacityAutoScalingSettings
+		as := replicaSetting(after.ReplicaSettings, r.region).ReplicaProvisionedWriteCapacityAutoScalingSettings
 		if as == nil || len(as.ScalingPolicies) != 1 {
 			return fmt.Errorf("expected one scaling policy, got %+v", as)
 		}
@@ -602,33 +645,45 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 
 	// --- Global-table settings optional members -------------------------
 	gtGsiName := fmt.Sprintf("baseline-gt-gsi-%d", suffix)
-	if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-		TableName: aws.String(gtGsiName),
-		AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
-			{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
-			{AttributeName: aws.String("gpk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
-		},
-		KeySchema: []dynamodbtypes.KeySchemaElement{
-			{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
-		},
-		GlobalSecondaryIndexes: []dynamodbtypes.GlobalSecondaryIndex{
-			{
-				IndexName: aws.String("gsi-index"),
-				KeySchema: []dynamodbtypes.KeySchemaElement{
-					{AttributeName: aws.String("gpk"), KeyType: dynamodbtypes.KeyTypeHash},
-				},
-				Projection: &dynamodbtypes.Projection{ProjectionType: dynamodbtypes.ProjectionTypeAll},
+	// Provisioned backing table with a provisioned GSI: the round-trip
+	// updates carry read and write capacity members against both the table
+	// and its index, and a provisioned result must complete every pair —
+	// from the request or from the settings the table already carries.
+	// Both member regions carry the same shape.
+	for _, c := range []*dynamodb.Client{client, replicaClient} {
+		if _, err := c.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(gtGsiName),
+			AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
+				{AttributeName: aws.String("gpk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
 			},
-		},
-		BillingMode: dynamodbtypes.BillingModePayPerRequest,
-		StreamSpecification: &dynamodbtypes.StreamSpecification{
-			StreamEnabled:  aws.Bool(true),
-			StreamViewType: dynamodbtypes.StreamViewTypeNewAndOldImages,
-		},
-	}); err != nil {
-		return setupErr("UpdateGlobalTableSettings_ReplicaSettingsMembersRoundTrip", fmt.Errorf("create GSI table: %v", err))
+			KeySchema: []dynamodbtypes.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
+			},
+			GlobalSecondaryIndexes: []dynamodbtypes.GlobalSecondaryIndex{
+				{
+					IndexName: aws.String("gsi-index"),
+					KeySchema: []dynamodbtypes.KeySchemaElement{
+						{AttributeName: aws.String("gpk"), KeyType: dynamodbtypes.KeyTypeHash},
+					},
+					Projection: &dynamodbtypes.Projection{ProjectionType: dynamodbtypes.ProjectionTypeAll},
+					ProvisionedThroughput: &dynamodbtypes.ProvisionedThroughput{
+						ReadCapacityUnits:  aws.Int64(5),
+						WriteCapacityUnits: aws.Int64(5),
+					},
+				},
+			},
+			BillingMode:           dynamodbtypes.BillingModeProvisioned,
+			ProvisionedThroughput: &dynamodbtypes.ProvisionedThroughput{ReadCapacityUnits: aws.Int64(5), WriteCapacityUnits: aws.Int64(5)},
+			StreamSpecification: &dynamodbtypes.StreamSpecification{
+				StreamEnabled:  aws.Bool(true),
+				StreamViewType: dynamodbtypes.StreamViewTypeNewAndOldImages,
+			},
+		}); err != nil {
+			return setupErr("UpdateGlobalTableSettings_ReplicaSettingsMembersRoundTrip", fmt.Errorf("create GSI table: %v", err))
+		}
+		defer c.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(gtGsiName)})
 	}
-	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(gtGsiName)})
 	if err := waitKinesisDestTableActive(ctx, client, gtGsiName); err != nil {
 		return setupErr("UpdateGlobalTableSettings_ReplicaSettingsMembersRoundTrip", fmt.Errorf("wait active: %v", err))
 	}
@@ -636,6 +691,7 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		GlobalTableName: aws.String(gtGsiName),
 		ReplicationGroup: []dynamodbtypes.Replica{
 			{RegionName: aws.String(r.region)},
+			{RegionName: aws.String(replicaRegion)},
 		},
 	}); err != nil {
 		return setupErr("UpdateGlobalTableSettings_ReplicaSettingsMembersRoundTrip", fmt.Errorf("create global table: %v", err))
@@ -675,10 +731,10 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		if err != nil {
 			return err
 		}
-		if len(after.ReplicaSettings) != 1 {
-			return fmt.Errorf("expected one replica, got %+v", after.ReplicaSettings)
+		if len(after.ReplicaSettings) != 2 {
+			return fmt.Errorf("expected two replicas, got %+v", after.ReplicaSettings)
 		}
-		rs := after.ReplicaSettings[0]
+		rs := replicaSetting(after.ReplicaSettings, r.region)
 		if rs.ReplicaProvisionedReadCapacityAutoScalingSettings == nil ||
 			aws.ToInt64(rs.ReplicaProvisionedReadCapacityAutoScalingSettings.MinimumUnits) != 1 {
 			return fmt.Errorf("expected replica read auto-scaling minimum 1, got %+v", rs.ReplicaProvisionedReadCapacityAutoScalingSettings)
@@ -730,10 +786,10 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		if err != nil {
 			return err
 		}
-		if len(after.ReplicaSettings) != 1 {
-			return fmt.Errorf("expected one replica, got %+v", after.ReplicaSettings)
+		if len(after.ReplicaSettings) != 2 {
+			return fmt.Errorf("expected two replicas, got %+v", after.ReplicaSettings)
 		}
-		rs := after.ReplicaSettings[0]
+		rs := replicaSetting(after.ReplicaSettings, r.region)
 		if rs.ReplicaProvisionedWriteCapacityAutoScalingSettings == nil ||
 			aws.ToInt64(rs.ReplicaProvisionedWriteCapacityAutoScalingSettings.MinimumUnits) != 1 {
 			return fmt.Errorf("expected replica write auto-scaling minimum 1, got %+v", rs.ReplicaProvisionedWriteCapacityAutoScalingSettings)

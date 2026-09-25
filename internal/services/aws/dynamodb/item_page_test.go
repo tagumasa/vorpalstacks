@@ -66,12 +66,20 @@ func TestIndexMarkerFromStartKeyMirrorsIndexKeyComposition(t *testing.T) {
 		"gsi_pk": dbstore.StringValue("g1"),
 	}
 	encodedHash := dbstore.EncodeKeyValue(dbstore.StringValue("g1"))
-	primaryKey := dbstore.EncodeItemKey(table.Name, map[string]*dbstore.AttributeValue{
-		"pk": dbstore.StringValue("p1"),
-		"sk": dbstore.StringValue("s1"),
-	}, table)
-	want := table.Name + dbstore.KeySep + "gsi" + dbstore.KeySep + encodedHash + dbstore.KeySep +
-		dbstore.EncodeKeyValue(dbstore.StringValue("s1")) + dbstore.KeySep + primaryKey
+	// The expected marker is the key the index store itself composes for
+	// the same entry — the resumer must anchor at the writer's key, not a
+	// second spelling of the layout.
+	entry := &dbstore.Item{
+		TableName: table.Name,
+		Key: map[string]*dbstore.AttributeValue{
+			"pk": dbstore.StringValue("p1"),
+			"sk": dbstore.StringValue("s1"),
+		},
+		Attributes: map[string]*dbstore.AttributeValue{
+			"gsi_pk": dbstore.StringValue("g1"),
+		},
+	}
+	want := dbstore.NewIndexStore("us-east-1").BuildGSIKey(table, table.GlobalSecondaryIndexes[0], entry)
 
 	if got := indexMarkerFromStartKey(table, "gsi", encodedHash, esk); got != want {
 		t.Fatalf("index marker:\n got %q\nwant %q", got, want)

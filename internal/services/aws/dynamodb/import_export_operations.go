@@ -7,6 +7,7 @@ import (
 	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // s3invoker returns the S3 invoker from the EventBus, or nil if unavailable.
@@ -15,6 +16,18 @@ func (s *DynamoDBService) s3invoker() invokers.S3Invoker {
 		return nil
 	}
 	return s.bus.S3Invoker()
+}
+
+// incrementalExportSpecificationWire renders the description's resolved
+// IncrementalExportSpecification member: the change window the export
+// reads and the image set its output carries.
+func incrementalExportSpecificationWire(export *dbstore.ExportDescription) map[string]interface{} {
+	spec := map[string]interface{}{
+		"ExportFromTime": export.ExportFromTime.Unix(),
+		"ExportToTime":   export.ExportToTime.Unix(),
+		"ExportViewType": string(export.ExportViewType),
+	}
+	return spec
 }
 
 // ExportTableToPointInTime exports a DynamoDB table to S3.
@@ -30,17 +43,21 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 
 	result := map[string]interface{}{
 		"ExportArn":      export.ExportArn,
-		"ExportStatus":   export.ExportStatus,
+		"ExportStatus":   string(export.ExportStatus),
 		"StartTime":      export.StartTime.Unix(),
 		"ExportTime":     exportTime.Unix(),
 		"TableArn":       export.TableArn,
-		"ExportFormat":   export.ExportFormat,
+		"ExportFormat":   string(export.ExportFormat),
 		"S3Bucket":       export.S3Bucket,
 		"S3Prefix":       export.S3Prefix,
 		"S3BucketOwner":  export.S3BucketOwner,
 		"S3SseKmsKeyId":  export.S3SseKmsKeyId,
+		"S3SseAlgorithm": string(export.S3SseAlgorithm),
 		"ExportManifest": export.ExportManifest,
-		"ExportType":     export.ExportType,
+		"ExportType":     string(export.ExportType),
+	}
+	if export.ExportType == "INCREMENTAL_EXPORT" {
+		result["IncrementalExportSpecification"] = incrementalExportSpecificationWire(export)
 	}
 	if export.ItemCount > 0 {
 		result["ItemCount"] = export.ItemCount
@@ -71,16 +88,20 @@ func (s *DynamoDBService) DescribeExport(ctx context.Context, reqCtx *request.Re
 
 	description := map[string]interface{}{
 		"ExportArn":      export.ExportArn,
-		"ExportStatus":   export.ExportStatus,
+		"ExportStatus":   string(export.ExportStatus),
 		"StartTime":      export.StartTime.Unix(),
 		"TableArn":       export.TableArn,
-		"ExportFormat":   export.ExportFormat,
+		"ExportFormat":   string(export.ExportFormat),
 		"S3Bucket":       export.S3Bucket,
 		"S3Prefix":       export.S3Prefix,
 		"S3BucketOwner":  export.S3BucketOwner,
 		"S3SseKmsKeyId":  export.S3SseKmsKeyId,
+		"S3SseAlgorithm": string(export.S3SseAlgorithm),
 		"ExportManifest": export.ExportManifest,
-		"ExportType":     export.ExportType,
+		"ExportType":     string(export.ExportType),
+	}
+	if export.ExportType == "INCREMENTAL_EXPORT" {
+		description["IncrementalExportSpecification"] = incrementalExportSpecificationWire(export)
 	}
 	if !export.ExportTime.IsZero() {
 		description["ExportTime"] = export.ExportTime.Unix()
@@ -95,6 +116,9 @@ func (s *DynamoDBService) DescribeExport(ctx context.Context, reqCtx *request.Re
 	if export.FailureCode != "" {
 		description["FailureCode"] = export.FailureCode
 		description["FailureMessage"] = export.FailureMessage
+	}
+	if export.ClientToken != "" {
+		description["ClientToken"] = export.ClientToken
 	}
 
 	return map[string]interface{}{
@@ -115,8 +139,8 @@ func (s *DynamoDBService) ListExports(ctx context.Context, reqCtx *request.Reque
 	for _, e := range exports {
 		summary := map[string]interface{}{
 			"ExportArn":    e.ExportArn,
-			"ExportStatus": e.ExportStatus,
-			"ExportType":   e.ExportType,
+			"ExportStatus": string(e.ExportStatus),
+			"ExportType":   string(e.ExportType),
 		}
 		exportSummaries = append(exportSummaries, summary)
 	}
@@ -132,23 +156,38 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	imp := outcome.Import
-	s3Bucket := outcome.S3Bucket
-	s3Prefix := outcome.S3Prefix
-	s3BucketOwner := outcome.S3BucketOwner
 
+	return map[string]interface{}{
+		"ImportTableDescription": buildImportTableDescription(outcome.Import),
+	}, nil
+}
+
+// buildImportTableDescription renders the ImportTableDescription shape
+// shared by the ImportTable and DescribeImport responses — one builder,
+// so the two faces cannot disagree. Unset members are omitted per the
+// protocol's rule: TableId and ClientToken only when the record carries
+// them, the counters only once the job has counted anything.
+func buildImportTableDescription(imp *dbstore.ImportTableDescription) map[string]interface{} {
 	description := map[string]interface{}{
 		"ImportArn":            imp.ImportArn,
-		"ImportStatus":         imp.ImportStatus,
+		"ImportStatus":         string(imp.ImportStatus),
 		"StartTime":            imp.StartTime.Unix(),
 		"TableArn":             imp.TableArn,
-		"InputFormat":          imp.InputFormat,
-		"InputCompressionType": imp.InputCompressionType,
-		"S3BucketSource": map[string]interface{}{
-			"S3Bucket":      s3Bucket,
-			"S3KeyPrefix":   s3Prefix,
-			"S3BucketOwner": s3BucketOwner,
-		},
+		"InputFormat":          string(imp.InputFormat),
+		"InputCompressionType": string(imp.InputCompressionType),
+	}
+	if imp.TableId != "" {
+		description["TableId"] = imp.TableId
+	}
+	if imp.ClientToken != "" {
+		description["ClientToken"] = imp.ClientToken
+	}
+	if imp.S3BucketSource != nil {
+		description["S3BucketSource"] = map[string]interface{}{
+			"S3Bucket":      imp.S3BucketSource.S3Bucket,
+			"S3KeyPrefix":   imp.S3BucketSource.S3Prefix,
+			"S3BucketOwner": imp.S3BucketSource.S3BucketOwner,
+		}
 	}
 	if !imp.EndTime.IsZero() {
 		description["EndTime"] = imp.EndTime.Unix()
@@ -167,10 +206,7 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 		description["FailureCode"] = imp.FailureCode
 		description["FailureMessage"] = imp.FailureMessage
 	}
-
-	return map[string]interface{}{
-		"ImportTableDescription": description,
-	}, nil
+	return description
 }
 
 // DescribeImport returns information about a table import.
@@ -180,35 +216,8 @@ func (s *DynamoDBService) DescribeImport(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	description := map[string]interface{}{
-		"ImportArn":            imp.ImportArn,
-		"ImportStatus":         imp.ImportStatus,
-		"StartTime":            imp.StartTime.Unix(),
-		"TableArn":             imp.TableArn,
-		"ClientToken":          imp.ClientToken,
-		"InputFormat":          imp.InputFormat,
-		"InputCompressionType": imp.InputCompressionType,
-		"ProcessedItemCount":   imp.ProcessedItemCount,
-		"ImportedItemCount":    imp.ImportedItemCount,
-		"ErrorCount":           imp.ErrorCount,
-	}
-	if imp.S3BucketSource != nil {
-		description["S3BucketSource"] = map[string]interface{}{
-			"S3Bucket":      imp.S3BucketSource.S3Bucket,
-			"S3KeyPrefix":   imp.S3BucketSource.S3Prefix,
-			"S3BucketOwner": imp.S3BucketSource.S3BucketOwner,
-		}
-	}
-	if !imp.EndTime.IsZero() {
-		description["EndTime"] = imp.EndTime.Unix()
-	}
-	if imp.FailureCode != "" {
-		description["FailureCode"] = imp.FailureCode
-		description["FailureMessage"] = imp.FailureMessage
-	}
-
 	return map[string]interface{}{
-		"ImportTableDescription": description,
+		"ImportTableDescription": buildImportTableDescription(imp),
 	}, nil
 }
 
@@ -225,9 +234,9 @@ func (s *DynamoDBService) ListImports(ctx context.Context, reqCtx *request.Reque
 	for _, i := range imports {
 		summary := map[string]interface{}{
 			"ImportArn":    i.ImportArn,
-			"ImportStatus": i.ImportStatus,
+			"ImportStatus": string(i.ImportStatus),
 			"TableArn":     i.TableArn,
-			"InputFormat":  i.InputFormat,
+			"InputFormat":  string(i.InputFormat),
 			"StartTime":    i.StartTime.Unix(),
 		}
 		if i.S3BucketSource != nil {

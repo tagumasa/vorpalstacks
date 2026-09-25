@@ -19,7 +19,7 @@ func newVectorFixture(t *testing.T, distanceFn string, dims int64) *DynamoDBStor
 	}
 	t.Cleanup(func() { st.Close() })
 
-	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(CreateTableParams{
 		Name:                 "VecTbl",
 		KeySchema:            []*KeySchemaElement{{AttributeName: "id", KeyType: KeyTypeHash}},
@@ -33,7 +33,7 @@ func newVectorFixture(t *testing.T, distanceFn string, dims int64) *DynamoDBStor
 			IndexName:           "vec",
 			VectorAttributeName: "embedding",
 			Dimensions:          dims,
-			DistanceFunction:    distanceFn,
+			DistanceFunction:    VectorDistanceFunction(distanceFn),
 			Projection:          &Projection{ProjectionType: "ALL"},
 			IndexStatus:         IndexStatusActive,
 		}}
@@ -239,7 +239,7 @@ func TestVectorTopKFilterPrunes(t *testing.T) {
 	putVectorFixtureItem(t, store, "drop", []float64{0, 1}, map[string]*AttributeValue{"category": strAttr("b")})
 
 	filter := func(item *Item) bool {
-		attr := item.GetAttribute("category")
+		attr := item.Attributes["category"]
 		return attr != nil && attr.S != nil && *attr.S == "a"
 	}
 	ids, _ := vectorTopKIDs(t, store, []float64{1, 0}, 2, filter)

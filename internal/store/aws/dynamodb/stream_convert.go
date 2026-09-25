@@ -54,7 +54,7 @@ func streamRecordToProto(rec *StreamRecord) *pb.StoredStreamRecord {
 			OldImage:                    wireImageToProto(rec.Dynamodb.OldImage),
 			SequenceNumber:              rec.Dynamodb.SequenceNumber,
 			SizeBytes:                   int64(rec.Dynamodb.SizeBytes),
-			StreamViewType:              rec.Dynamodb.StreamViewType,
+			StreamViewType:              streamViewTypeToProto(StreamViewType(rec.Dynamodb.StreamViewType)),
 		},
 		EventSourceArn: rec.EventSourceARN,
 		UserIdentity:   streamUserIdentityToProto(rec.UserIdentity),
@@ -84,31 +84,35 @@ func streamRecordFromProto(p *pb.StoredStreamRecord) *StreamRecord {
 			OldImage:                    protoImageToWire(p.Dynamodb.OldImage),
 			SequenceNumber:              p.Dynamodb.SequenceNumber,
 			SizeBytes:                   float64(p.Dynamodb.SizeBytes),
-			StreamViewType:              p.Dynamodb.StreamViewType,
+			StreamViewType:              string(protoToStreamViewType(p.Dynamodb.StreamViewType)),
 		}
 	}
 	return rec
 }
 
-// streamCounterToProto converts the per-table sequence allocator state to
-// its persisted form.
+// streamCounterToProto converts the retention sweep's per-table record to
+// its persisted form. No extent is persisted alongside the floor — a
+// transaction-committed extent regresses under commit-order inversion — so
+// the record carries the floor alone.
 func streamCounterToProto(c streamSeqCounter) *pb.StreamSequenceCounter {
-	return &pb.StreamSequenceCounter{LastSeq: c.LastSeq, TrimmedFloor: c.TrimmedFloor}
+	return &pb.StreamSequenceCounter{TrimmedFloor: c.TrimmedFloor}
 }
 
-// protoToStreamCounter converts a persisted sequence allocator state back.
+// protoToStreamCounter converts a persisted retention record back; the
+// allocator's extent is derived at restart (max of highest record key and
+// floor), never read from the record.
 func protoToStreamCounter(p *pb.StreamSequenceCounter) streamSeqCounter {
 	if p == nil {
 		return streamSeqCounter{}
 	}
-	return streamSeqCounter{LastSeq: p.LastSeq, TrimmedFloor: p.TrimmedFloor}
+	return streamSeqCounter{TrimmedFloor: p.TrimmedFloor}
 }
 
 // journalRecordToProto converts a PITR journal record to its persisted form.
 func journalRecordToProto(r *journalRecord) *pb.JournalRecord {
 	return &pb.JournalRecord{
 		Timestamp:   r.Timestamp,
-		Operation:   r.Operation,
+		Operation:   string(r.Operation),
 		Key:         attributeValueMapToProtoDirect(r.Key),
 		BeforeImage: attributeValueMapToProtoDirect(r.BeforeImage),
 	}
@@ -121,7 +125,7 @@ func protoToJournalRecord(p *pb.JournalRecord) *journalRecord {
 	}
 	return &journalRecord{
 		Timestamp:   p.Timestamp,
-		Operation:   p.Operation,
+		Operation:   JournalOperation(p.Operation),
 		Key:         protoToAttributeValueMapDirect(p.Key),
 		BeforeImage: protoToAttributeValueMapDirect(p.BeforeImage),
 	}

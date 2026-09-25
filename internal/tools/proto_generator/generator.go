@@ -240,6 +240,7 @@ func (g *ProtoGenerator) buildFieldsForShape(ctx context.Context, shape *ShapeIn
 	fields := make([]FieldData, 0, len(members))
 	for _, member := range members {
 		var protoType string
+		isEnumRef := false
 
 		if member.TargetShapeID > 0 {
 			targetShape, err := g.reader.FindShapeByID(ctx, member.TargetShapeID)
@@ -250,6 +251,7 @@ func (g *ProtoGenerator) buildFieldsForShape(ctx context.Context, shape *ShapeIn
 				protoType = "string"
 			} else {
 				protoType = g.resolveProtoType(ctx, targetShape)
+				isEnumRef = targetShape.Type == "enum"
 			}
 		} else {
 			protoType = "string"
@@ -261,6 +263,7 @@ func (g *ProtoGenerator) buildFieldsForShape(ctx context.Context, shape *ShapeIn
 			Type:                    protoType,
 			Number:                  stableFieldNumber(member.Name),
 			IsRequired:              member.IsRequired,
+			IsEnumRef:               isEnumRef,
 			HTTPLabel:               member.HTTPLabel,
 			HTTPQuery:               member.HTTPQuery,
 			HTTPHeader:              member.HTTPHeader,

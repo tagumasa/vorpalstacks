@@ -387,7 +387,7 @@ message AttributeValue {
 
 message AttributeValueUpdate {
 
-  AttributeAction action = 175614240;
+  optional AttributeAction action = 175614240;
 
   AttributeValue value = 289929579;
 
@@ -569,9 +569,9 @@ message BackupSummary {
 
   optional int64 backupsizebytes = 147336318;
 
-  BackupStatus backupstatus = 382505546;
+  optional BackupStatus backupstatus = 382505546;
 
-  BackupType backuptype = 134973992;
+  optional BackupType backuptype = 134973992;
 
   optional string tablearn = 431669347;
 
@@ -611,7 +611,7 @@ enum BackupTypeFilter {
 
 message BatchExecuteStatementInput {
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
   repeated BatchStatementRequest statements = 488352288;
 
@@ -635,7 +635,7 @@ message BatchGetItemInput {
 
   map<string, KeysAndAttributes> requestitems = 247720687;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
 }
 
@@ -659,7 +659,7 @@ message BatchGetItemOutput {
 
 message BatchStatementError {
 
-  BatchStatementErrorCodeEnum code = 425572629;
+  optional BatchStatementErrorCodeEnum code = 425572629;
 
   map<string, AttributeValue> item = 526680071;
 
@@ -705,7 +705,7 @@ message BatchStatementRequest {
 
   repeated AttributeValue parameters = 494900218;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string statement = 248790199;
 
@@ -733,9 +733,9 @@ message BatchWriteItemInput {
 
   map<string, string> requestitems = 247720687;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
-  ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
+  optional ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
 
 }
 
@@ -769,7 +769,7 @@ enum BillingMode {
 
 message BillingModeSummary {
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   optional string lastupdatetopayperrequestdatetime = 40315649;
 
@@ -861,7 +861,7 @@ message ConditionCheck {
 
   map<string, AttributeValue> key = 219859213;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string tablename = 272020061;
 
@@ -987,9 +987,9 @@ enum ContributorInsightsStatus {
 
 message ContributorInsightsSummary {
 
-  ContributorInsightsMode contributorinsightsmode = 86700161;
+  optional ContributorInsightsMode contributorinsightsmode = 86700161;
 
-  ContributorInsightsStatus contributorinsightsstatus = 363347282;
+  optional ContributorInsightsStatus contributorinsightsstatus = 363347282;
 
   optional string indexname = 102427281;
 
@@ -1089,7 +1089,7 @@ message CreateReplicationGroupMemberAction {
 
   string regionname = 112086463;
 
-  TableClass tableclassoverride = 415569842;
+  optional TableClass tableclassoverride = 415569842;
 
 }
 
@@ -1101,13 +1101,13 @@ message CreateTableInput {
 
   repeated AttributeDefinition attributedefinitions = 414687108;
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   optional bool deletionprotectionenabled = 259418450;
 
   repeated GlobalSecondaryIndex globalsecondaryindexes = 409156905;
 
-  GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
+  optional GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
 
   optional string globaltablesourcearn = 443614787;
 
@@ -1125,7 +1125,7 @@ message CreateTableInput {
 
   StreamSpecification streamspecification = 403922627;
 
-  TableClass tableclass = 342890498;
+  optional TableClass tableclass = 342890498;
 
   string tablename = 272020061;
 
@@ -1193,7 +1193,7 @@ message Delete {
 
   map<string, AttributeValue> key = 219859213;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string tablename = 272020061;
 
@@ -1243,7 +1243,7 @@ message DeleteItemInput {
 
   optional string conditionexpression = 409657405;
 
-  ConditionalOperator conditionaloperator = 172066260;
+  optional ConditionalOperator conditionaloperator = 172066260;
 
   map<string, ExpectedAttributeValue> expected = 106557946;
 
@@ -1253,13 +1253,13 @@ message DeleteItemInput {
 
   map<string, AttributeValue> key = 219859213;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
-  ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
+  optional ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
 
-  ReturnValue returnvalues = 402960198;
+  optional ReturnValue returnvalues = 402960198;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string tablename = 272020061;
 
@@ -1403,11 +1403,11 @@ message DescribeContributorInsightsInput {
 
 message DescribeContributorInsightsOutput {
 
-  ContributorInsightsMode contributorinsightsmode = 86700161;
+  optional ContributorInsightsMode contributorinsightsmode = 86700161;
 
   repeated string contributorinsightsrulelist = 140475206;
 
-  ContributorInsightsStatus contributorinsightsstatus = 363347282;
+  optional ContributorInsightsStatus contributorinsightsstatus = 363347282;
 
   FailureException failureexception = 284668899;
 
@@ -1627,7 +1627,7 @@ message DuplicateItemException {
 
 message EnableKinesisStreamingConfiguration {
 
-  ApproximateCreationDateTimePrecision approximatecreationdatetimeprecision = 392293352;
+  optional ApproximateCreationDateTimePrecision approximatecreationdatetimeprecision = 392293352;
 
 }
 
@@ -1655,9 +1655,9 @@ message ExecuteStatementInput {
 
   repeated AttributeValue parameters = 494900218;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string statement = 248790199;
 
@@ -1683,7 +1683,7 @@ message ExecuteTransactionInput {
 
   optional string clientrequesttoken = 455653361;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
   repeated ParameterizedStatement transactstatements = 446038782;
 
@@ -1707,7 +1707,7 @@ message ExpectedAttributeValue {
 
   repeated AttributeValue attributevaluelist = 157424013;
 
-  ComparisonOperator comparisonoperator = 7059861;
+  optional ComparisonOperator comparisonoperator = 7059861;
 
   optional bool exists = 265084382;
 
@@ -1739,15 +1739,15 @@ message ExportDescription {
 
   optional string exportarn = 3661287;
 
-  ExportFormat exportformat = 300799837;
+  optional ExportFormat exportformat = 300799837;
 
   optional string exportmanifest = 196735863;
 
-  ExportStatus exportstatus = 459702918;
+  optional ExportStatus exportstatus = 459702918;
 
   optional string exporttime = 28335083;
 
-  ExportType exporttype = 189377484;
+  optional ExportType exporttype = 189377484;
 
   optional string failurecode = 84707897;
 
@@ -1763,7 +1763,7 @@ message ExportDescription {
 
   optional string s3prefix = 21529336;
 
-  S3SseAlgorithm s3ssealgorithm = 213032706;
+  optional S3SseAlgorithm s3ssealgorithm = 213032706;
 
   optional string s3ssekmskeyid = 9386110;
 
@@ -1815,9 +1815,9 @@ message ExportSummary {
 
   optional string exportarn = 3661287;
 
-  ExportStatus exportstatus = 459702918;
+  optional ExportStatus exportstatus = 459702918;
 
-  ExportType exporttype = 189377484;
+  optional ExportType exporttype = 189377484;
 
 }
 
@@ -1827,11 +1827,11 @@ message ExportTableToPointInTimeInput {
 
   optional string clienttoken = 137297356;
 
-  ExportFormat exportformat = 300799837;
+  optional ExportFormat exportformat = 300799837;
 
   optional string exporttime = 28335083;
 
-  ExportType exporttype = 189377484;
+  optional ExportType exporttype = 189377484;
 
   IncrementalExportSpecification incrementalexportspecification = 20792295;
 
@@ -1841,7 +1841,7 @@ message ExportTableToPointInTimeInput {
 
   optional string s3prefix = 21529336;
 
-  S3SseAlgorithm s3ssealgorithm = 213032706;
+  optional S3SseAlgorithm s3ssealgorithm = 213032706;
 
   optional string s3ssekmskeyid = 9386110;
 
@@ -1921,7 +1921,7 @@ message GetItemInput {
 
   optional string projectionexpression = 150730243;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
   string tablename = 272020061;
 
@@ -2003,7 +2003,7 @@ message GlobalSecondaryIndexDescription {
 
   optional int64 indexsizebytes = 395738346;
 
-  IndexStatus indexstatus = 364436830;
+  optional IndexStatus indexstatus = 364436830;
 
   optional int64 itemcount = 26280022;
 
@@ -2059,7 +2059,7 @@ message GlobalSecondaryIndexWarmThroughputDescription {
 
   optional int64 readunitspersecond = 11400732;
 
-  IndexStatus status = 6222352;
+  optional IndexStatus status = 6222352;
 
   optional int64 writeunitspersecond = 339770127;
 
@@ -2099,7 +2099,7 @@ message GlobalTableDescription {
 
   optional string globaltablename = 283759402;
 
-  GlobalTableStatus globaltablestatus = 8833293;
+  optional GlobalTableStatus globaltablestatus = 8833293;
 
   repeated ReplicaDescription replicationgroup = 190970785;
 
@@ -2163,7 +2163,7 @@ message GlobalTableWitnessDescription {
 
   optional string regionname = 112086463;
 
-  WitnessStatus witnessstatus = 303352887;
+  optional WitnessStatus witnessstatus = 303352887;
 
 }
 
@@ -2237,9 +2237,9 @@ message ImportSummary {
 
   optional string importarn = 444379628;
 
-  ImportStatus importstatus = 129077631;
+  optional ImportStatus importstatus = 129077631;
 
-  InputFormat inputformat = 405664101;
+  optional InputFormat inputformat = 405664101;
 
   S3BucketSource s3bucketsource = 202310037;
 
@@ -2269,13 +2269,13 @@ message ImportTableDescription {
 
   optional string importarn = 444379628;
 
-  ImportStatus importstatus = 129077631;
+  optional ImportStatus importstatus = 129077631;
 
   optional int64 importeditemcount = 202622198;
 
-  InputCompressionType inputcompressiontype = 392699396;
+  optional InputCompressionType inputcompressiontype = 392699396;
 
-  InputFormat inputformat = 405664101;
+  optional InputFormat inputformat = 405664101;
 
   InputFormatOptions inputformatoptions = 249201403;
 
@@ -2301,7 +2301,7 @@ message ImportTableInput {
 
   optional string clienttoken = 137297356;
 
-  InputCompressionType inputcompressiontype = 392699396;
+  optional InputCompressionType inputcompressiontype = 392699396;
 
   InputFormat inputformat = 405664101;
 
@@ -2331,7 +2331,7 @@ message IncrementalExportSpecification {
 
   optional string exporttotime = 242369368;
 
-  ExportViewType exportviewtype = 26765639;
+  optional ExportViewType exportviewtype = 26765639;
 
 }
 
@@ -2509,9 +2509,9 @@ message KeysAndAttributes {
 
 message KinesisDataStreamDestination {
 
-  ApproximateCreationDateTimePrecision approximatecreationdatetimeprecision = 392293352;
+  optional ApproximateCreationDateTimePrecision approximatecreationdatetimeprecision = 392293352;
 
-  DestinationStatus destinationstatus = 381248234;
+  optional DestinationStatus destinationstatus = 381248234;
 
   optional string destinationstatusdescription = 499573086;
 
@@ -2535,7 +2535,7 @@ message KinesisStreamingDestinationInput {
 
 message KinesisStreamingDestinationOutput {
 
-  DestinationStatus destinationstatus = 381248234;
+  optional DestinationStatus destinationstatus = 381248234;
 
   EnableKinesisStreamingConfiguration enablekinesisstreamingconfiguration = 300307843;
 
@@ -2559,7 +2559,7 @@ message LimitExceededException {
 
 message ListBackupsInput {
 
-  BackupTypeFilter backuptype = 134973992;
+  optional BackupTypeFilter backuptype = 134973992;
 
   optional string exclusivestartbackuparn = 381696959;
 
@@ -2803,7 +2803,7 @@ message ParameterizedStatement {
 
   repeated AttributeValue parameters = 494900218;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string statement = 248790199;
 
@@ -2819,7 +2819,7 @@ message PointInTimeRecoveryDescription {
 
   optional string latestrestorabledatetime = 131030757;
 
-  PointInTimeRecoveryStatus pointintimerecoverystatus = 510838075;
+  optional PointInTimeRecoveryStatus pointintimerecoverystatus = 510838075;
 
   optional int32 recoveryperiodindays = 67453592;
 
@@ -2875,7 +2875,7 @@ message Projection {
 
   repeated string nonkeyattributes = 312245447;
 
-  ProjectionType projectiontype = 120720617;
+  optional ProjectionType projectiontype = 120720617;
 
 }
 
@@ -2957,7 +2957,7 @@ message Put {
 
   map<string, AttributeValue> item = 526680071;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string tablename = 272020061;
 
@@ -2971,7 +2971,7 @@ message PutItemInput {
 
   optional string conditionexpression = 409657405;
 
-  ConditionalOperator conditionaloperator = 172066260;
+  optional ConditionalOperator conditionaloperator = 172066260;
 
   map<string, ExpectedAttributeValue> expected = 106557946;
 
@@ -2981,13 +2981,13 @@ message PutItemInput {
 
   map<string, AttributeValue> item = 526680071;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
-  ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
+  optional ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
 
-  ReturnValue returnvalues = 402960198;
+  optional ReturnValue returnvalues = 402960198;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string tablename = 272020061;
 
@@ -3047,7 +3047,7 @@ message QueryInput {
 
   repeated string attributestoget = 311382592;
 
-  ConditionalOperator conditionaloperator = 172066260;
+  optional ConditionalOperator conditionaloperator = 172066260;
 
   optional bool consistentread = 531556994;
 
@@ -3071,11 +3071,11 @@ message QueryInput {
 
   map<string, Condition> queryfilter = 107880942;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
   optional bool scanindexforward = 360066954;
 
-  Select select = 512305998;
+  optional Select select = 512305998;
 
   string tablename = 272020061;
 
@@ -3133,7 +3133,7 @@ message ReplicaAutoScalingDescription {
 
   AutoScalingSettingsDescription replicaprovisionedwritecapacityautoscalingsettings = 293841796;
 
-  ReplicaStatus replicastatus = 466739730;
+  optional ReplicaStatus replicastatus = 466739730;
 
 }
 
@@ -3159,7 +3159,7 @@ message ReplicaDescription {
 
   repeated ReplicaGlobalSecondaryIndexDescription globalsecondaryindexes = 409156905;
 
-  GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
+  optional GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
 
   optional string kmsmasterkeyid = 521459443;
 
@@ -3173,7 +3173,7 @@ message ReplicaDescription {
 
   optional string replicainaccessibledatetime = 20060608;
 
-  ReplicaStatus replicastatus = 466739730;
+  optional ReplicaStatus replicastatus = 466739730;
 
   optional string replicastatusdescription = 416683638;
 
@@ -3207,7 +3207,7 @@ message ReplicaGlobalSecondaryIndexAutoScalingDescription {
 
   optional string indexname = 102427281;
 
-  IndexStatus indexstatus = 364436830;
+  optional IndexStatus indexstatus = 364436830;
 
   AutoScalingSettingsDescription provisionedreadcapacityautoscalingsettings = 85617667;
 
@@ -3251,7 +3251,7 @@ message ReplicaGlobalSecondaryIndexSettingsDescription {
 
   string indexname = 102427281;
 
-  IndexStatus indexstatus = 364436830;
+  optional IndexStatus indexstatus = 364436830;
 
   AutoScalingSettingsDescription provisionedreadcapacityautoscalingsettings = 85617667;
 
@@ -3307,7 +3307,7 @@ message ReplicaSettingsDescription {
 
   optional int64 replicaprovisionedwritecapacityunits = 356738858;
 
-  ReplicaStatus replicastatus = 466739730;
+  optional ReplicaStatus replicastatus = 466739730;
 
   TableClassSummary replicatableclasssummary = 519483614;
 
@@ -3327,7 +3327,7 @@ message ReplicaSettingsUpdate {
 
   optional int64 replicaprovisionedreadcapacityunits = 82081083;
 
-  TableClass replicatableclass = 248679204;
+  optional TableClass replicatableclass = 248679204;
 
 }
 
@@ -3447,7 +3447,7 @@ message RestoreTableFromBackupInput {
 
   string backuparn = 370874339;
 
-  BillingMode billingmodeoverride = 357784560;
+  optional BillingMode billingmodeoverride = 357784560;
 
   repeated GlobalSecondaryIndex globalsecondaryindexoverride = 369844021;
 
@@ -3477,7 +3477,7 @@ message RestoreTableFromBackupOutput {
 
 message RestoreTableToPointInTimeInput {
 
-  BillingMode billingmodeoverride = 357784560;
+  optional BillingMode billingmodeoverride = 357784560;
 
   repeated GlobalSecondaryIndex globalsecondaryindexoverride = 369844021;
 
@@ -3593,9 +3593,9 @@ message SSEDescription {
 
   optional string kmsmasterkeyarn = 281937987;
 
-  SSEType ssetype = 431846435;
+  optional SSEType ssetype = 431846435;
 
-  SSEStatus status = 6222352;
+  optional SSEStatus status = 6222352;
 
 }
 
@@ -3609,7 +3609,7 @@ message SSESpecification {
 
   optional string kmsmasterkeyid = 521459443;
 
-  SSEType ssetype = 431846435;
+  optional SSEType ssetype = 431846435;
 
 }
 
@@ -3659,7 +3659,7 @@ message ScanInput {
 
   repeated string attributestoget = 311382592;
 
-  ConditionalOperator conditionaloperator = 172066260;
+  optional ConditionalOperator conditionaloperator = 172066260;
 
   optional bool consistentread = 531556994;
 
@@ -3677,13 +3677,13 @@ message ScanInput {
 
   optional string projectionexpression = 150730243;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
   map<string, Condition> scanfilter = 272885755;
 
   optional int32 segment = 279654279;
 
-  Select select = 512305998;
+  optional Select select = 512305998;
 
   string tablename = 272020061;
 
@@ -3755,7 +3755,7 @@ message SearchVectorsInput {
 
   optional string projectionexpression = 150730243;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
   optional string searchconditionexpression = 251540249;
 
@@ -3797,7 +3797,7 @@ enum Select {
 
 message SourceTableDetails {
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   optional int64 itemcount = 26280022;
 
@@ -3847,7 +3847,7 @@ message StreamSpecification {
 
   optional bool streamenabled = 266707711;
 
-  StreamViewType streamviewtype = 380488241;
+  optional StreamViewType streamviewtype = 380488241;
 
 }
 
@@ -3885,7 +3885,7 @@ message TableAutoScalingDescription {
 
   optional string tablename = 272020061;
 
-  TableStatus tablestatus = 207908810;
+  optional TableStatus tablestatus = 207908810;
 
 }
 
@@ -3907,7 +3907,7 @@ message TableClassSummary {
 
   optional string lastupdatedatetime = 452274318;
 
-  TableClass tableclass = 342890498;
+  optional TableClass tableclass = 342890498;
 
 }
 
@@ -3919,7 +3919,7 @@ message TableCreationParameters {
 
   repeated AttributeDefinition attributedefinitions = 414687108;
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   repeated GlobalSecondaryIndex globalsecondaryindexes = 409156905;
 
@@ -3955,7 +3955,7 @@ message TableDescription {
 
   repeated GlobalSecondaryIndexDescription globalsecondaryindexes = 409156905;
 
-  GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
+  optional GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
 
   optional string globaltableversion = 68234287;
 
@@ -3971,7 +3971,7 @@ message TableDescription {
 
   repeated LocalSecondaryIndexDescription localsecondaryindexes = 362339959;
 
-  MultiRegionConsistency multiregionconsistency = 446019131;
+  optional MultiRegionConsistency multiregionconsistency = 446019131;
 
   OnDemandThroughput ondemandthroughput = 481734402;
 
@@ -3995,7 +3995,7 @@ message TableDescription {
 
   optional int64 tablesizebytes = 220631294;
 
-  TableStatus tablestatus = 207908810;
+  optional TableStatus tablestatus = 207908810;
 
   repeated VectorIndexDescription vectorindexes = 66291727;
 
@@ -4053,7 +4053,7 @@ message TableWarmThroughputDescription {
 
   optional int64 readunitspersecond = 11400732;
 
-  TableStatus status = 6222352;
+  optional TableStatus status = 6222352;
 
   optional int64 writeunitspersecond = 339770127;
 
@@ -4113,7 +4113,7 @@ message TimeToLiveDescription {
 
   optional string attributename = 352717485;
 
-  TimeToLiveStatus timetolivestatus = 279467554;
+  optional TimeToLiveStatus timetolivestatus = 279467554;
 
 }
 
@@ -4157,7 +4157,7 @@ message TransactGetItem {
 
 message TransactGetItemsInput {
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
   repeated TransactGetItem transactitems = 506245290;
 
@@ -4195,9 +4195,9 @@ message TransactWriteItemsInput {
 
   optional string clientrequesttoken = 455653361;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
-  ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
+  optional ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
 
   repeated TransactWriteItem transactitems = 506245290;
 
@@ -4269,7 +4269,7 @@ message Update {
 
   map<string, AttributeValue> key = 219859213;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string tablename = 272020061;
 
@@ -4301,7 +4301,7 @@ message UpdateContributorInsightsInput {
 
   ContributorInsightsAction contributorinsightsaction = 81909182;
 
-  ContributorInsightsMode contributorinsightsmode = 86700161;
+  optional ContributorInsightsMode contributorinsightsmode = 86700161;
 
   optional string indexname = 102427281;
 
@@ -4313,9 +4313,9 @@ message UpdateContributorInsightsInput {
 
 message UpdateContributorInsightsOutput {
 
-  ContributorInsightsMode contributorinsightsmode = 86700161;
+  optional ContributorInsightsMode contributorinsightsmode = 86700161;
 
-  ContributorInsightsStatus contributorinsightsstatus = 363347282;
+  optional ContributorInsightsStatus contributorinsightsstatus = 363347282;
 
   optional string indexname = 102427281;
 
@@ -4361,7 +4361,7 @@ message UpdateGlobalTableOutput {
 
 message UpdateGlobalTableSettingsInput {
 
-  BillingMode globaltablebillingmode = 285868859;
+  optional BillingMode globaltablebillingmode = 285868859;
 
   repeated GlobalTableGlobalSecondaryIndexSettingsUpdate globaltableglobalsecondaryindexsettingsupdate = 368411116;
 
@@ -4395,7 +4395,7 @@ message UpdateItemInput {
 
   optional string conditionexpression = 409657405;
 
-  ConditionalOperator conditionaloperator = 172066260;
+  optional ConditionalOperator conditionaloperator = 172066260;
 
   map<string, ExpectedAttributeValue> expected = 106557946;
 
@@ -4405,13 +4405,13 @@ message UpdateItemInput {
 
   map<string, AttributeValue> key = 219859213;
 
-  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+  optional ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
-  ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
+  optional ReturnItemCollectionMetrics returnitemcollectionmetrics = 255507354;
 
-  ReturnValue returnvalues = 402960198;
+  optional ReturnValue returnvalues = 402960198;
 
-  ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
+  optional ReturnValuesOnConditionCheckFailure returnvaluesonconditioncheckfailure = 4213728;
 
   string tablename = 272020061;
 
@@ -4439,7 +4439,7 @@ message UpdateItemOutput {
 
 message UpdateKinesisStreamingConfiguration {
 
-  ApproximateCreationDateTimePrecision approximatecreationdatetimeprecision = 392293352;
+  optional ApproximateCreationDateTimePrecision approximatecreationdatetimeprecision = 392293352;
 
 }
 
@@ -4459,7 +4459,7 @@ message UpdateKinesisStreamingDestinationInput {
 
 message UpdateKinesisStreamingDestinationOutput {
 
-  DestinationStatus destinationstatus = 381248234;
+  optional DestinationStatus destinationstatus = 381248234;
 
   optional string streamarn = 513423709;
 
@@ -4485,7 +4485,7 @@ message UpdateReplicationGroupMemberAction {
 
   string regionname = 112086463;
 
-  TableClass tableclassoverride = 415569842;
+  optional TableClass tableclassoverride = 415569842;
 
 }
 
@@ -4497,17 +4497,17 @@ message UpdateTableInput {
 
   repeated AttributeDefinition attributedefinitions = 414687108;
 
-  BillingMode billingmode = 184162880;
+  optional BillingMode billingmode = 184162880;
 
   optional bool deletionprotectionenabled = 259418450;
 
   repeated GlobalSecondaryIndexUpdate globalsecondaryindexupdates = 265760923;
 
-  GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
+  optional GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
 
   repeated GlobalTableWitnessGroupUpdate globaltablewitnessupdates = 269201458;
 
-  MultiRegionConsistency multiregionconsistency = 446019131;
+  optional MultiRegionConsistency multiregionconsistency = 446019131;
 
   OnDemandThroughput ondemandthroughput = 481734402;
 
@@ -4519,7 +4519,7 @@ message UpdateTableInput {
 
   StreamSpecification streamspecification = 403922627;
 
-  TableClass tableclass = 342890498;
+  optional TableClass tableclass = 342890498;
 
   string tablename = 272020061;
 
@@ -4645,7 +4645,7 @@ message VectorIndexDescription {
 
   optional int64 dimensions = 462933457;
 
-  VectorDistanceFunction distancefunction = 423470871;
+  optional VectorDistanceFunction distancefunction = 423470871;
 
   optional string indexarn = 374335615;
 
@@ -4653,7 +4653,7 @@ message VectorIndexDescription {
 
   optional int64 indexsizebytes = 395738346;
 
-  IndexStatus indexstatus = 364436830;
+  optional IndexStatus indexstatus = 364436830;
 
   optional int64 itemcount = 26280022;
 
@@ -4673,7 +4673,7 @@ message VectorIndexInfo {
 
   optional int64 dimensions = 462933457;
 
-  VectorDistanceFunction distancefunction = 423470871;
+  optional VectorDistanceFunction distancefunction = 423470871;
 
   optional string indexname = 102427281;
 

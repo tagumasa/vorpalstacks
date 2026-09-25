@@ -15,11 +15,14 @@ func journalBucketName(region string) string {
 	return "dynamodb_journal-" + region
 }
 
-// Journal operations: every journaled item mutation is either a put (the key
-// may or may not have existed before) or a delete.
+// JournalOperation distinguishes the two journaled item mutations: every
+// record is either a put (the key may or may not have existed before) or a
+// delete.
+type JournalOperation string
+
 const (
-	JournalOperationPut    = "PUT"
-	JournalOperationDelete = "DELETE"
+	JournalOperationPut    JournalOperation = "PUT"
+	JournalOperationDelete JournalOperation = "DELETE"
 )
 
 // journalSequence breaks ordering ties between records appended within the
@@ -33,13 +36,22 @@ const (
 	journalSeqWidth  = 10
 )
 
+// journalSeqModulus bounds the tie-breaking sequence at its key width: the
+// rendered component must stay exactly journalSeqWidth digits, because a
+// wider component sorts lexicographically BEFORE every narrower one and
+// would invert the journal's total order. The tie-breaker needs uniqueness
+// only among records appended within the same nanosecond, and 10^10
+// same-nanosecond appends cannot occur, so wrapping the counter loses
+// nothing.
+const journalSeqModulus = 10_000_000_000
+
 // journalRecord is the in-memory form of one item mutation on a table with
 // point-in-time recovery enabled. BeforeImage holds the complete attribute
 // map of the item as it was before the mutation (nil when the key did not
 // exist), which is exactly the state needed to undo the change.
 type journalRecord struct {
 	Timestamp   int64
-	Operation   string
+	Operation   JournalOperation
 	Key         map[string]*AttributeValue
 	BeforeImage map[string]*AttributeValue
 }
@@ -49,13 +61,13 @@ type journalRecord struct {
 // table yields records oldest-first.
 func journalRecordKey(tableName string, at time.Time) string {
 	return tableName + KeySep + fmt.Sprintf("%0*d%0*d",
-		journalTimeWidth, at.UnixNano(), journalSeqWidth, journalSequence.Add(1))
+		journalTimeWidth, at.UnixNano(), journalSeqWidth, journalSequence.Add(1)%journalSeqModulus)
 }
 
 // appendJournalTxnAt appends one journal record inside the given transaction
 // so the journal entry commits atomically with the item mutation it
 // describes. The append time is injected for testability.
-func appendJournalTxnAt(txn storage.Transaction, region, tableName, operation string, key, beforeImage map[string]*AttributeValue, at time.Time) error {
+func appendJournalTxnAt(txn storage.Transaction, region, tableName string, operation JournalOperation, key, beforeImage map[string]*AttributeValue, at time.Time) error {
 	data, err := proto.Marshal(journalRecordToProto(&journalRecord{
 		Timestamp:   at.UnixNano(),
 		Operation:   operation,
@@ -70,7 +82,7 @@ func appendJournalTxnAt(txn storage.Transaction, region, tableName, operation st
 }
 
 // appendJournalTxn appends one journal record at the current time.
-func appendJournalTxn(txn storage.Transaction, region, tableName, operation string, key, beforeImage map[string]*AttributeValue) error {
+func appendJournalTxn(txn storage.Transaction, region, tableName string, operation JournalOperation, key, beforeImage map[string]*AttributeValue) error {
 	return appendJournalTxnAt(txn, region, tableName, operation, key, beforeImage, time.Now())
 }
 
@@ -136,6 +148,32 @@ func (s *JournalStore) ReverseReplay(tableName string, from time.Time, fn func(r
 	return nil
 }
 
+// WindowReplay hands the caller every journaled mutation of the table whose
+// append time lies in the half-open window [from, to), oldest first. The
+// incremental export reads exactly this window: the specification documents
+// ExportFromTime as the inclusive start of the exported change range and
+// ExportToTime as its exclusive end.
+func (s *JournalStore) WindowReplay(tableName string, from, to time.Time, fn func(record *JournalChange) error) error {
+	prefix := tableName + KeySep
+	fromNanos, toNanos := from.UnixNano(), to.UnixNano()
+	return s.BaseStore.ScanPrefix(prefix, func(_ string, value []byte) error {
+		record, err := journalRecordFromBytes(value)
+		if err != nil {
+			return err
+		}
+		if record.Timestamp < fromNanos || record.Timestamp >= toNanos {
+			return nil
+		}
+		change := &JournalChange{
+			Timestamp:   time.Unix(0, record.Timestamp),
+			Operation:   record.Operation,
+			Key:         record.Key,
+			BeforeImage: record.BeforeImage,
+		}
+		return fn(change)
+	})
+}
+
 // DeleteOlderThan removes every journal record of the table appended at or
 // before the cutoff and returns how many were removed. Records at or before
 // the table's EarliestRestorableDateTime can never be replayed by a
@@ -176,7 +214,48 @@ func (s *JournalStore) DeleteAllForTable(tableName string) error {
 // JournalChange is the caller-facing form of one journaled mutation.
 type JournalChange struct {
 	Timestamp   time.Time
-	Operation   string
+	Operation   JournalOperation
 	Key         map[string]*AttributeValue
 	BeforeImage map[string]*AttributeValue
+}
+
+// journalPut appends a journal record for a put on a table with
+// point-in-time recovery enabled. The record stores the pre-write item so a
+// restore can undo the change; the append shares the caller's transaction,
+// so the journal never diverges from the item state.
+func (t *DynamoDBTxn) journalPut(table *Table, key map[string]*AttributeValue) error {
+	if !pitrEnabled(table) {
+		return nil
+	}
+	beforeImage := t.itemBeforeImage(table.Name, key)
+	return appendJournalTxn(t.txn, t.region(), table.Name, JournalOperationPut, key, beforeImage)
+}
+
+// journalDelete appends a journal record for a delete. Deletes of keys that
+// do not exist are not journaled because they change nothing.
+func (t *DynamoDBTxn) journalDelete(table *Table, key map[string]*AttributeValue) error {
+	if !pitrEnabled(table) {
+		return nil
+	}
+	beforeImage := t.itemBeforeImage(table.Name, key)
+	if beforeImage == nil {
+		return nil
+	}
+	return appendJournalTxn(t.txn, t.region(), table.Name, JournalOperationDelete, key, beforeImage)
+}
+
+// pitrEnabled reports whether the table currently has point-in-time
+// recovery enabled.
+func pitrEnabled(table *Table) bool {
+	return table != nil && table.PointInTimeRecovery != nil && table.PointInTimeRecovery.Status == PITRStatusEnabled
+}
+
+// itemBeforeImage reads the item's current attribute map through the
+// transaction, or nil when the key does not exist.
+func (t *DynamoDBTxn) itemBeforeImage(tableName string, key map[string]*AttributeValue) map[string]*AttributeValue {
+	existing, err := t.GetItem(tableName, key)
+	if err != nil || existing == nil {
+		return nil
+	}
+	return existing.Attributes
 }

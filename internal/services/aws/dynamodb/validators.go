@@ -1,12 +1,14 @@
 package dynamodb
 
 import (
+	"math"
 	"regexp"
 	"strings"
 	"unicode/utf8"
 
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	"vorpalstacks/internal/utils/aws/arn"
 )
 
 // ---------------------------------------------------------------------------
@@ -53,7 +55,6 @@ const (
 	nonKeyAttrListMaxLen        = 20
 	partiqlStatementMaxLen      = 8192
 	partiqlBatchMaxLen          = 25
-	partiqlNextTokenMaxLen      = 32768
 	importNextTokenMinLen       = 112
 	importNextTokenMaxLen       = 1024
 	tagKeyMaxLen                = 128
@@ -99,6 +100,8 @@ const (
 	listGlobalTablesMinPageSize        = 10
 	listStreamsDefaultLimit            = 100
 	listStreamsMaxLimit                = 100
+	describeStreamDefaultLimit         = 100
+	describeStreamMaxLimit             = 100
 	getRecordsDefaultLimit             = 100
 	getRecordsMaxLimit                 = 1000
 	listTagsForResourceDefaultPageSize = 50
@@ -111,12 +114,11 @@ const (
 	// PITR default recovery window in days (AWS default: 35 days).
 	pitrDefaultRecoveryPeriodDays = 35
 
-	// Data-plane Query/Scan pagination defaults. AWS does not document a
-	// hard cap for these (the documented max is 1 MB per page), but the
-	// SDK tests and the existing implementation cap the item count at
-	// 1000 to bound work. The admin Scan handler shares the same cap.
+	// Data-plane Query/Scan page size when the request carries no Limit.
+	// The Limit parameter's model range has a minimum of 1 and no maximum;
+	// the documented AWS page bound is 1 MB of data, not an item count, so
+	// a requested Limit is honoured as-is.
 	dataPlaneQueryDefaultLimit = 100
-	dataPlaneQueryMaxLimit     = 1000
 )
 
 // Compiled regex patterns from Smithy @pattern traits.
@@ -126,7 +128,6 @@ var (
 
 	s3BucketRegex              = regexp.MustCompile(`^[a-z0-9A-Z]+[.\-\w]*[a-z0-9A-Z]+$`)
 	s3BucketOwnerRegex         = regexp.MustCompile(`^[0-9]{12}$`)
-	tableIdRegex               = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 	clientTokenRegex           = regexp.MustCompile(`^[^\$]+$`)
 	importNextTokenRegex       = regexp.MustCompile(`^([0-9a-f]{16})+$`)
 	autoScalingPolicyNameRegex = regexp.MustCompile(`[^[:cntrl:]]+`)
@@ -188,8 +189,26 @@ func validateResourceName(name string) bool {
 	return resourceNameRegex.MatchString(name)
 }
 
-// validateIndexName reports whether a secondary-index name meets the same
-// constraints as table names (Smithy IndexName: len 3-255, pattern).
+// resolveTableNameMember normalises a table-naming member that documents
+// both forms — the bare table name or the table's ARN — into the bare
+// name the stores key records under, parsing the ARN rather than probing
+// substrings. The ARN form must be the table ARN itself: stream and index
+// ARNs carry further resource segments, so a resource that is not exactly
+// table/<name> does not resolve.
+func resolveTableNameMember(member string) (string, error) {
+	if parsed, perr := arn.ParseARN(member); perr == nil {
+		name, isTable := strings.CutPrefix(parsed.Resource, "table/")
+		if parsed.Service != "dynamodb" || !isTable || strings.Contains(name, "/") {
+			return "", ErrInvalidParameter
+		}
+		member = name
+	}
+	if !validateResourceName(member) {
+		return "", ErrInvalidParameter
+	}
+	return member, nil
+}
+
 // validateVectorDistanceFunction reports whether fn is one of the modelled
 // vector distance functions.
 func validateVectorDistanceFunction(fn string) bool {
@@ -271,7 +290,9 @@ func validateProjectionRequired(projMap map[string]interface{}) bool {
 	}
 	projectionType := request.GetStringParam(projMap, "ProjectionType")
 	if nkAs, ok := projMap["NonKeyAttributes"].([]interface{}); ok {
-		if len(nkAs) > nonKeyAttrListMaxLen {
+		// The list trait bounds the length at both ends: an explicitly
+		// empty NonKeyAttributes list violates the minimum of 1.
+		if len(nkAs) == 0 || len(nkAs) > nonKeyAttrListMaxLen {
 			return false
 		}
 		for _, nk := range nkAs {
@@ -365,6 +386,54 @@ func validateBillingModeConsistency(billingMode dbstore.BillingMode, provThrough
 	return true
 }
 
+// validateSecondaryIndexQuotas reports whether a table's secondary index
+// families satisfy the documented per-table quotas: at most 20 global
+// secondary indexes, at most 5 local secondary indexes, and at most 100
+// user-specified projected attribute names combined across all secondary
+// indexes — the sum the quota page states "only applies to user-specified
+// projected attributes".
+func validateSecondaryIndexQuotas(gsis []*dbstore.GlobalSecondaryIndex, lsis []*dbstore.LocalSecondaryIndex) bool {
+	if len(gsis) > dbstore.GlobalSecondaryIndexesPerTable {
+		return false
+	}
+	if len(lsis) > dbstore.LocalSecondaryIndexesPerTable {
+		return false
+	}
+	projected := 0
+	for _, gsi := range gsis {
+		if gsi.Projection != nil {
+			projected += len(gsi.Projection.NonKeyAttributes)
+		}
+	}
+	for _, lsi := range lsis {
+		if lsi.Projection != nil {
+			projected += len(lsi.Projection.NonKeyAttributes)
+		}
+	}
+	return projected <= dbstore.ProjectedAttributesPerTable
+}
+
+// validateIndexThroughputModeConsistency reports whether every global
+// secondary index's capacity settings follow the table's billing mode:
+// "Global secondary indexes inherit the read/write capacity mode from the
+// base table", and the throughput member's own contract is "You must use
+// ProvisionedThroughput or OnDemandThroughput based on your table's capacity
+// mode" — so a provisioned table's index carries provisioned settings and an
+// on-demand table's index carries none.
+func validateIndexThroughputModeConsistency(billingMode dbstore.BillingMode, gsis []*dbstore.GlobalSecondaryIndex) bool {
+	for _, gsi := range gsis {
+		if billingMode == dbstore.BillingModeProvisioned {
+			if gsi.ProvisionedThroughput == nil || !validateProvisionedThroughputValues(gsi.ProvisionedThroughput) {
+				return false
+			}
+		}
+		if billingMode == dbstore.BillingModePayPerRequest && gsi.ProvisionedThroughput != nil {
+			return false
+		}
+	}
+	return true
+}
+
 // validateProvisionedThroughputValues reports whether both capacity values
 // fall inside the model's PositiveLongObject range (minimum 1).
 func validateProvisionedThroughputValues(pt *dbstore.ProvisionedThroughput) bool {
@@ -414,11 +483,18 @@ func validateStreamSpecification(spec *dbstore.StreamSpecification) error {
 // Kept as (bool, error) because the parsed value is needed by the caller on
 // success; the bool alone is insufficient.
 func validateBoolParam(params map[string]interface{}, key string, defaultVal bool) (bool, error) {
-	v, ok := params[key]
-	if !ok {
+	return validateBoolValue(params[key], defaultVal)
+}
+
+// validateBoolValue is validateBoolParam's form for a caller that holds the
+// raw wire member rather than the parameter map (a core reading a DTO field
+// the handler extracted): nil is the absent member and yields the default,
+// a present non-bool is rejected rather than silently coerced.
+func validateBoolValue(raw interface{}, defaultVal bool) (bool, error) {
+	if raw == nil {
 		return defaultVal, nil
 	}
-	b, ok := v.(bool)
+	b, ok := raw.(bool)
 	if !ok {
 		return false, ErrInvalidParameter
 	}
@@ -427,7 +503,9 @@ func validateBoolParam(params map[string]interface{}, key string, defaultVal boo
 
 // validateBracketIndex parses a bracket-enclosed list index (e.g. "[3]")
 // and returns the integer index. Returns an error for empty, non-numeric,
-// or negative values (Smithy document path spec).
+// or negative values (Smithy document path spec), and for digit runs the
+// machine cannot represent: the accumulation bails at the first digit that
+// would overflow, so an absurd index can never wrap into a small valid one.
 //
 // Kept as (int, error) because the parsed index is needed by the caller on
 // success; the bool alone is insufficient.
@@ -441,10 +519,11 @@ func validateBracketIndex(idxStr string) (int, error) {
 		if ch < '0' || ch > '9' {
 			return 0, ErrInvalidParameter
 		}
-		idx = idx*10 + int(ch-'0')
-	}
-	if idx < 0 {
-		return 0, ErrInvalidParameter
+		digit := int(ch - '0')
+		if idx > (math.MaxInt-digit)/10 {
+			return 0, ErrInvalidParameter
+		}
+		idx = idx*10 + digit
 	}
 	return idx, nil
 }
@@ -473,15 +552,15 @@ func validateExecuteStatementLimit(limit int) bool {
 }
 
 // validateS3Bucket reports whether bucket matches the S3 bucket name format
-// (Smithy S3Bucket: len 0-255, pattern ^[a-z0-9A-Z]+[.\-\w]*[a-z0-9A-Z]+$).
+// (Smithy S3Bucket: pattern ^[a-z0-9A-Z]+[.\-\w]*[a-z0-9A-Z]+$, length at
+// most 255). The pattern applies unconditionally: it requires at least two
+// characters, so the empty string — a required member's omission — fails
+// at request time rather than inside the background job.
 func validateS3Bucket(bucket string) bool {
 	if !validateLength(bucket, 0, s3BucketMaxLen) {
 		return false
 	}
-	if bucket != "" && !s3BucketRegex.MatchString(bucket) {
-		return false
-	}
-	return true
+	return s3BucketRegex.MatchString(bucket)
 }
 
 // validateS3BucketOwner reports whether owner matches the S3 bucket owner
@@ -508,6 +587,30 @@ func validateS3SseKmsKeyId(keyId string) bool {
 		return true
 	}
 	return validateLength(keyId, s3SseKmsKeyIdMinLen, s3SseKmsKeyIdMaxLen)
+}
+
+// validateS3SseAlgorithm reports whether algorithm is a member of the
+// S3SseAlgorithm enum (Smithy: AES256 | KMS). Empty is treated as valid
+// (parameter omitted — the destination bucket's default encryption then
+// governs).
+func validateS3SseAlgorithm(algorithm string) bool {
+	return algorithm == "" || algorithm == "AES256" || algorithm == "KMS"
+}
+
+// validateExportType reports whether exportType is a member of the
+// ExportType enum (Smithy: FULL_EXPORT | INCREMENTAL_EXPORT). Empty is
+// treated as valid (parameter omitted — the documented default is
+// FULL_EXPORT).
+func validateExportType(exportType string) bool {
+	return exportType == "" || exportType == "FULL_EXPORT" || exportType == "INCREMENTAL_EXPORT"
+}
+
+// validateExportViewType reports whether viewType is a member of the
+// ExportViewType enum (Smithy: NEW_IMAGE | NEW_AND_OLD_IMAGES). Empty is
+// treated as valid (parameter omitted — the documented default is
+// NEW_AND_OLD_IMAGES).
+func validateExportViewType(viewType string) bool {
+	return viewType == "" || viewType == "NEW_IMAGE" || viewType == "NEW_AND_OLD_IMAGES"
 }
 
 // ---------------------------------------------------------------------------
@@ -609,16 +712,6 @@ func validatePolicyRevisionId(id string) bool {
 // attribute name length constraint (Smithy TimeToLiveAttributeName: len 1-255).
 func validateTimeToLiveAttributeName(name string) bool {
 	return validateLength(name, 1, ttlAttributeNameMaxLen)
-}
-
-// validateTableId reports whether id matches the table UUID format
-// (Smithy TableId: pattern ^[0-9a-f]{8}-...$). Empty is treated as valid
-// (parameter omitted).
-func validateTableId(id string) bool {
-	if id == "" {
-		return true
-	}
-	return tableIdRegex.MatchString(id)
 }
 
 // validateImportNextToken reports whether token matches the ListImports

@@ -3,6 +3,7 @@ package cloudwatchlogs
 import (
 	"google.golang.org/protobuf/proto"
 
+	"vorpalstacks/internal/common/pbutil"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchlogs"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
@@ -16,11 +17,11 @@ func toPbLogGroupSummary(lg *logsstore.LogGroup) *pb.LogGroupSummary {
 	}
 	switch lg.LogGroupClass {
 	case "DELIVERY":
-		summary.Loggroupclass = pb.LogGroupClass_LOG_GROUP_CLASS_DELIVERY
+		summary.Loggroupclass = pbutil.Enum(pb.LogGroupClass_LOG_GROUP_CLASS_DELIVERY)
 	case "INFREQUENT_ACCESS":
-		summary.Loggroupclass = pb.LogGroupClass_LOG_GROUP_CLASS_INFREQUENT_ACCESS
+		summary.Loggroupclass = pbutil.Enum(pb.LogGroupClass_LOG_GROUP_CLASS_INFREQUENT_ACCESS)
 	default:
-		summary.Loggroupclass = pb.LogGroupClass_LOG_GROUP_CLASS_STANDARD
+		summary.Loggroupclass = pbutil.Enum(pb.LogGroupClass_LOG_GROUP_CLASS_STANDARD)
 	}
 	return summary
 }

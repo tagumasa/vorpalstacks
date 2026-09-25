@@ -5,7 +5,12 @@ import (
 	"testing"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
+
+func testARNBuilder() *svcarn.DynamoDBBuilder {
+	return svcarn.NewARNBuilder("123456789012", "us-east-1").DynamoDB()
+}
 
 func gsiFixture(name string) *dbstore.GlobalSecondaryIndex {
 	return &dbstore.GlobalSecondaryIndex{
@@ -40,7 +45,7 @@ func indexNames(gsis []*dbstore.GlobalSecondaryIndex) []string {
 func TestApplyGSIUpdatesReturnsDeletedIndexNames(t *testing.T) {
 	existing := []*dbstore.GlobalSecondaryIndex{gsiFixture("gsi-1"), gsiFixture("gsi-2")}
 
-	updated, deleted, err := applyGSIUpdates("arn:aws:dynamodb:us-east-1:123456789012:table/T", existing, []interface{}{gsiDeleteUpdate("gsi-1")})
+	updated, deleted, err := applyGSIUpdates(testARNBuilder(), "T", existing, []interface{}{gsiDeleteUpdate("gsi-1")})
 	if err != nil {
 		t.Fatalf("delete update: %v", err)
 	}
@@ -54,7 +59,7 @@ func TestApplyGSIUpdatesReturnsDeletedIndexNames(t *testing.T) {
 	// A delete followed by a same-name create in one request leaves the
 	// index in the final schema, so its entries must survive for the
 	// backfill to rebuild on top of.
-	updated, deleted, err = applyGSIUpdates("arn:aws:dynamodb:us-east-1:123456789012:table/T", existing, []interface{}{
+	updated, deleted, err = applyGSIUpdates(testARNBuilder(), "T", existing, []interface{}{
 		gsiDeleteUpdate("gsi-1"),
 		gsiCreateUpdate("gsi-1"),
 	})
@@ -69,7 +74,7 @@ func TestApplyGSIUpdatesReturnsDeletedIndexNames(t *testing.T) {
 	}
 
 	// Deleting an unknown index stays rejected.
-	_, _, err = applyGSIUpdates("arn:aws:dynamodb:us-east-1:123456789012:table/T", existing, []interface{}{gsiDeleteUpdate("nope")})
+	_, _, err = applyGSIUpdates(testARNBuilder(), "T", existing, []interface{}{gsiDeleteUpdate("nope")})
 	if !errors.Is(err, ErrIndexNotFound) {
 		t.Fatalf("delete of unknown index = %v, want ErrIndexNotFound", err)
 	}

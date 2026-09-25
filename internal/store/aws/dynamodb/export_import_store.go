@@ -2,6 +2,8 @@
 package dynamodb
 
 import (
+	"crypto/rand"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -9,6 +11,26 @@ import (
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
+
+// tableScopedId mints the distinguishing segment of an export, import, or
+// backup ARN: the creation time at millisecond granularity followed by
+// a random 8-hex-digit suffix, the shape the documented ARN examples of
+// all three families show (export 01234567890123-a1b2c3d4, backup
+// table/Music/backup/01489602797149-73d8d5bc). The timestamp alone cannot
+// tell two creations apart inside one millisecond; the random suffix
+// is what keeps concurrent same-table creations from sharing the ARN
+// their records are keyed by — the identity mechanism the documented
+// concurrency quotas rely on, with no one-in-progress guard on the API to
+// mask a collision. For backups the same mechanism is what lets
+// same-named generations of one table name coexist, each addressed by its
+// own ARN.
+func tableScopedId(now time.Time) (string, error) {
+	var suffix [4]byte
+	if _, err := rand.Read(suffix[:]); err != nil {
+		return "", fmt.Errorf("generate table-scoped resource id suffix: %w", err)
+	}
+	return fmt.Sprintf("%014d-%x", now.UnixMilli(), suffix[:]), nil
+}
 
 func exportBucketName(region string) string {
 	return "dynamodb_exports-" + region
@@ -42,13 +64,17 @@ func (s *ExportStore) Get(exportArn string) (*ExportDescription, error) {
 }
 
 // Create initiates a new export of a DynamoDB table to S3.
-func (s *ExportStore) Create(tableArn, tableId, exportFormat string) (*ExportDescription, error) {
+func (s *ExportStore) Create(tableArn, tableId string, exportFormat ExportFormat) (*ExportDescription, error) {
 	now := time.Now().UTC()
-	exportArn := s.arnBuilder.Export(tableArn, now.Format("20060102150405"))
+	exportId, err := tableScopedId(now)
+	if err != nil {
+		return nil, err
+	}
+	exportArn := s.arnBuilder.Export(tableArn, exportId)
 
 	export := &ExportDescription{
 		ExportArn:    exportArn,
-		ExportStatus: "IN_PROGRESS",
+		ExportStatus: ExportStatusInProgress,
 		StartTime:    now,
 		TableArn:     tableArn,
 		TableId:      tableId,
@@ -68,37 +94,16 @@ func (s *ExportStore) Put(export *ExportDescription) error {
 }
 
 // List returns exports, optionally filtered by table ARN, with pagination.
+// A non-positive maxItems reads as the pagination layer's default (the
+// normalisation the shared list path applies to every family).
 func (s *ExportStore) List(tableArn, marker string, maxItems int) ([]*ExportDescription, string, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-	opts := common.ListOptions{
-		Marker:   marker,
-		MaxItems: maxItems,
-	}
-
 	filter := func(e *pb.ExportDescription) bool {
 		if tableArn == "" {
 			return true
 		}
 		return e.TableArn == tableArn
 	}
-
-	result, err := common.ListProto[*pb.ExportDescription](s.BaseStore, opts, func() *pb.ExportDescription { return &pb.ExportDescription{} }, filter)
-	if err != nil {
-		return nil, "", err
-	}
-
-	exports := make([]*ExportDescription, len(result.Items))
-	for i, e := range result.Items {
-		exports[i] = ProtoToExportDescription(e)
-	}
-
-	nextToken := ""
-	if result.IsTruncated {
-		nextToken = result.NextMarker
-	}
-	return exports, nextToken, nil
+	return listProtoConverted(s.BaseStore, marker, maxItems, func() *pb.ExportDescription { return &pb.ExportDescription{} }, ProtoToExportDescription, filter)
 }
 
 // ImportStore manages DynamoDB table imports from S3.
@@ -127,11 +132,15 @@ func (s *ImportStore) Get(importArn string) (*ImportTableDescription, error) {
 // Create initiates a new import of a DynamoDB table from S3.
 func (s *ImportStore) Create(tableArn, tableId string) (*ImportTableDescription, error) {
 	now := time.Now().UTC()
-	importArn := s.arnBuilder.Import(tableArn, now.Format("20060102150405"))
+	importId, err := tableScopedId(now)
+	if err != nil {
+		return nil, err
+	}
+	importArn := s.arnBuilder.Import(tableArn, importId)
 
 	imp := &ImportTableDescription{
 		ImportArn:    importArn,
-		ImportStatus: "IN_PROGRESS",
+		ImportStatus: ImportStatusInProgress,
 		TableArn:     tableArn,
 		TableId:      tableId,
 		StartTime:    now,
@@ -150,35 +159,14 @@ func (s *ImportStore) Put(imp *ImportTableDescription) error {
 }
 
 // List returns imports, optionally filtered by table ARN, with pagination.
+// A non-positive maxItems reads as the pagination layer's default (the
+// normalisation the shared list path applies to every family).
 func (s *ImportStore) List(tableArn, marker string, maxItems int) ([]*ImportTableDescription, string, error) {
-	if maxItems <= 0 {
-		maxItems = 100
-	}
-	opts := common.ListOptions{
-		Marker:   marker,
-		MaxItems: maxItems,
-	}
-
 	filter := func(i *pb.ImportTableDescription) bool {
 		if tableArn == "" {
 			return true
 		}
 		return i.TableArn == tableArn
 	}
-
-	result, err := common.ListProto[*pb.ImportTableDescription](s.BaseStore, opts, func() *pb.ImportTableDescription { return &pb.ImportTableDescription{} }, filter)
-	if err != nil {
-		return nil, "", err
-	}
-
-	imports := make([]*ImportTableDescription, len(result.Items))
-	for i, imp := range result.Items {
-		imports[i] = ProtoToImportTableDescription(imp)
-	}
-
-	nextToken := ""
-	if result.IsTruncated {
-		nextToken = result.NextMarker
-	}
-	return imports, nextToken, nil
+	return listProtoConverted(s.BaseStore, marker, maxItems, func() *pb.ImportTableDescription { return &pb.ImportTableDescription{} }, ProtoToImportTableDescription, filter)
 }

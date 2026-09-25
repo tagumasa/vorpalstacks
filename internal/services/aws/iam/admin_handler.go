@@ -269,7 +269,7 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 	// The proto enum's zero value means the scope is unspecified, which
 	// the Core defaults to All — the same contract as the AWS API plane.
 	scope := ""
-	switch req.Msg.Scope {
+	switch req.Msg.GetScope() {
 	case pb.PolicyScopeType_POLICY_SCOPE_TYPE_AWS:
 		scope = "AWS"
 	case pb.PolicyScopeType_POLICY_SCOPE_TYPE_ALL:

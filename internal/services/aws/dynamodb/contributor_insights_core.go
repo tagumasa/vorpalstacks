@@ -23,8 +23,32 @@ type listContributorInsightsInput struct {
 	Parameters map[string]interface{}
 }
 
+// contributorInsightsSummary renders one table's summary: the status its
+// record carries (DISABLED unless insights are enabled) and the mode when
+// one is recorded.
+func contributorInsightsSummary(t *dbstore.Table) map[string]interface{} {
+	status := "DISABLED"
+	if t.ContributorInsightsEnabled {
+		status = "ENABLED"
+	}
+	summary := map[string]interface{}{
+		"TableName":                 t.Name,
+		"ContributorInsightsStatus": status,
+	}
+	if t.ContributorInsightsMode != "" {
+		summary["ContributorInsightsMode"] = t.ContributorInsightsMode
+	}
+	return summary
+}
+
 // listContributorInsightsCore returns the contributor insights summaries,
-// optionally scoped to one table.
+// optionally scoped to one table. The summaries describe resources carrying
+// contributor-insights state: the unfiltered walk keeps the tables whose
+// record an UpdateContributorInsights call has stamped (the update
+// timestamp), reading the state from the listed records themselves — the
+// scoped call answers the named table's own summary the way
+// DescribeContributorInsights does, DISABLED included for a table insights
+// were never configured on.
 func (s *DynamoDBService) listContributorInsightsCore(ctx context.Context, reqCtx *request.RequestContext, in listContributorInsightsInput) (interface{}, error) {
 	tableName := request.GetStringParam(in.Parameters, "TableName")
 	maxResults := listContributorMaxLimit
@@ -42,46 +66,53 @@ func (s *DynamoDBService) listContributorInsightsCore(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	var tables []string
-	if tableName != "" {
-		if _, err := s.validateAndGetTable(reqCtx, in.Parameters); err != nil {
-			return nil, err
-		}
-		tables = []string{tableName}
-	} else {
-		tableList, _, err := store.Tables().List(nextToken, maxResults+1)
-		if err != nil {
-			return nil, err
-		}
-		for _, t := range tableList {
-			tables = append(tables, t.Name)
-		}
-	}
-
 	summaries := make([]map[string]interface{}, 0)
-	for _, tn := range tables {
-		t, err := store.Tables().Get(tn)
+	if tableName != "" {
+		table, err := s.validateAndGetTable(reqCtx, in.Parameters)
 		if err != nil {
-			continue
+			return nil, err
 		}
-		status := "DISABLED"
-		if t.ContributorInsightsEnabled {
-			status = "ENABLED"
-		}
-		summary := map[string]interface{}{
-			"TableName":                 tn,
-			"ContributorInsightsStatus": status,
-		}
-		if t.ContributorInsightsMode != "" {
-			summary["ContributorInsightsMode"] = t.ContributorInsightsMode
-		}
-		summaries = append(summaries, summary)
+		summaries = append(summaries, contributorInsightsSummary(table))
+		return pagination.BuildListResponse("ContributorInsightsSummaries", summaries, ""), nil
 	}
 
-	if len(summaries) > maxResults && maxResults > 0 {
-		summaries = summaries[:maxResults]
-		lastTableName, _ := summaries[len(summaries)-1]["TableName"].(string)
-		return pagination.BuildListResponse("ContributorInsightsSummaries", summaries, lastTableName), nil
+	// The unfiltered walk pages through the table records, keeping those
+	// carrying insights state. A result page fills slower than the record
+	// pages it consumes (records without state are skipped), so the walk
+	// continues across record pages until the result page fills or the
+	// tables run out; the continuation marker is the last table name
+	// consumed, examined or not, so the next call resumes after it and a
+	// final marker may answer an empty page when only state-less records
+	// followed it.
+	remaining := maxResults
+	marker := nextToken
+	for remaining > 0 {
+		page, next, err := store.Tables().List(marker, remaining+1)
+		if err != nil {
+			return nil, err
+		}
+		if len(page) == 0 {
+			break
+		}
+		filled := false
+		for _, t := range page {
+			marker = t.Name
+			if t.ContributorInsightsUpdatedAt.IsZero() {
+				continue
+			}
+			summaries = append(summaries, contributorInsightsSummary(t))
+			remaining--
+			if remaining == 0 {
+				filled = true
+				break
+			}
+		}
+		if filled {
+			return pagination.BuildListResponse("ContributorInsightsSummaries", summaries, marker), nil
+		}
+		if next == "" {
+			break
+		}
 	}
 
 	return pagination.BuildListResponse("ContributorInsightsSummaries", summaries, ""), nil
@@ -117,7 +148,7 @@ func (s *DynamoDBService) updateContributorInsightsCore(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Tables().SetContributorInsights(tableName, enabled, mode); err != nil {
+	if err := store.Tables().SetContributorInsights(tableName, enabled, dbstore.ContributorInsightsMode(mode)); err != nil {
 		return nil, err
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
@@ -142,7 +143,7 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 
 	resp := &pb.ScheduleKeyDeletionResponse{
 		Keyid:               proto.String(meta.KeyID),
-		Keystate:            keyStateToProto(meta.KeyState),
+		Keystate:            pbutil.Enum(keyStateToProto(meta.KeyState)),
 		Pendingwindowindays: proto.Int32(int32(days)),
 	}
 	if meta.DeletionDate != nil {
@@ -236,14 +237,14 @@ func buildProtoKeyMetadata(meta *KeyMetadataResult, keyUsage pb.KeyUsageType, ke
 		Awsaccountid:          proto.String(accountID),
 		Keyid:                 meta.KeyID,
 		Arn:                   proto.String(meta.Arn),
-		Keystate:              keyStateToProto(meta.KeyState),
-		Keyusage:              keyUsage,
-		Keyspec:               keySpec,
-		Customermasterkeyspec: pb.CustomerMasterKeySpec(keySpec),
+		Keystate:              pbutil.Enum(keyStateToProto(meta.KeyState)),
+		Keyusage:              pbutil.Enum(keyUsage),
+		Keyspec:               pbutil.Enum(keySpec),
+		Customermasterkeyspec: pbutil.Enum(pb.CustomerMasterKeySpec(keySpec)),
 		Description:           proto.String(meta.Description),
 		Enabled:               proto.Bool(meta.Enabled),
-		Origin:                origin,
-		Keymanager:            pb.KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER,
+		Origin:                pbutil.Enum(origin),
+		Keymanager:            pbutil.Enum(pb.KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER),
 		Multiregion:           proto.Bool(meta.MultiRegion),
 		Creationdate:          proto.String(meta.CreationDate.Format(timeutils.ISO8601UTCFormat)),
 	}
@@ -258,9 +259,9 @@ func buildProtoKeyMetadata(meta *KeyMetadataResult, keyUsage pb.KeyUsageType, ke
 		md.Validto = proto.String(meta.ValidTo.Format(timeutils.ISO8601UTCFormat))
 	}
 	if meta.ExpirationModel == "KEY_MATERIAL_EXPIRES" {
-		md.Expirationmodel = pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_EXPIRES
+		md.Expirationmodel = pbutil.Enum(pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_EXPIRES)
 	} else if meta.ExpirationModel == "KEY_MATERIAL_DOES_NOT_EXPIRE" {
-		md.Expirationmodel = pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_DOES_NOT_EXPIRE
+		md.Expirationmodel = pbutil.Enum(pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_DOES_NOT_EXPIRE)
 	}
 
 	return md

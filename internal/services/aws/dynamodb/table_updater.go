@@ -6,6 +6,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 func mergeAttributeDefinitions(existing, newDefs []*dbstore.AttributeDefinition) []*dbstore.AttributeDefinition {
@@ -30,8 +31,9 @@ func mergeAttributeDefinitions(existing, newDefs []*dbstore.AttributeDefinition)
 // list and returns the updated list plus the names of indexes this request
 // removes. A name that is both deleted and re-created in the same request
 // is not returned as deleted: the final schema still contains it, so its
-// entries must survive for the backfill to rebuild on top of.
-func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, updates []interface{}) ([]*dbstore.GlobalSecondaryIndex, []string, error) {
+// entries must survive for the backfill to rebuild on top of. New index ARNs
+// are composed through the ARN builder for the table's region and account.
+func applyGSIUpdates(arnBuilder *svcarn.DynamoDBBuilder, tableName string, existing []*dbstore.GlobalSecondaryIndex, updates []interface{}) ([]*dbstore.GlobalSecondaryIndex, []string, error) {
 	gsiMap := make(map[string]*dbstore.GlobalSecondaryIndex)
 	for _, g := range existing {
 		gsiMap[g.IndexName] = g
@@ -70,12 +72,18 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 			if gsiPT != nil && !validateProvisionedThroughputValues(gsiPT) {
 				return nil, nil, ErrInvalidParameter
 			}
+			gsiODT, odtErr := parseOnDemandThroughput(create)
+			if odtErr != nil {
+				return nil, nil, odtErr
+			}
 			gsiMap[idxName] = &dbstore.GlobalSecondaryIndex{
 				IndexName:             idxName,
-				IndexArn:              tableARN + "/index/" + idxName,
+				IndexArn:              arnBuilder.Index(tableName, idxName),
 				KeySchema:             keySchema,
 				Projection:            proj,
 				ProvisionedThroughput: gsiPT,
+				OnDemandThroughput:    gsiODT,
+				WarmThroughput:        parseWarmThroughput(create),
 				IndexStatus:           dbstore.IndexStatusActive,
 			}
 		}
@@ -94,6 +102,14 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 						return nil, nil, ErrInvalidParameter
 					}
 					idx.ProvisionedThroughput = provThroughput
+				}
+				if odt, odtErr := parseOnDemandThroughput(updateGSI); odtErr != nil {
+					return nil, nil, odtErr
+				} else if odt != nil {
+					idx.OnDemandThroughput = odt
+				}
+				if wt := parseWarmThroughput(updateGSI); wt != nil {
+					idx.WarmThroughput = wt
 				}
 				idx.IndexStatus = dbstore.IndexStatusActive
 			} else {
@@ -137,8 +153,9 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 // applyVectorIndexUpdates applies VectorIndexUpdates to the existing vector
 // index list and returns the updated list plus the names this request creates
 // and removes. One UpdateTable request may add or remove exactly one vector
-// index, so more than one update element is rejected.
-func applyVectorIndexUpdates(tableARN string, existing []*dbstore.VectorIndex, updates []interface{}) ([]*dbstore.VectorIndex, []string, []string, error) {
+// index, so more than one update element is rejected. New index ARNs are
+// composed through the ARN builder for the table's region and account.
+func applyVectorIndexUpdates(arnBuilder *svcarn.DynamoDBBuilder, tableName string, existing []*dbstore.VectorIndex, updates []interface{}) ([]*dbstore.VectorIndex, []string, []string, error) {
 	if len(updates) > 1 {
 		return nil, nil, nil, ErrInvalidParameter
 	}
@@ -164,7 +181,7 @@ func applyVectorIndexUpdates(tableARN string, existing []*dbstore.VectorIndex, u
 			if _, exists := viMap[idx.IndexName]; exists {
 				return nil, nil, nil, ErrIndexAlreadyExists
 			}
-			idx.IndexArn = tableARN + "/index/" + idx.IndexName
+			idx.IndexArn = arnBuilder.Index(tableName, idx.IndexName)
 			viMap[idx.IndexName] = idx
 			createdNames = append(createdNames, idx.IndexName)
 		}

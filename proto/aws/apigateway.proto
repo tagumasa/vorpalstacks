@@ -795,7 +795,7 @@ message Authorizer {
 
   repeated string providerarns = 301486689;
 
-  AuthorizerType type = 287830350;
+  optional AuthorizerType type = 287830350;
 
 }
 
@@ -1053,7 +1053,7 @@ message CreateDeploymentRequest {
 
   optional bool cacheclusterenabled = 63967991;
 
-  CacheClusterSize cacheclustersize = 232189861;
+  optional CacheClusterSize cacheclustersize = 232189861;
 
   DeploymentCanarySettings canarysettings = 285544261;
 
@@ -1133,7 +1133,7 @@ message CreateDomainNameRequest {
 
   string domainname = 390326667;
 
-  EndpointAccessMode endpointaccessmode = 356705630;
+  optional EndpointAccessMode endpointaccessmode = 356705630;
 
   EndpointConfiguration endpointconfiguration = 487543735;
 
@@ -1147,9 +1147,9 @@ message CreateDomainNameRequest {
 
   optional string regionalcertificatename = 431716941;
 
-  RoutingMode routingmode = 506342119;
+  optional RoutingMode routingmode = 506342119;
 
-  SecurityPolicy securitypolicy = 491792990;
+  optional SecurityPolicy securitypolicy = 491792990;
 
   map<string, string> tags = 337046433;
 
@@ -1209,7 +1209,7 @@ message CreateResourceRequest {
 
 message CreateRestApiRequest {
 
-  ApiKeySourceType apikeysource = 108531220;
+  optional ApiKeySourceType apikeysource = 108531220;
 
   repeated string binarymediatypes = 406416146;
 
@@ -1219,7 +1219,7 @@ message CreateRestApiRequest {
 
   optional bool disableexecuteapiendpoint = 148140696;
 
-  EndpointAccessMode endpointaccessmode = 356705630;
+  optional EndpointAccessMode endpointaccessmode = 356705630;
 
   EndpointConfiguration endpointconfiguration = 487543735;
 
@@ -1229,7 +1229,7 @@ message CreateRestApiRequest {
 
   optional string policy = 247528064;
 
-  SecurityPolicy securitypolicy = 491792990;
+  optional SecurityPolicy securitypolicy = 491792990;
 
   map<string, string> tags = 337046433;
 
@@ -1245,7 +1245,7 @@ message CreateStageRequest {
 
   optional bool cacheclusterenabled = 63967991;
 
-  CacheClusterSize cacheclustersize = 232189861;
+  optional CacheClusterSize cacheclustersize = 232189861;
 
   CanarySettings canarysettings = 285544261;
 
@@ -1757,11 +1757,11 @@ message DomainName {
 
   optional string domainnameid = 298270248;
 
-  DomainNameStatus domainnamestatus = 275080629;
+  optional DomainNameStatus domainnamestatus = 275080629;
 
   optional string domainnamestatusmessage = 335045044;
 
-  EndpointAccessMode endpointaccessmode = 356705630;
+  optional EndpointAccessMode endpointaccessmode = 356705630;
 
   EndpointConfiguration endpointconfiguration = 487543735;
 
@@ -1781,9 +1781,9 @@ message DomainName {
 
   optional string regionalhostedzoneid = 467276949;
 
-  RoutingMode routingmode = 506342119;
+  optional RoutingMode routingmode = 506342119;
 
-  SecurityPolicy securitypolicy = 491792990;
+  optional SecurityPolicy securitypolicy = 491792990;
 
   map<string, string> tags = 337046433;
 
@@ -1797,7 +1797,7 @@ message DomainNameAccessAssociation {
 
   optional string accessassociationsource = 328257828;
 
-  AccessAssociationSourceType accessassociationsourcetype = 176397628;
+  optional AccessAssociationSourceType accessassociationsourcetype = 176397628;
 
   optional string domainnameaccessassociationarn = 281017927;
 
@@ -1863,7 +1863,7 @@ enum EndpointAccessMode {
 
 message EndpointConfiguration {
 
-  IpAddressType ipaddresstype = 393863813;
+  optional IpAddressType ipaddresstype = 393863813;
 
   repeated EndpointType types = 534824091;
 
@@ -1933,7 +1933,7 @@ message GatewayResponse {
 
   map<string, string> responsetemplates = 107376570;
 
-  GatewayResponseType responsetype = 377935935;
+  optional GatewayResponseType responsetype = 377935935;
 
   optional string statuscode = 299352223;
 
@@ -2175,7 +2175,7 @@ message GetDocumentationPartsRequest {
 
   optional int32 limit = 316332341;
 
-  LocationStatusType locationstatus = 532215305;
+  optional LocationStatusType locationstatus = 532215305;
 
   optional string namequery = 51018795;
 
@@ -2185,7 +2185,7 @@ message GetDocumentationPartsRequest {
 
   string restapiid = 383799833;
 
-  DocumentationPartType type = 287830350;
+  optional DocumentationPartType type = 287830350;
 
 }
 
@@ -2223,7 +2223,7 @@ message GetDomainNameAccessAssociationsRequest {
 
   optional string position = 323964427;
 
-  ResourceOwner resourceowner = 259175301;
+  optional ResourceOwner resourceowner = 259175301;
 
 }
 
@@ -2249,7 +2249,7 @@ message GetDomainNamesRequest {
 
   optional string position = 323964427;
 
-  ResourceOwner resourceowner = 259175301;
+  optional ResourceOwner resourceowner = 259175301;
 
 }
 
@@ -2669,7 +2669,7 @@ message ImportDocumentationPartsRequest {
 
   optional bool failonwarnings = 434363958;
 
-  PutMode mode = 208592915;
+  optional PutMode mode = 208592915;
 
   string restapiid = 383799833;
 
@@ -2701,9 +2701,9 @@ message Integration {
 
   optional string connectionid = 450027965;
 
-  ConnectionType connectiontype = 336253170;
+  optional ConnectionType connectiontype = 336253170;
 
-  ContentHandlingStrategy contenthandling = 533182832;
+  optional ContentHandlingStrategy contenthandling = 533182832;
 
   optional string credentials = 150838226;
 
@@ -2719,13 +2719,13 @@ message Integration {
 
   map<string, string> requesttemplates = 333512166;
 
-  ResponseTransferMode responsetransfermode = 458910787;
+  optional ResponseTransferMode responsetransfermode = 458910787;
 
   optional int32 timeoutinmillis = 378229126;
 
   TlsConfig tlsconfig = 108946693;
 
-  IntegrationType type = 287830350;
+  optional IntegrationType type = 287830350;
 
   optional string uri = 395269118;
 
@@ -2737,7 +2737,7 @@ message Integration {
 
 message IntegrationResponse {
 
-  ContentHandlingStrategy contenthandling = 533182832;
+  optional ContentHandlingStrategy contenthandling = 533182832;
 
   map<string, string> responseparameters = 64271839;
 
@@ -2865,7 +2865,7 @@ message MethodSetting {
 
   optional double throttlingratelimit = 371718088;
 
-  UnauthorizedCacheControlHeaderStrategy unauthorizedcachecontrolheaderstrategy = 476741277;
+  optional UnauthorizedCacheControlHeaderStrategy unauthorizedcachecontrolheaderstrategy = 476741277;
 
 }
 
@@ -2973,7 +2973,7 @@ message PatchOperation {
 
   optional string from = 365789302;
 
-  Op op = 523513003;
+  optional Op op = 523513003;
 
   optional string path = 75975991;
 
@@ -3011,9 +3011,9 @@ message PutIntegrationRequest {
 
   optional string connectionid = 450027965;
 
-  ConnectionType connectiontype = 336253170;
+  optional ConnectionType connectiontype = 336253170;
 
-  ContentHandlingStrategy contenthandling = 533182832;
+  optional ContentHandlingStrategy contenthandling = 533182832;
 
   optional string credentials = 150838226;
 
@@ -3031,7 +3031,7 @@ message PutIntegrationRequest {
 
   string resourceid = 318922417;
 
-  ResponseTransferMode responsetransfermode = 458910787;
+  optional ResponseTransferMode responsetransfermode = 458910787;
 
   string restapiid = 383799833;
 
@@ -3051,7 +3051,7 @@ message PutIntegrationRequest {
 
 message PutIntegrationResponseRequest {
 
-  ContentHandlingStrategy contenthandling = 533182832;
+  optional ContentHandlingStrategy contenthandling = 533182832;
 
   string httpmethod = 115276273;
 
@@ -3139,7 +3139,7 @@ message PutRestApiRequest {
 
   optional bool failonwarnings = 434363958;
 
-  PutMode mode = 208592915;
+  optional PutMode mode = 208592915;
 
   map<string, string> parameters = 145043162;
 
@@ -3169,7 +3169,7 @@ message QuotaSettings {
 
   optional int32 offset = 348705739;
 
-  QuotaPeriodType period = 432621317;
+  optional QuotaPeriodType period = 432621317;
 
 }
 
@@ -3267,9 +3267,9 @@ enum ResponseTransferMode {
 
 message RestApi {
 
-  ApiKeySourceType apikeysource = 108531220;
+  optional ApiKeySourceType apikeysource = 108531220;
 
-  ApiStatus apistatus = 200568018;
+  optional ApiStatus apistatus = 200568018;
 
   optional string apistatusmessage = 353995209;
 
@@ -3281,7 +3281,7 @@ message RestApi {
 
   optional bool disableexecuteapiendpoint = 148140696;
 
-  EndpointAccessMode endpointaccessmode = 356705630;
+  optional EndpointAccessMode endpointaccessmode = 356705630;
 
   EndpointConfiguration endpointconfiguration = 487543735;
 
@@ -3295,7 +3295,7 @@ message RestApi {
 
   optional string rootresourceid = 360157585;
 
-  SecurityPolicy securitypolicy = 491792990;
+  optional SecurityPolicy securitypolicy = 491792990;
 
   map<string, string> tags = 337046433;
 
@@ -3439,9 +3439,9 @@ message Stage {
 
   optional bool cacheclusterenabled = 63967991;
 
-  CacheClusterSize cacheclustersize = 232189861;
+  optional CacheClusterSize cacheclustersize = 232189861;
 
-  CacheClusterStatus cacheclusterstatus = 385293784;
+  optional CacheClusterStatus cacheclusterstatus = 385293784;
 
   CanarySettings canarysettings = 285544261;
 
@@ -4087,7 +4087,7 @@ message VpcLink {
 
   optional string name = 221887975;
 
-  VpcLinkStatus status = 441153520;
+  optional VpcLinkStatus status = 441153520;
 
   optional string statusmessage = 474462255;
 

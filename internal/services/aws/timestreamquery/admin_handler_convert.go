@@ -4,6 +4,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"vorpalstacks/internal/utils/timeutils"
 
@@ -40,7 +41,7 @@ func toPbScheduledQuery(summary *ScheduledQuerySummary) *pb.ScheduledQuery {
 	}
 
 	if summary.LastRunStatus != "" {
-		sq.Lastrunstatus = mapLastRunStatusToProto(summary.LastRunStatus)
+		sq.Lastrunstatus = pbutil.Enum(mapLastRunStatusToProto(summary.LastRunStatus))
 	}
 
 	if summary.ErrorReportConfiguration != nil && summary.ErrorReportConfiguration.S3Configuration != nil {

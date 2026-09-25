@@ -8,54 +8,26 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-func compareBetween(attr, low, high *dbstore.AttributeValue) bool {
-	cLow, okLow := compareOrderedValues(attr, low)
-	cHigh, okHigh := compareOrderedValues(attr, high)
-	return okLow && okHigh && cLow >= 0 && cHigh <= 0
-}
-
-func compareIn(attr *dbstore.AttributeValue, inValues []*dbstore.AttributeValue) bool {
-	for _, v := range inValues {
-		if attributeValuesEqual(attr, v) {
-			return true
-		}
+// filterByCondition applies a request's FilterExpression — parsed and
+// validated before the read ran — to the scanned page.
+func filterByCondition(items []*dbstore.Item, cond *compiledCondition) []*dbstore.Item {
+	if cond == nil {
+		return items
 	}
-	return false
-}
-
-func filterByExpression(items []*dbstore.Item, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) []*dbstore.Item {
 	var result []*dbstore.Item
 	for _, item := range items {
-		if evaluateFilterExpression(item, expr, names, values) {
+		if cond.matches(item) {
 			result = append(result, item)
 		}
 	}
 	return result
 }
 
-func evaluateFilterExpression(item *dbstore.Item, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) bool {
-	if expr == "" {
-		return true
-	}
-
-	result, err := evaluateConditionExpr(item, expr, names, values)
-	if err != nil {
-		return false
-	}
-	return result
-}
-
-// isValidComparisonOperator returns true for recognised DynamoDB
-// ConditionExpression comparison operators. Legacy ComparisonOperator
-// API names (NE, LT, LE, GT, GE, !=) are intentionally excluded.
-func isValidComparisonOperator(op string) bool {
-	switch op {
-	case "=", "<>", "<", "<=", ">", ">=":
-		return true
-	}
-	return false
-}
-
+// compareAttributeValues evaluates one comparison under the expression
+// grammar's six comparators (= <> < <= > >=). Legacy ComparisonOperator API
+// names never reach this point: the legacy parameters are translated to the
+// grammar's operators before evaluation, and the operator gates reject
+// anything else.
 func compareAttributeValues(attr *dbstore.AttributeValue, op string, value *dbstore.AttributeValue) bool {
 	if attr == nil || value == nil {
 		return false
@@ -64,18 +36,18 @@ func compareAttributeValues(attr *dbstore.AttributeValue, op string, value *dbst
 	switch op {
 	case "=":
 		return attributeValuesEqual(attr, value)
-	case "<>", "!=", "NE":
+	case "<>":
 		return !attributeValuesEqual(attr, value)
-	case "<", "LT":
+	case "<":
 		c, ok := compareOrderedValues(attr, value)
 		return ok && c < 0
-	case "<=", "LE":
+	case "<=":
 		c, ok := compareOrderedValues(attr, value)
 		return ok && c <= 0
-	case ">", "GT":
+	case ">":
 		c, ok := compareOrderedValues(attr, value)
 		return ok && c > 0
-	case ">=", "GE":
+	case ">=":
 		c, ok := compareOrderedValues(attr, value)
 		return ok && c >= 0
 	}
@@ -171,14 +143,13 @@ func attributeValuesEqual(a, b *dbstore.AttributeValue) bool {
 		if len(a.BS) != len(b.BS) {
 			return false
 		}
-		for i := range a.BS {
-			if len(a.BS[i]) != len(b.BS[i]) {
+		aSet := make(map[string]bool)
+		for _, elem := range a.BS {
+			aSet[string(elem)] = true
+		}
+		for _, elem := range b.BS {
+			if !aSet[string(elem)] {
 				return false
-			}
-			for j := range a.BS[i] {
-				if a.BS[i][j] != b.BS[i][j] {
-					return false
-				}
 			}
 		}
 		return true
@@ -257,10 +228,17 @@ func genericCompare(a, b *dbstore.AttributeValue) int {
 	return c
 }
 
+// normalizeNumberString renders one number spelling in the canonical
+// decimal DynamoDB form. Number-set membership keys and appended set
+// members both use it, so two spellings of one value ("1" and "01",
+// "1.5" and "1.50") are one set member, and a member stored through an
+// ADD is always a valid DynamoDB number — big.Rat's own fraction form
+// ("3/2" for 1.5) is not part of the number grammar and must never
+// reach the stored item.
 func normalizeNumberString(n string) string {
 	num, ok := new(big.Rat).SetString(n)
 	if !ok {
 		return n
 	}
-	return num.RatString()
+	return normalizeNumber(num)
 }

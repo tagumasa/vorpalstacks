@@ -69,8 +69,14 @@ func (s *DynamoDBService) updateTimeToLiveCore(ctx context.Context, store dbstor
 	// Enabling TTL on a table that already has TTL enabled is rejected;
 	// renaming the TTL attribute requires disabling TTL first. Disabling
 	// is always allowed and is the documented path for changing the
-	// attribute.
-	existingTTL, _ := store.Tables().GetTimeToLive(in.TableName)
+	// attribute. The precondition read's failure is reported, never
+	// discarded: with the existing specification unknowable, silently
+	// passing the rejection would overwrite a state the store could not
+	// read.
+	existingTTL, err := store.Tables().GetTimeToLive(in.TableName)
+	if err != nil {
+		return nil, err
+	}
 	if in.Enabled && existingTTL != nil && existingTTL.Enabled {
 		return nil, ErrInvalidParameter
 	}

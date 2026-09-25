@@ -980,9 +980,9 @@ message GetPropertygraphStreamInput {
 
   optional string commitnum = 254685821;
 
-  Encoding encoding = 519819761;
+  optional Encoding encoding = 519819761;
 
-  IteratorType iteratortype = 141085528;
+  optional IteratorType iteratortype = 141085528;
 
   optional string limit = 316332341;
 
@@ -1010,7 +1010,7 @@ message GetPropertygraphStreamOutput {
 
 message GetPropertygraphSummaryInput {
 
-  GraphSummaryType mode = 208592915;
+  optional GraphSummaryType mode = 208592915;
 
 }
 
@@ -1028,7 +1028,7 @@ message GetPropertygraphSummaryOutput {
 
 message GetRDFGraphSummaryInput {
 
-  GraphSummaryType mode = 208592915;
+  optional GraphSummaryType mode = 208592915;
 
 }
 
@@ -1058,9 +1058,9 @@ message GetSparqlStreamInput {
 
   optional string commitnum = 254685821;
 
-  Encoding encoding = 519819761;
+  optional Encoding encoding = 519819761;
 
-  IteratorType iteratortype = 141085528;
+  optional IteratorType iteratortype = 141085528;
 
   optional string limit = 316332341;
 
@@ -1394,7 +1394,7 @@ message MalformedQueryException {
 
 message ManagePropertygraphStatisticsInput {
 
-  StatisticsAutoGenerationMode mode = 208592915;
+  optional StatisticsAutoGenerationMode mode = 208592915;
 
 }
 
@@ -1412,7 +1412,7 @@ message ManagePropertygraphStatisticsOutput {
 
 message ManageSparqlStatisticsInput {
 
-  StatisticsAutoGenerationMode mode = 208592915;
+  optional StatisticsAutoGenerationMode mode = 208592915;
 
 }
 
@@ -1944,9 +1944,9 @@ message StartLoaderJobInput {
 
   string iamrolearn = 316257434;
 
-  Mode mode = 208592915;
+  optional Mode mode = 208592915;
 
-  Parallelism parallelism = 150642114;
+  optional Parallelism parallelism = 150642114;
 
   map<string, string> parserconfiguration = 258205897;
 

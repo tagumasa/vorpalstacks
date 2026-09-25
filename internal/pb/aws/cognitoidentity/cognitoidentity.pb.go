@@ -2657,10 +2657,10 @@ func (x *ResourceNotFoundException) GetMessage() string {
 }
 
 type RoleMapping struct {
-	state                   protoimpl.MessageState      `protogen:"open.v1"`
-	Ambiguousroleresolution AmbiguousRoleResolutionType `protobuf:"varint,410304778,opt,name=ambiguousroleresolution,proto3,enum=cognitoidentity.AmbiguousRoleResolutionType" json:"ambiguousroleresolution,omitempty"`
-	Rulesconfiguration      *RulesConfigurationType     `protobuf:"bytes,123571251,opt,name=rulesconfiguration,proto3" json:"rulesconfiguration,omitempty"`
-	Type                    RoleMappingType             `protobuf:"varint,290836590,opt,name=type,proto3,enum=cognitoidentity.RoleMappingType" json:"type,omitempty"`
+	state                   protoimpl.MessageState       `protogen:"open.v1"`
+	Ambiguousroleresolution *AmbiguousRoleResolutionType `protobuf:"varint,410304778,opt,name=ambiguousroleresolution,proto3,enum=cognitoidentity.AmbiguousRoleResolutionType,oneof" json:"ambiguousroleresolution,omitempty"`
+	Rulesconfiguration      *RulesConfigurationType      `protobuf:"bytes,123571251,opt,name=rulesconfiguration,proto3" json:"rulesconfiguration,omitempty"`
+	Type                    RoleMappingType              `protobuf:"varint,290836590,opt,name=type,proto3,enum=cognitoidentity.RoleMappingType" json:"type,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2696,8 +2696,8 @@ func (*RoleMapping) Descriptor() ([]byte, []int) {
 }
 
 func (x *RoleMapping) GetAmbiguousroleresolution() AmbiguousRoleResolutionType {
-	if x != nil {
-		return x.Ambiguousroleresolution
+	if x != nil && x.Ambiguousroleresolution != nil {
+		return *x.Ambiguousroleresolution
 	}
 	return AmbiguousRoleResolutionType_AMBIGUOUS_ROLE_RESOLUTION_TYPE_AUTHENTICATED_ROLE
 }
@@ -3218,7 +3218,7 @@ func (x *UnlinkIdentityInput) GetLoginstoremove() []string {
 
 type UnprocessedIdentityId struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Errorcode     ErrorCode              `protobuf:"varint,34663193,opt,name=errorcode,proto3,enum=cognitoidentity.ErrorCode" json:"errorcode,omitempty"`
+	Errorcode     *ErrorCode             `protobuf:"varint,34663193,opt,name=errorcode,proto3,enum=cognitoidentity.ErrorCode,oneof" json:"errorcode,omitempty"`
 	Identityid    *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3255,8 +3255,8 @@ func (*UnprocessedIdentityId) Descriptor() ([]byte, []int) {
 }
 
 func (x *UnprocessedIdentityId) GetErrorcode() ErrorCode {
-	if x != nil {
-		return x.Errorcode
+	if x != nil && x.Errorcode != nil {
+		return *x.Errorcode
 	}
 	return ErrorCode_ERROR_CODE_ACCESS_DENIED
 }
@@ -3659,11 +3659,12 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\x19ResourceNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x8f\x02\n" +
-	"\vRoleMapping\x12j\n" +
-	"\x17ambiguousroleresolution\x18\x8a\x82\xd3\xc3\x01 \x01(\x0e2,.cognitoidentity.AmbiguousRoleResolutionTypeR\x17ambiguousroleresolution\x12Z\n" +
+	"\b_message\"\xb0\x02\n" +
+	"\vRoleMapping\x12o\n" +
+	"\x17ambiguousroleresolution\x18\x8a\x82\xd3\xc3\x01 \x01(\x0e2,.cognitoidentity.AmbiguousRoleResolutionTypeH\x00R\x17ambiguousroleresolution\x88\x01\x01\x12Z\n" +
 	"\x12rulesconfiguration\x18\xb3\x98\xf6: \x01(\v2'.cognitoidentity.RulesConfigurationTypeR\x12rulesconfiguration\x128\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2 .cognitoidentity.RoleMappingTypeR\x04type\"O\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2 .cognitoidentity.RoleMappingTypeR\x04typeB\x1a\n" +
+	"\x18_ambiguousroleresolution\"O\n" +
 	"\x16RulesConfigurationType\x125\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\x1c.cognitoidentity.MappingRuleR\x05rules\"\x95\x03\n" +
 	"\x19SetIdentityPoolRolesInput\x12)\n" +
@@ -3723,12 +3724,14 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\x0eloginstoremove\x18\xbb\xef\xfa\xe9\x01 \x03(\tR\x0eloginstoremove\x1a9\n" +
 	"\vLoginsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8b\x01\n" +
-	"\x15UnprocessedIdentityId\x12;\n" +
-	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\x0e2\x1a.cognitoidentity.ErrorCodeR\terrorcode\x12&\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9e\x01\n" +
+	"\x15UnprocessedIdentityId\x12@\n" +
+	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\x0e2\x1a.cognitoidentity.ErrorCodeH\x00R\terrorcode\x88\x01\x01\x12&\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x00R\n" +
-	"identityid\x88\x01\x01B\r\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x01R\n" +
+	"identityid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_errorcodeB\r\n" +
 	"\v_identityid\"X\n" +
 	"\x12UntagResourceInput\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
@@ -3994,6 +3997,7 @@ func file_cognitoidentity_proto_init() {
 	file_cognitoidentity_proto_msgTypes[41].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[42].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[43].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[44].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[47].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[48].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[51].OneofWrappers = []any{}

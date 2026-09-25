@@ -84,15 +84,21 @@ func templateFuncs() template.FuncMap {
 // string, 0, or false) — exactly the distinction the AWS wire protocol
 // makes between an omitted member and an empty one. Booleans are always
 // optional because proto3 has no other way to express an unset boolean.
-// Repeated fields and maps have no scalar presence semantics, message and
-// enum references are nil-able already, and required scalars are always
-// present on the wire.
+// Non-required enum references are optional for the same reason: a
+// singular proto3 enum field is a plain value, not a nil-able reference,
+// so without the marker an omitted member is indistinguishable from an
+// explicit naming of the zero-value enum constant. Repeated fields and
+// maps have no scalar presence semantics, message references are nil-able
+// already, and required scalars and enums are always present on the wire.
 func fieldIsOptional(f FieldData) bool {
 	if f.Type == "bool" {
 		return true
 	}
 	if f.IsRequired || strings.HasPrefix(f.Type, "repeated ") || strings.HasPrefix(f.Type, "map<") {
 		return false
+	}
+	if f.IsEnumRef {
+		return true
 	}
 	switch f.Type {
 	case "string", "int32", "int64", "double", "float", "bytes":

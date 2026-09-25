@@ -94,19 +94,19 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTags(ctx context.Context, in *AddTagsRequest, opts ...grpc.CallOption) (*AddTagsResponse, error)
-	// Cancels a query if the query is not in a terminated state, such as CANCELLED, FAILED, TIMED_OUT, or FINISHED. You must specify an ARN value for EventDataStore. The ID of the query that you want to ...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CancelQuery(ctx context.Context, in *CancelQueryRequest, opts ...grpc.CallOption) (*CancelQueryResponse, error)
-	// Creates a channel for CloudTrail to ingest events from a partner or external source. After you create a channel, a CloudTrail Lake event data store can log events from the partner or source that yo...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateChannel(ctx context.Context, in *CreateChannelRequest, opts ...grpc.CallOption) (*CreateChannelResponse, error)
-	// Creates a custom dashboard or the Highlights dashboard. Custom dashboards - Custom dashboards allow you to query events in any event data store type. You can add up to 10 widgets to a custom dashbo...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateDashboard(ctx context.Context, in *CreateDashboardRequest, opts ...grpc.CallOption) (*CreateDashboardResponse, error)
-	// Creates a new event data store.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateEventDataStore(ctx context.Context, in *CreateEventDataStoreRequest, opts ...grpc.CallOption) (*CreateEventDataStoreResponse, error)
@@ -114,15 +114,15 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateTrail(ctx context.Context, in *CreateTrailRequest, opts ...grpc.CallOption) (*CreateTrailResponse, error)
-	// Deletes a channel.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteChannel(ctx context.Context, in *DeleteChannelRequest, opts ...grpc.CallOption) (*DeleteChannelResponse, error)
-	// Deletes the specified dashboard. You cannot delete a dashboard that has termination protection enabled.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteDashboard(ctx context.Context, in *DeleteDashboardRequest, opts ...grpc.CallOption) (*DeleteDashboardResponse, error)
-	// Disables the event data store specified by EventDataStore, which accepts an event data store ARN. After you run DeleteEventDataStore, the event data store enters a PENDING_DELETION state, and is au...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteEventDataStore(ctx context.Context, in *DeleteEventDataStoreRequest, opts ...grpc.CallOption) (*DeleteEventDataStoreResponse, error)
@@ -138,7 +138,7 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeregisterOrganizationDelegatedAdmin(ctx context.Context, in *DeregisterOrganizationDelegatedAdminRequest, opts ...grpc.CallOption) (*DeregisterOrganizationDelegatedAdminResponse, error)
-	// Returns metadata about a query, including query run time in milliseconds, number of events scanned and matched, and query status. If the query results were delivered to an S3 bucket, the response a...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeQuery(ctx context.Context, in *DescribeQueryRequest, opts ...grpc.CallOption) (*DescribeQueryResponse, error)
@@ -146,23 +146,23 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeTrails(ctx context.Context, in *DescribeTrailsRequest, opts ...grpc.CallOption) (*DescribeTrailsResponse, error)
-	// Disables Lake query federation on the specified event data store. When you disable federation, CloudTrail disables the integration with Glue, Lake Formation, and Amazon Athena. After disabling Lake...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DisableFederation(ctx context.Context, in *DisableFederationRequest, opts ...grpc.CallOption) (*DisableFederationResponse, error)
-	// Enables Lake query federation on the specified event data store. Federating an event data store lets you view the metadata associated with the event data store in the Glue Data Catalog and run SQL ...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	EnableFederation(ctx context.Context, in *EnableFederationRequest, opts ...grpc.CallOption) (*EnableFederationResponse, error)
-	// Generates a query from a natural language prompt. This operation uses generative artificial intelligence (generative AI) to produce a ready-to-use SQL query from the prompt. The prompt can be a que...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GenerateQuery(ctx context.Context, in *GenerateQueryRequest, opts ...grpc.CallOption) (*GenerateQueryResponse, error)
-	// Returns information about a specific channel.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetChannel(ctx context.Context, in *GetChannelRequest, opts ...grpc.CallOption) (*GetChannelResponse, error)
-	// Returns the specified dashboard.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetDashboard(ctx context.Context, in *GetDashboardRequest, opts ...grpc.CallOption) (*GetDashboardResponse, error)
@@ -170,7 +170,7 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetEventConfiguration(ctx context.Context, in *GetEventConfigurationRequest, opts ...grpc.CallOption) (*GetEventConfigurationResponse, error)
-	// Returns information about an event data store specified as either an ARN or the ID portion of the ARN.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetEventDataStore(ctx context.Context, in *GetEventDataStoreRequest, opts ...grpc.CallOption) (*GetEventDataStoreResponse, error)
@@ -178,7 +178,7 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetEventSelectors(ctx context.Context, in *GetEventSelectorsRequest, opts ...grpc.CallOption) (*GetEventSelectorsResponse, error)
-	// Returns information about a specific import.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetImport(ctx context.Context, in *GetImportRequest, opts ...grpc.CallOption) (*GetImportResponse, error)
@@ -186,7 +186,7 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetInsightSelectors(ctx context.Context, in *GetInsightSelectorsRequest, opts ...grpc.CallOption) (*GetInsightSelectorsResponse, error)
-	// Gets event data results of a query. You must specify the QueryID value returned by the StartQuery operation.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetQueryResults(ctx context.Context, in *GetQueryResultsRequest, opts ...grpc.CallOption) (*GetQueryResultsResponse, error)
@@ -202,23 +202,23 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetTrailStatus(ctx context.Context, in *GetTrailStatusRequest, opts ...grpc.CallOption) (*GetTrailStatusResponse, error)
-	// Lists the channels in the current account, and their source names.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListChannels(ctx context.Context, in *ListChannelsRequest, opts ...grpc.CallOption) (*ListChannelsResponse, error)
-	// Returns information about all dashboards in the account, in the current Region.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListDashboards(ctx context.Context, in *ListDashboardsRequest, opts ...grpc.CallOption) (*ListDashboardsResponse, error)
-	// Returns information about all event data stores in the account, in the current Region.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListEventDataStores(ctx context.Context, in *ListEventDataStoresRequest, opts ...grpc.CallOption) (*ListEventDataStoresResponse, error)
-	// Returns a list of failures for the specified import.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListImportFailures(ctx context.Context, in *ListImportFailuresRequest, opts ...grpc.CallOption) (*ListImportFailuresResponse, error)
-	// Returns information on all imports, or a select set of imports by ImportStatus or Destination.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListImports(ctx context.Context, in *ListImportsRequest, opts ...grpc.CallOption) (*ListImportsResponse, error)
@@ -234,7 +234,7 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListPublicKeys(ctx context.Context, in *ListPublicKeysRequest, opts ...grpc.CallOption) (*ListPublicKeysResponse, error)
-	// Returns a list of queries and query statuses for the past seven days. You must specify an ARN value for EventDataStore. Optionally, to shorten the list of results, you can specify a time range, for...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListQueries(ctx context.Context, in *ListQueriesRequest, opts ...grpc.CallOption) (*ListQueriesResponse, error)
@@ -274,23 +274,23 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	RemoveTags(ctx context.Context, in *RemoveTagsRequest, opts ...grpc.CallOption) (*RemoveTagsResponse, error)
-	// Restores a deleted event data store specified by EventDataStore, which accepts an event data store ARN. You can only restore a deleted event data store within the seven-day wait period after deleti...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	RestoreEventDataStore(ctx context.Context, in *RestoreEventDataStoreRequest, opts ...grpc.CallOption) (*RestoreEventDataStoreResponse, error)
-	// Searches sample queries and returns a list of sample queries that are sorted by relevance. To search for sample queries, provide a natural language SearchPhrase in English.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	SearchSampleQueries(ctx context.Context, in *SearchSampleQueriesRequest, opts ...grpc.CallOption) (*SearchSampleQueriesResponse, error)
-	// Starts a refresh of the specified dashboard. Each time a dashboard is refreshed, CloudTrail runs queries to populate the dashboard's widgets. CloudTrail must be granted permissions to run the Start...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartDashboardRefresh(ctx context.Context, in *StartDashboardRefreshRequest, opts ...grpc.CallOption) (*StartDashboardRefreshResponse, error)
-	// Starts the ingestion of live events on an event data store specified as either an ARN or the ID portion of the ARN. To start ingestion, the event data store Status must be STOPPED_INGESTION and the...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartEventDataStoreIngestion(ctx context.Context, in *StartEventDataStoreIngestionRequest, opts ...grpc.CallOption) (*StartEventDataStoreIngestionResponse, error)
-	// Starts an import of logged trail events from a source S3 bucket to a destination event data store. By default, CloudTrail only imports events contained in the S3 bucket's CloudTrail prefix and the ...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartImport(ctx context.Context, in *StartImportRequest, opts ...grpc.CallOption) (*StartImportResponse, error)
@@ -298,15 +298,15 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartLogging(ctx context.Context, in *StartLoggingRequest, opts ...grpc.CallOption) (*StartLoggingResponse, error)
-	// Starts a CloudTrail Lake query. Use the QueryStatement parameter to provide your SQL query, enclosed in single quotation marks. Use the optional DeliveryS3Uri parameter to deliver the query results...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartQuery(ctx context.Context, in *StartQueryRequest, opts ...grpc.CallOption) (*StartQueryResponse, error)
-	// Stops the ingestion of live events on an event data store specified as either an ARN or the ID portion of the ARN. To stop ingestion, the event data store Status must be ENABLED and the eventCatego...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StopEventDataStoreIngestion(ctx context.Context, in *StopEventDataStoreIngestionRequest, opts ...grpc.CallOption) (*StopEventDataStoreIngestionResponse, error)
-	// Stops a specified import.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StopImport(ctx context.Context, in *StopImportRequest, opts ...grpc.CallOption) (*StopImportResponse, error)
@@ -314,15 +314,15 @@ type CloudTrailServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	StopLogging(ctx context.Context, in *StopLoggingRequest, opts ...grpc.CallOption) (*StopLoggingResponse, error)
-	// Updates a channel specified by a required channel ARN or UUID.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateChannel(ctx context.Context, in *UpdateChannelRequest, opts ...grpc.CallOption) (*UpdateChannelResponse, error)
-	// Updates the specified dashboard. To set a refresh schedule, CloudTrail must be granted permissions to run the StartDashboardRefresh operation to refresh the dashboard on your behalf. To provide per...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateDashboard(ctx context.Context, in *UpdateDashboardRequest, opts ...grpc.CallOption) (*UpdateDashboardResponse, error)
-	// Updates an event data store. The required EventDataStore value is an ARN or the ID portion of the ARN. Other parameters are optional, but at least one optional parameter must be specified, or Cloud...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateEventDataStore(ctx context.Context, in *UpdateEventDataStoreRequest, opts ...grpc.CallOption) (*UpdateEventDataStoreResponse, error)
@@ -950,19 +950,19 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTags(context.Context, *AddTagsRequest) (*AddTagsResponse, error)
-	// Cancels a query if the query is not in a terminated state, such as CANCELLED, FAILED, TIMED_OUT, or FINISHED. You must specify an ARN value for EventDataStore. The ID of the query that you want to ...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CancelQuery(context.Context, *CancelQueryRequest) (*CancelQueryResponse, error)
-	// Creates a channel for CloudTrail to ingest events from a partner or external source. After you create a channel, a CloudTrail Lake event data store can log events from the partner or source that yo...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateChannel(context.Context, *CreateChannelRequest) (*CreateChannelResponse, error)
-	// Creates a custom dashboard or the Highlights dashboard. Custom dashboards - Custom dashboards allow you to query events in any event data store type. You can add up to 10 widgets to a custom dashbo...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateDashboard(context.Context, *CreateDashboardRequest) (*CreateDashboardResponse, error)
-	// Creates a new event data store.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateEventDataStore(context.Context, *CreateEventDataStoreRequest) (*CreateEventDataStoreResponse, error)
@@ -970,15 +970,15 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateTrail(context.Context, *CreateTrailRequest) (*CreateTrailResponse, error)
-	// Deletes a channel.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteChannel(context.Context, *DeleteChannelRequest) (*DeleteChannelResponse, error)
-	// Deletes the specified dashboard. You cannot delete a dashboard that has termination protection enabled.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteDashboard(context.Context, *DeleteDashboardRequest) (*DeleteDashboardResponse, error)
-	// Disables the event data store specified by EventDataStore, which accepts an event data store ARN. After you run DeleteEventDataStore, the event data store enters a PENDING_DELETION state, and is au...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteEventDataStore(context.Context, *DeleteEventDataStoreRequest) (*DeleteEventDataStoreResponse, error)
@@ -994,7 +994,7 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeregisterOrganizationDelegatedAdmin(context.Context, *DeregisterOrganizationDelegatedAdminRequest) (*DeregisterOrganizationDelegatedAdminResponse, error)
-	// Returns metadata about a query, including query run time in milliseconds, number of events scanned and matched, and query status. If the query results were delivered to an S3 bucket, the response a...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeQuery(context.Context, *DescribeQueryRequest) (*DescribeQueryResponse, error)
@@ -1002,23 +1002,23 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeTrails(context.Context, *DescribeTrailsRequest) (*DescribeTrailsResponse, error)
-	// Disables Lake query federation on the specified event data store. When you disable federation, CloudTrail disables the integration with Glue, Lake Formation, and Amazon Athena. After disabling Lake...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DisableFederation(context.Context, *DisableFederationRequest) (*DisableFederationResponse, error)
-	// Enables Lake query federation on the specified event data store. Federating an event data store lets you view the metadata associated with the event data store in the Glue Data Catalog and run SQL ...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	EnableFederation(context.Context, *EnableFederationRequest) (*EnableFederationResponse, error)
-	// Generates a query from a natural language prompt. This operation uses generative artificial intelligence (generative AI) to produce a ready-to-use SQL query from the prompt. The prompt can be a que...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GenerateQuery(context.Context, *GenerateQueryRequest) (*GenerateQueryResponse, error)
-	// Returns information about a specific channel.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetChannel(context.Context, *GetChannelRequest) (*GetChannelResponse, error)
-	// Returns the specified dashboard.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetDashboard(context.Context, *GetDashboardRequest) (*GetDashboardResponse, error)
@@ -1026,7 +1026,7 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetEventConfiguration(context.Context, *GetEventConfigurationRequest) (*GetEventConfigurationResponse, error)
-	// Returns information about an event data store specified as either an ARN or the ID portion of the ARN.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetEventDataStore(context.Context, *GetEventDataStoreRequest) (*GetEventDataStoreResponse, error)
@@ -1034,7 +1034,7 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetEventSelectors(context.Context, *GetEventSelectorsRequest) (*GetEventSelectorsResponse, error)
-	// Returns information about a specific import.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetImport(context.Context, *GetImportRequest) (*GetImportResponse, error)
@@ -1042,7 +1042,7 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetInsightSelectors(context.Context, *GetInsightSelectorsRequest) (*GetInsightSelectorsResponse, error)
-	// Gets event data results of a query. You must specify the QueryID value returned by the StartQuery operation.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetQueryResults(context.Context, *GetQueryResultsRequest) (*GetQueryResultsResponse, error)
@@ -1058,23 +1058,23 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetTrailStatus(context.Context, *GetTrailStatusRequest) (*GetTrailStatusResponse, error)
-	// Lists the channels in the current account, and their source names.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListChannels(context.Context, *ListChannelsRequest) (*ListChannelsResponse, error)
-	// Returns information about all dashboards in the account, in the current Region.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListDashboards(context.Context, *ListDashboardsRequest) (*ListDashboardsResponse, error)
-	// Returns information about all event data stores in the account, in the current Region.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListEventDataStores(context.Context, *ListEventDataStoresRequest) (*ListEventDataStoresResponse, error)
-	// Returns a list of failures for the specified import.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListImportFailures(context.Context, *ListImportFailuresRequest) (*ListImportFailuresResponse, error)
-	// Returns information on all imports, or a select set of imports by ImportStatus or Destination.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListImports(context.Context, *ListImportsRequest) (*ListImportsResponse, error)
@@ -1090,7 +1090,7 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListPublicKeys(context.Context, *ListPublicKeysRequest) (*ListPublicKeysResponse, error)
-	// Returns a list of queries and query statuses for the past seven days. You must specify an ARN value for EventDataStore. Optionally, to shorten the list of results, you can specify a time range, for...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListQueries(context.Context, *ListQueriesRequest) (*ListQueriesResponse, error)
@@ -1130,23 +1130,23 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	RemoveTags(context.Context, *RemoveTagsRequest) (*RemoveTagsResponse, error)
-	// Restores a deleted event data store specified by EventDataStore, which accepts an event data store ARN. You can only restore a deleted event data store within the seven-day wait period after deleti...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	RestoreEventDataStore(context.Context, *RestoreEventDataStoreRequest) (*RestoreEventDataStoreResponse, error)
-	// Searches sample queries and returns a list of sample queries that are sorted by relevance. To search for sample queries, provide a natural language SearchPhrase in English.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	SearchSampleQueries(context.Context, *SearchSampleQueriesRequest) (*SearchSampleQueriesResponse, error)
-	// Starts a refresh of the specified dashboard. Each time a dashboard is refreshed, CloudTrail runs queries to populate the dashboard's widgets. CloudTrail must be granted permissions to run the Start...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartDashboardRefresh(context.Context, *StartDashboardRefreshRequest) (*StartDashboardRefreshResponse, error)
-	// Starts the ingestion of live events on an event data store specified as either an ARN or the ID portion of the ARN. To start ingestion, the event data store Status must be STOPPED_INGESTION and the...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartEventDataStoreIngestion(context.Context, *StartEventDataStoreIngestionRequest) (*StartEventDataStoreIngestionResponse, error)
-	// Starts an import of logged trail events from a source S3 bucket to a destination event data store. By default, CloudTrail only imports events contained in the S3 bucket's CloudTrail prefix and the ...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartImport(context.Context, *StartImportRequest) (*StartImportResponse, error)
@@ -1154,15 +1154,15 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartLogging(context.Context, *StartLoggingRequest) (*StartLoggingResponse, error)
-	// Starts a CloudTrail Lake query. Use the QueryStatement parameter to provide your SQL query, enclosed in single quotation marks. Use the optional DeliveryS3Uri parameter to deliver the query results...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StartQuery(context.Context, *StartQueryRequest) (*StartQueryResponse, error)
-	// Stops the ingestion of live events on an event data store specified as either an ARN or the ID portion of the ARN. To stop ingestion, the event data store Status must be ENABLED and the eventCatego...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StopEventDataStoreIngestion(context.Context, *StopEventDataStoreIngestionRequest) (*StopEventDataStoreIngestionResponse, error)
-	// Stops a specified import.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	StopImport(context.Context, *StopImportRequest) (*StopImportResponse, error)
@@ -1170,15 +1170,15 @@ type CloudTrailServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	StopLogging(context.Context, *StopLoggingRequest) (*StopLoggingResponse, error)
-	// Updates a channel specified by a required channel ARN or UUID.
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateChannel(context.Context, *UpdateChannelRequest) (*UpdateChannelResponse, error)
-	// Updates the specified dashboard. To set a refresh schedule, CloudTrail must be granted permissions to run the StartDashboardRefresh operation to refresh the dashboard on your behalf. To provide per...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateDashboard(context.Context, *UpdateDashboardRequest) (*UpdateDashboardResponse, error)
-	// Updates an event data store. The required EventDataStore value is an ARN or the ID portion of the ARN. Other parameters are optional, but at least one optional parameter must be specified, or Cloud...
+	// CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the servi...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateEventDataStore(context.Context, *UpdateEventDataStoreRequest) (*UpdateEventDataStoreResponse, error)

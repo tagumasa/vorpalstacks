@@ -129,6 +129,28 @@ func TestExprToAttributeValueLiterals(t *testing.T) {
 	assert.Equal(t, "v", *item["m"].M["k"].S)
 }
 
+// TestPartiQLSetLiteralMaterialises pins the set literal: a homogeneous
+// member list materialises as SS or NS, while mixed kinds and repeated
+// members are validation errors — never a silently collapsed or retyped
+// set.
+func TestPartiQLSetLiteralMaterialises(t *testing.T) {
+	_, item, err := parseInsertStatementWithParams(
+		`INSERT INTO "T" VALUE {'ss': <<'a', 'b'>>, 'ns': <<1, 2>>}`, nil)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, item["ss"].SS)
+	assert.Equal(t, []string{"1", "2"}, item["ns"].NS)
+
+	for _, stmt := range []string{
+		`INSERT INTO "T" VALUE {'s': <<'a', 1>>}`,
+		`INSERT INTO "T" VALUE {'s': <<'a', 'a'>>}`,
+		`INSERT INTO "T" VALUE {'s': <<1, 1.0>>}`,
+		`INSERT INTO "T" VALUE {'s': <<true>>}`,
+	} {
+		_, _, err := parseInsertStatementWithParams(stmt, nil)
+		assert.ErrorIs(t, err, ErrInvalidParameter, stmt)
+	}
+}
+
 // TestPartiQLNumberLiteralsHeldToNumberContract pins that number literals
 // follow the same DynamoDB Number contract as wire AttributeValues: the
 // documented magnitude range and the 38-significant-digit limit. The key
@@ -160,6 +182,23 @@ func TestPartiQLNumberLiteralsHeldToNumberContract(t *testing.T) {
 	assert.Equal(t, "7", *item["c"].N)
 	assert.Equal(t, "1e-130", *item["d"].N)
 	assert.Equal(t, "9.9999999999999999999999999999999999999e125", *item["e"].N)
+}
+
+// TestPartiQLValueMaterialiserRejectsNonValues pins the corruption-class
+// removal: an expression that is not a value this grammar defines — a
+// column reference, a function call, an operator combination — is a
+// validation error, never a materialised NULL stored as the attribute.
+func TestPartiQLValueMaterialiserRejectsNonValues(t *testing.T) {
+	for _, stmt := range []string{
+		`INSERT INTO "T" VALUE {'a': other}`,        // column reference
+		`INSERT INTO "T" VALUE {'a': upper('x')}`,   // function call
+		`INSERT INTO "T" VALUE {'a': 1 + 2}`,        // operator combination
+		`INSERT INTO "T" VALUE {'a': [other]}`,      // nested inside a list
+		`INSERT INTO "T" VALUE {'a': {'b': upper}}`, // nested inside an object
+	} {
+		_, _, err := parseInsertStatementWithParams(stmt, nil)
+		assert.ErrorIs(t, err, ErrInvalidParameter, stmt)
+	}
 }
 
 // TestPreparePartiQLStatementNumbersInOrder pins the placeholder rewrite
@@ -218,7 +257,8 @@ func TestManualUpdateNumberingSpansSegments(t *testing.T) {
 	stmt, placeholders := preparePartiQLStatement(`UPDATE "T" ADD n ? WHERE id = ?`)
 	require.Equal(t, 2, placeholders)
 
-	_, clauses, whereExpr := parseUpdateStatement(stmt)
+	_, clauses, whereExpr, parseErr := parseUpdateStatement(stmt)
+	require.NoError(t, parseErr)
 	require.Len(t, clauses.addAssignments, 1)
 	require.NotNil(t, whereExpr)
 

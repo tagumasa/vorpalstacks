@@ -3,6 +3,7 @@ package cloudwatch
 import (
 	"google.golang.org/protobuf/proto"
 
+	"vorpalstacks/internal/common/pbutil"
 	pb "vorpalstacks/internal/pb/aws/cloudwatch"
 	cloudwatchstore "vorpalstacks/internal/store/aws/cloudwatch"
 	"vorpalstacks/internal/utils/timeutils"
@@ -25,13 +26,13 @@ func toPbMetricAlarm(alarm *cloudwatchstore.Alarm) *pb.MetricAlarm {
 		Namespace:                          proto.String(alarm.Namespace),
 		Metricname:                         proto.String(alarm.MetricName),
 		Dimensions:                         pbDims,
-		Comparisonoperator:                 toPbComparisonOperator(alarm.ComparisonOperator),
+		Comparisonoperator:                 pbutil.Enum(toPbComparisonOperator(alarm.ComparisonOperator)),
 		Threshold:                          proto.Float64(alarm.Threshold),
 		Evaluationperiods:                  proto.Int32(alarm.EvaluationPeriods),
 		Period:                             proto.Int32(alarm.Period),
-		Statistic:                          toPbStatistic(alarm.Statistic),
+		Statistic:                          pbutil.Enum(toPbStatistic(alarm.Statistic)),
 		Treatmissingdata:                   proto.String(alarm.TreatMissingData),
-		Statevalue:                         toPbStateValue(alarm.State),
+		Statevalue:                         pbutil.Enum(toPbStateValue(alarm.State)),
 		Stateupdatedtimestamp:              proto.String(alarm.StateUpdatedTimestamp.Format(timeutils.ISO8601UTCFormat)),
 		Alarmconfigurationupdatedtimestamp: proto.String(alarm.CreatedAt.Format(timeutils.ISO8601UTCFormat)),
 	}

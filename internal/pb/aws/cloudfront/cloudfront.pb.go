@@ -2565,7 +2565,7 @@ func (x *ActiveTrustedSigners) GetQuantity() int32 {
 type AliasICPRecordal struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Cname             *string                `protobuf:"bytes,420235386,opt,name=cname,proto3,oneof" json:"cname,omitempty"`
-	Icprecordalstatus ICPRecordalStatus      `protobuf:"varint,230990942,opt,name=icprecordalstatus,proto3,enum=cloudfront.ICPRecordalStatus" json:"icprecordalstatus,omitempty"`
+	Icprecordalstatus *ICPRecordalStatus     `protobuf:"varint,230990942,opt,name=icprecordalstatus,proto3,enum=cloudfront.ICPRecordalStatus,oneof" json:"icprecordalstatus,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -2608,8 +2608,8 @@ func (x *AliasICPRecordal) GetCname() string {
 }
 
 func (x *AliasICPRecordal) GetIcprecordalstatus() ICPRecordalStatus {
-	if x != nil {
-		return x.Icprecordalstatus
+	if x != nil && x.Icprecordalstatus != nil {
+		return *x.Icprecordalstatus
 	}
 	return ICPRecordalStatus_I_C_P_RECORDAL_STATUS_PENDING
 }
@@ -2731,7 +2731,7 @@ type AnycastIpList struct {
 	Anycastips       []string               `protobuf:"bytes,113332317,rep,name=anycastips,proto3" json:"anycastips,omitempty"`
 	Arn              string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
 	Id               string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Ipaddresstype    IpAddressType          `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType" json:"ipaddresstype,omitempty"`
+	Ipaddresstype    *IpAddressType         `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType,oneof" json:"ipaddresstype,omitempty"`
 	Ipcount          int32                  `protobuf:"varint,475138532,opt,name=ipcount,proto3" json:"ipcount,omitempty"`
 	Ipamconfig       *IpamConfig            `protobuf:"bytes,310812553,opt,name=ipamconfig,proto3" json:"ipamconfig,omitempty"`
 	Lastmodifiedtime string                 `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3" json:"lastmodifiedtime,omitempty"`
@@ -2793,8 +2793,8 @@ func (x *AnycastIpList) GetId() string {
 }
 
 func (x *AnycastIpList) GetIpaddresstype() IpAddressType {
-	if x != nil {
-		return x.Ipaddresstype
+	if x != nil && x.Ipaddresstype != nil {
+		return *x.Ipaddresstype
 	}
 	return IpAddressType_IP_ADDRESS_TYPE_IPV6
 }
@@ -2923,7 +2923,7 @@ type AnycastIpListSummary struct {
 	Arn              string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
 	Etag             *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
 	Id               string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Ipaddresstype    IpAddressType          `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType" json:"ipaddresstype,omitempty"`
+	Ipaddresstype    *IpAddressType         `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType,oneof" json:"ipaddresstype,omitempty"`
 	Ipcount          int32                  `protobuf:"varint,475138532,opt,name=ipcount,proto3" json:"ipcount,omitempty"`
 	Ipamconfig       *IpamConfig            `protobuf:"bytes,310812553,opt,name=ipamconfig,proto3" json:"ipamconfig,omitempty"`
 	Lastmodifiedtime string                 `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3" json:"lastmodifiedtime,omitempty"`
@@ -2985,8 +2985,8 @@ func (x *AnycastIpListSummary) GetId() string {
 }
 
 func (x *AnycastIpListSummary) GetIpaddresstype() IpAddressType {
-	if x != nil {
-		return x.Ipaddresstype
+	if x != nil && x.Ipaddresstype != nil {
+		return *x.Ipaddresstype
 	}
 	return IpAddressType_IP_ADDRESS_TYPE_IPV6
 }
@@ -6368,7 +6368,7 @@ func (x *CopyDistributionResult) GetLocation() string {
 
 type CreateAnycastIpListRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Ipaddresstype   IpAddressType          `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType" json:"ipaddresstype,omitempty"`
+	Ipaddresstype   *IpAddressType         `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType,oneof" json:"ipaddresstype,omitempty"`
 	Ipcount         int32                  `protobuf:"varint,475138532,opt,name=ipcount,proto3" json:"ipcount,omitempty"`
 	Ipamcidrconfigs []*IpamCidrConfig      `protobuf:"bytes,314539184,rep,name=ipamcidrconfigs,proto3" json:"ipamcidrconfigs,omitempty"`
 	Name            string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
@@ -6408,8 +6408,8 @@ func (*CreateAnycastIpListRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateAnycastIpListRequest) GetIpaddresstype() IpAddressType {
-	if x != nil {
-		return x.Ipaddresstype
+	if x != nil && x.Ipaddresstype != nil {
+		return *x.Ipaddresstype
 	}
 	return IpAddressType_IP_ADDRESS_TYPE_IPV6
 }
@@ -9446,7 +9446,7 @@ type CustomOriginConfig struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Httpport               int32                  `protobuf:"varint,375976295,opt,name=httpport,proto3" json:"httpport,omitempty"`
 	Httpsport              int32                  `protobuf:"varint,153043918,opt,name=httpsport,proto3" json:"httpsport,omitempty"`
-	Ipaddresstype          IpAddressType          `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType" json:"ipaddresstype,omitempty"`
+	Ipaddresstype          *IpAddressType         `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType,oneof" json:"ipaddresstype,omitempty"`
 	Originkeepalivetimeout *int32                 `protobuf:"varint,214128603,opt,name=originkeepalivetimeout,proto3,oneof" json:"originkeepalivetimeout,omitempty"`
 	Originmtlsconfig       *OriginMtlsConfig      `protobuf:"bytes,268477222,opt,name=originmtlsconfig,proto3" json:"originmtlsconfig,omitempty"`
 	Originprotocolpolicy   OriginProtocolPolicy   `protobuf:"varint,234303342,opt,name=originprotocolpolicy,proto3,enum=cloudfront.OriginProtocolPolicy" json:"originprotocolpolicy,omitempty"`
@@ -9501,8 +9501,8 @@ func (x *CustomOriginConfig) GetHttpsport() int32 {
 }
 
 func (x *CustomOriginConfig) GetIpaddresstype() IpAddressType {
-	if x != nil {
-		return x.Ipaddresstype
+	if x != nil && x.Ipaddresstype != nil {
+		return *x.Ipaddresstype
 	}
 	return IpAddressType_IP_ADDRESS_TYPE_IPV6
 }
@@ -11061,7 +11061,7 @@ func (x *DeleteVpcOriginResult) GetVpcorigin() *VpcOrigin {
 type DescribeConnectionFunctionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Identifier    string                 `protobuf:"bytes,41865311,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Stage         FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
+	Stage         *FunctionStage         `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage,oneof" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11104,8 +11104,8 @@ func (x *DescribeConnectionFunctionRequest) GetIdentifier() string {
 }
 
 func (x *DescribeConnectionFunctionRequest) GetStage() FunctionStage {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return FunctionStage_FUNCTION_STAGE_DEVELOPMENT
 }
@@ -11165,7 +11165,7 @@ func (x *DescribeConnectionFunctionResult) GetEtag() string {
 type DescribeFunctionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Stage         FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
+	Stage         *FunctionStage         `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage,oneof" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11208,8 +11208,8 @@ func (x *DescribeFunctionRequest) GetName() string {
 }
 
 func (x *DescribeFunctionRequest) GetStage() FunctionStage {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return FunctionStage_FUNCTION_STAGE_DEVELOPMENT
 }
@@ -11739,18 +11739,18 @@ type DistributionConfig struct {
 	Callerreference               string                         `protobuf:"bytes,151211160,opt,name=callerreference,proto3" json:"callerreference,omitempty"`
 	Comment                       string                         `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
 	Connectionfunctionassociation *ConnectionFunctionAssociation `protobuf:"bytes,253879893,opt,name=connectionfunctionassociation,proto3" json:"connectionfunctionassociation,omitempty"`
-	Connectionmode                ConnectionMode                 `protobuf:"varint,82068023,opt,name=connectionmode,proto3,enum=cloudfront.ConnectionMode" json:"connectionmode,omitempty"`
+	Connectionmode                *ConnectionMode                `protobuf:"varint,82068023,opt,name=connectionmode,proto3,enum=cloudfront.ConnectionMode,oneof" json:"connectionmode,omitempty"`
 	Continuousdeploymentpolicyid  *string                        `protobuf:"bytes,370023231,opt,name=continuousdeploymentpolicyid,proto3,oneof" json:"continuousdeploymentpolicyid,omitempty"`
 	Customerrorresponses          *CustomErrorResponses          `protobuf:"bytes,306704557,opt,name=customerrorresponses,proto3" json:"customerrorresponses,omitempty"`
 	Defaultcachebehavior          *DefaultCacheBehavior          `protobuf:"bytes,346164111,opt,name=defaultcachebehavior,proto3" json:"defaultcachebehavior,omitempty"`
 	Defaultrootobject             *string                        `protobuf:"bytes,58521698,opt,name=defaultrootobject,proto3,oneof" json:"defaultrootobject,omitempty"`
 	Enabled                       *bool                          `protobuf:"varint,478602303,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
-	Httpversion                   HttpVersion                    `protobuf:"varint,390398520,opt,name=httpversion,proto3,enum=cloudfront.HttpVersion" json:"httpversion,omitempty"`
+	Httpversion                   *HttpVersion                   `protobuf:"varint,390398520,opt,name=httpversion,proto3,enum=cloudfront.HttpVersion,oneof" json:"httpversion,omitempty"`
 	Isipv6Enabled                 *bool                          `protobuf:"varint,526764378,opt,name=isipv6enabled,proto3,oneof" json:"isipv6enabled,omitempty"`
 	Logging                       *LoggingConfig                 `protobuf:"bytes,65655615,opt,name=logging,proto3" json:"logging,omitempty"`
 	Origingroups                  *OriginGroups                  `protobuf:"bytes,397149984,opt,name=origingroups,proto3" json:"origingroups,omitempty"`
 	Origins                       *Origins                       `protobuf:"bytes,277391381,opt,name=origins,proto3" json:"origins,omitempty"`
-	Priceclass                    PriceClass                     `protobuf:"varint,488692315,opt,name=priceclass,proto3,enum=cloudfront.PriceClass" json:"priceclass,omitempty"`
+	Priceclass                    *PriceClass                    `protobuf:"varint,488692315,opt,name=priceclass,proto3,enum=cloudfront.PriceClass,oneof" json:"priceclass,omitempty"`
 	Restrictions                  *Restrictions                  `protobuf:"bytes,521105179,opt,name=restrictions,proto3" json:"restrictions,omitempty"`
 	Staging                       *bool                          `protobuf:"varint,193058759,opt,name=staging,proto3,oneof" json:"staging,omitempty"`
 	Tenantconfig                  *TenantConfig                  `protobuf:"bytes,477582312,opt,name=tenantconfig,proto3" json:"tenantconfig,omitempty"`
@@ -11841,8 +11841,8 @@ func (x *DistributionConfig) GetConnectionfunctionassociation() *ConnectionFunct
 }
 
 func (x *DistributionConfig) GetConnectionmode() ConnectionMode {
-	if x != nil {
-		return x.Connectionmode
+	if x != nil && x.Connectionmode != nil {
+		return *x.Connectionmode
 	}
 	return ConnectionMode_CONNECTION_MODE_DIRECT
 }
@@ -11883,8 +11883,8 @@ func (x *DistributionConfig) GetEnabled() bool {
 }
 
 func (x *DistributionConfig) GetHttpversion() HttpVersion {
-	if x != nil {
-		return x.Httpversion
+	if x != nil && x.Httpversion != nil {
+		return *x.Httpversion
 	}
 	return HttpVersion_HTTP_VERSION_HTTP2
 }
@@ -11918,8 +11918,8 @@ func (x *DistributionConfig) GetOrigins() *Origins {
 }
 
 func (x *DistributionConfig) GetPriceclass() PriceClass {
-	if x != nil {
-		return x.Priceclass
+	if x != nil && x.Priceclass != nil {
+		return *x.Priceclass
 	}
 	return PriceClass_PRICE_CLASS_NONE
 }
@@ -12427,7 +12427,7 @@ type DistributionSummary struct {
 	Cachebehaviors                *CacheBehaviors                `protobuf:"bytes,70698397,opt,name=cachebehaviors,proto3" json:"cachebehaviors,omitempty"`
 	Comment                       string                         `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
 	Connectionfunctionassociation *ConnectionFunctionAssociation `protobuf:"bytes,253879893,opt,name=connectionfunctionassociation,proto3" json:"connectionfunctionassociation,omitempty"`
-	Connectionmode                ConnectionMode                 `protobuf:"varint,82068023,opt,name=connectionmode,proto3,enum=cloudfront.ConnectionMode" json:"connectionmode,omitempty"`
+	Connectionmode                *ConnectionMode                `protobuf:"varint,82068023,opt,name=connectionmode,proto3,enum=cloudfront.ConnectionMode,oneof" json:"connectionmode,omitempty"`
 	Customerrorresponses          *CustomErrorResponses          `protobuf:"bytes,306704557,opt,name=customerrorresponses,proto3" json:"customerrorresponses,omitempty"`
 	Defaultcachebehavior          *DefaultCacheBehavior          `protobuf:"bytes,346164111,opt,name=defaultcachebehavior,proto3" json:"defaultcachebehavior,omitempty"`
 	Domainname                    string                         `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
@@ -12530,8 +12530,8 @@ func (x *DistributionSummary) GetConnectionfunctionassociation() *ConnectionFunc
 }
 
 func (x *DistributionSummary) GetConnectionmode() ConnectionMode {
-	if x != nil {
-		return x.Connectionmode
+	if x != nil && x.Connectionmode != nil {
+		return *x.Connectionmode
 	}
 	return ConnectionMode_CONNECTION_MODE_DIRECT
 }
@@ -13161,7 +13161,7 @@ func (x *DomainItem) GetDomain() string {
 type DomainResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Domain        string                 `protobuf:"bytes,505186578,opt,name=domain,proto3" json:"domain,omitempty"`
-	Status        DomainStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudfront.DomainStatus" json:"status,omitempty"`
+	Status        *DomainStatus          `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudfront.DomainStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13204,8 +13204,8 @@ func (x *DomainResult) GetDomain() string {
 }
 
 func (x *DomainResult) GetStatus() DomainStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DomainStatus_DOMAIN_STATUS_ACTIVE
 }
@@ -14759,7 +14759,7 @@ type FunctionMetadata struct {
 	Createdtime      *string                `protobuf:"bytes,121435635,opt,name=createdtime,proto3,oneof" json:"createdtime,omitempty"`
 	Functionarn      string                 `protobuf:"bytes,387130481,opt,name=functionarn,proto3" json:"functionarn,omitempty"`
 	Lastmodifiedtime string                 `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3" json:"lastmodifiedtime,omitempty"`
-	Stage            FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
+	Stage            *FunctionStage         `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage,oneof" json:"stage,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -14816,8 +14816,8 @@ func (x *FunctionMetadata) GetLastmodifiedtime() string {
 }
 
 func (x *FunctionMetadata) GetStage() FunctionStage {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return FunctionStage_FUNCTION_STAGE_DEVELOPMENT
 }
@@ -15529,7 +15529,7 @@ func (x *GetCloudFrontOriginAccessIdentityResult) GetEtag() string {
 type GetConnectionFunctionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Identifier    string                 `protobuf:"bytes,41865311,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Stage         FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
+	Stage         *FunctionStage         `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage,oneof" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15572,8 +15572,8 @@ func (x *GetConnectionFunctionRequest) GetIdentifier() string {
 }
 
 func (x *GetConnectionFunctionRequest) GetStage() FunctionStage {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return FunctionStage_FUNCTION_STAGE_DEVELOPMENT
 }
@@ -16793,7 +16793,7 @@ func (x *GetFieldLevelEncryptionResult) GetFieldlevelencryption() *FieldLevelEnc
 type GetFunctionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Stage         FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
+	Stage         *FunctionStage         `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage,oneof" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -16836,8 +16836,8 @@ func (x *GetFunctionRequest) GetName() string {
 }
 
 func (x *GetFunctionRequest) GetStage() FunctionStage {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return FunctionStage_FUNCTION_STAGE_DEVELOPMENT
 }
@@ -20631,7 +20631,7 @@ type IpamCidrConfig struct {
 	Anycastip     *string                `protobuf:"bytes,343152584,opt,name=anycastip,proto3,oneof" json:"anycastip,omitempty"`
 	Cidr          string                 `protobuf:"bytes,390242040,opt,name=cidr,proto3" json:"cidr,omitempty"`
 	Ipampoolarn   string                 `protobuf:"bytes,116678828,opt,name=ipampoolarn,proto3" json:"ipampoolarn,omitempty"`
-	Status        IpamCidrStatus         `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudfront.IpamCidrStatus" json:"status,omitempty"`
+	Status        *IpamCidrStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudfront.IpamCidrStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -20688,8 +20688,8 @@ func (x *IpamCidrConfig) GetIpampoolarn() string {
 }
 
 func (x *IpamCidrConfig) GetStatus() IpamCidrStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return IpamCidrStatus_IPAM_CIDR_STATUS_PROVISIONED
 }
@@ -21638,7 +21638,7 @@ type ListCachePoliciesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Type          CachePolicyType        `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudfront.CachePolicyType" json:"type,omitempty"`
+	Type          *CachePolicyType       `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudfront.CachePolicyType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -21688,8 +21688,8 @@ func (x *ListCachePoliciesRequest) GetMaxitems() int32 {
 }
 
 func (x *ListCachePoliciesRequest) GetType() CachePolicyType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return CachePolicyType_CACHE_POLICY_TYPE_MANAGED
 }
@@ -21950,7 +21950,7 @@ type ListConnectionFunctionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Stage         FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
+	Stage         *FunctionStage         `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage,oneof" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -22000,8 +22000,8 @@ func (x *ListConnectionFunctionsRequest) GetMaxitems() int32 {
 }
 
 func (x *ListConnectionFunctionsRequest) GetStage() FunctionStage {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return FunctionStage_FUNCTION_STAGE_DEVELOPMENT
 }
@@ -24166,7 +24166,7 @@ type ListFunctionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Stage         FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
+	Stage         *FunctionStage         `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage,oneof" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24216,8 +24216,8 @@ func (x *ListFunctionsRequest) GetMaxitems() int32 {
 }
 
 func (x *ListFunctionsRequest) GetStage() FunctionStage {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return FunctionStage_FUNCTION_STAGE_DEVELOPMENT
 }
@@ -24771,10 +24771,10 @@ func (x *ListOriginAccessControlsResult) GetOriginaccesscontrollist() *OriginAcc
 }
 
 type ListOriginRequestPoliciesRequest struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Marker        *string                 `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
-	Maxitems      *int32                  `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Type          OriginRequestPolicyType `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudfront.OriginRequestPolicyType" json:"type,omitempty"`
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Marker        *string                  `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
+	Maxitems      *int32                   `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Type          *OriginRequestPolicyType `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudfront.OriginRequestPolicyType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24824,8 +24824,8 @@ func (x *ListOriginRequestPoliciesRequest) GetMaxitems() int32 {
 }
 
 func (x *ListOriginRequestPoliciesRequest) GetType() OriginRequestPolicyType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return OriginRequestPolicyType_ORIGIN_REQUEST_POLICY_TYPE_MANAGED
 }
@@ -25067,10 +25067,10 @@ func (x *ListRealtimeLogConfigsResult) GetRealtimelogconfigs() *RealtimeLogConfi
 }
 
 type ListResponseHeadersPoliciesRequest struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Marker        *string                   `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
-	Maxitems      *int32                    `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Type          ResponseHeadersPolicyType `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudfront.ResponseHeadersPolicyType" json:"type,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Marker        *string                    `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
+	Maxitems      *int32                     `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Type          *ResponseHeadersPolicyType `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudfront.ResponseHeadersPolicyType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -25120,8 +25120,8 @@ func (x *ListResponseHeadersPoliciesRequest) GetMaxitems() int32 {
 }
 
 func (x *ListResponseHeadersPoliciesRequest) GetType() ResponseHeadersPolicyType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ResponseHeadersPolicyType_RESPONSE_HEADERS_POLICY_TYPE_MANAGED
 }
@@ -25623,11 +25623,11 @@ func (x *LoggingConfig) GetPrefix() string {
 }
 
 type ManagedCertificateDetails struct {
-	state                  protoimpl.MessageState   `protogen:"open.v1"`
-	Certificatearn         *string                  `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
-	Certificatestatus      ManagedCertificateStatus `protobuf:"varint,508638899,opt,name=certificatestatus,proto3,enum=cloudfront.ManagedCertificateStatus" json:"certificatestatus,omitempty"`
-	Validationtokendetails []*ValidationTokenDetail `protobuf:"bytes,370214280,rep,name=validationtokendetails,proto3" json:"validationtokendetails,omitempty"`
-	Validationtokenhost    ValidationTokenHost      `protobuf:"varint,521935290,opt,name=validationtokenhost,proto3,enum=cloudfront.ValidationTokenHost" json:"validationtokenhost,omitempty"`
+	state                  protoimpl.MessageState    `protogen:"open.v1"`
+	Certificatearn         *string                   `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificatestatus      *ManagedCertificateStatus `protobuf:"varint,508638899,opt,name=certificatestatus,proto3,enum=cloudfront.ManagedCertificateStatus,oneof" json:"certificatestatus,omitempty"`
+	Validationtokendetails []*ValidationTokenDetail  `protobuf:"bytes,370214280,rep,name=validationtokendetails,proto3" json:"validationtokendetails,omitempty"`
+	Validationtokenhost    *ValidationTokenHost      `protobuf:"varint,521935290,opt,name=validationtokenhost,proto3,enum=cloudfront.ValidationTokenHost,oneof" json:"validationtokenhost,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -25670,8 +25670,8 @@ func (x *ManagedCertificateDetails) GetCertificatearn() string {
 }
 
 func (x *ManagedCertificateDetails) GetCertificatestatus() ManagedCertificateStatus {
-	if x != nil {
-		return x.Certificatestatus
+	if x != nil && x.Certificatestatus != nil {
+		return *x.Certificatestatus
 	}
 	return ManagedCertificateStatus_MANAGED_CERTIFICATE_STATUS_PENDINGVALIDATION
 }
@@ -25684,17 +25684,17 @@ func (x *ManagedCertificateDetails) GetValidationtokendetails() []*ValidationTok
 }
 
 func (x *ManagedCertificateDetails) GetValidationtokenhost() ValidationTokenHost {
-	if x != nil {
-		return x.Validationtokenhost
+	if x != nil && x.Validationtokenhost != nil {
+		return *x.Validationtokenhost
 	}
 	return ValidationTokenHost_VALIDATION_TOKEN_HOST_SELFHOSTED
 }
 
 type ManagedCertificateRequest struct {
-	state                                    protoimpl.MessageState                   `protogen:"open.v1"`
-	Certificatetransparencyloggingpreference CertificateTransparencyLoggingPreference `protobuf:"varint,414636075,opt,name=certificatetransparencyloggingpreference,proto3,enum=cloudfront.CertificateTransparencyLoggingPreference" json:"certificatetransparencyloggingpreference,omitempty"`
-	Primarydomainname                        *string                                  `protobuf:"bytes,229268599,opt,name=primarydomainname,proto3,oneof" json:"primarydomainname,omitempty"`
-	Validationtokenhost                      ValidationTokenHost                      `protobuf:"varint,521935290,opt,name=validationtokenhost,proto3,enum=cloudfront.ValidationTokenHost" json:"validationtokenhost,omitempty"`
+	state                                    protoimpl.MessageState                    `protogen:"open.v1"`
+	Certificatetransparencyloggingpreference *CertificateTransparencyLoggingPreference `protobuf:"varint,414636075,opt,name=certificatetransparencyloggingpreference,proto3,enum=cloudfront.CertificateTransparencyLoggingPreference,oneof" json:"certificatetransparencyloggingpreference,omitempty"`
+	Primarydomainname                        *string                                   `protobuf:"bytes,229268599,opt,name=primarydomainname,proto3,oneof" json:"primarydomainname,omitempty"`
+	Validationtokenhost                      ValidationTokenHost                       `protobuf:"varint,521935290,opt,name=validationtokenhost,proto3,enum=cloudfront.ValidationTokenHost" json:"validationtokenhost,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
 	sizeCache                                protoimpl.SizeCache
 }
@@ -25730,8 +25730,8 @@ func (*ManagedCertificateRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ManagedCertificateRequest) GetCertificatetransparencyloggingpreference() CertificateTransparencyLoggingPreference {
-	if x != nil {
-		return x.Certificatetransparencyloggingpreference
+	if x != nil && x.Certificatetransparencyloggingpreference != nil {
+		return *x.Certificatetransparencyloggingpreference
 	}
 	return CertificateTransparencyLoggingPreference_CERTIFICATE_TRANSPARENCY_LOGGING_PREFERENCE_DISABLED
 }
@@ -27199,11 +27199,11 @@ func (x *OriginCustomHeader) GetHeadervalue() string {
 }
 
 type OriginGroup struct {
-	state             protoimpl.MessageState       `protogen:"open.v1"`
-	Failovercriteria  *OriginGroupFailoverCriteria `protobuf:"bytes,474175659,opt,name=failovercriteria,proto3" json:"failovercriteria,omitempty"`
-	Id                string                       `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Members           *OriginGroupMembers          `protobuf:"bytes,222074545,opt,name=members,proto3" json:"members,omitempty"`
-	Selectioncriteria OriginGroupSelectionCriteria `protobuf:"varint,3089005,opt,name=selectioncriteria,proto3,enum=cloudfront.OriginGroupSelectionCriteria" json:"selectioncriteria,omitempty"`
+	state             protoimpl.MessageState        `protogen:"open.v1"`
+	Failovercriteria  *OriginGroupFailoverCriteria  `protobuf:"bytes,474175659,opt,name=failovercriteria,proto3" json:"failovercriteria,omitempty"`
+	Id                string                        `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
+	Members           *OriginGroupMembers           `protobuf:"bytes,222074545,opt,name=members,proto3" json:"members,omitempty"`
+	Selectioncriteria *OriginGroupSelectionCriteria `protobuf:"varint,3089005,opt,name=selectioncriteria,proto3,enum=cloudfront.OriginGroupSelectionCriteria,oneof" json:"selectioncriteria,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -27260,8 +27260,8 @@ func (x *OriginGroup) GetMembers() *OriginGroupMembers {
 }
 
 func (x *OriginGroup) GetSelectioncriteria() OriginGroupSelectionCriteria {
-	if x != nil {
-		return x.Selectioncriteria
+	if x != nil && x.Selectioncriteria != nil {
+		return *x.Selectioncriteria
 	}
 	return OriginGroupSelectionCriteria_ORIGIN_GROUP_SELECTION_CRITERIA_MEDIAQUALITYBASED
 }
@@ -31729,7 +31729,7 @@ type StreamingDistributionConfig struct {
 	Comment         string                  `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
 	Enabled         *bool                   `protobuf:"varint,478602303,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
 	Logging         *StreamingLoggingConfig `protobuf:"bytes,65655615,opt,name=logging,proto3" json:"logging,omitempty"`
-	Priceclass      PriceClass              `protobuf:"varint,488692315,opt,name=priceclass,proto3,enum=cloudfront.PriceClass" json:"priceclass,omitempty"`
+	Priceclass      *PriceClass             `protobuf:"varint,488692315,opt,name=priceclass,proto3,enum=cloudfront.PriceClass,oneof" json:"priceclass,omitempty"`
 	S3Origin        *S3Origin               `protobuf:"bytes,197642510,opt,name=s3origin,proto3" json:"s3origin,omitempty"`
 	Trustedsigners  *TrustedSigners         `protobuf:"bytes,82003176,opt,name=trustedsigners,proto3" json:"trustedsigners,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -31802,8 +31802,8 @@ func (x *StreamingDistributionConfig) GetLogging() *StreamingLoggingConfig {
 }
 
 func (x *StreamingDistributionConfig) GetPriceclass() PriceClass {
-	if x != nil {
-		return x.Priceclass
+	if x != nil && x.Priceclass != nil {
+		return *x.Priceclass
 	}
 	return PriceClass_PRICE_CLASS_NONE
 }
@@ -32487,7 +32487,7 @@ type TestConnectionFunctionRequest struct {
 	Connectionobject []byte                 `protobuf:"bytes,262521015,opt,name=connectionobject,proto3" json:"connectionobject,omitempty"`
 	Id               string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Ifmatch          string                 `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
-	Stage            FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
+	Stage            *FunctionStage         `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage,oneof" json:"stage,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -32544,8 +32544,8 @@ func (x *TestConnectionFunctionRequest) GetIfmatch() string {
 }
 
 func (x *TestConnectionFunctionRequest) GetStage() FunctionStage {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return FunctionStage_FUNCTION_STAGE_DEVELOPMENT
 }
@@ -32643,7 +32643,7 @@ type TestFunctionRequest struct {
 	Eventobject   []byte                 `protobuf:"bytes,59339613,opt,name=eventobject,proto3" json:"eventobject,omitempty"`
 	Ifmatch       string                 `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Stage         FunctionStage          `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage" json:"stage,omitempty"`
+	Stage         *FunctionStage         `protobuf:"varint,236325838,opt,name=stage,proto3,enum=cloudfront.FunctionStage,oneof" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -32700,8 +32700,8 @@ func (x *TestFunctionRequest) GetName() string {
 }
 
 func (x *TestFunctionRequest) GetStage() FunctionStage {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return FunctionStage_FUNCTION_STAGE_DEVELOPMENT
 }
@@ -35182,7 +35182,7 @@ type TrustStore struct {
 	Name                             *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Numberofcacertificates           *int32                 `protobuf:"varint,203958970,opt,name=numberofcacertificates,proto3,oneof" json:"numberofcacertificates,omitempty"`
 	Reason                           *string                `protobuf:"bytes,20005178,opt,name=reason,proto3,oneof" json:"reason,omitempty"`
-	Status                           TrustStoreStatus       `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudfront.TrustStoreStatus" json:"status,omitempty"`
+	Status                           *TrustStoreStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudfront.TrustStoreStatus,oneof" json:"status,omitempty"`
 	Useclientcertificateocspendpoint *bool                  `protobuf:"varint,275801979,opt,name=useclientcertificateocspendpoint,proto3,oneof" json:"useclientcertificateocspendpoint,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
@@ -35261,8 +35261,8 @@ func (x *TrustStore) GetReason() string {
 }
 
 func (x *TrustStore) GetStatus() TrustStoreStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return TrustStoreStatus_TRUST_STORE_STATUS_ACTIVE
 }
@@ -35742,7 +35742,7 @@ type UpdateAnycastIpListRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Id              string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Ifmatch         string                 `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
-	Ipaddresstype   IpAddressType          `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType" json:"ipaddresstype,omitempty"`
+	Ipaddresstype   *IpAddressType         `protobuf:"varint,459110693,opt,name=ipaddresstype,proto3,enum=cloudfront.IpAddressType,oneof" json:"ipaddresstype,omitempty"`
 	Ipamcidrconfigs []*IpamCidrConfig      `protobuf:"bytes,314539184,rep,name=ipamcidrconfigs,proto3" json:"ipamcidrconfigs,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -35793,8 +35793,8 @@ func (x *UpdateAnycastIpListRequest) GetIfmatch() string {
 }
 
 func (x *UpdateAnycastIpListRequest) GetIpaddresstype() IpAddressType {
-	if x != nil {
-		return x.Ipaddresstype
+	if x != nil && x.Ipaddresstype != nil {
+		return *x.Ipaddresstype
 	}
 	return IpAddressType_IP_ADDRESS_TYPE_IPV6
 }
@@ -38583,14 +38583,14 @@ func (x *VerifyDnsConfigurationResult) GetDnsconfigurationlist() []*DnsConfigura
 }
 
 type ViewerCertificate struct {
-	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Acmcertificatearn            *string                `protobuf:"bytes,294529483,opt,name=acmcertificatearn,proto3,oneof" json:"acmcertificatearn,omitempty"`
-	Certificate                  *string                `protobuf:"bytes,198060817,opt,name=certificate,proto3,oneof" json:"certificate,omitempty"`
-	Certificatesource            CertificateSource      `protobuf:"varint,63765974,opt,name=certificatesource,proto3,enum=cloudfront.CertificateSource" json:"certificatesource,omitempty"`
-	Cloudfrontdefaultcertificate *bool                  `protobuf:"varint,529306422,opt,name=cloudfrontdefaultcertificate,proto3,oneof" json:"cloudfrontdefaultcertificate,omitempty"`
-	Iamcertificateid             *string                `protobuf:"bytes,92232821,opt,name=iamcertificateid,proto3,oneof" json:"iamcertificateid,omitempty"`
-	Minimumprotocolversion       MinimumProtocolVersion `protobuf:"varint,367416622,opt,name=minimumprotocolversion,proto3,enum=cloudfront.MinimumProtocolVersion" json:"minimumprotocolversion,omitempty"`
-	Sslsupportmethod             SSLSupportMethod       `protobuf:"varint,441557986,opt,name=sslsupportmethod,proto3,enum=cloudfront.SSLSupportMethod" json:"sslsupportmethod,omitempty"`
+	state                        protoimpl.MessageState  `protogen:"open.v1"`
+	Acmcertificatearn            *string                 `protobuf:"bytes,294529483,opt,name=acmcertificatearn,proto3,oneof" json:"acmcertificatearn,omitempty"`
+	Certificate                  *string                 `protobuf:"bytes,198060817,opt,name=certificate,proto3,oneof" json:"certificate,omitempty"`
+	Certificatesource            *CertificateSource      `protobuf:"varint,63765974,opt,name=certificatesource,proto3,enum=cloudfront.CertificateSource,oneof" json:"certificatesource,omitempty"`
+	Cloudfrontdefaultcertificate *bool                   `protobuf:"varint,529306422,opt,name=cloudfrontdefaultcertificate,proto3,oneof" json:"cloudfrontdefaultcertificate,omitempty"`
+	Iamcertificateid             *string                 `protobuf:"bytes,92232821,opt,name=iamcertificateid,proto3,oneof" json:"iamcertificateid,omitempty"`
+	Minimumprotocolversion       *MinimumProtocolVersion `protobuf:"varint,367416622,opt,name=minimumprotocolversion,proto3,enum=cloudfront.MinimumProtocolVersion,oneof" json:"minimumprotocolversion,omitempty"`
+	Sslsupportmethod             *SSLSupportMethod       `protobuf:"varint,441557986,opt,name=sslsupportmethod,proto3,enum=cloudfront.SSLSupportMethod,oneof" json:"sslsupportmethod,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -38640,8 +38640,8 @@ func (x *ViewerCertificate) GetCertificate() string {
 }
 
 func (x *ViewerCertificate) GetCertificatesource() CertificateSource {
-	if x != nil {
-		return x.Certificatesource
+	if x != nil && x.Certificatesource != nil {
+		return *x.Certificatesource
 	}
 	return CertificateSource_CERTIFICATE_SOURCE_IAM
 }
@@ -38661,22 +38661,22 @@ func (x *ViewerCertificate) GetIamcertificateid() string {
 }
 
 func (x *ViewerCertificate) GetMinimumprotocolversion() MinimumProtocolVersion {
-	if x != nil {
-		return x.Minimumprotocolversion
+	if x != nil && x.Minimumprotocolversion != nil {
+		return *x.Minimumprotocolversion
 	}
 	return MinimumProtocolVersion_MINIMUM_PROTOCOL_VERSION_TLSV1_1_2016
 }
 
 func (x *ViewerCertificate) GetSslsupportmethod() SSLSupportMethod {
-	if x != nil {
-		return x.Sslsupportmethod
+	if x != nil && x.Sslsupportmethod != nil {
+		return *x.Sslsupportmethod
 	}
 	return SSLSupportMethod_S_S_L_SUPPORT_METHOD_STATIC_IP
 }
 
 type ViewerMtlsConfig struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Mode             ViewerMtlsMode         `protobuf:"varint,323909427,opt,name=mode,proto3,enum=cloudfront.ViewerMtlsMode" json:"mode,omitempty"`
+	Mode             *ViewerMtlsMode        `protobuf:"varint,323909427,opt,name=mode,proto3,enum=cloudfront.ViewerMtlsMode,oneof" json:"mode,omitempty"`
 	Truststoreconfig *TrustStoreConfig      `protobuf:"bytes,397230249,opt,name=truststoreconfig,proto3" json:"truststoreconfig,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -38713,8 +38713,8 @@ func (*ViewerMtlsConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *ViewerMtlsConfig) GetMode() ViewerMtlsMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return ViewerMtlsMode_VIEWER_MTLS_MODE_OPTIONAL
 }
@@ -39227,32 +39227,34 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x12.cloudfront.SignerR\x05items\x12\x1d\n" +
 	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantityB\n" +
 	"\n" +
-	"\b_enabled\"\x8b\x01\n" +
+	"\b_enabled\"\xa6\x01\n" +
 	"\x10AliasICPRecordal\x12\x1d\n" +
-	"\x05cname\x18\xfa\x90\xb1\xc8\x01 \x01(\tH\x00R\x05cname\x88\x01\x01\x12N\n" +
-	"\x11icprecordalstatus\x18\xdeȒn \x01(\x0e2\x1d.cloudfront.ICPRecordalStatusR\x11icprecordalstatusB\b\n" +
-	"\x06_cname\"A\n" +
+	"\x05cname\x18\xfa\x90\xb1\xc8\x01 \x01(\tH\x00R\x05cname\x88\x01\x01\x12S\n" +
+	"\x11icprecordalstatus\x18\xdeȒn \x01(\x0e2\x1d.cloudfront.ICPRecordalStatusH\x01R\x11icprecordalstatus\x88\x01\x01B\b\n" +
+	"\x06_cnameB\x14\n" +
+	"\x12_icprecordalstatus\"A\n" +
 	"\aAliases\x12\x17\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\tR\x05items\x12\x1d\n" +
 	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"\xa0\x01\n" +
 	"\x0eAllowedMethods\x12B\n" +
 	"\rcachedmethods\x18\xa4\x9e\xfb\x1d \x01(\v2\x19.cloudfront.CachedMethodsR\rcachedmethods\x12+\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\x0e2\x12.cloudfront.MethodR\x05items\x12\x1d\n" +
-	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"\xdc\x02\n" +
+	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"\xf3\x02\n" +
 	"\rAnycastIpList\x12!\n" +
 	"\n" +
 	"anycastips\x18ݠ\x856 \x03(\tR\n" +
 	"anycastips\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12C\n" +
-	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeR\ripaddresstype\x12\x1c\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12H\n" +
+	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeH\x00R\ripaddresstype\x88\x01\x01\x12\x1c\n" +
 	"\aipcount\x18\xe4\x93\xc8\xe2\x01 \x01(\x05R\aipcount\x12:\n" +
 	"\n" +
 	"ipamconfig\x18\x89\xbf\x9a\x94\x01 \x01(\v2\x16.cloudfront.IpamConfigR\n" +
 	"ipamconfig\x12-\n" +
 	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\xa0\x02\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06statusB\x10\n" +
+	"\x0e_ipaddresstype\"\xa0\x02\n" +
 	"\x17AnycastIpListCollection\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x129\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2 .cloudfront.AnycastIpListSummaryR\x05items\x12\x19\n" +
@@ -39263,12 +39265,12 @@ const file_cloudfront_proto_rawDesc = "" +
 	"nextmarker\x88\x01\x01\x12\x1d\n" +
 	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantityB\x0e\n" +
 	"\f_istruncatedB\r\n" +
-	"\v_nextmarker\"\xe6\x02\n" +
+	"\v_nextmarker\"\xfd\x02\n" +
 	"\x14AnycastIpListSummary\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x1b\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12C\n" +
-	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeR\ripaddresstype\x12\x1c\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12H\n" +
+	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeH\x01R\ripaddresstype\x88\x01\x01\x12\x1c\n" +
 	"\aipcount\x18\xe4\x93\xc8\xe2\x01 \x01(\x05R\aipcount\x12:\n" +
 	"\n" +
 	"ipamconfig\x18\x89\xbf\x9a\x94\x01 \x01(\v2\x16.cloudfront.IpamConfigR\n" +
@@ -39276,7 +39278,8 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06statusB\a\n" +
-	"\x05_etag\"g\n" +
+	"\x05_etagB\x10\n" +
+	"\x0e_ipaddresstype\"g\n" +
 	"\x15AssociateAliasRequest\x12\x17\n" +
 	"\x05alias\x18\xf8\xe5\x87\x17 \x01(\tR\x05alias\x125\n" +
 	"\x14targetdistributionid\x18\xf8\xcc\xc8w \x01(\tR\x14targetdistributionid\"\x8d\x01\n" +
@@ -39615,13 +39618,14 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01\x12#\n" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tH\x01R\blocation\x88\x01\x01B\a\n" +
 	"\x05_etagB\v\n" +
-	"\t_location\"\x8a\x02\n" +
-	"\x1aCreateAnycastIpListRequest\x12C\n" +
-	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeR\ripaddresstype\x12\x1c\n" +
+	"\t_location\"\xa1\x02\n" +
+	"\x1aCreateAnycastIpListRequest\x12H\n" +
+	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeH\x00R\ripaddresstype\x88\x01\x01\x12\x1c\n" +
 	"\aipcount\x18\xe4\x93\xc8\xe2\x01 \x01(\x05R\aipcount\x12H\n" +
 	"\x0fipamcidrconfigs\x18\xb0\xf9\xfd\x95\x01 \x03(\v2\x1a.cloudfront.IpamCidrConfigR\x0fipamcidrconfigs\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12(\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x01(\v2\x10.cloudfront.TagsR\x04tags\"\x8b\x01\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x01(\v2\x10.cloudfront.TagsR\x04tagsB\x10\n" +
+	"\x0e_ipaddresstype\"\x8b\x01\n" +
 	"\x19CreateAnycastIpListResult\x12H\n" +
 	"\ranycastiplist\x18\xf0\xa5\xeeZ \x01(\v2\x19.cloudfront.AnycastIpListB\x04\x88\xb5\x18\x01R\ranycastiplist\x12\x1b\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01B\a\n" +
@@ -39866,16 +39870,17 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"g\n" +
 	"\rCustomHeaders\x127\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x1e.cloudfront.OriginCustomHeaderR\x05items\x12\x1d\n" +
-	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"\xbd\x04\n" +
+	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"\xd4\x04\n" +
 	"\x12CustomOriginConfig\x12\x1e\n" +
 	"\bhttpport\x18\xe7⣳\x01 \x01(\x05R\bhttpport\x12\x1f\n" +
-	"\thttpsport\x18·\xfdH \x01(\x05R\thttpsport\x12C\n" +
-	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeR\ripaddresstype\x12>\n" +
-	"\x16originkeepalivetimeout\x18ۯ\x8df \x01(\x05H\x00R\x16originkeepalivetimeout\x88\x01\x01\x12L\n" +
+	"\thttpsport\x18·\xfdH \x01(\x05R\thttpsport\x12H\n" +
+	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeH\x00R\ripaddresstype\x88\x01\x01\x12>\n" +
+	"\x16originkeepalivetimeout\x18ۯ\x8df \x01(\x05H\x01R\x16originkeepalivetimeout\x88\x01\x01\x12L\n" +
 	"\x10originmtlsconfig\x18\xa6Ƃ\x80\x01 \x01(\v2\x1c.cloudfront.OriginMtlsConfigR\x10originmtlsconfig\x12W\n" +
 	"\x14originprotocolpolicy\x18\xee\xde\xdco \x01(\x0e2 .cloudfront.OriginProtocolPolicyR\x14originprotocolpolicy\x125\n" +
-	"\x11originreadtimeout\x18\x9f\xaf\xf0\xb8\x01 \x01(\x05H\x01R\x11originreadtimeout\x88\x01\x01\x12R\n" +
-	"\x12originsslprotocols\x18\xb5\xa1\xc9\xc0\x01 \x01(\v2\x1e.cloudfront.OriginSslProtocolsR\x12originsslprotocolsB\x19\n" +
+	"\x11originreadtimeout\x18\x9f\xaf\xf0\xb8\x01 \x01(\x05H\x02R\x11originreadtimeout\x88\x01\x01\x12R\n" +
+	"\x12originsslprotocols\x18\xb5\xa1\xc9\xc0\x01 \x01(\v2\x1e.cloudfront.OriginSslProtocolsR\x12originsslprotocolsB\x10\n" +
+	"\x0e_ipaddresstypeB\x19\n" +
 	"\x17_originkeepalivetimeoutB\x14\n" +
 	"\x12_originreadtimeout\"\xe2\x01\n" +
 	"\x0eCustomizations\x12<\n" +
@@ -40014,19 +40019,21 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x15DeleteVpcOriginResult\x12\x1b\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01\x12<\n" +
 	"\tvpcorigin\x18\xcb\xd4\xf3K \x01(\v2\x15.cloudfront.VpcOriginB\x04\x88\xb5\x18\x01R\tvpcoriginB\a\n" +
-	"\x05_etag\"z\n" +
+	"\x05_etag\"\x89\x01\n" +
 	"!DescribeConnectionFunctionRequest\x12!\n" +
 	"\n" +
 	"identifier\x18ߠ\xfb\x13 \x01(\tR\n" +
-	"identifier\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stage\"\xb6\x01\n" +
+	"identifier\x127\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageH\x00R\x05stage\x88\x01\x01B\b\n" +
+	"\x06_stage\"\xb6\x01\n" +
 	" DescribeConnectionFunctionResult\x12l\n" +
 	"\x19connectionfunctionsummary\x18\x8c\xb7\xe8\x1d \x01(\v2%.cloudfront.ConnectionFunctionSummaryB\x04\x88\xb5\x18\x01R\x19connectionfunctionsummary\x12\x1b\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01B\a\n" +
-	"\x05_etag\"d\n" +
+	"\x05_etag\"s\n" +
 	"\x17DescribeFunctionRequest\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stage\"\x8f\x01\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x127\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageH\x00R\x05stage\x88\x01\x01B\b\n" +
+	"\x06_stage\"\x8f\x01\n" +
 	"\x16DescribeFunctionResult\x12\x1b\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01\x12O\n" +
 	"\x0ffunctionsummary\x18\xa8\xd8\xc4\xf9\x01 \x01(\v2\x1b.cloudfront.FunctionSummaryB\x04\x88\xb5\x18\x01R\x0ffunctionsummaryB\a\n" +
@@ -40073,7 +40080,7 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x19DistributionAlreadyExists\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xa8\r\n" +
+	"\b_message\"\xe9\r\n" +
 	"\x12DistributionConfig\x121\n" +
 	"\aaliases\x18\xc0\x89\xa7\xe3\x01 \x01(\v2\x13.cloudfront.AliasesR\aaliases\x121\n" +
 	"\x0fanycastiplistid\x18\x83\xac\xf8\xcd\x01 \x01(\tH\x00R\x0fanycastiplistid\x88\x01\x01\x12E\n" +
@@ -40081,33 +40088,36 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x0ecachetagconfig\x18\xd2\xdd\xdd, \x01(\v2\x1a.cloudfront.CacheTagConfigR\x0ecachetagconfig\x12+\n" +
 	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x12\x1c\n" +
 	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12r\n" +
-	"\x1dconnectionfunctionassociation\x18\xd5̇y \x01(\v2).cloudfront.ConnectionFunctionAssociationR\x1dconnectionfunctionassociation\x12E\n" +
-	"\x0econnectionmode\x18\xb7\x84\x91' \x01(\x0e2\x1a.cloudfront.ConnectionModeR\x0econnectionmode\x12K\n" +
-	"\x1ccontinuousdeploymentpolicyid\x18\xbf\xb6\xb8\xb0\x01 \x01(\tH\x01R\x1ccontinuousdeploymentpolicyid\x88\x01\x01\x12X\n" +
+	"\x1dconnectionfunctionassociation\x18\xd5̇y \x01(\v2).cloudfront.ConnectionFunctionAssociationR\x1dconnectionfunctionassociation\x12J\n" +
+	"\x0econnectionmode\x18\xb7\x84\x91' \x01(\x0e2\x1a.cloudfront.ConnectionModeH\x01R\x0econnectionmode\x88\x01\x01\x12K\n" +
+	"\x1ccontinuousdeploymentpolicyid\x18\xbf\xb6\xb8\xb0\x01 \x01(\tH\x02R\x1ccontinuousdeploymentpolicyid\x88\x01\x01\x12X\n" +
 	"\x14customerrorresponses\x18\xad្\x01 \x01(\v2 .cloudfront.CustomErrorResponsesR\x14customerrorresponses\x12X\n" +
 	"\x14defaultcachebehavior\x18\x8f\x97\x88\xa5\x01 \x01(\v2 .cloudfront.DefaultCacheBehaviorR\x14defaultcachebehavior\x124\n" +
-	"\x11defaultrootobject\x18\xe2\xf0\xf3\x1b \x01(\tH\x02R\x11defaultrootobject\x88\x01\x01\x12!\n" +
-	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x03R\aenabled\x88\x01\x01\x12=\n" +
-	"\vhttpversion\x18\xb8\x84\x94\xba\x01 \x01(\x0e2\x17.cloudfront.HttpVersionR\vhttpversion\x12-\n" +
-	"\risipv6enabled\x18ڒ\x97\xfb\x01 \x01(\bH\x04R\risipv6enabled\x88\x01\x01\x126\n" +
+	"\x11defaultrootobject\x18\xe2\xf0\xf3\x1b \x01(\tH\x03R\x11defaultrootobject\x88\x01\x01\x12!\n" +
+	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x04R\aenabled\x88\x01\x01\x12B\n" +
+	"\vhttpversion\x18\xb8\x84\x94\xba\x01 \x01(\x0e2\x17.cloudfront.HttpVersionH\x05R\vhttpversion\x88\x01\x01\x12-\n" +
+	"\risipv6enabled\x18ڒ\x97\xfb\x01 \x01(\bH\x06R\risipv6enabled\x88\x01\x01\x126\n" +
 	"\alogging\x18\xbf\xa6\xa7\x1f \x01(\v2\x19.cloudfront.LoggingConfigR\alogging\x12@\n" +
 	"\forigingroups\x18\xa0\x8e\xb0\xbd\x01 \x01(\v2\x18.cloudfront.OriginGroupsR\forigingroups\x121\n" +
-	"\aorigins\x18\x95Т\x84\x01 \x01(\v2\x13.cloudfront.OriginsR\aorigins\x12:\n" +
+	"\aorigins\x18\x95Т\x84\x01 \x01(\v2\x13.cloudfront.OriginsR\aorigins\x12?\n" +
 	"\n" +
-	"priceclass\x18۴\x83\xe9\x01 \x01(\x0e2\x16.cloudfront.PriceClassR\n" +
-	"priceclass\x12@\n" +
+	"priceclass\x18۴\x83\xe9\x01 \x01(\x0e2\x16.cloudfront.PriceClassH\aR\n" +
+	"priceclass\x88\x01\x01\x12@\n" +
 	"\frestrictions\x18\x9b\u07bd\xf8\x01 \x01(\v2\x18.cloudfront.RestrictionsR\frestrictions\x12 \n" +
-	"\astaging\x18ǯ\x87\\ \x01(\bH\x05R\astaging\x88\x01\x01\x12@\n" +
+	"\astaging\x18ǯ\x87\\ \x01(\bH\bR\astaging\x88\x01\x01\x12@\n" +
 	"\ftenantconfig\x18\xe8\xa7\xdd\xe3\x01 \x01(\v2\x18.cloudfront.TenantConfigR\ftenantconfig\x12N\n" +
 	"\x11viewercertificate\x18ߠ\xb5f \x01(\v2\x1d.cloudfront.ViewerCertificateR\x11viewercertificate\x12K\n" +
 	"\x10viewermtlsconfig\x18\xa6\xcb\xd2$ \x01(\v2\x1c.cloudfront.ViewerMtlsConfigR\x10viewermtlsconfig\x12\"\n" +
-	"\bwebaclid\x18ӵ\xf3L \x01(\tH\x06R\bwebaclid\x88\x01\x01B\x12\n" +
-	"\x10_anycastiplistidB\x1f\n" +
+	"\bwebaclid\x18ӵ\xf3L \x01(\tH\tR\bwebaclid\x88\x01\x01B\x12\n" +
+	"\x10_anycastiplistidB\x11\n" +
+	"\x0f_connectionmodeB\x1f\n" +
 	"\x1d_continuousdeploymentpolicyidB\x14\n" +
 	"\x12_defaultrootobjectB\n" +
 	"\n" +
-	"\b_enabledB\x10\n" +
-	"\x0e_isipv6enabledB\n" +
+	"\b_enabledB\x0e\n" +
+	"\f_httpversionB\x10\n" +
+	"\x0e_isipv6enabledB\r\n" +
+	"\v_priceclassB\n" +
 	"\n" +
 	"\b_stagingB\v\n" +
 	"\t_webaclid\"\x9a\x01\n" +
@@ -40158,7 +40168,7 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x0edistributionid\x18\xe7\xb1\xfbC \x01(\tH\x00R\x0edistributionid\x88\x01\x01\x12:\n" +
 	"\x14distributiontenantid\x18\xbf\x87\xe7: \x01(\tH\x01R\x14distributiontenantid\x88\x01\x01B\x11\n" +
 	"\x0f_distributionidB\x17\n" +
-	"\x15_distributiontenantid\"\xfb\v\n" +
+	"\x15_distributiontenantid\"\x93\f\n" +
 	"\x13DistributionSummary\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12M\n" +
 	"\x11aliasicprecordals\x18\xcb\xc9\xfb\x06 \x03(\v2\x1c.cloudfront.AliasICPRecordalR\x11aliasicprecordals\x121\n" +
@@ -40166,18 +40176,18 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x0fanycastiplistid\x18\x83\xac\xf8\xcd\x01 \x01(\tH\x00R\x0fanycastiplistid\x88\x01\x01\x12E\n" +
 	"\x0ecachebehaviors\x18\x9d\x8b\xdb! \x01(\v2\x1a.cloudfront.CacheBehaviorsR\x0ecachebehaviors\x12\x1c\n" +
 	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12r\n" +
-	"\x1dconnectionfunctionassociation\x18\xd5̇y \x01(\v2).cloudfront.ConnectionFunctionAssociationR\x1dconnectionfunctionassociation\x12E\n" +
-	"\x0econnectionmode\x18\xb7\x84\x91' \x01(\x0e2\x1a.cloudfront.ConnectionModeR\x0econnectionmode\x12X\n" +
+	"\x1dconnectionfunctionassociation\x18\xd5̇y \x01(\v2).cloudfront.ConnectionFunctionAssociationR\x1dconnectionfunctionassociation\x12J\n" +
+	"\x0econnectionmode\x18\xb7\x84\x91' \x01(\x0e2\x1a.cloudfront.ConnectionModeH\x01R\x0econnectionmode\x88\x01\x01\x12X\n" +
 	"\x14customerrorresponses\x18\xad្\x01 \x01(\v2 .cloudfront.CustomErrorResponsesR\x14customerrorresponses\x12X\n" +
 	"\x14defaultcachebehavior\x18\x8f\x97\x88\xa5\x01 \x01(\v2 .cloudfront.DefaultCacheBehaviorR\x14defaultcachebehavior\x12!\n" +
 	"\n" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
 	"domainname\x12\x1b\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x01R\x04etag\x88\x01\x01\x12!\n" +
-	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x02R\aenabled\x88\x01\x01\x12=\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x02R\x04etag\x88\x01\x01\x12!\n" +
+	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x03R\aenabled\x88\x01\x01\x12=\n" +
 	"\vhttpversion\x18\xb8\x84\x94\xba\x01 \x01(\x0e2\x17.cloudfront.HttpVersionR\vhttpversion\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12-\n" +
-	"\risipv6enabled\x18ڒ\x97\xfb\x01 \x01(\bH\x03R\risipv6enabled\x88\x01\x01\x12-\n" +
+	"\risipv6enabled\x18ڒ\x97\xfb\x01 \x01(\bH\x04R\risipv6enabled\x88\x01\x01\x12-\n" +
 	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x12@\n" +
 	"\forigingroups\x18\xa0\x8e\xb0\xbd\x01 \x01(\v2\x18.cloudfront.OriginGroupsR\forigingroups\x121\n" +
 	"\aorigins\x18\x95Т\x84\x01 \x01(\v2\x13.cloudfront.OriginsR\aorigins\x12:\n" +
@@ -40185,12 +40195,13 @@ const file_cloudfront_proto_rawDesc = "" +
 	"priceclass\x18۴\x83\xe9\x01 \x01(\x0e2\x16.cloudfront.PriceClassR\n" +
 	"priceclass\x12@\n" +
 	"\frestrictions\x18\x9b\u07bd\xf8\x01 \x01(\v2\x18.cloudfront.RestrictionsR\frestrictions\x12 \n" +
-	"\astaging\x18ǯ\x87\\ \x01(\bH\x04R\astaging\x88\x01\x01\x12\x19\n" +
+	"\astaging\x18ǯ\x87\\ \x01(\bH\x05R\astaging\x88\x01\x01\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12N\n" +
 	"\x11viewercertificate\x18ߠ\xb5f \x01(\v2\x1d.cloudfront.ViewerCertificateR\x11viewercertificate\x12K\n" +
 	"\x10viewermtlsconfig\x18\xa6\xcb\xd2$ \x01(\v2\x1c.cloudfront.ViewerMtlsConfigR\x10viewermtlsconfig\x12\x1d\n" +
 	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclidB\x12\n" +
-	"\x10_anycastiplistidB\a\n" +
+	"\x10_anycastiplistidB\x11\n" +
+	"\x0f_connectionmodeB\a\n" +
 	"\x05_etagB\n" +
 	"\n" +
 	"\b_enabledB\x10\n" +
@@ -40259,10 +40270,11 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2$.cloudfront.DistributionResourceTypeR\fresourcetype\"(\n" +
 	"\n" +
 	"DomainItem\x12\x1a\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\"_\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\"o\n" +
 	"\fDomainResult\x12\x1a\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x123\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x18.cloudfront.DomainStatusR\x06status\"j\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x128\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x18.cloudfront.DomainStatusH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"j\n" +
 	"\x12EncryptionEntities\x125\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x1c.cloudfront.EncryptionEntityR\x05items\x12\x1d\n" +
 	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantity\"\xa0\x01\n" +
@@ -40401,13 +40413,14 @@ const file_cloudfront_proto_rawDesc = "" +
 	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
 	"nextmarker\x88\x01\x01\x12\x1d\n" +
 	"\bquantity\x18\xf9\xe5\xdc_ \x01(\x05R\bquantityB\r\n" +
-	"\v_nextmarker\"\xd5\x01\n" +
+	"\v_nextmarker\"\xe4\x01\n" +
 	"\x10FunctionMetadata\x12(\n" +
 	"\vcreatedtime\x18\xf3\xeb\xf39 \x01(\tH\x00R\vcreatedtime\x88\x01\x01\x12$\n" +
 	"\vfunctionarn\x18\xf1\xc8̸\x01 \x01(\tR\vfunctionarn\x12-\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stageB\x0e\n" +
-	"\f_createdtime\"I\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x127\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageH\x01R\x05stage\x88\x01\x01B\x0e\n" +
+	"\f_createdtimeB\b\n" +
+	"\x06_stage\"I\n" +
 	"\x19FunctionSizeLimitExceeded\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -40454,12 +40467,13 @@ const file_cloudfront_proto_rawDesc = "" +
 	"'GetCloudFrontOriginAccessIdentityResult\x12{\n" +
 	"\x1ecloudfrontoriginaccessidentity\x18\x80\x9d\x9b4 \x01(\v2*.cloudfront.CloudFrontOriginAccessIdentityB\x04\x88\xb5\x18\x01R\x1ecloudfrontoriginaccessidentity\x12\x1b\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01B\a\n" +
-	"\x05_etag\"u\n" +
+	"\x05_etag\"\x84\x01\n" +
 	"\x1cGetConnectionFunctionRequest\x12!\n" +
 	"\n" +
 	"identifier\x18ߠ\xfb\x13 \x01(\tR\n" +
-	"identifier\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stage\"\xe0\x01\n" +
+	"identifier\x127\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageH\x00R\x05stage\x88\x01\x01B\b\n" +
+	"\x06_stage\"\xe0\x01\n" +
 	"\x1bGetConnectionFunctionResult\x12E\n" +
 	"\x16connectionfunctioncode\x18\xfd\xcc\xe9\xef\x01 \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x16connectionfunctioncode\x88\x01\x01\x12)\n" +
 	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x01R\vcontenttype\x88\x01\x01\x12\x1b\n" +
@@ -40542,10 +40556,11 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x1dGetFieldLevelEncryptionResult\x12\x1b\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01\x12^\n" +
 	"\x14fieldlevelencryption\x18\xdb\xfe\xdc\xe1\x01 \x01(\v2 .cloudfront.FieldLevelEncryptionB\x04\x88\xb5\x18\x01R\x14fieldlevelencryptionB\a\n" +
-	"\x05_etag\"_\n" +
+	"\x05_etag\"n\n" +
 	"\x12GetFunctionRequest\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stage\"\xb8\x01\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x127\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageH\x00R\x05stage\x88\x01\x01B\b\n" +
+	"\x06_stage\"\xb8\x01\n" +
 	"\x11GetFunctionResult\x12)\n" +
 	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x00R\vcontenttype\x88\x01\x01\x12\x1b\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x01R\x04etag\x88\x01\x01\x121\n" +
@@ -40842,14 +40857,15 @@ const file_cloudfront_proto_rawDesc = "" +
 	"createtime\x18\xbd\xf4\x89\xea\x01 \x01(\tR\n" +
 	"createtime\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\xb9\x01\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\xc9\x01\n" +
 	"\x0eIpamCidrConfig\x12%\n" +
 	"\tanycastip\x18ȯУ\x01 \x01(\tH\x00R\tanycastip\x88\x01\x01\x12\x16\n" +
 	"\x04cidr\x18\xf8\xbd\x8a\xba\x01 \x01(\tR\x04cidr\x12#\n" +
-	"\vipampoolarn\x18\xac\xc1\xd17 \x01(\tR\vipampoolarn\x125\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.cloudfront.IpamCidrStatusR\x06statusB\f\n" +
+	"\vipampoolarn\x18\xac\xc1\xd17 \x01(\tR\vipampoolarn\x12:\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.cloudfront.IpamCidrStatusH\x01R\x06status\x88\x01\x01B\f\n" +
 	"\n" +
-	"_anycastip\"u\n" +
+	"_anycastipB\t\n" +
+	"\a_status\"u\n" +
 	"\n" +
 	"IpamConfig\x12H\n" +
 	"\x0fipamcidrconfigs\x18\xb0\xf9\xfd\x95\x01 \x03(\v2\x1a.cloudfront.IpamCidrConfigR\x0fipamcidrconfigs\x12\x1d\n" +
@@ -40928,13 +40944,14 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\a_markerB\v\n" +
 	"\t_maxitems\"q\n" +
 	"\x18ListAnycastIpListsResult\x12U\n" +
-	"\x0eanycastiplists\x18\x95\x97\x9f\xe9\x01 \x01(\v2#.cloudfront.AnycastIpListCollectionB\x04\x88\xb5\x18\x01R\x0eanycastiplists\"\xac\x01\n" +
+	"\x0eanycastiplists\x18\x95\x97\x9f\xe9\x01 \x01(\v2#.cloudfront.AnycastIpListCollectionB\x04\x88\xb5\x18\x01R\x0eanycastiplists\"\xba\x01\n" +
 	"\x18ListCachePoliciesRequest\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x123\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1b.cloudfront.CachePolicyTypeR\x04typeB\t\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x128\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1b.cloudfront.CachePolicyTypeH\x02R\x04type\x88\x01\x01B\t\n" +
 	"\a_markerB\v\n" +
-	"\t_maxitems\"i\n" +
+	"\t_maxitemsB\a\n" +
+	"\x05_type\"i\n" +
 	"\x17ListCachePoliciesResult\x12N\n" +
 	"\x0fcachepolicylist\x18\xc8Ȭ7 \x01(\v2\x1b.cloudfront.CachePolicyListB\x04\x88\xb5\x18\x01R\x0fcachepolicylist\"\x8a\x01\n" +
 	"+ListCloudFrontOriginAccessIdentitiesRequest\x12\x1e\n" +
@@ -40952,13 +40969,14 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\a_markerB\v\n" +
 	"\t_maxitems\"\x83\x01\n" +
 	"\x1cListConflictingAliasesResult\x12c\n" +
-	"\x16conflictingaliaseslist\x18Ԥ\x83? \x01(\v2\".cloudfront.ConflictingAliasesListB\x04\x88\xb5\x18\x01R\x16conflictingaliaseslist\"\xb1\x01\n" +
+	"\x16conflictingaliaseslist\x18Ԥ\x83? \x01(\v2\".cloudfront.ConflictingAliasesListB\x04\x88\xb5\x18\x01R\x16conflictingaliaseslist\"\xc0\x01\n" +
 	"\x1eListConnectionFunctionsRequest\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stageB\t\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x127\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageH\x02R\x05stage\x88\x01\x01B\t\n" +
 	"\a_markerB\v\n" +
-	"\t_maxitems\"\xb4\x01\n" +
+	"\t_maxitemsB\b\n" +
+	"\x06_stage\"\xb4\x01\n" +
 	"\x1dListConnectionFunctionsResult\x12[\n" +
 	"\x13connectionfunctions\x18\xab״\xca\x01 \x03(\v2%.cloudfront.ConnectionFunctionSummaryR\x13connectionfunctions\x12'\n" +
 	"\n" +
@@ -41146,13 +41164,14 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\a_markerB\v\n" +
 	"\t_maxitems\"\xa9\x01\n" +
 	"&ListFieldLevelEncryptionProfilesResult\x12\x7f\n" +
-	"\x1ffieldlevelencryptionprofilelist\x18\x80\xde\xc1\xc1\x01 \x01(\v2+.cloudfront.FieldLevelEncryptionProfileListB\x04\x88\xb5\x18\x01R\x1ffieldlevelencryptionprofilelist\"\xa7\x01\n" +
+	"\x1ffieldlevelencryptionprofilelist\x18\x80\xde\xc1\xc1\x01 \x01(\v2+.cloudfront.FieldLevelEncryptionProfileListB\x04\x88\xb5\x18\x01R\x1ffieldlevelencryptionprofilelist\"\xb6\x01\n" +
 	"\x14ListFunctionsRequest\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stageB\t\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x127\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageH\x02R\x05stage\x88\x01\x01B\t\n" +
 	"\a_markerB\v\n" +
-	"\t_maxitems\"\\\n" +
+	"\t_maxitemsB\b\n" +
+	"\x06_stage\"\\\n" +
 	"\x13ListFunctionsResult\x12E\n" +
 	"\ffunctionlist\x18\x96\xca\xf6\" \x01(\v2\x18.cloudfront.FunctionListB\x04\x88\xb5\x18\x01R\ffunctionlist\"\xa0\x01\n" +
 	"-ListInvalidationsForDistributionTenantRequest\x12\x12\n" +
@@ -41193,13 +41212,14 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\a_markerB\v\n" +
 	"\t_maxitems\"\x88\x01\n" +
 	"\x1eListOriginAccessControlsResult\x12f\n" +
-	"\x17originaccesscontrollist\x18\x93\x91\xe4B \x01(\v2#.cloudfront.OriginAccessControlListB\x04\x88\xb5\x18\x01R\x17originaccesscontrollist\"\xbc\x01\n" +
+	"\x17originaccesscontrollist\x18\x93\x91\xe4B \x01(\v2#.cloudfront.OriginAccessControlListB\x04\x88\xb5\x18\x01R\x17originaccesscontrollist\"\xca\x01\n" +
 	" ListOriginRequestPoliciesRequest\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x12;\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2#.cloudfront.OriginRequestPolicyTypeR\x04typeB\t\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x12@\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2#.cloudfront.OriginRequestPolicyTypeH\x02R\x04type\x88\x01\x01B\t\n" +
 	"\a_markerB\v\n" +
-	"\t_maxitems\"\x8a\x01\n" +
+	"\t_maxitemsB\a\n" +
+	"\x05_type\"\x8a\x01\n" +
 	"\x1fListOriginRequestPoliciesResult\x12g\n" +
 	"\x17originrequestpolicylist\x18\xb7\xd7\xc6\xdd\x01 \x01(\v2#.cloudfront.OriginRequestPolicyListB\x04\x88\xb5\x18\x01R\x17originrequestpolicylist\"t\n" +
 	"\x15ListPublicKeysRequest\x12\x1e\n" +
@@ -41215,13 +41235,14 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\a_markerB\v\n" +
 	"\t_maxitems\"x\n" +
 	"\x1cListRealtimeLogConfigsResult\x12X\n" +
-	"\x12realtimelogconfigs\x18\xc2\xe2\x86\xd8\x01 \x01(\v2\x1e.cloudfront.RealtimeLogConfigsB\x04\x88\xb5\x18\x01R\x12realtimelogconfigs\"\xc0\x01\n" +
+	"\x12realtimelogconfigs\x18\xc2\xe2\x86\xd8\x01 \x01(\v2\x1e.cloudfront.RealtimeLogConfigsB\x04\x88\xb5\x18\x01R\x12realtimelogconfigs\"\xce\x01\n" +
 	"\"ListResponseHeadersPoliciesRequest\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x12=\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2%.cloudfront.ResponseHeadersPolicyTypeR\x04typeB\t\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x12B\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2%.cloudfront.ResponseHeadersPolicyTypeH\x02R\x04type\x88\x01\x01B\t\n" +
 	"\a_markerB\v\n" +
-	"\t_maxitems\"\x91\x01\n" +
+	"\t_maxitemsB\a\n" +
+	"\x05_type\"\x91\x01\n" +
 	"!ListResponseHeadersPoliciesResult\x12l\n" +
 	"\x19responseheaderspolicylist\x18\xdb\xef\xe6\x04 \x01(\v2%.cloudfront.ResponseHeadersPolicyListB\x04\x88\xb5\x18\x01R\x19responseheaderspolicylist\"\x80\x01\n" +
 	"!ListStreamingDistributionsRequest\x12\x1e\n" +
@@ -41262,17 +41283,20 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\n" +
 	"\b_enabledB\x11\n" +
 	"\x0f_includecookiesB\t\n" +
-	"\a_prefix\"\xec\x02\n" +
+	"\a_prefix\"\xa4\x03\n" +
 	"\x19ManagedCertificateDetails\x12.\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12V\n" +
-	"\x11certificatestatus\x18\xb3\xed\xc4\xf2\x01 \x01(\x0e2$.cloudfront.ManagedCertificateStatusR\x11certificatestatus\x12]\n" +
-	"\x16validationtokendetails\x18\x88\x8bİ\x01 \x03(\v2!.cloudfront.ValidationTokenDetailR\x16validationtokendetails\x12U\n" +
-	"\x13validationtokenhost\x18\xba\xb3\xf0\xf8\x01 \x01(\x0e2\x1f.cloudfront.ValidationTokenHostR\x13validationtokenhostB\x11\n" +
-	"\x0f_certificatearn\"\xd5\x02\n" +
-	"\x19ManagedCertificateRequest\x12\x94\x01\n" +
-	"(certificatetransparencyloggingpreference\x18\xab\xb0\xdb\xc5\x01 \x01(\x0e24.cloudfront.CertificateTransparencyLoggingPreferenceR(certificatetransparencyloggingpreference\x124\n" +
-	"\x11primarydomainname\x18\xf7\xb8\xa9m \x01(\tH\x00R\x11primarydomainname\x88\x01\x01\x12U\n" +
-	"\x13validationtokenhost\x18\xba\xb3\xf0\xf8\x01 \x01(\x0e2\x1f.cloudfront.ValidationTokenHostR\x13validationtokenhostB\x14\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12[\n" +
+	"\x11certificatestatus\x18\xb3\xed\xc4\xf2\x01 \x01(\x0e2$.cloudfront.ManagedCertificateStatusH\x01R\x11certificatestatus\x88\x01\x01\x12]\n" +
+	"\x16validationtokendetails\x18\x88\x8bİ\x01 \x03(\v2!.cloudfront.ValidationTokenDetailR\x16validationtokendetails\x12Z\n" +
+	"\x13validationtokenhost\x18\xba\xb3\xf0\xf8\x01 \x01(\x0e2\x1f.cloudfront.ValidationTokenHostH\x02R\x13validationtokenhost\x88\x01\x01B\x11\n" +
+	"\x0f_certificatearnB\x14\n" +
+	"\x12_certificatestatusB\x16\n" +
+	"\x14_validationtokenhost\"\x87\x03\n" +
+	"\x19ManagedCertificateRequest\x12\x99\x01\n" +
+	"(certificatetransparencyloggingpreference\x18\xab\xb0\xdb\xc5\x01 \x01(\x0e24.cloudfront.CertificateTransparencyLoggingPreferenceH\x00R(certificatetransparencyloggingpreference\x88\x01\x01\x124\n" +
+	"\x11primarydomainname\x18\xf7\xb8\xa9m \x01(\tH\x01R\x11primarydomainname\x88\x01\x01\x12U\n" +
+	"\x13validationtokenhost\x18\xba\xb3\xf0\xf8\x01 \x01(\x0e2\x1f.cloudfront.ValidationTokenHostR\x13validationtokenhostB+\n" +
+	")_certificatetransparencyloggingpreferenceB\x14\n" +
 	"\x12_primarydomainname\";\n" +
 	"\vMissingBody\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -41414,12 +41438,13 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\n" +
 	"headername\x18\xa4\x96\x96p \x01(\tR\n" +
 	"headername\x12#\n" +
-	"\vheadervalue\x18\xb2\xf6\x89\f \x01(\tR\vheadervalue\"\x92\x02\n" +
+	"\vheadervalue\x18\xb2\xf6\x89\f \x01(\tR\vheadervalue\"\xad\x02\n" +
 	"\vOriginGroup\x12W\n" +
 	"\x10failovercriteria\x18\xab\xb1\x8d\xe2\x01 \x01(\v2'.cloudfront.OriginGroupFailoverCriteriaR\x10failovercriteria\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12;\n" +
-	"\amembers\x18\xb1\xad\xf2i \x01(\v2\x1e.cloudfront.OriginGroupMembersR\amembers\x12Y\n" +
-	"\x11selectioncriteria\x18\xedļ\x01 \x01(\x0e2(.cloudfront.OriginGroupSelectionCriteriaR\x11selectioncriteria\"[\n" +
+	"\amembers\x18\xb1\xad\xf2i \x01(\v2\x1e.cloudfront.OriginGroupMembersR\amembers\x12^\n" +
+	"\x11selectioncriteria\x18\xedļ\x01 \x01(\x0e2(.cloudfront.OriginGroupSelectionCriteriaH\x00R\x11selectioncriteria\x88\x01\x01B\x14\n" +
+	"\x12_selectioncriteria\"[\n" +
 	"\x1bOriginGroupFailoverCriteria\x12<\n" +
 	"\vstatuscodes\x18\xf8\xff\xddy \x01(\v2\x17.cloudfront.StatusCodesR\vstatuscodes\"3\n" +
 	"\x11OriginGroupMember\x12\x1e\n" +
@@ -41789,20 +41814,21 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\"StreamingDistributionAlreadyExists\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xc3\x03\n" +
+	"\b_message\"\xd7\x03\n" +
 	"\x1bStreamingDistributionConfig\x121\n" +
 	"\aaliases\x18\xc0\x89\xa7\xe3\x01 \x01(\v2\x13.cloudfront.AliasesR\aaliases\x12+\n" +
 	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x12\x1c\n" +
 	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12!\n" +
 	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01\x12?\n" +
-	"\alogging\x18\xbf\xa6\xa7\x1f \x01(\v2\".cloudfront.StreamingLoggingConfigR\alogging\x12:\n" +
+	"\alogging\x18\xbf\xa6\xa7\x1f \x01(\v2\".cloudfront.StreamingLoggingConfigR\alogging\x12?\n" +
 	"\n" +
-	"priceclass\x18۴\x83\xe9\x01 \x01(\x0e2\x16.cloudfront.PriceClassR\n" +
-	"priceclass\x123\n" +
+	"priceclass\x18۴\x83\xe9\x01 \x01(\x0e2\x16.cloudfront.PriceClassH\x01R\n" +
+	"priceclass\x88\x01\x01\x123\n" +
 	"\bs3origin\x18\x8e\x92\x9f^ \x01(\v2\x14.cloudfront.S3OriginR\bs3origin\x12E\n" +
 	"\x0etrustedsigners\x18艍' \x01(\v2\x1a.cloudfront.TrustedSignersR\x0etrustedsignersB\n" +
 	"\n" +
-	"\b_enabled\"\xbe\x01\n" +
+	"\b_enabledB\r\n" +
+	"\v_priceclass\"\xbe\x01\n" +
 	"#StreamingDistributionConfigWithTags\x12m\n" +
 	"\x1bstreamingdistributionconfig\x18\xa8\xa7\xe8\x8a\x01 \x01(\v2'.cloudfront.StreamingDistributionConfigR\x1bstreamingdistributionconfig\x12(\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x01(\v2\x10.cloudfront.TagsR\x04tags\"\xaa\x02\n" +
@@ -41865,23 +41891,25 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x04Tags\x12(\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x0f.cloudfront.TagR\x05items\"g\n" +
 	"\fTenantConfig\x12W\n" +
-	"\x14parameterdefinitions\x18\x87\xf0\xe5\xf0\x01 \x03(\v2\x1f.cloudfront.ParameterDefinitionR\x14parameterdefinitions\"\xb3\x01\n" +
+	"\x14parameterdefinitions\x18\x87\xf0\xe5\xf0\x01 \x03(\v2\x1f.cloudfront.ParameterDefinitionR\x14parameterdefinitions\"\xc2\x01\n" +
 	"\x1dTestConnectionFunctionRequest\x12-\n" +
 	"\x10connectionobject\x18\xb7\x81\x97} \x01(\fR\x10connectionobject\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stage\"\x95\x01\n" +
+	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x127\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageH\x00R\x05stage\x88\x01\x01B\b\n" +
+	"\x06_stage\"\x95\x01\n" +
 	"\x1cTestConnectionFunctionResult\x12u\n" +
 	"\x1cconnectionfunctiontestresult\x18\xed\xa9\x89\x12 \x01(\v2(.cloudfront.ConnectionFunctionTestResultB\x04\x88\xb5\x18\x01R\x1cconnectionfunctiontestresult\"B\n" +
 	"\x12TestFunctionFailed\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xa2\x01\n" +
+	"\b_message\"\xb1\x01\n" +
 	"\x13TestFunctionRequest\x12#\n" +
 	"\veventobject\x18\xdd\xe6\xa5\x1c \x01(\fR\veventobject\x12\x1b\n" +
 	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
-	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageR\x05stage\"V\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x127\n" +
+	"\x05stage\x18Η\xd8p \x01(\x0e2\x19.cloudfront.FunctionStageH\x00R\x05stage\x88\x01\x01B\b\n" +
+	"\x06_stage\"V\n" +
 	"\x12TestFunctionResult\x12@\n" +
 	"\n" +
 	"testresult\x18\x85æ\xac\x01 \x01(\v2\x16.cloudfront.TestResultB\x04\x88\xb5\x18\x01R\n" +
@@ -42107,7 +42135,7 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\rTrafficConfig\x12f\n" +
 	"\x12singleheaderconfig\x18\x8b\xbbޒ\x01 \x01(\v22.cloudfront.ContinuousDeploymentSingleHeaderConfigR\x12singleheaderconfig\x12f\n" +
 	"\x12singleweightconfig\x18\xf0\x8a\xc7\xcc\x01 \x01(\v22.cloudfront.ContinuousDeploymentSingleWeightConfigR\x12singleweightconfig\x12B\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2*.cloudfront.ContinuousDeploymentPolicyTypeR\x04type\"\xf6\x03\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2*.cloudfront.ContinuousDeploymentPolicyTypeR\x04type\"\x86\x04\n" +
 	"\n" +
 	"TrustStore\x12\x19\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x17\n" +
@@ -42115,15 +42143,16 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x02R\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x12>\n" +
 	"\x16numberofcacertificates\x18\xbaՠa \x01(\x05H\x04R\x16numberofcacertificates\x88\x01\x01\x12\x1e\n" +
-	"\x06reason\x18\xba\x82\xc5\t \x01(\tH\x05R\x06reason\x88\x01\x01\x127\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.cloudfront.TrustStoreStatusR\x06status\x12S\n" +
-	" useclientcertificateocspendpoint\x18\xfb\xce\xc1\x83\x01 \x01(\bH\x06R useclientcertificateocspendpoint\x88\x01\x01B\x06\n" +
+	"\x06reason\x18\xba\x82\xc5\t \x01(\tH\x05R\x06reason\x88\x01\x01\x12<\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.cloudfront.TrustStoreStatusH\x06R\x06status\x88\x01\x01\x12S\n" +
+	" useclientcertificateocspendpoint\x18\xfb\xce\xc1\x83\x01 \x01(\bH\aR useclientcertificateocspendpoint\x88\x01\x01B\x06\n" +
 	"\x04_arnB\x05\n" +
 	"\x03_idB\x13\n" +
 	"\x11_lastmodifiedtimeB\a\n" +
 	"\x05_nameB\x19\n" +
 	"\x17_numberofcacertificatesB\t\n" +
-	"\a_reasonB#\n" +
+	"\a_reasonB\t\n" +
+	"\a_statusB#\n" +
 	"!_useclientcertificateocspendpoint\"\xfe\x01\n" +
 	"\x10TrustStoreConfig\x12F\n" +
 	"\x1aadvertisetruststorecanames\x18\xac\xe3\xad_ \x01(\bH\x00R\x1aadvertisetruststorecanames\x88\x01\x01\x12@\n" +
@@ -42167,12 +42196,13 @@ const file_cloudfront_proto_rawDesc = "" +
 	"\b_message\"n\n" +
 	"\x14UntagResourceRequest\x12\x1d\n" +
 	"\bresource\x18\x96\xb0\xc3\x1d \x01(\tR\bresource\x127\n" +
-	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x01(\v2\x13.cloudfront.TagKeysB\x04\x88\xb5\x18\x01R\atagkeys\"\xdc\x01\n" +
+	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x01(\v2\x13.cloudfront.TagKeysB\x04\x88\xb5\x18\x01R\atagkeys\"\xf3\x01\n" +
 	"\x1aUpdateAnycastIpListRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12C\n" +
-	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeR\ripaddresstype\x12H\n" +
-	"\x0fipamcidrconfigs\x18\xb0\xf9\xfd\x95\x01 \x03(\v2\x1a.cloudfront.IpamCidrConfigR\x0fipamcidrconfigs\"\x8b\x01\n" +
+	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12H\n" +
+	"\ripaddresstype\x18\xa5\xf2\xf5\xda\x01 \x01(\x0e2\x19.cloudfront.IpAddressTypeH\x00R\ripaddresstype\x88\x01\x01\x12H\n" +
+	"\x0fipamcidrconfigs\x18\xb0\xf9\xfd\x95\x01 \x03(\v2\x1a.cloudfront.IpamCidrConfigR\x0fipamcidrconfigsB\x10\n" +
+	"\x0e_ipaddresstype\"\x8b\x01\n" +
 	"\x19UpdateAnycastIpListResult\x12H\n" +
 	"\ranycastiplist\x18\xf0\xa5\xeeZ \x01(\v2\x19.cloudfront.AnycastIpListB\x04\x88\xb5\x18\x01R\ranycastiplist\x12\x1b\n" +
 	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01B\a\n" +
@@ -42429,22 +42459,26 @@ const file_cloudfront_proto_rawDesc = "" +
 	"identifierB\t\n" +
 	"\a_domain\"t\n" +
 	"\x1cVerifyDnsConfigurationResult\x12T\n" +
-	"\x14dnsconfigurationlist\x18\x83\xa6\xba\xa9\x01 \x03(\v2\x1c.cloudfront.DnsConfigurationR\x14dnsconfigurationlist\"\xcf\x04\n" +
+	"\x14dnsconfigurationlist\x18\x83\xa6\xba\xa9\x01 \x03(\v2\x1c.cloudfront.DnsConfigurationR\x14dnsconfigurationlist\"\xa4\x05\n" +
 	"\x11ViewerCertificate\x125\n" +
 	"\x11acmcertificatearn\x18\xcbӸ\x8c\x01 \x01(\tH\x00R\x11acmcertificatearn\x88\x01\x01\x12(\n" +
-	"\vcertificate\x18\x91ָ^ \x01(\tH\x01R\vcertificate\x88\x01\x01\x12N\n" +
-	"\x11certificatesource\x18\xd6\xfb\xb3\x1e \x01(\x0e2\x1d.cloudfront.CertificateSourceR\x11certificatesource\x12K\n" +
-	"\x1ccloudfrontdefaultcertificate\x18\xb6\xa6\xb2\xfc\x01 \x01(\bH\x02R\x1ccloudfrontdefaultcertificate\x88\x01\x01\x122\n" +
-	"\x10iamcertificateid\x18\xf5\xb8\xfd+ \x01(\tH\x03R\x10iamcertificateid\x88\x01\x01\x12^\n" +
-	"\x16minimumprotocolversion\x18\xae\xaa\x99\xaf\x01 \x01(\x0e2\".cloudfront.MinimumProtocolVersionR\x16minimumprotocolversion\x12L\n" +
-	"\x10sslsupportmethod\x18\xe2\xc7\xc6\xd2\x01 \x01(\x0e2\x1c.cloudfront.SSLSupportMethodR\x10sslsupportmethodB\x14\n" +
+	"\vcertificate\x18\x91ָ^ \x01(\tH\x01R\vcertificate\x88\x01\x01\x12S\n" +
+	"\x11certificatesource\x18\xd6\xfb\xb3\x1e \x01(\x0e2\x1d.cloudfront.CertificateSourceH\x02R\x11certificatesource\x88\x01\x01\x12K\n" +
+	"\x1ccloudfrontdefaultcertificate\x18\xb6\xa6\xb2\xfc\x01 \x01(\bH\x03R\x1ccloudfrontdefaultcertificate\x88\x01\x01\x122\n" +
+	"\x10iamcertificateid\x18\xf5\xb8\xfd+ \x01(\tH\x04R\x10iamcertificateid\x88\x01\x01\x12c\n" +
+	"\x16minimumprotocolversion\x18\xae\xaa\x99\xaf\x01 \x01(\x0e2\".cloudfront.MinimumProtocolVersionH\x05R\x16minimumprotocolversion\x88\x01\x01\x12Q\n" +
+	"\x10sslsupportmethod\x18\xe2\xc7\xc6\xd2\x01 \x01(\x0e2\x1c.cloudfront.SSLSupportMethodH\x06R\x10sslsupportmethod\x88\x01\x01B\x14\n" +
 	"\x12_acmcertificatearnB\x0e\n" +
-	"\f_certificateB\x1f\n" +
+	"\f_certificateB\x14\n" +
+	"\x12_certificatesourceB\x1f\n" +
 	"\x1d_cloudfrontdefaultcertificateB\x13\n" +
-	"\x11_iamcertificateid\"\x94\x01\n" +
-	"\x10ViewerMtlsConfig\x122\n" +
-	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x1a.cloudfront.ViewerMtlsModeR\x04mode\x12L\n" +
-	"\x10truststoreconfig\x18\xa9\x81\xb5\xbd\x01 \x01(\v2\x1c.cloudfront.TrustStoreConfigR\x10truststoreconfig\"\xba\x02\n" +
+	"\x11_iamcertificateidB\x19\n" +
+	"\x17_minimumprotocolversionB\x13\n" +
+	"\x11_sslsupportmethod\"\xa2\x01\n" +
+	"\x10ViewerMtlsConfig\x127\n" +
+	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x1a.cloudfront.ViewerMtlsModeH\x00R\x04mode\x88\x01\x01\x12L\n" +
+	"\x10truststoreconfig\x18\xa9\x81\xb5\xbd\x01 \x01(\v2\x1c.cloudfront.TrustStoreConfigR\x10truststoreconfigB\a\n" +
+	"\x05_mode\"\xba\x02\n" +
 	"\tVpcOrigin\x12$\n" +
 	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tH\x00R\taccountid\x88\x01\x01\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12#\n" +
@@ -44440,6 +44474,7 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[1].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[2].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[3].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[6].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[7].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[8].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[10].OneofWrappers = []any{}
@@ -44474,6 +44509,7 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[56].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[62].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[63].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[64].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[65].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[67].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[69].OneofWrappers = []any{}
@@ -44519,7 +44555,9 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[142].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[143].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[146].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[147].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[148].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[149].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[150].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[152].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[153].OneofWrappers = []any{}
@@ -44538,6 +44576,7 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[169].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[170].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[171].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[174].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[178].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[179].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[180].OneofWrappers = []any{}
@@ -44565,6 +44604,7 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[213].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[215].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[217].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[218].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[219].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[221].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[223].OneofWrappers = []any{}
@@ -44578,6 +44618,7 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[239].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[241].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[243].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[244].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[245].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[251].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[253].OneofWrappers = []any{}
@@ -44708,6 +44749,7 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[445].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[446].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[447].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[450].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[457].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[458].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[461].OneofWrappers = []any{}
@@ -44754,7 +44796,9 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[538].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[539].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[540].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[545].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[547].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[548].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[550].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[551].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[552].OneofWrappers = []any{}
@@ -44816,6 +44860,7 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[609].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[610].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[611].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[613].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[614].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[615].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[616].OneofWrappers = []any{}
@@ -44859,6 +44904,7 @@ func file_cloudfront_proto_init() {
 	file_cloudfront_proto_msgTypes[659].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[660].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[662].OneofWrappers = []any{}
+	file_cloudfront_proto_msgTypes[663].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[664].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[665].OneofWrappers = []any{}
 	file_cloudfront_proto_msgTypes[667].OneofWrappers = []any{}

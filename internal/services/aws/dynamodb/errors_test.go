@@ -50,9 +50,6 @@ func TestDynamoDBErrors(t *testing.T) {
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#BackupNotFoundException: Backup not found", ErrBackupNotFound.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrBackupNotFound.GetHTTPStatusCode())
 
-		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#BackupInUseException: Backup already exists", ErrBackupAlreadyExists.Error())
-		assert.Equal(t, http.StatusBadRequest, ErrBackupAlreadyExists.GetHTTPStatusCode())
-
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#GlobalTableNotFoundException: Global table not found", ErrGlobalTableNotFound.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrGlobalTableNotFound.GetHTTPStatusCode())
 
@@ -65,7 +62,7 @@ func TestDynamoDBErrors(t *testing.T) {
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#ReplicaNotFoundException: Replica not found", ErrReplicaNotFound.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrReplicaNotFound.GetHTTPStatusCode())
 
-		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#TransactionConflictException: TransactionConflict", ErrTransactionConflict.Error())
+		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#TransactionConflictException: Operation was rejected because there is an ongoing transaction for the item", ErrTransactionConflict.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrTransactionConflict.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#IdempotentParameterMismatchException: Idempotent parameter mismatch", ErrIdempotentParameterMismatch.Error())

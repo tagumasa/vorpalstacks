@@ -3,6 +3,7 @@ package iot
 import (
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"google.golang.org/protobuf/proto"
 
@@ -141,8 +142,8 @@ func toPbCertificate(c *iotstore.Certificate) *iot.Certificate {
 	cert := &iot.Certificate{
 		Certificatearn:  proto.String(c.CertificateARN),
 		Certificateid:   proto.String(c.CertificateID),
-		Certificatemode: certModeToProto(c.CertificateMode),
-		Status:          certStatusToProto(c.Status),
+		Certificatemode: pbutil.Enum(certModeToProto(c.CertificateMode)),
+		Status:          pbutil.Enum(certStatusToProto(c.Status)),
 	}
 	if !c.CreationDate.IsZero() {
 		cert.Creationdate = proto.String(c.CreationDate.Format(timeutils.ISO8601UTCFormat))
@@ -156,8 +157,8 @@ func toPbCertificateDescription(c *iotstore.Certificate) *iot.CertificateDescrip
 		Certificateid:   proto.String(c.CertificateID),
 		Certificatepem:  proto.String(c.CertificatePEM),
 		Cacertificateid: proto.String(c.CaCertificateID),
-		Status:          certStatusToProto(c.Status),
-		Certificatemode: certModeToProto(c.CertificateMode),
+		Status:          pbutil.Enum(certStatusToProto(c.Status)),
+		Certificatemode: pbutil.Enum(certModeToProto(c.CertificateMode)),
 		Generationid:    proto.String("1"),
 	}
 	cv := int32(1)

@@ -580,6 +580,12 @@ func (tkn *Tokenizer) Scan() (int, []byte) {
 				return NE, nil
 			case '<':
 				tkn.next()
+				// The PartiQL dialect reserves the double angle brackets
+				// for set literals; the shift operator tokens never reach
+				// its grammar.
+				if tkn.dialect == DialectPartiQL {
+					return SET_LITERAL_START, nil
+				}
 				return SHIFT_LEFT, nil
 			case '=':
 				tkn.next()
@@ -600,6 +606,9 @@ func (tkn *Tokenizer) Scan() (int, []byte) {
 				return GE, nil
 			case '>':
 				tkn.next()
+				if tkn.dialect == DialectPartiQL {
+					return SET_LITERAL_END, nil
+				}
 				return SHIFT_RIGHT, nil
 			default:
 				return int(ch), nil

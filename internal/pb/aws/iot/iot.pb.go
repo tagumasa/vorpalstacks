@@ -5155,7 +5155,7 @@ type ActiveViolation struct {
 	Lastviolationvalue           *MetricValue                  `protobuf:"bytes,327142014,opt,name=lastviolationvalue,proto3" json:"lastviolationvalue,omitempty"`
 	Securityprofilename          *string                       `protobuf:"bytes,463970880,opt,name=securityprofilename,proto3,oneof" json:"securityprofilename,omitempty"`
 	Thingname                    *string                       `protobuf:"bytes,526020141,opt,name=thingname,proto3,oneof" json:"thingname,omitempty"`
-	Verificationstate            VerificationState             `protobuf:"varint,46156804,opt,name=verificationstate,proto3,enum=iot.VerificationState" json:"verificationstate,omitempty"`
+	Verificationstate            *VerificationState            `protobuf:"varint,46156804,opt,name=verificationstate,proto3,enum=iot.VerificationState,oneof" json:"verificationstate,omitempty"`
 	Verificationstatedescription *string                       `protobuf:"bytes,16078040,opt,name=verificationstatedescription,proto3,oneof" json:"verificationstatedescription,omitempty"`
 	Violationeventadditionalinfo *ViolationEventAdditionalInfo `protobuf:"bytes,29091486,opt,name=violationeventadditionalinfo,proto3" json:"violationeventadditionalinfo,omitempty"`
 	Violationid                  *string                       `protobuf:"bytes,273917670,opt,name=violationid,proto3,oneof" json:"violationid,omitempty"`
@@ -5230,8 +5230,8 @@ func (x *ActiveViolation) GetThingname() string {
 }
 
 func (x *ActiveViolation) GetVerificationstate() VerificationState {
-	if x != nil {
-		return x.Verificationstate
+	if x != nil && x.Verificationstate != nil {
+		return *x.Verificationstate
 	}
 	return VerificationState_VERIFICATION_STATE_UNKNOWN
 }
@@ -5932,7 +5932,7 @@ type AssociateSbomWithPackageVersionResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Packagename          *string                `protobuf:"bytes,474490177,opt,name=packagename,proto3,oneof" json:"packagename,omitempty"`
 	Sbom                 *Sbom                  `protobuf:"bytes,522734353,opt,name=sbom,proto3" json:"sbom,omitempty"`
-	Sbomvalidationstatus SbomValidationStatus   `protobuf:"varint,502368374,opt,name=sbomvalidationstatus,proto3,enum=iot.SbomValidationStatus" json:"sbomvalidationstatus,omitempty"`
+	Sbomvalidationstatus *SbomValidationStatus  `protobuf:"varint,502368374,opt,name=sbomvalidationstatus,proto3,enum=iot.SbomValidationStatus,oneof" json:"sbomvalidationstatus,omitempty"`
 	Versionname          *string                `protobuf:"bytes,508494709,opt,name=versionname,proto3,oneof" json:"versionname,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -5983,8 +5983,8 @@ func (x *AssociateSbomWithPackageVersionResponse) GetSbom() *Sbom {
 }
 
 func (x *AssociateSbomWithPackageVersionResponse) GetSbomvalidationstatus() SbomValidationStatus {
-	if x != nil {
-		return x.Sbomvalidationstatus
+	if x != nil && x.Sbomvalidationstatus != nil {
+		return *x.Sbomvalidationstatus
 	}
 	return SbomValidationStatus_SBOM_VALIDATION_STATUS_IN_PROGRESS
 }
@@ -6320,7 +6320,7 @@ type AttachThingPrincipalRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Principal          string                 `protobuf:"bytes,262257194,opt,name=principal,proto3" json:"principal,omitempty"`
 	Thingname          string                 `protobuf:"bytes,526020141,opt,name=thingname,proto3" json:"thingname,omitempty"`
-	Thingprincipaltype ThingPrincipalType     `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType" json:"thingprincipaltype,omitempty"`
+	Thingprincipaltype *ThingPrincipalType    `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType,oneof" json:"thingprincipaltype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -6370,8 +6370,8 @@ func (x *AttachThingPrincipalRequest) GetThingname() string {
 }
 
 func (x *AttachThingPrincipalRequest) GetThingprincipaltype() ThingPrincipalType {
-	if x != nil {
-		return x.Thingprincipaltype
+	if x != nil && x.Thingprincipaltype != nil {
+		return *x.Thingprincipaltype
 	}
 	return ThingPrincipalType_THING_PRINCIPAL_TYPE_EXCLUSIVE_THING
 }
@@ -6519,7 +6519,7 @@ func (x *AuditCheckConfiguration) GetEnabled() bool {
 type AuditCheckDetails struct {
 	state                                protoimpl.MessageState `protogen:"open.v1"`
 	Checkcompliant                       *bool                  `protobuf:"varint,337223141,opt,name=checkcompliant,proto3,oneof" json:"checkcompliant,omitempty"`
-	Checkrunstatus                       AuditCheckRunStatus    `protobuf:"varint,205905699,opt,name=checkrunstatus,proto3,enum=iot.AuditCheckRunStatus" json:"checkrunstatus,omitempty"`
+	Checkrunstatus                       *AuditCheckRunStatus   `protobuf:"varint,205905699,opt,name=checkrunstatus,proto3,enum=iot.AuditCheckRunStatus,oneof" json:"checkrunstatus,omitempty"`
 	Errorcode                            *string                `protobuf:"bytes,355916985,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
 	Message                              *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Noncompliantresourcescount           *int64                 `protobuf:"varint,113668994,opt,name=noncompliantresourcescount,proto3,oneof" json:"noncompliantresourcescount,omitempty"`
@@ -6567,8 +6567,8 @@ func (x *AuditCheckDetails) GetCheckcompliant() bool {
 }
 
 func (x *AuditCheckDetails) GetCheckrunstatus() AuditCheckRunStatus {
-	if x != nil {
-		return x.Checkrunstatus
+	if x != nil && x.Checkrunstatus != nil {
+		return *x.Checkrunstatus
 	}
 	return AuditCheckRunStatus_AUDIT_CHECK_RUN_STATUS_CANCELED
 }
@@ -6618,7 +6618,7 @@ type AuditFinding struct {
 	Reasonfornoncompliance     *string                `protobuf:"bytes,438316965,opt,name=reasonfornoncompliance,proto3,oneof" json:"reasonfornoncompliance,omitempty"`
 	Reasonfornoncompliancecode *string                `protobuf:"bytes,251692114,opt,name=reasonfornoncompliancecode,proto3,oneof" json:"reasonfornoncompliancecode,omitempty"`
 	Relatedresources           []*RelatedResource     `protobuf:"bytes,292628798,rep,name=relatedresources,proto3" json:"relatedresources,omitempty"`
-	Severity                   AuditFindingSeverity   `protobuf:"varint,268193715,opt,name=severity,proto3,enum=iot.AuditFindingSeverity" json:"severity,omitempty"`
+	Severity                   *AuditFindingSeverity  `protobuf:"varint,268193715,opt,name=severity,proto3,enum=iot.AuditFindingSeverity,oneof" json:"severity,omitempty"`
 	Taskid                     *string                `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
 	Taskstarttime              *string                `protobuf:"bytes,106092442,opt,name=taskstarttime,proto3,oneof" json:"taskstarttime,omitempty"`
 	unknownFields              protoimpl.UnknownFields
@@ -6712,8 +6712,8 @@ func (x *AuditFinding) GetRelatedresources() []*RelatedResource {
 }
 
 func (x *AuditFinding) GetSeverity() AuditFindingSeverity {
-	if x != nil {
-		return x.Severity
+	if x != nil && x.Severity != nil {
+		return *x.Severity
 	}
 	return AuditFindingSeverity_AUDIT_FINDING_SEVERITY_MEDIUM
 }
@@ -6733,16 +6733,16 @@ func (x *AuditFinding) GetTaskstarttime() string {
 }
 
 type AuditMitigationActionExecutionMetadata struct {
-	state         protoimpl.MessageState                `protogen:"open.v1"`
-	Actionid      *string                               `protobuf:"bytes,281444883,opt,name=actionid,proto3,oneof" json:"actionid,omitempty"`
-	Actionname    *string                               `protobuf:"bytes,111062493,opt,name=actionname,proto3,oneof" json:"actionname,omitempty"`
-	Endtime       *string                               `protobuf:"bytes,329679852,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
-	Errorcode     *string                               `protobuf:"bytes,355916985,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
-	Findingid     *string                               `protobuf:"bytes,319355036,opt,name=findingid,proto3,oneof" json:"findingid,omitempty"`
-	Message       *string                               `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
-	Starttime     *string                               `protobuf:"bytes,178154767,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
-	Status        AuditMitigationActionsExecutionStatus `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuditMitigationActionsExecutionStatus" json:"status,omitempty"`
-	Taskid        *string                               `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
+	state         protoimpl.MessageState                 `protogen:"open.v1"`
+	Actionid      *string                                `protobuf:"bytes,281444883,opt,name=actionid,proto3,oneof" json:"actionid,omitempty"`
+	Actionname    *string                                `protobuf:"bytes,111062493,opt,name=actionname,proto3,oneof" json:"actionname,omitempty"`
+	Endtime       *string                                `protobuf:"bytes,329679852,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
+	Errorcode     *string                                `protobuf:"bytes,355916985,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
+	Findingid     *string                                `protobuf:"bytes,319355036,opt,name=findingid,proto3,oneof" json:"findingid,omitempty"`
+	Message       *string                                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Starttime     *string                                `protobuf:"bytes,178154767,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
+	Status        *AuditMitigationActionsExecutionStatus `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuditMitigationActionsExecutionStatus,oneof" json:"status,omitempty"`
+	Taskid        *string                                `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6827,8 +6827,8 @@ func (x *AuditMitigationActionExecutionMetadata) GetStarttime() string {
 }
 
 func (x *AuditMitigationActionExecutionMetadata) GetStatus() AuditMitigationActionsExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AuditMitigationActionsExecutionStatus_AUDIT_MITIGATION_ACTIONS_EXECUTION_STATUS_PENDING
 }
@@ -6841,10 +6841,10 @@ func (x *AuditMitigationActionExecutionMetadata) GetTaskid() string {
 }
 
 type AuditMitigationActionsTaskMetadata struct {
-	state         protoimpl.MessageState           `protogen:"open.v1"`
-	Starttime     *string                          `protobuf:"bytes,178154767,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
-	Taskid        *string                          `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
-	Taskstatus    AuditMitigationActionsTaskStatus `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditMitigationActionsTaskStatus" json:"taskstatus,omitempty"`
+	state         protoimpl.MessageState            `protogen:"open.v1"`
+	Starttime     *string                           `protobuf:"bytes,178154767,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
+	Taskid        *string                           `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
+	Taskstatus    *AuditMitigationActionsTaskStatus `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditMitigationActionsTaskStatus,oneof" json:"taskstatus,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6894,8 +6894,8 @@ func (x *AuditMitigationActionsTaskMetadata) GetTaskid() string {
 }
 
 func (x *AuditMitigationActionsTaskMetadata) GetTaskstatus() AuditMitigationActionsTaskStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return AuditMitigationActionsTaskStatus_AUDIT_MITIGATION_ACTIONS_TASK_STATUS_CANCELED
 }
@@ -7099,8 +7099,8 @@ func (x *AuditSuppression) GetSuppressindefinitely() bool {
 type AuditTaskMetadata struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Taskid        *string                `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
-	Taskstatus    AuditTaskStatus        `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditTaskStatus" json:"taskstatus,omitempty"`
-	Tasktype      AuditTaskType          `protobuf:"varint,318747781,opt,name=tasktype,proto3,enum=iot.AuditTaskType" json:"tasktype,omitempty"`
+	Taskstatus    *AuditTaskStatus       `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditTaskStatus,oneof" json:"taskstatus,omitempty"`
+	Tasktype      *AuditTaskType         `protobuf:"varint,318747781,opt,name=tasktype,proto3,enum=iot.AuditTaskType,oneof" json:"tasktype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7143,22 +7143,22 @@ func (x *AuditTaskMetadata) GetTaskid() string {
 }
 
 func (x *AuditTaskMetadata) GetTaskstatus() AuditTaskStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return AuditTaskStatus_AUDIT_TASK_STATUS_CANCELED
 }
 
 func (x *AuditTaskMetadata) GetTasktype() AuditTaskType {
-	if x != nil {
-		return x.Tasktype
+	if x != nil && x.Tasktype != nil {
+		return *x.Tasktype
 	}
 	return AuditTaskType_AUDIT_TASK_TYPE_ON_DEMAND_AUDIT_TASK
 }
 
 type AuthInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Actiontype    ActionType             `protobuf:"varint,315213608,opt,name=actiontype,proto3,enum=iot.ActionType" json:"actiontype,omitempty"`
+	Actiontype    *ActionType            `protobuf:"varint,315213608,opt,name=actiontype,proto3,enum=iot.ActionType,oneof" json:"actiontype,omitempty"`
 	Resources     []string               `protobuf:"bytes,282443763,rep,name=resources,proto3" json:"resources,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7195,8 +7195,8 @@ func (*AuthInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *AuthInfo) GetActiontype() ActionType {
-	if x != nil {
-		return x.Actiontype
+	if x != nil && x.Actiontype != nil {
+		return *x.Actiontype
 	}
 	return ActionType_ACTION_TYPE_RECEIVE
 }
@@ -7211,7 +7211,7 @@ func (x *AuthInfo) GetResources() []string {
 type AuthResult struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Allowed              *Allowed               `protobuf:"bytes,130344004,opt,name=allowed,proto3" json:"allowed,omitempty"`
-	Authdecision         AuthDecision           `protobuf:"varint,473322838,opt,name=authdecision,proto3,enum=iot.AuthDecision" json:"authdecision,omitempty"`
+	Authdecision         *AuthDecision          `protobuf:"varint,473322838,opt,name=authdecision,proto3,enum=iot.AuthDecision,oneof" json:"authdecision,omitempty"`
 	Authinfo             *AuthInfo              `protobuf:"bytes,184797020,opt,name=authinfo,proto3" json:"authinfo,omitempty"`
 	Denied               *Denied                `protobuf:"bytes,286531703,opt,name=denied,proto3" json:"denied,omitempty"`
 	Missingcontextvalues []string               `protobuf:"bytes,510823701,rep,name=missingcontextvalues,proto3" json:"missingcontextvalues,omitempty"`
@@ -7257,8 +7257,8 @@ func (x *AuthResult) GetAllowed() *Allowed {
 }
 
 func (x *AuthResult) GetAuthdecision() AuthDecision {
-	if x != nil {
-		return x.Authdecision
+	if x != nil && x.Authdecision != nil {
+		return *x.Authdecision
 	}
 	return AuthDecision_AUTH_DECISION_IMPLICIT_DENY
 }
@@ -7345,7 +7345,7 @@ type AuthorizerDescription struct {
 	Enablecachingforhttp   *bool                  `protobuf:"varint,70468675,opt,name=enablecachingforhttp,proto3,oneof" json:"enablecachingforhttp,omitempty"`
 	Lastmodifieddate       *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Signingdisabled        *bool                  `protobuf:"varint,34955421,opt,name=signingdisabled,proto3,oneof" json:"signingdisabled,omitempty"`
-	Status                 AuthorizerStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuthorizerStatus" json:"status,omitempty"`
+	Status                 *AuthorizerStatus      `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuthorizerStatus,oneof" json:"status,omitempty"`
 	Tokenkeyname           *string                `protobuf:"bytes,279325171,opt,name=tokenkeyname,proto3,oneof" json:"tokenkeyname,omitempty"`
 	Tokensigningpublickeys map[string]string      `protobuf:"bytes,326945473,rep,name=tokensigningpublickeys,proto3" json:"tokensigningpublickeys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields          protoimpl.UnknownFields
@@ -7432,8 +7432,8 @@ func (x *AuthorizerDescription) GetSigningdisabled() bool {
 }
 
 func (x *AuthorizerDescription) GetStatus() AuthorizerStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AuthorizerStatus_AUTHORIZER_STATUS_ACTIVE
 }
@@ -8066,7 +8066,7 @@ func (x *Behavior) GetSuppressalerts() bool {
 
 type BehaviorCriteria struct {
 	state                        protoimpl.MessageState          `protogen:"open.v1"`
-	Comparisonoperator           ComparisonOperator              `protobuf:"varint,5689013,opt,name=comparisonoperator,proto3,enum=iot.ComparisonOperator" json:"comparisonoperator,omitempty"`
+	Comparisonoperator           *ComparisonOperator             `protobuf:"varint,5689013,opt,name=comparisonoperator,proto3,enum=iot.ComparisonOperator,oneof" json:"comparisonoperator,omitempty"`
 	Consecutivedatapointstoalarm *int32                          `protobuf:"varint,374370085,opt,name=consecutivedatapointstoalarm,proto3,oneof" json:"consecutivedatapointstoalarm,omitempty"`
 	Consecutivedatapointstoclear *int32                          `protobuf:"varint,341998561,opt,name=consecutivedatapointstoclear,proto3,oneof" json:"consecutivedatapointstoclear,omitempty"`
 	Durationseconds              *int32                          `protobuf:"varint,532374275,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
@@ -8108,8 +8108,8 @@ func (*BehaviorCriteria) Descriptor() ([]byte, []int) {
 }
 
 func (x *BehaviorCriteria) GetComparisonoperator() ComparisonOperator {
-	if x != nil {
-		return x.Comparisonoperator
+	if x != nil && x.Comparisonoperator != nil {
+		return *x.Comparisonoperator
 	}
 	return ComparisonOperator_COMPARISON_OPERATOR_LESS_THAN
 }
@@ -8161,7 +8161,7 @@ type BehaviorModelTrainingSummary struct {
 	Behaviorname                    *string                `protobuf:"bytes,75735045,opt,name=behaviorname,proto3,oneof" json:"behaviorname,omitempty"`
 	Datapointscollectionpercentage  *float64               `protobuf:"fixed64,284665007,opt,name=datapointscollectionpercentage,proto3,oneof" json:"datapointscollectionpercentage,omitempty"`
 	Lastmodelrefreshdate            *string                `protobuf:"bytes,271169450,opt,name=lastmodelrefreshdate,proto3,oneof" json:"lastmodelrefreshdate,omitempty"`
-	Modelstatus                     ModelStatus            `protobuf:"varint,39129381,opt,name=modelstatus,proto3,enum=iot.ModelStatus" json:"modelstatus,omitempty"`
+	Modelstatus                     *ModelStatus           `protobuf:"varint,39129381,opt,name=modelstatus,proto3,enum=iot.ModelStatus,oneof" json:"modelstatus,omitempty"`
 	Securityprofilename             *string                `protobuf:"bytes,463970880,opt,name=securityprofilename,proto3,oneof" json:"securityprofilename,omitempty"`
 	Trainingdatacollectionstartdate *string                `protobuf:"bytes,117275242,opt,name=trainingdatacollectionstartdate,proto3,oneof" json:"trainingdatacollectionstartdate,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
@@ -8220,8 +8220,8 @@ func (x *BehaviorModelTrainingSummary) GetLastmodelrefreshdate() string {
 }
 
 func (x *BehaviorModelTrainingSummary) GetModelstatus() ModelStatus {
-	if x != nil {
-		return x.Modelstatus
+	if x != nil && x.Modelstatus != nil {
+		return *x.Modelstatus
 	}
 	return ModelStatus_MODEL_STATUS_PENDING_BUILD
 }
@@ -8429,7 +8429,7 @@ type CACertificate struct {
 	Certificatearn *string                `protobuf:"bytes,425831704,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
 	Certificateid  *string                `protobuf:"bytes,322284558,opt,name=certificateid,proto3,oneof" json:"certificateid,omitempty"`
 	Creationdate   *string                `protobuf:"bytes,238315265,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
-	Status         CACertificateStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CACertificateStatus" json:"status,omitempty"`
+	Status         *CACertificateStatus   `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CACertificateStatus,oneof" json:"status,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -8486,26 +8486,26 @@ func (x *CACertificate) GetCreationdate() string {
 }
 
 func (x *CACertificate) GetStatus() CACertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CACertificateStatus_C_A_CERTIFICATE_STATUS_ACTIVE
 }
 
 type CACertificateDescription struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Autoregistrationstatus AutoRegistrationStatus `protobuf:"varint,525144298,opt,name=autoregistrationstatus,proto3,enum=iot.AutoRegistrationStatus" json:"autoregistrationstatus,omitempty"`
-	Certificatearn         *string                `protobuf:"bytes,425831704,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
-	Certificateid          *string                `protobuf:"bytes,322284558,opt,name=certificateid,proto3,oneof" json:"certificateid,omitempty"`
-	Certificatemode        CertificateMode        `protobuf:"varint,236877860,opt,name=certificatemode,proto3,enum=iot.CertificateMode" json:"certificatemode,omitempty"`
-	Certificatepem         *string                `protobuf:"bytes,498816311,opt,name=certificatepem,proto3,oneof" json:"certificatepem,omitempty"`
-	Creationdate           *string                `protobuf:"bytes,238315265,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
-	Customerversion        *int32                 `protobuf:"varint,175153604,opt,name=customerversion,proto3,oneof" json:"customerversion,omitempty"`
-	Generationid           *string                `protobuf:"bytes,416668699,opt,name=generationid,proto3,oneof" json:"generationid,omitempty"`
-	Lastmodifieddate       *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
-	Ownedby                *string                `protobuf:"bytes,331791992,opt,name=ownedby,proto3,oneof" json:"ownedby,omitempty"`
-	Status                 CACertificateStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CACertificateStatus" json:"status,omitempty"`
-	Validity               *CertificateValidity   `protobuf:"bytes,263781880,opt,name=validity,proto3" json:"validity,omitempty"`
+	state                  protoimpl.MessageState  `protogen:"open.v1"`
+	Autoregistrationstatus *AutoRegistrationStatus `protobuf:"varint,525144298,opt,name=autoregistrationstatus,proto3,enum=iot.AutoRegistrationStatus,oneof" json:"autoregistrationstatus,omitempty"`
+	Certificatearn         *string                 `protobuf:"bytes,425831704,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificateid          *string                 `protobuf:"bytes,322284558,opt,name=certificateid,proto3,oneof" json:"certificateid,omitempty"`
+	Certificatemode        *CertificateMode        `protobuf:"varint,236877860,opt,name=certificatemode,proto3,enum=iot.CertificateMode,oneof" json:"certificatemode,omitempty"`
+	Certificatepem         *string                 `protobuf:"bytes,498816311,opt,name=certificatepem,proto3,oneof" json:"certificatepem,omitempty"`
+	Creationdate           *string                 `protobuf:"bytes,238315265,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
+	Customerversion        *int32                  `protobuf:"varint,175153604,opt,name=customerversion,proto3,oneof" json:"customerversion,omitempty"`
+	Generationid           *string                 `protobuf:"bytes,416668699,opt,name=generationid,proto3,oneof" json:"generationid,omitempty"`
+	Lastmodifieddate       *string                 `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
+	Ownedby                *string                 `protobuf:"bytes,331791992,opt,name=ownedby,proto3,oneof" json:"ownedby,omitempty"`
+	Status                 *CACertificateStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CACertificateStatus,oneof" json:"status,omitempty"`
+	Validity               *CertificateValidity    `protobuf:"bytes,263781880,opt,name=validity,proto3" json:"validity,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -8541,8 +8541,8 @@ func (*CACertificateDescription) Descriptor() ([]byte, []int) {
 }
 
 func (x *CACertificateDescription) GetAutoregistrationstatus() AutoRegistrationStatus {
-	if x != nil {
-		return x.Autoregistrationstatus
+	if x != nil && x.Autoregistrationstatus != nil {
+		return *x.Autoregistrationstatus
 	}
 	return AutoRegistrationStatus_AUTO_REGISTRATION_STATUS_ENABLE
 }
@@ -8562,8 +8562,8 @@ func (x *CACertificateDescription) GetCertificateid() string {
 }
 
 func (x *CACertificateDescription) GetCertificatemode() CertificateMode {
-	if x != nil {
-		return x.Certificatemode
+	if x != nil && x.Certificatemode != nil {
+		return *x.Certificatemode
 	}
 	return CertificateMode_CERTIFICATE_MODE_DEFAULT
 }
@@ -8611,8 +8611,8 @@ func (x *CACertificateDescription) GetOwnedby() string {
 }
 
 func (x *CACertificateDescription) GetStatus() CACertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CACertificateStatus_C_A_CERTIFICATE_STATUS_ACTIVE
 }
@@ -9116,9 +9116,9 @@ type Certificate struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Certificatearn  *string                `protobuf:"bytes,425831704,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
 	Certificateid   *string                `protobuf:"bytes,322284558,opt,name=certificateid,proto3,oneof" json:"certificateid,omitempty"`
-	Certificatemode CertificateMode        `protobuf:"varint,236877860,opt,name=certificatemode,proto3,enum=iot.CertificateMode" json:"certificatemode,omitempty"`
+	Certificatemode *CertificateMode       `protobuf:"varint,236877860,opt,name=certificatemode,proto3,enum=iot.CertificateMode,oneof" json:"certificatemode,omitempty"`
 	Creationdate    *string                `protobuf:"bytes,238315265,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
-	Status          CertificateStatus      `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CertificateStatus" json:"status,omitempty"`
+	Status          *CertificateStatus     `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CertificateStatus,oneof" json:"status,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -9168,8 +9168,8 @@ func (x *Certificate) GetCertificateid() string {
 }
 
 func (x *Certificate) GetCertificatemode() CertificateMode {
-	if x != nil {
-		return x.Certificatemode
+	if x != nil && x.Certificatemode != nil {
+		return *x.Certificatemode
 	}
 	return CertificateMode_CERTIFICATE_MODE_DEFAULT
 }
@@ -9182,8 +9182,8 @@ func (x *Certificate) GetCreationdate() string {
 }
 
 func (x *Certificate) GetStatus() CertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CertificateStatus_CERTIFICATE_STATUS_PENDING_TRANSFER
 }
@@ -9237,7 +9237,7 @@ type CertificateDescription struct {
 	Cacertificateid  *string                `protobuf:"bytes,510727626,opt,name=cacertificateid,proto3,oneof" json:"cacertificateid,omitempty"`
 	Certificatearn   *string                `protobuf:"bytes,425831704,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
 	Certificateid    *string                `protobuf:"bytes,322284558,opt,name=certificateid,proto3,oneof" json:"certificateid,omitempty"`
-	Certificatemode  CertificateMode        `protobuf:"varint,236877860,opt,name=certificatemode,proto3,enum=iot.CertificateMode" json:"certificatemode,omitempty"`
+	Certificatemode  *CertificateMode       `protobuf:"varint,236877860,opt,name=certificatemode,proto3,enum=iot.CertificateMode,oneof" json:"certificatemode,omitempty"`
 	Certificatepem   *string                `protobuf:"bytes,498816311,opt,name=certificatepem,proto3,oneof" json:"certificatepem,omitempty"`
 	Creationdate     *string                `protobuf:"bytes,238315265,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
 	Customerversion  *int32                 `protobuf:"varint,175153604,opt,name=customerversion,proto3,oneof" json:"customerversion,omitempty"`
@@ -9245,7 +9245,7 @@ type CertificateDescription struct {
 	Lastmodifieddate *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Ownedby          *string                `protobuf:"bytes,331791992,opt,name=ownedby,proto3,oneof" json:"ownedby,omitempty"`
 	Previousownedby  *string                `protobuf:"bytes,192023001,opt,name=previousownedby,proto3,oneof" json:"previousownedby,omitempty"`
-	Status           CertificateStatus      `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CertificateStatus" json:"status,omitempty"`
+	Status           *CertificateStatus     `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CertificateStatus,oneof" json:"status,omitempty"`
 	Transferdata     *TransferData          `protobuf:"bytes,185908391,opt,name=transferdata,proto3" json:"transferdata,omitempty"`
 	Validity         *CertificateValidity   `protobuf:"bytes,263781880,opt,name=validity,proto3" json:"validity,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -9304,8 +9304,8 @@ func (x *CertificateDescription) GetCertificateid() string {
 }
 
 func (x *CertificateDescription) GetCertificatemode() CertificateMode {
-	if x != nil {
-		return x.Certificatemode
+	if x != nil && x.Certificatemode != nil {
+		return *x.Certificatemode
 	}
 	return CertificateMode_CERTIFICATE_MODE_DEFAULT
 }
@@ -9360,8 +9360,8 @@ func (x *CertificateDescription) GetPreviousownedby() string {
 }
 
 func (x *CertificateDescription) GetStatus() CertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CertificateStatus_CERTIFICATE_STATUS_PENDING_TRANSFER
 }
@@ -10117,14 +10117,14 @@ func (x *CommandExecutionResult) GetS() string {
 }
 
 type CommandExecutionSummary struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Commandarn    *string                `protobuf:"bytes,100510046,opt,name=commandarn,proto3,oneof" json:"commandarn,omitempty"`
-	Completedat   *string                `protobuf:"bytes,303098600,opt,name=completedat,proto3,oneof" json:"completedat,omitempty"`
-	Createdat     *string                `protobuf:"bytes,370722959,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
-	Executionid   *string                `protobuf:"bytes,364931921,opt,name=executionid,proto3,oneof" json:"executionid,omitempty"`
-	Startedat     *string                `protobuf:"bytes,405642876,opt,name=startedat,proto3,oneof" json:"startedat,omitempty"`
-	Status        CommandExecutionStatus `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CommandExecutionStatus" json:"status,omitempty"`
-	Targetarn     *string                `protobuf:"bytes,367964720,opt,name=targetarn,proto3,oneof" json:"targetarn,omitempty"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Commandarn    *string                 `protobuf:"bytes,100510046,opt,name=commandarn,proto3,oneof" json:"commandarn,omitempty"`
+	Completedat   *string                 `protobuf:"bytes,303098600,opt,name=completedat,proto3,oneof" json:"completedat,omitempty"`
+	Createdat     *string                 `protobuf:"bytes,370722959,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Executionid   *string                 `protobuf:"bytes,364931921,opt,name=executionid,proto3,oneof" json:"executionid,omitempty"`
+	Startedat     *string                 `protobuf:"bytes,405642876,opt,name=startedat,proto3,oneof" json:"startedat,omitempty"`
+	Status        *CommandExecutionStatus `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CommandExecutionStatus,oneof" json:"status,omitempty"`
+	Targetarn     *string                 `protobuf:"bytes,367964720,opt,name=targetarn,proto3,oneof" json:"targetarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10195,8 +10195,8 @@ func (x *CommandExecutionSummary) GetStartedat() string {
 }
 
 func (x *CommandExecutionSummary) GetStatus() CommandExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CommandExecutionStatus_COMMAND_EXECUTION_STATUS_TIMED_OUT
 }
@@ -10213,7 +10213,7 @@ type CommandParameter struct {
 	Defaultvalue    *CommandParameterValue            `protobuf:"bytes,403858624,opt,name=defaultvalue,proto3" json:"defaultvalue,omitempty"`
 	Description     *string                           `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Name            string                            `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Type            CommandParameterType              `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.CommandParameterType" json:"type,omitempty"`
+	Type            *CommandParameterType             `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.CommandParameterType,oneof" json:"type,omitempty"`
 	Value           *CommandParameterValue            `protobuf:"bytes,39769035,opt,name=value,proto3" json:"value,omitempty"`
 	Valueconditions []*CommandParameterValueCondition `protobuf:"bytes,474955077,rep,name=valueconditions,proto3" json:"valueconditions,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -10272,8 +10272,8 @@ func (x *CommandParameter) GetName() string {
 }
 
 func (x *CommandParameter) GetType() CommandParameterType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return CommandParameterType_COMMAND_PARAMETER_TYPE_UNSIGNEDLONG
 }
@@ -10798,7 +10798,7 @@ func (x *Configuration) GetEnabled() bool {
 
 type ConfigurationDetails struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Configurationstatus ConfigurationStatus    `protobuf:"varint,36192732,opt,name=configurationstatus,proto3,enum=iot.ConfigurationStatus" json:"configurationstatus,omitempty"`
+	Configurationstatus *ConfigurationStatus   `protobuf:"varint,36192732,opt,name=configurationstatus,proto3,enum=iot.ConfigurationStatus,oneof" json:"configurationstatus,omitempty"`
 	Errorcode           *string                `protobuf:"bytes,355916985,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
 	Errormessage        *string                `protobuf:"bytes,136873289,opt,name=errormessage,proto3,oneof" json:"errormessage,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -10836,8 +10836,8 @@ func (*ConfigurationDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConfigurationDetails) GetConfigurationstatus() ConfigurationStatus {
-	if x != nil {
-		return x.Configurationstatus
+	if x != nil && x.Configurationstatus != nil {
+		return *x.Configurationstatus
 	}
 	return ConfigurationStatus_CONFIGURATION_STATUS_UNHEALTHY
 }
@@ -11202,7 +11202,7 @@ type CreateAuthorizerRequest struct {
 	Authorizername         string                 `protobuf:"bytes,49871270,opt,name=authorizername,proto3" json:"authorizername,omitempty"`
 	Enablecachingforhttp   *bool                  `protobuf:"varint,70468675,opt,name=enablecachingforhttp,proto3,oneof" json:"enablecachingforhttp,omitempty"`
 	Signingdisabled        *bool                  `protobuf:"varint,34955421,opt,name=signingdisabled,proto3,oneof" json:"signingdisabled,omitempty"`
-	Status                 AuthorizerStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuthorizerStatus" json:"status,omitempty"`
+	Status                 *AuthorizerStatus      `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuthorizerStatus,oneof" json:"status,omitempty"`
 	Tags                   []*Tag                 `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
 	Tokenkeyname           *string                `protobuf:"bytes,279325171,opt,name=tokenkeyname,proto3,oneof" json:"tokenkeyname,omitempty"`
 	Tokensigningpublickeys map[string]string      `protobuf:"bytes,326945473,rep,name=tokensigningpublickeys,proto3" json:"tokensigningpublickeys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -11269,8 +11269,8 @@ func (x *CreateAuthorizerRequest) GetSigningdisabled() bool {
 }
 
 func (x *CreateAuthorizerRequest) GetStatus() AuthorizerStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AuthorizerStatus_AUTHORIZER_STATUS_ACTIVE
 }
@@ -11714,7 +11714,7 @@ type CreateCommandRequest struct {
 	Description         *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Displayname         *string                `protobuf:"bytes,268527191,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
 	Mandatoryparameters []*CommandParameter    `protobuf:"bytes,188477117,rep,name=mandatoryparameters,proto3" json:"mandatoryparameters,omitempty"`
-	Namespace           CommandNamespace       `protobuf:"varint,181303969,opt,name=namespace,proto3,enum=iot.CommandNamespace" json:"namespace,omitempty"`
+	Namespace           *CommandNamespace      `protobuf:"varint,181303969,opt,name=namespace,proto3,enum=iot.CommandNamespace,oneof" json:"namespace,omitempty"`
 	Payload             *CommandPayload        `protobuf:"bytes,319780774,opt,name=payload,proto3" json:"payload,omitempty"`
 	Payloadtemplate     *string                `protobuf:"bytes,93065676,opt,name=payloadtemplate,proto3,oneof" json:"payloadtemplate,omitempty"`
 	Preprocessor        *CommandPreprocessor   `protobuf:"bytes,338810155,opt,name=preprocessor,proto3" json:"preprocessor,omitempty"`
@@ -11783,8 +11783,8 @@ func (x *CreateCommandRequest) GetMandatoryparameters() []*CommandParameter {
 }
 
 func (x *CreateCommandRequest) GetNamespace() CommandNamespace {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return CommandNamespace_COMMAND_NAMESPACE_AWSIOT
 }
@@ -12134,15 +12134,15 @@ func (x *CreateDimensionResponse) GetName() string {
 
 type CreateDomainConfigurationRequest struct {
 	state                    protoimpl.MessageState   `protogen:"open.v1"`
-	Applicationprotocol      ApplicationProtocol      `protobuf:"varint,420413526,opt,name=applicationprotocol,proto3,enum=iot.ApplicationProtocol" json:"applicationprotocol,omitempty"`
-	Authenticationtype       AuthenticationType       `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=iot.AuthenticationType" json:"authenticationtype,omitempty"`
+	Applicationprotocol      *ApplicationProtocol     `protobuf:"varint,420413526,opt,name=applicationprotocol,proto3,enum=iot.ApplicationProtocol,oneof" json:"applicationprotocol,omitempty"`
+	Authenticationtype       *AuthenticationType      `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=iot.AuthenticationType,oneof" json:"authenticationtype,omitempty"`
 	Authorizerconfig         *AuthorizerConfig        `protobuf:"bytes,86904353,opt,name=authorizerconfig,proto3" json:"authorizerconfig,omitempty"`
 	Clientcertificateconfig  *ClientCertificateConfig `protobuf:"bytes,287420460,opt,name=clientcertificateconfig,proto3" json:"clientcertificateconfig,omitempty"`
 	Domainconfigurationname  string                   `protobuf:"bytes,280194767,opt,name=domainconfigurationname,proto3" json:"domainconfigurationname,omitempty"`
 	Domainname               *string                  `protobuf:"bytes,390326667,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
 	Servercertificatearns    []string                 `protobuf:"bytes,265878182,rep,name=servercertificatearns,proto3" json:"servercertificatearns,omitempty"`
 	Servercertificateconfig  *ServerCertificateConfig `protobuf:"bytes,115239696,opt,name=servercertificateconfig,proto3" json:"servercertificateconfig,omitempty"`
-	Servicetype              ServiceType              `protobuf:"varint,232238413,opt,name=servicetype,proto3,enum=iot.ServiceType" json:"servicetype,omitempty"`
+	Servicetype              *ServiceType             `protobuf:"varint,232238413,opt,name=servicetype,proto3,enum=iot.ServiceType,oneof" json:"servicetype,omitempty"`
 	Tags                     []*Tag                   `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
 	Tlsconfig                *TlsConfig               `protobuf:"bytes,108946693,opt,name=tlsconfig,proto3" json:"tlsconfig,omitempty"`
 	Validationcertificatearn *string                  `protobuf:"bytes,465015181,opt,name=validationcertificatearn,proto3,oneof" json:"validationcertificatearn,omitempty"`
@@ -12181,15 +12181,15 @@ func (*CreateDomainConfigurationRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateDomainConfigurationRequest) GetApplicationprotocol() ApplicationProtocol {
-	if x != nil {
-		return x.Applicationprotocol
+	if x != nil && x.Applicationprotocol != nil {
+		return *x.Applicationprotocol
 	}
 	return ApplicationProtocol_APPLICATION_PROTOCOL_MQTT_WSS
 }
 
 func (x *CreateDomainConfigurationRequest) GetAuthenticationtype() AuthenticationType {
-	if x != nil {
-		return x.Authenticationtype
+	if x != nil && x.Authenticationtype != nil {
+		return *x.Authenticationtype
 	}
 	return AuthenticationType_AUTHENTICATION_TYPE_AWS_X509
 }
@@ -12237,8 +12237,8 @@ func (x *CreateDomainConfigurationRequest) GetServercertificateconfig() *ServerC
 }
 
 func (x *CreateDomainConfigurationRequest) GetServicetype() ServiceType {
-	if x != nil {
-		return x.Servicetype
+	if x != nil && x.Servicetype != nil {
+		return *x.Servicetype
 	}
 	return ServiceType_SERVICE_TYPE_CREDENTIAL_PROVIDER
 }
@@ -12495,7 +12495,7 @@ type CreateFleetMetricRequest struct {
 	Querystring      string                 `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
 	Queryversion     *string                `protobuf:"bytes,11161566,opt,name=queryversion,proto3,oneof" json:"queryversion,omitempty"`
 	Tags             []*Tag                 `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
-	Unit             FleetMetricUnit        `protobuf:"varint,146086408,opt,name=unit,proto3,enum=iot.FleetMetricUnit" json:"unit,omitempty"`
+	Unit             *FleetMetricUnit       `protobuf:"varint,146086408,opt,name=unit,proto3,enum=iot.FleetMetricUnit,oneof" json:"unit,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -12594,8 +12594,8 @@ func (x *CreateFleetMetricRequest) GetTags() []*Tag {
 }
 
 func (x *CreateFleetMetricRequest) GetUnit() FleetMetricUnit {
-	if x != nil {
-		return x.Unit
+	if x != nil && x.Unit != nil {
+		return *x.Unit
 	}
 	return FleetMetricUnit_FLEET_METRIC_UNIT_KILOBITSSECOND
 }
@@ -12668,7 +12668,7 @@ type CreateJobRequest struct {
 	Presignedurlconfig         *PresignedUrlConfig         `protobuf:"bytes,376323594,opt,name=presignedurlconfig,proto3" json:"presignedurlconfig,omitempty"`
 	Schedulingconfig           *SchedulingConfig           `protobuf:"bytes,237787022,opt,name=schedulingconfig,proto3" json:"schedulingconfig,omitempty"`
 	Tags                       []*Tag                      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
-	Targetselection            TargetSelection             `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection" json:"targetselection,omitempty"`
+	Targetselection            *TargetSelection            `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection,oneof" json:"targetselection,omitempty"`
 	Targets                    []string                    `protobuf:"bytes,150369506,rep,name=targets,proto3" json:"targets,omitempty"`
 	Timeoutconfig              *TimeoutConfig              `protobuf:"bytes,83438887,opt,name=timeoutconfig,proto3" json:"timeoutconfig,omitempty"`
 	unknownFields              protoimpl.UnknownFields
@@ -12804,8 +12804,8 @@ func (x *CreateJobRequest) GetTags() []*Tag {
 }
 
 func (x *CreateJobRequest) GetTargetselection() TargetSelection {
-	if x != nil {
-		return x.Targetselection
+	if x != nil && x.Targetselection != nil {
+		return *x.Targetselection
 	}
 	return TargetSelection_TARGET_SELECTION_CONTINUOUS
 }
@@ -13321,7 +13321,7 @@ type CreateOTAUpdateRequest struct {
 	Protocols                     []Protocol                     `protobuf:"varint,100734643,rep,packed,name=protocols,proto3,enum=iot.Protocol" json:"protocols,omitempty"`
 	Rolearn                       string                         `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Tags                          []*Tag                         `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
-	Targetselection               TargetSelection                `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection" json:"targetselection,omitempty"`
+	Targetselection               *TargetSelection               `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection,oneof" json:"targetselection,omitempty"`
 	Targets                       []string                       `protobuf:"bytes,150369506,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -13435,8 +13435,8 @@ func (x *CreateOTAUpdateRequest) GetTags() []*Tag {
 }
 
 func (x *CreateOTAUpdateRequest) GetTargetselection() TargetSelection {
-	if x != nil {
-		return x.Targetselection
+	if x != nil && x.Targetselection != nil {
+		return *x.Targetselection
 	}
 	return TargetSelection_TARGET_SELECTION_CONTINUOUS
 }
@@ -13454,7 +13454,7 @@ type CreateOTAUpdateResponse struct {
 	Awsiotjobid     *string                `protobuf:"bytes,134742365,opt,name=awsiotjobid,proto3,oneof" json:"awsiotjobid,omitempty"`
 	Otaupdatearn    *string                `protobuf:"bytes,258238004,opt,name=otaupdatearn,proto3,oneof" json:"otaupdatearn,omitempty"`
 	Otaupdateid     *string                `protobuf:"bytes,284156338,opt,name=otaupdateid,proto3,oneof" json:"otaupdateid,omitempty"`
-	Otaupdatestatus OTAUpdateStatus        `protobuf:"varint,129588903,opt,name=otaupdatestatus,proto3,enum=iot.OTAUpdateStatus" json:"otaupdatestatus,omitempty"`
+	Otaupdatestatus *OTAUpdateStatus       `protobuf:"varint,129588903,opt,name=otaupdatestatus,proto3,enum=iot.OTAUpdateStatus,oneof" json:"otaupdatestatus,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -13518,8 +13518,8 @@ func (x *CreateOTAUpdateResponse) GetOtaupdateid() string {
 }
 
 func (x *CreateOTAUpdateResponse) GetOtaupdatestatus() OTAUpdateStatus {
-	if x != nil {
-		return x.Otaupdatestatus
+	if x != nil && x.Otaupdatestatus != nil {
+		return *x.Otaupdatestatus
 	}
 	return OTAUpdateStatus_O_T_A_UPDATE_STATUS_DELETE_FAILED
 }
@@ -13759,7 +13759,7 @@ type CreatePackageVersionResponse struct {
 	Errorreason       *string                `protobuf:"bytes,528861918,opt,name=errorreason,proto3,oneof" json:"errorreason,omitempty"`
 	Packagename       *string                `protobuf:"bytes,474490177,opt,name=packagename,proto3,oneof" json:"packagename,omitempty"`
 	Packageversionarn *string                `protobuf:"bytes,503725677,opt,name=packageversionarn,proto3,oneof" json:"packageversionarn,omitempty"`
-	Status            PackageVersionStatus   `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.PackageVersionStatus" json:"status,omitempty"`
+	Status            *PackageVersionStatus  `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.PackageVersionStatus,oneof" json:"status,omitempty"`
 	Versionname       *string                `protobuf:"bytes,508494709,opt,name=versionname,proto3,oneof" json:"versionname,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -13831,8 +13831,8 @@ func (x *CreatePackageVersionResponse) GetPackageversionarn() string {
 }
 
 func (x *CreatePackageVersionResponse) GetStatus() PackageVersionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return PackageVersionStatus_PACKAGE_VERSION_STATUS_PUBLISHED
 }
@@ -14221,7 +14221,7 @@ type CreateProvisioningTemplateRequest struct {
 	Tags                []*Tag                 `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
 	Templatebody        string                 `protobuf:"bytes,339554452,opt,name=templatebody,proto3" json:"templatebody,omitempty"`
 	Templatename        string                 `protobuf:"bytes,301901137,opt,name=templatename,proto3" json:"templatename,omitempty"`
-	Type                TemplateType           `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.TemplateType" json:"type,omitempty"`
+	Type                *TemplateType          `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.TemplateType,oneof" json:"type,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -14306,8 +14306,8 @@ func (x *CreateProvisioningTemplateRequest) GetTemplatename() string {
 }
 
 func (x *CreateProvisioningTemplateRequest) GetType() TemplateType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return TemplateType_TEMPLATE_TYPE_FLEET_PROVISIONING
 }
@@ -14623,7 +14623,7 @@ func (x *CreateRoleAliasResponse) GetRolealiasarn() string {
 type CreateScheduledAuditRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Dayofmonth         *string                `protobuf:"bytes,239383807,opt,name=dayofmonth,proto3,oneof" json:"dayofmonth,omitempty"`
-	Dayofweek          DayOfWeek              `protobuf:"varint,99137661,opt,name=dayofweek,proto3,enum=iot.DayOfWeek" json:"dayofweek,omitempty"`
+	Dayofweek          *DayOfWeek             `protobuf:"varint,99137661,opt,name=dayofweek,proto3,enum=iot.DayOfWeek,oneof" json:"dayofweek,omitempty"`
 	Frequency          AuditFrequency         `protobuf:"varint,263396354,opt,name=frequency,proto3,enum=iot.AuditFrequency" json:"frequency,omitempty"`
 	Scheduledauditname string                 `protobuf:"bytes,384331605,opt,name=scheduledauditname,proto3" json:"scheduledauditname,omitempty"`
 	Tags               []*Tag                 `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -14670,8 +14670,8 @@ func (x *CreateScheduledAuditRequest) GetDayofmonth() string {
 }
 
 func (x *CreateScheduledAuditRequest) GetDayofweek() DayOfWeek {
-	if x != nil {
-		return x.Dayofweek
+	if x != nil && x.Dayofweek != nil {
+		return *x.Dayofweek
 	}
 	return DayOfWeek_DAY_OF_WEEK_SUN
 }
@@ -18796,7 +18796,7 @@ type DescribeAuditMitigationActionsTaskResponse struct {
 	Starttime                  *string                                 `protobuf:"bytes,178154767,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	Target                     *AuditMitigationActionsTaskTarget       `protobuf:"bytes,308316233,opt,name=target,proto3" json:"target,omitempty"`
 	Taskstatistics             map[string]*TaskStatisticsForAuditCheck `protobuf:"bytes,7797856,rep,name=taskstatistics,proto3" json:"taskstatistics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Taskstatus                 AuditMitigationActionsTaskStatus        `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditMitigationActionsTaskStatus" json:"taskstatus,omitempty"`
+	Taskstatus                 *AuditMitigationActionsTaskStatus       `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditMitigationActionsTaskStatus,oneof" json:"taskstatus,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -18874,8 +18874,8 @@ func (x *DescribeAuditMitigationActionsTaskResponse) GetTaskstatistics() map[str
 }
 
 func (x *DescribeAuditMitigationActionsTaskResponse) GetTaskstatus() AuditMitigationActionsTaskStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return AuditMitigationActionsTaskStatus_AUDIT_MITIGATION_ACTIONS_TASK_STATUS_CANCELED
 }
@@ -19058,8 +19058,8 @@ type DescribeAuditTaskResponse struct {
 	Scheduledauditname *string                       `protobuf:"bytes,384331605,opt,name=scheduledauditname,proto3,oneof" json:"scheduledauditname,omitempty"`
 	Taskstarttime      *string                       `protobuf:"bytes,106092442,opt,name=taskstarttime,proto3,oneof" json:"taskstarttime,omitempty"`
 	Taskstatistics     *TaskStatistics               `protobuf:"bytes,7797856,opt,name=taskstatistics,proto3" json:"taskstatistics,omitempty"`
-	Taskstatus         AuditTaskStatus               `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditTaskStatus" json:"taskstatus,omitempty"`
-	Tasktype           AuditTaskType                 `protobuf:"varint,318747781,opt,name=tasktype,proto3,enum=iot.AuditTaskType" json:"tasktype,omitempty"`
+	Taskstatus         *AuditTaskStatus              `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditTaskStatus,oneof" json:"taskstatus,omitempty"`
+	Tasktype           *AuditTaskType                `protobuf:"varint,318747781,opt,name=tasktype,proto3,enum=iot.AuditTaskType,oneof" json:"tasktype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -19123,15 +19123,15 @@ func (x *DescribeAuditTaskResponse) GetTaskstatistics() *TaskStatistics {
 }
 
 func (x *DescribeAuditTaskResponse) GetTaskstatus() AuditTaskStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return AuditTaskStatus_AUDIT_TASK_STATUS_CANCELED
 }
 
 func (x *DescribeAuditTaskResponse) GetTasktype() AuditTaskType {
-	if x != nil {
-		return x.Tasktype
+	if x != nil && x.Tasktype != nil {
+		return *x.Tasktype
 	}
 	return AuditTaskType_AUDIT_TASK_TYPE_ON_DEMAND_AUDIT_TASK
 }
@@ -19715,7 +19715,7 @@ type DescribeCustomMetricResponse struct {
 	Lastmodifieddate *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Metricarn        *string                `protobuf:"bytes,465303433,opt,name=metricarn,proto3,oneof" json:"metricarn,omitempty"`
 	Metricname       *string                `protobuf:"bytes,204020635,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
-	Metrictype       CustomMetricType       `protobuf:"varint,39768938,opt,name=metrictype,proto3,enum=iot.CustomMetricType" json:"metrictype,omitempty"`
+	Metrictype       *CustomMetricType      `protobuf:"varint,39768938,opt,name=metrictype,proto3,enum=iot.CustomMetricType,oneof" json:"metrictype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -19786,8 +19786,8 @@ func (x *DescribeCustomMetricResponse) GetMetricname() string {
 }
 
 func (x *DescribeCustomMetricResponse) GetMetrictype() CustomMetricType {
-	if x != nil {
-		return x.Metrictype
+	if x != nil && x.Metrictype != nil {
+		return *x.Metrictype
 	}
 	return CustomMetricType_CUSTOM_METRIC_TYPE_IP_ADDRESS_LIST
 }
@@ -20011,7 +20011,7 @@ type DescribeDimensionResponse struct {
 	Lastmodifieddate *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Name             *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Stringvalues     []string               `protobuf:"bytes,236264239,rep,name=stringvalues,proto3" json:"stringvalues,omitempty"`
-	Type             DimensionType          `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.DimensionType" json:"type,omitempty"`
+	Type             *DimensionType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.DimensionType,oneof" json:"type,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -20082,8 +20082,8 @@ func (x *DescribeDimensionResponse) GetStringvalues() []string {
 }
 
 func (x *DescribeDimensionResponse) GetType() DimensionType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return DimensionType_DIMENSION_TYPE_TOPIC_FILTER
 }
@@ -20134,19 +20134,19 @@ func (x *DescribeDomainConfigurationRequest) GetDomainconfigurationname() string
 
 type DescribeDomainConfigurationResponse struct {
 	state                     protoimpl.MessageState      `protogen:"open.v1"`
-	Applicationprotocol       ApplicationProtocol         `protobuf:"varint,420413526,opt,name=applicationprotocol,proto3,enum=iot.ApplicationProtocol" json:"applicationprotocol,omitempty"`
-	Authenticationtype        AuthenticationType          `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=iot.AuthenticationType" json:"authenticationtype,omitempty"`
+	Applicationprotocol       *ApplicationProtocol        `protobuf:"varint,420413526,opt,name=applicationprotocol,proto3,enum=iot.ApplicationProtocol,oneof" json:"applicationprotocol,omitempty"`
+	Authenticationtype        *AuthenticationType         `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=iot.AuthenticationType,oneof" json:"authenticationtype,omitempty"`
 	Authorizerconfig          *AuthorizerConfig           `protobuf:"bytes,86904353,opt,name=authorizerconfig,proto3" json:"authorizerconfig,omitempty"`
 	Clientcertificateconfig   *ClientCertificateConfig    `protobuf:"bytes,287420460,opt,name=clientcertificateconfig,proto3" json:"clientcertificateconfig,omitempty"`
 	Domainconfigurationarn    *string                     `protobuf:"bytes,95043717,opt,name=domainconfigurationarn,proto3,oneof" json:"domainconfigurationarn,omitempty"`
 	Domainconfigurationname   *string                     `protobuf:"bytes,280194767,opt,name=domainconfigurationname,proto3,oneof" json:"domainconfigurationname,omitempty"`
-	Domainconfigurationstatus DomainConfigurationStatus   `protobuf:"varint,60627256,opt,name=domainconfigurationstatus,proto3,enum=iot.DomainConfigurationStatus" json:"domainconfigurationstatus,omitempty"`
+	Domainconfigurationstatus *DomainConfigurationStatus  `protobuf:"varint,60627256,opt,name=domainconfigurationstatus,proto3,enum=iot.DomainConfigurationStatus,oneof" json:"domainconfigurationstatus,omitempty"`
 	Domainname                *string                     `protobuf:"bytes,390326667,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
-	Domaintype                DomainType                  `protobuf:"varint,149987002,opt,name=domaintype,proto3,enum=iot.DomainType" json:"domaintype,omitempty"`
+	Domaintype                *DomainType                 `protobuf:"varint,149987002,opt,name=domaintype,proto3,enum=iot.DomainType,oneof" json:"domaintype,omitempty"`
 	Laststatuschangedate      *string                     `protobuf:"bytes,210467132,opt,name=laststatuschangedate,proto3,oneof" json:"laststatuschangedate,omitempty"`
 	Servercertificateconfig   *ServerCertificateConfig    `protobuf:"bytes,115239696,opt,name=servercertificateconfig,proto3" json:"servercertificateconfig,omitempty"`
 	Servercertificates        []*ServerCertificateSummary `protobuf:"bytes,372126347,rep,name=servercertificates,proto3" json:"servercertificates,omitempty"`
-	Servicetype               ServiceType                 `protobuf:"varint,232238413,opt,name=servicetype,proto3,enum=iot.ServiceType" json:"servicetype,omitempty"`
+	Servicetype               *ServiceType                `protobuf:"varint,232238413,opt,name=servicetype,proto3,enum=iot.ServiceType,oneof" json:"servicetype,omitempty"`
 	Tlsconfig                 *TlsConfig                  `protobuf:"bytes,108946693,opt,name=tlsconfig,proto3" json:"tlsconfig,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -20183,15 +20183,15 @@ func (*DescribeDomainConfigurationResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDomainConfigurationResponse) GetApplicationprotocol() ApplicationProtocol {
-	if x != nil {
-		return x.Applicationprotocol
+	if x != nil && x.Applicationprotocol != nil {
+		return *x.Applicationprotocol
 	}
 	return ApplicationProtocol_APPLICATION_PROTOCOL_MQTT_WSS
 }
 
 func (x *DescribeDomainConfigurationResponse) GetAuthenticationtype() AuthenticationType {
-	if x != nil {
-		return x.Authenticationtype
+	if x != nil && x.Authenticationtype != nil {
+		return *x.Authenticationtype
 	}
 	return AuthenticationType_AUTHENTICATION_TYPE_AWS_X509
 }
@@ -20225,8 +20225,8 @@ func (x *DescribeDomainConfigurationResponse) GetDomainconfigurationname() strin
 }
 
 func (x *DescribeDomainConfigurationResponse) GetDomainconfigurationstatus() DomainConfigurationStatus {
-	if x != nil {
-		return x.Domainconfigurationstatus
+	if x != nil && x.Domainconfigurationstatus != nil {
+		return *x.Domainconfigurationstatus
 	}
 	return DomainConfigurationStatus_DOMAIN_CONFIGURATION_STATUS_DISABLED
 }
@@ -20239,8 +20239,8 @@ func (x *DescribeDomainConfigurationResponse) GetDomainname() string {
 }
 
 func (x *DescribeDomainConfigurationResponse) GetDomaintype() DomainType {
-	if x != nil {
-		return x.Domaintype
+	if x != nil && x.Domaintype != nil {
+		return *x.Domaintype
 	}
 	return DomainType_DOMAIN_TYPE_AWS_MANAGED
 }
@@ -20267,8 +20267,8 @@ func (x *DescribeDomainConfigurationResponse) GetServercertificates() []*ServerC
 }
 
 func (x *DescribeDomainConfigurationResponse) GetServicetype() ServiceType {
-	if x != nil {
-		return x.Servicetype
+	if x != nil && x.Servicetype != nil {
+		return *x.Servicetype
 	}
 	return ServiceType_SERVICE_TYPE_CREDENTIAL_PROVIDER
 }
@@ -20319,7 +20319,7 @@ func (*DescribeEncryptionConfigurationRequest) Descriptor() ([]byte, []int) {
 type DescribeEncryptionConfigurationResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Configurationdetails *ConfigurationDetails  `protobuf:"bytes,406779458,opt,name=configurationdetails,proto3" json:"configurationdetails,omitempty"`
-	Encryptiontype       EncryptionType         `protobuf:"varint,113239253,opt,name=encryptiontype,proto3,enum=iot.EncryptionType" json:"encryptiontype,omitempty"`
+	Encryptiontype       *EncryptionType        `protobuf:"varint,113239253,opt,name=encryptiontype,proto3,enum=iot.EncryptionType,oneof" json:"encryptiontype,omitempty"`
 	Kmsaccessrolearn     *string                `protobuf:"bytes,260591204,opt,name=kmsaccessrolearn,proto3,oneof" json:"kmsaccessrolearn,omitempty"`
 	Kmskeyarn            *string                `protobuf:"bytes,341492497,opt,name=kmskeyarn,proto3,oneof" json:"kmskeyarn,omitempty"`
 	Lastmodifieddate     *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
@@ -20365,8 +20365,8 @@ func (x *DescribeEncryptionConfigurationResponse) GetConfigurationdetails() *Con
 }
 
 func (x *DescribeEncryptionConfigurationResponse) GetEncryptiontype() EncryptionType {
-	if x != nil {
-		return x.Encryptiontype
+	if x != nil && x.Encryptiontype != nil {
+		return *x.Encryptiontype
 	}
 	return EncryptionType_ENCRYPTION_TYPE_CUSTOMER_MANAGED_KMS_KEY
 }
@@ -20633,7 +20633,7 @@ type DescribeFleetMetricResponse struct {
 	Period           *int32                 `protobuf:"varint,432621317,opt,name=period,proto3,oneof" json:"period,omitempty"`
 	Querystring      *string                `protobuf:"bytes,520568967,opt,name=querystring,proto3,oneof" json:"querystring,omitempty"`
 	Queryversion     *string                `protobuf:"bytes,11161566,opt,name=queryversion,proto3,oneof" json:"queryversion,omitempty"`
-	Unit             FleetMetricUnit        `protobuf:"varint,146086408,opt,name=unit,proto3,enum=iot.FleetMetricUnit" json:"unit,omitempty"`
+	Unit             *FleetMetricUnit       `protobuf:"varint,146086408,opt,name=unit,proto3,enum=iot.FleetMetricUnit,oneof" json:"unit,omitempty"`
 	Version          *int64                 `protobuf:"varint,108113560,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -20747,8 +20747,8 @@ func (x *DescribeFleetMetricResponse) GetQueryversion() string {
 }
 
 func (x *DescribeFleetMetricResponse) GetUnit() FleetMetricUnit {
-	if x != nil {
-		return x.Unit
+	if x != nil && x.Unit != nil {
+		return *x.Unit
 	}
 	return FleetMetricUnit_FLEET_METRIC_UNIT_KILOBITSSECOND
 }
@@ -20807,7 +20807,7 @@ func (x *DescribeIndexRequest) GetIndexname() string {
 type DescribeIndexResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Indexname     *string                `protobuf:"bytes,280883889,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
-	Indexstatus   IndexStatus            `protobuf:"varint,5670014,opt,name=indexstatus,proto3,enum=iot.IndexStatus" json:"indexstatus,omitempty"`
+	Indexstatus   *IndexStatus           `protobuf:"varint,5670014,opt,name=indexstatus,proto3,enum=iot.IndexStatus,oneof" json:"indexstatus,omitempty"`
 	Schema        *string                `protobuf:"bytes,310182711,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -20851,8 +20851,8 @@ func (x *DescribeIndexResponse) GetIndexname() string {
 }
 
 func (x *DescribeIndexResponse) GetIndexstatus() IndexStatus {
-	if x != nil {
-		return x.Indexstatus
+	if x != nil && x.Indexstatus != nil {
+		return *x.Indexstatus
 	}
 	return IndexStatus_INDEX_STATUS_BUILDING
 }
@@ -21450,7 +21450,7 @@ type DescribeMitigationActionResponse struct {
 	Actionid         *string                 `protobuf:"bytes,281444883,opt,name=actionid,proto3,oneof" json:"actionid,omitempty"`
 	Actionname       *string                 `protobuf:"bytes,111062493,opt,name=actionname,proto3,oneof" json:"actionname,omitempty"`
 	Actionparams     *MitigationActionParams `protobuf:"bytes,111951182,opt,name=actionparams,proto3" json:"actionparams,omitempty"`
-	Actiontype       MitigationActionType    `protobuf:"varint,315213608,opt,name=actiontype,proto3,enum=iot.MitigationActionType" json:"actiontype,omitempty"`
+	Actiontype       *MitigationActionType   `protobuf:"varint,315213608,opt,name=actiontype,proto3,enum=iot.MitigationActionType,oneof" json:"actiontype,omitempty"`
 	Creationdate     *string                 `protobuf:"bytes,238315265,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
 	Lastmodifieddate *string                 `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Rolearn          *string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
@@ -21517,8 +21517,8 @@ func (x *DescribeMitigationActionResponse) GetActionparams() *MitigationActionPa
 }
 
 func (x *DescribeMitigationActionResponse) GetActiontype() MitigationActionType {
-	if x != nil {
-		return x.Actiontype
+	if x != nil && x.Actiontype != nil {
+		return *x.Actiontype
 	}
 	return MitigationActionType_MITIGATION_ACTION_TYPE_ADD_THINGS_TO_THING_GROUP
 }
@@ -21600,7 +21600,7 @@ type DescribeProvisioningTemplateResponse struct {
 	Templatearn         *string                `protobuf:"bytes,290623807,opt,name=templatearn,proto3,oneof" json:"templatearn,omitempty"`
 	Templatebody        *string                `protobuf:"bytes,339554452,opt,name=templatebody,proto3,oneof" json:"templatebody,omitempty"`
 	Templatename        *string                `protobuf:"bytes,301901137,opt,name=templatename,proto3,oneof" json:"templatename,omitempty"`
-	Type                TemplateType           `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.TemplateType" json:"type,omitempty"`
+	Type                *TemplateType          `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.TemplateType,oneof" json:"type,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -21706,8 +21706,8 @@ func (x *DescribeProvisioningTemplateResponse) GetTemplatename() string {
 }
 
 func (x *DescribeProvisioningTemplateResponse) GetType() TemplateType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return TemplateType_TEMPLATE_TYPE_FLEET_PROVISIONING
 }
@@ -21967,8 +21967,8 @@ func (x *DescribeScheduledAuditRequest) GetScheduledauditname() string {
 type DescribeScheduledAuditResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Dayofmonth         *string                `protobuf:"bytes,239383807,opt,name=dayofmonth,proto3,oneof" json:"dayofmonth,omitempty"`
-	Dayofweek          DayOfWeek              `protobuf:"varint,99137661,opt,name=dayofweek,proto3,enum=iot.DayOfWeek" json:"dayofweek,omitempty"`
-	Frequency          AuditFrequency         `protobuf:"varint,263396354,opt,name=frequency,proto3,enum=iot.AuditFrequency" json:"frequency,omitempty"`
+	Dayofweek          *DayOfWeek             `protobuf:"varint,99137661,opt,name=dayofweek,proto3,enum=iot.DayOfWeek,oneof" json:"dayofweek,omitempty"`
+	Frequency          *AuditFrequency        `protobuf:"varint,263396354,opt,name=frequency,proto3,enum=iot.AuditFrequency,oneof" json:"frequency,omitempty"`
 	Scheduledauditarn  *string                `protobuf:"bytes,244234715,opt,name=scheduledauditarn,proto3,oneof" json:"scheduledauditarn,omitempty"`
 	Scheduledauditname *string                `protobuf:"bytes,384331605,opt,name=scheduledauditname,proto3,oneof" json:"scheduledauditname,omitempty"`
 	Targetchecknames   []string               `protobuf:"bytes,469955521,rep,name=targetchecknames,proto3" json:"targetchecknames,omitempty"`
@@ -22014,15 +22014,15 @@ func (x *DescribeScheduledAuditResponse) GetDayofmonth() string {
 }
 
 func (x *DescribeScheduledAuditResponse) GetDayofweek() DayOfWeek {
-	if x != nil {
-		return x.Dayofweek
+	if x != nil && x.Dayofweek != nil {
+		return *x.Dayofweek
 	}
 	return DayOfWeek_DAY_OF_WEEK_SUN
 }
 
 func (x *DescribeScheduledAuditResponse) GetFrequency() AuditFrequency {
-	if x != nil {
-		return x.Frequency
+	if x != nil && x.Frequency != nil {
+		return *x.Frequency
 	}
 	return AuditFrequency_AUDIT_FREQUENCY_BIWEEKLY
 }
@@ -22353,7 +22353,7 @@ type DescribeThingGroupResponse struct {
 	Indexname            *string                `protobuf:"bytes,280883889,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
 	Querystring          *string                `protobuf:"bytes,520568967,opt,name=querystring,proto3,oneof" json:"querystring,omitempty"`
 	Queryversion         *string                `protobuf:"bytes,11161566,opt,name=queryversion,proto3,oneof" json:"queryversion,omitempty"`
-	Status               DynamicGroupStatus     `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.DynamicGroupStatus" json:"status,omitempty"`
+	Status               *DynamicGroupStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.DynamicGroupStatus,oneof" json:"status,omitempty"`
 	Thinggrouparn        *string                `protobuf:"bytes,350650610,opt,name=thinggrouparn,proto3,oneof" json:"thinggrouparn,omitempty"`
 	Thinggroupid         *string                `protobuf:"bytes,331425484,opt,name=thinggroupid,proto3,oneof" json:"thinggroupid,omitempty"`
 	Thinggroupmetadata   *ThingGroupMetadata    `protobuf:"bytes,175746772,opt,name=thinggroupmetadata,proto3" json:"thinggroupmetadata,omitempty"`
@@ -22416,8 +22416,8 @@ func (x *DescribeThingGroupResponse) GetQueryversion() string {
 }
 
 func (x *DescribeThingGroupResponse) GetStatus() DynamicGroupStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DynamicGroupStatus_DYNAMIC_GROUP_STATUS_BUILDING
 }
@@ -22518,7 +22518,7 @@ type DescribeThingRegistrationTaskResponse struct {
 	Message            *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Percentageprogress *int32                 `protobuf:"varint,356534519,opt,name=percentageprogress,proto3,oneof" json:"percentageprogress,omitempty"`
 	Rolearn            *string                `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
-	Status             Status                 `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.Status" json:"status,omitempty"`
+	Status             *Status                `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.Status,oneof" json:"status,omitempty"`
 	Successcount       *int32                 `protobuf:"varint,466832416,opt,name=successcount,proto3,oneof" json:"successcount,omitempty"`
 	Taskid             *string                `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
 	Templatebody       *string                `protobuf:"bytes,339554452,opt,name=templatebody,proto3,oneof" json:"templatebody,omitempty"`
@@ -22613,8 +22613,8 @@ func (x *DescribeThingRegistrationTaskResponse) GetRolearn() string {
 }
 
 func (x *DescribeThingRegistrationTaskResponse) GetStatus() Status {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return Status_STATUS_FAILED
 }
@@ -23229,16 +23229,16 @@ func (*DetachThingPrincipalResponse) Descriptor() ([]byte, []int) {
 }
 
 type DetectMitigationActionExecution struct {
-	state              protoimpl.MessageState                `protogen:"open.v1"`
-	Actionname         *string                               `protobuf:"bytes,111062493,opt,name=actionname,proto3,oneof" json:"actionname,omitempty"`
-	Errorcode          *string                               `protobuf:"bytes,355916985,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
-	Executionenddate   *string                               `protobuf:"bytes,17398751,opt,name=executionenddate,proto3,oneof" json:"executionenddate,omitempty"`
-	Executionstartdate *string                               `protobuf:"bytes,193691980,opt,name=executionstartdate,proto3,oneof" json:"executionstartdate,omitempty"`
-	Message            *string                               `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
-	Status             DetectMitigationActionExecutionStatus `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.DetectMitigationActionExecutionStatus" json:"status,omitempty"`
-	Taskid             *string                               `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
-	Thingname          *string                               `protobuf:"bytes,526020141,opt,name=thingname,proto3,oneof" json:"thingname,omitempty"`
-	Violationid        *string                               `protobuf:"bytes,273917670,opt,name=violationid,proto3,oneof" json:"violationid,omitempty"`
+	state              protoimpl.MessageState                 `protogen:"open.v1"`
+	Actionname         *string                                `protobuf:"bytes,111062493,opt,name=actionname,proto3,oneof" json:"actionname,omitempty"`
+	Errorcode          *string                                `protobuf:"bytes,355916985,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
+	Executionenddate   *string                                `protobuf:"bytes,17398751,opt,name=executionenddate,proto3,oneof" json:"executionenddate,omitempty"`
+	Executionstartdate *string                                `protobuf:"bytes,193691980,opt,name=executionstartdate,proto3,oneof" json:"executionstartdate,omitempty"`
+	Message            *string                                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Status             *DetectMitigationActionExecutionStatus `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.DetectMitigationActionExecutionStatus,oneof" json:"status,omitempty"`
+	Taskid             *string                                `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
+	Thingname          *string                                `protobuf:"bytes,526020141,opt,name=thingname,proto3,oneof" json:"thingname,omitempty"`
+	Violationid        *string                                `protobuf:"bytes,273917670,opt,name=violationid,proto3,oneof" json:"violationid,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -23309,8 +23309,8 @@ func (x *DetectMitigationActionExecution) GetMessage() string {
 }
 
 func (x *DetectMitigationActionExecution) GetStatus() DetectMitigationActionExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DetectMitigationActionExecutionStatus_DETECT_MITIGATION_ACTION_EXECUTION_STATUS_SUCCESSFUL
 }
@@ -23406,7 +23406,7 @@ type DetectMitigationActionsTaskSummary struct {
 	Taskid                        *string                                `protobuf:"bytes,216769858,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
 	Taskstarttime                 *string                                `protobuf:"bytes,106092442,opt,name=taskstarttime,proto3,oneof" json:"taskstarttime,omitempty"`
 	Taskstatistics                *DetectMitigationActionsTaskStatistics `protobuf:"bytes,7797856,opt,name=taskstatistics,proto3" json:"taskstatistics,omitempty"`
-	Taskstatus                    DetectMitigationActionsTaskStatus      `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.DetectMitigationActionsTaskStatus" json:"taskstatus,omitempty"`
+	Taskstatus                    *DetectMitigationActionsTaskStatus     `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.DetectMitigationActionsTaskStatus,oneof" json:"taskstatus,omitempty"`
 	Violationeventoccurrencerange *ViolationEventOccurrenceRange         `protobuf:"bytes,179026603,opt,name=violationeventoccurrencerange,proto3" json:"violationeventoccurrencerange,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -23499,8 +23499,8 @@ func (x *DetectMitigationActionsTaskSummary) GetTaskstatistics() *DetectMitigati
 }
 
 func (x *DetectMitigationActionsTaskSummary) GetTaskstatus() DetectMitigationActionsTaskStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return DetectMitigationActionsTaskStatus_DETECT_MITIGATION_ACTIONS_TASK_STATUS_CANCELED
 }
@@ -23792,7 +23792,7 @@ type DomainConfigurationSummary struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Domainconfigurationarn  *string                `protobuf:"bytes,95043717,opt,name=domainconfigurationarn,proto3,oneof" json:"domainconfigurationarn,omitempty"`
 	Domainconfigurationname *string                `protobuf:"bytes,280194767,opt,name=domainconfigurationname,proto3,oneof" json:"domainconfigurationname,omitempty"`
-	Servicetype             ServiceType            `protobuf:"varint,232238413,opt,name=servicetype,proto3,enum=iot.ServiceType" json:"servicetype,omitempty"`
+	Servicetype             *ServiceType           `protobuf:"varint,232238413,opt,name=servicetype,proto3,enum=iot.ServiceType,oneof" json:"servicetype,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -23842,8 +23842,8 @@ func (x *DomainConfigurationSummary) GetDomainconfigurationname() string {
 }
 
 func (x *DomainConfigurationSummary) GetServicetype() ServiceType {
-	if x != nil {
-		return x.Servicetype
+	if x != nil && x.Servicetype != nil {
+		return *x.Servicetype
 	}
 	return ServiceType_SERVICE_TYPE_CREDENTIAL_PROVIDER
 }
@@ -23851,12 +23851,12 @@ func (x *DomainConfigurationSummary) GetServicetype() ServiceType {
 type DynamoDBAction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Hashkeyfield  string                 `protobuf:"bytes,420736853,opt,name=hashkeyfield,proto3" json:"hashkeyfield,omitempty"`
-	Hashkeytype   DynamoKeyType          `protobuf:"varint,22277137,opt,name=hashkeytype,proto3,enum=iot.DynamoKeyType" json:"hashkeytype,omitempty"`
+	Hashkeytype   *DynamoKeyType         `protobuf:"varint,22277137,opt,name=hashkeytype,proto3,enum=iot.DynamoKeyType,oneof" json:"hashkeytype,omitempty"`
 	Hashkeyvalue  string                 `protobuf:"bytes,346377066,opt,name=hashkeyvalue,proto3" json:"hashkeyvalue,omitempty"`
 	Operation     *string                `protobuf:"bytes,322863367,opt,name=operation,proto3,oneof" json:"operation,omitempty"`
 	Payloadfield  *string                `protobuf:"bytes,205318440,opt,name=payloadfield,proto3,oneof" json:"payloadfield,omitempty"`
 	Rangekeyfield *string                `protobuf:"bytes,185223092,opt,name=rangekeyfield,proto3,oneof" json:"rangekeyfield,omitempty"`
-	Rangekeytype  DynamoKeyType          `protobuf:"varint,22975218,opt,name=rangekeytype,proto3,enum=iot.DynamoKeyType" json:"rangekeytype,omitempty"`
+	Rangekeytype  *DynamoKeyType         `protobuf:"varint,22975218,opt,name=rangekeytype,proto3,enum=iot.DynamoKeyType,oneof" json:"rangekeytype,omitempty"`
 	Rangekeyvalue *string                `protobuf:"bytes,125774727,opt,name=rangekeyvalue,proto3,oneof" json:"rangekeyvalue,omitempty"`
 	Rolearn       string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Tablename     string                 `protobuf:"bytes,299343869,opt,name=tablename,proto3" json:"tablename,omitempty"`
@@ -23902,8 +23902,8 @@ func (x *DynamoDBAction) GetHashkeyfield() string {
 }
 
 func (x *DynamoDBAction) GetHashkeytype() DynamoKeyType {
-	if x != nil {
-		return x.Hashkeytype
+	if x != nil && x.Hashkeytype != nil {
+		return *x.Hashkeytype
 	}
 	return DynamoKeyType_DYNAMO_KEY_TYPE_STRING
 }
@@ -23937,8 +23937,8 @@ func (x *DynamoDBAction) GetRangekeyfield() string {
 }
 
 func (x *DynamoDBAction) GetRangekeytype() DynamoKeyType {
-	if x != nil {
-		return x.Rangekeytype
+	if x != nil && x.Rangekeytype != nil {
+		return *x.Rangekeytype
 	}
 	return DynamoKeyType_DYNAMO_KEY_TYPE_STRING
 }
@@ -24407,7 +24407,7 @@ func (x *ExponentialRolloutRate) GetRateincreasecriteria() *RateIncreaseCriteria
 type Field struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Type          FieldType              `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.FieldType" json:"type,omitempty"`
+	Type          *FieldType             `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.FieldType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24450,8 +24450,8 @@ func (x *Field) GetName() string {
 }
 
 func (x *Field) GetType() FieldType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return FieldType_FIELD_TYPE_STRING
 }
@@ -24631,7 +24631,7 @@ func (x *FleetMetricNameAndArn) GetMetricname() string {
 type GeoLocationTarget struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Order         TargetFieldOrder       `protobuf:"varint,321654936,opt,name=order,proto3,enum=iot.TargetFieldOrder" json:"order,omitempty"`
+	Order         *TargetFieldOrder      `protobuf:"varint,321654936,opt,name=order,proto3,enum=iot.TargetFieldOrder,oneof" json:"order,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -24674,8 +24674,8 @@ func (x *GeoLocationTarget) GetName() string {
 }
 
 func (x *GeoLocationTarget) GetOrder() TargetFieldOrder {
-	if x != nil {
-		return x.Order
+	if x != nil && x.Order != nil {
+		return *x.Order
 	}
 	return TargetFieldOrder_TARGET_FIELD_ORDER_LATLON
 }
@@ -25103,7 +25103,7 @@ type GetCommandExecutionResponse struct {
 	Parameters              map[string]*CommandParameterValue  `protobuf:"bytes,145043162,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Result                  map[string]*CommandExecutionResult `protobuf:"bytes,171406885,rep,name=result,proto3" json:"result,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Startedat               *string                            `protobuf:"bytes,405642876,opt,name=startedat,proto3,oneof" json:"startedat,omitempty"`
-	Status                  CommandExecutionStatus             `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CommandExecutionStatus" json:"status,omitempty"`
+	Status                  *CommandExecutionStatus            `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CommandExecutionStatus,oneof" json:"status,omitempty"`
 	Statusreason            *StatusReason                      `protobuf:"bytes,352592412,opt,name=statusreason,proto3" json:"statusreason,omitempty"`
 	Targetarn               *string                            `protobuf:"bytes,367964720,opt,name=targetarn,proto3,oneof" json:"targetarn,omitempty"`
 	Timetolive              *string                            `protobuf:"bytes,318112728,opt,name=timetolive,proto3,oneof" json:"timetolive,omitempty"`
@@ -25205,8 +25205,8 @@ func (x *GetCommandExecutionResponse) GetStartedat() string {
 }
 
 func (x *GetCommandExecutionResponse) GetStatus() CommandExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CommandExecutionStatus_COMMAND_EXECUTION_STATUS_TIMED_OUT
 }
@@ -25286,7 +25286,7 @@ type GetCommandResponse struct {
 	Displayname         *string                `protobuf:"bytes,268527191,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
 	Lastupdatedat       *string                `protobuf:"bytes,2052226,opt,name=lastupdatedat,proto3,oneof" json:"lastupdatedat,omitempty"`
 	Mandatoryparameters []*CommandParameter    `protobuf:"bytes,188477117,rep,name=mandatoryparameters,proto3" json:"mandatoryparameters,omitempty"`
-	Namespace           CommandNamespace       `protobuf:"varint,181303969,opt,name=namespace,proto3,enum=iot.CommandNamespace" json:"namespace,omitempty"`
+	Namespace           *CommandNamespace      `protobuf:"varint,181303969,opt,name=namespace,proto3,enum=iot.CommandNamespace,oneof" json:"namespace,omitempty"`
 	Payload             *CommandPayload        `protobuf:"bytes,319780774,opt,name=payload,proto3" json:"payload,omitempty"`
 	Payloadtemplate     *string                `protobuf:"bytes,93065676,opt,name=payloadtemplate,proto3,oneof" json:"payloadtemplate,omitempty"`
 	Pendingdeletion     *bool                  `protobuf:"varint,124227855,opt,name=pendingdeletion,proto3,oneof" json:"pendingdeletion,omitempty"`
@@ -25383,8 +25383,8 @@ func (x *GetCommandResponse) GetMandatoryparameters() []*CommandParameter {
 }
 
 func (x *GetCommandResponse) GetNamespace() CommandNamespace {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return CommandNamespace_COMMAND_NAMESPACE_AWSIOT
 }
@@ -25750,7 +25750,7 @@ func (*GetLoggingOptionsRequest) Descriptor() ([]byte, []int) {
 
 type GetLoggingOptionsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Loglevel      LogLevel               `protobuf:"varint,98610074,opt,name=loglevel,proto3,enum=iot.LogLevel" json:"loglevel,omitempty"`
+	Loglevel      *LogLevel              `protobuf:"varint,98610074,opt,name=loglevel,proto3,enum=iot.LogLevel,oneof" json:"loglevel,omitempty"`
 	Rolearn       *string                `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -25787,8 +25787,8 @@ func (*GetLoggingOptionsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetLoggingOptionsResponse) GetLoglevel() LogLevel {
-	if x != nil {
-		return x.Loglevel
+	if x != nil && x.Loglevel != nil {
+		return *x.Loglevel
 	}
 	return LogLevel_LOG_LEVEL_DISABLED
 }
@@ -26160,8 +26160,8 @@ type GetPackageVersionResponse struct {
 	Packageversionarn    *string                 `protobuf:"bytes,503725677,opt,name=packageversionarn,proto3,oneof" json:"packageversionarn,omitempty"`
 	Recipe               *string                 `protobuf:"bytes,209622992,opt,name=recipe,proto3,oneof" json:"recipe,omitempty"`
 	Sbom                 *Sbom                   `protobuf:"bytes,522734353,opt,name=sbom,proto3" json:"sbom,omitempty"`
-	Sbomvalidationstatus SbomValidationStatus    `protobuf:"varint,502368374,opt,name=sbomvalidationstatus,proto3,enum=iot.SbomValidationStatus" json:"sbomvalidationstatus,omitempty"`
-	Status               PackageVersionStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.PackageVersionStatus" json:"status,omitempty"`
+	Sbomvalidationstatus *SbomValidationStatus   `protobuf:"varint,502368374,opt,name=sbomvalidationstatus,proto3,enum=iot.SbomValidationStatus,oneof" json:"sbomvalidationstatus,omitempty"`
+	Status               *PackageVersionStatus   `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.PackageVersionStatus,oneof" json:"status,omitempty"`
 	Versionname          *string                 `protobuf:"bytes,508494709,opt,name=versionname,proto3,oneof" json:"versionname,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -26268,15 +26268,15 @@ func (x *GetPackageVersionResponse) GetSbom() *Sbom {
 }
 
 func (x *GetPackageVersionResponse) GetSbomvalidationstatus() SbomValidationStatus {
-	if x != nil {
-		return x.Sbomvalidationstatus
+	if x != nil && x.Sbomvalidationstatus != nil {
+		return *x.Sbomvalidationstatus
 	}
 	return SbomValidationStatus_SBOM_VALIDATION_STATUS_IN_PROGRESS
 }
 
 func (x *GetPackageVersionResponse) GetStatus() PackageVersionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return PackageVersionStatus_PACKAGE_VERSION_STATUS_PUBLISHED
 }
@@ -26945,7 +26945,7 @@ type GetThingConnectivityDataResponse struct {
 	Cleansession      *bool                  `protobuf:"varint,498517171,opt,name=cleansession,proto3,oneof" json:"cleansession,omitempty"`
 	Clientid          *string                `protobuf:"bytes,5306436,opt,name=clientid,proto3,oneof" json:"clientid,omitempty"`
 	Connected         *bool                  `protobuf:"varint,351196369,opt,name=connected,proto3,oneof" json:"connected,omitempty"`
-	Disconnectreason  DisconnectReasonValue  `protobuf:"varint,71375216,opt,name=disconnectreason,proto3,enum=iot.DisconnectReasonValue" json:"disconnectreason,omitempty"`
+	Disconnectreason  *DisconnectReasonValue `protobuf:"varint,71375216,opt,name=disconnectreason,proto3,enum=iot.DisconnectReasonValue,oneof" json:"disconnectreason,omitempty"`
 	Keepaliveduration *int32                 `protobuf:"varint,104990410,opt,name=keepaliveduration,proto3,oneof" json:"keepaliveduration,omitempty"`
 	Sessionexpiry     *int64                 `protobuf:"varint,332376101,opt,name=sessionexpiry,proto3,oneof" json:"sessionexpiry,omitempty"`
 	Sourceip          *string                `protobuf:"bytes,183045450,opt,name=sourceip,proto3,oneof" json:"sourceip,omitempty"`
@@ -27011,8 +27011,8 @@ func (x *GetThingConnectivityDataResponse) GetConnected() bool {
 }
 
 func (x *GetThingConnectivityDataResponse) GetDisconnectreason() DisconnectReasonValue {
-	if x != nil {
-		return x.Disconnectreason
+	if x != nil && x.Disconnectreason != nil {
+		return *x.Disconnectreason
 	}
 	return DisconnectReasonValue_DISCONNECT_REASON_VALUE_MQTT_KEEP_ALIVE_TIMEOUT
 }
@@ -27310,7 +27310,7 @@ func (x *GetV2LoggingOptionsRequest) GetVerbose() bool {
 
 type GetV2LoggingOptionsResponse struct {
 	state               protoimpl.MessageState   `protogen:"open.v1"`
-	Defaultloglevel     LogLevel                 `protobuf:"varint,200142155,opt,name=defaultloglevel,proto3,enum=iot.LogLevel" json:"defaultloglevel,omitempty"`
+	Defaultloglevel     *LogLevel                `protobuf:"varint,200142155,opt,name=defaultloglevel,proto3,enum=iot.LogLevel,oneof" json:"defaultloglevel,omitempty"`
 	Disablealllogs      *bool                    `protobuf:"varint,205646942,opt,name=disablealllogs,proto3,oneof" json:"disablealllogs,omitempty"`
 	Eventconfigurations []*LogEventConfiguration `protobuf:"bytes,151393605,rep,name=eventconfigurations,proto3" json:"eventconfigurations,omitempty"`
 	Rolearn             *string                  `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
@@ -27349,8 +27349,8 @@ func (*GetV2LoggingOptionsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetV2LoggingOptionsResponse) GetDefaultloglevel() LogLevel {
-	if x != nil {
-		return x.Defaultloglevel
+	if x != nil && x.Defaultloglevel != nil {
+		return *x.Defaultloglevel
 	}
 	return LogLevel_LOG_LEVEL_DISABLED
 }
@@ -27949,7 +27949,7 @@ type InfluxDBAction struct {
 	Rolearn        string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Tablename      string                 `protobuf:"bytes,299343869,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	Tags           map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Timestampunit  InfluxDBTimestampUnit  `protobuf:"varint,377781530,opt,name=timestampunit,proto3,enum=iot.InfluxDBTimestampUnit" json:"timestampunit,omitempty"`
+	Timestampunit  *InfluxDBTimestampUnit `protobuf:"varint,377781530,opt,name=timestampunit,proto3,enum=iot.InfluxDBTimestampUnit,oneof" json:"timestampunit,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -28034,8 +28034,8 @@ func (x *InfluxDBAction) GetTags() map[string]string {
 }
 
 func (x *InfluxDBAction) GetTimestampunit() InfluxDBTimestampUnit {
-	if x != nil {
-		return x.Timestampunit
+	if x != nil && x.Timestampunit != nil {
+		return *x.Timestampunit
 	}
 	return InfluxDBTimestampUnit_INFLUX_D_B_TIMESTAMP_UNIT_MILLISECONDS
 }
@@ -28114,7 +28114,7 @@ type InfluxDBDestinationConfiguration struct {
 	Influxdbversion InfluxDBVersion        `protobuf:"varint,482434050,opt,name=influxdbversion,proto3,enum=iot.InfluxDBVersion" json:"influxdbversion,omitempty"`
 	Secretid        string                 `protobuf:"bytes,434881157,opt,name=secretid,proto3" json:"secretid,omitempty"`
 	Secretkey       *string                `protobuf:"bytes,474034745,opt,name=secretkey,proto3,oneof" json:"secretkey,omitempty"`
-	Secrettype      InfluxDBSecretType     `protobuf:"varint,63487002,opt,name=secrettype,proto3,enum=iot.InfluxDBSecretType" json:"secrettype,omitempty"`
+	Secrettype      *InfluxDBSecretType    `protobuf:"varint,63487002,opt,name=secrettype,proto3,enum=iot.InfluxDBSecretType,oneof" json:"secrettype,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -28178,8 +28178,8 @@ func (x *InfluxDBDestinationConfiguration) GetSecretkey() string {
 }
 
 func (x *InfluxDBDestinationConfiguration) GetSecrettype() InfluxDBSecretType {
-	if x != nil {
-		return x.Secrettype
+	if x != nil && x.Secrettype != nil {
+		return *x.Secrettype
 	}
 	return InfluxDBSecretType_INFLUX_D_B_SECRET_TYPE_SECRET_STRING
 }
@@ -28187,10 +28187,10 @@ func (x *InfluxDBDestinationConfiguration) GetSecrettype() InfluxDBSecretType {
 type InfluxDBDestinationProperties struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Endpoint        *string                `protobuf:"bytes,414707837,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
-	Influxdbversion InfluxDBVersion        `protobuf:"varint,482434050,opt,name=influxdbversion,proto3,enum=iot.InfluxDBVersion" json:"influxdbversion,omitempty"`
+	Influxdbversion *InfluxDBVersion       `protobuf:"varint,482434050,opt,name=influxdbversion,proto3,enum=iot.InfluxDBVersion,oneof" json:"influxdbversion,omitempty"`
 	Secretid        *string                `protobuf:"bytes,434881157,opt,name=secretid,proto3,oneof" json:"secretid,omitempty"`
 	Secretkey       *string                `protobuf:"bytes,474034745,opt,name=secretkey,proto3,oneof" json:"secretkey,omitempty"`
-	Secrettype      InfluxDBSecretType     `protobuf:"varint,63487002,opt,name=secrettype,proto3,enum=iot.InfluxDBSecretType" json:"secrettype,omitempty"`
+	Secrettype      *InfluxDBSecretType    `protobuf:"varint,63487002,opt,name=secrettype,proto3,enum=iot.InfluxDBSecretType,oneof" json:"secrettype,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -28233,8 +28233,8 @@ func (x *InfluxDBDestinationProperties) GetEndpoint() string {
 }
 
 func (x *InfluxDBDestinationProperties) GetInfluxdbversion() InfluxDBVersion {
-	if x != nil {
-		return x.Influxdbversion
+	if x != nil && x.Influxdbversion != nil {
+		return *x.Influxdbversion
 	}
 	return InfluxDBVersion_INFLUX_D_B_VERSION_V3
 }
@@ -28254,8 +28254,8 @@ func (x *InfluxDBDestinationProperties) GetSecretkey() string {
 }
 
 func (x *InfluxDBDestinationProperties) GetSecrettype() InfluxDBSecretType {
-	if x != nil {
-		return x.Secrettype
+	if x != nil && x.Secrettype != nil {
+		return *x.Secrettype
 	}
 	return InfluxDBSecretType_INFLUX_D_B_SECRET_TYPE_SECRET_STRING
 }
@@ -28263,10 +28263,10 @@ func (x *InfluxDBDestinationProperties) GetSecrettype() InfluxDBSecretType {
 type InfluxDBDestinationSummary struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Endpoint        *string                `protobuf:"bytes,414707837,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
-	Influxdbversion InfluxDBVersion        `protobuf:"varint,482434050,opt,name=influxdbversion,proto3,enum=iot.InfluxDBVersion" json:"influxdbversion,omitempty"`
+	Influxdbversion *InfluxDBVersion       `protobuf:"varint,482434050,opt,name=influxdbversion,proto3,enum=iot.InfluxDBVersion,oneof" json:"influxdbversion,omitempty"`
 	Secretid        *string                `protobuf:"bytes,434881157,opt,name=secretid,proto3,oneof" json:"secretid,omitempty"`
 	Secretkey       *string                `protobuf:"bytes,474034745,opt,name=secretkey,proto3,oneof" json:"secretkey,omitempty"`
-	Secrettype      InfluxDBSecretType     `protobuf:"varint,63487002,opt,name=secrettype,proto3,enum=iot.InfluxDBSecretType" json:"secrettype,omitempty"`
+	Secrettype      *InfluxDBSecretType    `protobuf:"varint,63487002,opt,name=secrettype,proto3,enum=iot.InfluxDBSecretType,oneof" json:"secrettype,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -28309,8 +28309,8 @@ func (x *InfluxDBDestinationSummary) GetEndpoint() string {
 }
 
 func (x *InfluxDBDestinationSummary) GetInfluxdbversion() InfluxDBVersion {
-	if x != nil {
-		return x.Influxdbversion
+	if x != nil && x.Influxdbversion != nil {
+		return *x.Influxdbversion
 	}
 	return InfluxDBVersion_INFLUX_D_B_VERSION_V3
 }
@@ -28330,8 +28330,8 @@ func (x *InfluxDBDestinationSummary) GetSecretkey() string {
 }
 
 func (x *InfluxDBDestinationSummary) GetSecrettype() InfluxDBSecretType {
-	if x != nil {
-		return x.Secrettype
+	if x != nil && x.Secrettype != nil {
+		return *x.Secrettype
 	}
 	return InfluxDBSecretType_INFLUX_D_B_SECRET_TYPE_SECRET_STRING
 }
@@ -28959,8 +28959,8 @@ type Job struct {
 	Reasoncode                 *string                     `protobuf:"bytes,207873105,opt,name=reasoncode,proto3,oneof" json:"reasoncode,omitempty"`
 	Scheduledjobrollouts       []*ScheduledJobRollout      `protobuf:"bytes,171400514,rep,name=scheduledjobrollouts,proto3" json:"scheduledjobrollouts,omitempty"`
 	Schedulingconfig           *SchedulingConfig           `protobuf:"bytes,237787022,opt,name=schedulingconfig,proto3" json:"schedulingconfig,omitempty"`
-	Status                     JobStatus                   `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobStatus" json:"status,omitempty"`
-	Targetselection            TargetSelection             `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection" json:"targetselection,omitempty"`
+	Status                     *JobStatus                  `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobStatus,oneof" json:"status,omitempty"`
+	Targetselection            *TargetSelection            `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection,oneof" json:"targetselection,omitempty"`
 	Targets                    []string                    `protobuf:"bytes,150369506,rep,name=targets,proto3" json:"targets,omitempty"`
 	Timeoutconfig              *TimeoutConfig              `protobuf:"bytes,83438887,opt,name=timeoutconfig,proto3" json:"timeoutconfig,omitempty"`
 	unknownFields              protoimpl.UnknownFields
@@ -29145,15 +29145,15 @@ func (x *Job) GetSchedulingconfig() *SchedulingConfig {
 }
 
 func (x *Job) GetStatus() JobStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return JobStatus_JOB_STATUS_CANCELED
 }
 
 func (x *Job) GetTargetselection() TargetSelection {
-	if x != nil {
-		return x.Targetselection
+	if x != nil && x.Targetselection != nil {
+		return *x.Targetselection
 	}
 	return TargetSelection_TARGET_SELECTION_CONTINUOUS
 }
@@ -29181,7 +29181,7 @@ type JobExecution struct {
 	Lastupdatedat                    *string                    `protobuf:"bytes,2052226,opt,name=lastupdatedat,proto3,oneof" json:"lastupdatedat,omitempty"`
 	Queuedat                         *string                    `protobuf:"bytes,450463394,opt,name=queuedat,proto3,oneof" json:"queuedat,omitempty"`
 	Startedat                        *string                    `protobuf:"bytes,405642876,opt,name=startedat,proto3,oneof" json:"startedat,omitempty"`
-	Status                           JobExecutionStatus         `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobExecutionStatus" json:"status,omitempty"`
+	Status                           *JobExecutionStatus        `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobExecutionStatus,oneof" json:"status,omitempty"`
 	Statusdetails                    *JobExecutionStatusDetails `protobuf:"bytes,129369416,opt,name=statusdetails,proto3" json:"statusdetails,omitempty"`
 	Thingarn                         *string                    `protobuf:"bytes,78684339,opt,name=thingarn,proto3,oneof" json:"thingarn,omitempty"`
 	Versionnumber                    *int64                     `protobuf:"varint,261111415,opt,name=versionnumber,proto3,oneof" json:"versionnumber,omitempty"`
@@ -29269,8 +29269,8 @@ func (x *JobExecution) GetStartedat() string {
 }
 
 func (x *JobExecution) GetStatus() JobExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return JobExecutionStatus_JOB_EXECUTION_STATUS_QUEUED
 }
@@ -29347,7 +29347,7 @@ type JobExecutionSummary struct {
 	Queuedat        *string                `protobuf:"bytes,450463394,opt,name=queuedat,proto3,oneof" json:"queuedat,omitempty"`
 	Retryattempt    *int32                 `protobuf:"varint,290617331,opt,name=retryattempt,proto3,oneof" json:"retryattempt,omitempty"`
 	Startedat       *string                `protobuf:"bytes,405642876,opt,name=startedat,proto3,oneof" json:"startedat,omitempty"`
-	Status          JobExecutionStatus     `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobExecutionStatus" json:"status,omitempty"`
+	Status          *JobExecutionStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobExecutionStatus,oneof" json:"status,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -29418,8 +29418,8 @@ func (x *JobExecutionSummary) GetStartedat() string {
 }
 
 func (x *JobExecutionSummary) GetStatus() JobExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return JobExecutionStatus_JOB_EXECUTION_STATUS_QUEUED
 }
@@ -29740,8 +29740,8 @@ type JobSummary struct {
 	Jobarn          *string                `protobuf:"bytes,234123380,opt,name=jobarn,proto3,oneof" json:"jobarn,omitempty"`
 	Jobid           *string                `protobuf:"bytes,333387506,opt,name=jobid,proto3,oneof" json:"jobid,omitempty"`
 	Lastupdatedat   *string                `protobuf:"bytes,2052226,opt,name=lastupdatedat,proto3,oneof" json:"lastupdatedat,omitempty"`
-	Status          JobStatus              `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobStatus" json:"status,omitempty"`
-	Targetselection TargetSelection        `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection" json:"targetselection,omitempty"`
+	Status          *JobStatus             `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobStatus,oneof" json:"status,omitempty"`
+	Targetselection *TargetSelection       `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection,oneof" json:"targetselection,omitempty"`
 	Thinggroupid    *string                `protobuf:"bytes,331425484,opt,name=thinggroupid,proto3,oneof" json:"thinggroupid,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -29820,15 +29820,15 @@ func (x *JobSummary) GetLastupdatedat() string {
 }
 
 func (x *JobSummary) GetStatus() JobStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return JobStatus_JOB_STATUS_CANCELED
 }
 
 func (x *JobSummary) GetTargetselection() TargetSelection {
-	if x != nil {
-		return x.Targetselection
+	if x != nil && x.Targetselection != nil {
+		return *x.Targetselection
 	}
 	return TargetSelection_TARGET_SELECTION_CONTINUOUS
 }
@@ -30246,13 +30246,13 @@ func (x *LimitExceededException) GetMessage() string {
 
 type ListActiveViolationsRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Behaviorcriteriatype BehaviorCriteriaType   `protobuf:"varint,458322347,opt,name=behaviorcriteriatype,proto3,enum=iot.BehaviorCriteriaType" json:"behaviorcriteriatype,omitempty"`
+	Behaviorcriteriatype *BehaviorCriteriaType  `protobuf:"varint,458322347,opt,name=behaviorcriteriatype,proto3,enum=iot.BehaviorCriteriaType,oneof" json:"behaviorcriteriatype,omitempty"`
 	Listsuppressedalerts *bool                  `protobuf:"varint,274886813,opt,name=listsuppressedalerts,proto3,oneof" json:"listsuppressedalerts,omitempty"`
 	Maxresults           *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken            *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Securityprofilename  *string                `protobuf:"bytes,463970880,opt,name=securityprofilename,proto3,oneof" json:"securityprofilename,omitempty"`
 	Thingname            *string                `protobuf:"bytes,526020141,opt,name=thingname,proto3,oneof" json:"thingname,omitempty"`
-	Verificationstate    VerificationState      `protobuf:"varint,46156804,opt,name=verificationstate,proto3,enum=iot.VerificationState" json:"verificationstate,omitempty"`
+	Verificationstate    *VerificationState     `protobuf:"varint,46156804,opt,name=verificationstate,proto3,enum=iot.VerificationState,oneof" json:"verificationstate,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -30288,8 +30288,8 @@ func (*ListActiveViolationsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListActiveViolationsRequest) GetBehaviorcriteriatype() BehaviorCriteriaType {
-	if x != nil {
-		return x.Behaviorcriteriatype
+	if x != nil && x.Behaviorcriteriatype != nil {
+		return *x.Behaviorcriteriatype
 	}
 	return BehaviorCriteriaType_BEHAVIOR_CRITERIA_TYPE_MACHINE_LEARNING
 }
@@ -30330,8 +30330,8 @@ func (x *ListActiveViolationsRequest) GetThingname() string {
 }
 
 func (x *ListActiveViolationsRequest) GetVerificationstate() VerificationState {
-	if x != nil {
-		return x.Verificationstate
+	if x != nil && x.Verificationstate != nil {
+		return *x.Verificationstate
 	}
 	return VerificationState_VERIFICATION_STATE_UNKNOWN
 }
@@ -30661,12 +30661,12 @@ func (x *ListAuditFindingsResponse) GetNexttoken() string {
 }
 
 type ListAuditMitigationActionsExecutionsRequest struct {
-	state         protoimpl.MessageState                `protogen:"open.v1"`
-	Actionstatus  AuditMitigationActionsExecutionStatus `protobuf:"varint,31823690,opt,name=actionstatus,proto3,enum=iot.AuditMitigationActionsExecutionStatus" json:"actionstatus,omitempty"`
-	Findingid     string                                `protobuf:"bytes,319355036,opt,name=findingid,proto3" json:"findingid,omitempty"`
-	Maxresults    *int32                                `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     *string                               `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Taskid        string                                `protobuf:"bytes,216769858,opt,name=taskid,proto3" json:"taskid,omitempty"`
+	state         protoimpl.MessageState                 `protogen:"open.v1"`
+	Actionstatus  *AuditMitigationActionsExecutionStatus `protobuf:"varint,31823690,opt,name=actionstatus,proto3,enum=iot.AuditMitigationActionsExecutionStatus,oneof" json:"actionstatus,omitempty"`
+	Findingid     string                                 `protobuf:"bytes,319355036,opt,name=findingid,proto3" json:"findingid,omitempty"`
+	Maxresults    *int32                                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Taskid        string                                 `protobuf:"bytes,216769858,opt,name=taskid,proto3" json:"taskid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -30702,8 +30702,8 @@ func (*ListAuditMitigationActionsExecutionsRequest) Descriptor() ([]byte, []int)
 }
 
 func (x *ListAuditMitigationActionsExecutionsRequest) GetActionstatus() AuditMitigationActionsExecutionStatus {
-	if x != nil {
-		return x.Actionstatus
+	if x != nil && x.Actionstatus != nil {
+		return *x.Actionstatus
 	}
 	return AuditMitigationActionsExecutionStatus_AUDIT_MITIGATION_ACTIONS_EXECUTION_STATUS_PENDING
 }
@@ -30789,14 +30789,14 @@ func (x *ListAuditMitigationActionsExecutionsResponse) GetNexttoken() string {
 }
 
 type ListAuditMitigationActionsTasksRequest struct {
-	state         protoimpl.MessageState           `protogen:"open.v1"`
-	Audittaskid   *string                          `protobuf:"bytes,186616953,opt,name=audittaskid,proto3,oneof" json:"audittaskid,omitempty"`
-	Endtime       string                           `protobuf:"bytes,329679852,opt,name=endtime,proto3" json:"endtime,omitempty"`
-	Findingid     *string                          `protobuf:"bytes,319355036,opt,name=findingid,proto3,oneof" json:"findingid,omitempty"`
-	Maxresults    *int32                           `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     *string                          `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Starttime     string                           `protobuf:"bytes,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
-	Taskstatus    AuditMitigationActionsTaskStatus `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditMitigationActionsTaskStatus" json:"taskstatus,omitempty"`
+	state         protoimpl.MessageState            `protogen:"open.v1"`
+	Audittaskid   *string                           `protobuf:"bytes,186616953,opt,name=audittaskid,proto3,oneof" json:"audittaskid,omitempty"`
+	Endtime       string                            `protobuf:"bytes,329679852,opt,name=endtime,proto3" json:"endtime,omitempty"`
+	Findingid     *string                           `protobuf:"bytes,319355036,opt,name=findingid,proto3,oneof" json:"findingid,omitempty"`
+	Maxresults    *int32                            `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                           `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Starttime     string                            `protobuf:"bytes,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Taskstatus    *AuditMitigationActionsTaskStatus `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditMitigationActionsTaskStatus,oneof" json:"taskstatus,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -30874,8 +30874,8 @@ func (x *ListAuditMitigationActionsTasksRequest) GetStarttime() string {
 }
 
 func (x *ListAuditMitigationActionsTasksRequest) GetTaskstatus() AuditMitigationActionsTaskStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return AuditMitigationActionsTaskStatus_AUDIT_MITIGATION_ACTIONS_TASK_STATUS_CANCELED
 }
@@ -31066,8 +31066,8 @@ type ListAuditTasksRequest struct {
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Starttime     string                 `protobuf:"bytes,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
-	Taskstatus    AuditTaskStatus        `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditTaskStatus" json:"taskstatus,omitempty"`
-	Tasktype      AuditTaskType          `protobuf:"varint,318747781,opt,name=tasktype,proto3,enum=iot.AuditTaskType" json:"tasktype,omitempty"`
+	Taskstatus    *AuditTaskStatus       `protobuf:"varint,91888279,opt,name=taskstatus,proto3,enum=iot.AuditTaskStatus,oneof" json:"taskstatus,omitempty"`
+	Tasktype      *AuditTaskType         `protobuf:"varint,318747781,opt,name=tasktype,proto3,enum=iot.AuditTaskType,oneof" json:"tasktype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -31131,15 +31131,15 @@ func (x *ListAuditTasksRequest) GetStarttime() string {
 }
 
 func (x *ListAuditTasksRequest) GetTaskstatus() AuditTaskStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return AuditTaskStatus_AUDIT_TASK_STATUS_CANCELED
 }
 
 func (x *ListAuditTasksRequest) GetTasktype() AuditTaskType {
-	if x != nil {
-		return x.Tasktype
+	if x != nil && x.Tasktype != nil {
+		return *x.Tasktype
 	}
 	return AuditTaskType_AUDIT_TASK_TYPE_ON_DEMAND_AUDIT_TASK
 }
@@ -31201,7 +31201,7 @@ type ListAuthorizersRequest struct {
 	Ascendingorder *bool                  `protobuf:"varint,531885012,opt,name=ascendingorder,proto3,oneof" json:"ascendingorder,omitempty"`
 	Marker         *string                `protobuf:"bytes,402141592,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Pagesize       *int32                 `protobuf:"varint,355157592,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
-	Status         AuthorizerStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuthorizerStatus" json:"status,omitempty"`
+	Status         *AuthorizerStatus      `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuthorizerStatus,oneof" json:"status,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -31258,8 +31258,8 @@ func (x *ListAuthorizersRequest) GetPagesize() int32 {
 }
 
 func (x *ListAuthorizersRequest) GetStatus() AuthorizerStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AuthorizerStatus_AUTHORIZER_STATUS_ACTIVE
 }
@@ -31885,16 +31885,16 @@ func (x *ListCertificatesResponse) GetNextmarker() string {
 }
 
 type ListCommandExecutionsRequest struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	Commandarn          *string                `protobuf:"bytes,100510046,opt,name=commandarn,proto3,oneof" json:"commandarn,omitempty"`
-	Completedtimefilter *TimeFilter            `protobuf:"bytes,503497246,opt,name=completedtimefilter,proto3" json:"completedtimefilter,omitempty"`
-	Maxresults          *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Namespace           CommandNamespace       `protobuf:"varint,181303969,opt,name=namespace,proto3,enum=iot.CommandNamespace" json:"namespace,omitempty"`
-	Nexttoken           *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Sortorder           SortOrder              `protobuf:"varint,21628452,opt,name=sortorder,proto3,enum=iot.SortOrder" json:"sortorder,omitempty"`
-	Startedtimefilter   *TimeFilter            `protobuf:"bytes,37256722,opt,name=startedtimefilter,proto3" json:"startedtimefilter,omitempty"`
-	Status              CommandExecutionStatus `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CommandExecutionStatus" json:"status,omitempty"`
-	Targetarn           *string                `protobuf:"bytes,367964720,opt,name=targetarn,proto3,oneof" json:"targetarn,omitempty"`
+	state               protoimpl.MessageState  `protogen:"open.v1"`
+	Commandarn          *string                 `protobuf:"bytes,100510046,opt,name=commandarn,proto3,oneof" json:"commandarn,omitempty"`
+	Completedtimefilter *TimeFilter             `protobuf:"bytes,503497246,opt,name=completedtimefilter,proto3" json:"completedtimefilter,omitempty"`
+	Maxresults          *int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Namespace           *CommandNamespace       `protobuf:"varint,181303969,opt,name=namespace,proto3,enum=iot.CommandNamespace,oneof" json:"namespace,omitempty"`
+	Nexttoken           *string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Sortorder           *SortOrder              `protobuf:"varint,21628452,opt,name=sortorder,proto3,enum=iot.SortOrder,oneof" json:"sortorder,omitempty"`
+	Startedtimefilter   *TimeFilter             `protobuf:"bytes,37256722,opt,name=startedtimefilter,proto3" json:"startedtimefilter,omitempty"`
+	Status              *CommandExecutionStatus `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CommandExecutionStatus,oneof" json:"status,omitempty"`
+	Targetarn           *string                 `protobuf:"bytes,367964720,opt,name=targetarn,proto3,oneof" json:"targetarn,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -31951,8 +31951,8 @@ func (x *ListCommandExecutionsRequest) GetMaxresults() int32 {
 }
 
 func (x *ListCommandExecutionsRequest) GetNamespace() CommandNamespace {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return CommandNamespace_COMMAND_NAMESPACE_AWSIOT
 }
@@ -31965,8 +31965,8 @@ func (x *ListCommandExecutionsRequest) GetNexttoken() string {
 }
 
 func (x *ListCommandExecutionsRequest) GetSortorder() SortOrder {
-	if x != nil {
-		return x.Sortorder
+	if x != nil && x.Sortorder != nil {
+		return *x.Sortorder
 	}
 	return SortOrder_SORT_ORDER_DESCENDING
 }
@@ -31979,8 +31979,8 @@ func (x *ListCommandExecutionsRequest) GetStartedtimefilter() *TimeFilter {
 }
 
 func (x *ListCommandExecutionsRequest) GetStatus() CommandExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CommandExecutionStatus_COMMAND_EXECUTION_STATUS_TIMED_OUT
 }
@@ -32048,9 +32048,9 @@ type ListCommandsRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Commandparametername *string                `protobuf:"bytes,468232295,opt,name=commandparametername,proto3,oneof" json:"commandparametername,omitempty"`
 	Maxresults           *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Namespace            CommandNamespace       `protobuf:"varint,181303969,opt,name=namespace,proto3,enum=iot.CommandNamespace" json:"namespace,omitempty"`
+	Namespace            *CommandNamespace      `protobuf:"varint,181303969,opt,name=namespace,proto3,enum=iot.CommandNamespace,oneof" json:"namespace,omitempty"`
 	Nexttoken            *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Sortorder            SortOrder              `protobuf:"varint,21628452,opt,name=sortorder,proto3,enum=iot.SortOrder" json:"sortorder,omitempty"`
+	Sortorder            *SortOrder             `protobuf:"varint,21628452,opt,name=sortorder,proto3,enum=iot.SortOrder,oneof" json:"sortorder,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -32100,8 +32100,8 @@ func (x *ListCommandsRequest) GetMaxresults() int32 {
 }
 
 func (x *ListCommandsRequest) GetNamespace() CommandNamespace {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return CommandNamespace_COMMAND_NAMESPACE_AWSIOT
 }
@@ -32114,8 +32114,8 @@ func (x *ListCommandsRequest) GetNexttoken() string {
 }
 
 func (x *ListCommandsRequest) GetSortorder() SortOrder {
-	if x != nil {
-		return x.Sortorder
+	if x != nil && x.Sortorder != nil {
+		return *x.Sortorder
 	}
 	return SortOrder_SORT_ORDER_DESCENDING
 }
@@ -32648,7 +32648,7 @@ type ListDomainConfigurationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Marker        *string                `protobuf:"bytes,402141592,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Pagesize      *int32                 `protobuf:"varint,355157592,opt,name=pagesize,proto3,oneof" json:"pagesize,omitempty"`
-	Servicetype   ServiceType            `protobuf:"varint,232238413,opt,name=servicetype,proto3,enum=iot.ServiceType" json:"servicetype,omitempty"`
+	Servicetype   *ServiceType           `protobuf:"varint,232238413,opt,name=servicetype,proto3,enum=iot.ServiceType,oneof" json:"servicetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -32698,8 +32698,8 @@ func (x *ListDomainConfigurationsRequest) GetPagesize() int32 {
 }
 
 func (x *ListDomainConfigurationsRequest) GetServicetype() ServiceType {
-	if x != nil {
-		return x.Servicetype
+	if x != nil && x.Servicetype != nil {
+		return *x.Servicetype
 	}
 	return ServiceType_SERVICE_TYPE_CREDENTIAL_PROVIDER
 }
@@ -32969,7 +32969,7 @@ type ListJobExecutionsForJobRequest struct {
 	Jobid         string                 `protobuf:"bytes,333387506,opt,name=jobid,proto3" json:"jobid,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Status        JobExecutionStatus     `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobExecutionStatus" json:"status,omitempty"`
+	Status        *JobExecutionStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobExecutionStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -33026,8 +33026,8 @@ func (x *ListJobExecutionsForJobRequest) GetNexttoken() string {
 }
 
 func (x *ListJobExecutionsForJobRequest) GetStatus() JobExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return JobExecutionStatus_JOB_EXECUTION_STATUS_QUEUED
 }
@@ -33090,7 +33090,7 @@ type ListJobExecutionsForThingRequest struct {
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Namespaceid   *string                `protobuf:"bytes,85280638,opt,name=namespaceid,proto3,oneof" json:"namespaceid,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Status        JobExecutionStatus     `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobExecutionStatus" json:"status,omitempty"`
+	Status        *JobExecutionStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobExecutionStatus,oneof" json:"status,omitempty"`
 	Thingname     string                 `protobuf:"bytes,526020141,opt,name=thingname,proto3" json:"thingname,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -33155,8 +33155,8 @@ func (x *ListJobExecutionsForThingRequest) GetNexttoken() string {
 }
 
 func (x *ListJobExecutionsForThingRequest) GetStatus() JobExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return JobExecutionStatus_JOB_EXECUTION_STATUS_QUEUED
 }
@@ -33329,8 +33329,8 @@ type ListJobsRequest struct {
 	Maxresults      *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Namespaceid     *string                `protobuf:"bytes,85280638,opt,name=namespaceid,proto3,oneof" json:"namespaceid,omitempty"`
 	Nexttoken       *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Status          JobStatus              `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobStatus" json:"status,omitempty"`
-	Targetselection TargetSelection        `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection" json:"targetselection,omitempty"`
+	Status          *JobStatus             `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.JobStatus,oneof" json:"status,omitempty"`
+	Targetselection *TargetSelection       `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection,oneof" json:"targetselection,omitempty"`
 	Thinggroupid    *string                `protobuf:"bytes,331425484,opt,name=thinggroupid,proto3,oneof" json:"thinggroupid,omitempty"`
 	Thinggroupname  *string                `protobuf:"bytes,104567446,opt,name=thinggroupname,proto3,oneof" json:"thinggroupname,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -33389,15 +33389,15 @@ func (x *ListJobsRequest) GetNexttoken() string {
 }
 
 func (x *ListJobsRequest) GetStatus() JobStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return JobStatus_JOB_STATUS_CANCELED
 }
 
 func (x *ListJobsRequest) GetTargetselection() TargetSelection {
-	if x != nil {
-		return x.Targetselection
+	if x != nil && x.Targetselection != nil {
+		return *x.Targetselection
 	}
 	return TargetSelection_TARGET_SELECTION_CONTINUOUS
 }
@@ -33581,15 +33581,15 @@ func (x *ListManagedJobTemplatesResponse) GetNexttoken() string {
 }
 
 type ListMetricValuesRequest struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Dimensionname          *string                `protobuf:"bytes,454022409,opt,name=dimensionname,proto3,oneof" json:"dimensionname,omitempty"`
-	Dimensionvalueoperator DimensionValueOperator `protobuf:"varint,252502801,opt,name=dimensionvalueoperator,proto3,enum=iot.DimensionValueOperator" json:"dimensionvalueoperator,omitempty"`
-	Endtime                string                 `protobuf:"bytes,329679852,opt,name=endtime,proto3" json:"endtime,omitempty"`
-	Maxresults             *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Metricname             string                 `protobuf:"bytes,204020635,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Nexttoken              *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Starttime              string                 `protobuf:"bytes,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
-	Thingname              string                 `protobuf:"bytes,526020141,opt,name=thingname,proto3" json:"thingname,omitempty"`
+	state                  protoimpl.MessageState  `protogen:"open.v1"`
+	Dimensionname          *string                 `protobuf:"bytes,454022409,opt,name=dimensionname,proto3,oneof" json:"dimensionname,omitempty"`
+	Dimensionvalueoperator *DimensionValueOperator `protobuf:"varint,252502801,opt,name=dimensionvalueoperator,proto3,enum=iot.DimensionValueOperator,oneof" json:"dimensionvalueoperator,omitempty"`
+	Endtime                string                  `protobuf:"bytes,329679852,opt,name=endtime,proto3" json:"endtime,omitempty"`
+	Maxresults             *int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Metricname             string                  `protobuf:"bytes,204020635,opt,name=metricname,proto3" json:"metricname,omitempty"`
+	Nexttoken              *string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Starttime              string                  `protobuf:"bytes,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Thingname              string                  `protobuf:"bytes,526020141,opt,name=thingname,proto3" json:"thingname,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -33632,8 +33632,8 @@ func (x *ListMetricValuesRequest) GetDimensionname() string {
 }
 
 func (x *ListMetricValuesRequest) GetDimensionvalueoperator() DimensionValueOperator {
-	if x != nil {
-		return x.Dimensionvalueoperator
+	if x != nil && x.Dimensionvalueoperator != nil {
+		return *x.Dimensionvalueoperator
 	}
 	return DimensionValueOperator_DIMENSION_VALUE_OPERATOR_IN
 }
@@ -33734,7 +33734,7 @@ func (x *ListMetricValuesResponse) GetNexttoken() string {
 
 type ListMitigationActionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Actiontype    MitigationActionType   `protobuf:"varint,315213608,opt,name=actiontype,proto3,enum=iot.MitigationActionType" json:"actiontype,omitempty"`
+	Actiontype    *MitigationActionType  `protobuf:"varint,315213608,opt,name=actiontype,proto3,enum=iot.MitigationActionType,oneof" json:"actiontype,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -33772,8 +33772,8 @@ func (*ListMitigationActionsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMitigationActionsRequest) GetActiontype() MitigationActionType {
-	if x != nil {
-		return x.Actiontype
+	if x != nil && x.Actiontype != nil {
+		return *x.Actiontype
 	}
 	return MitigationActionType_MITIGATION_ACTION_TYPE_ADD_THINGS_TO_THING_GROUP
 }
@@ -33848,7 +33848,7 @@ type ListOTAUpdatesRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults      *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken       *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Otaupdatestatus OTAUpdateStatus        `protobuf:"varint,129588903,opt,name=otaupdatestatus,proto3,enum=iot.OTAUpdateStatus" json:"otaupdatestatus,omitempty"`
+	Otaupdatestatus *OTAUpdateStatus       `protobuf:"varint,129588903,opt,name=otaupdatestatus,proto3,enum=iot.OTAUpdateStatus,oneof" json:"otaupdatestatus,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -33898,8 +33898,8 @@ func (x *ListOTAUpdatesRequest) GetNexttoken() string {
 }
 
 func (x *ListOTAUpdatesRequest) GetOtaupdatestatus() OTAUpdateStatus {
-	if x != nil {
-		return x.Otaupdatestatus
+	if x != nil && x.Otaupdatestatus != nil {
+		return *x.Otaupdatestatus
 	}
 	return OTAUpdateStatus_O_T_A_UPDATE_STATUS_DELETE_FAILED
 }
@@ -34073,7 +34073,7 @@ type ListPackageVersionsRequest struct {
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Packagename   string                 `protobuf:"bytes,474490177,opt,name=packagename,proto3" json:"packagename,omitempty"`
-	Status        PackageVersionStatus   `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.PackageVersionStatus" json:"status,omitempty"`
+	Status        *PackageVersionStatus  `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.PackageVersionStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -34130,8 +34130,8 @@ func (x *ListPackageVersionsRequest) GetPackagename() string {
 }
 
 func (x *ListPackageVersionsRequest) GetStatus() PackageVersionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return PackageVersionStatus_PACKAGE_VERSION_STATUS_PUBLISHED
 }
@@ -34849,7 +34849,7 @@ type ListPrincipalThingsV2Request struct {
 	Maxresults         *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken          *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Principal          string                 `protobuf:"bytes,262257194,opt,name=principal,proto3" json:"principal,omitempty"`
-	Thingprincipaltype ThingPrincipalType     `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType" json:"thingprincipaltype,omitempty"`
+	Thingprincipaltype *ThingPrincipalType    `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType,oneof" json:"thingprincipaltype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -34906,8 +34906,8 @@ func (x *ListPrincipalThingsV2Request) GetPrincipal() string {
 }
 
 func (x *ListPrincipalThingsV2Request) GetThingprincipaltype() ThingPrincipalType {
-	if x != nil {
-		return x.Thingprincipaltype
+	if x != nil && x.Thingprincipaltype != nil {
+		return *x.Thingprincipaltype
 	}
 	return ThingPrincipalType_THING_PRINCIPAL_TYPE_EXCLUSIVE_THING
 }
@@ -35409,7 +35409,7 @@ type ListSbomValidationResultsRequest struct {
 	Maxresults       *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken        *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Packagename      string                 `protobuf:"bytes,474490177,opt,name=packagename,proto3" json:"packagename,omitempty"`
-	Validationresult SbomValidationResult   `protobuf:"varint,173338468,opt,name=validationresult,proto3,enum=iot.SbomValidationResult" json:"validationresult,omitempty"`
+	Validationresult *SbomValidationResult  `protobuf:"varint,173338468,opt,name=validationresult,proto3,enum=iot.SbomValidationResult,oneof" json:"validationresult,omitempty"`
 	Versionname      string                 `protobuf:"bytes,508494709,opt,name=versionname,proto3" json:"versionname,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -35467,8 +35467,8 @@ func (x *ListSbomValidationResultsRequest) GetPackagename() string {
 }
 
 func (x *ListSbomValidationResultsRequest) GetValidationresult() SbomValidationResult {
-	if x != nil {
-		return x.Validationresult
+	if x != nil && x.Validationresult != nil {
+		return *x.Validationresult
 	}
 	return SbomValidationResult_SBOM_VALIDATION_RESULT_SUCCEEDED
 }
@@ -36673,7 +36673,7 @@ type ListThingPrincipalsV2Request struct {
 	Maxresults         *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken          *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Thingname          string                 `protobuf:"bytes,526020141,opt,name=thingname,proto3" json:"thingname,omitempty"`
-	Thingprincipaltype ThingPrincipalType     `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType" json:"thingprincipaltype,omitempty"`
+	Thingprincipaltype *ThingPrincipalType    `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType,oneof" json:"thingprincipaltype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -36730,8 +36730,8 @@ func (x *ListThingPrincipalsV2Request) GetThingname() string {
 }
 
 func (x *ListThingPrincipalsV2Request) GetThingprincipaltype() ThingPrincipalType {
-	if x != nil {
-		return x.Thingprincipaltype
+	if x != nil && x.Thingprincipaltype != nil {
+		return *x.Thingprincipaltype
 	}
 	return ThingPrincipalType_THING_PRINCIPAL_TYPE_EXCLUSIVE_THING
 }
@@ -36859,7 +36859,7 @@ func (x *ListThingRegistrationTaskReportsRequest) GetTaskid() string {
 type ListThingRegistrationTaskReportsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Reporttype    ReportType             `protobuf:"varint,445294164,opt,name=reporttype,proto3,enum=iot.ReportType" json:"reporttype,omitempty"`
+	Reporttype    *ReportType            `protobuf:"varint,445294164,opt,name=reporttype,proto3,enum=iot.ReportType,oneof" json:"reporttype,omitempty"`
 	Resourcelinks []string               `protobuf:"bytes,61453695,rep,name=resourcelinks,proto3" json:"resourcelinks,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -36903,8 +36903,8 @@ func (x *ListThingRegistrationTaskReportsResponse) GetNexttoken() string {
 }
 
 func (x *ListThingRegistrationTaskReportsResponse) GetReporttype() ReportType {
-	if x != nil {
-		return x.Reporttype
+	if x != nil && x.Reporttype != nil {
+		return *x.Reporttype
 	}
 	return ReportType_REPORT_TYPE_RESULTS
 }
@@ -36920,7 +36920,7 @@ type ListThingRegistrationTasksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Status        Status                 `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.Status" json:"status,omitempty"`
+	Status        *Status                `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.Status,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -36970,8 +36970,8 @@ func (x *ListThingRegistrationTasksRequest) GetNexttoken() string {
 }
 
 func (x *ListThingRegistrationTasksRequest) GetStatus() Status {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return Status_STATUS_FAILED
 }
@@ -37736,7 +37736,7 @@ type ListV2LoggingLevelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Targettype    LogTargetType          `protobuf:"varint,414363201,opt,name=targettype,proto3,enum=iot.LogTargetType" json:"targettype,omitempty"`
+	Targettype    *LogTargetType         `protobuf:"varint,414363201,opt,name=targettype,proto3,enum=iot.LogTargetType,oneof" json:"targettype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -37786,8 +37786,8 @@ func (x *ListV2LoggingLevelsRequest) GetNexttoken() string {
 }
 
 func (x *ListV2LoggingLevelsRequest) GetTargettype() LogTargetType {
-	if x != nil {
-		return x.Targettype
+	if x != nil && x.Targettype != nil {
+		return *x.Targettype
 	}
 	return LogTargetType_LOG_TARGET_TYPE_CLIENT_ID
 }
@@ -37846,7 +37846,7 @@ func (x *ListV2LoggingLevelsResponse) GetNexttoken() string {
 
 type ListViolationEventsRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Behaviorcriteriatype BehaviorCriteriaType   `protobuf:"varint,458322347,opt,name=behaviorcriteriatype,proto3,enum=iot.BehaviorCriteriaType" json:"behaviorcriteriatype,omitempty"`
+	Behaviorcriteriatype *BehaviorCriteriaType  `protobuf:"varint,458322347,opt,name=behaviorcriteriatype,proto3,enum=iot.BehaviorCriteriaType,oneof" json:"behaviorcriteriatype,omitempty"`
 	Endtime              string                 `protobuf:"bytes,329679852,opt,name=endtime,proto3" json:"endtime,omitempty"`
 	Listsuppressedalerts *bool                  `protobuf:"varint,274886813,opt,name=listsuppressedalerts,proto3,oneof" json:"listsuppressedalerts,omitempty"`
 	Maxresults           *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
@@ -37854,7 +37854,7 @@ type ListViolationEventsRequest struct {
 	Securityprofilename  *string                `protobuf:"bytes,463970880,opt,name=securityprofilename,proto3,oneof" json:"securityprofilename,omitempty"`
 	Starttime            string                 `protobuf:"bytes,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
 	Thingname            *string                `protobuf:"bytes,526020141,opt,name=thingname,proto3,oneof" json:"thingname,omitempty"`
-	Verificationstate    VerificationState      `protobuf:"varint,46156804,opt,name=verificationstate,proto3,enum=iot.VerificationState" json:"verificationstate,omitempty"`
+	Verificationstate    *VerificationState     `protobuf:"varint,46156804,opt,name=verificationstate,proto3,enum=iot.VerificationState,oneof" json:"verificationstate,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -37890,8 +37890,8 @@ func (*ListViolationEventsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListViolationEventsRequest) GetBehaviorcriteriatype() BehaviorCriteriaType {
-	if x != nil {
-		return x.Behaviorcriteriatype
+	if x != nil && x.Behaviorcriteriatype != nil {
+		return *x.Behaviorcriteriatype
 	}
 	return BehaviorCriteriaType_BEHAVIOR_CRITERIA_TYPE_MACHINE_LEARNING
 }
@@ -37946,8 +37946,8 @@ func (x *ListViolationEventsRequest) GetThingname() string {
 }
 
 func (x *ListViolationEventsRequest) GetVerificationstate() VerificationState {
-	if x != nil {
-		return x.Verificationstate
+	if x != nil && x.Verificationstate != nil {
+		return *x.Verificationstate
 	}
 	return VerificationState_VERIFICATION_STATE_UNKNOWN
 }
@@ -38144,7 +38144,7 @@ type LogEventConfiguration struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Eventtype      string                 `protobuf:"bytes,487734536,opt,name=eventtype,proto3" json:"eventtype,omitempty"`
 	Logdestination *string                `protobuf:"bytes,13789772,opt,name=logdestination,proto3,oneof" json:"logdestination,omitempty"`
-	Loglevel       LogLevel               `protobuf:"varint,98610074,opt,name=loglevel,proto3,enum=iot.LogLevel" json:"loglevel,omitempty"`
+	Loglevel       *LogLevel              `protobuf:"varint,98610074,opt,name=loglevel,proto3,enum=iot.LogLevel,oneof" json:"loglevel,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -38194,8 +38194,8 @@ func (x *LogEventConfiguration) GetLogdestination() string {
 }
 
 func (x *LogEventConfiguration) GetLoglevel() LogLevel {
-	if x != nil {
-		return x.Loglevel
+	if x != nil && x.Loglevel != nil {
+		return *x.Loglevel
 	}
 	return LogLevel_LOG_LEVEL_DISABLED
 }
@@ -38254,7 +38254,7 @@ func (x *LogTarget) GetTargettype() LogTargetType {
 
 type LogTargetConfiguration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Loglevel      LogLevel               `protobuf:"varint,98610074,opt,name=loglevel,proto3,enum=iot.LogLevel" json:"loglevel,omitempty"`
+	Loglevel      *LogLevel              `protobuf:"varint,98610074,opt,name=loglevel,proto3,enum=iot.LogLevel,oneof" json:"loglevel,omitempty"`
 	Logtarget     *LogTarget             `protobuf:"bytes,467569445,opt,name=logtarget,proto3" json:"logtarget,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -38291,8 +38291,8 @@ func (*LogTargetConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *LogTargetConfiguration) GetLoglevel() LogLevel {
-	if x != nil {
-		return x.Loglevel
+	if x != nil && x.Loglevel != nil {
+		return *x.Loglevel
 	}
 	return LogLevel_LOG_LEVEL_DISABLED
 }
@@ -38306,7 +38306,7 @@ func (x *LogTargetConfiguration) GetLogtarget() *LogTarget {
 
 type LoggingOptionsPayload struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Loglevel      LogLevel               `protobuf:"varint,98610074,opt,name=loglevel,proto3,enum=iot.LogLevel" json:"loglevel,omitempty"`
+	Loglevel      *LogLevel              `protobuf:"varint,98610074,opt,name=loglevel,proto3,enum=iot.LogLevel,oneof" json:"loglevel,omitempty"`
 	Rolearn       string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -38343,8 +38343,8 @@ func (*LoggingOptionsPayload) Descriptor() ([]byte, []int) {
 }
 
 func (x *LoggingOptionsPayload) GetLoglevel() LogLevel {
-	if x != nil {
-		return x.Loglevel
+	if x != nil && x.Loglevel != nil {
+		return *x.Loglevel
 	}
 	return LogLevel_LOG_LEVEL_DISABLED
 }
@@ -38625,9 +38625,9 @@ func (x *MetricDatum) GetValue() *MetricValue {
 }
 
 type MetricDimension struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Dimensionname string                 `protobuf:"bytes,454022409,opt,name=dimensionname,proto3" json:"dimensionname,omitempty"`
-	Operator      DimensionValueOperator `protobuf:"varint,466939646,opt,name=operator,proto3,enum=iot.DimensionValueOperator" json:"operator,omitempty"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Dimensionname string                  `protobuf:"bytes,454022409,opt,name=dimensionname,proto3" json:"dimensionname,omitempty"`
+	Operator      *DimensionValueOperator `protobuf:"varint,466939646,opt,name=operator,proto3,enum=iot.DimensionValueOperator,oneof" json:"operator,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -38670,8 +38670,8 @@ func (x *MetricDimension) GetDimensionname() string {
 }
 
 func (x *MetricDimension) GetOperator() DimensionValueOperator {
-	if x != nil {
-		return x.Operator
+	if x != nil && x.Operator != nil {
+		return *x.Operator
 	}
 	return DimensionValueOperator_DIMENSION_VALUE_OPERATOR_IN
 }
@@ -39276,7 +39276,7 @@ type NonCompliantResource struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Additionalinfo     map[string]string      `protobuf:"bytes,288546721,rep,name=additionalinfo,proto3" json:"additionalinfo,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Resourceidentifier *ResourceIdentifier    `protobuf:"bytes,309427407,opt,name=resourceidentifier,proto3" json:"resourceidentifier,omitempty"`
-	Resourcetype       ResourceType           `protobuf:"varint,7604990,opt,name=resourcetype,proto3,enum=iot.ResourceType" json:"resourcetype,omitempty"`
+	Resourcetype       *ResourceType          `protobuf:"varint,7604990,opt,name=resourcetype,proto3,enum=iot.ResourceType,oneof" json:"resourcetype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -39326,8 +39326,8 @@ func (x *NonCompliantResource) GetResourceidentifier() *ResourceIdentifier {
 }
 
 func (x *NonCompliantResource) GetResourcetype() ResourceType {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return ResourceType_RESOURCE_TYPE_ROLE_ALIAS
 }
@@ -39474,9 +39474,9 @@ type OTAUpdateInfo struct {
 	Otaupdatearn                  *string                        `protobuf:"bytes,258238004,opt,name=otaupdatearn,proto3,oneof" json:"otaupdatearn,omitempty"`
 	Otaupdatefiles                []*OTAUpdateFile               `protobuf:"bytes,279270428,rep,name=otaupdatefiles,proto3" json:"otaupdatefiles,omitempty"`
 	Otaupdateid                   *string                        `protobuf:"bytes,284156338,opt,name=otaupdateid,proto3,oneof" json:"otaupdateid,omitempty"`
-	Otaupdatestatus               OTAUpdateStatus                `protobuf:"varint,129588903,opt,name=otaupdatestatus,proto3,enum=iot.OTAUpdateStatus" json:"otaupdatestatus,omitempty"`
+	Otaupdatestatus               *OTAUpdateStatus               `protobuf:"varint,129588903,opt,name=otaupdatestatus,proto3,enum=iot.OTAUpdateStatus,oneof" json:"otaupdatestatus,omitempty"`
 	Protocols                     []Protocol                     `protobuf:"varint,100734643,rep,packed,name=protocols,proto3,enum=iot.Protocol" json:"protocols,omitempty"`
-	Targetselection               TargetSelection                `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection" json:"targetselection,omitempty"`
+	Targetselection               *TargetSelection               `protobuf:"varint,155321351,opt,name=targetselection,proto3,enum=iot.TargetSelection,oneof" json:"targetselection,omitempty"`
 	Targets                       []string                       `protobuf:"bytes,150369506,rep,name=targets,proto3" json:"targets,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -39597,8 +39597,8 @@ func (x *OTAUpdateInfo) GetOtaupdateid() string {
 }
 
 func (x *OTAUpdateInfo) GetOtaupdatestatus() OTAUpdateStatus {
-	if x != nil {
-		return x.Otaupdatestatus
+	if x != nil && x.Otaupdatestatus != nil {
+		return *x.Otaupdatestatus
 	}
 	return OTAUpdateStatus_O_T_A_UPDATE_STATUS_DELETE_FAILED
 }
@@ -39611,8 +39611,8 @@ func (x *OTAUpdateInfo) GetProtocols() []Protocol {
 }
 
 func (x *OTAUpdateInfo) GetTargetselection() TargetSelection {
-	if x != nil {
-		return x.Targetselection
+	if x != nil && x.Targetselection != nil {
+		return *x.Targetselection
 	}
 	return TargetSelection_TARGET_SELECTION_CONTINUOUS
 }
@@ -39961,7 +39961,7 @@ type PackageVersionSummary struct {
 	Creationdate     *string                `protobuf:"bytes,238315265,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
 	Lastmodifieddate *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Packagename      *string                `protobuf:"bytes,474490177,opt,name=packagename,proto3,oneof" json:"packagename,omitempty"`
-	Status           PackageVersionStatus   `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.PackageVersionStatus" json:"status,omitempty"`
+	Status           *PackageVersionStatus  `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.PackageVersionStatus,oneof" json:"status,omitempty"`
 	Versionname      *string                `protobuf:"bytes,508494709,opt,name=versionname,proto3,oneof" json:"versionname,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -40019,8 +40019,8 @@ func (x *PackageVersionSummary) GetPackagename() string {
 }
 
 func (x *PackageVersionSummary) GetStatus() PackageVersionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return PackageVersionStatus_PACKAGE_VERSION_STATUS_PUBLISHED
 }
@@ -40303,7 +40303,7 @@ func (x *PresignedUrlConfig) GetRolearn() string {
 type PrincipalThingObject struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Thingname          string                 `protobuf:"bytes,526020141,opt,name=thingname,proto3" json:"thingname,omitempty"`
-	Thingprincipaltype ThingPrincipalType     `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType" json:"thingprincipaltype,omitempty"`
+	Thingprincipaltype *ThingPrincipalType    `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType,oneof" json:"thingprincipaltype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -40346,8 +40346,8 @@ func (x *PrincipalThingObject) GetThingname() string {
 }
 
 func (x *PrincipalThingObject) GetThingprincipaltype() ThingPrincipalType {
-	if x != nil {
-		return x.Thingprincipaltype
+	if x != nil && x.Thingprincipaltype != nil {
+		return *x.Thingprincipaltype
 	}
 	return ThingPrincipalType_THING_PRINCIPAL_TYPE_EXCLUSIVE_THING
 }
@@ -40472,7 +40472,7 @@ type ProvisioningTemplateSummary struct {
 	Lastmodifieddate *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Templatearn      *string                `protobuf:"bytes,290623807,opt,name=templatearn,proto3,oneof" json:"templatearn,omitempty"`
 	Templatename     *string                `protobuf:"bytes,301901137,opt,name=templatename,proto3,oneof" json:"templatename,omitempty"`
-	Type             TemplateType           `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.TemplateType" json:"type,omitempty"`
+	Type             *TemplateType          `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.TemplateType,oneof" json:"type,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -40550,8 +40550,8 @@ func (x *ProvisioningTemplateSummary) GetTemplatename() string {
 }
 
 func (x *ProvisioningTemplateSummary) GetType() TemplateType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return TemplateType_TEMPLATE_TYPE_FLEET_PROVISIONING
 }
@@ -40932,7 +40932,7 @@ type RegisterCACertificateRequest struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Allowautoregistration   *bool                  `protobuf:"varint,57484881,opt,name=allowautoregistration,proto3,oneof" json:"allowautoregistration,omitempty"`
 	Cacertificate           string                 `protobuf:"bytes,492190309,opt,name=cacertificate,proto3" json:"cacertificate,omitempty"`
-	Certificatemode         CertificateMode        `protobuf:"varint,236877860,opt,name=certificatemode,proto3,enum=iot.CertificateMode" json:"certificatemode,omitempty"`
+	Certificatemode         *CertificateMode       `protobuf:"varint,236877860,opt,name=certificatemode,proto3,enum=iot.CertificateMode,oneof" json:"certificatemode,omitempty"`
 	Registrationconfig      *RegistrationConfig    `protobuf:"bytes,297329879,opt,name=registrationconfig,proto3" json:"registrationconfig,omitempty"`
 	Setasactive             *bool                  `protobuf:"varint,126943154,opt,name=setasactive,proto3,oneof" json:"setasactive,omitempty"`
 	Tags                    []*Tag                 `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
@@ -40986,8 +40986,8 @@ func (x *RegisterCACertificateRequest) GetCacertificate() string {
 }
 
 func (x *RegisterCACertificateRequest) GetCertificatemode() CertificateMode {
-	if x != nil {
-		return x.Certificatemode
+	if x != nil && x.Certificatemode != nil {
+		return *x.Certificatemode
 	}
 	return CertificateMode_CERTIFICATE_MODE_DEFAULT
 }
@@ -41077,7 +41077,7 @@ type RegisterCertificateRequest struct {
 	Cacertificatepem *string                `protobuf:"bytes,240572259,opt,name=cacertificatepem,proto3,oneof" json:"cacertificatepem,omitempty"`
 	Certificatepem   string                 `protobuf:"bytes,498816311,opt,name=certificatepem,proto3" json:"certificatepem,omitempty"`
 	Setasactive      *bool                  `protobuf:"varint,126943154,opt,name=setasactive,proto3,oneof" json:"setasactive,omitempty"`
-	Status           CertificateStatus      `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CertificateStatus" json:"status,omitempty"`
+	Status           *CertificateStatus     `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CertificateStatus,oneof" json:"status,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -41134,8 +41134,8 @@ func (x *RegisterCertificateRequest) GetSetasactive() bool {
 }
 
 func (x *RegisterCertificateRequest) GetStatus() CertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CertificateStatus_CERTIFICATE_STATUS_PENDING_TRANSFER
 }
@@ -41195,7 +41195,7 @@ func (x *RegisterCertificateResponse) GetCertificateid() string {
 type RegisterCertificateWithoutCARequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Certificatepem string                 `protobuf:"bytes,498816311,opt,name=certificatepem,proto3" json:"certificatepem,omitempty"`
-	Status         CertificateStatus      `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CertificateStatus" json:"status,omitempty"`
+	Status         *CertificateStatus     `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.CertificateStatus,oneof" json:"status,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -41238,8 +41238,8 @@ func (x *RegisterCertificateWithoutCARequest) GetCertificatepem() string {
 }
 
 func (x *RegisterCertificateWithoutCARequest) GetStatus() CertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CertificateStatus_CERTIFICATE_STATUS_PENDING_TRANSFER
 }
@@ -41560,7 +41560,7 @@ type RelatedResource struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Additionalinfo     map[string]string      `protobuf:"bytes,288546721,rep,name=additionalinfo,proto3" json:"additionalinfo,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Resourceidentifier *ResourceIdentifier    `protobuf:"bytes,309427407,opt,name=resourceidentifier,proto3" json:"resourceidentifier,omitempty"`
-	Resourcetype       ResourceType           `protobuf:"varint,7604990,opt,name=resourcetype,proto3,enum=iot.ResourceType" json:"resourcetype,omitempty"`
+	Resourcetype       *ResourceType          `protobuf:"varint,7604990,opt,name=resourcetype,proto3,enum=iot.ResourceType,oneof" json:"resourcetype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -41610,8 +41610,8 @@ func (x *RelatedResource) GetResourceidentifier() *ResourceIdentifier {
 }
 
 func (x *RelatedResource) GetResourcetype() ResourceType {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return ResourceType_RESOURCE_TYPE_ROLE_ALIAS
 }
@@ -42397,11 +42397,11 @@ func (x *RoleAliasDescription) GetRolearn() string {
 }
 
 type S3Action struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Bucketname    string                  `protobuf:"bytes,430533589,opt,name=bucketname,proto3" json:"bucketname,omitempty"`
-	Cannedacl     CannedAccessControlList `protobuf:"varint,63718781,opt,name=cannedacl,proto3,enum=iot.CannedAccessControlList" json:"cannedacl,omitempty"`
-	Key           string                  `protobuf:"bytes,135645293,opt,name=key,proto3" json:"key,omitempty"`
-	Rolearn       string                  `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Bucketname    string                   `protobuf:"bytes,430533589,opt,name=bucketname,proto3" json:"bucketname,omitempty"`
+	Cannedacl     *CannedAccessControlList `protobuf:"varint,63718781,opt,name=cannedacl,proto3,enum=iot.CannedAccessControlList,oneof" json:"cannedacl,omitempty"`
+	Key           string                   `protobuf:"bytes,135645293,opt,name=key,proto3" json:"key,omitempty"`
+	Rolearn       string                   `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -42444,8 +42444,8 @@ func (x *S3Action) GetBucketname() string {
 }
 
 func (x *S3Action) GetCannedacl() CannedAccessControlList {
-	if x != nil {
-		return x.Cannedacl
+	if x != nil && x.Cannedacl != nil {
+		return *x.Cannedacl
 	}
 	return CannedAccessControlList_CANNED_ACCESS_CONTROL_LIST_BUCKETOWNERFULLCONTROL
 }
@@ -42673,11 +42673,11 @@ func (x *Sbom) GetS3Location() *S3Location {
 }
 
 type SbomValidationResultSummary struct {
-	state            protoimpl.MessageState  `protogen:"open.v1"`
-	Errorcode        SbomValidationErrorCode `protobuf:"varint,355916985,opt,name=errorcode,proto3,enum=iot.SbomValidationErrorCode" json:"errorcode,omitempty"`
-	Errormessage     *string                 `protobuf:"bytes,136873289,opt,name=errormessage,proto3,oneof" json:"errormessage,omitempty"`
-	Filename         *string                 `protobuf:"bytes,524113321,opt,name=filename,proto3,oneof" json:"filename,omitempty"`
-	Validationresult SbomValidationResult    `protobuf:"varint,173338468,opt,name=validationresult,proto3,enum=iot.SbomValidationResult" json:"validationresult,omitempty"`
+	state            protoimpl.MessageState   `protogen:"open.v1"`
+	Errorcode        *SbomValidationErrorCode `protobuf:"varint,355916985,opt,name=errorcode,proto3,enum=iot.SbomValidationErrorCode,oneof" json:"errorcode,omitempty"`
+	Errormessage     *string                  `protobuf:"bytes,136873289,opt,name=errormessage,proto3,oneof" json:"errormessage,omitempty"`
+	Filename         *string                  `protobuf:"bytes,524113321,opt,name=filename,proto3,oneof" json:"filename,omitempty"`
+	Validationresult *SbomValidationResult    `protobuf:"varint,173338468,opt,name=validationresult,proto3,enum=iot.SbomValidationResult,oneof" json:"validationresult,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -42713,8 +42713,8 @@ func (*SbomValidationResultSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *SbomValidationResultSummary) GetErrorcode() SbomValidationErrorCode {
-	if x != nil {
-		return x.Errorcode
+	if x != nil && x.Errorcode != nil {
+		return *x.Errorcode
 	}
 	return SbomValidationErrorCode_SBOM_VALIDATION_ERROR_CODE_FILE_SIZE_LIMIT_EXCEEDED
 }
@@ -42734,8 +42734,8 @@ func (x *SbomValidationResultSummary) GetFilename() string {
 }
 
 func (x *SbomValidationResultSummary) GetValidationresult() SbomValidationResult {
-	if x != nil {
-		return x.Validationresult
+	if x != nil && x.Validationresult != nil {
+		return *x.Validationresult
 	}
 	return SbomValidationResult_SBOM_VALIDATION_RESULT_SUCCEEDED
 }
@@ -42743,8 +42743,8 @@ func (x *SbomValidationResultSummary) GetValidationresult() SbomValidationResult
 type ScheduledAuditMetadata struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Dayofmonth         *string                `protobuf:"bytes,239383807,opt,name=dayofmonth,proto3,oneof" json:"dayofmonth,omitempty"`
-	Dayofweek          DayOfWeek              `protobuf:"varint,99137661,opt,name=dayofweek,proto3,enum=iot.DayOfWeek" json:"dayofweek,omitempty"`
-	Frequency          AuditFrequency         `protobuf:"varint,263396354,opt,name=frequency,proto3,enum=iot.AuditFrequency" json:"frequency,omitempty"`
+	Dayofweek          *DayOfWeek             `protobuf:"varint,99137661,opt,name=dayofweek,proto3,enum=iot.DayOfWeek,oneof" json:"dayofweek,omitempty"`
+	Frequency          *AuditFrequency        `protobuf:"varint,263396354,opt,name=frequency,proto3,enum=iot.AuditFrequency,oneof" json:"frequency,omitempty"`
 	Scheduledauditarn  *string                `protobuf:"bytes,244234715,opt,name=scheduledauditarn,proto3,oneof" json:"scheduledauditarn,omitempty"`
 	Scheduledauditname *string                `protobuf:"bytes,384331605,opt,name=scheduledauditname,proto3,oneof" json:"scheduledauditname,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -42789,15 +42789,15 @@ func (x *ScheduledAuditMetadata) GetDayofmonth() string {
 }
 
 func (x *ScheduledAuditMetadata) GetDayofweek() DayOfWeek {
-	if x != nil {
-		return x.Dayofweek
+	if x != nil && x.Dayofweek != nil {
+		return *x.Dayofweek
 	}
 	return DayOfWeek_DAY_OF_WEEK_SUN
 }
 
 func (x *ScheduledAuditMetadata) GetFrequency() AuditFrequency {
-	if x != nil {
-		return x.Frequency
+	if x != nil && x.Frequency != nil {
+		return *x.Frequency
 	}
 	return AuditFrequency_AUDIT_FREQUENCY_BIWEEKLY
 }
@@ -42862,7 +42862,7 @@ func (x *ScheduledJobRollout) GetStarttime() string {
 
 type SchedulingConfig struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Endbehavior        JobEndBehavior         `protobuf:"varint,146379981,opt,name=endbehavior,proto3,enum=iot.JobEndBehavior" json:"endbehavior,omitempty"`
+	Endbehavior        *JobEndBehavior        `protobuf:"varint,146379981,opt,name=endbehavior,proto3,enum=iot.JobEndBehavior,oneof" json:"endbehavior,omitempty"`
 	Endtime            *string                `protobuf:"bytes,329679852,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
 	Maintenancewindows []*MaintenanceWindow   `protobuf:"bytes,40861662,rep,name=maintenancewindows,proto3" json:"maintenancewindows,omitempty"`
 	Starttime          *string                `protobuf:"bytes,178154767,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
@@ -42901,8 +42901,8 @@ func (*SchedulingConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *SchedulingConfig) GetEndbehavior() JobEndBehavior {
-	if x != nil {
-		return x.Endbehavior
+	if x != nil && x.Endbehavior != nil {
+		return *x.Endbehavior
 	}
 	return JobEndBehavior_JOB_END_BEHAVIOR_FORCE_CANCEL
 }
@@ -43273,10 +43273,10 @@ func (x *ServerCertificateConfig) GetOcsplambdaarn() string {
 }
 
 type ServerCertificateSummary struct {
-	state                         protoimpl.MessageState  `protogen:"open.v1"`
-	Servercertificatearn          *string                 `protobuf:"bytes,8361365,opt,name=servercertificatearn,proto3,oneof" json:"servercertificatearn,omitempty"`
-	Servercertificatestatus       ServerCertificateStatus `protobuf:"varint,224463784,opt,name=servercertificatestatus,proto3,enum=iot.ServerCertificateStatus" json:"servercertificatestatus,omitempty"`
-	Servercertificatestatusdetail *string                 `protobuf:"bytes,184980711,opt,name=servercertificatestatusdetail,proto3,oneof" json:"servercertificatestatusdetail,omitempty"`
+	state                         protoimpl.MessageState   `protogen:"open.v1"`
+	Servercertificatearn          *string                  `protobuf:"bytes,8361365,opt,name=servercertificatearn,proto3,oneof" json:"servercertificatearn,omitempty"`
+	Servercertificatestatus       *ServerCertificateStatus `protobuf:"varint,224463784,opt,name=servercertificatestatus,proto3,enum=iot.ServerCertificateStatus,oneof" json:"servercertificatestatus,omitempty"`
+	Servercertificatestatusdetail *string                  `protobuf:"bytes,184980711,opt,name=servercertificatestatusdetail,proto3,oneof" json:"servercertificatestatusdetail,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -43319,8 +43319,8 @@ func (x *ServerCertificateSummary) GetServercertificatearn() string {
 }
 
 func (x *ServerCertificateSummary) GetServercertificatestatus() ServerCertificateStatus {
-	if x != nil {
-		return x.Servercertificatestatus
+	if x != nil && x.Servercertificatestatus != nil {
+		return *x.Servercertificatestatus
 	}
 	return ServerCertificateStatus_SERVER_CERTIFICATE_STATUS_INVALID
 }
@@ -43666,7 +43666,7 @@ func (x *SetV2LoggingLevelRequest) GetLogtarget() *LogTarget {
 
 type SetV2LoggingOptionsRequest struct {
 	state               protoimpl.MessageState   `protogen:"open.v1"`
-	Defaultloglevel     LogLevel                 `protobuf:"varint,200142155,opt,name=defaultloglevel,proto3,enum=iot.LogLevel" json:"defaultloglevel,omitempty"`
+	Defaultloglevel     *LogLevel                `protobuf:"varint,200142155,opt,name=defaultloglevel,proto3,enum=iot.LogLevel,oneof" json:"defaultloglevel,omitempty"`
 	Disablealllogs      *bool                    `protobuf:"varint,205646942,opt,name=disablealllogs,proto3,oneof" json:"disablealllogs,omitempty"`
 	Eventconfigurations []*LogEventConfiguration `protobuf:"bytes,151393605,rep,name=eventconfigurations,proto3" json:"eventconfigurations,omitempty"`
 	Rolearn             *string                  `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
@@ -43705,8 +43705,8 @@ func (*SetV2LoggingOptionsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *SetV2LoggingOptionsRequest) GetDefaultloglevel() LogLevel {
-	if x != nil {
-		return x.Defaultloglevel
+	if x != nil && x.Defaultloglevel != nil {
+		return *x.Defaultloglevel
 	}
 	return LogLevel_LOG_LEVEL_DISABLED
 }
@@ -43854,7 +43854,7 @@ func (x *SigningProfileParameter) GetPlatform() string {
 
 type SnsAction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Messageformat MessageFormat          `protobuf:"varint,377921592,opt,name=messageformat,proto3,enum=iot.MessageFormat" json:"messageformat,omitempty"`
+	Messageformat *MessageFormat         `protobuf:"varint,377921592,opt,name=messageformat,proto3,enum=iot.MessageFormat,oneof" json:"messageformat,omitempty"`
 	Rolearn       string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Targetarn     string                 `protobuf:"bytes,367964720,opt,name=targetarn,proto3" json:"targetarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -43892,8 +43892,8 @@ func (*SnsAction) Descriptor() ([]byte, []int) {
 }
 
 func (x *SnsAction) GetMessageformat() MessageFormat {
-	if x != nil {
-		return x.Messageformat
+	if x != nil && x.Messageformat != nil {
+		return *x.Messageformat
 	}
 	return MessageFormat_MESSAGE_FORMAT_RAW
 }
@@ -46333,14 +46333,14 @@ func (x *ThingGroupProperties) GetThinggroupdescription() string {
 }
 
 type ThingIndexingConfiguration struct {
-	state                         protoimpl.MessageState        `protogen:"open.v1"`
-	Customfields                  []*Field                      `protobuf:"bytes,221047948,rep,name=customfields,proto3" json:"customfields,omitempty"`
-	Devicedefenderindexingmode    DeviceDefenderIndexingMode    `protobuf:"varint,265589628,opt,name=devicedefenderindexingmode,proto3,enum=iot.DeviceDefenderIndexingMode" json:"devicedefenderindexingmode,omitempty"`
-	Filter                        *IndexingFilter               `protobuf:"bytes,132212856,opt,name=filter,proto3" json:"filter,omitempty"`
-	Managedfields                 []*Field                      `protobuf:"bytes,322709940,rep,name=managedfields,proto3" json:"managedfields,omitempty"`
-	Namedshadowindexingmode       NamedShadowIndexingMode       `protobuf:"varint,3963614,opt,name=namedshadowindexingmode,proto3,enum=iot.NamedShadowIndexingMode" json:"namedshadowindexingmode,omitempty"`
-	Thingconnectivityindexingmode ThingConnectivityIndexingMode `protobuf:"varint,409190892,opt,name=thingconnectivityindexingmode,proto3,enum=iot.ThingConnectivityIndexingMode" json:"thingconnectivityindexingmode,omitempty"`
-	Thingindexingmode             ThingIndexingMode             `protobuf:"varint,235360021,opt,name=thingindexingmode,proto3,enum=iot.ThingIndexingMode" json:"thingindexingmode,omitempty"`
+	state                         protoimpl.MessageState         `protogen:"open.v1"`
+	Customfields                  []*Field                       `protobuf:"bytes,221047948,rep,name=customfields,proto3" json:"customfields,omitempty"`
+	Devicedefenderindexingmode    *DeviceDefenderIndexingMode    `protobuf:"varint,265589628,opt,name=devicedefenderindexingmode,proto3,enum=iot.DeviceDefenderIndexingMode,oneof" json:"devicedefenderindexingmode,omitempty"`
+	Filter                        *IndexingFilter                `protobuf:"bytes,132212856,opt,name=filter,proto3" json:"filter,omitempty"`
+	Managedfields                 []*Field                       `protobuf:"bytes,322709940,rep,name=managedfields,proto3" json:"managedfields,omitempty"`
+	Namedshadowindexingmode       *NamedShadowIndexingMode       `protobuf:"varint,3963614,opt,name=namedshadowindexingmode,proto3,enum=iot.NamedShadowIndexingMode,oneof" json:"namedshadowindexingmode,omitempty"`
+	Thingconnectivityindexingmode *ThingConnectivityIndexingMode `protobuf:"varint,409190892,opt,name=thingconnectivityindexingmode,proto3,enum=iot.ThingConnectivityIndexingMode,oneof" json:"thingconnectivityindexingmode,omitempty"`
+	Thingindexingmode             ThingIndexingMode              `protobuf:"varint,235360021,opt,name=thingindexingmode,proto3,enum=iot.ThingIndexingMode" json:"thingindexingmode,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -46383,8 +46383,8 @@ func (x *ThingIndexingConfiguration) GetCustomfields() []*Field {
 }
 
 func (x *ThingIndexingConfiguration) GetDevicedefenderindexingmode() DeviceDefenderIndexingMode {
-	if x != nil {
-		return x.Devicedefenderindexingmode
+	if x != nil && x.Devicedefenderindexingmode != nil {
+		return *x.Devicedefenderindexingmode
 	}
 	return DeviceDefenderIndexingMode_DEVICE_DEFENDER_INDEXING_MODE_OFF
 }
@@ -46404,15 +46404,15 @@ func (x *ThingIndexingConfiguration) GetManagedfields() []*Field {
 }
 
 func (x *ThingIndexingConfiguration) GetNamedshadowindexingmode() NamedShadowIndexingMode {
-	if x != nil {
-		return x.Namedshadowindexingmode
+	if x != nil && x.Namedshadowindexingmode != nil {
+		return *x.Namedshadowindexingmode
 	}
 	return NamedShadowIndexingMode_NAMED_SHADOW_INDEXING_MODE_OFF
 }
 
 func (x *ThingIndexingConfiguration) GetThingconnectivityindexingmode() ThingConnectivityIndexingMode {
-	if x != nil {
-		return x.Thingconnectivityindexingmode
+	if x != nil && x.Thingconnectivityindexingmode != nil {
+		return *x.Thingconnectivityindexingmode
 	}
 	return ThingConnectivityIndexingMode_THING_CONNECTIVITY_INDEXING_MODE_STATUS
 }
@@ -46427,7 +46427,7 @@ func (x *ThingIndexingConfiguration) GetThingindexingmode() ThingIndexingMode {
 type ThingPrincipalObject struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Principal          string                 `protobuf:"bytes,262257194,opt,name=principal,proto3" json:"principal,omitempty"`
-	Thingprincipaltype ThingPrincipalType     `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType" json:"thingprincipaltype,omitempty"`
+	Thingprincipaltype *ThingPrincipalType    `protobuf:"varint,362103556,opt,name=thingprincipaltype,proto3,enum=iot.ThingPrincipalType,oneof" json:"thingprincipaltype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -46470,8 +46470,8 @@ func (x *ThingPrincipalObject) GetPrincipal() string {
 }
 
 func (x *ThingPrincipalObject) GetThingprincipaltype() ThingPrincipalType {
-	if x != nil {
-		return x.Thingprincipaltype
+	if x != nil && x.Thingprincipaltype != nil {
+		return *x.Thingprincipaltype
 	}
 	return ThingPrincipalType_THING_PRINCIPAL_TYPE_EXCLUSIVE_THING
 }
@@ -47179,7 +47179,7 @@ type TopicRuleDestination struct {
 	Httpurlproperties  *HttpUrlDestinationProperties  `protobuf:"bytes,424978444,opt,name=httpurlproperties,proto3" json:"httpurlproperties,omitempty"`
 	Influxdbproperties *InfluxDBDestinationProperties `protobuf:"bytes,282836311,opt,name=influxdbproperties,proto3" json:"influxdbproperties,omitempty"`
 	Lastupdatedat      *string                        `protobuf:"bytes,2052226,opt,name=lastupdatedat,proto3,oneof" json:"lastupdatedat,omitempty"`
-	Status             TopicRuleDestinationStatus     `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.TopicRuleDestinationStatus" json:"status,omitempty"`
+	Status             *TopicRuleDestinationStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.TopicRuleDestinationStatus,oneof" json:"status,omitempty"`
 	Statusreason       *string                        `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vpcproperties      *VpcDestinationProperties      `protobuf:"bytes,57632238,opt,name=vpcproperties,proto3" json:"vpcproperties,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -47252,8 +47252,8 @@ func (x *TopicRuleDestination) GetLastupdatedat() string {
 }
 
 func (x *TopicRuleDestination) GetStatus() TopicRuleDestinationStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return TopicRuleDestinationStatus_TOPIC_RULE_DESTINATION_STATUS_DISABLED
 }
@@ -47339,7 +47339,7 @@ type TopicRuleDestinationSummary struct {
 	Httpurlsummary        *HttpUrlDestinationSummary  `protobuf:"bytes,121888091,opt,name=httpurlsummary,proto3" json:"httpurlsummary,omitempty"`
 	Influxdbsummary       *InfluxDBDestinationSummary `protobuf:"bytes,152374586,opt,name=influxdbsummary,proto3" json:"influxdbsummary,omitempty"`
 	Lastupdatedat         *string                     `protobuf:"bytes,2052226,opt,name=lastupdatedat,proto3,oneof" json:"lastupdatedat,omitempty"`
-	Status                TopicRuleDestinationStatus  `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.TopicRuleDestinationStatus" json:"status,omitempty"`
+	Status                *TopicRuleDestinationStatus `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.TopicRuleDestinationStatus,oneof" json:"status,omitempty"`
 	Statusreason          *string                     `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vpcdestinationsummary *VpcDestinationSummary      `protobuf:"bytes,457039073,opt,name=vpcdestinationsummary,proto3" json:"vpcdestinationsummary,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -47412,8 +47412,8 @@ func (x *TopicRuleDestinationSummary) GetLastupdatedat() string {
 }
 
 func (x *TopicRuleDestinationSummary) GetStatus() TopicRuleDestinationStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return TopicRuleDestinationStatus_TOPIC_RULE_DESTINATION_STATUS_DISABLED
 }
@@ -48205,7 +48205,7 @@ type UpdateAuthorizerRequest struct {
 	Authorizerfunctionarn  *string                `protobuf:"bytes,386040646,opt,name=authorizerfunctionarn,proto3,oneof" json:"authorizerfunctionarn,omitempty"`
 	Authorizername         string                 `protobuf:"bytes,49871270,opt,name=authorizername,proto3" json:"authorizername,omitempty"`
 	Enablecachingforhttp   *bool                  `protobuf:"varint,70468675,opt,name=enablecachingforhttp,proto3,oneof" json:"enablecachingforhttp,omitempty"`
-	Status                 AuthorizerStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuthorizerStatus" json:"status,omitempty"`
+	Status                 *AuthorizerStatus      `protobuf:"varint,441153520,opt,name=status,proto3,enum=iot.AuthorizerStatus,oneof" json:"status,omitempty"`
 	Tokenkeyname           *string                `protobuf:"bytes,279325171,opt,name=tokenkeyname,proto3,oneof" json:"tokenkeyname,omitempty"`
 	Tokensigningpublickeys map[string]string      `protobuf:"bytes,326945473,rep,name=tokensigningpublickeys,proto3" json:"tokensigningpublickeys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields          protoimpl.UnknownFields
@@ -48264,8 +48264,8 @@ func (x *UpdateAuthorizerRequest) GetEnablecachingforhttp() bool {
 }
 
 func (x *UpdateAuthorizerRequest) GetStatus() AuthorizerStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AuthorizerStatus_AUTHORIZER_STATUS_ACTIVE
 }
@@ -48485,12 +48485,12 @@ func (x *UpdateCACertificateParams) GetAction() CACertificateUpdateAction {
 }
 
 type UpdateCACertificateRequest struct {
-	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Certificateid             string                 `protobuf:"bytes,322284558,opt,name=certificateid,proto3" json:"certificateid,omitempty"`
-	Newautoregistrationstatus AutoRegistrationStatus `protobuf:"varint,18187318,opt,name=newautoregistrationstatus,proto3,enum=iot.AutoRegistrationStatus" json:"newautoregistrationstatus,omitempty"`
-	Newstatus                 CACertificateStatus    `protobuf:"varint,313789652,opt,name=newstatus,proto3,enum=iot.CACertificateStatus" json:"newstatus,omitempty"`
-	Registrationconfig        *RegistrationConfig    `protobuf:"bytes,297329879,opt,name=registrationconfig,proto3" json:"registrationconfig,omitempty"`
-	Removeautoregistration    *bool                  `protobuf:"varint,491279720,opt,name=removeautoregistration,proto3,oneof" json:"removeautoregistration,omitempty"`
+	state                     protoimpl.MessageState  `protogen:"open.v1"`
+	Certificateid             string                  `protobuf:"bytes,322284558,opt,name=certificateid,proto3" json:"certificateid,omitempty"`
+	Newautoregistrationstatus *AutoRegistrationStatus `protobuf:"varint,18187318,opt,name=newautoregistrationstatus,proto3,enum=iot.AutoRegistrationStatus,oneof" json:"newautoregistrationstatus,omitempty"`
+	Newstatus                 *CACertificateStatus    `protobuf:"varint,313789652,opt,name=newstatus,proto3,enum=iot.CACertificateStatus,oneof" json:"newstatus,omitempty"`
+	Registrationconfig        *RegistrationConfig     `protobuf:"bytes,297329879,opt,name=registrationconfig,proto3" json:"registrationconfig,omitempty"`
+	Removeautoregistration    *bool                   `protobuf:"varint,491279720,opt,name=removeautoregistration,proto3,oneof" json:"removeautoregistration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -48533,15 +48533,15 @@ func (x *UpdateCACertificateRequest) GetCertificateid() string {
 }
 
 func (x *UpdateCACertificateRequest) GetNewautoregistrationstatus() AutoRegistrationStatus {
-	if x != nil {
-		return x.Newautoregistrationstatus
+	if x != nil && x.Newautoregistrationstatus != nil {
+		return *x.Newautoregistrationstatus
 	}
 	return AutoRegistrationStatus_AUTO_REGISTRATION_STATUS_ENABLE
 }
 
 func (x *UpdateCACertificateRequest) GetNewstatus() CACertificateStatus {
-	if x != nil {
-		return x.Newstatus
+	if x != nil && x.Newstatus != nil {
+		return *x.Newstatus
 	}
 	return CACertificateStatus_C_A_CERTIFICATE_STATUS_ACTIVE
 }
@@ -48927,7 +48927,7 @@ type UpdateCustomMetricResponse struct {
 	Lastmodifieddate *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Metricarn        *string                `protobuf:"bytes,465303433,opt,name=metricarn,proto3,oneof" json:"metricarn,omitempty"`
 	Metricname       *string                `protobuf:"bytes,204020635,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
-	Metrictype       CustomMetricType       `protobuf:"varint,39768938,opt,name=metrictype,proto3,enum=iot.CustomMetricType" json:"metrictype,omitempty"`
+	Metrictype       *CustomMetricType      `protobuf:"varint,39768938,opt,name=metrictype,proto3,enum=iot.CustomMetricType,oneof" json:"metrictype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -48998,8 +48998,8 @@ func (x *UpdateCustomMetricResponse) GetMetricname() string {
 }
 
 func (x *UpdateCustomMetricResponse) GetMetrictype() CustomMetricType {
-	if x != nil {
-		return x.Metrictype
+	if x != nil && x.Metrictype != nil {
+		return *x.Metrictype
 	}
 	return CustomMetricType_CUSTOM_METRIC_TYPE_IP_ADDRESS_LIST
 }
@@ -49107,7 +49107,7 @@ type UpdateDimensionResponse struct {
 	Lastmodifieddate *string                `protobuf:"bytes,161429939,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Name             *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Stringvalues     []string               `protobuf:"bytes,236264239,rep,name=stringvalues,proto3" json:"stringvalues,omitempty"`
-	Type             DimensionType          `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.DimensionType" json:"type,omitempty"`
+	Type             *DimensionType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=iot.DimensionType,oneof" json:"type,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -49178,23 +49178,23 @@ func (x *UpdateDimensionResponse) GetStringvalues() []string {
 }
 
 func (x *UpdateDimensionResponse) GetType() DimensionType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return DimensionType_DIMENSION_TYPE_TOPIC_FILTER
 }
 
 type UpdateDomainConfigurationRequest struct {
-	state                     protoimpl.MessageState    `protogen:"open.v1"`
-	Applicationprotocol       ApplicationProtocol       `protobuf:"varint,420413526,opt,name=applicationprotocol,proto3,enum=iot.ApplicationProtocol" json:"applicationprotocol,omitempty"`
-	Authenticationtype        AuthenticationType        `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=iot.AuthenticationType" json:"authenticationtype,omitempty"`
-	Authorizerconfig          *AuthorizerConfig         `protobuf:"bytes,86904353,opt,name=authorizerconfig,proto3" json:"authorizerconfig,omitempty"`
-	Clientcertificateconfig   *ClientCertificateConfig  `protobuf:"bytes,287420460,opt,name=clientcertificateconfig,proto3" json:"clientcertificateconfig,omitempty"`
-	Domainconfigurationname   string                    `protobuf:"bytes,280194767,opt,name=domainconfigurationname,proto3" json:"domainconfigurationname,omitempty"`
-	Domainconfigurationstatus DomainConfigurationStatus `protobuf:"varint,60627256,opt,name=domainconfigurationstatus,proto3,enum=iot.DomainConfigurationStatus" json:"domainconfigurationstatus,omitempty"`
-	Removeauthorizerconfig    *bool                     `protobuf:"varint,290069641,opt,name=removeauthorizerconfig,proto3,oneof" json:"removeauthorizerconfig,omitempty"`
-	Servercertificateconfig   *ServerCertificateConfig  `protobuf:"bytes,115239696,opt,name=servercertificateconfig,proto3" json:"servercertificateconfig,omitempty"`
-	Tlsconfig                 *TlsConfig                `protobuf:"bytes,108946693,opt,name=tlsconfig,proto3" json:"tlsconfig,omitempty"`
+	state                     protoimpl.MessageState     `protogen:"open.v1"`
+	Applicationprotocol       *ApplicationProtocol       `protobuf:"varint,420413526,opt,name=applicationprotocol,proto3,enum=iot.ApplicationProtocol,oneof" json:"applicationprotocol,omitempty"`
+	Authenticationtype        *AuthenticationType        `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=iot.AuthenticationType,oneof" json:"authenticationtype,omitempty"`
+	Authorizerconfig          *AuthorizerConfig          `protobuf:"bytes,86904353,opt,name=authorizerconfig,proto3" json:"authorizerconfig,omitempty"`
+	Clientcertificateconfig   *ClientCertificateConfig   `protobuf:"bytes,287420460,opt,name=clientcertificateconfig,proto3" json:"clientcertificateconfig,omitempty"`
+	Domainconfigurationname   string                     `protobuf:"bytes,280194767,opt,name=domainconfigurationname,proto3" json:"domainconfigurationname,omitempty"`
+	Domainconfigurationstatus *DomainConfigurationStatus `protobuf:"varint,60627256,opt,name=domainconfigurationstatus,proto3,enum=iot.DomainConfigurationStatus,oneof" json:"domainconfigurationstatus,omitempty"`
+	Removeauthorizerconfig    *bool                      `protobuf:"varint,290069641,opt,name=removeauthorizerconfig,proto3,oneof" json:"removeauthorizerconfig,omitempty"`
+	Servercertificateconfig   *ServerCertificateConfig   `protobuf:"bytes,115239696,opt,name=servercertificateconfig,proto3" json:"servercertificateconfig,omitempty"`
+	Tlsconfig                 *TlsConfig                 `protobuf:"bytes,108946693,opt,name=tlsconfig,proto3" json:"tlsconfig,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -49230,15 +49230,15 @@ func (*UpdateDomainConfigurationRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateDomainConfigurationRequest) GetApplicationprotocol() ApplicationProtocol {
-	if x != nil {
-		return x.Applicationprotocol
+	if x != nil && x.Applicationprotocol != nil {
+		return *x.Applicationprotocol
 	}
 	return ApplicationProtocol_APPLICATION_PROTOCOL_MQTT_WSS
 }
 
 func (x *UpdateDomainConfigurationRequest) GetAuthenticationtype() AuthenticationType {
-	if x != nil {
-		return x.Authenticationtype
+	if x != nil && x.Authenticationtype != nil {
+		return *x.Authenticationtype
 	}
 	return AuthenticationType_AUTHENTICATION_TYPE_AWS_X509
 }
@@ -49265,8 +49265,8 @@ func (x *UpdateDomainConfigurationRequest) GetDomainconfigurationname() string {
 }
 
 func (x *UpdateDomainConfigurationRequest) GetDomainconfigurationstatus() DomainConfigurationStatus {
-	if x != nil {
-		return x.Domainconfigurationstatus
+	if x != nil && x.Domainconfigurationstatus != nil {
+		return *x.Domainconfigurationstatus
 	}
 	return DomainConfigurationStatus_DOMAIN_CONFIGURATION_STATUS_DISABLED
 }
@@ -49659,7 +49659,7 @@ type UpdateFleetMetricRequest struct {
 	Period           *int32                 `protobuf:"varint,432621317,opt,name=period,proto3,oneof" json:"period,omitempty"`
 	Querystring      *string                `protobuf:"bytes,520568967,opt,name=querystring,proto3,oneof" json:"querystring,omitempty"`
 	Queryversion     *string                `protobuf:"bytes,11161566,opt,name=queryversion,proto3,oneof" json:"queryversion,omitempty"`
-	Unit             FleetMetricUnit        `protobuf:"varint,146086408,opt,name=unit,proto3,enum=iot.FleetMetricUnit" json:"unit,omitempty"`
+	Unit             *FleetMetricUnit       `protobuf:"varint,146086408,opt,name=unit,proto3,enum=iot.FleetMetricUnit,oneof" json:"unit,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -49758,8 +49758,8 @@ func (x *UpdateFleetMetricRequest) GetQueryversion() string {
 }
 
 func (x *UpdateFleetMetricRequest) GetUnit() FleetMetricUnit {
-	if x != nil {
-		return x.Unit
+	if x != nil && x.Unit != nil {
+		return *x.Unit
 	}
 	return FleetMetricUnit_FLEET_METRIC_UNIT_KILOBITSSECOND
 }
@@ -50266,7 +50266,7 @@ func (*UpdatePackageResponse) Descriptor() ([]byte, []int) {
 
 type UpdatePackageVersionRequest struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Action        PackageVersionAction    `protobuf:"varint,73674496,opt,name=action,proto3,enum=iot.PackageVersionAction" json:"action,omitempty"`
+	Action        *PackageVersionAction   `protobuf:"varint,73674496,opt,name=action,proto3,enum=iot.PackageVersionAction,oneof" json:"action,omitempty"`
 	Artifact      *PackageVersionArtifact `protobuf:"bytes,514562084,opt,name=artifact,proto3" json:"artifact,omitempty"`
 	Attributes    map[string]string       `protobuf:"bytes,33545109,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Clienttoken   *string                 `protobuf:"bytes,272531820,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
@@ -50309,8 +50309,8 @@ func (*UpdatePackageVersionRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdatePackageVersionRequest) GetAction() PackageVersionAction {
-	if x != nil {
-		return x.Action
+	if x != nil && x.Action != nil {
+		return *x.Action
 	}
 	return PackageVersionAction_PACKAGE_VERSION_ACTION_DEPRECATE
 }
@@ -50643,8 +50643,8 @@ func (x *UpdateRoleAliasResponse) GetRolealiasarn() string {
 type UpdateScheduledAuditRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Dayofmonth         *string                `protobuf:"bytes,239383807,opt,name=dayofmonth,proto3,oneof" json:"dayofmonth,omitempty"`
-	Dayofweek          DayOfWeek              `protobuf:"varint,99137661,opt,name=dayofweek,proto3,enum=iot.DayOfWeek" json:"dayofweek,omitempty"`
-	Frequency          AuditFrequency         `protobuf:"varint,263396354,opt,name=frequency,proto3,enum=iot.AuditFrequency" json:"frequency,omitempty"`
+	Dayofweek          *DayOfWeek             `protobuf:"varint,99137661,opt,name=dayofweek,proto3,enum=iot.DayOfWeek,oneof" json:"dayofweek,omitempty"`
+	Frequency          *AuditFrequency        `protobuf:"varint,263396354,opt,name=frequency,proto3,enum=iot.AuditFrequency,oneof" json:"frequency,omitempty"`
 	Scheduledauditname string                 `protobuf:"bytes,384331605,opt,name=scheduledauditname,proto3" json:"scheduledauditname,omitempty"`
 	Targetchecknames   []string               `protobuf:"bytes,469955521,rep,name=targetchecknames,proto3" json:"targetchecknames,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -50689,15 +50689,15 @@ func (x *UpdateScheduledAuditRequest) GetDayofmonth() string {
 }
 
 func (x *UpdateScheduledAuditRequest) GetDayofweek() DayOfWeek {
-	if x != nil {
-		return x.Dayofweek
+	if x != nil && x.Dayofweek != nil {
+		return *x.Dayofweek
 	}
 	return DayOfWeek_DAY_OF_WEEK_SUN
 }
 
 func (x *UpdateScheduledAuditRequest) GetFrequency() AuditFrequency {
-	if x != nil {
-		return x.Frequency
+	if x != nil && x.Frequency != nil {
+		return *x.Frequency
 	}
 	return AuditFrequency_AUDIT_FREQUENCY_BIWEEKLY
 }
@@ -52030,11 +52030,11 @@ type ViolationEvent struct {
 	Metricvalue                  *MetricValue                  `protobuf:"bytes,51084559,opt,name=metricvalue,proto3" json:"metricvalue,omitempty"`
 	Securityprofilename          *string                       `protobuf:"bytes,463970880,opt,name=securityprofilename,proto3,oneof" json:"securityprofilename,omitempty"`
 	Thingname                    *string                       `protobuf:"bytes,526020141,opt,name=thingname,proto3,oneof" json:"thingname,omitempty"`
-	Verificationstate            VerificationState             `protobuf:"varint,46156804,opt,name=verificationstate,proto3,enum=iot.VerificationState" json:"verificationstate,omitempty"`
+	Verificationstate            *VerificationState            `protobuf:"varint,46156804,opt,name=verificationstate,proto3,enum=iot.VerificationState,oneof" json:"verificationstate,omitempty"`
 	Verificationstatedescription *string                       `protobuf:"bytes,16078040,opt,name=verificationstatedescription,proto3,oneof" json:"verificationstatedescription,omitempty"`
 	Violationeventadditionalinfo *ViolationEventAdditionalInfo `protobuf:"bytes,29091486,opt,name=violationeventadditionalinfo,proto3" json:"violationeventadditionalinfo,omitempty"`
 	Violationeventtime           *string                       `protobuf:"bytes,434404122,opt,name=violationeventtime,proto3,oneof" json:"violationeventtime,omitempty"`
-	Violationeventtype           ViolationEventType            `protobuf:"varint,372521673,opt,name=violationeventtype,proto3,enum=iot.ViolationEventType" json:"violationeventtype,omitempty"`
+	Violationeventtype           *ViolationEventType           `protobuf:"varint,372521673,opt,name=violationeventtype,proto3,enum=iot.ViolationEventType,oneof" json:"violationeventtype,omitempty"`
 	Violationid                  *string                       `protobuf:"bytes,273917670,opt,name=violationid,proto3,oneof" json:"violationid,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -52099,8 +52099,8 @@ func (x *ViolationEvent) GetThingname() string {
 }
 
 func (x *ViolationEvent) GetVerificationstate() VerificationState {
-	if x != nil {
-		return x.Verificationstate
+	if x != nil && x.Verificationstate != nil {
+		return *x.Verificationstate
 	}
 	return VerificationState_VERIFICATION_STATE_UNKNOWN
 }
@@ -52127,8 +52127,8 @@ func (x *ViolationEvent) GetViolationeventtime() string {
 }
 
 func (x *ViolationEvent) GetViolationeventtype() ViolationEventType {
-	if x != nil {
-		return x.Violationeventtype
+	if x != nil && x.Violationeventtype != nil {
+		return *x.Violationeventtype
 	}
 	return ViolationEventType_VIOLATION_EVENT_TYPE_IN_ALARM
 }
@@ -52142,7 +52142,7 @@ func (x *ViolationEvent) GetViolationid() string {
 
 type ViolationEventAdditionalInfo struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Confidencelevel ConfidenceLevel        `protobuf:"varint,240401946,opt,name=confidencelevel,proto3,enum=iot.ConfidenceLevel" json:"confidencelevel,omitempty"`
+	Confidencelevel *ConfidenceLevel       `protobuf:"varint,240401946,opt,name=confidencelevel,proto3,enum=iot.ConfidenceLevel,oneof" json:"confidencelevel,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -52178,8 +52178,8 @@ func (*ViolationEventAdditionalInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *ViolationEventAdditionalInfo) GetConfidencelevel() ConfidenceLevel {
-	if x != nil {
-		return x.Confidencelevel
+	if x != nil && x.Confidencelevel != nil {
+		return *x.Confidencelevel
 	}
 	return ConfidenceLevel_CONFIDENCE_LEVEL_MEDIUM
 }
@@ -52489,22 +52489,23 @@ const file_iot_proto_rawDesc = "" +
 	"\rstepfunctions\x18\xf5\xb0ô\x01 \x01(\v2\x18.iot.StepFunctionsActionR\rstepfunctions\x128\n" +
 	"\n" +
 	"timestream\x18\xfd\xb1\xa8/ \x01(\v2\x15.iot.TimestreamActionR\n" +
-	"timestream\"\x84\x06\n" +
+	"timestream\"\x9f\x06\n" +
 	"\x0fActiveViolation\x12,\n" +
 	"\bbehavior\x18\xa8\xfc\xa6\x7f \x01(\v2\r.iot.BehaviorR\bbehavior\x124\n" +
 	"\x11lastviolationtime\x18\xa6\xca\xd6X \x01(\tH\x00R\x11lastviolationtime\x88\x01\x01\x12D\n" +
 	"\x12lastviolationvalue\x18\xfe\x94\xff\x9b\x01 \x01(\v2\x10.iot.MetricValueR\x12lastviolationvalue\x129\n" +
 	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tH\x01R\x13securityprofilename\x88\x01\x01\x12%\n" +
-	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\x02R\tthingname\x88\x01\x01\x12G\n" +
-	"\x11verificationstate\x18\x84\x98\x81\x16 \x01(\x0e2\x16.iot.VerificationStateR\x11verificationstate\x12J\n" +
-	"\x1cverificationstatedescription\x18ة\xd5\a \x01(\tH\x03R\x1cverificationstatedescription\x88\x01\x01\x12h\n" +
+	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\x02R\tthingname\x88\x01\x01\x12L\n" +
+	"\x11verificationstate\x18\x84\x98\x81\x16 \x01(\x0e2\x16.iot.VerificationStateH\x03R\x11verificationstate\x88\x01\x01\x12J\n" +
+	"\x1cverificationstatedescription\x18ة\xd5\a \x01(\tH\x04R\x1cverificationstatedescription\x88\x01\x01\x12h\n" +
 	"\x1cviolationeventadditionalinfo\x18\x9e\xcd\xef\r \x01(\v2!.iot.ViolationEventAdditionalInfoR\x1cviolationeventadditionalinfo\x12)\n" +
-	"\vviolationid\x18\xe6\xcd\u0382\x01 \x01(\tH\x04R\vviolationid\x88\x01\x01\x127\n" +
-	"\x12violationstarttime\x18\xa6\xa1\xbe\xe4\x01 \x01(\tH\x05R\x12violationstarttime\x88\x01\x01B\x14\n" +
+	"\vviolationid\x18\xe6\xcd\u0382\x01 \x01(\tH\x05R\vviolationid\x88\x01\x01\x127\n" +
+	"\x12violationstarttime\x18\xa6\xa1\xbe\xe4\x01 \x01(\tH\x06R\x12violationstarttime\x88\x01\x01B\x14\n" +
 	"\x12_lastviolationtimeB\x16\n" +
 	"\x14_securityprofilenameB\f\n" +
 	"\n" +
-	"_thingnameB\x1f\n" +
+	"_thingnameB\x14\n" +
+	"\x12_verificationstateB\x1f\n" +
 	"\x1d_verificationstatedescriptionB\x0e\n" +
 	"\f_violationidB\x15\n" +
 	"\x13_violationstarttime\"\x95\x02\n" +
@@ -52568,13 +52569,14 @@ const file_iot_proto_rawDesc = "" +
 	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tR\vpackagename\x12!\n" +
 	"\x04sbom\x18\x91\x96\xa1\xf9\x01 \x01(\v2\t.iot.SbomR\x04sbom\x12$\n" +
 	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tR\vversionnameB\x0e\n" +
-	"\f_clienttoken\"\x95\x02\n" +
+	"\f_clienttoken\"\xb3\x02\n" +
 	"'AssociateSbomWithPackageVersionResponse\x12)\n" +
 	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tH\x00R\vpackagename\x88\x01\x01\x12!\n" +
-	"\x04sbom\x18\x91\x96\xa1\xf9\x01 \x01(\v2\t.iot.SbomR\x04sbom\x12Q\n" +
-	"\x14sbomvalidationstatus\x18\xf6\x90\xc6\xef\x01 \x01(\x0e2\x19.iot.SbomValidationStatusR\x14sbomvalidationstatus\x12)\n" +
-	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tH\x01R\vversionname\x88\x01\x01B\x0e\n" +
-	"\f_packagenameB\x0e\n" +
+	"\x04sbom\x18\x91\x96\xa1\xf9\x01 \x01(\v2\t.iot.SbomR\x04sbom\x12V\n" +
+	"\x14sbomvalidationstatus\x18\xf6\x90\xc6\xef\x01 \x01(\x0e2\x19.iot.SbomValidationStatusH\x01R\x14sbomvalidationstatus\x88\x01\x01\x12)\n" +
+	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tH\x02R\vversionname\x88\x01\x01B\x0e\n" +
+	"\f_packagenameB\x17\n" +
+	"\x15_sbomvalidationstatusB\x0e\n" +
 	"\f_versionname\"\xbf\x01\n" +
 	"\x1eAssociateTargetsWithJobRequest\x12 \n" +
 	"\acomment\x18߈\x9b= \x01(\tH\x00R\acomment\x88\x01\x01\x12\x18\n" +
@@ -52604,11 +52606,12 @@ const file_iot_proto_rawDesc = "" +
 	"\x1cAttachSecurityProfileRequest\x124\n" +
 	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tR\x13securityprofilename\x12=\n" +
 	"\x18securityprofiletargetarn\x18\xe5\x9e\xc0m \x01(\tR\x18securityprofiletargetarn\"\x1f\n" +
-	"\x1dAttachSecurityProfileResponse\"\xad\x01\n" +
+	"\x1dAttachSecurityProfileResponse\"\xc9\x01\n" +
 	"\x1bAttachThingPrincipalRequest\x12\x1f\n" +
 	"\tprincipal\x18\xaa\xf4\x86} \x01(\tR\tprincipal\x12 \n" +
-	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingname\x12K\n" +
-	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeR\x12thingprincipaltype\"\x1e\n" +
+	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingname\x12P\n" +
+	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeH\x00R\x12thingprincipaltype\x88\x01\x01B\x15\n" +
+	"\x13_thingprincipaltype\"\x1e\n" +
 	"\x1cAttachThingPrincipalResponse\"\xc4\x01\n" +
 	"\x10AttributePayload\x12H\n" +
 	"\n" +
@@ -52626,23 +52629,24 @@ const file_iot_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
 	"\n" +
-	"\b_enabled\"\xbe\x04\n" +
+	"\b_enabled\"\xd6\x04\n" +
 	"\x11AuditCheckDetails\x12/\n" +
-	"\x0echeckcompliant\x18\xe5\xbb\xe6\xa0\x01 \x01(\bH\x00R\x0echeckcompliant\x88\x01\x01\x12C\n" +
-	"\x0echeckrunstatus\x18\xa3\xbe\x97b \x01(\x0e2\x18.iot.AuditCheckRunStatusR\x0echeckrunstatus\x12%\n" +
-	"\terrorcode\x18\xb9\xb9۩\x01 \x01(\tH\x01R\terrorcode\x88\x01\x01\x12 \n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x02R\amessage\x88\x01\x01\x12F\n" +
-	"\x1anoncompliantresourcescount\x18\x82\xe7\x996 \x01(\x03H\x03R\x1anoncompliantresourcescount\x88\x01\x01\x12Z\n" +
-	"$suppressednoncompliantresourcescount\x18ؚ\xe6- \x01(\x03H\x04R$suppressednoncompliantresourcescount\x88\x01\x01\x129\n" +
-	"\x13totalresourcescount\x18®\xfe\xcf\x01 \x01(\x03H\x05R\x13totalresourcescount\x88\x01\x01B\x11\n" +
-	"\x0f_checkcompliantB\f\n" +
+	"\x0echeckcompliant\x18\xe5\xbb\xe6\xa0\x01 \x01(\bH\x00R\x0echeckcompliant\x88\x01\x01\x12H\n" +
+	"\x0echeckrunstatus\x18\xa3\xbe\x97b \x01(\x0e2\x18.iot.AuditCheckRunStatusH\x01R\x0echeckrunstatus\x88\x01\x01\x12%\n" +
+	"\terrorcode\x18\xb9\xb9۩\x01 \x01(\tH\x02R\terrorcode\x88\x01\x01\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x03R\amessage\x88\x01\x01\x12F\n" +
+	"\x1anoncompliantresourcescount\x18\x82\xe7\x996 \x01(\x03H\x04R\x1anoncompliantresourcescount\x88\x01\x01\x12Z\n" +
+	"$suppressednoncompliantresourcescount\x18ؚ\xe6- \x01(\x03H\x05R$suppressednoncompliantresourcescount\x88\x01\x01\x129\n" +
+	"\x13totalresourcescount\x18®\xfe\xcf\x01 \x01(\x03H\x06R\x13totalresourcescount\x88\x01\x01B\x11\n" +
+	"\x0f_checkcompliantB\x11\n" +
+	"\x0f_checkrunstatusB\f\n" +
 	"\n" +
 	"_errorcodeB\n" +
 	"\n" +
 	"\b_messageB\x1d\n" +
 	"\x1b_noncompliantresourcescountB'\n" +
 	"%_suppressednoncompliantresourcescountB\x16\n" +
-	"\x14_totalresourcescount\"\xf0\x05\n" +
+	"\x14_totalresourcescount\"\x82\x06\n" +
 	"\fAuditFinding\x12%\n" +
 	"\tcheckname\x18\xe5\x9a\xec\xfe\x01 \x01(\tH\x00R\tcheckname\x88\x01\x01\x12%\n" +
 	"\tfindingid\x18\x9c\xf1\xa3\x98\x01 \x01(\tH\x01R\tfindingid\x88\x01\x01\x12(\n" +
@@ -52651,10 +52655,10 @@ const file_iot_proto_rawDesc = "" +
 	"\x14noncompliantresource\x18\xde۵\xdb\x01 \x01(\v2\x19.iot.NonCompliantResourceR\x14noncompliantresource\x12?\n" +
 	"\x16reasonfornoncompliance\x18\xa5߀\xd1\x01 \x01(\tH\x04R\x16reasonfornoncompliance\x88\x01\x01\x12F\n" +
 	"\x1areasonfornoncompliancecode\x18҈\x82x \x01(\tH\x05R\x1areasonfornoncompliancecode\x88\x01\x01\x12D\n" +
-	"\x10relatedresources\x18\xbe\xd2ċ\x01 \x03(\v2\x14.iot.RelatedResourceR\x10relatedresources\x128\n" +
-	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2\x19.iot.AuditFindingSeverityR\bseverity\x12\x1e\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tH\x06R\x06taskid\x88\x01\x01\x12,\n" +
-	"\rtaskstarttime\x18\x9a\xaf\xcb2 \x01(\tH\aR\rtaskstarttime\x88\x01\x01B\f\n" +
+	"\x10relatedresources\x18\xbe\xd2ċ\x01 \x03(\v2\x14.iot.RelatedResourceR\x10relatedresources\x12=\n" +
+	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2\x19.iot.AuditFindingSeverityH\x06R\bseverity\x88\x01\x01\x12\x1e\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tH\aR\x06taskid\x88\x01\x01\x12,\n" +
+	"\rtaskstarttime\x18\x9a\xaf\xcb2 \x01(\tH\bR\rtaskstarttime\x88\x01\x01B\f\n" +
 	"\n" +
 	"_checknameB\f\n" +
 	"\n" +
@@ -52662,9 +52666,10 @@ const file_iot_proto_rawDesc = "" +
 	"\f_findingtimeB\x0f\n" +
 	"\r_issuppressedB\x19\n" +
 	"\x17_reasonfornoncomplianceB\x1d\n" +
-	"\x1b_reasonfornoncompliancecodeB\t\n" +
+	"\x1b_reasonfornoncompliancecodeB\v\n" +
+	"\t_severityB\t\n" +
 	"\a_taskidB\x10\n" +
-	"\x0e_taskstarttime\"\xff\x03\n" +
+	"\x0e_taskstarttime\"\x8f\x04\n" +
 	"&AuditMitigationActionExecutionMetadata\x12#\n" +
 	"\bactionid\x18\x93\x84\x9a\x86\x01 \x01(\tH\x00R\bactionid\x88\x01\x01\x12&\n" +
 	"\n" +
@@ -52674,9 +52679,9 @@ const file_iot_proto_rawDesc = "" +
 	"\terrorcode\x18\xb9\xb9۩\x01 \x01(\tH\x03R\terrorcode\x88\x01\x01\x12%\n" +
 	"\tfindingid\x18\x9c\xf1\xa3\x98\x01 \x01(\tH\x04R\tfindingid\x88\x01\x01\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x05R\amessage\x88\x01\x01\x12$\n" +
-	"\tstarttime\x18\x8f\xda\xf9T \x01(\tH\x06R\tstarttime\x88\x01\x01\x12F\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2*.iot.AuditMitigationActionsExecutionStatusR\x06status\x12\x1e\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tH\aR\x06taskid\x88\x01\x01B\v\n" +
+	"\tstarttime\x18\x8f\xda\xf9T \x01(\tH\x06R\tstarttime\x88\x01\x01\x12K\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2*.iot.AuditMitigationActionsExecutionStatusH\aR\x06status\x88\x01\x01\x12\x1e\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tH\bR\x06taskid\x88\x01\x01B\v\n" +
 	"\t_actionidB\r\n" +
 	"\v_actionnameB\n" +
 	"\n" +
@@ -52689,16 +52694,18 @@ const file_iot_proto_rawDesc = "" +
 	"\b_messageB\f\n" +
 	"\n" +
 	"_starttimeB\t\n" +
-	"\a_taskid\"\xcd\x01\n" +
+	"\a_statusB\t\n" +
+	"\a_taskid\"\xe1\x01\n" +
 	"\"AuditMitigationActionsTaskMetadata\x12$\n" +
 	"\tstarttime\x18\x8f\xda\xf9T \x01(\tH\x00R\tstarttime\x88\x01\x01\x12\x1e\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tH\x01R\x06taskid\x88\x01\x01\x12H\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tH\x01R\x06taskid\x88\x01\x01\x12M\n" +
 	"\n" +
-	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2%.iot.AuditMitigationActionsTaskStatusR\n" +
-	"taskstatusB\f\n" +
+	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2%.iot.AuditMitigationActionsTaskStatusH\x02R\n" +
+	"taskstatus\x88\x01\x01B\f\n" +
 	"\n" +
 	"_starttimeB\t\n" +
-	"\a_taskid\"\xe2\x02\n" +
+	"\a_taskidB\r\n" +
+	"\v_taskstatus\"\xe2\x02\n" +
 	" AuditMitigationActionsTaskTarget\x12\x8e\x01\n" +
 	"\x1cauditchecktoreasoncodefilter\x18\xb7\xd7\xca\x02 \x03(\v2G.iot.AuditMitigationActionsTaskTarget.AuditchecktoreasoncodefilterEntryR\x1cauditchecktoreasoncodefilter\x12(\n" +
 	"\vaudittaskid\x18\xf9\x98\xfeX \x01(\tH\x00R\vaudittaskid\x88\x01\x01\x12\"\n" +
@@ -52727,31 +52734,35 @@ const file_iot_proto_rawDesc = "" +
 	"\x14suppressindefinitely\x18\x97\xe8\xd7J \x01(\bH\x02R\x14suppressindefinitely\x88\x01\x01B\x0e\n" +
 	"\f_descriptionB\x11\n" +
 	"\x0f_expirationdateB\x17\n" +
-	"\x15_suppressindefinitely\"\xab\x01\n" +
+	"\x15_suppressindefinitely\"\xd1\x01\n" +
 	"\x11AuditTaskMetadata\x12\x1e\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tH\x00R\x06taskid\x88\x01\x01\x127\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tH\x00R\x06taskid\x88\x01\x01\x12<\n" +
 	"\n" +
-	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2\x14.iot.AuditTaskStatusR\n" +
-	"taskstatus\x122\n" +
-	"\btasktype\x18\x85\xe9\xfe\x97\x01 \x01(\x0e2\x12.iot.AuditTaskTypeR\btasktypeB\t\n" +
-	"\a_taskid\"a\n" +
-	"\bAuthInfo\x123\n" +
+	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2\x14.iot.AuditTaskStatusH\x01R\n" +
+	"taskstatus\x88\x01\x01\x127\n" +
+	"\btasktype\x18\x85\xe9\xfe\x97\x01 \x01(\x0e2\x12.iot.AuditTaskTypeH\x02R\btasktype\x88\x01\x01B\t\n" +
+	"\a_taskidB\r\n" +
+	"\v_taskstatusB\v\n" +
+	"\t_tasktype\"u\n" +
+	"\bAuthInfo\x128\n" +
 	"\n" +
-	"actiontype\x18\xa8\x8e\xa7\x96\x01 \x01(\x0e2\x0f.iot.ActionTypeR\n" +
-	"actiontype\x12 \n" +
-	"\tresources\x18\xf3\xffֆ\x01 \x03(\tR\tresources\"\x81\x02\n" +
+	"actiontype\x18\xa8\x8e\xa7\x96\x01 \x01(\x0e2\x0f.iot.ActionTypeH\x00R\n" +
+	"actiontype\x88\x01\x01\x12 \n" +
+	"\tresources\x18\xf3\xffֆ\x01 \x03(\tR\tresourcesB\r\n" +
+	"\v_actiontype\"\x97\x02\n" +
 	"\n" +
 	"AuthResult\x12)\n" +
-	"\aallowed\x18\xc4ȓ> \x01(\v2\f.iot.AllowedR\aallowed\x129\n" +
-	"\fauthdecision\x18֪\xd9\xe1\x01 \x01(\x0e2\x11.iot.AuthDecisionR\fauthdecision\x12,\n" +
+	"\aallowed\x18\xc4ȓ> \x01(\v2\f.iot.AllowedR\aallowed\x12>\n" +
+	"\fauthdecision\x18֪\xd9\xe1\x01 \x01(\x0e2\x11.iot.AuthDecisionH\x00R\fauthdecision\x88\x01\x01\x12,\n" +
 	"\bauthinfo\x18\u070e\x8fX \x01(\v2\r.iot.AuthInfoR\bauthinfo\x12'\n" +
 	"\x06denied\x18\xf7\xc0Ј\x01 \x01(\v2\v.iot.DeniedR\x06denied\x126\n" +
-	"\x14missingcontextvalues\x18\x95\x9a\xca\xf3\x01 \x03(\tR\x14missingcontextvalues\"\xc9\x01\n" +
+	"\x14missingcontextvalues\x18\x95\x9a\xca\xf3\x01 \x03(\tR\x14missingcontextvaluesB\x0f\n" +
+	"\r_authdecision\"\xc9\x01\n" +
 	"\x10AuthorizerConfig\x12@\n" +
 	"\x17allowauthorizeroverride\x18Ɛ\xecE \x01(\bH\x00R\x17allowauthorizeroverride\x88\x01\x01\x12=\n" +
 	"\x15defaultauthorizername\x18\x93\xa8\xb7\xee\x01 \x01(\tH\x01R\x15defaultauthorizername\x88\x01\x01B\x1a\n" +
 	"\x18_allowauthorizeroverrideB\x18\n" +
-	"\x16_defaultauthorizername\"\xc4\x06\n" +
+	"\x16_defaultauthorizername\"\xd4\x06\n" +
 	"\x15AuthorizerDescription\x12,\n" +
 	"\rauthorizerarn\x18¼\xfbV \x01(\tH\x00R\rauthorizerarn\x88\x01\x01\x12=\n" +
 	"\x15authorizerfunctionarn\x18Ɔ\x8a\xb8\x01 \x01(\tH\x01R\x15authorizerfunctionarn\x88\x01\x01\x12.\n" +
@@ -52759,9 +52770,9 @@ const file_iot_proto_rawDesc = "" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x03R\fcreationdate\x88\x01\x01\x12:\n" +
 	"\x14enablecachingforhttp\x18È\xcd! \x01(\bH\x04R\x14enablecachingforhttp\x88\x01\x01\x122\n" +
 	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x05R\x10lastmodifieddate\x88\x01\x01\x120\n" +
-	"\x0fsigningdisabled\x18\x9d\xc1\xd5\x10 \x01(\bH\x06R\x0fsigningdisabled\x88\x01\x01\x121\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.iot.AuthorizerStatusR\x06status\x12+\n" +
-	"\ftokenkeyname\x18\xf3Ә\x85\x01 \x01(\tH\aR\ftokenkeyname\x88\x01\x01\x12r\n" +
+	"\x0fsigningdisabled\x18\x9d\xc1\xd5\x10 \x01(\bH\x06R\x0fsigningdisabled\x88\x01\x01\x126\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.iot.AuthorizerStatusH\aR\x06status\x88\x01\x01\x12+\n" +
+	"\ftokenkeyname\x18\xf3Ә\x85\x01 \x01(\tH\bR\ftokenkeyname\x88\x01\x01\x12r\n" +
 	"\x16tokensigningpublickeys\x18\xc1\x95\xf3\x9b\x01 \x03(\v26.iot.AuthorizerDescription.TokensigningpublickeysEntryR\x16tokensigningpublickeys\x1aI\n" +
 	"\x1bTokensigningpublickeysEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -52772,7 +52783,8 @@ const file_iot_proto_rawDesc = "" +
 	"\r_creationdateB\x17\n" +
 	"\x15_enablecachingforhttpB\x13\n" +
 	"\x11_lastmodifieddateB\x12\n" +
-	"\x10_signingdisabledB\x0f\n" +
+	"\x10_signingdisabledB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_tokenkeyname\"\x96\x01\n" +
 	"\x11AuthorizerSummary\x12,\n" +
 	"\rauthorizerarn\x18¼\xfbV \x01(\tH\x00R\rauthorizerarn\x88\x01\x01\x12.\n" +
@@ -52825,28 +52837,30 @@ const file_iot_proto_rawDesc = "" +
 	"\x0esuppressalerts\x18\xb6\x9a\xe6\xec\x01 \x01(\bH\x02R\x0esuppressalerts\x88\x01\x01B\x0f\n" +
 	"\r_exportmetricB\t\n" +
 	"\a_metricB\x11\n" +
-	"\x0f_suppressalerts\"\xd5\x04\n" +
-	"\x10BehaviorCriteria\x12J\n" +
-	"\x12comparisonoperator\x18\xb5\x9d\xdb\x02 \x01(\x0e2\x17.iot.ComparisonOperatorR\x12comparisonoperator\x12K\n" +
-	"\x1cconsecutivedatapointstoalarm\x18\xa5\xde\xc1\xb2\x01 \x01(\x05H\x00R\x1cconsecutivedatapointstoalarm\x88\x01\x01\x12K\n" +
-	"\x1cconsecutivedatapointstoclear\x18\xe1\xf7\x89\xa3\x01 \x01(\x05H\x01R\x1cconsecutivedatapointstoclear\x88\x01\x01\x121\n" +
-	"\x0fdurationseconds\x18\x83\xc6\xed\xfd\x01 \x01(\x05H\x02R\x0fdurationseconds\x88\x01\x01\x12T\n" +
+	"\x0f_suppressalerts\"\xf1\x04\n" +
+	"\x10BehaviorCriteria\x12O\n" +
+	"\x12comparisonoperator\x18\xb5\x9d\xdb\x02 \x01(\x0e2\x17.iot.ComparisonOperatorH\x00R\x12comparisonoperator\x88\x01\x01\x12K\n" +
+	"\x1cconsecutivedatapointstoalarm\x18\xa5\xde\xc1\xb2\x01 \x01(\x05H\x01R\x1cconsecutivedatapointstoalarm\x88\x01\x01\x12K\n" +
+	"\x1cconsecutivedatapointstoclear\x18\xe1\xf7\x89\xa3\x01 \x01(\x05H\x02R\x1cconsecutivedatapointstoclear\x88\x01\x01\x121\n" +
+	"\x0fdurationseconds\x18\x83\xc6\xed\xfd\x01 \x01(\x05H\x03R\x0fdurationseconds\x88\x01\x01\x12T\n" +
 	"\x11mldetectionconfig\x18\x86\xdc\xef* \x01(\v2#.iot.MachineLearningDetectionConfigR\x11mldetectionconfig\x12Q\n" +
 	"\x14statisticalthreshold\x18\x8c\xca\xda\xf8\x01 \x01(\v2\x19.iot.StatisticalThresholdR\x14statisticalthreshold\x12)\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\v2\x10.iot.MetricValueR\x05valueB\x1f\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\v2\x10.iot.MetricValueR\x05valueB\x15\n" +
+	"\x13_comparisonoperatorB\x1f\n" +
 	"\x1d_consecutivedatapointstoalarmB\x1f\n" +
 	"\x1d_consecutivedatapointstoclearB\x12\n" +
-	"\x10_durationseconds\"\xa5\x04\n" +
+	"\x10_durationseconds\"\xba\x04\n" +
 	"\x1cBehaviorModelTrainingSummary\x12*\n" +
 	"\fbehaviorname\x18\x85\xc0\x8e$ \x01(\tH\x00R\fbehaviorname\x88\x01\x01\x12O\n" +
 	"\x1edatapointscollectionpercentage\x18\xaf\xc9އ\x01 \x01(\x01H\x01R\x1edatapointscollectionpercentage\x88\x01\x01\x12;\n" +
-	"\x14lastmodelrefreshdate\x18\xaa女\x01 \x01(\tH\x02R\x14lastmodelrefreshdate\x88\x01\x01\x125\n" +
-	"\vmodelstatus\x18\xa5\xa2\xd4\x12 \x01(\x0e2\x10.iot.ModelStatusR\vmodelstatus\x129\n" +
-	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tH\x03R\x13securityprofilename\x88\x01\x01\x12P\n" +
-	"\x1ftrainingdatacollectionstartdate\x18\xea\xf4\xf57 \x01(\tH\x04R\x1ftrainingdatacollectionstartdate\x88\x01\x01B\x0f\n" +
+	"\x14lastmodelrefreshdate\x18\xaa女\x01 \x01(\tH\x02R\x14lastmodelrefreshdate\x88\x01\x01\x12:\n" +
+	"\vmodelstatus\x18\xa5\xa2\xd4\x12 \x01(\x0e2\x10.iot.ModelStatusH\x03R\vmodelstatus\x88\x01\x01\x129\n" +
+	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tH\x04R\x13securityprofilename\x88\x01\x01\x12P\n" +
+	"\x1ftrainingdatacollectionstartdate\x18\xea\xf4\xf57 \x01(\tH\x05R\x1ftrainingdatacollectionstartdate\x88\x01\x01B\x0f\n" +
 	"\r_behaviornameB!\n" +
 	"\x1f_datapointscollectionpercentageB\x17\n" +
-	"\x15_lastmodelrefreshdateB\x16\n" +
+	"\x15_lastmodelrefreshdateB\x0e\n" +
+	"\f_modelstatusB\x16\n" +
 	"\x14_securityprofilenameB\"\n" +
 	" _trainingdatacollectionstartdate\"S\n" +
 	"\x14BillingGroupMetadata\x12*\n" +
@@ -52861,37 +52875,42 @@ const file_iot_proto_rawDesc = "" +
 	"\x06_countB\v\n" +
 	"\t_keyvalue\"_\n" +
 	"\x16BucketsAggregationType\x12E\n" +
-	"\x10termsaggregation\x18\xef\x8c\xc9\xfe\x01 \x01(\v2\x15.iot.TermsAggregationR\x10termsaggregation\"\x87\x02\n" +
+	"\x10termsaggregation\x18\xef\x8c\xc9\xfe\x01 \x01(\v2\x15.iot.TermsAggregationR\x10termsaggregation\"\x97\x02\n" +
 	"\rCACertificate\x12/\n" +
 	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12-\n" +
 	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x01R\rcertificateid\x88\x01\x01\x12*\n" +
-	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x02R\fcreationdate\x88\x01\x01\x124\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x18.iot.CACertificateStatusR\x06statusB\x11\n" +
+	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x02R\fcreationdate\x88\x01\x01\x129\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x18.iot.CACertificateStatusH\x03R\x06status\x88\x01\x01B\x11\n" +
 	"\x0f_certificatearnB\x10\n" +
 	"\x0e_certificateidB\x0f\n" +
-	"\r_creationdate\"\xa7\x06\n" +
-	"\x18CACertificateDescription\x12W\n" +
-	"\x16autoregistrationstatus\x18꡴\xfa\x01 \x01(\x0e2\x1b.iot.AutoRegistrationStatusR\x16autoregistrationstatus\x12/\n" +
-	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12-\n" +
-	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x01R\rcertificateid\x88\x01\x01\x12A\n" +
-	"\x0fcertificatemode\x18\xa4\xf0\xf9p \x01(\x0e2\x14.iot.CertificateModeR\x0fcertificatemode\x12/\n" +
-	"\x0ecertificatepem\x18\xb7\xaa\xed\xed\x01 \x01(\tH\x02R\x0ecertificatepem\x88\x01\x01\x12*\n" +
-	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x03R\fcreationdate\x88\x01\x01\x120\n" +
-	"\x0fcustomerversion\x18\xc4\xc3\xc2S \x01(\x05H\x04R\x0fcustomerversion\x88\x01\x01\x12+\n" +
-	"\fgenerationid\x18\x9b\xb8\xd7\xc6\x01 \x01(\tH\x05R\fgenerationid\x88\x01\x01\x122\n" +
-	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x06R\x10lastmodifieddate\x88\x01\x01\x12!\n" +
-	"\aownedby\x18\xf8\xfc\x9a\x9e\x01 \x01(\tH\aR\aownedby\x88\x01\x01\x124\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x18.iot.CACertificateStatusR\x06status\x127\n" +
-	"\bvalidity\x18\xf8\xfb\xe3} \x01(\v2\x18.iot.CertificateValidityR\bvalidityB\x11\n" +
+	"\r_creationdateB\t\n" +
+	"\a_status\"\xf0\x06\n" +
+	"\x18CACertificateDescription\x12\\\n" +
+	"\x16autoregistrationstatus\x18꡴\xfa\x01 \x01(\x0e2\x1b.iot.AutoRegistrationStatusH\x00R\x16autoregistrationstatus\x88\x01\x01\x12/\n" +
+	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x01R\x0ecertificatearn\x88\x01\x01\x12-\n" +
+	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x02R\rcertificateid\x88\x01\x01\x12F\n" +
+	"\x0fcertificatemode\x18\xa4\xf0\xf9p \x01(\x0e2\x14.iot.CertificateModeH\x03R\x0fcertificatemode\x88\x01\x01\x12/\n" +
+	"\x0ecertificatepem\x18\xb7\xaa\xed\xed\x01 \x01(\tH\x04R\x0ecertificatepem\x88\x01\x01\x12*\n" +
+	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x05R\fcreationdate\x88\x01\x01\x120\n" +
+	"\x0fcustomerversion\x18\xc4\xc3\xc2S \x01(\x05H\x06R\x0fcustomerversion\x88\x01\x01\x12+\n" +
+	"\fgenerationid\x18\x9b\xb8\xd7\xc6\x01 \x01(\tH\aR\fgenerationid\x88\x01\x01\x122\n" +
+	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\bR\x10lastmodifieddate\x88\x01\x01\x12!\n" +
+	"\aownedby\x18\xf8\xfc\x9a\x9e\x01 \x01(\tH\tR\aownedby\x88\x01\x01\x129\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x18.iot.CACertificateStatusH\n" +
+	"R\x06status\x88\x01\x01\x127\n" +
+	"\bvalidity\x18\xf8\xfb\xe3} \x01(\v2\x18.iot.CertificateValidityR\bvalidityB\x19\n" +
+	"\x17_autoregistrationstatusB\x11\n" +
 	"\x0f_certificatearnB\x10\n" +
-	"\x0e_certificateidB\x11\n" +
+	"\x0e_certificateidB\x12\n" +
+	"\x10_certificatemodeB\x11\n" +
 	"\x0f_certificatepemB\x0f\n" +
 	"\r_creationdateB\x12\n" +
 	"\x10_customerversionB\x0f\n" +
 	"\r_generationidB\x13\n" +
 	"\x11_lastmodifieddateB\n" +
 	"\n" +
-	"\b_ownedby\"D\n" +
+	"\b_ownedbyB\t\n" +
+	"\a_status\"D\n" +
 	"'CancelAuditMitigationActionsTaskRequest\x12\x19\n" +
 	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\"*\n" +
 	"(CancelAuditMitigationActionsTaskResponse\"3\n" +
@@ -52931,38 +52950,42 @@ const file_iot_proto_rawDesc = "" +
 	"\x05jobid\x18\xf2\xad\xfc\x9e\x01 \x01(\tH\x02R\x05jobid\x88\x01\x01B\x0e\n" +
 	"\f_descriptionB\t\n" +
 	"\a_jobarnB\b\n" +
-	"\x06_jobid\"\xc6\x02\n" +
+	"\x06_jobid\"\xef\x02\n" +
 	"\vCertificate\x12/\n" +
 	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12-\n" +
-	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x01R\rcertificateid\x88\x01\x01\x12A\n" +
-	"\x0fcertificatemode\x18\xa4\xf0\xf9p \x01(\x0e2\x14.iot.CertificateModeR\x0fcertificatemode\x12*\n" +
-	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x02R\fcreationdate\x88\x01\x01\x122\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x16.iot.CertificateStatusR\x06statusB\x11\n" +
+	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x01R\rcertificateid\x88\x01\x01\x12F\n" +
+	"\x0fcertificatemode\x18\xa4\xf0\xf9p \x01(\x0e2\x14.iot.CertificateModeH\x02R\x0fcertificatemode\x88\x01\x01\x12*\n" +
+	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x03R\fcreationdate\x88\x01\x01\x127\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x16.iot.CertificateStatusH\x04R\x06status\x88\x01\x01B\x11\n" +
 	"\x0f_certificatearnB\x10\n" +
-	"\x0e_certificateidB\x0f\n" +
-	"\r_creationdate\"L\n" +
+	"\x0e_certificateidB\x12\n" +
+	"\x10_certificatemodeB\x0f\n" +
+	"\r_creationdateB\t\n" +
+	"\a_status\"L\n" +
 	"\x1cCertificateConflictException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x91\a\n" +
+	"\b_message\"\xba\a\n" +
 	"\x16CertificateDescription\x121\n" +
 	"\x0fcacertificateid\x18ʫ\xc4\xf3\x01 \x01(\tH\x00R\x0fcacertificateid\x88\x01\x01\x12/\n" +
 	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x01R\x0ecertificatearn\x88\x01\x01\x12-\n" +
-	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x02R\rcertificateid\x88\x01\x01\x12A\n" +
-	"\x0fcertificatemode\x18\xa4\xf0\xf9p \x01(\x0e2\x14.iot.CertificateModeR\x0fcertificatemode\x12/\n" +
-	"\x0ecertificatepem\x18\xb7\xaa\xed\xed\x01 \x01(\tH\x03R\x0ecertificatepem\x88\x01\x01\x12*\n" +
-	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x04R\fcreationdate\x88\x01\x01\x120\n" +
-	"\x0fcustomerversion\x18\xc4\xc3\xc2S \x01(\x05H\x05R\x0fcustomerversion\x88\x01\x01\x12+\n" +
-	"\fgenerationid\x18\x9b\xb8\xd7\xc6\x01 \x01(\tH\x06R\fgenerationid\x88\x01\x01\x122\n" +
-	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\aR\x10lastmodifieddate\x88\x01\x01\x12!\n" +
-	"\aownedby\x18\xf8\xfc\x9a\x9e\x01 \x01(\tH\bR\aownedby\x88\x01\x01\x120\n" +
-	"\x0fpreviousownedby\x18ٓ\xc8[ \x01(\tH\tR\x0fpreviousownedby\x88\x01\x01\x122\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x16.iot.CertificateStatusR\x06status\x128\n" +
+	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x02R\rcertificateid\x88\x01\x01\x12F\n" +
+	"\x0fcertificatemode\x18\xa4\xf0\xf9p \x01(\x0e2\x14.iot.CertificateModeH\x03R\x0fcertificatemode\x88\x01\x01\x12/\n" +
+	"\x0ecertificatepem\x18\xb7\xaa\xed\xed\x01 \x01(\tH\x04R\x0ecertificatepem\x88\x01\x01\x12*\n" +
+	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x05R\fcreationdate\x88\x01\x01\x120\n" +
+	"\x0fcustomerversion\x18\xc4\xc3\xc2S \x01(\x05H\x06R\x0fcustomerversion\x88\x01\x01\x12+\n" +
+	"\fgenerationid\x18\x9b\xb8\xd7\xc6\x01 \x01(\tH\aR\fgenerationid\x88\x01\x01\x122\n" +
+	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\bR\x10lastmodifieddate\x88\x01\x01\x12!\n" +
+	"\aownedby\x18\xf8\xfc\x9a\x9e\x01 \x01(\tH\tR\aownedby\x88\x01\x01\x120\n" +
+	"\x0fpreviousownedby\x18ٓ\xc8[ \x01(\tH\n" +
+	"R\x0fpreviousownedby\x88\x01\x01\x127\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x16.iot.CertificateStatusH\vR\x06status\x88\x01\x01\x128\n" +
 	"\ftransferdata\x18\xa7\xf9\xd2X \x01(\v2\x11.iot.TransferDataR\ftransferdata\x127\n" +
 	"\bvalidity\x18\xf8\xfb\xe3} \x01(\v2\x18.iot.CertificateValidityR\bvalidityB\x12\n" +
 	"\x10_cacertificateidB\x11\n" +
 	"\x0f_certificatearnB\x10\n" +
-	"\x0e_certificateidB\x11\n" +
+	"\x0e_certificateidB\x12\n" +
+	"\x10_certificatemodeB\x11\n" +
 	"\x0f_certificatepemB\x0f\n" +
 	"\r_creationdateB\x12\n" +
 	"\x10_customerversionB\x0f\n" +
@@ -52970,7 +52993,8 @@ const file_iot_proto_rawDesc = "" +
 	"\x11_lastmodifieddateB\n" +
 	"\n" +
 	"\b_ownedbyB\x12\n" +
-	"\x10_previousownedby\"\xd6\x01\n" +
+	"\x10_previousownedbyB\t\n" +
+	"\a_status\"\xd6\x01\n" +
 	"\x1aCertificateProviderSummary\x12?\n" +
 	"\x16certificateproviderarn\x18\x85Ʊ\xb6\x01 \x01(\tH\x00R\x16certificateproviderarn\x88\x01\x01\x12@\n" +
 	"\x17certificateprovidername\x18\xcf\xfc\xbeK \x01(\tH\x01R\x17certificateprovidername\x88\x01\x01B\x19\n" +
@@ -53039,7 +53063,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x01s\x18\xa3\xa6\xb0\xb0\x01 \x01(\tH\x02R\x01s\x88\x01\x01B\x04\n" +
 	"\x02_bB\x06\n" +
 	"\x04_binB\x04\n" +
-	"\x02_s\"\x9e\x03\n" +
+	"\x02_s\"\xae\x03\n" +
 	"\x17CommandExecutionSummary\x12&\n" +
 	"\n" +
 	"commandarn\x18\xde\xd2\xf6/ \x01(\tH\x00R\n" +
@@ -53047,26 +53071,28 @@ const file_iot_proto_rawDesc = "" +
 	"\vcompletedat\x18\xe8\xd5Ð\x01 \x01(\tH\x01R\vcompletedat\x88\x01\x01\x12%\n" +
 	"\tcreatedat\x18\x8f\x91\xe3\xb0\x01 \x01(\tH\x02R\tcreatedat\x88\x01\x01\x12)\n" +
 	"\vexecutionid\x18\xd1ց\xae\x01 \x01(\tH\x03R\vexecutionid\x88\x01\x01\x12%\n" +
-	"\tstartedat\x18\xfc\xbc\xb6\xc1\x01 \x01(\tH\x04R\tstartedat\x88\x01\x01\x127\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.iot.CommandExecutionStatusR\x06status\x12%\n" +
-	"\ttargetarn\x18\xb0亯\x01 \x01(\tH\x05R\ttargetarn\x88\x01\x01B\r\n" +
+	"\tstartedat\x18\xfc\xbc\xb6\xc1\x01 \x01(\tH\x04R\tstartedat\x88\x01\x01\x12<\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.iot.CommandExecutionStatusH\x05R\x06status\x88\x01\x01\x12%\n" +
+	"\ttargetarn\x18\xb0亯\x01 \x01(\tH\x06R\ttargetarn\x88\x01\x01B\r\n" +
 	"\v_commandarnB\x0e\n" +
 	"\f_completedatB\f\n" +
 	"\n" +
 	"_createdatB\x0e\n" +
 	"\f_executionidB\f\n" +
 	"\n" +
-	"_startedatB\f\n" +
+	"_startedatB\t\n" +
+	"\a_statusB\f\n" +
 	"\n" +
-	"_targetarn\"\xe3\x02\n" +
+	"_targetarn\"\xf1\x02\n" +
 	"\x10CommandParameter\x12B\n" +
 	"\fdefaultvalue\x18\xc0\xc9\xc9\xc0\x01 \x01(\v2\x1a.iot.CommandParameterValueR\fdefaultvalue\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x121\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x19.iot.CommandParameterTypeR\x04type\x123\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x126\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x19.iot.CommandParameterTypeH\x01R\x04type\x88\x01\x01\x123\n" +
 	"\x05value\x18˧\xfb\x12 \x01(\v2\x1a.iot.CommandParameterValueR\x05value\x12Q\n" +
 	"\x0fvalueconditions\x18\xc5\xfa\xbc\xe2\x01 \x03(\v2#.iot.CommandParameterValueConditionR\x0fvalueconditionsB\x0e\n" +
-	"\f_description\"\xe7\x01\n" +
+	"\f_descriptionB\a\n" +
+	"\x05_type\"\xe7\x01\n" +
 	"\x15CommandParameterValue\x12\x14\n" +
 	"\x01b\x18\x86\xf7\xaf8 \x01(\bH\x00R\x01b\x88\x01\x01\x12\x19\n" +
 	"\x03bin\x18\xdfه\xfc\x01 \x01(\fH\x01R\x03bin\x88\x01\x01\x12\x14\n" +
@@ -53128,11 +53154,12 @@ const file_iot_proto_rawDesc = "" +
 	"\rConfiguration\x12!\n" +
 	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01B\n" +
 	"\n" +
-	"\b_enabled\"\xd7\x01\n" +
-	"\x14ConfigurationDetails\x12M\n" +
-	"\x13configurationstatus\x18܃\xa1\x11 \x01(\x0e2\x18.iot.ConfigurationStatusR\x13configurationstatus\x12%\n" +
-	"\terrorcode\x18\xb9\xb9۩\x01 \x01(\tH\x00R\terrorcode\x88\x01\x01\x12*\n" +
-	"\ferrormessage\x18Ɋ\xa2A \x01(\tH\x01R\ferrormessage\x88\x01\x01B\f\n" +
+	"\b_enabled\"\xf4\x01\n" +
+	"\x14ConfigurationDetails\x12R\n" +
+	"\x13configurationstatus\x18܃\xa1\x11 \x01(\x0e2\x18.iot.ConfigurationStatusH\x00R\x13configurationstatus\x88\x01\x01\x12%\n" +
+	"\terrorcode\x18\xb9\xb9۩\x01 \x01(\tH\x01R\terrorcode\x88\x01\x01\x12*\n" +
+	"\ferrormessage\x18Ɋ\xa2A \x01(\tH\x02R\ferrormessage\x88\x01\x01B\x16\n" +
+	"\x14_configurationstatusB\f\n" +
 	"\n" +
 	"_errorcodeB\x0f\n" +
 	"\r_errormessage\"V\n" +
@@ -53163,21 +53190,22 @@ const file_iot_proto_rawDesc = "" +
 	"\f_descriptionB\x11\n" +
 	"\x0f_expirationdateB\x17\n" +
 	"\x15_suppressindefinitely\" \n" +
-	"\x1eCreateAuditSuppressionResponse\"\xed\x04\n" +
+	"\x1eCreateAuditSuppressionResponse\"\xfd\x04\n" +
 	"\x17CreateAuthorizerRequest\x128\n" +
 	"\x15authorizerfunctionarn\x18Ɔ\x8a\xb8\x01 \x01(\tR\x15authorizerfunctionarn\x12)\n" +
 	"\x0eauthorizername\x18\xa6\xf3\xe3\x17 \x01(\tR\x0eauthorizername\x12:\n" +
 	"\x14enablecachingforhttp\x18È\xcd! \x01(\bH\x00R\x14enablecachingforhttp\x88\x01\x01\x120\n" +
-	"\x0fsigningdisabled\x18\x9d\xc1\xd5\x10 \x01(\bH\x01R\x0fsigningdisabled\x88\x01\x01\x121\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.iot.AuthorizerStatusR\x06status\x12 \n" +
+	"\x0fsigningdisabled\x18\x9d\xc1\xd5\x10 \x01(\bH\x01R\x0fsigningdisabled\x88\x01\x01\x126\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.iot.AuthorizerStatusH\x02R\x06status\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12+\n" +
-	"\ftokenkeyname\x18\xf3Ә\x85\x01 \x01(\tH\x02R\ftokenkeyname\x88\x01\x01\x12t\n" +
+	"\ftokenkeyname\x18\xf3Ә\x85\x01 \x01(\tH\x03R\ftokenkeyname\x88\x01\x01\x12t\n" +
 	"\x16tokensigningpublickeys\x18\xc1\x95\xf3\x9b\x01 \x03(\v28.iot.CreateAuthorizerRequest.TokensigningpublickeysEntryR\x16tokensigningpublickeys\x1aI\n" +
 	"\x1bTokensigningpublickeysEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x17\n" +
 	"\x15_enablecachingforhttpB\x12\n" +
-	"\x10_signingdisabledB\x0f\n" +
+	"\x10_signingdisabledB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_tokenkeyname\"\x9d\x01\n" +
 	"\x18CreateAuthorizerResponse\x12,\n" +
 	"\rauthorizerarn\x18¼\xfbV \x01(\tH\x00R\rauthorizerarn\x88\x01\x01\x12.\n" +
@@ -53217,20 +53245,22 @@ const file_iot_proto_rawDesc = "" +
 	"\x16certificateproviderarn\x18\x85Ʊ\xb6\x01 \x01(\tH\x00R\x16certificateproviderarn\x88\x01\x01\x12@\n" +
 	"\x17certificateprovidername\x18\xcf\xfc\xbeK \x01(\tH\x01R\x17certificateprovidername\x88\x01\x01B\x19\n" +
 	"\x17_certificateproviderarnB\x1a\n" +
-	"\x18_certificateprovidername\"\xbd\x04\n" +
+	"\x18_certificateprovidername\"\xd0\x04\n" +
 	"\x14CreateCommandRequest\x12 \n" +
 	"\tcommandid\x18\xa0\xaf\xc6\xca\x01 \x01(\tR\tcommandid\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12)\n" +
 	"\vdisplayname\x18\xd7̅\x80\x01 \x01(\tH\x01R\vdisplayname\x88\x01\x01\x12J\n" +
-	"\x13mandatoryparameters\x18\xbd\xdd\xefY \x03(\v2\x15.iot.CommandParameterR\x13mandatoryparameters\x126\n" +
-	"\tnamespace\x18\xa1\xf5\xb9V \x01(\x0e2\x15.iot.CommandNamespaceR\tnamespace\x121\n" +
+	"\x13mandatoryparameters\x18\xbd\xdd\xefY \x03(\v2\x15.iot.CommandParameterR\x13mandatoryparameters\x12;\n" +
+	"\tnamespace\x18\xa1\xf5\xb9V \x01(\x0e2\x15.iot.CommandNamespaceH\x02R\tnamespace\x88\x01\x01\x121\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2\x13.iot.CommandPayloadR\apayload\x120\n" +
-	"\x0fpayloadtemplate\x18̣\xb0, \x01(\tH\x02R\x0fpayloadtemplate\x88\x01\x01\x12@\n" +
+	"\x0fpayloadtemplate\x18̣\xb0, \x01(\tH\x03R\x0fpayloadtemplate\x88\x01\x01\x12@\n" +
 	"\fpreprocessor\x18\xab\xaaǡ\x01 \x01(\v2\x18.iot.CommandPreprocessorR\fpreprocessor\x12 \n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x03R\arolearn\x88\x01\x01\x12 \n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x04R\arolearn\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tagsB\x0e\n" +
 	"\f_descriptionB\x0e\n" +
-	"\f_displaynameB\x12\n" +
+	"\f_displaynameB\f\n" +
+	"\n" +
+	"_namespaceB\x12\n" +
 	"\x10_payloadtemplateB\n" +
 	"\n" +
 	"\b_rolearn\"\x83\x01\n" +
@@ -53271,23 +53301,26 @@ const file_iot_proto_rawDesc = "" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01B\x06\n" +
 	"\x04_arnB\a\n" +
-	"\x05_name\"\xd6\x06\n" +
-	" CreateDomainConfigurationRequest\x12N\n" +
-	"\x13applicationprotocol\x18ր\xbc\xc8\x01 \x01(\x0e2\x18.iot.ApplicationProtocolR\x13applicationprotocol\x12J\n" +
-	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x17.iot.AuthenticationTypeR\x12authenticationtype\x12D\n" +
+	"\x05_name\"\xa4\a\n" +
+	" CreateDomainConfigurationRequest\x12S\n" +
+	"\x13applicationprotocol\x18ր\xbc\xc8\x01 \x01(\x0e2\x18.iot.ApplicationProtocolH\x00R\x13applicationprotocol\x88\x01\x01\x12O\n" +
+	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x17.iot.AuthenticationTypeH\x01R\x12authenticationtype\x88\x01\x01\x12D\n" +
 	"\x10authorizerconfig\x18\xa1\x9c\xb8) \x01(\v2\x15.iot.AuthorizerConfigR\x10authorizerconfig\x12Z\n" +
 	"\x17clientcertificateconfig\x18\xac\xe0\x86\x89\x01 \x01(\v2\x1c.iot.ClientCertificateConfigR\x17clientcertificateconfig\x12<\n" +
 	"\x17domainconfigurationname\x18\xcf\xddͅ\x01 \x01(\tR\x17domainconfigurationname\x12'\n" +
 	"\n" +
-	"domainname\x18\x8bӏ\xba\x01 \x01(\tH\x00R\n" +
+	"domainname\x18\x8bӏ\xba\x01 \x01(\tH\x02R\n" +
 	"domainname\x88\x01\x01\x127\n" +
 	"\x15servercertificatearns\x18\xa6\xf5\xe3~ \x03(\tR\x15servercertificatearns\x12Y\n" +
-	"\x17servercertificateconfig\x18\x90\xd6\xf96 \x01(\v2\x1c.iot.ServerCertificateConfigR\x17servercertificateconfig\x125\n" +
-	"\vservicetype\x18\xcd\xda\xden \x01(\x0e2\x10.iot.ServiceTypeR\vservicetype\x12 \n" +
+	"\x17servercertificateconfig\x18\x90\xd6\xf96 \x01(\v2\x1c.iot.ServerCertificateConfigR\x17servercertificateconfig\x12:\n" +
+	"\vservicetype\x18\xcd\xda\xden \x01(\x0e2\x10.iot.ServiceTypeH\x03R\vservicetype\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12/\n" +
 	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x0e.iot.TlsConfigR\ttlsconfig\x12C\n" +
-	"\x18validationcertificatearn\x18\x8d\xa3\xde\xdd\x01 \x01(\tH\x01R\x18validationcertificatearn\x88\x01\x01B\r\n" +
-	"\v_domainnameB\x1b\n" +
+	"\x18validationcertificatearn\x18\x8d\xa3\xde\xdd\x01 \x01(\tH\x04R\x18validationcertificatearn\x88\x01\x01B\x16\n" +
+	"\x14_applicationprotocolB\x15\n" +
+	"\x13_authenticationtypeB\r\n" +
+	"\v_domainnameB\x0e\n" +
+	"\f_servicetypeB\x1b\n" +
 	"\x19_validationcertificatearn\"\xdd\x01\n" +
 	"!CreateDomainConfigurationResponse\x12>\n" +
 	"\x16domainconfigurationarn\x18\x85\x81\xa9- \x01(\tH\x00R\x16domainconfigurationarn\x88\x01\x01\x12A\n" +
@@ -53317,7 +53350,7 @@ const file_iot_proto_rawDesc = "" +
 	"\r_queryversionB\x10\n" +
 	"\x0e_thinggrouparnB\x0f\n" +
 	"\r_thinggroupidB\x11\n" +
-	"\x0f_thinggroupname\"\xee\x03\n" +
+	"\x0f_thinggroupname\"\xfc\x03\n" +
 	"\x18CreateFleetMetricRequest\x12.\n" +
 	"\x10aggregationfield\x18\xe8\xa7\xf7\x93\x01 \x01(\tR\x10aggregationfield\x12A\n" +
 	"\x0faggregationtype\x18\xceӮ\\ \x01(\v2\x14.iot.AggregationTypeR\x0faggregationtype\x12)\n" +
@@ -53329,12 +53362,13 @@ const file_iot_proto_rawDesc = "" +
 	"\x06period\x18\x85\x8e\xa5\xce\x01 \x01(\x05R\x06period\x12$\n" +
 	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x12*\n" +
 	"\fqueryversion\x18ޟ\xa9\x05 \x01(\tH\x02R\fqueryversion\x88\x01\x01\x12 \n" +
-	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12+\n" +
-	"\x04unit\x18\x88\xb4\xd4E \x01(\x0e2\x14.iot.FleetMetricUnitR\x04unitB\x0e\n" +
+	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x120\n" +
+	"\x04unit\x18\x88\xb4\xd4E \x01(\x0e2\x14.iot.FleetMetricUnitH\x03R\x04unit\x88\x01\x01B\x0e\n" +
 	"\f_descriptionB\f\n" +
 	"\n" +
 	"_indexnameB\x0f\n" +
-	"\r_queryversion\"\x87\x01\n" +
+	"\r_queryversionB\a\n" +
+	"\x05_unit\"\x87\x01\n" +
 	"\x19CreateFleetMetricResponse\x12%\n" +
 	"\tmetricarn\x18\x89\xef\xef\xdd\x01 \x01(\tH\x00R\tmetricarn\x88\x01\x01\x12&\n" +
 	"\n" +
@@ -53342,7 +53376,7 @@ const file_iot_proto_rawDesc = "" +
 	"metricname\x88\x01\x01B\f\n" +
 	"\n" +
 	"_metricarnB\r\n" +
-	"\v_metricname\"\x93\t\n" +
+	"\v_metricname\"\xac\t\n" +
 	"\x10CreateJobRequest\x126\n" +
 	"\vabortconfig\x18\x8c\xbe\xfb\xee\x01 \x01(\v2\x10.iot.AbortConfigR\vabortconfig\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12B\n" +
@@ -53357,8 +53391,8 @@ const file_iot_proto_rawDesc = "" +
 	"\vnamespaceid\x18\xfe\x8e\xd5( \x01(\tH\x04R\vnamespaceid\x88\x01\x01\x12K\n" +
 	"\x12presignedurlconfig\x18\x8a\xfc\xb8\xb3\x01 \x01(\v2\x17.iot.PresignedUrlConfigR\x12presignedurlconfig\x12D\n" +
 	"\x10schedulingconfig\x18\x8e\xaf\xb1q \x01(\v2\x15.iot.SchedulingConfigR\x10schedulingconfig\x12 \n" +
-	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12A\n" +
-	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionR\x0ftargetselection\x12\x1b\n" +
+	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12F\n" +
+	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionH\x05R\x0ftargetselection\x88\x01\x01\x12\x1b\n" +
 	"\atargets\x18\xe2\xe9\xd9G \x03(\tR\atargets\x12;\n" +
 	"\rtimeoutconfig\x18\xa7\xda\xe4' \x01(\v2\x12.iot.TimeoutConfigR\rtimeoutconfig\x1aE\n" +
 	"\x17DocumentparametersEntry\x12\x10\n" +
@@ -53368,7 +53402,8 @@ const file_iot_proto_rawDesc = "" +
 	"\t_documentB\x11\n" +
 	"\x0f_documentsourceB\x11\n" +
 	"\x0f_jobtemplatearnB\x0e\n" +
-	"\f_namespaceid\"\xa2\x01\n" +
+	"\f_namespaceidB\x12\n" +
+	"\x10_targetselection\"\xa2\x01\n" +
 	"\x11CreateJobResponse\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1e\n" +
 	"\x06jobarn\x18\xf4\xe0\xd1o \x01(\tH\x01R\x06jobarn\x88\x01\x01\x12\x1d\n" +
@@ -53421,7 +53456,7 @@ const file_iot_proto_rawDesc = "" +
 	"\bactionid\x18\x93\x84\x9a\x86\x01 \x01(\tH\x01R\bactionid\x88\x01\x01B\f\n" +
 	"\n" +
 	"_actionarnB\v\n" +
-	"\t_actionid\"\x93\a\n" +
+	"\t_actionid\"\xac\a\n" +
 	"\x16CreateOTAUpdateRequest\x12l\n" +
 	"\x14additionalparameters\x18\xf1Ǳ\" \x03(\v25.iot.CreateOTAUpdateRequest.AdditionalparametersEntryR\x14additionalparameters\x12H\n" +
 	"\x11awsjobabortconfig\x18\xf8\x86\xfa\x99\x01 \x01(\v2\x16.iot.AwsJobAbortConfigR\x11awsjobabortconfig\x12l\n" +
@@ -53433,23 +53468,25 @@ const file_iot_proto_rawDesc = "" +
 	"\votaupdateid\x18\xb2ÿ\x87\x01 \x01(\tR\votaupdateid\x12.\n" +
 	"\tprotocols\x18\xb3\xad\x840 \x03(\x0e2\r.iot.ProtocolR\tprotocols\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12 \n" +
-	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12A\n" +
-	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionR\x0ftargetselection\x12\x1b\n" +
+	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12F\n" +
+	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionH\x01R\x0ftargetselection\x88\x01\x01\x12\x1b\n" +
 	"\atargets\x18\xe2\xe9\xd9G \x03(\tR\atargets\x1aG\n" +
 	"\x19AdditionalparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
-	"\f_description\"\xcc\x02\n" +
+	"\f_descriptionB\x12\n" +
+	"\x10_targetselection\"\xe5\x02\n" +
 	"\x17CreateOTAUpdateResponse\x12+\n" +
 	"\fawsiotjobarn\x18\x81\xd1\xcc\xea\x01 \x01(\tH\x00R\fawsiotjobarn\x88\x01\x01\x12(\n" +
 	"\vawsiotjobid\x18݂\xa0@ \x01(\tH\x01R\vawsiotjobid\x88\x01\x01\x12*\n" +
 	"\fotaupdatearn\x18\xb4̑{ \x01(\tH\x02R\fotaupdatearn\x88\x01\x01\x12)\n" +
-	"\votaupdateid\x18\xb2ÿ\x87\x01 \x01(\tH\x03R\votaupdateid\x88\x01\x01\x12A\n" +
-	"\x0fotaupdatestatus\x18\xa7\xbd\xe5= \x01(\x0e2\x14.iot.OTAUpdateStatusR\x0fotaupdatestatusB\x0f\n" +
+	"\votaupdateid\x18\xb2ÿ\x87\x01 \x01(\tH\x03R\votaupdateid\x88\x01\x01\x12F\n" +
+	"\x0fotaupdatestatus\x18\xa7\xbd\xe5= \x01(\x0e2\x14.iot.OTAUpdateStatusH\x04R\x0fotaupdatestatus\x88\x01\x01B\x0f\n" +
 	"\r_awsiotjobarnB\x0e\n" +
 	"\f_awsiotjobidB\x0f\n" +
 	"\r_otaupdatearnB\x0e\n" +
-	"\f_otaupdateid\"\xa8\x02\n" +
+	"\f_otaupdateidB\x12\n" +
+	"\x10_otaupdatestatus\"\xa8\x02\n" +
 	"\x14CreatePackageRequest\x12)\n" +
 	"\vclienttoken\x18\xec\x82\xfa\x81\x01 \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12$\n" +
@@ -53488,7 +53525,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
 	"\f_clienttokenB\x0e\n" +
 	"\f_descriptionB\t\n" +
-	"\a_recipe\"\xa3\x04\n" +
+	"\a_recipe\"\xb3\x04\n" +
 	"\x1cCreatePackageVersionResponse\x12T\n" +
 	"\n" +
 	"attributes\x18\x95\xb7\xff\x0f \x03(\v21.iot.CreatePackageVersionResponse.AttributesEntryR\n" +
@@ -53496,16 +53533,17 @@ const file_iot_proto_rawDesc = "" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12)\n" +
 	"\verrorreason\x18ޕ\x97\xfc\x01 \x01(\tH\x01R\verrorreason\x88\x01\x01\x12)\n" +
 	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tH\x02R\vpackagename\x88\x01\x01\x125\n" +
-	"\x11packageversionarn\x18\xed\xfc\x98\xf0\x01 \x01(\tH\x03R\x11packageversionarn\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.iot.PackageVersionStatusR\x06status\x12)\n" +
-	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tH\x04R\vversionname\x88\x01\x01\x1a=\n" +
+	"\x11packageversionarn\x18\xed\xfc\x98\xf0\x01 \x01(\tH\x03R\x11packageversionarn\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.iot.PackageVersionStatusH\x04R\x06status\x88\x01\x01\x12)\n" +
+	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tH\x05R\vversionname\x88\x01\x01\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
 	"\f_descriptionB\x0e\n" +
 	"\f_errorreasonB\x0e\n" +
 	"\f_packagenameB\x14\n" +
-	"\x12_packageversionarnB\x0e\n" +
+	"\x12_packageversionarnB\t\n" +
+	"\a_statusB\x0e\n" +
 	"\f_versionname\"\x85\x01\n" +
 	"\x13CreatePolicyRequest\x12)\n" +
 	"\x0epolicydocument\x18\xeb\xe9\xf6T \x01(\tR\x0epolicydocument\x12!\n" +
@@ -53553,7 +53591,7 @@ const file_iot_proto_rawDesc = "" +
 	"\akeypair\x18\xa1\xb7\x92\x8a\x01 \x01(\v2\f.iot.KeyPairR\akeypairB\x10\n" +
 	"\x0e_certificateidB\x11\n" +
 	"\x0f_certificatepemB\r\n" +
-	"\v_expiration\"\xab\x03\n" +
+	"\v_expiration\"\xb9\x03\n" +
 	"!CreateProvisioningTemplateRequest\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12 \n" +
 	"\aenabled\x18\x9f\xe7\xce\x17 \x01(\bH\x01R\aenabled\x88\x01\x01\x12J\n" +
@@ -53561,11 +53599,12 @@ const file_iot_proto_rawDesc = "" +
 	"\x13provisioningrolearn\x18\xc0\xb4\xd9\xd9\x01 \x01(\tR\x13provisioningrolearn\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12&\n" +
 	"\ftemplatebody\x18\x94\xe1\xf4\xa1\x01 \x01(\tR\ftemplatebody\x12&\n" +
-	"\ftemplatename\x18\xd1\xca\xfa\x8f\x01 \x01(\tR\ftemplatename\x12)\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x11.iot.TemplateTypeR\x04typeB\x0e\n" +
+	"\ftemplatename\x18\xd1\xca\xfa\x8f\x01 \x01(\tR\ftemplatename\x12.\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x11.iot.TemplateTypeH\x02R\x04type\x88\x01\x01B\x0e\n" +
 	"\f_descriptionB\n" +
 	"\n" +
-	"\b_enabled\"\xe7\x01\n" +
+	"\b_enabledB\a\n" +
+	"\x05_type\"\xe7\x01\n" +
 	"\"CreateProvisioningTemplateResponse\x123\n" +
 	"\x10defaultversionid\x18\x90\xf6\xb3\x8b\x01 \x01(\x05H\x00R\x10defaultversionid\x88\x01\x01\x12)\n" +
 	"\vtemplatearn\x18\xbf\xa2ʊ\x01 \x01(\tH\x01R\vtemplatearn\x88\x01\x01\x12+\n" +
@@ -53599,17 +53638,19 @@ const file_iot_proto_rawDesc = "" +
 	"\frolealiasarn\x18\xffϥ\xd5\x01 \x01(\tH\x01R\frolealiasarn\x88\x01\x01B\f\n" +
 	"\n" +
 	"_rolealiasB\x0f\n" +
-	"\r_rolealiasarn\"\xc1\x02\n" +
+	"\r_rolealiasarn\"\xd4\x02\n" +
 	"\x1bCreateScheduledAuditRequest\x12&\n" +
 	"\n" +
 	"dayofmonth\x18\xff\xe9\x92r \x01(\tH\x00R\n" +
-	"dayofmonth\x88\x01\x01\x12/\n" +
-	"\tdayofweek\x18\xfd\xf0\xa2/ \x01(\x0e2\x0e.iot.DayOfWeekR\tdayofweek\x124\n" +
+	"dayofmonth\x88\x01\x01\x124\n" +
+	"\tdayofweek\x18\xfd\xf0\xa2/ \x01(\x0e2\x0e.iot.DayOfWeekH\x01R\tdayofweek\x88\x01\x01\x124\n" +
 	"\tfrequency\x18\x82\xb8\xcc} \x01(\x0e2\x13.iot.AuditFrequencyR\tfrequency\x122\n" +
 	"\x12scheduledauditname\x18\xd5ޡ\xb7\x01 \x01(\tR\x12scheduledauditname\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12.\n" +
 	"\x10targetchecknames\x18\xc1\xe7\x8b\xe0\x01 \x03(\tR\x10targetchecknamesB\r\n" +
-	"\v_dayofmonth\"j\n" +
+	"\v_dayofmonthB\f\n" +
+	"\n" +
+	"_dayofweek\"j\n" +
 	"\x1cCreateScheduledAuditResponse\x124\n" +
 	"\x11scheduledauditarn\x18\xdb\xf3\xbat \x01(\tH\x00R\x11scheduledauditarn\x88\x01\x01B\x14\n" +
 	"\x12_scheduledauditarn\"\xab\x05\n" +
@@ -53890,17 +53931,17 @@ const file_iot_proto_rawDesc = "" +
 	"\x1cDescribeAuditFindingResponse\x12.\n" +
 	"\afinding\x18\xa7\xa2\xdbH \x01(\v2\x11.iot.AuditFindingR\afinding\"F\n" +
 	")DescribeAuditMitigationActionsTaskRequest\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\"\x9e\x06\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\"\xb2\x06\n" +
 	"*DescribeAuditMitigationActionsTaskResponse\x12F\n" +
 	"\x11actionsdefinition\x18\ue7bdg \x03(\v2\x15.iot.MitigationActionR\x11actionsdefinition\x12\x93\x01\n" +
 	"\x1aauditchecktoactionsmapping\x18\xa7\xb7\x8e\xc7\x01 \x03(\v2O.iot.DescribeAuditMitigationActionsTaskResponse.AuditchecktoactionsmappingEntryR\x1aauditchecktoactionsmapping\x12!\n" +
 	"\aendtime\x18쇚\x9d\x01 \x01(\tH\x00R\aendtime\x88\x01\x01\x12$\n" +
 	"\tstarttime\x18\x8f\xda\xf9T \x01(\tH\x01R\tstarttime\x88\x01\x01\x12A\n" +
 	"\x06target\x18ɐ\x82\x93\x01 \x01(\v2%.iot.AuditMitigationActionsTaskTargetR\x06target\x12n\n" +
-	"\x0etaskstatistics\x18\xe0\xf8\xdb\x03 \x03(\v2C.iot.DescribeAuditMitigationActionsTaskResponse.TaskstatisticsEntryR\x0etaskstatistics\x12H\n" +
+	"\x0etaskstatistics\x18\xe0\xf8\xdb\x03 \x03(\v2C.iot.DescribeAuditMitigationActionsTaskResponse.TaskstatisticsEntryR\x0etaskstatistics\x12M\n" +
 	"\n" +
-	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2%.iot.AuditMitigationActionsTaskStatusR\n" +
-	"taskstatus\x1aM\n" +
+	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2%.iot.AuditMitigationActionsTaskStatusH\x02R\n" +
+	"taskstatus\x88\x01\x01\x1aM\n" +
 	"\x1fAuditchecktoactionsmappingEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1ac\n" +
@@ -53910,7 +53951,8 @@ const file_iot_proto_rawDesc = "" +
 	"\n" +
 	"\b_endtimeB\f\n" +
 	"\n" +
-	"_starttime\"\x90\x01\n" +
+	"_starttimeB\r\n" +
+	"\v_taskstatus\"\x90\x01\n" +
 	"\x1fDescribeAuditSuppressionRequest\x12 \n" +
 	"\tcheckname\x18\xe5\x9a\xec\xfe\x01 \x01(\tR\tcheckname\x12K\n" +
 	"\x12resourceidentifier\x18\xcf\xf9œ\x01 \x01(\v2\x17.iot.ResourceIdentifierR\x12resourceidentifier\"\xf8\x02\n" +
@@ -53926,21 +53968,23 @@ const file_iot_proto_rawDesc = "" +
 	"\x0f_expirationdateB\x17\n" +
 	"\x15_suppressindefinitely\"5\n" +
 	"\x18DescribeAuditTaskRequest\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\"\x8b\x04\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\"\xb1\x04\n" +
 	"\x19DescribeAuditTaskResponse\x12X\n" +
 	"\fauditdetails\x18\x8fǷ\xe3\x01 \x03(\v20.iot.DescribeAuditTaskResponse.AuditdetailsEntryR\fauditdetails\x127\n" +
 	"\x12scheduledauditname\x18\xd5ޡ\xb7\x01 \x01(\tH\x00R\x12scheduledauditname\x88\x01\x01\x12,\n" +
 	"\rtaskstarttime\x18\x9a\xaf\xcb2 \x01(\tH\x01R\rtaskstarttime\x88\x01\x01\x12>\n" +
-	"\x0etaskstatistics\x18\xe0\xf8\xdb\x03 \x01(\v2\x13.iot.TaskStatisticsR\x0etaskstatistics\x127\n" +
+	"\x0etaskstatistics\x18\xe0\xf8\xdb\x03 \x01(\v2\x13.iot.TaskStatisticsR\x0etaskstatistics\x12<\n" +
 	"\n" +
-	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2\x14.iot.AuditTaskStatusR\n" +
-	"taskstatus\x122\n" +
-	"\btasktype\x18\x85\xe9\xfe\x97\x01 \x01(\x0e2\x12.iot.AuditTaskTypeR\btasktype\x1aW\n" +
+	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2\x14.iot.AuditTaskStatusH\x02R\n" +
+	"taskstatus\x88\x01\x01\x127\n" +
+	"\btasktype\x18\x85\xe9\xfe\x97\x01 \x01(\x0e2\x12.iot.AuditTaskTypeH\x03R\btasktype\x88\x01\x01\x1aW\n" +
 	"\x11AuditdetailsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.iot.AuditCheckDetailsR\x05value:\x028\x01B\x15\n" +
 	"\x13_scheduledauditnameB\x10\n" +
-	"\x0e_taskstarttime\"F\n" +
+	"\x0e_taskstarttimeB\r\n" +
+	"\v_taskstatusB\v\n" +
+	"\t_tasktype\"F\n" +
 	"\x19DescribeAuthorizerRequest\x12)\n" +
 	"\x0eauthorizername\x18\xa6\xf3\xe3\x17 \x01(\tR\x0eauthorizername\"q\n" +
 	"\x1aDescribeAuthorizerResponse\x12S\n" +
@@ -53985,7 +54029,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x1bDescribeCustomMetricRequest\x12!\n" +
 	"\n" +
 	"metricname\x18\x9b\xb7\xa4a \x01(\tR\n" +
-	"metricname\"\x85\x03\n" +
+	"metricname\"\x99\x03\n" +
 	"\x1cDescribeCustomMetricResponse\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x00R\fcreationdate\x88\x01\x01\x12)\n" +
 	"\vdisplayname\x18\xd7̅\x80\x01 \x01(\tH\x01R\vdisplayname\x88\x01\x01\x122\n" +
@@ -53993,16 +54037,17 @@ const file_iot_proto_rawDesc = "" +
 	"\tmetricarn\x18\x89\xef\xef\xdd\x01 \x01(\tH\x03R\tmetricarn\x88\x01\x01\x12&\n" +
 	"\n" +
 	"metricname\x18\x9b\xb7\xa4a \x01(\tH\x04R\n" +
-	"metricname\x88\x01\x01\x128\n" +
+	"metricname\x88\x01\x01\x12=\n" +
 	"\n" +
-	"metrictype\x18\xea\xa6\xfb\x12 \x01(\x0e2\x15.iot.CustomMetricTypeR\n" +
-	"metrictypeB\x0f\n" +
+	"metrictype\x18\xea\xa6\xfb\x12 \x01(\x0e2\x15.iot.CustomMetricTypeH\x05R\n" +
+	"metrictype\x88\x01\x01B\x0f\n" +
 	"\r_creationdateB\x0e\n" +
 	"\f_displaynameB\x13\n" +
 	"\x11_lastmodifieddateB\f\n" +
 	"\n" +
 	"_metricarnB\r\n" +
-	"\v_metricname\"\"\n" +
+	"\v_metricnameB\r\n" +
+	"\v_metrictype\"\"\n" +
 	" DescribeDefaultAuthorizerRequest\"x\n" +
 	"!DescribeDefaultAuthorizerResponse\x12S\n" +
 	"\x15authorizerdescription\x18ٮ\x996 \x01(\v2\x1a.iot.AuthorizerDescriptionR\x15authorizerdescription\"G\n" +
@@ -54011,50 +54056,57 @@ const file_iot_proto_rawDesc = "" +
 	"+DescribeDetectMitigationActionsTaskResponse\x12L\n" +
 	"\vtasksummary\x18\xd5\xdc\xe7i \x01(\v2'.iot.DetectMitigationActionsTaskSummaryR\vtasksummary\"1\n" +
 	"\x18DescribeDimensionRequest\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"\xbc\x02\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"\xca\x02\n" +
 	"\x19DescribeDimensionResponse\x12\x19\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x01R\fcreationdate\x88\x01\x01\x122\n" +
 	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x02R\x10lastmodifieddate\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x03R\x04name\x88\x01\x01\x12%\n" +
-	"\fstringvalues\x18\xaf\xb6\xd4p \x03(\tR\fstringvalues\x12*\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x12.iot.DimensionTypeR\x04typeB\x06\n" +
+	"\fstringvalues\x18\xaf\xb6\xd4p \x03(\tR\fstringvalues\x12/\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x12.iot.DimensionTypeH\x04R\x04type\x88\x01\x01B\x06\n" +
 	"\x04_arnB\x0f\n" +
 	"\r_creationdateB\x13\n" +
 	"\x11_lastmodifieddateB\a\n" +
-	"\x05_name\"b\n" +
+	"\x05_nameB\a\n" +
+	"\x05_type\"b\n" +
 	"\"DescribeDomainConfigurationRequest\x12<\n" +
-	"\x17domainconfigurationname\x18\xcf\xddͅ\x01 \x01(\tR\x17domainconfigurationname\"\xd5\b\n" +
-	"#DescribeDomainConfigurationResponse\x12N\n" +
-	"\x13applicationprotocol\x18ր\xbc\xc8\x01 \x01(\x0e2\x18.iot.ApplicationProtocolR\x13applicationprotocol\x12J\n" +
-	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x17.iot.AuthenticationTypeR\x12authenticationtype\x12D\n" +
+	"\x17domainconfigurationname\x18\xcf\xddͅ\x01 \x01(\tR\x17domainconfigurationname\"\xda\t\n" +
+	"#DescribeDomainConfigurationResponse\x12S\n" +
+	"\x13applicationprotocol\x18ր\xbc\xc8\x01 \x01(\x0e2\x18.iot.ApplicationProtocolH\x00R\x13applicationprotocol\x88\x01\x01\x12O\n" +
+	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x17.iot.AuthenticationTypeH\x01R\x12authenticationtype\x88\x01\x01\x12D\n" +
 	"\x10authorizerconfig\x18\xa1\x9c\xb8) \x01(\v2\x15.iot.AuthorizerConfigR\x10authorizerconfig\x12Z\n" +
 	"\x17clientcertificateconfig\x18\xac\xe0\x86\x89\x01 \x01(\v2\x1c.iot.ClientCertificateConfigR\x17clientcertificateconfig\x12>\n" +
-	"\x16domainconfigurationarn\x18\x85\x81\xa9- \x01(\tH\x00R\x16domainconfigurationarn\x88\x01\x01\x12A\n" +
-	"\x17domainconfigurationname\x18\xcf\xddͅ\x01 \x01(\tH\x01R\x17domainconfigurationname\x88\x01\x01\x12_\n" +
-	"\x19domainconfigurationstatus\x18\xb8\xb2\xf4\x1c \x01(\x0e2\x1e.iot.DomainConfigurationStatusR\x19domainconfigurationstatus\x12'\n" +
+	"\x16domainconfigurationarn\x18\x85\x81\xa9- \x01(\tH\x02R\x16domainconfigurationarn\x88\x01\x01\x12A\n" +
+	"\x17domainconfigurationname\x18\xcf\xddͅ\x01 \x01(\tH\x03R\x17domainconfigurationname\x88\x01\x01\x12d\n" +
+	"\x19domainconfigurationstatus\x18\xb8\xb2\xf4\x1c \x01(\x0e2\x1e.iot.DomainConfigurationStatusH\x04R\x19domainconfigurationstatus\x88\x01\x01\x12'\n" +
 	"\n" +
-	"domainname\x18\x8bӏ\xba\x01 \x01(\tH\x02R\n" +
-	"domainname\x88\x01\x01\x122\n" +
+	"domainname\x18\x8bӏ\xba\x01 \x01(\tH\x05R\n" +
+	"domainname\x88\x01\x01\x127\n" +
 	"\n" +
-	"domaintype\x18\xba\xbd\xc2G \x01(\x0e2\x0f.iot.DomainTypeR\n" +
-	"domaintype\x12:\n" +
-	"\x14laststatuschangedate\x18\xbc\xf2\xadd \x01(\tH\x03R\x14laststatuschangedate\x88\x01\x01\x12Y\n" +
+	"domaintype\x18\xba\xbd\xc2G \x01(\x0e2\x0f.iot.DomainTypeH\x06R\n" +
+	"domaintype\x88\x01\x01\x12:\n" +
+	"\x14laststatuschangedate\x18\xbc\xf2\xadd \x01(\tH\aR\x14laststatuschangedate\x88\x01\x01\x12Y\n" +
 	"\x17servercertificateconfig\x18\x90\xd6\xf96 \x01(\v2\x1c.iot.ServerCertificateConfigR\x17servercertificateconfig\x12Q\n" +
-	"\x12servercertificates\x18\x8b帱\x01 \x03(\v2\x1d.iot.ServerCertificateSummaryR\x12servercertificates\x125\n" +
-	"\vservicetype\x18\xcd\xda\xden \x01(\x0e2\x10.iot.ServiceTypeR\vservicetype\x12/\n" +
-	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x0e.iot.TlsConfigR\ttlsconfigB\x19\n" +
+	"\x12servercertificates\x18\x8b帱\x01 \x03(\v2\x1d.iot.ServerCertificateSummaryR\x12servercertificates\x12:\n" +
+	"\vservicetype\x18\xcd\xda\xden \x01(\x0e2\x10.iot.ServiceTypeH\bR\vservicetype\x88\x01\x01\x12/\n" +
+	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x0e.iot.TlsConfigR\ttlsconfigB\x16\n" +
+	"\x14_applicationprotocolB\x15\n" +
+	"\x13_authenticationtypeB\x19\n" +
 	"\x17_domainconfigurationarnB\x1a\n" +
-	"\x18_domainconfigurationnameB\r\n" +
-	"\v_domainnameB\x17\n" +
-	"\x15_laststatuschangedate\"(\n" +
-	"&DescribeEncryptionConfigurationRequest\"\x83\x03\n" +
+	"\x18_domainconfigurationnameB\x1c\n" +
+	"\x1a_domainconfigurationstatusB\r\n" +
+	"\v_domainnameB\r\n" +
+	"\v_domaintypeB\x17\n" +
+	"\x15_laststatuschangedateB\x0e\n" +
+	"\f_servicetype\"(\n" +
+	"&DescribeEncryptionConfigurationRequest\"\x9b\x03\n" +
 	"'DescribeEncryptionConfigurationResponse\x12Q\n" +
-	"\x14configurationdetails\x18\xc2\xec\xfb\xc1\x01 \x01(\v2\x19.iot.ConfigurationDetailsR\x14configurationdetails\x12>\n" +
-	"\x0eencryptiontype\x18\xd5\xc9\xff5 \x01(\x0e2\x13.iot.EncryptionTypeR\x0eencryptiontype\x122\n" +
-	"\x10kmsaccessrolearn\x18䜡| \x01(\tH\x00R\x10kmsaccessrolearn\x88\x01\x01\x12%\n" +
-	"\tkmskeyarn\x18\x91\x86\xeb\xa2\x01 \x01(\tH\x01R\tkmskeyarn\x88\x01\x01\x122\n" +
-	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x02R\x10lastmodifieddate\x88\x01\x01B\x13\n" +
+	"\x14configurationdetails\x18\xc2\xec\xfb\xc1\x01 \x01(\v2\x19.iot.ConfigurationDetailsR\x14configurationdetails\x12C\n" +
+	"\x0eencryptiontype\x18\xd5\xc9\xff5 \x01(\x0e2\x13.iot.EncryptionTypeH\x00R\x0eencryptiontype\x88\x01\x01\x122\n" +
+	"\x10kmsaccessrolearn\x18䜡| \x01(\tH\x01R\x10kmsaccessrolearn\x88\x01\x01\x12%\n" +
+	"\tkmskeyarn\x18\x91\x86\xeb\xa2\x01 \x01(\tH\x02R\tkmskeyarn\x88\x01\x01\x122\n" +
+	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x03R\x10lastmodifieddate\x88\x01\x01B\x11\n" +
+	"\x0f_encryptiontypeB\x13\n" +
 	"\x11_kmsaccessrolearnB\f\n" +
 	"\n" +
 	"_kmskeyarnB\x13\n" +
@@ -54078,7 +54130,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x1aDescribeFleetMetricRequest\x12!\n" +
 	"\n" +
 	"metricname\x18\x9b\xb7\xa4a \x01(\tR\n" +
-	"metricname\"\x8b\x06\n" +
+	"metricname\"\x99\x06\n" +
 	"\x1bDescribeFleetMetricResponse\x123\n" +
 	"\x10aggregationfield\x18\xe8\xa7\xf7\x93\x01 \x01(\tH\x00R\x10aggregationfield\x88\x01\x01\x12A\n" +
 	"\x0faggregationtype\x18\xceӮ\\ \x01(\v2\x14.iot.AggregationTypeR\x0faggregationtype\x12*\n" +
@@ -54092,10 +54144,10 @@ const file_iot_proto_rawDesc = "" +
 	"metricname\x88\x01\x01\x12\x1f\n" +
 	"\x06period\x18\x85\x8e\xa5\xce\x01 \x01(\x05H\aR\x06period\x88\x01\x01\x12)\n" +
 	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\bR\vquerystring\x88\x01\x01\x12*\n" +
-	"\fqueryversion\x18ޟ\xa9\x05 \x01(\tH\tR\fqueryversion\x88\x01\x01\x12+\n" +
-	"\x04unit\x18\x88\xb4\xd4E \x01(\x0e2\x14.iot.FleetMetricUnitR\x04unit\x12 \n" +
-	"\aversion\x18\x98\xdd\xc63 \x01(\x03H\n" +
-	"R\aversion\x88\x01\x01B\x13\n" +
+	"\fqueryversion\x18ޟ\xa9\x05 \x01(\tH\tR\fqueryversion\x88\x01\x01\x120\n" +
+	"\x04unit\x18\x88\xb4\xd4E \x01(\x0e2\x14.iot.FleetMetricUnitH\n" +
+	"R\x04unit\x88\x01\x01\x12 \n" +
+	"\aversion\x18\x98\xdd\xc63 \x01(\x03H\vR\aversion\x88\x01\x01B\x13\n" +
 	"\x11_aggregationfieldB\x0f\n" +
 	"\r_creationdateB\x0e\n" +
 	"\f_descriptionB\f\n" +
@@ -54107,17 +54159,19 @@ const file_iot_proto_rawDesc = "" +
 	"\v_metricnameB\t\n" +
 	"\a_periodB\x0e\n" +
 	"\f_querystringB\x0f\n" +
-	"\r_queryversionB\n" +
+	"\r_queryversionB\a\n" +
+	"\x05_unitB\n" +
 	"\n" +
 	"\b_version\"8\n" +
 	"\x14DescribeIndexRequest\x12 \n" +
-	"\tindexname\x18\xb1\xe5\xf7\x85\x01 \x01(\tR\tindexname\"\xaf\x01\n" +
+	"\tindexname\x18\xb1\xe5\xf7\x85\x01 \x01(\tR\tindexname\"\xc4\x01\n" +
 	"\x15DescribeIndexResponse\x12%\n" +
-	"\tindexname\x18\xb1\xe5\xf7\x85\x01 \x01(\tH\x00R\tindexname\x88\x01\x01\x125\n" +
-	"\vindexstatus\x18\xfe\x88\xda\x02 \x01(\x0e2\x10.iot.IndexStatusR\vindexstatus\x12\x1f\n" +
-	"\x06schema\x18\xb7\x86\xf4\x93\x01 \x01(\tH\x01R\x06schema\x88\x01\x01B\f\n" +
+	"\tindexname\x18\xb1\xe5\xf7\x85\x01 \x01(\tH\x00R\tindexname\x88\x01\x01\x12:\n" +
+	"\vindexstatus\x18\xfe\x88\xda\x02 \x01(\x0e2\x10.iot.IndexStatusH\x01R\vindexstatus\x88\x01\x01\x12\x1f\n" +
+	"\x06schema\x18\xb7\x86\xf4\x93\x01 \x01(\tH\x02R\x06schema\x88\x01\x01B\f\n" +
 	"\n" +
-	"_indexnameB\t\n" +
+	"_indexnameB\x0e\n" +
+	"\f_indexstatusB\t\n" +
 	"\a_schema\"\x9f\x01\n" +
 	"\x1bDescribeJobExecutionRequest\x120\n" +
 	"\x0fexecutionnumber\x18\x91\xa6\xdb/ \x01(\x03H\x00R\x0fexecutionnumber\x88\x01\x01\x12\x18\n" +
@@ -54177,30 +54231,31 @@ const file_iot_proto_rawDesc = "" +
 	"\x1fDescribeMitigationActionRequest\x12!\n" +
 	"\n" +
 	"actionname\x18\xdd\xdb\xfa4 \x01(\tR\n" +
-	"actionname\"\xf6\x03\n" +
+	"actionname\"\x8a\x04\n" +
 	" DescribeMitigationActionResponse\x12$\n" +
 	"\tactionarn\x18\xe3\x8d\xf8[ \x01(\tH\x00R\tactionarn\x88\x01\x01\x12#\n" +
 	"\bactionid\x18\x93\x84\x9a\x86\x01 \x01(\tH\x01R\bactionid\x88\x01\x01\x12&\n" +
 	"\n" +
 	"actionname\x18\xdd\xdb\xfa4 \x01(\tH\x02R\n" +
 	"actionname\x88\x01\x01\x12B\n" +
-	"\factionparams\x18\xce\xfa\xb05 \x01(\v2\x1b.iot.MitigationActionParamsR\factionparams\x12=\n" +
+	"\factionparams\x18\xce\xfa\xb05 \x01(\v2\x1b.iot.MitigationActionParamsR\factionparams\x12B\n" +
 	"\n" +
-	"actiontype\x18\xa8\x8e\xa7\x96\x01 \x01(\x0e2\x19.iot.MitigationActionTypeR\n" +
-	"actiontype\x12*\n" +
-	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x03R\fcreationdate\x88\x01\x01\x122\n" +
-	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x04R\x10lastmodifieddate\x88\x01\x01\x12 \n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x05R\arolearn\x88\x01\x01B\f\n" +
+	"actiontype\x18\xa8\x8e\xa7\x96\x01 \x01(\x0e2\x19.iot.MitigationActionTypeH\x03R\n" +
+	"actiontype\x88\x01\x01\x12*\n" +
+	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x04R\fcreationdate\x88\x01\x01\x122\n" +
+	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x05R\x10lastmodifieddate\x88\x01\x01\x12 \n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x06R\arolearn\x88\x01\x01B\f\n" +
 	"\n" +
 	"_actionarnB\v\n" +
 	"\t_actionidB\r\n" +
-	"\v_actionnameB\x0f\n" +
+	"\v_actionnameB\r\n" +
+	"\v_actiontypeB\x0f\n" +
 	"\r_creationdateB\x13\n" +
 	"\x11_lastmodifieddateB\n" +
 	"\n" +
 	"\b_rolearn\"M\n" +
 	"#DescribeProvisioningTemplateRequest\x12&\n" +
-	"\ftemplatename\x18\xd1\xca\xfa\x8f\x01 \x01(\tR\ftemplatename\"\xe0\x05\n" +
+	"\ftemplatename\x18\xd1\xca\xfa\x8f\x01 \x01(\tR\ftemplatename\"\xee\x05\n" +
 	"$DescribeProvisioningTemplateResponse\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x00R\fcreationdate\x88\x01\x01\x123\n" +
 	"\x10defaultversionid\x18\x90\xf6\xb3\x8b\x01 \x01(\x05H\x01R\x10defaultversionid\x88\x01\x01\x12)\n" +
@@ -54211,8 +54266,8 @@ const file_iot_proto_rawDesc = "" +
 	"\x13provisioningrolearn\x18\xc0\xb4\xd9\xd9\x01 \x01(\tH\x05R\x13provisioningrolearn\x88\x01\x01\x12)\n" +
 	"\vtemplatearn\x18\xbf\xa2ʊ\x01 \x01(\tH\x06R\vtemplatearn\x88\x01\x01\x12+\n" +
 	"\ftemplatebody\x18\x94\xe1\xf4\xa1\x01 \x01(\tH\aR\ftemplatebody\x88\x01\x01\x12+\n" +
-	"\ftemplatename\x18\xd1\xca\xfa\x8f\x01 \x01(\tH\bR\ftemplatename\x88\x01\x01\x12)\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x11.iot.TemplateTypeR\x04typeB\x0f\n" +
+	"\ftemplatename\x18\xd1\xca\xfa\x8f\x01 \x01(\tH\bR\ftemplatename\x88\x01\x01\x12.\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x11.iot.TemplateTypeH\tR\x04type\x88\x01\x01B\x0f\n" +
 	"\r_creationdateB\x13\n" +
 	"\x11_defaultversionidB\x0e\n" +
 	"\f_descriptionB\n" +
@@ -54222,7 +54277,8 @@ const file_iot_proto_rawDesc = "" +
 	"\x14_provisioningrolearnB\x0e\n" +
 	"\f_templatearnB\x0f\n" +
 	"\r_templatebodyB\x0f\n" +
-	"\r_templatename\"u\n" +
+	"\r_templatenameB\a\n" +
+	"\x05_type\"u\n" +
 	"*DescribeProvisioningTemplateVersionRequest\x12&\n" +
 	"\ftemplatename\x18\xd1\xca\xfa\x8f\x01 \x01(\tR\ftemplatename\x12\x1f\n" +
 	"\tversionid\x18\xbb\xe8\xc7= \x01(\x05R\tversionid\"\xa5\x02\n" +
@@ -54241,17 +54297,21 @@ const file_iot_proto_rawDesc = "" +
 	"\x19DescribeRoleAliasResponse\x12P\n" +
 	"\x14rolealiasdescription\x18\x90\xed\x94@ \x01(\v2\x19.iot.RoleAliasDescriptionR\x14rolealiasdescription\"S\n" +
 	"\x1dDescribeScheduledAuditRequest\x122\n" +
-	"\x12scheduledauditname\x18\xd5ޡ\xb7\x01 \x01(\tR\x12scheduledauditname\"\x8a\x03\n" +
+	"\x12scheduledauditname\x18\xd5ޡ\xb7\x01 \x01(\tR\x12scheduledauditname\"\xb0\x03\n" +
 	"\x1eDescribeScheduledAuditResponse\x12&\n" +
 	"\n" +
 	"dayofmonth\x18\xff\xe9\x92r \x01(\tH\x00R\n" +
-	"dayofmonth\x88\x01\x01\x12/\n" +
-	"\tdayofweek\x18\xfd\xf0\xa2/ \x01(\x0e2\x0e.iot.DayOfWeekR\tdayofweek\x124\n" +
-	"\tfrequency\x18\x82\xb8\xcc} \x01(\x0e2\x13.iot.AuditFrequencyR\tfrequency\x124\n" +
-	"\x11scheduledauditarn\x18\xdb\xf3\xbat \x01(\tH\x01R\x11scheduledauditarn\x88\x01\x01\x127\n" +
-	"\x12scheduledauditname\x18\xd5ޡ\xb7\x01 \x01(\tH\x02R\x12scheduledauditname\x88\x01\x01\x12.\n" +
+	"dayofmonth\x88\x01\x01\x124\n" +
+	"\tdayofweek\x18\xfd\xf0\xa2/ \x01(\x0e2\x0e.iot.DayOfWeekH\x01R\tdayofweek\x88\x01\x01\x129\n" +
+	"\tfrequency\x18\x82\xb8\xcc} \x01(\x0e2\x13.iot.AuditFrequencyH\x02R\tfrequency\x88\x01\x01\x124\n" +
+	"\x11scheduledauditarn\x18\xdb\xf3\xbat \x01(\tH\x03R\x11scheduledauditarn\x88\x01\x01\x127\n" +
+	"\x12scheduledauditname\x18\xd5ޡ\xb7\x01 \x01(\tH\x04R\x12scheduledauditname\x88\x01\x01\x12.\n" +
 	"\x10targetchecknames\x18\xc1\xe7\x8b\xe0\x01 \x03(\tR\x10targetchecknamesB\r\n" +
-	"\v_dayofmonthB\x14\n" +
+	"\v_dayofmonthB\f\n" +
+	"\n" +
+	"_dayofweekB\f\n" +
+	"\n" +
+	"_frequencyB\x14\n" +
 	"\x12_scheduledauditarnB\x15\n" +
 	"\x13_scheduledauditname\"V\n" +
 	"\x1eDescribeSecurityProfileRequest\x124\n" +
@@ -54285,29 +54345,30 @@ const file_iot_proto_rawDesc = "" +
 	"streaminfo\x18\x86\x9d\x91\xf2\x01 \x01(\v2\x0f.iot.StreamInfoR\n" +
 	"streaminfo\"F\n" +
 	"\x19DescribeThingGroupRequest\x12)\n" +
-	"\x0ethinggroupname\x18\x96\xa5\xee1 \x01(\tR\x0ethinggroupname\"\x8d\x05\n" +
+	"\x0ethinggroupname\x18\x96\xa5\xee1 \x01(\tR\x0ethinggroupname\"\x9d\x05\n" +
 	"\x1aDescribeThingGroupResponse\x12%\n" +
 	"\tindexname\x18\xb1\xe5\xf7\x85\x01 \x01(\tH\x00R\tindexname\x88\x01\x01\x12)\n" +
 	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\x01R\vquerystring\x88\x01\x01\x12*\n" +
-	"\fqueryversion\x18ޟ\xa9\x05 \x01(\tH\x02R\fqueryversion\x88\x01\x01\x123\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.DynamicGroupStatusR\x06status\x12-\n" +
-	"\rthinggrouparn\x18\U000816a7\x01 \x01(\tH\x03R\rthinggrouparn\x88\x01\x01\x12+\n" +
-	"\fthinggroupid\x18\xcc̈́\x9e\x01 \x01(\tH\x04R\fthinggroupid\x88\x01\x01\x12J\n" +
+	"\fqueryversion\x18ޟ\xa9\x05 \x01(\tH\x02R\fqueryversion\x88\x01\x01\x128\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.DynamicGroupStatusH\x03R\x06status\x88\x01\x01\x12-\n" +
+	"\rthinggrouparn\x18\U000816a7\x01 \x01(\tH\x04R\rthinggrouparn\x88\x01\x01\x12+\n" +
+	"\fthinggroupid\x18\xcc̈́\x9e\x01 \x01(\tH\x05R\fthinggroupid\x88\x01\x01\x12J\n" +
 	"\x12thinggroupmetadata\x18\xd4\xdd\xe6S \x01(\v2\x17.iot.ThingGroupMetadataR\x12thinggroupmetadata\x12.\n" +
-	"\x0ethinggroupname\x18\x96\xa5\xee1 \x01(\tH\x05R\x0ethinggroupname\x88\x01\x01\x12Q\n" +
+	"\x0ethinggroupname\x18\x96\xa5\xee1 \x01(\tH\x06R\x0ethinggroupname\x88\x01\x01\x12Q\n" +
 	"\x14thinggroupproperties\x18Ā\xa2\xac\x01 \x01(\v2\x19.iot.ThingGroupPropertiesR\x14thinggroupproperties\x12 \n" +
-	"\aversion\x18\x98\xdd\xc63 \x01(\x03H\x06R\aversion\x88\x01\x01B\f\n" +
+	"\aversion\x18\x98\xdd\xc63 \x01(\x03H\aR\aversion\x88\x01\x01B\f\n" +
 	"\n" +
 	"_indexnameB\x0e\n" +
 	"\f_querystringB\x0f\n" +
-	"\r_queryversionB\x10\n" +
+	"\r_queryversionB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_thinggrouparnB\x0f\n" +
 	"\r_thinggroupidB\x11\n" +
 	"\x0f_thinggroupnameB\n" +
 	"\n" +
 	"\b_version\"A\n" +
 	"$DescribeThingRegistrationTaskRequest\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\"\xea\x05\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskid\"\xfa\x05\n" +
 	"%DescribeThingRegistrationTaskResponse\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x00R\fcreationdate\x88\x01\x01\x12+\n" +
 	"\ffailurecount\x18\xa9\xf6\xb8\xe3\x01 \x01(\x05H\x01R\ffailurecount\x88\x01\x01\x120\n" +
@@ -54316,12 +54377,12 @@ const file_iot_proto_rawDesc = "" +
 	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x04R\x10lastmodifieddate\x88\x01\x01\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x05R\amessage\x88\x01\x01\x127\n" +
 	"\x12percentageprogress\x18\xf7\x91\x81\xaa\x01 \x01(\x05H\x06R\x12percentageprogress\x88\x01\x01\x12 \n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\aR\arolearn\x88\x01\x01\x12'\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\v.iot.StatusR\x06status\x12+\n" +
-	"\fsuccesscount\x18\xa0\x98\xcd\xde\x01 \x01(\x05H\bR\fsuccesscount\x88\x01\x01\x12\x1e\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tH\tR\x06taskid\x88\x01\x01\x12+\n" +
-	"\ftemplatebody\x18\x94\xe1\xf4\xa1\x01 \x01(\tH\n" +
-	"R\ftemplatebody\x88\x01\x01B\x0f\n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\aR\arolearn\x88\x01\x01\x12,\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\v.iot.StatusH\bR\x06status\x88\x01\x01\x12+\n" +
+	"\fsuccesscount\x18\xa0\x98\xcd\xde\x01 \x01(\x05H\tR\fsuccesscount\x88\x01\x01\x12\x1e\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tH\n" +
+	"R\x06taskid\x88\x01\x01\x12+\n" +
+	"\ftemplatebody\x18\x94\xe1\xf4\xa1\x01 \x01(\tH\vR\ftemplatebody\x88\x01\x01B\x0f\n" +
 	"\r_creationdateB\x0f\n" +
 	"\r_failurecountB\x12\n" +
 	"\x10_inputfilebucketB\x0f\n" +
@@ -54331,7 +54392,8 @@ const file_iot_proto_rawDesc = "" +
 	"\b_messageB\x15\n" +
 	"\x13_percentageprogressB\n" +
 	"\n" +
-	"\b_rolearnB\x0f\n" +
+	"\b_rolearnB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_successcountB\t\n" +
 	"\a_taskidB\x0f\n" +
 	"\r_templatebody\"8\n" +
@@ -54391,7 +54453,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x1bDetachThingPrincipalRequest\x12\x1f\n" +
 	"\tprincipal\x18\xaa\xf4\x86} \x01(\tR\tprincipal\x12 \n" +
 	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingname\"\x1e\n" +
-	"\x1cDetachThingPrincipalResponse\"\xb6\x04\n" +
+	"\x1cDetachThingPrincipalResponse\"\xc6\x04\n" +
 	"\x1fDetectMitigationActionExecution\x12&\n" +
 	"\n" +
 	"actionname\x18\xdd\xdb\xfa4 \x01(\tH\x00R\n" +
@@ -54399,11 +54461,11 @@ const file_iot_proto_rawDesc = "" +
 	"\terrorcode\x18\xb9\xb9۩\x01 \x01(\tH\x01R\terrorcode\x88\x01\x01\x122\n" +
 	"\x10executionenddate\x18\xdf\xf7\xa5\b \x01(\tH\x02R\x10executionenddate\x88\x01\x01\x126\n" +
 	"\x12executionstartdate\x18̂\xae\\ \x01(\tH\x03R\x12executionstartdate\x88\x01\x01\x12 \n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x04R\amessage\x88\x01\x01\x12F\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2*.iot.DetectMitigationActionExecutionStatusR\x06status\x12\x1e\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tH\x05R\x06taskid\x88\x01\x01\x12%\n" +
-	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\x06R\tthingname\x88\x01\x01\x12)\n" +
-	"\vviolationid\x18\xe6\xcd\u0382\x01 \x01(\tH\aR\vviolationid\x88\x01\x01B\r\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x04R\amessage\x88\x01\x01\x12K\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2*.iot.DetectMitigationActionExecutionStatusH\x05R\x06status\x88\x01\x01\x12\x1e\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tH\x06R\x06taskid\x88\x01\x01\x12%\n" +
+	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\aR\tthingname\x88\x01\x01\x12)\n" +
+	"\vviolationid\x18\xe6\xcd\u0382\x01 \x01(\tH\bR\vviolationid\x88\x01\x01B\r\n" +
 	"\v_actionnameB\f\n" +
 	"\n" +
 	"_errorcodeB\x13\n" +
@@ -54411,6 +54473,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x13_executionstartdateB\n" +
 	"\n" +
 	"\b_messageB\t\n" +
+	"\a_statusB\t\n" +
 	"\a_taskidB\f\n" +
 	"\n" +
 	"_thingnameB\x0e\n" +
@@ -54421,7 +54484,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x0eactionsskipped\x18\xe9\x9a\xfa\x04 \x01(\x03H\x02R\x0eactionsskipped\x88\x01\x01B\x12\n" +
 	"\x10_actionsexecutedB\x10\n" +
 	"\x0e_actionsfailedB\x11\n" +
-	"\x0f_actionsskipped\"\xb4\x06\n" +
+	"\x0f_actionsskipped\"\xc8\x06\n" +
 	"\"DetectMitigationActionsTaskSummary\x12F\n" +
 	"\x11actionsdefinition\x18\ue7bdg \x03(\v2\x15.iot.MitigationActionR\x11actionsdefinition\x12J\n" +
 	"\x1conlyactiveviolationsincluded\x18\xdaʺF \x01(\bH\x00R\x1conlyactiveviolationsincluded\x88\x01\x01\x12C\n" +
@@ -54430,16 +54493,17 @@ const file_iot_proto_rawDesc = "" +
 	"\vtaskendtime\x18\xd9\xe1\xb5\xf7\x01 \x01(\tH\x02R\vtaskendtime\x88\x01\x01\x12\x1e\n" +
 	"\x06taskid\x18\xc2ʮg \x01(\tH\x03R\x06taskid\x88\x01\x01\x12,\n" +
 	"\rtaskstarttime\x18\x9a\xaf\xcb2 \x01(\tH\x04R\rtaskstarttime\x88\x01\x01\x12U\n" +
-	"\x0etaskstatistics\x18\xe0\xf8\xdb\x03 \x01(\v2*.iot.DetectMitigationActionsTaskStatisticsR\x0etaskstatistics\x12I\n" +
+	"\x0etaskstatistics\x18\xe0\xf8\xdb\x03 \x01(\v2*.iot.DetectMitigationActionsTaskStatisticsR\x0etaskstatistics\x12N\n" +
 	"\n" +
-	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2&.iot.DetectMitigationActionsTaskStatusR\n" +
-	"taskstatus\x12k\n" +
+	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2&.iot.DetectMitigationActionsTaskStatusH\x05R\n" +
+	"taskstatus\x88\x01\x01\x12k\n" +
 	"\x1dviolationeventoccurrencerange\x18\xab\xf5\xaeU \x01(\v2\".iot.ViolationEventOccurrenceRangeR\x1dviolationeventoccurrencerangeB\x1f\n" +
 	"\x1d_onlyactiveviolationsincludedB\x1b\n" +
 	"\x19_suppressedalertsincludedB\x0e\n" +
 	"\f_taskendtimeB\t\n" +
 	"\a_taskidB\x10\n" +
-	"\x0e_taskstarttime\"\xda\x01\n" +
+	"\x0e_taskstarttimeB\r\n" +
+	"\v_taskstatus\"\xda\x01\n" +
 	"!DetectMitigationActionsTaskTarget\x12*\n" +
 	"\fbehaviorname\x18\x85\xc0\x8e$ \x01(\tH\x00R\fbehaviorname\x88\x01\x01\x129\n" +
 	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tH\x01R\x13securityprofilename\x88\x01\x01\x12%\n" +
@@ -54465,30 +54529,33 @@ const file_iot_proto_rawDesc = "" +
 	"\b_exampleB\x06\n" +
 	"\x04_keyB\v\n" +
 	"\t_optionalB\b\n" +
-	"\x06_regex\"\x8d\x02\n" +
+	"\x06_regex\"\xa2\x02\n" +
 	"\x1aDomainConfigurationSummary\x12>\n" +
 	"\x16domainconfigurationarn\x18\x85\x81\xa9- \x01(\tH\x00R\x16domainconfigurationarn\x88\x01\x01\x12A\n" +
-	"\x17domainconfigurationname\x18\xcf\xddͅ\x01 \x01(\tH\x01R\x17domainconfigurationname\x88\x01\x01\x125\n" +
-	"\vservicetype\x18\xcd\xda\xden \x01(\x0e2\x10.iot.ServiceTypeR\vservicetypeB\x19\n" +
+	"\x17domainconfigurationname\x18\xcf\xddͅ\x01 \x01(\tH\x01R\x17domainconfigurationname\x88\x01\x01\x12:\n" +
+	"\vservicetype\x18\xcd\xda\xden \x01(\x0e2\x10.iot.ServiceTypeH\x02R\vservicetype\x88\x01\x01B\x19\n" +
 	"\x17_domainconfigurationarnB\x1a\n" +
-	"\x18_domainconfigurationname\"\x85\x04\n" +
+	"\x18_domainconfigurationnameB\x0e\n" +
+	"\f_servicetype\"\xb0\x04\n" +
 	"\x0eDynamoDBAction\x12&\n" +
-	"\fhashkeyfield\x18\xd5\xde\xcf\xc8\x01 \x01(\tR\fhashkeyfield\x127\n" +
+	"\fhashkeyfield\x18\xd5\xde\xcf\xc8\x01 \x01(\tR\fhashkeyfield\x12<\n" +
 	"\vhashkeytype\x18\x91\xd8\xcf\n" +
-	" \x01(\x0e2\x12.iot.DynamoKeyTypeR\vhashkeytype\x12&\n" +
+	" \x01(\x0e2\x12.iot.DynamoKeyTypeH\x00R\vhashkeytype\x88\x01\x01\x12&\n" +
 	"\fhashkeyvalue\x18ꖕ\xa5\x01 \x01(\tR\fhashkeyvalue\x12%\n" +
-	"\toperation\x18\x87\x82\xfa\x99\x01 \x01(\tH\x00R\toperation\x88\x01\x01\x12*\n" +
-	"\fpayloadfield\x18\xa8\xd2\xf3a \x01(\tH\x01R\fpayloadfield\x88\x01\x01\x12,\n" +
-	"\rrangekeyfield\x18\xb4\x8f\xa9X \x01(\tH\x02R\rrangekeyfield\x88\x01\x01\x129\n" +
+	"\toperation\x18\x87\x82\xfa\x99\x01 \x01(\tH\x01R\toperation\x88\x01\x01\x12*\n" +
+	"\fpayloadfield\x18\xa8\xd2\xf3a \x01(\tH\x02R\fpayloadfield\x88\x01\x01\x12,\n" +
+	"\rrangekeyfield\x18\xb4\x8f\xa9X \x01(\tH\x03R\rrangekeyfield\x88\x01\x01\x12>\n" +
 	"\frangekeytype\x18\xf2\xa5\xfa\n" +
-	" \x01(\x0e2\x12.iot.DynamoKeyTypeR\frangekeytype\x12,\n" +
-	"\rrangekeyvalue\x18\x87\xd7\xfc; \x01(\tH\x03R\rrangekeyvalue\x88\x01\x01\x12\x1b\n" +
+	" \x01(\x0e2\x12.iot.DynamoKeyTypeH\x04R\frangekeytype\x88\x01\x01\x12,\n" +
+	"\rrangekeyvalue\x18\x87\xd7\xfc; \x01(\tH\x05R\rrangekeyvalue\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12 \n" +
-	"\ttablename\x18\xfd\xbfގ\x01 \x01(\tR\ttablenameB\f\n" +
+	"\ttablename\x18\xfd\xbfގ\x01 \x01(\tR\ttablenameB\x0e\n" +
+	"\f_hashkeytypeB\f\n" +
 	"\n" +
 	"_operationB\x0f\n" +
 	"\r_payloadfieldB\x10\n" +
-	"\x0e_rangekeyfieldB\x10\n" +
+	"\x0e_rangekeyfieldB\x0f\n" +
+	"\r_rangekeytypeB\x10\n" +
 	"\x0e_rangekeyvalue\"_\n" +
 	"\x10DynamoDBv2Action\x12.\n" +
 	"\aputitem\x18\xae\xf9\x95A \x01(\v2\x11.iot.PutItemInputR\aputitem\x12\x1b\n" +
@@ -54525,11 +54592,12 @@ const file_iot_proto_rawDesc = "" +
 	"\x16ExponentialRolloutRate\x120\n" +
 	"\x11baserateperminute\x18\x86\xf6\xf6\xb1\x01 \x01(\x05R\x11baserateperminute\x12+\n" +
 	"\x0fincrementfactor\x18\xfa\x8c\xeb\\ \x01(\x01R\x0fincrementfactor\x12Q\n" +
-	"\x14rateincreasecriteria\x18\xfb\xe8\xed\xa7\x01 \x01(\v2\x19.iot.RateIncreaseCriteriaR\x14rateincreasecriteria\"T\n" +
+	"\x14rateincreasecriteria\x18\xfb\xe8\xed\xa7\x01 \x01(\v2\x19.iot.RateIncreaseCriteriaR\x14rateincreasecriteria\"b\n" +
 	"\x05Field\x12\x1a\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x00R\x04name\x88\x01\x01\x12&\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x0e.iot.FieldTypeR\x04typeB\a\n" +
-	"\x05_name\"l\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x00R\x04name\x88\x01\x01\x12+\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x0e.iot.FieldTypeH\x01R\x04type\x88\x01\x01B\a\n" +
+	"\x05_nameB\a\n" +
+	"\x05_type\"l\n" +
 	"\fFileLocation\x123\n" +
 	"\n" +
 	"s3location\x18\xb5\xf5\xb3\xbe\x01 \x01(\v2\x0f.iot.S3LocationR\n" +
@@ -54551,11 +54619,12 @@ const file_iot_proto_rawDesc = "" +
 	"metricname\x88\x01\x01B\f\n" +
 	"\n" +
 	"_metricarnB\r\n" +
-	"\v_metricname\"i\n" +
+	"\v_metricname\"x\n" +
 	"\x11GeoLocationTarget\x12\x1a\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x00R\x04name\x88\x01\x01\x12/\n" +
-	"\x05order\x18\x98\xa1\xb0\x99\x01 \x01(\x0e2\x15.iot.TargetFieldOrderR\x05orderB\a\n" +
-	"\x05_name\"\xe9\x01\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x00R\x04name\x88\x01\x01\x124\n" +
+	"\x05order\x18\x98\xa1\xb0\x99\x01 \x01(\x0e2\x15.iot.TargetFieldOrderH\x01R\x05order\x88\x01\x01B\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_order\"\xe9\x01\n" +
 	"(GetBehaviorModelTrainingSummariesRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
@@ -54602,7 +54671,7 @@ const file_iot_proto_rawDesc = "" +
 	"\vexecutionid\x18\xd1ց\xae\x01 \x01(\tR\vexecutionid\x12,\n" +
 	"\rincluderesult\x18\xffנ\x11 \x01(\bH\x00R\rincluderesult\x88\x01\x01\x12 \n" +
 	"\ttargetarn\x18\xb0亯\x01 \x01(\tR\ttargetarnB\x10\n" +
-	"\x0e_includeresult\"\x83\b\n" +
+	"\x0e_includeresult\"\x93\b\n" +
 	"\x1bGetCommandExecutionResponse\x12&\n" +
 	"\n" +
 	"commandarn\x18\xde\xd2\xf6/ \x01(\tH\x00R\n" +
@@ -54616,12 +54685,12 @@ const file_iot_proto_rawDesc = "" +
 	"parameters\x18\xdaݔE \x03(\v20.iot.GetCommandExecutionResponse.ParametersEntryR\n" +
 	"parameters\x12G\n" +
 	"\x06result\x18\xa5\xec\xddQ \x03(\v2,.iot.GetCommandExecutionResponse.ResultEntryR\x06result\x12%\n" +
-	"\tstartedat\x18\xfc\xbc\xb6\xc1\x01 \x01(\tH\x06R\tstartedat\x88\x01\x01\x127\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.iot.CommandExecutionStatusR\x06status\x129\n" +
+	"\tstartedat\x18\xfc\xbc\xb6\xc1\x01 \x01(\tH\x06R\tstartedat\x88\x01\x01\x12<\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.iot.CommandExecutionStatusH\aR\x06status\x88\x01\x01\x129\n" +
 	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\v2\x11.iot.StatusReasonR\fstatusreason\x12%\n" +
-	"\ttargetarn\x18\xb0亯\x01 \x01(\tH\aR\ttargetarn\x88\x01\x01\x12'\n" +
+	"\ttargetarn\x18\xb0亯\x01 \x01(\tH\bR\ttargetarn\x88\x01\x01\x12'\n" +
 	"\n" +
-	"timetolive\x18؇ؗ\x01 \x01(\tH\bR\n" +
+	"timetolive\x18؇ؗ\x01 \x01(\tH\tR\n" +
 	"timetolive\x88\x01\x01\x1aY\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x120\n" +
@@ -54637,12 +54706,13 @@ const file_iot_proto_rawDesc = "" +
 	"\x18_executiontimeoutsecondsB\x10\n" +
 	"\x0e_lastupdatedatB\f\n" +
 	"\n" +
-	"_startedatB\f\n" +
+	"_startedatB\t\n" +
+	"\a_statusB\f\n" +
 	"\n" +
 	"_targetarnB\r\n" +
 	"\v_timetolive\"5\n" +
 	"\x11GetCommandRequest\x12 \n" +
-	"\tcommandid\x18\xa0\xaf\xc6\xca\x01 \x01(\tR\tcommandid\"\xd5\x06\n" +
+	"\tcommandid\x18\xa0\xaf\xc6\xca\x01 \x01(\tR\tcommandid\"\xe8\x06\n" +
 	"\x12GetCommandResponse\x12&\n" +
 	"\n" +
 	"commandarn\x18\xde\xd2\xf6/ \x01(\tH\x00R\n" +
@@ -54655,13 +54725,14 @@ const file_iot_proto_rawDesc = "" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x04R\vdescription\x88\x01\x01\x12)\n" +
 	"\vdisplayname\x18\xd7̅\x80\x01 \x01(\tH\x05R\vdisplayname\x88\x01\x01\x12+\n" +
 	"\rlastupdatedat\x18\x82\xa1} \x01(\tH\x06R\rlastupdatedat\x88\x01\x01\x12J\n" +
-	"\x13mandatoryparameters\x18\xbd\xdd\xefY \x03(\v2\x15.iot.CommandParameterR\x13mandatoryparameters\x126\n" +
-	"\tnamespace\x18\xa1\xf5\xb9V \x01(\x0e2\x15.iot.CommandNamespaceR\tnamespace\x121\n" +
+	"\x13mandatoryparameters\x18\xbd\xdd\xefY \x03(\v2\x15.iot.CommandParameterR\x13mandatoryparameters\x12;\n" +
+	"\tnamespace\x18\xa1\xf5\xb9V \x01(\x0e2\x15.iot.CommandNamespaceH\aR\tnamespace\x88\x01\x01\x121\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2\x13.iot.CommandPayloadR\apayload\x120\n" +
-	"\x0fpayloadtemplate\x18̣\xb0, \x01(\tH\aR\x0fpayloadtemplate\x88\x01\x01\x120\n" +
-	"\x0fpendingdeletion\x18\x8f\xa2\x9e; \x01(\bH\bR\x0fpendingdeletion\x88\x01\x01\x12@\n" +
+	"\x0fpayloadtemplate\x18̣\xb0, \x01(\tH\bR\x0fpayloadtemplate\x88\x01\x01\x120\n" +
+	"\x0fpendingdeletion\x18\x8f\xa2\x9e; \x01(\bH\tR\x0fpendingdeletion\x88\x01\x01\x12@\n" +
 	"\fpreprocessor\x18\xab\xaaǡ\x01 \x01(\v2\x18.iot.CommandPreprocessorR\fpreprocessor\x12 \n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\tR\arolearn\x88\x01\x01B\r\n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\n" +
+	"R\arolearn\x88\x01\x01B\r\n" +
 	"\v_commandarnB\f\n" +
 	"\n" +
 	"_commandidB\f\n" +
@@ -54670,7 +54741,9 @@ const file_iot_proto_rawDesc = "" +
 	"\v_deprecatedB\x0e\n" +
 	"\f_descriptionB\x0e\n" +
 	"\f_displaynameB\x10\n" +
-	"\x0e_lastupdatedatB\x12\n" +
+	"\x0e_lastupdatedatB\f\n" +
+	"\n" +
+	"_namespaceB\x12\n" +
 	"\x10_payloadtemplateB\x12\n" +
 	"\x10_pendingdeletionB\n" +
 	"\n" +
@@ -54697,10 +54770,11 @@ const file_iot_proto_rawDesc = "" +
 	"\x16GetJobDocumentResponse\x12#\n" +
 	"\bdocument\x18\u0557\x8d\xb1\x01 \x01(\tH\x00R\bdocument\x88\x01\x01B\v\n" +
 	"\t_document\"\x1a\n" +
-	"\x18GetLoggingOptionsRequest\"w\n" +
-	"\x19GetLoggingOptionsResponse\x12,\n" +
-	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\r.iot.LogLevelR\bloglevel\x12 \n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x00R\arolearn\x88\x01\x01B\n" +
+	"\x18GetLoggingOptionsRequest\"\x89\x01\n" +
+	"\x19GetLoggingOptionsResponse\x121\n" +
+	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\r.iot.LogLevelH\x00R\bloglevel\x88\x01\x01\x12 \n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x01R\arolearn\x88\x01\x01B\v\n" +
+	"\t_loglevelB\n" +
 	"\n" +
 	"\b_rolearn\";\n" +
 	"\x13GetOTAUpdateRequest\x12$\n" +
@@ -54729,7 +54803,7 @@ const file_iot_proto_rawDesc = "" +
 	"\f_packagename\"f\n" +
 	"\x18GetPackageVersionRequest\x12$\n" +
 	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tR\vpackagename\x12$\n" +
-	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tR\vversionname\"\x81\a\n" +
+	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tR\vversionname\"\xaf\a\n" +
 	"\x19GetPackageVersionResponse\x12;\n" +
 	"\bartifact\x18\xa4\xb0\xae\xf5\x01 \x01(\v2\x1b.iot.PackageVersionArtifactR\bartifact\x12Q\n" +
 	"\n" +
@@ -54742,10 +54816,10 @@ const file_iot_proto_rawDesc = "" +
 	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tH\x04R\vpackagename\x88\x01\x01\x125\n" +
 	"\x11packageversionarn\x18\xed\xfc\x98\xf0\x01 \x01(\tH\x05R\x11packageversionarn\x88\x01\x01\x12\x1e\n" +
 	"\x06recipe\x18Я\xfac \x01(\tH\x06R\x06recipe\x88\x01\x01\x12!\n" +
-	"\x04sbom\x18\x91\x96\xa1\xf9\x01 \x01(\v2\t.iot.SbomR\x04sbom\x12Q\n" +
-	"\x14sbomvalidationstatus\x18\xf6\x90\xc6\xef\x01 \x01(\x0e2\x19.iot.SbomValidationStatusR\x14sbomvalidationstatus\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.iot.PackageVersionStatusR\x06status\x12)\n" +
-	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tH\aR\vversionname\x88\x01\x01\x1a=\n" +
+	"\x04sbom\x18\x91\x96\xa1\xf9\x01 \x01(\v2\t.iot.SbomR\x04sbom\x12V\n" +
+	"\x14sbomvalidationstatus\x18\xf6\x90\xc6\xef\x01 \x01(\x0e2\x19.iot.SbomValidationStatusH\aR\x14sbomvalidationstatus\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.iot.PackageVersionStatusH\bR\x06status\x88\x01\x01\x12)\n" +
+	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tH\tR\vversionname\x88\x01\x01\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
@@ -54755,7 +54829,9 @@ const file_iot_proto_rawDesc = "" +
 	"\x11_lastmodifieddateB\x0e\n" +
 	"\f_packagenameB\x14\n" +
 	"\x12_packageversionarnB\t\n" +
-	"\a_recipeB\x0e\n" +
+	"\a_recipeB\x17\n" +
+	"\x15_sbomvalidationstatusB\t\n" +
+	"\a_statusB\x0e\n" +
 	"\f_versionname\"\x98\x02\n" +
 	"\x15GetPercentilesRequest\x123\n" +
 	"\x10aggregationfield\x18\xe8\xa7\xf7\x93\x01 \x01(\tH\x00R\x10aggregationfield\x88\x01\x01\x12%\n" +
@@ -54836,30 +54912,31 @@ const file_iot_proto_rawDesc = "" +
 	"\x1fGetThingConnectivityDataRequest\x12C\n" +
 	"\x18includesocketinformation\x18\xe1؊\xf3\x01 \x01(\bH\x00R\x18includesocketinformation\x88\x01\x01\x12 \n" +
 	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingnameB\x1b\n" +
-	"\x19_includesocketinformation\"\x9b\x06\n" +
+	"\x19_includesocketinformation\"\xb5\x06\n" +
 	" GetThingConnectivityDataResponse\x12+\n" +
 	"\fcleansession\x18\xb3\x89\xdb\xed\x01 \x01(\bH\x00R\fcleansession\x88\x01\x01\x12\"\n" +
 	"\bclientid\x18\xc4\xf0\xc3\x02 \x01(\tH\x01R\bclientid\x88\x01\x01\x12%\n" +
-	"\tconnected\x18ѩ\xbb\xa7\x01 \x01(\bH\x02R\tconnected\x88\x01\x01\x12I\n" +
-	"\x10disconnectreason\x18\xf0\xb2\x84\" \x01(\x0e2\x1a.iot.DisconnectReasonValueR\x10disconnectreason\x124\n" +
-	"\x11keepaliveduration\x18ʍ\x882 \x01(\x05H\x03R\x11keepaliveduration\x88\x01\x01\x12-\n" +
-	"\rsessionexpiry\x18\xa5о\x9e\x01 \x01(\x03H\x04R\rsessionexpiry\x88\x01\x01\x12\"\n" +
-	"\bsourceip\x18ʚ\xa4W \x01(\tH\x05R\bsourceip\x88\x01\x01\x12&\n" +
+	"\tconnected\x18ѩ\xbb\xa7\x01 \x01(\bH\x02R\tconnected\x88\x01\x01\x12N\n" +
+	"\x10disconnectreason\x18\xf0\xb2\x84\" \x01(\x0e2\x1a.iot.DisconnectReasonValueH\x03R\x10disconnectreason\x88\x01\x01\x124\n" +
+	"\x11keepaliveduration\x18ʍ\x882 \x01(\x05H\x04R\x11keepaliveduration\x88\x01\x01\x12-\n" +
+	"\rsessionexpiry\x18\xa5о\x9e\x01 \x01(\x03H\x05R\rsessionexpiry\x88\x01\x01\x12\"\n" +
+	"\bsourceip\x18ʚ\xa4W \x01(\tH\x06R\bsourceip\x88\x01\x01\x12&\n" +
 	"\n" +
-	"sourceport\x18\xc4\xff\x904 \x01(\x05H\x06R\n" +
+	"sourceport\x18\xc4\xff\x904 \x01(\x05H\aR\n" +
 	"sourceport\x88\x01\x01\x12#\n" +
-	"\btargetip\x18ڀ\xab\x83\x01 \x01(\tH\aR\btargetip\x88\x01\x01\x12'\n" +
+	"\btargetip\x18ڀ\xab\x83\x01 \x01(\tH\bR\btargetip\x88\x01\x01\x12'\n" +
 	"\n" +
-	"targetport\x18Է\xa2\xcc\x01 \x01(\x05H\bR\n" +
+	"targetport\x18Է\xa2\xcc\x01 \x01(\x05H\tR\n" +
 	"targetport\x88\x01\x01\x12%\n" +
-	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\tR\tthingname\x88\x01\x01\x12%\n" +
-	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\tH\n" +
-	"R\ttimestamp\x88\x01\x01\x12-\n" +
-	"\rvpcendpointid\x18\x9d\x8fѳ\x01 \x01(\tH\vR\rvpcendpointid\x88\x01\x01B\x0f\n" +
+	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\n" +
+	"R\tthingname\x88\x01\x01\x12%\n" +
+	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\tH\vR\ttimestamp\x88\x01\x01\x12-\n" +
+	"\rvpcendpointid\x18\x9d\x8fѳ\x01 \x01(\tH\fR\rvpcendpointid\x88\x01\x01B\x0f\n" +
 	"\r_cleansessionB\v\n" +
 	"\t_clientidB\f\n" +
 	"\n" +
-	"_connectedB\x14\n" +
+	"_connectedB\x13\n" +
+	"\x11_disconnectreasonB\x14\n" +
 	"\x12_keepalivedurationB\x10\n" +
 	"\x0e_sessionexpiryB\v\n" +
 	"\t_sourceipB\r\n" +
@@ -54885,12 +54962,13 @@ const file_iot_proto_rawDesc = "" +
 	"\x1aGetV2LoggingOptionsRequest\x12 \n" +
 	"\averbose\x18\x9e\xf2\xafc \x01(\bH\x00R\averbose\x88\x01\x01B\n" +
 	"\n" +
-	"\b_verbose\"\x9b\x02\n" +
-	"\x1bGetV2LoggingOptionsResponse\x12:\n" +
-	"\x0fdefaultloglevel\x18\xcbڷ_ \x01(\x0e2\r.iot.LogLevelR\x0fdefaultloglevel\x12.\n" +
-	"\x0edisablealllogs\x18\xde؇b \x01(\bH\x00R\x0edisablealllogs\x88\x01\x01\x12O\n" +
+	"\b_verbose\"\xb4\x02\n" +
+	"\x1bGetV2LoggingOptionsResponse\x12?\n" +
+	"\x0fdefaultloglevel\x18\xcbڷ_ \x01(\x0e2\r.iot.LogLevelH\x00R\x0fdefaultloglevel\x88\x01\x01\x12.\n" +
+	"\x0edisablealllogs\x18\xde؇b \x01(\bH\x01R\x0edisablealllogs\x88\x01\x01\x12O\n" +
 	"\x13eventconfigurations\x18Ū\x98H \x03(\v2\x1a.iot.LogEventConfigurationR\x13eventconfigurations\x12 \n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x01R\arolearn\x88\x01\x01B\x11\n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x02R\arolearn\x88\x01\x01B\x12\n" +
+	"\x10_defaultloglevelB\x11\n" +
 	"\x0f_disablealllogsB\n" +
 	"\n" +
 	"\b_rolearn\"x\n" +
@@ -54939,7 +55017,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x0eIndexingFilter\x12>\n" +
 	"\fconnectivity\x18\xa3\xb6\xa6L \x01(\v2\x17.iot.ConnectivityFilterR\fconnectivity\x12>\n" +
 	"\fgeolocations\x18\xf7\x8d\x98\x84\x01 \x03(\v2\x16.iot.GeoLocationTargetR\fgeolocations\x12-\n" +
-	"\x10namedshadownames\x18\x83\xb3\xe88 \x03(\tR\x10namedshadownames\"\xd7\x03\n" +
+	"\x10namedshadownames\x18\x83\xb3\xe88 \x03(\tR\x10namedshadownames\"\xee\x03\n" +
 	"\x0eInfluxDBAction\x12>\n" +
 	"\vbatchconfig\x18\x8a\x9e\xf4\xd6\x01 \x01(\v2\x18.iot.InfluxDBBatchConfigR\vbatchconfig\x12&\n" +
 	"\fdatabasename\x18\xfc\xcd\xf6\x8c\x01 \x01(\tR\fdatabasename\x12*\n" +
@@ -54947,12 +55025,13 @@ const file_iot_proto_rawDesc = "" +
 	"\forganization\x18\xeb\xf7\xbb\xb3\x01 \x01(\tH\x00R\forganization\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12 \n" +
 	"\ttablename\x18\xfd\xbfގ\x01 \x01(\tR\ttablename\x125\n" +
-	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1d.iot.InfluxDBAction.TagsEntryR\x04tags\x12D\n" +
-	"\rtimestampunit\x18\x9a\xfa\x91\xb4\x01 \x01(\x0e2\x1a.iot.InfluxDBTimestampUnitR\rtimestampunit\x1a7\n" +
+	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1d.iot.InfluxDBAction.TagsEntryR\x04tags\x12I\n" +
+	"\rtimestampunit\x18\x9a\xfa\x91\xb4\x01 \x01(\x0e2\x1a.iot.InfluxDBTimestampUnitH\x01R\rtimestampunit\x88\x01\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
-	"\r_organization\"\xb0\x02\n" +
+	"\r_organizationB\x10\n" +
+	"\x0e_timestampunit\"\xb0\x02\n" +
 	"\x13InfluxDBBatchConfig\x125\n" +
 	"\x11batchacrosstopics\x18\x9f\x89\xe0\xfc\x01 \x01(\bH\x00R\x11batchacrosstopics\x88\x01\x01\x12/\n" +
 	"\x0emaxbatchopenms\x18\x9c\xc2\xe8\xf9\x01 \x01(\x05H\x01R\x0emaxbatchopenms\x88\x01\x01\x12*\n" +
@@ -54961,41 +55040,46 @@ const file_iot_proto_rawDesc = "" +
 	"\x12_batchacrosstopicsB\x11\n" +
 	"\x0f_maxbatchopenmsB\x0f\n" +
 	"\r_maxbatchsizeB\x14\n" +
-	"\x12_maxbatchsizebytes\"\x97\x02\n" +
+	"\x12_maxbatchsizebytes\"\xab\x02\n" +
 	" InfluxDBDestinationConfiguration\x12\x1e\n" +
 	"\bendpoint\x18\xfd\xe0\xdf\xc5\x01 \x01(\tR\bendpoint\x12B\n" +
 	"\x0finfluxdbversion\x18\x82\xb8\x85\xe6\x01 \x01(\x0e2\x14.iot.InfluxDBVersionR\x0finfluxdbversion\x12\x1e\n" +
 	"\bsecretid\x18\x85\x85\xaf\xcf\x01 \x01(\tR\bsecretid\x12%\n" +
-	"\tsecretkey\x18\xb9\xe4\x84\xe2\x01 \x01(\tH\x00R\tsecretkey\x88\x01\x01\x12:\n" +
+	"\tsecretkey\x18\xb9\xe4\x84\xe2\x01 \x01(\tH\x00R\tsecretkey\x88\x01\x01\x12?\n" +
 	"\n" +
-	"secrettype\x18\x9a\xf8\xa2\x1e \x01(\x0e2\x17.iot.InfluxDBSecretTypeR\n" +
-	"secrettypeB\f\n" +
+	"secrettype\x18\x9a\xf8\xa2\x1e \x01(\x0e2\x17.iot.InfluxDBSecretTypeH\x01R\n" +
+	"secrettype\x88\x01\x01B\f\n" +
 	"\n" +
-	"_secretkey\"\xb8\x02\n" +
+	"_secretkeyB\r\n" +
+	"\v_secrettype\"\xe5\x02\n" +
 	"\x1dInfluxDBDestinationProperties\x12#\n" +
-	"\bendpoint\x18\xfd\xe0\xdf\xc5\x01 \x01(\tH\x00R\bendpoint\x88\x01\x01\x12B\n" +
-	"\x0finfluxdbversion\x18\x82\xb8\x85\xe6\x01 \x01(\x0e2\x14.iot.InfluxDBVersionR\x0finfluxdbversion\x12#\n" +
-	"\bsecretid\x18\x85\x85\xaf\xcf\x01 \x01(\tH\x01R\bsecretid\x88\x01\x01\x12%\n" +
-	"\tsecretkey\x18\xb9\xe4\x84\xe2\x01 \x01(\tH\x02R\tsecretkey\x88\x01\x01\x12:\n" +
+	"\bendpoint\x18\xfd\xe0\xdf\xc5\x01 \x01(\tH\x00R\bendpoint\x88\x01\x01\x12G\n" +
+	"\x0finfluxdbversion\x18\x82\xb8\x85\xe6\x01 \x01(\x0e2\x14.iot.InfluxDBVersionH\x01R\x0finfluxdbversion\x88\x01\x01\x12#\n" +
+	"\bsecretid\x18\x85\x85\xaf\xcf\x01 \x01(\tH\x02R\bsecretid\x88\x01\x01\x12%\n" +
+	"\tsecretkey\x18\xb9\xe4\x84\xe2\x01 \x01(\tH\x03R\tsecretkey\x88\x01\x01\x12?\n" +
 	"\n" +
-	"secrettype\x18\x9a\xf8\xa2\x1e \x01(\x0e2\x17.iot.InfluxDBSecretTypeR\n" +
-	"secrettypeB\v\n" +
-	"\t_endpointB\v\n" +
+	"secrettype\x18\x9a\xf8\xa2\x1e \x01(\x0e2\x17.iot.InfluxDBSecretTypeH\x04R\n" +
+	"secrettype\x88\x01\x01B\v\n" +
+	"\t_endpointB\x12\n" +
+	"\x10_influxdbversionB\v\n" +
 	"\t_secretidB\f\n" +
 	"\n" +
-	"_secretkey\"\xb5\x02\n" +
+	"_secretkeyB\r\n" +
+	"\v_secrettype\"\xe2\x02\n" +
 	"\x1aInfluxDBDestinationSummary\x12#\n" +
-	"\bendpoint\x18\xfd\xe0\xdf\xc5\x01 \x01(\tH\x00R\bendpoint\x88\x01\x01\x12B\n" +
-	"\x0finfluxdbversion\x18\x82\xb8\x85\xe6\x01 \x01(\x0e2\x14.iot.InfluxDBVersionR\x0finfluxdbversion\x12#\n" +
-	"\bsecretid\x18\x85\x85\xaf\xcf\x01 \x01(\tH\x01R\bsecretid\x88\x01\x01\x12%\n" +
-	"\tsecretkey\x18\xb9\xe4\x84\xe2\x01 \x01(\tH\x02R\tsecretkey\x88\x01\x01\x12:\n" +
+	"\bendpoint\x18\xfd\xe0\xdf\xc5\x01 \x01(\tH\x00R\bendpoint\x88\x01\x01\x12G\n" +
+	"\x0finfluxdbversion\x18\x82\xb8\x85\xe6\x01 \x01(\x0e2\x14.iot.InfluxDBVersionH\x01R\x0finfluxdbversion\x88\x01\x01\x12#\n" +
+	"\bsecretid\x18\x85\x85\xaf\xcf\x01 \x01(\tH\x02R\bsecretid\x88\x01\x01\x12%\n" +
+	"\tsecretkey\x18\xb9\xe4\x84\xe2\x01 \x01(\tH\x03R\tsecretkey\x88\x01\x01\x12?\n" +
 	"\n" +
-	"secrettype\x18\x9a\xf8\xa2\x1e \x01(\x0e2\x17.iot.InfluxDBSecretTypeR\n" +
-	"secrettypeB\v\n" +
-	"\t_endpointB\v\n" +
+	"secrettype\x18\x9a\xf8\xa2\x1e \x01(\x0e2\x17.iot.InfluxDBSecretTypeH\x04R\n" +
+	"secrettype\x88\x01\x01B\v\n" +
+	"\t_endpointB\x12\n" +
+	"\x10_influxdbversionB\v\n" +
 	"\t_secretidB\f\n" +
 	"\n" +
-	"_secretkey\"A\n" +
+	"_secretkeyB\r\n" +
+	"\v_secrettype\"A\n" +
 	"\x11InternalException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -55059,7 +55143,7 @@ const file_iot_proto_rawDesc = "" +
 	"\bissuerid\x18\xac\xb6\xa3\xc4\x01 \x01(\tH\x02R\bissuerid\x88\x01\x01B \n" +
 	"\x1e_issuercertificateserialnumberB\x1b\n" +
 	"\x19_issuercertificatesubjectB\v\n" +
-	"\t_issuerid\"\xf4\f\n" +
+	"\t_issuerid\"\x9d\r\n" +
 	"\x03Job\x126\n" +
 	"\vabortconfig\x18\x8c\xbe\xfb\xee\x01 \x01(\v2\x10.iot.AbortConfigR\vabortconfig\x12 \n" +
 	"\acomment\x18߈\x9b= \x01(\tH\x00R\acomment\x88\x01\x01\x12)\n" +
@@ -55084,9 +55168,9 @@ const file_iot_proto_rawDesc = "" +
 	"reasoncode\x18\xd1ȏc \x01(\tH\vR\n" +
 	"reasoncode\x88\x01\x01\x12O\n" +
 	"\x14scheduledjobrollouts\x18º\xddQ \x03(\v2\x18.iot.ScheduledJobRolloutR\x14scheduledjobrollouts\x12D\n" +
-	"\x10schedulingconfig\x18\x8e\xaf\xb1q \x01(\v2\x15.iot.SchedulingConfigR\x10schedulingconfig\x12*\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x0e.iot.JobStatusR\x06status\x12A\n" +
-	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionR\x0ftargetselection\x12\x1b\n" +
+	"\x10schedulingconfig\x18\x8e\xaf\xb1q \x01(\v2\x15.iot.SchedulingConfigR\x10schedulingconfig\x12/\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x0e.iot.JobStatusH\fR\x06status\x88\x01\x01\x12F\n" +
+	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionH\rR\x0ftargetselection\x88\x01\x01\x12\x1b\n" +
 	"\atargets\x18\xe2\xe9\xd9G \x03(\tR\atargets\x12;\n" +
 	"\rtimeoutconfig\x18\xa7\xda\xe4' \x01(\v2\x12.iot.TimeoutConfigR\rtimeoutconfig\x1aE\n" +
 	"\x17DocumentparametersEntry\x12\x10\n" +
@@ -55105,7 +55189,9 @@ const file_iot_proto_rawDesc = "" +
 	"\x0f_jobtemplatearnB\x10\n" +
 	"\x0e_lastupdatedatB\x0e\n" +
 	"\f_namespaceidB\r\n" +
-	"\v_reasoncode\"\xcc\x05\n" +
+	"\v_reasoncodeB\t\n" +
+	"\a_statusB\x12\n" +
+	"\x10_targetselection\"\xdc\x05\n" +
 	"\fJobExecution\x12S\n" +
 	" approximatesecondsbeforetimedout\x18\xe1\xf6\xcc\xcb\x01 \x01(\x03H\x00R approximatesecondsbeforetimedout\x88\x01\x01\x120\n" +
 	"\x0fexecutionnumber\x18\x91\xa6\xdb/ \x01(\x03H\x01R\x0fexecutionnumber\x88\x01\x01\x12,\n" +
@@ -55113,11 +55199,11 @@ const file_iot_proto_rawDesc = "" +
 	"\x05jobid\x18\xf2\xad\xfc\x9e\x01 \x01(\tH\x03R\x05jobid\x88\x01\x01\x12+\n" +
 	"\rlastupdatedat\x18\x82\xa1} \x01(\tH\x04R\rlastupdatedat\x88\x01\x01\x12#\n" +
 	"\bqueuedat\x18\xa2\x8d\xe6\xd6\x01 \x01(\tH\x05R\bqueuedat\x88\x01\x01\x12%\n" +
-	"\tstartedat\x18\xfc\xbc\xb6\xc1\x01 \x01(\tH\x06R\tstartedat\x88\x01\x01\x123\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.JobExecutionStatusR\x06status\x12G\n" +
+	"\tstartedat\x18\xfc\xbc\xb6\xc1\x01 \x01(\tH\x06R\tstartedat\x88\x01\x01\x128\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.JobExecutionStatusH\aR\x06status\x88\x01\x01\x12G\n" +
 	"\rstatusdetails\x18Ȋ\xd8= \x01(\v2\x1e.iot.JobExecutionStatusDetailsR\rstatusdetails\x12\"\n" +
-	"\bthingarn\x18\xb3\xc1\xc2% \x01(\tH\aR\bthingarn\x88\x01\x01\x12,\n" +
-	"\rversionnumber\x18\xf7\xfc\xc0| \x01(\x03H\bR\rversionnumber\x88\x01\x01B#\n" +
+	"\bthingarn\x18\xb3\xc1\xc2% \x01(\tH\bR\bthingarn\x88\x01\x01\x12,\n" +
+	"\rversionnumber\x18\xf7\xfc\xc0| \x01(\x03H\tR\rversionnumber\x88\x01\x01B#\n" +
 	"!_approximatesecondsbeforetimedoutB\x12\n" +
 	"\x10_executionnumberB\x10\n" +
 	"\x0e_forcecanceledB\b\n" +
@@ -55125,7 +55211,8 @@ const file_iot_proto_rawDesc = "" +
 	"\x0e_lastupdatedatB\v\n" +
 	"\t_queuedatB\f\n" +
 	"\n" +
-	"_startedatB\v\n" +
+	"_startedatB\t\n" +
+	"\a_statusB\v\n" +
 	"\t_thingarnB\x10\n" +
 	"\x0e_versionnumber\"\xad\x01\n" +
 	"\x19JobExecutionStatusDetails\x12Q\n" +
@@ -55134,20 +55221,21 @@ const file_iot_proto_rawDesc = "" +
 	"detailsmap\x1a=\n" +
 	"\x0fDetailsmapEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf4\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x84\x03\n" +
 	"\x13JobExecutionSummary\x120\n" +
 	"\x0fexecutionnumber\x18\x91\xa6\xdb/ \x01(\x03H\x00R\x0fexecutionnumber\x88\x01\x01\x12+\n" +
 	"\rlastupdatedat\x18\x82\xa1} \x01(\tH\x01R\rlastupdatedat\x88\x01\x01\x12#\n" +
 	"\bqueuedat\x18\xa2\x8d\xe6\xd6\x01 \x01(\tH\x02R\bqueuedat\x88\x01\x01\x12+\n" +
 	"\fretryattempt\x18\xf3\xefɊ\x01 \x01(\x05H\x03R\fretryattempt\x88\x01\x01\x12%\n" +
-	"\tstartedat\x18\xfc\xbc\xb6\xc1\x01 \x01(\tH\x04R\tstartedat\x88\x01\x01\x123\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.JobExecutionStatusR\x06statusB\x12\n" +
+	"\tstartedat\x18\xfc\xbc\xb6\xc1\x01 \x01(\tH\x04R\tstartedat\x88\x01\x01\x128\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.JobExecutionStatusH\x05R\x06status\x88\x01\x01B\x12\n" +
 	"\x10_executionnumberB\x10\n" +
 	"\x0e_lastupdatedatB\v\n" +
 	"\t_queuedatB\x0f\n" +
 	"\r_retryattemptB\f\n" +
 	"\n" +
-	"_startedat\"\x9c\x01\n" +
+	"_startedatB\t\n" +
+	"\a_status\"\x9c\x01\n" +
 	"\x19JobExecutionSummaryForJob\x12N\n" +
 	"\x13jobexecutionsummary\x18\x97\x81\xca\xf0\x01 \x01(\v2\x18.iot.JobExecutionSummaryR\x13jobexecutionsummary\x12\"\n" +
 	"\bthingarn\x18\xb3\xc1\xc2% \x01(\tH\x00R\bthingarn\x88\x01\x01B\v\n" +
@@ -55179,7 +55267,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x17_numberofrejectedthingsB\x18\n" +
 	"\x16_numberofremovedthingsB\x1a\n" +
 	"\x18_numberofsucceededthingsB\x19\n" +
-	"\x17_numberoftimedoutthings\"\xfa\x03\n" +
+	"\x17_numberoftimedoutthings\"\xa3\x04\n" +
 	"\n" +
 	"JobSummary\x12)\n" +
 	"\vcompletedat\x18\xe8\xd5Ð\x01 \x01(\tH\x00R\vcompletedat\x88\x01\x01\x12%\n" +
@@ -55187,17 +55275,19 @@ const file_iot_proto_rawDesc = "" +
 	"\fisconcurrent\x18\xa5\xb2\x85\xba\x01 \x01(\bH\x02R\fisconcurrent\x88\x01\x01\x12\x1e\n" +
 	"\x06jobarn\x18\xf4\xe0\xd1o \x01(\tH\x03R\x06jobarn\x88\x01\x01\x12\x1d\n" +
 	"\x05jobid\x18\xf2\xad\xfc\x9e\x01 \x01(\tH\x04R\x05jobid\x88\x01\x01\x12+\n" +
-	"\rlastupdatedat\x18\x82\xa1} \x01(\tH\x05R\rlastupdatedat\x88\x01\x01\x12*\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x0e.iot.JobStatusR\x06status\x12A\n" +
-	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionR\x0ftargetselection\x12+\n" +
-	"\fthinggroupid\x18\xcc̈́\x9e\x01 \x01(\tH\x06R\fthinggroupid\x88\x01\x01B\x0e\n" +
+	"\rlastupdatedat\x18\x82\xa1} \x01(\tH\x05R\rlastupdatedat\x88\x01\x01\x12/\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x0e.iot.JobStatusH\x06R\x06status\x88\x01\x01\x12F\n" +
+	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionH\aR\x0ftargetselection\x88\x01\x01\x12+\n" +
+	"\fthinggroupid\x18\xcc̈́\x9e\x01 \x01(\tH\bR\fthinggroupid\x88\x01\x01B\x0e\n" +
 	"\f_completedatB\f\n" +
 	"\n" +
 	"_createdatB\x0f\n" +
 	"\r_isconcurrentB\t\n" +
 	"\a_jobarnB\b\n" +
 	"\x06_jobidB\x10\n" +
-	"\x0e_lastupdatedatB\x0f\n" +
+	"\x0e_lastupdatedatB\t\n" +
+	"\a_statusB\x12\n" +
+	"\x10_targetselectionB\x0f\n" +
 	"\r_thinggroupid\"\x87\x02\n" +
 	"\x12JobTemplateSummary\x12%\n" +
 	"\tcreatedat\x18\x8f\x91\xe3\xb0\x01 \x01(\tH\x00R\tcreatedat\x88\x01\x01\x12)\n" +
@@ -55245,24 +55335,26 @@ const file_iot_proto_rawDesc = "" +
 	"\x16LimitExceededException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x83\x04\n" +
-	"\x1bListActiveViolationsRequest\x12Q\n" +
-	"\x14behaviorcriteriatype\x18\xab\xe3\xc5\xda\x01 \x01(\x0e2\x19.iot.BehaviorCriteriaTypeR\x14behaviorcriteriatype\x12;\n" +
-	"\x14listsuppressedalerts\x18\x9dቃ\x01 \x01(\bH\x00R\x14listsuppressedalerts\x88\x01\x01\x12'\n" +
+	"\b_message\"\xbc\x04\n" +
+	"\x1bListActiveViolationsRequest\x12V\n" +
+	"\x14behaviorcriteriatype\x18\xab\xe3\xc5\xda\x01 \x01(\x0e2\x19.iot.BehaviorCriteriaTypeH\x00R\x14behaviorcriteriatype\x88\x01\x01\x12;\n" +
+	"\x14listsuppressedalerts\x18\x9dቃ\x01 \x01(\bH\x01R\x14listsuppressedalerts\x88\x01\x01\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x02R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x129\n" +
-	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tH\x03R\x13securityprofilename\x88\x01\x01\x12%\n" +
-	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\x04R\tthingname\x88\x01\x01\x12G\n" +
-	"\x11verificationstate\x18\x84\x98\x81\x16 \x01(\x0e2\x16.iot.VerificationStateR\x11verificationstateB\x17\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x03R\tnexttoken\x88\x01\x01\x129\n" +
+	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tH\x04R\x13securityprofilename\x88\x01\x01\x12%\n" +
+	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\x05R\tthingname\x88\x01\x01\x12L\n" +
+	"\x11verificationstate\x18\x84\x98\x81\x16 \x01(\x0e2\x16.iot.VerificationStateH\x06R\x11verificationstate\x88\x01\x01B\x17\n" +
+	"\x15_behaviorcriteriatypeB\x17\n" +
 	"\x15_listsuppressedalertsB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
 	"_nexttokenB\x16\n" +
 	"\x14_securityprofilenameB\f\n" +
 	"\n" +
-	"_thingname\"\x98\x01\n" +
+	"_thingnameB\x14\n" +
+	"\x12_verificationstate\"\x98\x01\n" +
 	"\x1cListActiveViolationsResponse\x12D\n" +
 	"\x10activeviolations\x18\xb8\x88\xe7\xee\x01 \x03(\v2\x14.iot.ActiveViolationR\x10activeviolations\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
@@ -55309,15 +55401,16 @@ const file_iot_proto_rawDesc = "" +
 	"\bfindings\x18Б\xae\x1f \x03(\v2\x11.iot.AuditFindingR\bfindings\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xa9\x02\n" +
-	"+ListAuditMitigationActionsExecutionsRequest\x12Q\n" +
-	"\factionstatus\x18ʮ\x96\x0f \x01(\x0e2*.iot.AuditMitigationActionsExecutionStatusR\factionstatus\x12 \n" +
+	"_nexttoken\"\xbf\x02\n" +
+	"+ListAuditMitigationActionsExecutionsRequest\x12V\n" +
+	"\factionstatus\x18ʮ\x96\x0f \x01(\x0e2*.iot.AuditMitigationActionsExecutionStatusH\x00R\factionstatus\x88\x01\x01\x12 \n" +
 	"\tfindingid\x18\x9c\xf1\xa3\x98\x01 \x01(\tR\tfindingid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\r\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12\x19\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x0f\n" +
+	"\r_actionstatusB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
 	"_nexttoken\"\xc1\x01\n" +
@@ -55325,7 +55418,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x11actionsexecutions\x18\xa4\xcf\xcf\xee\x01 \x03(\v2+.iot.AuditMitigationActionExecutionMetadataR\x11actionsexecutions\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\x8c\x03\n" +
+	"_nexttoken\"\xa0\x03\n" +
 	"&ListAuditMitigationActionsTasksRequest\x12(\n" +
 	"\vaudittaskid\x18\xf9\x98\xfeX \x01(\tH\x00R\vaudittaskid\x88\x01\x01\x12\x1c\n" +
 	"\aendtime\x18쇚\x9d\x01 \x01(\tR\aendtime\x12%\n" +
@@ -55334,16 +55427,17 @@ const file_iot_proto_rawDesc = "" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x02R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x03R\tnexttoken\x88\x01\x01\x12\x1f\n" +
-	"\tstarttime\x18\x8f\xda\xf9T \x01(\tR\tstarttime\x12H\n" +
+	"\tstarttime\x18\x8f\xda\xf9T \x01(\tR\tstarttime\x12M\n" +
 	"\n" +
-	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2%.iot.AuditMitigationActionsTaskStatusR\n" +
-	"taskstatusB\x0e\n" +
+	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2%.iot.AuditMitigationActionsTaskStatusH\x04R\n" +
+	"taskstatus\x88\x01\x01B\x0e\n" +
 	"\f_audittaskidB\f\n" +
 	"\n" +
 	"_findingidB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x9f\x01\n" +
+	"_nexttokenB\r\n" +
+	"\v_taskstatus\"\x9f\x01\n" +
 	"'ListAuditMitigationActionsTasksResponse\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12@\n" +
 	"\x05tasks\x18Α\xb9i \x03(\v2'.iot.AuditMitigationActionsTaskMetadataR\x05tasksB\f\n" +
@@ -55367,34 +55461,37 @@ const file_iot_proto_rawDesc = "" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12<\n" +
 	"\fsuppressions\x18\xf2\xde\xe6v \x03(\v2\x15.iot.AuditSuppressionR\fsuppressionsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xaf\x02\n" +
+	"_nexttoken\"\xd5\x02\n" +
 	"\x15ListAuditTasksRequest\x12\x1c\n" +
 	"\aendtime\x18쇚\x9d\x01 \x01(\tR\aendtime\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12\x1f\n" +
-	"\tstarttime\x18\x8f\xda\xf9T \x01(\tR\tstarttime\x127\n" +
+	"\tstarttime\x18\x8f\xda\xf9T \x01(\tR\tstarttime\x12<\n" +
 	"\n" +
-	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2\x14.iot.AuditTaskStatusR\n" +
-	"taskstatus\x122\n" +
-	"\btasktype\x18\x85\xe9\xfe\x97\x01 \x01(\x0e2\x12.iot.AuditTaskTypeR\btasktypeB\r\n" +
+	"taskstatus\x18\x97\xb5\xe8+ \x01(\x0e2\x14.iot.AuditTaskStatusH\x02R\n" +
+	"taskstatus\x88\x01\x01\x127\n" +
+	"\btasktype\x18\x85\xe9\xfe\x97\x01 \x01(\x0e2\x12.iot.AuditTaskTypeH\x03R\btasktype\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"}\n" +
+	"_nexttokenB\r\n" +
+	"\v_taskstatusB\v\n" +
+	"\t_tasktype\"}\n" +
 	"\x16ListAuditTasksResponse\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12/\n" +
 	"\x05tasks\x18Α\xb9i \x03(\v2\x16.iot.AuditTaskMetadataR\x05tasksB\f\n" +
 	"\n" +
-	"_nexttoken\"\xed\x01\n" +
+	"_nexttoken\"\xfd\x01\n" +
 	"\x16ListAuthorizersRequest\x12/\n" +
 	"\x0eascendingorder\x18\xd4\xd7\xcf\xfd\x01 \x01(\bH\x00R\x0eascendingorder\x88\x01\x01\x12\x1f\n" +
 	"\x06marker\x18\x98\xe3\xe0\xbf\x01 \x01(\tH\x01R\x06marker\x88\x01\x01\x12#\n" +
-	"\bpagesize\x18،\xad\xa9\x01 \x01(\x05H\x02R\bpagesize\x88\x01\x01\x121\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.iot.AuthorizerStatusR\x06statusB\x11\n" +
+	"\bpagesize\x18،\xad\xa9\x01 \x01(\x05H\x02R\bpagesize\x88\x01\x01\x126\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.iot.AuthorizerStatusH\x03R\x06status\x88\x01\x01B\x11\n" +
 	"\x0f_ascendingorderB\t\n" +
 	"\a_markerB\v\n" +
-	"\t_pagesize\"\x8f\x01\n" +
+	"\t_pagesizeB\t\n" +
+	"\a_status\"\x8f\x01\n" +
 	"\x17ListAuthorizersResponse\x12<\n" +
 	"\vauthorizers\x18\x90\x9e\x98\xf5\x01 \x03(\v2\x16.iot.AuthorizerSummaryR\vauthorizers\x12'\n" +
 	"\n" +
@@ -55468,7 +55565,7 @@ const file_iot_proto_rawDesc = "" +
 	"\n" +
 	"nextmarker\x18ò\xa1\xfc\x01 \x01(\tH\x00R\n" +
 	"nextmarker\x88\x01\x01B\r\n" +
-	"\v_nextmarker\"\xa1\x04\n" +
+	"\v_nextmarker\"\xd7\x04\n" +
 	"\x1cListCommandExecutionsRequest\x12&\n" +
 	"\n" +
 	"commandarn\x18\xde\xd2\xf6/ \x01(\tH\x00R\n" +
@@ -55476,38 +55573,47 @@ const file_iot_proto_rawDesc = "" +
 	"\x13completedtimefilter\x18\x9e\x84\x8b\xf0\x01 \x01(\v2\x0f.iot.TimeFilterR\x13completedtimefilter\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
-	"maxresults\x88\x01\x01\x126\n" +
-	"\tnamespace\x18\xa1\xf5\xb9V \x01(\x0e2\x15.iot.CommandNamespaceR\tnamespace\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12/\n" +
+	"maxresults\x88\x01\x01\x12;\n" +
+	"\tnamespace\x18\xa1\xf5\xb9V \x01(\x0e2\x15.iot.CommandNamespaceH\x02R\tnamespace\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x03R\tnexttoken\x88\x01\x01\x124\n" +
 	"\tsortorder\x18\xa4\x8c\xa8\n" +
-	" \x01(\x0e2\x0e.iot.SortOrderR\tsortorder\x12@\n" +
-	"\x11startedtimefilter\x18\x92\xfc\xe1\x11 \x01(\v2\x0f.iot.TimeFilterR\x11startedtimefilter\x127\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.iot.CommandExecutionStatusR\x06status\x12%\n" +
-	"\ttargetarn\x18\xb0亯\x01 \x01(\tH\x03R\ttargetarn\x88\x01\x01B\r\n" +
+	" \x01(\x0e2\x0e.iot.SortOrderH\x04R\tsortorder\x88\x01\x01\x12@\n" +
+	"\x11startedtimefilter\x18\x92\xfc\xe1\x11 \x01(\v2\x0f.iot.TimeFilterR\x11startedtimefilter\x12<\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1b.iot.CommandExecutionStatusH\x05R\x06status\x88\x01\x01\x12%\n" +
+	"\ttargetarn\x18\xb0亯\x01 \x01(\tH\x06R\ttargetarn\x88\x01\x01B\r\n" +
 	"\v_commandarnB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
+	"_namespaceB\f\n" +
+	"\n" +
 	"_nexttokenB\f\n" +
+	"\n" +
+	"_sortorderB\t\n" +
+	"\a_statusB\f\n" +
 	"\n" +
 	"_targetarn\"\xa2\x01\n" +
 	"\x1dListCommandExecutionsResponse\x12M\n" +
 	"\x11commandexecutions\x18\xba\xe5\x81G \x03(\v2\x1c.iot.CommandExecutionSummaryR\x11commandexecutions\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xc0\x02\n" +
+	"_nexttoken\"\xe6\x02\n" +
 	"\x13ListCommandsRequest\x12;\n" +
 	"\x14commandparametername\x18\xe7Т\xdf\x01 \x01(\tH\x00R\x14commandparametername\x88\x01\x01\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
-	"maxresults\x88\x01\x01\x126\n" +
-	"\tnamespace\x18\xa1\xf5\xb9V \x01(\x0e2\x15.iot.CommandNamespaceR\tnamespace\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12/\n" +
+	"maxresults\x88\x01\x01\x12;\n" +
+	"\tnamespace\x18\xa1\xf5\xb9V \x01(\x0e2\x15.iot.CommandNamespaceH\x02R\tnamespace\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x03R\tnexttoken\x88\x01\x01\x124\n" +
 	"\tsortorder\x18\xa4\x8c\xa8\n" +
-	" \x01(\x0e2\x0e.iot.SortOrderR\tsortorderB\x17\n" +
+	" \x01(\x0e2\x0e.iot.SortOrderH\x04R\tsortorder\x88\x01\x01B\x17\n" +
 	"\x15_commandparameternameB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x7f\n" +
+	"_namespaceB\f\n" +
+	"\n" +
+	"_nexttokenB\f\n" +
+	"\n" +
+	"_sortorder\"\x7f\n" +
 	"\x14ListCommandsResponse\x123\n" +
 	"\bcommands\x18\xd4\xdb´\x01 \x03(\v2\x13.iot.CommandSummaryR\bcommands\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
@@ -55579,13 +55685,14 @@ const file_iot_proto_rawDesc = "" +
 	"\x0edimensionnames\x18\xa2\xa1\xb4\xa7\x01 \x03(\tR\x0edimensionnames\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xb6\x01\n" +
+	"_nexttoken\"\xcb\x01\n" +
 	"\x1fListDomainConfigurationsRequest\x12\x1f\n" +
 	"\x06marker\x18\x98\xe3\xe0\xbf\x01 \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
-	"\bpagesize\x18،\xad\xa9\x01 \x01(\x05H\x01R\bpagesize\x88\x01\x01\x125\n" +
-	"\vservicetype\x18\xcd\xda\xden \x01(\x0e2\x10.iot.ServiceTypeR\vservicetypeB\t\n" +
+	"\bpagesize\x18،\xad\xa9\x01 \x01(\x05H\x01R\bpagesize\x88\x01\x01\x12:\n" +
+	"\vservicetype\x18\xcd\xda\xden \x01(\x0e2\x10.iot.ServiceTypeH\x02R\vservicetype\x88\x01\x01B\t\n" +
 	"\a_markerB\v\n" +
-	"\t_pagesize\"\xb2\x01\n" +
+	"\t_pagesizeB\x0e\n" +
+	"\f_servicetype\"\xb2\x01\n" +
 	" ListDomainConfigurationsResponse\x12V\n" +
 	"\x14domainconfigurations\x18\xbb\x8b\x863 \x03(\v2\x1f.iot.DomainConfigurationSummaryR\x14domainconfigurations\x12'\n" +
 	"\n" +
@@ -55619,36 +55726,38 @@ const file_iot_proto_rawDesc = "" +
 	"indexnames\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xdb\x01\n" +
+	"_nexttoken\"\xeb\x01\n" +
 	"\x1eListJobExecutionsForJobRequest\x12\x18\n" +
 	"\x05jobid\x18\xf2\xad\xfc\x9e\x01 \x01(\tR\x05jobid\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x123\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.JobExecutionStatusR\x06statusB\r\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x128\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.JobExecutionStatusH\x02R\x06status\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xa9\x01\n" +
+	"_nexttokenB\t\n" +
+	"\a_status\"\xa9\x01\n" +
 	"\x1fListJobExecutionsForJobResponse\x12R\n" +
 	"\x12executionsummaries\x18\x84\x94\xc2\xe6\x01 \x03(\v2\x1e.iot.JobExecutionSummaryForJobR\x12executionsummaries\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xc8\x02\n" +
+	"_nexttoken\"\xd8\x02\n" +
 	" ListJobExecutionsForThingRequest\x12\x1d\n" +
 	"\x05jobid\x18\xf2\xad\xfc\x9e\x01 \x01(\tH\x00R\x05jobid\x88\x01\x01\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
 	"maxresults\x88\x01\x01\x12(\n" +
 	"\vnamespaceid\x18\xfe\x8e\xd5( \x01(\tH\x02R\vnamespaceid\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x03R\tnexttoken\x88\x01\x01\x123\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.JobExecutionStatusR\x06status\x12 \n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x03R\tnexttoken\x88\x01\x01\x128\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.iot.JobExecutionStatusH\x04R\x06status\x88\x01\x01\x12 \n" +
 	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingnameB\b\n" +
 	"\x06_jobidB\r\n" +
 	"\v_maxresultsB\x0e\n" +
 	"\f_namespaceidB\f\n" +
 	"\n" +
-	"_nexttoken\"\xad\x01\n" +
+	"_nexttokenB\t\n" +
+	"\a_status\"\xad\x01\n" +
 	"!ListJobExecutionsForThingResponse\x12T\n" +
 	"\x12executionsummaries\x18\x84\x94\xc2\xe6\x01 \x03(\v2 .iot.JobExecutionSummaryForThingR\x12executionsummaries\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
@@ -55666,21 +55775,23 @@ const file_iot_proto_rawDesc = "" +
 	"\fjobtemplates\x18\xd0\xff\xb7. \x03(\v2\x17.iot.JobTemplateSummaryR\fjobtemplates\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xa7\x03\n" +
+	"_nexttoken\"\xd0\x03\n" +
 	"\x0fListJobsRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12(\n" +
 	"\vnamespaceid\x18\xfe\x8e\xd5( \x01(\tH\x01R\vnamespaceid\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12*\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x0e.iot.JobStatusR\x06status\x12A\n" +
-	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionR\x0ftargetselection\x12+\n" +
-	"\fthinggroupid\x18\xcc̈́\x9e\x01 \x01(\tH\x03R\fthinggroupid\x88\x01\x01\x12.\n" +
-	"\x0ethinggroupname\x18\x96\xa5\xee1 \x01(\tH\x04R\x0ethinggroupname\x88\x01\x01B\r\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12/\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x0e.iot.JobStatusH\x03R\x06status\x88\x01\x01\x12F\n" +
+	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionH\x04R\x0ftargetselection\x88\x01\x01\x12+\n" +
+	"\fthinggroupid\x18\xcc̈́\x9e\x01 \x01(\tH\x05R\fthinggroupid\x88\x01\x01\x12.\n" +
+	"\x0ethinggroupname\x18\x96\xa5\xee1 \x01(\tH\x06R\x0ethinggroupname\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\x0e\n" +
 	"\f_namespaceidB\f\n" +
 	"\n" +
-	"_nexttokenB\x0f\n" +
+	"_nexttokenB\t\n" +
+	"\a_statusB\x12\n" +
+	"\x10_targetselectionB\x0f\n" +
 	"\r_thinggroupidB\x11\n" +
 	"\x0f_thinggroupname\"n\n" +
 	"\x10ListJobsResponse\x12&\n" +
@@ -55702,21 +55813,22 @@ const file_iot_proto_rawDesc = "" +
 	"\x13managedjobtemplates\x18\xe5ԥ~ \x03(\v2\x1e.iot.ManagedJobTemplateSummaryR\x13managedjobtemplates\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xa2\x03\n" +
+	"_nexttoken\"\xc2\x03\n" +
 	"\x17ListMetricValuesRequest\x12-\n" +
-	"\rdimensionname\x18\x89\xaa\xbf\xd8\x01 \x01(\tH\x00R\rdimensionname\x88\x01\x01\x12V\n" +
-	"\x16dimensionvalueoperator\x18\x91Ƴx \x01(\x0e2\x1b.iot.DimensionValueOperatorR\x16dimensionvalueoperator\x12\x1c\n" +
+	"\rdimensionname\x18\x89\xaa\xbf\xd8\x01 \x01(\tH\x00R\rdimensionname\x88\x01\x01\x12[\n" +
+	"\x16dimensionvalueoperator\x18\x91Ƴx \x01(\x0e2\x1b.iot.DimensionValueOperatorH\x01R\x16dimensionvalueoperator\x88\x01\x01\x12\x1c\n" +
 	"\aendtime\x18쇚\x9d\x01 \x01(\tR\aendtime\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x02R\n" +
 	"maxresults\x88\x01\x01\x12!\n" +
 	"\n" +
 	"metricname\x18\x9b\xb7\xa4a \x01(\tR\n" +
 	"metricname\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x03R\tnexttoken\x88\x01\x01\x12\x1f\n" +
 	"\tstarttime\x18\x8f\xda\xf9T \x01(\tR\tstarttime\x12 \n" +
 	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingnameB\x10\n" +
-	"\x0e_dimensionnameB\r\n" +
+	"\x0e_dimensionnameB\x19\n" +
+	"\x17_dimensionvalueoperatorB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
 	"_nexttoken\"\x8d\x01\n" +
@@ -55724,15 +55836,16 @@ const file_iot_proto_rawDesc = "" +
 	"\x0fmetricdatumlist\x18\x89\xc1\x8ao \x03(\v2\x10.iot.MetricDatumR\x0fmetricdatumlist\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xc9\x01\n" +
-	"\x1cListMitigationActionsRequest\x12=\n" +
+	"_nexttoken\"\xdd\x01\n" +
+	"\x1cListMitigationActionsRequest\x12B\n" +
 	"\n" +
-	"actiontype\x18\xa8\x8e\xa7\x96\x01 \x01(\x0e2\x19.iot.MitigationActionTypeR\n" +
-	"actiontype\x12'\n" +
+	"actiontype\x18\xa8\x8e\xa7\x96\x01 \x01(\x0e2\x19.iot.MitigationActionTypeH\x00R\n" +
+	"actiontype\x88\x01\x01\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_actiontypeB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
 	"_nexttoken\"\xa5\x01\n" +
@@ -55740,16 +55853,17 @@ const file_iot_proto_rawDesc = "" +
 	"\x11actionidentifiers\x18\xb6ց3 \x03(\v2\x1f.iot.MitigationActionIdentifierR\x11actionidentifiers\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xc6\x01\n" +
+	"_nexttoken\"\xdf\x01\n" +
 	"\x15ListOTAUpdatesRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12A\n" +
-	"\x0fotaupdatestatus\x18\xa7\xbd\xe5= \x01(\x0e2\x14.iot.OTAUpdateStatusR\x0fotaupdatestatusB\r\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12F\n" +
+	"\x0fotaupdatestatus\x18\xa7\xbd\xe5= \x01(\x0e2\x14.iot.OTAUpdateStatusH\x02R\x0fotaupdatestatus\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x85\x01\n" +
+	"_nexttokenB\x12\n" +
+	"\x10_otaupdatestatus\"\x85\x01\n" +
 	"\x16ListOTAUpdatesResponse\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x127\n" +
 	"\n" +
@@ -55769,17 +55883,18 @@ const file_iot_proto_rawDesc = "" +
 	"nextmarker\x18ò\xa1\xfc\x01 \x01(\tH\x00R\n" +
 	"nextmarker\x88\x01\x01\x12O\n" +
 	"\x14outgoingcertificates\x18\x9c\xae\xaet \x03(\v2\x18.iot.OutgoingCertificateR\x14outgoingcertificatesB\r\n" +
-	"\v_nextmarker\"\xe5\x01\n" +
+	"\v_nextmarker\"\xf5\x01\n" +
 	"\x1aListPackageVersionsRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12$\n" +
-	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tR\vpackagename\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.iot.PackageVersionStatusR\x06statusB\r\n" +
+	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tR\vpackagename\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.iot.PackageVersionStatusH\x02R\x06status\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xab\x01\n" +
+	"_nexttokenB\t\n" +
+	"\a_status\"\xab\x01\n" +
 	"\x1bListPackageVersionsResponse\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12X\n" +
 	"\x17packageversionsummaries\x18\x84ʟ\xc2\x01 \x03(\v2\x1a.iot.PackageVersionSummaryR\x17packageversionsummariesB\f\n" +
@@ -55862,17 +55977,18 @@ const file_iot_proto_rawDesc = "" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12\x1a\n" +
 	"\x06things\x18\xb5\x9e\xe9\xf3\x01 \x03(\tR\x06thingsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xf8\x01\n" +
+	"_nexttoken\"\x94\x02\n" +
 	"\x1cListPrincipalThingsV2Request\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12\x1f\n" +
-	"\tprincipal\x18\xaa\xf4\x86} \x01(\tR\tprincipal\x12K\n" +
-	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeR\x12thingprincipaltypeB\r\n" +
+	"\tprincipal\x18\xaa\xf4\x86} \x01(\tR\tprincipal\x12P\n" +
+	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeH\x02R\x12thingprincipaltype\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xa8\x01\n" +
+	"_nexttokenB\x15\n" +
+	"\x13_thingprincipaltype\"\xa8\x01\n" +
 	"\x1dListPrincipalThingsV2Response\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12S\n" +
 	"\x15principalthingobjects\x18\xf2\x83\x9d\xf2\x01 \x03(\v2\x19.iot.PrincipalThingObjectR\x15principalthingobjectsB\f\n" +
@@ -55931,18 +56047,19 @@ const file_iot_proto_rawDesc = "" +
 	"nextmarker\x18ò\xa1\xfc\x01 \x01(\tH\x00R\n" +
 	"nextmarker\x88\x01\x01\x12$\n" +
 	"\vrolealiases\x18ܟȒ\x01 \x03(\tR\vrolealiasesB\r\n" +
-	"\v_nextmarker\"\xa4\x02\n" +
+	"\v_nextmarker\"\xbe\x02\n" +
 	" ListSbomValidationResultsRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12$\n" +
-	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tR\vpackagename\x12H\n" +
-	"\x10validationresult\x18\xe4\xde\xd3R \x01(\x0e2\x19.iot.SbomValidationResultR\x10validationresult\x12$\n" +
+	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tR\vpackagename\x12M\n" +
+	"\x10validationresult\x18\xe4\xde\xd3R \x01(\x0e2\x19.iot.SbomValidationResultH\x02R\x10validationresult\x88\x01\x01\x12$\n" +
 	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tR\vversionnameB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xbb\x01\n" +
+	"_nexttokenB\x13\n" +
+	"\x11_validationresult\"\xbb\x01\n" +
 	"!ListSbomValidationResultsResponse\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12b\n" +
 	"\x19validationresultsummaries\x18\xd2\xf7\xf1\xaf\x01 \x03(\v2 .iot.SbomValidationResultSummaryR\x19validationresultsummariesB\f\n" +
@@ -56099,17 +56216,18 @@ const file_iot_proto_rawDesc = "" +
 	"principals\x18\xaf\xb7\xe1\xac\x01 \x03(\tR\n" +
 	"principalsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xf9\x01\n" +
+	"_nexttoken\"\x95\x02\n" +
 	"\x1cListThingPrincipalsV2Request\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12 \n" +
-	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingname\x12K\n" +
-	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeR\x12thingprincipaltypeB\r\n" +
+	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingname\x12P\n" +
+	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeH\x02R\x12thingprincipaltype\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xa8\x01\n" +
+	"_nexttokenB\x15\n" +
+	"\x13_thingprincipaltype\"\xa8\x01\n" +
 	"\x1dListThingPrincipalsV2Response\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12S\n" +
 	"\x15thingprincipalobjects\x18\xba\xe1\x83\xf7\x01 \x03(\v2\x19.iot.ThingPrincipalObjectR\x15thingprincipalobjectsB\f\n" +
@@ -56126,24 +56244,26 @@ const file_iot_proto_rawDesc = "" +
 	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xbc\x01\n" +
+	"_nexttoken\"\xd0\x01\n" +
 	"(ListThingRegistrationTaskReportsResponse\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x123\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x128\n" +
 	"\n" +
-	"reporttype\x18\xd4̪\xd4\x01 \x01(\x0e2\x0f.iot.ReportTypeR\n" +
-	"reporttype\x12'\n" +
+	"reporttype\x18\xd4̪\xd4\x01 \x01(\x0e2\x0f.iot.ReportTypeH\x01R\n" +
+	"reporttype\x88\x01\x01\x12'\n" +
 	"\rresourcelinks\x18\xff\xea\xa6\x1d \x03(\tR\rresourcelinksB\f\n" +
 	"\n" +
-	"_nexttoken\"\xb8\x01\n" +
+	"_nexttokenB\r\n" +
+	"\v_reporttype\"\xc8\x01\n" +
 	"!ListThingRegistrationTasksRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12'\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\v.iot.StatusR\x06statusB\r\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12,\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\v.iot.StatusH\x02R\x06status\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"u\n" +
+	"_nexttokenB\t\n" +
+	"\a_status\"u\n" +
 	"\"ListThingRegistrationTasksResponse\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12\x1b\n" +
 	"\ataskids\x18\xb7\x9b\xd4G \x03(\tR\ataskidsB\f\n" +
@@ -56247,42 +56367,45 @@ const file_iot_proto_rawDesc = "" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x120\n" +
 	"\x05rules\x18\xe1\xf7\xbe\xe6\x01 \x03(\v2\x16.iot.TopicRuleListItemR\x05rulesB\f\n" +
 	"\n" +
-	"_nexttoken\"\xc0\x01\n" +
+	"_nexttoken\"\xd4\x01\n" +
 	"\x1aListV2LoggingLevelsRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x126\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12;\n" +
 	"\n" +
-	"targettype\x18\xc1\xdc\xca\xc5\x01 \x01(\x0e2\x12.iot.LogTargetTypeR\n" +
-	"targettypeB\r\n" +
+	"targettype\x18\xc1\xdc\xca\xc5\x01 \x01(\x0e2\x12.iot.LogTargetTypeH\x02R\n" +
+	"targettype\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xac\x01\n" +
+	"_nexttokenB\r\n" +
+	"\v_targettype\"\xac\x01\n" +
 	"\x1bListV2LoggingLevelsResponse\x12Y\n" +
 	"\x17logtargetconfigurations\x18\xa8ܙ\x84\x01 \x03(\v2\x1b.iot.LogTargetConfigurationR\x17logtargetconfigurations\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xc1\x04\n" +
-	"\x1aListViolationEventsRequest\x12Q\n" +
-	"\x14behaviorcriteriatype\x18\xab\xe3\xc5\xda\x01 \x01(\x0e2\x19.iot.BehaviorCriteriaTypeR\x14behaviorcriteriatype\x12\x1c\n" +
+	"_nexttoken\"\xfa\x04\n" +
+	"\x1aListViolationEventsRequest\x12V\n" +
+	"\x14behaviorcriteriatype\x18\xab\xe3\xc5\xda\x01 \x01(\x0e2\x19.iot.BehaviorCriteriaTypeH\x00R\x14behaviorcriteriatype\x88\x01\x01\x12\x1c\n" +
 	"\aendtime\x18쇚\x9d\x01 \x01(\tR\aendtime\x12;\n" +
-	"\x14listsuppressedalerts\x18\x9dቃ\x01 \x01(\bH\x00R\x14listsuppressedalerts\x88\x01\x01\x12'\n" +
+	"\x14listsuppressedalerts\x18\x9dቃ\x01 \x01(\bH\x01R\x14listsuppressedalerts\x88\x01\x01\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x02R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x129\n" +
-	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tH\x03R\x13securityprofilename\x88\x01\x01\x12\x1f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x03R\tnexttoken\x88\x01\x01\x129\n" +
+	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tH\x04R\x13securityprofilename\x88\x01\x01\x12\x1f\n" +
 	"\tstarttime\x18\x8f\xda\xf9T \x01(\tR\tstarttime\x12%\n" +
-	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\x04R\tthingname\x88\x01\x01\x12G\n" +
-	"\x11verificationstate\x18\x84\x98\x81\x16 \x01(\x0e2\x16.iot.VerificationStateR\x11verificationstateB\x17\n" +
+	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\x05R\tthingname\x88\x01\x01\x12L\n" +
+	"\x11verificationstate\x18\x84\x98\x81\x16 \x01(\x0e2\x16.iot.VerificationStateH\x06R\x11verificationstate\x88\x01\x01B\x17\n" +
+	"\x15_behaviorcriteriatypeB\x17\n" +
 	"\x15_listsuppressedalertsB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
 	"_nexttokenB\x16\n" +
 	"\x14_securityprofilenameB\f\n" +
 	"\n" +
-	"_thingname\"\x94\x01\n" +
+	"_thingnameB\x14\n" +
+	"\x12_verificationstate\"\x94\x01\n" +
 	"\x1bListViolationEventsResponse\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12A\n" +
 	"\x0fviolationevents\x18\xca\xf0\x87\xc4\x01 \x03(\v2\x13.iot.ViolationEventR\x0fviolationeventsB\f\n" +
@@ -56298,12 +56421,13 @@ const file_iot_proto_rawDesc = "" +
 	"\x11LocationTimestamp\x12\x1a\n" +
 	"\x04unit\x18\x88\xb4\xd4E \x01(\tH\x00R\x04unit\x88\x01\x01\x12\x17\n" +
 	"\x05value\x18˧\xfb\x12 \x01(\tR\x05valueB\a\n" +
-	"\x05_unit\"\xaa\x01\n" +
+	"\x05_unit\"\xbc\x01\n" +
 	"\x15LogEventConfiguration\x12 \n" +
 	"\teventtype\x18\x88\xfa\xc8\xe8\x01 \x01(\tR\teventtype\x12.\n" +
-	"\x0elogdestination\x18\xcc\xd4\xc9\x06 \x01(\tH\x00R\x0elogdestination\x88\x01\x01\x12,\n" +
-	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\r.iot.LogLevelR\bloglevelB\x11\n" +
-	"\x0f_logdestination\"z\n" +
+	"\x0elogdestination\x18\xcc\xd4\xc9\x06 \x01(\tH\x00R\x0elogdestination\x88\x01\x01\x121\n" +
+	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\r.iot.LogLevelH\x01R\bloglevel\x88\x01\x01B\x11\n" +
+	"\x0f_logdestinationB\v\n" +
+	"\t_loglevel\"z\n" +
 	"\tLogTarget\x12&\n" +
 	"\n" +
 	"targetname\x18\x8c\xee\xcd\n" +
@@ -56312,13 +56436,15 @@ const file_iot_proto_rawDesc = "" +
 	"\n" +
 	"targettype\x18\xc1\xdc\xca\xc5\x01 \x01(\x0e2\x12.iot.LogTargetTypeR\n" +
 	"targettypeB\r\n" +
-	"\v_targetname\"x\n" +
-	"\x16LogTargetConfiguration\x12,\n" +
-	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\r.iot.LogLevelR\bloglevel\x120\n" +
-	"\tlogtarget\x18\xa5\x96\xfa\xde\x01 \x01(\v2\x0e.iot.LogTargetR\tlogtarget\"b\n" +
-	"\x15LoggingOptionsPayload\x12,\n" +
-	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\r.iot.LogLevelR\bloglevel\x12\x1b\n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\"c\n" +
+	"\v_targetname\"\x8a\x01\n" +
+	"\x16LogTargetConfiguration\x121\n" +
+	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\r.iot.LogLevelH\x00R\bloglevel\x88\x01\x01\x120\n" +
+	"\tlogtarget\x18\xa5\x96\xfa\xde\x01 \x01(\v2\x0e.iot.LogTargetR\tlogtargetB\v\n" +
+	"\t_loglevel\"t\n" +
+	"\x15LoggingOptionsPayload\x121\n" +
+	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\r.iot.LogLevelH\x00R\bloglevel\x88\x01\x01\x12\x1b\n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearnB\v\n" +
+	"\t_loglevel\"c\n" +
 	"\x1eMachineLearningDetectionConfig\x12A\n" +
 	"\x0fconfidencelevel\x18\x9a\xfc\xd0r \x01(\x0e2\x14.iot.ConfidenceLevelR\x0fconfidencelevel\"f\n" +
 	"\x11MaintenanceWindow\x120\n" +
@@ -56342,10 +56468,11 @@ const file_iot_proto_rawDesc = "" +
 	"\ttimestamp\x18\xa4\xaa\x8f\x94\x01 \x01(\tH\x00R\ttimestamp\x88\x01\x01\x12)\n" +
 	"\x05value\x18˧\xfb\x12 \x01(\v2\x10.iot.MetricValueR\x05valueB\f\n" +
 	"\n" +
-	"_timestamp\"x\n" +
+	"_timestamp\"\x8a\x01\n" +
 	"\x0fMetricDimension\x12(\n" +
-	"\rdimensionname\x18\x89\xaa\xbf\xd8\x01 \x01(\tR\rdimensionname\x12;\n" +
-	"\boperator\x18\xfe\xdd\xd3\xde\x01 \x01(\x0e2\x1b.iot.DimensionValueOperatorR\boperator\"\xab\x01\n" +
+	"\rdimensionname\x18\x89\xaa\xbf\xd8\x01 \x01(\tR\rdimensionname\x12@\n" +
+	"\boperator\x18\xfe\xdd\xd3\xde\x01 \x01(\x0e2\x1b.iot.DimensionValueOperatorH\x00R\boperator\x88\x01\x01B\v\n" +
+	"\t_operator\"\xab\x01\n" +
 	"\x0eMetricToRetain\x12*\n" +
 	"\fexportmetric\x18\x80\xac\xbet \x01(\bH\x00R\fexportmetric\x88\x01\x01\x12\x19\n" +
 	"\x06metric\x18\x82\x86\xbdM \x01(\tR\x06metric\x12A\n" +
@@ -56409,14 +56536,15 @@ const file_iot_proto_rawDesc = "" +
 	"\x10_correlationdataB\x10\n" +
 	"\x0e_messageexpiryB\x19\n" +
 	"\x17_payloadformatindicatorB\x10\n" +
-	"\x0e_responsetopic\"\xbb\x02\n" +
+	"\x0e_responsetopic\"\xd1\x02\n" +
 	"\x14NonCompliantResource\x12Y\n" +
 	"\x0eadditionalinfo\x18\xa1\xbfˉ\x01 \x03(\v2-.iot.NonCompliantResource.AdditionalinfoEntryR\x0eadditionalinfo\x12K\n" +
-	"\x12resourceidentifier\x18\xcf\xf9œ\x01 \x01(\v2\x17.iot.ResourceIdentifierR\x12resourceidentifier\x128\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\x0e2\x11.iot.ResourceTypeR\fresourcetype\x1aA\n" +
+	"\x12resourceidentifier\x18\xcf\xf9œ\x01 \x01(\v2\x17.iot.ResourceIdentifierR\x12resourceidentifier\x12=\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\x0e2\x11.iot.ResourceTypeH\x00R\fresourcetype\x88\x01\x01\x1aA\n" +
 	"\x13AdditionalinfoEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"F\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_resourcetype\"F\n" +
 	"\x16NotConfiguredException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -56435,7 +56563,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
 	"\t_filenameB\v\n" +
 	"\t_filetypeB\x0e\n" +
-	"\f_fileversion\"\xff\b\n" +
+	"\f_fileversion\"\xb1\t\n" +
 	"\rOTAUpdateInfo\x12c\n" +
 	"\x14additionalparameters\x18\xf1Ǳ\" \x03(\v2,.iot.OTAUpdateInfo.AdditionalparametersEntryR\x14additionalparameters\x12+\n" +
 	"\fawsiotjobarn\x18\x81\xd1\xcc\xea\x01 \x01(\tH\x00R\fawsiotjobarn\x88\x01\x01\x12(\n" +
@@ -56448,10 +56576,10 @@ const file_iot_proto_rawDesc = "" +
 	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x04R\x10lastmodifieddate\x88\x01\x01\x12*\n" +
 	"\fotaupdatearn\x18\xb4̑{ \x01(\tH\x05R\fotaupdatearn\x88\x01\x01\x12>\n" +
 	"\x0eotaupdatefiles\x18\x9c\xa8\x95\x85\x01 \x03(\v2\x12.iot.OTAUpdateFileR\x0eotaupdatefiles\x12)\n" +
-	"\votaupdateid\x18\xb2ÿ\x87\x01 \x01(\tH\x06R\votaupdateid\x88\x01\x01\x12A\n" +
-	"\x0fotaupdatestatus\x18\xa7\xbd\xe5= \x01(\x0e2\x14.iot.OTAUpdateStatusR\x0fotaupdatestatus\x12.\n" +
-	"\tprotocols\x18\xb3\xad\x840 \x03(\x0e2\r.iot.ProtocolR\tprotocols\x12A\n" +
-	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionR\x0ftargetselection\x12\x1b\n" +
+	"\votaupdateid\x18\xb2ÿ\x87\x01 \x01(\tH\x06R\votaupdateid\x88\x01\x01\x12F\n" +
+	"\x0fotaupdatestatus\x18\xa7\xbd\xe5= \x01(\x0e2\x14.iot.OTAUpdateStatusH\aR\x0fotaupdatestatus\x88\x01\x01\x12.\n" +
+	"\tprotocols\x18\xb3\xad\x840 \x03(\x0e2\r.iot.ProtocolR\tprotocols\x12F\n" +
+	"\x0ftargetselection\x18\x87\x88\x88J \x01(\x0e2\x14.iot.TargetSelectionH\bR\x0ftargetselection\x88\x01\x01\x12\x1b\n" +
 	"\atargets\x18\xe2\xe9\xd9G \x03(\tR\atargets\x1aG\n" +
 	"\x19AdditionalparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -56462,7 +56590,9 @@ const file_iot_proto_rawDesc = "" +
 	"\f_descriptionB\x13\n" +
 	"\x11_lastmodifieddateB\x0f\n" +
 	"\r_otaupdatearnB\x0e\n" +
-	"\f_otaupdateid\"\xc7\x01\n" +
+	"\f_otaupdateidB\x12\n" +
+	"\x10_otaupdatestatusB\x12\n" +
+	"\x10_targetselection\"\xc7\x01\n" +
 	"\x10OTAUpdateSummary\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x00R\fcreationdate\x88\x01\x01\x12*\n" +
 	"\fotaupdatearn\x18\xb4̑{ \x01(\tH\x01R\fotaupdatearn\x88\x01\x01\x12)\n" +
@@ -56501,16 +56631,17 @@ const file_iot_proto_rawDesc = "" +
 	"\x16PackageVersionArtifact\x123\n" +
 	"\n" +
 	"s3location\x18\xb5\xf5\xb3\xbe\x01 \x01(\v2\x0f.iot.S3LocationR\n" +
-	"s3location\"\xca\x02\n" +
+	"s3location\"\xda\x02\n" +
 	"\x15PackageVersionSummary\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x00R\fcreationdate\x88\x01\x01\x122\n" +
 	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x01R\x10lastmodifieddate\x88\x01\x01\x12)\n" +
-	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tH\x02R\vpackagename\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.iot.PackageVersionStatusR\x06status\x12)\n" +
-	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tH\x03R\vversionname\x88\x01\x01B\x0f\n" +
+	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tH\x02R\vpackagename\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.iot.PackageVersionStatusH\x03R\x06status\x88\x01\x01\x12)\n" +
+	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tH\x04R\vversionname\x88\x01\x01B\x0f\n" +
 	"\r_creationdateB\x13\n" +
 	"\x11_lastmodifieddateB\x0e\n" +
-	"\f_packagenameB\x0e\n" +
+	"\f_packagenameB\t\n" +
+	"\a_statusB\x0e\n" +
 	"\f_versionname\"d\n" +
 	"\vPercentPair\x12!\n" +
 	"\apercent\x18\xdb\xf4\xe7\xaf\x01 \x01(\x01H\x00R\apercent\x88\x01\x01\x12\x1c\n" +
@@ -56548,10 +56679,11 @@ const file_iot_proto_rawDesc = "" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x01R\arolearn\x88\x01\x01B\x0f\n" +
 	"\r_expiresinsecB\n" +
 	"\n" +
-	"\b_rolearn\"\x85\x01\n" +
+	"\b_rolearn\"\xa1\x01\n" +
 	"\x14PrincipalThingObject\x12 \n" +
-	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingname\x12K\n" +
-	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeR\x12thingprincipaltype\"\xf4\x01\n" +
+	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tR\tthingname\x12P\n" +
+	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeH\x00R\x12thingprincipaltype\x88\x01\x01B\x15\n" +
+	"\x13_thingprincipaltype\"\xf4\x01\n" +
 	"\x14PropagatingAttribute\x129\n" +
 	"\x13connectionattribute\x18\xb4ȕ\xba\x01 \x01(\tH\x00R\x13connectionattribute\x88\x01\x01\x12/\n" +
 	"\x0ethingattribute\x18\xa6\uab1c\x01 \x01(\tH\x01R\x0ethingattribute\x88\x01\x01\x121\n" +
@@ -56562,22 +56694,23 @@ const file_iot_proto_rawDesc = "" +
 	"\x10ProvisioningHook\x12/\n" +
 	"\x0epayloadversion\x18\xd8\xd0\xe2\xbe\x01 \x01(\tH\x00R\x0epayloadversion\x88\x01\x01\x12 \n" +
 	"\ttargetarn\x18\xb0亯\x01 \x01(\tR\ttargetarnB\x11\n" +
-	"\x0f_payloadversion\"\xb0\x03\n" +
+	"\x0f_payloadversion\"\xbe\x03\n" +
 	"\x1bProvisioningTemplateSummary\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x00R\fcreationdate\x88\x01\x01\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12 \n" +
 	"\aenabled\x18\x9f\xe7\xce\x17 \x01(\bH\x02R\aenabled\x88\x01\x01\x122\n" +
 	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x03R\x10lastmodifieddate\x88\x01\x01\x12)\n" +
 	"\vtemplatearn\x18\xbf\xa2ʊ\x01 \x01(\tH\x04R\vtemplatearn\x88\x01\x01\x12+\n" +
-	"\ftemplatename\x18\xd1\xca\xfa\x8f\x01 \x01(\tH\x05R\ftemplatename\x88\x01\x01\x12)\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x11.iot.TemplateTypeR\x04typeB\x0f\n" +
+	"\ftemplatename\x18\xd1\xca\xfa\x8f\x01 \x01(\tH\x05R\ftemplatename\x88\x01\x01\x12.\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x11.iot.TemplateTypeH\x06R\x04type\x88\x01\x01B\x0f\n" +
 	"\r_creationdateB\x0e\n" +
 	"\f_descriptionB\n" +
 	"\n" +
 	"\b_enabledB\x13\n" +
 	"\x11_lastmodifieddateB\x0e\n" +
 	"\f_templatearnB\x0f\n" +
-	"\r_templatename\"\xde\x01\n" +
+	"\r_templatenameB\a\n" +
+	"\x05_type\"\xde\x01\n" +
 	"\"ProvisioningTemplateVersionSummary\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x00R\fcreationdate\x88\x01\x01\x122\n" +
 	"\x10isdefaultversion\x18\xb3\xae\xb57 \x01(\bH\x01R\x10isdefaultversion\x88\x01\x01\x12$\n" +
@@ -56614,38 +56747,41 @@ const file_iot_proto_rawDesc = "" +
 	"\x16numberofnotifiedthings\x18\u1754\xed\x01 \x01(\x05H\x00R\x16numberofnotifiedthings\x88\x01\x01\x12A\n" +
 	"\x17numberofsucceededthings\x18\xc0\x99\xa6\x9f\x01 \x01(\x05H\x01R\x17numberofsucceededthings\x88\x01\x01B\x19\n" +
 	"\x17_numberofnotifiedthingsB\x1a\n" +
-	"\x18_numberofsucceededthings\"\xea\x03\n" +
+	"\x18_numberofsucceededthings\"\x83\x04\n" +
 	"\x1cRegisterCACertificateRequest\x12<\n" +
 	"\x15allowautoregistration\x18\xd1̴\x1b \x01(\bH\x00R\x15allowautoregistration\x88\x01\x01\x12(\n" +
-	"\rcacertificate\x18\xe5\xf4\xd8\xea\x01 \x01(\tR\rcacertificate\x12A\n" +
-	"\x0fcertificatemode\x18\xa4\xf0\xf9p \x01(\x0e2\x14.iot.CertificateModeR\x0fcertificatemode\x12K\n" +
+	"\rcacertificate\x18\xe5\xf4\xd8\xea\x01 \x01(\tR\rcacertificate\x12F\n" +
+	"\x0fcertificatemode\x18\xa4\xf0\xf9p \x01(\x0e2\x14.iot.CertificateModeH\x01R\x0fcertificatemode\x88\x01\x01\x12K\n" +
 	"\x12registrationconfig\x18\xd7\xc9\xe3\x8d\x01 \x01(\v2\x17.iot.RegistrationConfigR\x12registrationconfig\x12(\n" +
-	"\vsetasactive\x18\xb2\xff\xc3< \x01(\bH\x01R\vsetasactive\x88\x01\x01\x12 \n" +
+	"\vsetasactive\x18\xb2\xff\xc3< \x01(\bH\x02R\vsetasactive\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.iot.TagR\x04tags\x12@\n" +
-	"\x17verificationcertificate\x18\x9a\xf1\x91% \x01(\tH\x02R\x17verificationcertificate\x88\x01\x01B\x18\n" +
-	"\x16_allowautoregistrationB\x0e\n" +
+	"\x17verificationcertificate\x18\x9a\xf1\x91% \x01(\tH\x03R\x17verificationcertificate\x88\x01\x01B\x18\n" +
+	"\x16_allowautoregistrationB\x12\n" +
+	"\x10_certificatemodeB\x0e\n" +
 	"\f_setasactiveB\x1a\n" +
 	"\x18_verificationcertificate\"\xa4\x01\n" +
 	"\x1dRegisterCACertificateResponse\x12/\n" +
 	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12-\n" +
 	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x01R\rcertificateid\x88\x01\x01B\x11\n" +
 	"\x0f_certificatearnB\x10\n" +
-	"\x0e_certificateid\"\xff\x01\n" +
+	"\x0e_certificateid\"\x8f\x02\n" +
 	"\x1aRegisterCertificateRequest\x122\n" +
 	"\x10cacertificatepem\x18\xe3\xae\xdbr \x01(\tH\x00R\x10cacertificatepem\x88\x01\x01\x12*\n" +
 	"\x0ecertificatepem\x18\xb7\xaa\xed\xed\x01 \x01(\tR\x0ecertificatepem\x12(\n" +
-	"\vsetasactive\x18\xb2\xff\xc3< \x01(\bH\x01R\vsetasactive\x88\x01\x01\x122\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x16.iot.CertificateStatusR\x06statusB\x13\n" +
+	"\vsetasactive\x18\xb2\xff\xc3< \x01(\bH\x01R\vsetasactive\x88\x01\x01\x127\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x16.iot.CertificateStatusH\x02R\x06status\x88\x01\x01B\x13\n" +
 	"\x11_cacertificatepemB\x0e\n" +
-	"\f_setasactive\"\xa2\x01\n" +
+	"\f_setasactiveB\t\n" +
+	"\a_status\"\xa2\x01\n" +
 	"\x1bRegisterCertificateResponse\x12/\n" +
 	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12-\n" +
 	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x01R\rcertificateid\x88\x01\x01B\x11\n" +
 	"\x0f_certificatearnB\x10\n" +
-	"\x0e_certificateid\"\x85\x01\n" +
+	"\x0e_certificateid\"\x95\x01\n" +
 	"#RegisterCertificateWithoutCARequest\x12*\n" +
-	"\x0ecertificatepem\x18\xb7\xaa\xed\xed\x01 \x01(\tR\x0ecertificatepem\x122\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x16.iot.CertificateStatusR\x06status\"\xab\x01\n" +
+	"\x0ecertificatepem\x18\xb7\xaa\xed\xed\x01 \x01(\tR\x0ecertificatepem\x127\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x16.iot.CertificateStatusH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"\xab\x01\n" +
 	"$RegisterCertificateWithoutCAResponse\x12/\n" +
 	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12-\n" +
 	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tH\x01R\rcertificateid\x88\x01\x01B\x11\n" +
@@ -56681,14 +56817,15 @@ const file_iot_proto_rawDesc = "" +
 	" RejectCertificateTransferRequest\x12(\n" +
 	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tR\rcertificateid\x12*\n" +
 	"\frejectreason\x18㺮\x11 \x01(\tH\x00R\frejectreason\x88\x01\x01B\x0f\n" +
-	"\r_rejectreason\"\xb1\x02\n" +
+	"\r_rejectreason\"\xc7\x02\n" +
 	"\x0fRelatedResource\x12T\n" +
 	"\x0eadditionalinfo\x18\xa1\xbfˉ\x01 \x03(\v2(.iot.RelatedResource.AdditionalinfoEntryR\x0eadditionalinfo\x12K\n" +
-	"\x12resourceidentifier\x18\xcf\xf9œ\x01 \x01(\v2\x17.iot.ResourceIdentifierR\x12resourceidentifier\x128\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\x0e2\x11.iot.ResourceTypeR\fresourcetype\x1aA\n" +
+	"\x12resourceidentifier\x18\xcf\xf9œ\x01 \x01(\v2\x17.iot.ResourceIdentifierR\x12resourceidentifier\x12=\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\x0e2\x11.iot.ResourceTypeH\x00R\fresourcetype\x88\x01\x01\x1aA\n" +
 	"\x13AdditionalinfoEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9a\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_resourcetype\"\x9a\x02\n" +
 	"\"RemoveThingFromBillingGroupRequest\x121\n" +
 	"\x0fbillinggrouparn\x18\xf3\xeb\xd8\xd7\x01 \x01(\tH\x00R\x0fbillinggrouparn\x88\x01\x01\x122\n" +
 	"\x10billinggroupname\x18\xed֔w \x01(\tH\x01R\x10billinggroupname\x88\x01\x01\x12\"\n" +
@@ -56781,14 +56918,16 @@ const file_iot_proto_rawDesc = "" +
 	"_rolealiasB\x0f\n" +
 	"\r_rolealiasarnB\n" +
 	"\n" +
-	"\b_rolearn\"\x9f\x01\n" +
+	"\b_rolearn\"\xb2\x01\n" +
 	"\bS3Action\x12\"\n" +
 	"\n" +
 	"bucketname\x18\xd5ץ\xcd\x01 \x01(\tR\n" +
-	"bucketname\x12=\n" +
-	"\tcannedacl\x18\xfd\x8a\xb1\x1e \x01(\x0e2\x1c.iot.CannedAccessControlListR\tcannedacl\x12\x13\n" +
+	"bucketname\x12B\n" +
+	"\tcannedacl\x18\xfd\x8a\xb1\x1e \x01(\x0e2\x1c.iot.CannedAccessControlListH\x00R\tcannedacl\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\xed\x90\xd7@ \x01(\tR\x03key\x12\x1b\n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\"g\n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearnB\f\n" +
+	"\n" +
+	"_cannedacl\"g\n" +
 	"\rS3Destination\x12\x1f\n" +
 	"\x06bucket\x18\xb8\x9e\xe2\x9b\x01 \x01(\tH\x00R\x06bucket\x88\x01\x01\x12\x1f\n" +
 	"\x06prefix\x18ʣ\x99\xe2\x01 \x01(\tH\x01R\x06prefix\x88\x01\x01B\t\n" +
@@ -56809,34 +56948,42 @@ const file_iot_proto_rawDesc = "" +
 	"\x04Sbom\x123\n" +
 	"\n" +
 	"s3location\x18\xb5\xf5\xb3\xbe\x01 \x01(\v2\x0f.iot.S3LocationR\n" +
-	"s3location\"\x96\x02\n" +
-	"\x1bSbomValidationResultSummary\x12>\n" +
-	"\terrorcode\x18\xb9\xb9۩\x01 \x01(\x0e2\x1c.iot.SbomValidationErrorCodeR\terrorcode\x12*\n" +
-	"\ferrormessage\x18Ɋ\xa2A \x01(\tH\x00R\ferrormessage\x88\x01\x01\x12#\n" +
-	"\bfilename\x18\xa9\xab\xf5\xf9\x01 \x01(\tH\x01R\bfilename\x88\x01\x01\x12H\n" +
-	"\x10validationresult\x18\xe4\xde\xd3R \x01(\x0e2\x19.iot.SbomValidationResultR\x10validationresultB\x0f\n" +
+	"s3location\"\xc3\x02\n" +
+	"\x1bSbomValidationResultSummary\x12C\n" +
+	"\terrorcode\x18\xb9\xb9۩\x01 \x01(\x0e2\x1c.iot.SbomValidationErrorCodeH\x00R\terrorcode\x88\x01\x01\x12*\n" +
+	"\ferrormessage\x18Ɋ\xa2A \x01(\tH\x01R\ferrormessage\x88\x01\x01\x12#\n" +
+	"\bfilename\x18\xa9\xab\xf5\xf9\x01 \x01(\tH\x02R\bfilename\x88\x01\x01\x12M\n" +
+	"\x10validationresult\x18\xe4\xde\xd3R \x01(\x0e2\x19.iot.SbomValidationResultH\x03R\x10validationresult\x88\x01\x01B\f\n" +
+	"\n" +
+	"_errorcodeB\x0f\n" +
 	"\r_errormessageB\v\n" +
-	"\t_filename\"\xd2\x02\n" +
+	"\t_filenameB\x13\n" +
+	"\x11_validationresult\"\xf8\x02\n" +
 	"\x16ScheduledAuditMetadata\x12&\n" +
 	"\n" +
 	"dayofmonth\x18\xff\xe9\x92r \x01(\tH\x00R\n" +
-	"dayofmonth\x88\x01\x01\x12/\n" +
-	"\tdayofweek\x18\xfd\xf0\xa2/ \x01(\x0e2\x0e.iot.DayOfWeekR\tdayofweek\x124\n" +
-	"\tfrequency\x18\x82\xb8\xcc} \x01(\x0e2\x13.iot.AuditFrequencyR\tfrequency\x124\n" +
-	"\x11scheduledauditarn\x18\xdb\xf3\xbat \x01(\tH\x01R\x11scheduledauditarn\x88\x01\x01\x127\n" +
-	"\x12scheduledauditname\x18\xd5ޡ\xb7\x01 \x01(\tH\x02R\x12scheduledauditname\x88\x01\x01B\r\n" +
-	"\v_dayofmonthB\x14\n" +
+	"dayofmonth\x88\x01\x01\x124\n" +
+	"\tdayofweek\x18\xfd\xf0\xa2/ \x01(\x0e2\x0e.iot.DayOfWeekH\x01R\tdayofweek\x88\x01\x01\x129\n" +
+	"\tfrequency\x18\x82\xb8\xcc} \x01(\x0e2\x13.iot.AuditFrequencyH\x02R\tfrequency\x88\x01\x01\x124\n" +
+	"\x11scheduledauditarn\x18\xdb\xf3\xbat \x01(\tH\x03R\x11scheduledauditarn\x88\x01\x01\x127\n" +
+	"\x12scheduledauditname\x18\xd5ޡ\xb7\x01 \x01(\tH\x04R\x12scheduledauditname\x88\x01\x01B\r\n" +
+	"\v_dayofmonthB\f\n" +
+	"\n" +
+	"_dayofweekB\f\n" +
+	"\n" +
+	"_frequencyB\x14\n" +
 	"\x12_scheduledauditarnB\x15\n" +
 	"\x13_scheduledauditname\"I\n" +
 	"\x13ScheduledJobRollout\x12$\n" +
 	"\tstarttime\x18\x8f\xda\xf9T \x01(\tH\x00R\tstarttime\x88\x01\x01B\f\n" +
 	"\n" +
-	"_starttime\"\xfa\x01\n" +
-	"\x10SchedulingConfig\x128\n" +
-	"\vendbehavior\x18ͩ\xe6E \x01(\x0e2\x13.iot.JobEndBehaviorR\vendbehavior\x12!\n" +
-	"\aendtime\x18쇚\x9d\x01 \x01(\tH\x00R\aendtime\x88\x01\x01\x12I\n" +
+	"_starttime\"\x8f\x02\n" +
+	"\x10SchedulingConfig\x12=\n" +
+	"\vendbehavior\x18ͩ\xe6E \x01(\x0e2\x13.iot.JobEndBehaviorH\x00R\vendbehavior\x88\x01\x01\x12!\n" +
+	"\aendtime\x18쇚\x9d\x01 \x01(\tH\x01R\aendtime\x88\x01\x01\x12I\n" +
 	"\x12maintenancewindows\x18\xde\xff\xbd\x13 \x03(\v2\x16.iot.MaintenanceWindowR\x12maintenancewindows\x12$\n" +
-	"\tstarttime\x18\x8f\xda\xf9T \x01(\tH\x01R\tstarttime\x88\x01\x01B\n" +
+	"\tstarttime\x18\x8f\xda\xf9T \x01(\tH\x02R\tstarttime\x88\x01\x01B\x0e\n" +
+	"\f_endbehaviorB\n" +
 	"\n" +
 	"\b_endtimeB\f\n" +
 	"\n" +
@@ -56875,12 +57022,13 @@ const file_iot_proto_rawDesc = "" +
 	"\rocsplambdaarn\x18\xdb\xe9\xa9e \x01(\tH\x02R\rocsplambdaarn\x88\x01\x01B\x12\n" +
 	"\x10_enableocspcheckB\x1d\n" +
 	"\x1b_ocspauthorizedresponderarnB\x10\n" +
-	"\x0e_ocsplambdaarn\"\xba\x02\n" +
+	"\x0e_ocsplambdaarn\"\xdb\x02\n" +
 	"\x18ServerCertificateSummary\x12:\n" +
-	"\x14servercertificatearn\x18\x95\xab\xfe\x03 \x01(\tH\x00R\x14servercertificatearn\x88\x01\x01\x12Y\n" +
-	"\x17servercertificatestatus\x18\xa8\x97\x84k \x01(\x0e2\x1c.iot.ServerCertificateStatusR\x17servercertificatestatus\x12L\n" +
-	"\x1dservercertificatestatusdetail\x18穚X \x01(\tH\x01R\x1dservercertificatestatusdetail\x88\x01\x01B\x17\n" +
-	"\x15_servercertificatearnB \n" +
+	"\x14servercertificatearn\x18\x95\xab\xfe\x03 \x01(\tH\x00R\x14servercertificatearn\x88\x01\x01\x12^\n" +
+	"\x17servercertificatestatus\x18\xa8\x97\x84k \x01(\x0e2\x1c.iot.ServerCertificateStatusH\x01R\x17servercertificatestatus\x88\x01\x01\x12L\n" +
+	"\x1dservercertificatestatusdetail\x18穚X \x01(\tH\x02R\x1dservercertificatestatusdetail\x88\x01\x01B\x17\n" +
+	"\x15_servercertificatearnB\x1a\n" +
+	"\x18_servercertificatestatusB \n" +
 	"\x1e_servercertificatestatusdetail\"M\n" +
 	"\x1dServiceQuotaExceededException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -56906,12 +57054,13 @@ const file_iot_proto_rawDesc = "" +
 	"\x15loggingoptionspayload\x18\xdf\xf7\xe5\xf8\x01 \x01(\v2\x1a.iot.LoggingOptionsPayloadB\x04\x88\xb5\x18\x01R\x15loggingoptionspayload\"z\n" +
 	"\x18SetV2LoggingLevelRequest\x12,\n" +
 	"\bloglevel\x18\x9aׂ/ \x01(\x0e2\r.iot.LogLevelR\bloglevel\x120\n" +
-	"\tlogtarget\x18\xa5\x96\xfa\xde\x01 \x01(\v2\x0e.iot.LogTargetR\tlogtarget\"\x9a\x02\n" +
-	"\x1aSetV2LoggingOptionsRequest\x12:\n" +
-	"\x0fdefaultloglevel\x18\xcbڷ_ \x01(\x0e2\r.iot.LogLevelR\x0fdefaultloglevel\x12.\n" +
-	"\x0edisablealllogs\x18\xde؇b \x01(\bH\x00R\x0edisablealllogs\x88\x01\x01\x12O\n" +
+	"\tlogtarget\x18\xa5\x96\xfa\xde\x01 \x01(\v2\x0e.iot.LogTargetR\tlogtarget\"\xb3\x02\n" +
+	"\x1aSetV2LoggingOptionsRequest\x12?\n" +
+	"\x0fdefaultloglevel\x18\xcbڷ_ \x01(\x0e2\r.iot.LogLevelH\x00R\x0fdefaultloglevel\x88\x01\x01\x12.\n" +
+	"\x0edisablealllogs\x18\xde؇b \x01(\bH\x01R\x0edisablealllogs\x88\x01\x01\x12O\n" +
 	"\x13eventconfigurations\x18Ū\x98H \x03(\v2\x1a.iot.LogEventConfigurationR\x13eventconfigurations\x12 \n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x01R\arolearn\x88\x01\x01B\x11\n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x02R\arolearn\x88\x01\x01B\x12\n" +
+	"\x10_defaultloglevelB\x11\n" +
 	"\x0f_disablealllogsB\n" +
 	"\n" +
 	"\b_rolearn\"\x80\x01\n" +
@@ -56925,11 +57074,12 @@ const file_iot_proto_rawDesc = "" +
 	"\bplatform\x18\xb3\xe5\xa8R \x01(\tH\x02R\bplatform\x88\x01\x01B\x11\n" +
 	"\x0f_certificatearnB\x1a\n" +
 	"\x18_certificatepathondeviceB\v\n" +
-	"\t_platform\"\x88\x01\n" +
-	"\tSnsAction\x12<\n" +
-	"\rmessageformat\x18\xb8\xc0\x9a\xb4\x01 \x01(\x0e2\x12.iot.MessageFormatR\rmessageformat\x12\x1b\n" +
+	"\t_platform\"\x9f\x01\n" +
+	"\tSnsAction\x12A\n" +
+	"\rmessageformat\x18\xb8\xc0\x9a\xb4\x01 \x01(\x0e2\x12.iot.MessageFormatH\x00R\rmessageformat\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12 \n" +
-	"\ttargetarn\x18\xb0亯\x01 \x01(\tR\ttargetarn\"A\n" +
+	"\ttargetarn\x18\xb0亯\x01 \x01(\tR\ttargetarnB\x10\n" +
+	"\x0e_messageformat\"A\n" +
 	"\x11SqlParseException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -57224,20 +57374,24 @@ const file_iot_proto_rawDesc = "" +
 	"\x14ThingGroupProperties\x12D\n" +
 	"\x10attributepayload\x18\xa0\xf1\xea@ \x01(\v2\x15.iot.AttributePayloadR\x10attributepayload\x12<\n" +
 	"\x15thinggroupdescription\x18\xa9\xb8\xbd\x16 \x01(\tH\x00R\x15thinggroupdescription\x88\x01\x01B\x18\n" +
-	"\x16_thinggroupdescription\"\xab\x04\n" +
+	"\x16_thinggroupdescription\"\x97\x05\n" +
 	"\x1aThingIndexingConfiguration\x121\n" +
 	"\fcustomfields\x18\x8cٳi \x03(\v2\n" +
-	".iot.FieldR\fcustomfields\x12b\n" +
-	"\x1adevicedefenderindexingmode\x18\xfc\xa6\xd2~ \x01(\x0e2\x1f.iot.DeviceDefenderIndexingModeR\x1adevicedefenderindexingmode\x12.\n" +
+	".iot.FieldR\fcustomfields\x12g\n" +
+	"\x1adevicedefenderindexingmode\x18\xfc\xa6\xd2~ \x01(\x0e2\x1f.iot.DeviceDefenderIndexingModeH\x00R\x1adevicedefenderindexingmode\x88\x01\x01\x12.\n" +
 	"\x06filter\x18\xf8Ѕ? \x01(\v2\x13.iot.IndexingFilterR\x06filter\x124\n" +
 	"\rmanagedfields\x18\xb4\xd3\xf0\x99\x01 \x03(\v2\n" +
-	".iot.FieldR\rmanagedfields\x12Y\n" +
-	"\x17namedshadowindexingmode\x18\xde\xf5\xf1\x01 \x01(\x0e2\x1c.iot.NamedShadowIndexingModeR\x17namedshadowindexingmode\x12l\n" +
-	"\x1dthingconnectivityindexingmode\x18샏\xc3\x01 \x01(\x0e2\".iot.ThingConnectivityIndexingModeR\x1dthingconnectivityindexingmode\x12G\n" +
-	"\x11thingindexingmode\x18\x95\x9e\x9dp \x01(\x0e2\x16.iot.ThingIndexingModeR\x11thingindexingmode\"\x84\x01\n" +
+	".iot.FieldR\rmanagedfields\x12^\n" +
+	"\x17namedshadowindexingmode\x18\xde\xf5\xf1\x01 \x01(\x0e2\x1c.iot.NamedShadowIndexingModeH\x01R\x17namedshadowindexingmode\x88\x01\x01\x12q\n" +
+	"\x1dthingconnectivityindexingmode\x18샏\xc3\x01 \x01(\x0e2\".iot.ThingConnectivityIndexingModeH\x02R\x1dthingconnectivityindexingmode\x88\x01\x01\x12G\n" +
+	"\x11thingindexingmode\x18\x95\x9e\x9dp \x01(\x0e2\x16.iot.ThingIndexingModeR\x11thingindexingmodeB\x1d\n" +
+	"\x1b_devicedefenderindexingmodeB\x1a\n" +
+	"\x18_namedshadowindexingmodeB \n" +
+	"\x1e_thingconnectivityindexingmode\"\xa0\x01\n" +
 	"\x14ThingPrincipalObject\x12\x1f\n" +
-	"\tprincipal\x18\xaa\xf4\x86} \x01(\tR\tprincipal\x12K\n" +
-	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeR\x12thingprincipaltype\"\xac\x02\n" +
+	"\tprincipal\x18\xaa\xf4\x86} \x01(\tR\tprincipal\x12P\n" +
+	"\x12thingprincipaltype\x18\x84\x86լ\x01 \x01(\x0e2\x17.iot.ThingPrincipalTypeH\x00R\x12thingprincipaltype\x88\x01\x01B\x15\n" +
+	"\x13_thingprincipaltype\"\xac\x02\n" +
 	"\x13ThingTypeDefinition\x12*\n" +
 	"\fthingtypearn\x18\xfb\x93\xb4\x13 \x01(\tH\x00R\fthingtypearn\x88\x01\x01\x12H\n" +
 	"\x11thingtypemetadata\x18˱\xb9\x8c\x01 \x01(\v2\x16.iot.ThingTypeMetadataR\x11thingtypemetadata\x12,\n" +
@@ -57310,38 +57464,40 @@ const file_iot_proto_rawDesc = "" +
 	"\f_descriptionB\x0f\n" +
 	"\r_ruledisabledB\v\n" +
 	"\t_rulenameB\x06\n" +
-	"\x04_sql\"\x9d\x04\n" +
+	"\x04_sql\"\xad\x04\n" +
 	"\x14TopicRuleDestination\x12\x19\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12%\n" +
 	"\tcreatedat\x18\x8f\x91\xe3\xb0\x01 \x01(\tH\x01R\tcreatedat\x88\x01\x01\x12S\n" +
 	"\x11httpurlproperties\x18\x8c\xd0\xd2\xca\x01 \x01(\v2!.iot.HttpUrlDestinationPropertiesR\x11httpurlproperties\x12V\n" +
 	"\x12influxdbproperties\x18\xd7\xfa\xee\x86\x01 \x01(\v2\".iot.InfluxDBDestinationPropertiesR\x12influxdbproperties\x12+\n" +
-	"\rlastupdatedat\x18\x82\xa1} \x01(\tH\x02R\rlastupdatedat\x88\x01\x01\x12;\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1f.iot.TopicRuleDestinationStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x03R\fstatusreason\x88\x01\x01\x12F\n" +
+	"\rlastupdatedat\x18\x82\xa1} \x01(\tH\x02R\rlastupdatedat\x88\x01\x01\x12@\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1f.iot.TopicRuleDestinationStatusH\x03R\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x04R\fstatusreason\x88\x01\x01\x12F\n" +
 	"\rvpcproperties\x18\xee˽\x1b \x01(\v2\x1d.iot.VpcDestinationPropertiesR\rvpcpropertiesB\x06\n" +
 	"\x04_arnB\f\n" +
 	"\n" +
 	"_createdatB\x10\n" +
-	"\x0e_lastupdatedatB\x0f\n" +
+	"\x0e_lastupdatedatB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_statusreason\"\xb3\x02\n" +
 	"!TopicRuleDestinationConfiguration\x12\\\n" +
 	"\x14httpurlconfiguration\x18\x95媂\x01 \x01(\v2$.iot.HttpUrlDestinationConfigurationR\x14httpurlconfiguration\x12^\n" +
 	"\x15influxdbconfiguration\x18\u0b65b \x01(\v2%.iot.InfluxDBDestinationConfigurationR\x15influxdbconfiguration\x12P\n" +
-	"\x10vpcconfiguration\x18\xcb\xf4\xc6\xeb\x01 \x01(\v2 .iot.VpcDestinationConfigurationR\x10vpcconfiguration\"\x9e\x04\n" +
+	"\x10vpcconfiguration\x18\xcb\xf4\xc6\xeb\x01 \x01(\v2 .iot.VpcDestinationConfigurationR\x10vpcconfiguration\"\xae\x04\n" +
 	"\x1bTopicRuleDestinationSummary\x12\x19\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12%\n" +
 	"\tcreatedat\x18\x8f\x91\xe3\xb0\x01 \x01(\tH\x01R\tcreatedat\x88\x01\x01\x12I\n" +
 	"\x0ehttpurlsummary\x18ۺ\x8f: \x01(\v2\x1e.iot.HttpUrlDestinationSummaryR\x0ehttpurlsummary\x12L\n" +
 	"\x0finfluxdbsummary\x18\xba\x9a\xd4H \x01(\v2\x1f.iot.InfluxDBDestinationSummaryR\x0finfluxdbsummary\x12+\n" +
-	"\rlastupdatedat\x18\x82\xa1} \x01(\tH\x02R\rlastupdatedat\x88\x01\x01\x12;\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1f.iot.TopicRuleDestinationStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x03R\fstatusreason\x88\x01\x01\x12T\n" +
+	"\rlastupdatedat\x18\x82\xa1} \x01(\tH\x02R\rlastupdatedat\x88\x01\x01\x12@\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1f.iot.TopicRuleDestinationStatusH\x03R\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x04R\fstatusreason\x88\x01\x01\x12T\n" +
 	"\x15vpcdestinationsummary\x18\xe1\xb9\xf7\xd9\x01 \x01(\v2\x1a.iot.VpcDestinationSummaryR\x15vpcdestinationsummaryB\x06\n" +
 	"\x04_arnB\f\n" +
 	"\n" +
 	"_createdatB\x10\n" +
-	"\x0e_lastupdatedatB\x0f\n" +
+	"\x0e_lastupdatedatB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_statusreason\"\xa4\x02\n" +
 	"\x11TopicRuleListItem\x12%\n" +
 	"\tcreatedat\x18\x8f\x91\xe3\xb0\x01 \x01(\tH\x00R\tcreatedat\x88\x01\x01\x12 \n" +
@@ -57427,19 +57583,20 @@ const file_iot_proto_rawDesc = "" +
 	"\f_descriptionB\x11\n" +
 	"\x0f_expirationdateB\x17\n" +
 	"\x15_suppressindefinitely\" \n" +
-	"\x1eUpdateAuditSuppressionResponse\"\xa4\x04\n" +
+	"\x1eUpdateAuditSuppressionResponse\"\xb4\x04\n" +
 	"\x17UpdateAuthorizerRequest\x12=\n" +
 	"\x15authorizerfunctionarn\x18Ɔ\x8a\xb8\x01 \x01(\tH\x00R\x15authorizerfunctionarn\x88\x01\x01\x12)\n" +
 	"\x0eauthorizername\x18\xa6\xf3\xe3\x17 \x01(\tR\x0eauthorizername\x12:\n" +
-	"\x14enablecachingforhttp\x18È\xcd! \x01(\bH\x01R\x14enablecachingforhttp\x88\x01\x01\x121\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.iot.AuthorizerStatusR\x06status\x12+\n" +
-	"\ftokenkeyname\x18\xf3Ә\x85\x01 \x01(\tH\x02R\ftokenkeyname\x88\x01\x01\x12t\n" +
+	"\x14enablecachingforhttp\x18È\xcd! \x01(\bH\x01R\x14enablecachingforhttp\x88\x01\x01\x126\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.iot.AuthorizerStatusH\x02R\x06status\x88\x01\x01\x12+\n" +
+	"\ftokenkeyname\x18\xf3Ә\x85\x01 \x01(\tH\x03R\ftokenkeyname\x88\x01\x01\x12t\n" +
 	"\x16tokensigningpublickeys\x18\xc1\x95\xf3\x9b\x01 \x03(\v28.iot.UpdateAuthorizerRequest.TokensigningpublickeysEntryR\x16tokensigningpublickeys\x1aI\n" +
 	"\x1bTokensigningpublickeysEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
 	"\x16_authorizerfunctionarnB\x17\n" +
-	"\x15_enablecachingforhttpB\x0f\n" +
+	"\x15_enablecachingforhttpB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_tokenkeyname\"\x9d\x01\n" +
 	"\x18UpdateAuthorizerResponse\x12,\n" +
 	"\rauthorizerarn\x18¼\xfbV \x01(\tH\x00R\rauthorizerarn\x88\x01\x01\x12.\n" +
@@ -57456,13 +57613,16 @@ const file_iot_proto_rawDesc = "" +
 	"\n" +
 	"\b_version\"V\n" +
 	"\x19UpdateCACertificateParams\x129\n" +
-	"\x06action\x18\x80ސ# \x01(\x0e2\x1e.iot.CACertificateUpdateActionR\x06action\"\x89\x03\n" +
+	"\x06action\x18\x80ސ# \x01(\x0e2\x1e.iot.CACertificateUpdateActionR\x06action\"\xbf\x03\n" +
 	"\x1aUpdateCACertificateRequest\x12(\n" +
-	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tR\rcertificateid\x12\\\n" +
-	"\x19newautoregistrationstatus\x18\xb6\x88\xd6\b \x01(\x0e2\x1b.iot.AutoRegistrationStatusR\x19newautoregistrationstatus\x12:\n" +
-	"\tnewstatus\x18ԙЕ\x01 \x01(\x0e2\x18.iot.CACertificateStatusR\tnewstatus\x12K\n" +
+	"\rcertificateid\x18\x8e\xd8֙\x01 \x01(\tR\rcertificateid\x12a\n" +
+	"\x19newautoregistrationstatus\x18\xb6\x88\xd6\b \x01(\x0e2\x1b.iot.AutoRegistrationStatusH\x00R\x19newautoregistrationstatus\x88\x01\x01\x12?\n" +
+	"\tnewstatus\x18ԙЕ\x01 \x01(\x0e2\x18.iot.CACertificateStatusH\x01R\tnewstatus\x88\x01\x01\x12K\n" +
 	"\x12registrationconfig\x18\xd7\xc9\xe3\x8d\x01 \x01(\v2\x17.iot.RegistrationConfigR\x12registrationconfig\x12?\n" +
-	"\x16removeautoregistration\x18誡\xea\x01 \x01(\bH\x00R\x16removeautoregistration\x88\x01\x01B\x19\n" +
+	"\x16removeautoregistration\x18誡\xea\x01 \x01(\bH\x02R\x16removeautoregistration\x88\x01\x01B\x1c\n" +
+	"\x1a_newautoregistrationstatusB\f\n" +
+	"\n" +
+	"_newstatusB\x19\n" +
 	"\x17_removeautoregistration\"\x94\x02\n" +
 	" UpdateCertificateProviderRequest\x12g\n" +
 	"\x1baccountdefaultforoperations\x18\xbb܋\xfd\x01 \x03(\x0e2!.iot.CertificateProviderOperationR\x1baccountdefaultforoperations\x12;\n" +
@@ -57505,7 +57665,7 @@ const file_iot_proto_rawDesc = "" +
 	"\vdisplayname\x18\xd7̅\x80\x01 \x01(\tR\vdisplayname\x12!\n" +
 	"\n" +
 	"metricname\x18\x9b\xb7\xa4a \x01(\tR\n" +
-	"metricname\"\x83\x03\n" +
+	"metricname\"\x97\x03\n" +
 	"\x1aUpdateCustomMetricResponse\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x00R\fcreationdate\x88\x01\x01\x12)\n" +
 	"\vdisplayname\x18\xd7̅\x80\x01 \x01(\tH\x01R\vdisplayname\x88\x01\x01\x122\n" +
@@ -57513,42 +57673,47 @@ const file_iot_proto_rawDesc = "" +
 	"\tmetricarn\x18\x89\xef\xef\xdd\x01 \x01(\tH\x03R\tmetricarn\x88\x01\x01\x12&\n" +
 	"\n" +
 	"metricname\x18\x9b\xb7\xa4a \x01(\tH\x04R\n" +
-	"metricname\x88\x01\x01\x128\n" +
+	"metricname\x88\x01\x01\x12=\n" +
 	"\n" +
-	"metrictype\x18\xea\xa6\xfb\x12 \x01(\x0e2\x15.iot.CustomMetricTypeR\n" +
-	"metrictypeB\x0f\n" +
+	"metrictype\x18\xea\xa6\xfb\x12 \x01(\x0e2\x15.iot.CustomMetricTypeH\x05R\n" +
+	"metrictype\x88\x01\x01B\x0f\n" +
 	"\r_creationdateB\x0e\n" +
 	"\f_displaynameB\x13\n" +
 	"\x11_lastmodifieddateB\f\n" +
 	"\n" +
 	"_metricarnB\r\n" +
-	"\v_metricname\"^\n" +
+	"\v_metricnameB\r\n" +
+	"\v_metrictype\"^\n" +
 	"\x1dUpdateDeviceCertificateParams\x12=\n" +
 	"\x06action\x18\x80ސ# \x01(\x0e2\".iot.DeviceCertificateUpdateActionR\x06action\"V\n" +
 	"\x16UpdateDimensionRequest\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12%\n" +
-	"\fstringvalues\x18\xaf\xb6\xd4p \x03(\tR\fstringvalues\"\xba\x02\n" +
+	"\fstringvalues\x18\xaf\xb6\xd4p \x03(\tR\fstringvalues\"\xc8\x02\n" +
 	"\x17UpdateDimensionResponse\x12\x19\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12*\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x01R\fcreationdate\x88\x01\x01\x122\n" +
 	"\x10lastmodifieddate\x18\xb3\xf3\xfcL \x01(\tH\x02R\x10lastmodifieddate\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x03R\x04name\x88\x01\x01\x12%\n" +
-	"\fstringvalues\x18\xaf\xb6\xd4p \x03(\tR\fstringvalues\x12*\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x12.iot.DimensionTypeR\x04typeB\x06\n" +
+	"\fstringvalues\x18\xaf\xb6\xd4p \x03(\tR\fstringvalues\x12/\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x12.iot.DimensionTypeH\x04R\x04type\x88\x01\x01B\x06\n" +
 	"\x04_arnB\x0f\n" +
 	"\r_creationdateB\x13\n" +
 	"\x11_lastmodifieddateB\a\n" +
-	"\x05_name\"\xe7\x05\n" +
-	" UpdateDomainConfigurationRequest\x12N\n" +
-	"\x13applicationprotocol\x18ր\xbc\xc8\x01 \x01(\x0e2\x18.iot.ApplicationProtocolR\x13applicationprotocol\x12J\n" +
-	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x17.iot.AuthenticationTypeR\x12authenticationtype\x12D\n" +
+	"\x05_nameB\a\n" +
+	"\x05_type\"\xc3\x06\n" +
+	" UpdateDomainConfigurationRequest\x12S\n" +
+	"\x13applicationprotocol\x18ր\xbc\xc8\x01 \x01(\x0e2\x18.iot.ApplicationProtocolH\x00R\x13applicationprotocol\x88\x01\x01\x12O\n" +
+	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x17.iot.AuthenticationTypeH\x01R\x12authenticationtype\x88\x01\x01\x12D\n" +
 	"\x10authorizerconfig\x18\xa1\x9c\xb8) \x01(\v2\x15.iot.AuthorizerConfigR\x10authorizerconfig\x12Z\n" +
 	"\x17clientcertificateconfig\x18\xac\xe0\x86\x89\x01 \x01(\v2\x1c.iot.ClientCertificateConfigR\x17clientcertificateconfig\x12<\n" +
-	"\x17domainconfigurationname\x18\xcf\xddͅ\x01 \x01(\tR\x17domainconfigurationname\x12_\n" +
-	"\x19domainconfigurationstatus\x18\xb8\xb2\xf4\x1c \x01(\x0e2\x1e.iot.DomainConfigurationStatusR\x19domainconfigurationstatus\x12?\n" +
-	"\x16removeauthorizerconfig\x18\x89\xb9\xa8\x8a\x01 \x01(\bH\x00R\x16removeauthorizerconfig\x88\x01\x01\x12Y\n" +
+	"\x17domainconfigurationname\x18\xcf\xddͅ\x01 \x01(\tR\x17domainconfigurationname\x12d\n" +
+	"\x19domainconfigurationstatus\x18\xb8\xb2\xf4\x1c \x01(\x0e2\x1e.iot.DomainConfigurationStatusH\x02R\x19domainconfigurationstatus\x88\x01\x01\x12?\n" +
+	"\x16removeauthorizerconfig\x18\x89\xb9\xa8\x8a\x01 \x01(\bH\x03R\x16removeauthorizerconfig\x88\x01\x01\x12Y\n" +
 	"\x17servercertificateconfig\x18\x90\xd6\xf96 \x01(\v2\x1c.iot.ServerCertificateConfigR\x17servercertificateconfig\x12/\n" +
-	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x0e.iot.TlsConfigR\ttlsconfigB\x19\n" +
+	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x0e.iot.TlsConfigR\ttlsconfigB\x16\n" +
+	"\x14_applicationprotocolB\x15\n" +
+	"\x13_authenticationtypeB\x1c\n" +
+	"\x1a_domainconfigurationstatusB\x19\n" +
 	"\x17_removeauthorizerconfig\"\xdd\x01\n" +
 	"!UpdateDomainConfigurationResponse\x12>\n" +
 	"\x16domainconfigurationarn\x18\x85\x81\xa9- \x01(\tH\x00R\x16domainconfigurationarn\x88\x01\x01\x12A\n" +
@@ -57584,7 +57749,7 @@ const file_iot_proto_rawDesc = "" +
 	"\x18EventconfigurationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12(\n" +
 	"\x05value\x18\x02 \x01(\v2\x12.iot.ConfigurationR\x05value:\x028\x01\"#\n" +
-	"!UpdateEventConfigurationsResponse\"\xbe\x04\n" +
+	"!UpdateEventConfigurationsResponse\"\xcc\x04\n" +
 	"\x18UpdateFleetMetricRequest\x123\n" +
 	"\x10aggregationfield\x18\xe8\xa7\xf7\x93\x01 \x01(\tH\x00R\x10aggregationfield\x88\x01\x01\x12A\n" +
 	"\x0faggregationtype\x18\xceӮ\\ \x01(\v2\x14.iot.AggregationTypeR\x0faggregationtype\x12)\n" +
@@ -57596,14 +57761,15 @@ const file_iot_proto_rawDesc = "" +
 	"metricname\x12\x1f\n" +
 	"\x06period\x18\x85\x8e\xa5\xce\x01 \x01(\x05H\x03R\x06period\x88\x01\x01\x12)\n" +
 	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\x04R\vquerystring\x88\x01\x01\x12*\n" +
-	"\fqueryversion\x18ޟ\xa9\x05 \x01(\tH\x05R\fqueryversion\x88\x01\x01\x12+\n" +
-	"\x04unit\x18\x88\xb4\xd4E \x01(\x0e2\x14.iot.FleetMetricUnitR\x04unitB\x13\n" +
+	"\fqueryversion\x18ޟ\xa9\x05 \x01(\tH\x05R\fqueryversion\x88\x01\x01\x120\n" +
+	"\x04unit\x18\x88\xb4\xd4E \x01(\x0e2\x14.iot.FleetMetricUnitH\x06R\x04unit\x88\x01\x01B\x13\n" +
 	"\x11_aggregationfieldB\x0e\n" +
 	"\f_descriptionB\x12\n" +
 	"\x10_expectedversionB\t\n" +
 	"\a_periodB\x0e\n" +
 	"\f_querystringB\x0f\n" +
-	"\r_queryversion\"\xfc\x01\n" +
+	"\r_queryversionB\a\n" +
+	"\x05_unit\"\xfc\x01\n" +
 	"\"UpdateIndexingConfigurationRequest\x12r\n" +
 	"\x1fthinggroupindexingconfiguration\x18\xad\xbe\x9b\xdf\x01 \x01(\v2$.iot.ThingGroupIndexingConfigurationR\x1fthinggroupindexingconfiguration\x12b\n" +
 	"\x1athingindexingconfiguration\x18\xd4\xd9\xff& \x01(\v2\x1f.iot.ThingIndexingConfigurationR\x1athingindexingconfiguration\"%\n" +
@@ -57648,21 +57814,22 @@ const file_iot_proto_rawDesc = "" +
 	"\x13_defaultversionnameB\x0e\n" +
 	"\f_descriptionB\x16\n" +
 	"\x14_unsetdefaultversion\"\x17\n" +
-	"\x15UpdatePackageResponse\"\x91\x04\n" +
-	"\x1bUpdatePackageVersionRequest\x124\n" +
-	"\x06action\x18\x80ސ# \x01(\x0e2\x19.iot.PackageVersionActionR\x06action\x12;\n" +
+	"\x15UpdatePackageResponse\"\xa1\x04\n" +
+	"\x1bUpdatePackageVersionRequest\x129\n" +
+	"\x06action\x18\x80ސ# \x01(\x0e2\x19.iot.PackageVersionActionH\x00R\x06action\x88\x01\x01\x12;\n" +
 	"\bartifact\x18\xa4\xb0\xae\xf5\x01 \x01(\v2\x1b.iot.PackageVersionArtifactR\bartifact\x12S\n" +
 	"\n" +
 	"attributes\x18\x95\xb7\xff\x0f \x03(\v20.iot.UpdatePackageVersionRequest.AttributesEntryR\n" +
 	"attributes\x12)\n" +
-	"\vclienttoken\x18\xec\x82\xfa\x81\x01 \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12)\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12$\n" +
+	"\vclienttoken\x18\xec\x82\xfa\x81\x01 \x01(\tH\x01R\vclienttoken\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x12$\n" +
 	"\vpackagename\x18\xc1ʠ\xe2\x01 \x01(\tR\vpackagename\x12\x1e\n" +
-	"\x06recipe\x18Я\xfac \x01(\tH\x02R\x06recipe\x88\x01\x01\x12$\n" +
+	"\x06recipe\x18Я\xfac \x01(\tH\x03R\x06recipe\x88\x01\x01\x12$\n" +
 	"\vversionname\x18\xf5\x86\xbc\xf2\x01 \x01(\tR\vversionname\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\t\n" +
+	"\a_actionB\x0e\n" +
 	"\f_clienttokenB\x0e\n" +
 	"\f_descriptionB\t\n" +
 	"\a_recipe\"\x1e\n" +
@@ -57694,16 +57861,20 @@ const file_iot_proto_rawDesc = "" +
 	"\frolealiasarn\x18\xffϥ\xd5\x01 \x01(\tH\x01R\frolealiasarn\x88\x01\x01B\f\n" +
 	"\n" +
 	"_rolealiasB\x0f\n" +
-	"\r_rolealiasarn\"\x9f\x02\n" +
+	"\r_rolealiasarn\"\xc5\x02\n" +
 	"\x1bUpdateScheduledAuditRequest\x12&\n" +
 	"\n" +
 	"dayofmonth\x18\xff\xe9\x92r \x01(\tH\x00R\n" +
-	"dayofmonth\x88\x01\x01\x12/\n" +
-	"\tdayofweek\x18\xfd\xf0\xa2/ \x01(\x0e2\x0e.iot.DayOfWeekR\tdayofweek\x124\n" +
-	"\tfrequency\x18\x82\xb8\xcc} \x01(\x0e2\x13.iot.AuditFrequencyR\tfrequency\x122\n" +
+	"dayofmonth\x88\x01\x01\x124\n" +
+	"\tdayofweek\x18\xfd\xf0\xa2/ \x01(\x0e2\x0e.iot.DayOfWeekH\x01R\tdayofweek\x88\x01\x01\x129\n" +
+	"\tfrequency\x18\x82\xb8\xcc} \x01(\x0e2\x13.iot.AuditFrequencyH\x02R\tfrequency\x88\x01\x01\x122\n" +
 	"\x12scheduledauditname\x18\xd5ޡ\xb7\x01 \x01(\tR\x12scheduledauditname\x12.\n" +
 	"\x10targetchecknames\x18\xc1\xe7\x8b\xe0\x01 \x03(\tR\x10targetchecknamesB\r\n" +
-	"\v_dayofmonth\"j\n" +
+	"\v_dayofmonthB\f\n" +
+	"\n" +
+	"_dayofweekB\f\n" +
+	"\n" +
+	"_frequency\"j\n" +
 	"\x1cUpdateScheduledAuditResponse\x124\n" +
 	"\x11scheduledauditarn\x18\xdb\xf3\xbat \x01(\tH\x00R\x11scheduledauditarn\x88\x01\x01B\x14\n" +
 	"\x12_scheduledauditarn\"\xc2\b\n" +
@@ -57835,26 +58006,29 @@ const file_iot_proto_rawDesc = "" +
 	"\x1eVersionsLimitExceededException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xf5\x05\n" +
+	"\b_message\"\xac\x06\n" +
 	"\x0eViolationEvent\x12,\n" +
 	"\bbehavior\x18\xa8\xfc\xa6\x7f \x01(\v2\r.iot.BehaviorR\bbehavior\x125\n" +
 	"\vmetricvalue\x18\x8f\xfa\xad\x18 \x01(\v2\x10.iot.MetricValueR\vmetricvalue\x129\n" +
 	"\x13securityprofilename\x18\xc0Ğ\xdd\x01 \x01(\tH\x00R\x13securityprofilename\x88\x01\x01\x12%\n" +
-	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\x01R\tthingname\x88\x01\x01\x12G\n" +
-	"\x11verificationstate\x18\x84\x98\x81\x16 \x01(\x0e2\x16.iot.VerificationStateR\x11verificationstate\x12J\n" +
-	"\x1cverificationstatedescription\x18ة\xd5\a \x01(\tH\x02R\x1cverificationstatedescription\x88\x01\x01\x12h\n" +
+	"\tthingname\x18\xad\xdc\xe9\xfa\x01 \x01(\tH\x01R\tthingname\x88\x01\x01\x12L\n" +
+	"\x11verificationstate\x18\x84\x98\x81\x16 \x01(\x0e2\x16.iot.VerificationStateH\x02R\x11verificationstate\x88\x01\x01\x12J\n" +
+	"\x1cverificationstatedescription\x18ة\xd5\a \x01(\tH\x03R\x1cverificationstatedescription\x88\x01\x01\x12h\n" +
 	"\x1cviolationeventadditionalinfo\x18\x9e\xcd\xef\r \x01(\v2!.iot.ViolationEventAdditionalInfoR\x1cviolationeventadditionalinfo\x127\n" +
-	"\x12violationeventtime\x18\x9a\xf6\x91\xcf\x01 \x01(\tH\x03R\x12violationeventtime\x88\x01\x01\x12K\n" +
-	"\x12violationeventtype\x18\xc9\xf5б\x01 \x01(\x0e2\x17.iot.ViolationEventTypeR\x12violationeventtype\x12)\n" +
-	"\vviolationid\x18\xe6\xcd\u0382\x01 \x01(\tH\x04R\vviolationid\x88\x01\x01B\x16\n" +
+	"\x12violationeventtime\x18\x9a\xf6\x91\xcf\x01 \x01(\tH\x04R\x12violationeventtime\x88\x01\x01\x12P\n" +
+	"\x12violationeventtype\x18\xc9\xf5б\x01 \x01(\x0e2\x17.iot.ViolationEventTypeH\x05R\x12violationeventtype\x88\x01\x01\x12)\n" +
+	"\vviolationid\x18\xe6\xcd\u0382\x01 \x01(\tH\x06R\vviolationid\x88\x01\x01B\x16\n" +
 	"\x14_securityprofilenameB\f\n" +
 	"\n" +
-	"_thingnameB\x1f\n" +
+	"_thingnameB\x14\n" +
+	"\x12_verificationstateB\x1f\n" +
 	"\x1d_verificationstatedescriptionB\x15\n" +
-	"\x13_violationeventtimeB\x0e\n" +
-	"\f_violationid\"a\n" +
-	"\x1cViolationEventAdditionalInfo\x12A\n" +
-	"\x0fconfidencelevel\x18\x9a\xfc\xd0r \x01(\x0e2\x14.iot.ConfidenceLevelR\x0fconfidencelevel\"^\n" +
+	"\x13_violationeventtimeB\x15\n" +
+	"\x13_violationeventtypeB\x0e\n" +
+	"\f_violationid\"z\n" +
+	"\x1cViolationEventAdditionalInfo\x12F\n" +
+	"\x0fconfidencelevel\x18\x9a\xfc\xd0r \x01(\x0e2\x14.iot.ConfidenceLevelH\x00R\x0fconfidencelevel\x88\x01\x01B\x12\n" +
+	"\x10_confidencelevel\"^\n" +
 	"\x1dViolationEventOccurrenceRange\x12\x1c\n" +
 	"\aendtime\x18쇚\x9d\x01 \x01(\tR\aendtime\x12\x1f\n" +
 	"\tstarttime\x18\x8f\xda\xf9T \x01(\tR\tstarttime\"\xa2\x01\n" +
@@ -60759,6 +60933,7 @@ func file_iot_proto_init() {
 	file_iot_proto_msgTypes[17].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[18].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[19].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[24].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[26].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[27].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[28].OneofWrappers = []any{}
@@ -60769,6 +60944,8 @@ func file_iot_proto_init() {
 	file_iot_proto_msgTypes[33].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[34].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[35].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[36].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[37].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[38].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[39].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[40].OneofWrappers = []any{}
@@ -61118,15 +61295,19 @@ func file_iot_proto_init() {
 	file_iot_proto_msgTypes[553].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[554].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[555].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[556].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[557].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[560].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[561].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[562].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[563].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[564].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[565].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[567].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[568].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[571].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[572].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[573].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[574].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[575].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[576].OneofWrappers = []any{}
@@ -61139,6 +61320,7 @@ func file_iot_proto_init() {
 	file_iot_proto_msgTypes[585].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[586].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[587].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[588].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[589].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[590].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[591].OneofWrappers = []any{}
@@ -61150,11 +61332,13 @@ func file_iot_proto_init() {
 	file_iot_proto_msgTypes[600].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[601].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[602].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[603].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[604].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[606].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[607].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[608].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[609].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[610].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[611].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[613].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[617].OneofWrappers = []any{}
@@ -61163,6 +61347,7 @@ func file_iot_proto_init() {
 	file_iot_proto_msgTypes[620].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[621].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[623].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[624].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[625].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[626].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[629].OneofWrappers = []any{}
@@ -61178,6 +61363,7 @@ func file_iot_proto_init() {
 	file_iot_proto_msgTypes[643].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[647].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[649].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[650].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[651].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[652].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[654].OneofWrappers = []any{}
@@ -61208,6 +61394,8 @@ func file_iot_proto_init() {
 	file_iot_proto_msgTypes[686].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[688].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[689].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[690].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[691].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[692].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[693].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[694].OneofWrappers = []any{}
@@ -61272,6 +61460,7 @@ func file_iot_proto_init() {
 	file_iot_proto_msgTypes[783].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[784].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[785].OneofWrappers = []any{}
+	file_iot_proto_msgTypes[786].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[789].OneofWrappers = []any{}
 	file_iot_proto_msgTypes[790].OneofWrappers = []any{}
 	type x struct{}

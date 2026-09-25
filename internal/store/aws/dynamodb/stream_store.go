@@ -26,9 +26,15 @@ var errStopScan = errors.New("stop scan")
 // partitions, but our single-node deployment uses a single shard per stream.
 // The shard ID is derived from the stream ARN via SHA-256, ensuring each
 // stream has a unique, deterministic identifier that persists across restarts.
+// shardIdSeqModulus bounds the hash-derived shard-id sequence component so
+// it stays below 10^18 — the rendered id keeps its fixed 20-digit field
+// (%020d) with the leading two digits as padding, leaving room for the
+// scheme to grow without renumbering existing shard ids.
+const shardIdSeqModulus = 1_000_000_000_000_000_000
+
 func ShardIDForStream(streamArn string) string {
 	h := sha256.Sum256([]byte(streamArn))
-	seq := binary.BigEndian.Uint64(h[:8]) % 1000000000000000000
+	seq := binary.BigEndian.Uint64(h[:8]) % shardIdSeqModulus
 	return fmt.Sprintf("shardId-%020d-%012x", seq, h[8:14])
 }
 
@@ -73,11 +79,9 @@ var TTLServiceIdentity = &StreamUserIdentity{
 // ReplicationServiceIdentity is the userIdentity attached to records written
 // by global-table replication: consumers distinguish replicated writes from
 // direct client writes by the Service principal, the same principal AWS
-// attaches to its own service-initiated records.
-var ReplicationServiceIdentity = &StreamUserIdentity{
-	Type:        "Service",
-	PrincipalID: "dynamodb.amazonaws.com",
-}
+// attaches to its own service-initiated records — one principal value with
+// the TTL identity, two documented roles.
+var ReplicationServiceIdentity = TTLServiceIdentity
 
 // StreamRecordData contains the DynamoDB-specific portion of a stream record.
 type StreamRecordData struct {
@@ -90,25 +94,34 @@ type StreamRecordData struct {
 	StreamViewType              string                 `json:"StreamViewType"`
 }
 
-// streamSeqCounter is stored per table to atomically allocate sequence
-// numbers. TrimmedFloor records the highest sequence number removed by the
-// retention sweep; reads starting at or below it no longer have data.
+// streamSeqCounter is the retention sweep's own per-table record.
+// TrimmedFloor records the highest sequence number removed by the retention
+// sweep; reads starting at or below it no longer have data. The counter
+// deliberately persists no sequence extent: a value written inside each
+// record's carrying transaction inherits the transaction's commit order, so
+// a slower transaction would regress a persisted maximum below committed
+// records — the stream's extent is derived from the record keys, which
+// never regress. With no extent member, the record path has nothing to add
+// to the counter and stops writing it, which leaves the sweep as the
+// counter's single writer: the floor can only be raised, never rewritten by
+// a racing record commit. Allocation still seeds from the floor — it is
+// what survives a trim that removed every record, keeping removed numbers
+// from being re-allocated after a restart.
 type streamSeqCounter struct {
-	LastSeq      int64
 	TrimmedFloor int64
 }
 
-// readSeqCounter loads a table's persisted sequence allocator state; exists
-// reports whether a counter record is present at all.
-func (s *StreamStore) readSeqCounter(counterKey string) (counter streamSeqCounter, exists bool, err error) {
+// readSeqCounter loads a table's persisted retention record; a table that
+// has never trimmed carries none, which reads as a zero floor.
+func (s *StreamStore) readSeqCounter(counterKey string) (counter streamSeqCounter, err error) {
 	var pbCounter pb.StreamSequenceCounter
 	if err := s.BaseStore.GetProto(counterKey, &pbCounter); err != nil {
 		if common.IsNotFound(err) {
-			return streamSeqCounter{}, false, nil
+			return streamSeqCounter{}, nil
 		}
-		return streamSeqCounter{}, false, fmt.Errorf("failed to read stream sequence counter: %w", err)
+		return streamSeqCounter{}, fmt.Errorf("failed to read stream sequence counter: %w", err)
 	}
-	return protoToStreamCounter(&pbCounter), true, nil
+	return protoToStreamCounter(&pbCounter), nil
 }
 
 // StreamStore manages DynamoDB Streams records. Records are stored in a
@@ -125,12 +138,12 @@ type StreamStore struct {
 	// read-committed, so allocating by counter read-modify-write inside a
 	// transaction makes two records in one transaction (or two concurrent
 	// transactions) collide on the same record key and silently overwrite
-	// each other. The map seeds lazily from the persisted counter and the
-	// highest record key (a committed counter can lag the records when
-	// transactions commit out of allocation order). A table deleted and
-	// recreated under the same name leaves a stale entry, which only
-	// produces a gap in the new stream's numbering — sequence numbers stay
-	// unique and increasing.
+	// each other. The map seeds lazily from the highest record key and the
+	// persisted trim floor (the two things that survive a restart: the
+	// records themselves, and the floor when the records have been trimmed
+	// away). A table deleted and recreated under the same name leaves a
+	// stale entry, which only produces a gap in the new stream's numbering —
+	// sequence numbers stay unique and increasing.
 	seqNext map[string]int64
 	// iteratorKey caches the shard-iterator signing key read (or generated)
 	// by IteratorSigningKey.
@@ -162,47 +175,31 @@ func streamSeqKey(tableName string) string {
 
 // allocateSeq reserves the next sequence number for a table. The caller
 // must hold s.mu. Allocation is a purely in-memory increment seeded once
-// per table per process from the persisted counter and the highest record
-// key — the counter alone is not enough, because transactions commit out
-// of allocation order and can leave it behind the records. The returned
-// counter is the value the caller persists alongside the record; its
-// TrimmedFloor is read under the lock so retention trimming and allocation
-// cannot clobber each other's floor within the process.
-func (s *StreamStore) allocateSeq(tableName string) (int64, streamSeqCounter, error) {
+// per table per process from the highest record key and the persisted trim
+// floor — together they bound every number any record has used or any trim
+// has removed, so the numbering never restarts below a used number after a
+// restart. Nothing is persisted here: the record's carrying transaction
+// writes only the record (a counter value written inside it would inherit
+// the transaction's commit order and regress below committed records), and
+// the trim floor belongs to the retention sweep alone.
+func (s *StreamStore) allocateSeq(tableName string) (int64, error) {
 	if _, seeded := s.seqNext[tableName]; !seeded {
-		counter, _, err := s.readSeqCounter(streamSeqKey(tableName))
+		recordHighest, err := s.highestRecordSequenceForStream(tableName, "")
 		if err != nil {
-			return 0, streamSeqCounter{}, err
+			return 0, err
 		}
-		highest := counter.LastSeq
-		prefix := tableName + KeySep
-		err = s.BaseStore.ScanPrefix(prefix, func(key string, _ []byte) error {
-			if strings.HasSuffix(key, "__seq_counter__") {
-				return nil
-			}
-			digits := key[len(key)-20:]
-			seq, err := strconv.ParseInt(digits, 10, 64)
-			if err != nil {
-				return fmt.Errorf("invalid sequence number in stream record key %q: %w", key, err)
-			}
-			if seq > highest {
-				highest = seq
-			}
-			return nil
-		})
+		counter, err := s.readSeqCounter(streamSeqKey(tableName))
 		if err != nil {
-			return 0, streamSeqCounter{}, err
+			return 0, err
+		}
+		highest := recordHighest
+		if counter.TrimmedFloor > highest {
+			highest = counter.TrimmedFloor
 		}
 		s.seqNext[tableName] = highest
 	}
 	s.seqNext[tableName]++
-	seq := s.seqNext[tableName]
-
-	current, _, err := s.readSeqCounter(streamSeqKey(tableName))
-	if err != nil {
-		return 0, streamSeqCounter{}, err
-	}
-	return seq, streamSeqCounter{LastSeq: seq, TrimmedFloor: current.TrimmedFloor}, nil
+	return s.seqNext[tableName], nil
 }
 
 // iteratorSigningKeyKey is the fixed record the stream bucket persists the
@@ -243,61 +240,28 @@ func (s *StreamStore) IteratorSigningKey() ([]byte, error) {
 	return generated, nil
 }
 
-// AddRecord stores a new stream record for the given table. It allocates
-// the next sequence number outside any caller transaction and writes the
-// record and the counter immediately.
-func (s *StreamStore) AddRecord(tableName, streamArn, streamViewType string, eventName StreamEventName, keys, newImage, oldImage map[string]interface{}, userIdentity *StreamUserIdentity) (*StreamRecord, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	seq, counter, err := s.allocateSeq(tableName)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.BaseStore.PutProto(streamSeqKey(tableName), streamCounterToProto(counter)); err != nil {
-		return nil, fmt.Errorf("failed to write stream sequence counter: %w", err)
-	}
-
-	record := s.buildRecord(tableName, streamArn, streamViewType, eventName, keys, newImage, oldImage, seq, userIdentity)
-
-	recordKey := streamRecordKey(tableName, seq)
-	if err := s.BaseStore.PutProto(recordKey, streamRecordToProto(record)); err != nil {
-		return nil, fmt.Errorf("failed to write stream record: %w", err)
-	}
-
-	return record, nil
-}
-
 // AddRecordTxn writes a stream record within the given storage transaction,
 // ensuring atomicity with the item mutation that triggered the stream
 // event. The caller must commit the transaction for the record to be
 // persisted. The sequence number is allocated outside the transaction
 // (see allocateSeq), so two records added in one transaction — or in two
 // concurrent transactions — receive distinct consecutive numbers and never
-// collide on the same record key. The counter is written inside the
-// carrying transaction with the allocated number: it therefore never runs
-// ahead of the records it numbers, and because allocation order and commit
-// order can differ, restart seeding takes the highest record key into
-// account. A retention trim that lands between allocation and commit can
-// have its floor rewritten by this write; the next trim recomputes the
-// floor from the records, so the value is advisory and self-healing.
+// collide on the same record key. The transaction writes only the record:
+// the sequence counter is the retention sweep's own record (a counter value
+// written here would inherit the transaction's commit order — regressing an
+// extent below committed records, or rewriting a trim floor the sweep
+// raised between this allocation and the commit), and the stream's extent
+// is derived from the highest record key (highestRecordSequence), which
+// never regresses.
 func (s *StreamStore) AddRecordTxn(txn storage.Transaction, tableName, streamArn, streamViewType string, eventName StreamEventName, keys, newImage, oldImage map[string]interface{}, userIdentity *StreamUserIdentity) (*StreamRecord, error) {
 	s.mu.Lock()
-	seq, counter, err := s.allocateSeq(tableName)
+	seq, err := s.allocateSeq(tableName)
 	s.mu.Unlock()
 	if err != nil {
 		return nil, err
 	}
 
 	bucket := txn.Bucket(streamBucketName(s.region))
-
-	counterBytes, err := proto.Marshal(streamCounterToProto(counter))
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal stream sequence counter: %w", err)
-	}
-	if err := bucket.Put([]byte(streamSeqKey(tableName)), counterBytes); err != nil {
-		return nil, fmt.Errorf("failed to write stream sequence counter: %w", err)
-	}
 
 	record := s.buildRecord(tableName, streamArn, streamViewType, eventName, keys, newImage, oldImage, seq, userIdentity)
 
@@ -311,6 +275,15 @@ func (s *StreamStore) AddRecordTxn(txn storage.Transaction, tableName, streamArn
 	}
 
 	return record, nil
+}
+
+// FormatStreamSequenceNumber renders a stream sequence number in the wire
+// form the model defines: the SequenceNumber type is a 21-40 character
+// numeric string, so the platform's compact integers are zero-padded to the
+// 21-digit minimum. Parsing the padded form with ParseInt is unchanged, and
+// records, shard ranges, and iterator positions all share the one format.
+func FormatStreamSequenceNumber(seq int64) string {
+	return fmt.Sprintf("%021d", seq)
 }
 
 // buildRecord constructs a StreamRecord from the given parameters.
@@ -332,7 +305,7 @@ func (s *StreamStore) buildRecord(tableName, streamArn, streamViewType string, e
 		}
 	}
 
-	seqStr := strconv.FormatInt(seq, 10)
+	seqStr := FormatStreamSequenceNumber(seq)
 	return &StreamRecord{
 		EventID:        fmt.Sprintf("%s-%s", tableName, seqStr),
 		EventName:      eventName,
@@ -353,25 +326,26 @@ func (s *StreamStore) buildRecord(tableName, streamArn, streamViewType string, e
 	}
 }
 
-// GetRecords retrieves stream records for the given table starting from
-// the given sequence number (exclusive). Returns up to limit records and
-// the next sequence number for pagination. If no more records are
-// available, returns an empty slice and the current latest sequence number.
-func (s *StreamStore) GetRecords(tableName string, fromSeq int64, limit int) ([]*StreamRecord, int64, error) {
+// GetRecords retrieves the stream records of the named stream generation —
+// the records whose eventSourceARN is streamArn — starting from the given
+// sequence number (exclusive). Returns up to limit records and the next
+// sequence number for pagination. If no more records are available, returns
+// an empty slice and the current position. A generation change empties the
+// record space, but a write that raced the change can still commit a
+// superseded generation's record into it; the ARN comparison is what
+// guarantees such a record is never served to the successor generation's
+// readers.
+//
+// streamRecordsDefaultLimit bounds a reader that passes no explicit limit
+// to one bounded batch of the shard, not the whole retained history.
+const streamRecordsDefaultLimit = 100
+
+func (s *StreamStore) GetRecords(tableName, streamArn string, fromSeq int64, limit int) ([]*StreamRecord, int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Determine the latest sequence number.
-	_, exists, err := s.readSeqCounter(streamSeqKey(tableName))
-	if err != nil {
-		return nil, 0, err
-	}
-	if !exists {
-		return nil, 0, nil // No records yet.
-	}
-
 	if limit <= 0 {
-		limit = 100
+		limit = streamRecordsDefaultLimit
 	}
 
 	var records []*StreamRecord
@@ -391,7 +365,14 @@ func (s *StreamStore) GetRecords(tableName string, fromSeq int64, limit int) ([]
 		if err := proto.Unmarshal(value, &pbRec); err != nil {
 			return err
 		}
-		records = append(records, streamRecordFromProto(&pbRec))
+		rec := streamRecordFromProto(&pbRec)
+		if rec.EventSourceARN != streamArn {
+			// A record of another generation of the same table — only
+			// reachable when a write raced a generation change — never
+			// serves the generation this read belongs to.
+			return nil
+		}
+		records = append(records, rec)
 		if len(records) >= limit {
 			return errStopScan
 		}
@@ -413,16 +394,100 @@ func (s *StreamStore) GetRecords(tableName string, fromSeq int64, limit int) ([]
 	return records, nextSeq, nil
 }
 
-// GetLatestSequence returns the latest sequence number for the given table.
-func (s *StreamStore) GetLatestSequence(tableName string) (int64, error) {
+// highestRecordSequenceForStream returns the highest committed record
+// sequence number for the table, 0 when the stream holds no records. The
+// caller holds s.mu. A non-empty streamArn restricts the count to the
+// records of that stream generation; the empty string counts every record
+// of the table, which is what allocateSeq's restart seeding needs — its
+// numbering must stay unique and increasing across generations, residue
+// included. Committed record keys are the truth about a stream's extent:
+// the persisted counter carries no extent member (a transaction-committed
+// value would regress under commit-order inversion), and the reverse scan
+// reads only committed state, so the derived value is monotonic by
+// construction.
+func (s *StreamStore) highestRecordSequenceForStream(tableName, streamArn string) (int64, error) {
+	var highest int64
+	prefix := tableName + KeySep
+	scanErr := s.BaseStore.ScanPrefixReverse(prefix, "", func(key string, value []byte) error {
+		// The counter key sorts after every record key of the table, so
+		// the reverse scan meets it first; it is not a record.
+		if strings.HasSuffix(key, "__seq_counter__") {
+			return nil
+		}
+		if len(key) < 20 {
+			// A record key always ends in the 20-digit zero-padded
+			// sequence, so anything shorter under the table prefix is
+			// foreign or corrupt rather than a record — the scan
+			// continues past it instead of slicing out of bounds.
+			return nil
+		}
+		digits := key[len(key)-20:]
+		seq, err := strconv.ParseInt(digits, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid sequence number in stream record key %q: %w", key, err)
+		}
+		if streamArn != "" {
+			var pbRec pb.StoredStreamRecord
+			if err := proto.Unmarshal(value, &pbRec); err != nil {
+				return fmt.Errorf("decode stream record %q during extent scan: %w", key, err)
+			}
+			if streamRecordFromProto(&pbRec).EventSourceARN != streamArn {
+				// Residue of a superseded generation the best-effort
+				// generation sweep missed: it shares the table's key space,
+				// but no read of this generation may serve it, so it must
+				// not advance this generation's extent either.
+				return nil
+			}
+		}
+		highest = seq
+		return errStopScan
+	})
+	if scanErr != nil && scanErr != errStopScan {
+		return 0, scanErr
+	}
+	return highest, nil
+}
+
+// GetLatestSequenceForStream returns the latest committed sequence number
+// among the records of the named stream generation, derived from the
+// highest matching record key (see highestRecordSequenceForStream for why
+// the persisted counter is not the extent). The extent a stream reports —
+// its EndingSequenceNumber and the LATEST iterator position — must count
+// only the generation's own records.
+func (s *StreamStore) GetLatestSequenceForStream(tableName, streamArn string) (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	counter, _, err := s.readSeqCounter(streamSeqKey(tableName))
+	return s.highestRecordSequenceForStream(tableName, streamArn)
+}
+
+// DeleteTableRecords empties the table's whole stream record space — every
+// generation's records and the sequence counter — the state reset a stream
+// generation change owes: the successor generation starts with an empty
+// space. The in-process sequence allocator keeps its high-water mark, which
+// only leaves a gap in the successor's numbering (see allocateSeq); the
+// persisted counter leaves with the records because it shares the table
+// prefix. Keys are collected before any delete so the prefix scan never
+// mutates while iterating.
+func (s *StreamStore) DeleteTableRecords(tableName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	prefix := tableName + KeySep
+	var doomed []string
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, _ []byte) error {
+		doomed = append(doomed, key)
+		return nil
+	})
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return counter.LastSeq, nil
+	for _, key := range doomed {
+		if err := s.BaseStore.Delete(key); err != nil {
+			return fmt.Errorf("failed to delete stream record: %w", err)
+		}
+	}
+	return nil
 }
 
 // StreamRetention is the documented DynamoDB Streams retention window:
@@ -432,17 +497,17 @@ const StreamRetention = 24 * time.Hour
 // TrimOlderThan removes the stream records whose approximate creation time
 // is before the cutoff and advances the table's trimmed floor to the
 // highest removed sequence number. Keys are collected before any delete so
-// the prefix scan never mutates while iterating.
+// the prefix scan never mutates while iterating. The counter is this
+// sweep's own record: it is created by the first trim that removes records
+// (a table that has never trimmed carries none), and a missing counter is
+// simply a zero floor — the records themselves decide what is doomed.
 func (s *StreamStore) TrimOlderThan(tableName string, cutoff time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	counter, exists, err := s.readSeqCounter(streamSeqKey(tableName))
+	counter, err := s.readSeqCounter(streamSeqKey(tableName))
 	if err != nil {
 		return err
-	}
-	if !exists {
-		return nil
 	}
 	counterKey := streamSeqKey(tableName)
 
@@ -497,7 +562,7 @@ func (s *StreamStore) OldestSequence(tableName string) (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	counter, _, err := s.readSeqCounter(streamSeqKey(tableName))
+	counter, err := s.readSeqCounter(streamSeqKey(tableName))
 	if err != nil {
 		return 0, err
 	}

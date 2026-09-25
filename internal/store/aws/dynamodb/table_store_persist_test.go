@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/store/aws/common"
 )
 
 // newTablePersistStore opens a store holding one hash-only table.
@@ -15,7 +16,7 @@ func newTablePersistStore(t *testing.T) *DynamoDBStore {
 		t.Fatalf("open storage: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
-	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(CreateTableParams{
 		Name:                 "PersistTbl",
 		KeySchema:            []*KeySchemaElement{{AttributeName: "id", KeyType: KeyTypeHash}},
@@ -27,22 +28,21 @@ func newTablePersistStore(t *testing.T) *DynamoDBStore {
 	return store
 }
 
-// Resource-policy revisions must survive persistence: two SetResourcePolicy
-// calls advance the stored revision to 1 then 2, re-read from disk.
+// Resource-policy revisions must survive persistence: two revision-checked
+// policy puts advance the stored revision to 1 then 2, re-read from disk.
 func TestResourcePolicyRevisionPersists(t *testing.T) {
 	tables := newTablePersistStore(t).Tables()
 
-	if err := tables.SetResourcePolicy("PersistTbl", `{"Version":"2012-10-17"}`); err != nil {
-		t.Fatalf("first put: %v", err)
+	if rev, err := tables.SetResourcePolicyExpected("PersistTbl", `{"Version":"2012-10-17"}`, PolicyRevisionUnchecked); err != nil || rev != 1 {
+		t.Fatalf("first put: rev=%d err=%v, want 1", rev, err)
 	}
-	rev, err := tables.GetResourcePolicyRevisionId("PersistTbl")
-	if err != nil || rev != 1 {
+	if rev, err := tables.GetResourcePolicyRevisionId("PersistTbl"); err != nil || rev != 1 {
 		t.Fatalf("after first put: rev=%d err=%v, want 1", rev, err)
 	}
-	if err := tables.SetResourcePolicy("PersistTbl", `{"Version":"2012-10-17","x":1}`); err != nil {
-		t.Fatalf("second put: %v", err)
+	if rev, err := tables.SetResourcePolicyExpected("PersistTbl", `{"Version":"2012-10-17","x":1}`, PolicyRevisionUnchecked); err != nil || rev != 2 {
+		t.Fatalf("second put: rev=%d err=%v, want 2", rev, err)
 	}
-	rev, err = tables.GetResourcePolicyRevisionId("PersistTbl")
+	rev, err := tables.GetResourcePolicyRevisionId("PersistTbl")
 	if err != nil || rev != 2 {
 		t.Fatalf("after second put: rev=%d err=%v, want 2", rev, err)
 	}
@@ -161,8 +161,10 @@ func TestAutoScalingSettingsTypedRoundTrip(t *testing.T) {
 			}},
 		}},
 	}
-	if err := tables.SetAutoScalingSettings("PersistTbl", stored); err != nil {
-		t.Fatalf("set auto-scaling settings: %v", err)
+	if _, err := tables.UpdateAutoScalingSettings("PersistTbl", func(existing *TableReplicaAutoScalingSettings) *TableReplicaAutoScalingSettings {
+		return stored
+	}); err != nil {
+		t.Fatalf("store auto-scaling settings: %v", err)
 	}
 
 	loaded, err := tables.GetAutoScalingSettings("PersistTbl")
@@ -197,5 +199,36 @@ func TestAutoScalingSettingsTypedRoundTrip(t *testing.T) {
 		*replica.GlobalSecondaryIndexes[0].ProvisionedWriteCapacityUnits != 50 ||
 		replica.GlobalSecondaryIndexes[0].Read != nil {
 		t.Fatalf("index settings = %+v", replica.GlobalSecondaryIndexes)
+	}
+}
+
+// TestTableAbsenceAnswersOneContract pins the unified not-found contract of
+// the table record: absence through the direct read (TableStore.Get) and
+// through the transactional read (DynamoDBTxn.GetTable) satisfies both
+// sentinel families — errors.Is against the package sentinel and the common
+// store's IsNotFound — so no caller needs to know which path it called.
+func TestTableAbsenceAnswersOneContract(t *testing.T) {
+	st := newTablePersistStore(t)
+
+	_, err := st.Tables().Get("NoSuchTable")
+	if !IsTableNotFound(err) {
+		t.Errorf("direct read absence does not carry the table sentinel: %v", err)
+	}
+	if !common.IsNotFound(err) {
+		t.Errorf("direct read absence does not answer the common not-found class: %v", err)
+	}
+
+	updErr := st.Update(t.Context(), func(txn *DynamoDBTxn) error {
+		_, txnErr := txn.GetTable("NoSuchTable")
+		if !IsTableNotFound(txnErr) {
+			t.Errorf("transactional read absence does not carry the table sentinel: %v", txnErr)
+		}
+		if !common.IsNotFound(txnErr) {
+			t.Errorf("transactional read absence does not answer the common not-found class: %v", txnErr)
+		}
+		return nil
+	})
+	if updErr != nil {
+		t.Fatalf("update for transactional read: %v", updErr)
 	}
 }

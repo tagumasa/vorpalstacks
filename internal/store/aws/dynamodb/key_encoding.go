@@ -34,6 +34,14 @@ const (
 	keyTermNeg = "\xff"
 )
 
+// KeySep separates the table name from the encoded key components in the
+// item and index bucket keys. NUL can serve as the boundary because the
+// component encodings escape every 0x00/0x01 byte (keyTerm's property),
+// so the separator can never occur inside a component: a scan keyed on
+// the table-name prefix (table.Name + KeySep) cannot bleed into another
+// table's keys.
+const KeySep = "\x00"
+
 // numberSortFractionalDigits is the fractional-digit width of the sort
 // rendering. Validated DynamoDB numbers carry at most 38 significant digits
 // within the documented range 1E-130 to just under 1E+126, so the lowest
@@ -107,8 +115,10 @@ func encodeNumberForSort(numStr string) string {
 	rat := new(big.Rat)
 	if _, ok := rat.SetString(numStr); numStr == "" || !ok {
 		// Unparseable input never reaches storage keys through validated
-		// paths; keep it outside the numeric ordering rather than panicking.
-		return "X" + numStr
+		// paths; keep it outside the numeric ordering rather than
+		// panicking — escaped like every other component payload, so the
+		// terminator and separator invariants hold on this path too.
+		return "X" + escapeKeyPayload(numStr)
 	}
 	neg := rat.Sign() < 0
 	plain := new(big.Rat).Abs(rat).FloatString(numberSortFractionalDigits)
@@ -153,6 +163,21 @@ func EncodeItemKey(tableName string, key map[string]*AttributeValue, table *Tabl
 		return tableName + KeySep + pkValue + KeySep + skValue
 	}
 	return tableName + KeySep + pkValue
+}
+
+// BuildIndexScanKey joins the encoded components of one secondary-index
+// bucket key in the storage layout this file owns: table, index name, the
+// encoded hash value, the encoded sort value when the index carries one,
+// and the item's primary key. An empty encodedSort composes the hash-only
+// form. Every composer of the layout — the index-store entry builders and
+// the service plane's exclusive-start marker — routes through this one
+// function, so the layout cannot drift between writers and resumers.
+func BuildIndexScanKey(tableName, indexName, encodedHash, encodedSort, primaryKey string) string {
+	key := tableName + KeySep + indexName + KeySep + encodedHash
+	if encodedSort != "" {
+		key += KeySep + encodedSort
+	}
+	return key + KeySep + primaryKey
 }
 
 // schemaKeyNames returns the hash and range key attribute names of a key

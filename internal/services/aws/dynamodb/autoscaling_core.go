@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"math"
 	"sort"
 
 	"vorpalstacks/internal/common/request"
@@ -223,9 +224,14 @@ func (s *DynamoDBService) updateTableReplicaAutoScalingCore(ctx context.Context,
 	// Parse ReplicaUpdates from the request. Each entry contains a
 	// RegionName and per-replica read AutoScaling settings. We store these
 	// for API round-trip compatibility; the scaling engine itself is not
-	// implemented.
-	replicaUpdates, hasUpdates := in.Parameters["ReplicaUpdates"].([]interface{})
-	if hasUpdates {
+	// implemented. The carrier and the read-capacity member hold the
+	// typed-member presence contract: a present value of the wrong type is
+	// the invalid-parameter error, never a silently skipped update.
+	if replicasRaw := in.Parameters["ReplicaUpdates"]; replicasRaw != nil {
+		replicaUpdates, ok := replicasRaw.([]interface{})
+		if !ok {
+			return nil, ErrInvalidParameter
+		}
 		// Deduplicate replica descriptions by region so repeated updates
 		// for one region merge into a single description.
 		replicaByRegion := make(map[string]int)
@@ -247,7 +253,9 @@ func (s *DynamoDBService) updateTableReplicaAutoScalingCore(ctx context.Context,
 				replicaByRegion[regionName] = idx
 			}
 
-			if readAS, ok := updateMap["ReplicaProvisionedReadCapacityAutoScalingUpdate"].(map[string]interface{}); ok {
+			if readAS, present, err := wireStructMember(updateMap["ReplicaProvisionedReadCapacityAutoScalingUpdate"]); err != nil {
+				return nil, err
+			} else if present {
 				settings, err := parseAutoScalingSettings(readAS)
 				if err != nil {
 					return nil, err
@@ -268,20 +276,23 @@ func (s *DynamoDBService) updateTableReplicaAutoScalingCore(ctx context.Context,
 	}
 
 	// Merge the parsed per-region descriptions into the stored settings
-	// (upsert by region) so an update without ReplicaUpdates — e.g. a
-	// table-level write-capacity-only update — keeps the previously stored
-	// replica descriptions.
-	existing, err := store.Tables().GetAutoScalingSettings(table.Name)
+	// (upsert by region) under the table's record lock — the read, the
+	// merge, and the write form one locked read-modify-write, so two
+	// concurrent updates cannot each start from the same stored state and
+	// silently discard each other's replicas. An update without
+	// ReplicaUpdates — e.g. a table-level write-capacity-only update —
+	// keeps the previously stored replica descriptions through the same
+	// merge.
+	merged, err := store.Tables().UpdateAutoScalingSettings(table.Name, func(existing *dbstore.TableReplicaAutoScalingSettings) *dbstore.TableReplicaAutoScalingSettings {
+		return &dbstore.TableReplicaAutoScalingSettings{
+			Replicas: mergeReplicaDescriptions(replicaDescriptionsFromSettings(existing), replicas),
+		}
+	})
 	if err != nil {
 		return nil, err
 	}
-	replicas = mergeReplicaDescriptions(replicaDescriptionsFromSettings(existing), replicas)
 
-	if err := store.Tables().SetAutoScalingSettings(table.Name, &dbstore.TableReplicaAutoScalingSettings{Replicas: replicas}); err != nil {
-		return nil, err
-	}
-
-	return tableAutoScalingDescription(table, replicaAutoScalingDescriptionsToWire(replicas)), nil
+	return tableAutoScalingDescription(table, replicaAutoScalingDescriptionsToWire(merged.Replicas)), nil
 }
 
 // wirePositiveLong converts a JSON number into a non-negative integer
@@ -293,6 +304,71 @@ func wirePositiveLong(v interface{}) (*int64, error) {
 	}
 	n := int64(f)
 	return &n, nil
+}
+
+// wireStringMember converts a JSON String member into its value,
+// reporting whether the member was carried: the model types these
+// members as String, so a present value of another type is the
+// invalid-parameter error, never a silently skipped update. A nil value
+// is an absent member — the protocol omits unset members rather than
+// carrying an explicit null.
+func wireStringMember(v interface{}) (value string, present bool, err error) {
+	if v == nil {
+		return "", false, nil
+	}
+	s, ok := v.(string)
+	if !ok {
+		return "", true, ErrInvalidParameter
+	}
+	return s, true, nil
+}
+
+// wireBoolMember converts a JSON Boolean member into its value with the
+// typed-member family's discipline: the model types these members as
+// Boolean, so a present value of another type is the invalid-parameter
+// error, never a silently skipped update. A nil value is an absent member.
+func wireBoolMember(v interface{}) (value bool, present bool, err error) {
+	if v == nil {
+		return false, false, nil
+	}
+	b, ok := v.(bool)
+	if !ok {
+		return false, true, ErrInvalidParameter
+	}
+	return b, true, nil
+}
+
+// wireIntegerObject converts a JSON number into an int32 for a member the
+// model types as IntegerObject: the modelled shape carries no range, so
+// integrality is the documented bound and the int32 bounds are the
+// platform's storage type — a non-integral number or one outside int32 is
+// the invalid-parameter error, never a silently truncated value. A nil
+// value is an absent member.
+func wireIntegerObject(v interface{}) (value int32, present bool, err error) {
+	if v == nil {
+		return 0, false, nil
+	}
+	f, ok := v.(float64)
+	if !ok || f != math.Trunc(f) || f < math.MinInt32 || f > math.MaxInt32 {
+		return 0, true, ErrInvalidParameter
+	}
+	return int32(f), true, nil
+}
+
+// wireStructMember converts a JSON structure member into its map form,
+// reporting whether the member was carried — the typed-member family's
+// discipline for structure members: a present value of another type is the
+// invalid-parameter error, never a silently skipped specification. A nil
+// value is an absent member.
+func wireStructMember(v interface{}) (value map[string]interface{}, present bool, err error) {
+	if v == nil {
+		return nil, false, nil
+	}
+	m, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, true, ErrInvalidParameter
+	}
+	return m, true, nil
 }
 
 // parseAutoScalingSettings extracts AutoScaling settings from a request
@@ -316,22 +392,36 @@ func parseAutoScalingSettings(m map[string]interface{}) (*dbstore.AutoScalingSet
 		desc.MaximumUnits = units
 	}
 	if v, ok := m["AutoScalingDisabled"]; ok {
-		if disabled, isBool := v.(bool); isBool {
+		disabled, present, err := wireBoolMember(v)
+		if err != nil {
+			return nil, err
+		}
+		if present {
 			desc.AutoScalingDisabled = &disabled
 		}
 	}
 	if v, ok := m["AutoScalingRoleArn"]; ok {
-		if roleArn, isStr := v.(string); isStr {
+		roleArn, present, err := wireStringMember(v)
+		if err != nil {
+			return nil, err
+		}
+		if present {
 			if !validateAutoScalingRoleArn(roleArn) {
 				return nil, ErrInvalidParameter
 			}
 			desc.AutoScalingRoleArn = &roleArn
 		}
 	}
-	if pol, ok := m["ScalingPolicyUpdate"].(map[string]interface{}); ok {
+	if pol, present, err := wireStructMember(m["ScalingPolicyUpdate"]); err != nil {
+		return nil, err
+	} else if present {
 		policy := dbstore.AutoScalingPolicyDescription{}
 		if name, ok := pol["PolicyName"]; ok {
-			if policyName, isStr := name.(string); isStr {
+			policyName, present, err := wireStringMember(name)
+			if err != nil {
+				return nil, err
+			}
+			if present {
 				if !validateAutoScalingPolicyName(policyName) {
 					return nil, ErrInvalidParameter
 				}
@@ -341,7 +431,9 @@ func parseAutoScalingSettings(m map[string]interface{}) (*dbstore.AutoScalingSet
 		// The description form carries the target tracking configuration
 		// alongside the policy name; its TargetValue member is required and
 		// bounded by the documented metric range.
-		if tt, ok := pol["TargetTrackingScalingPolicyConfiguration"].(map[string]interface{}); ok {
+		if tt, present, err := wireStructMember(pol["TargetTrackingScalingPolicyConfiguration"]); err != nil {
+			return nil, err
+		} else if present {
 			target, ok := tt["TargetValue"].(float64)
 			if !ok {
 				return nil, ErrInvalidParameter
@@ -349,16 +441,32 @@ func parseAutoScalingSettings(m map[string]interface{}) (*dbstore.AutoScalingSet
 				return nil, ErrInvalidParameter
 			}
 			ttDesc := &dbstore.TargetTrackingScalingPolicyConfiguration{TargetValue: target}
-			if v, ok := tt["DisableScaleIn"].(bool); ok {
-				ttDesc.DisableScaleIn = &v
+			if v, ok := tt["DisableScaleIn"]; ok {
+				disableScaleIn, present, err := wireBoolMember(v)
+				if err != nil {
+					return nil, err
+				}
+				if present {
+					ttDesc.DisableScaleIn = &disableScaleIn
+				}
 			}
-			if v, ok := tt["ScaleInCooldown"].(float64); ok {
-				cooldown := int32(v)
-				ttDesc.ScaleInCooldown = &cooldown
+			if v, ok := tt["ScaleInCooldown"]; ok {
+				cooldown, present, err := wireIntegerObject(v)
+				if err != nil {
+					return nil, err
+				}
+				if present {
+					ttDesc.ScaleInCooldown = &cooldown
+				}
 			}
-			if v, ok := tt["ScaleOutCooldown"].(float64); ok {
-				cooldown := int32(v)
-				ttDesc.ScaleOutCooldown = &cooldown
+			if v, ok := tt["ScaleOutCooldown"]; ok {
+				cooldown, present, err := wireIntegerObject(v)
+				if err != nil {
+					return nil, err
+				}
+				if present {
+					ttDesc.ScaleOutCooldown = &cooldown
+				}
 			}
 			policy.TargetTrackingScalingPolicyConfiguration = ttDesc
 		}
@@ -368,68 +476,76 @@ func parseAutoScalingSettings(m map[string]interface{}) (*dbstore.AutoScalingSet
 }
 
 // parseOptionalAutoScalingSettings parses an optional top-level
-// AutoScalingSettingsUpdate member, returning nil when the member is absent.
+// AutoScalingSettingsUpdate member, returning nil when the member is
+// absent; a present value of another type is the invalid-parameter error.
 func parseOptionalAutoScalingSettings(parameters map[string]interface{}, key string) (*dbstore.AutoScalingSettingsDescription, error) {
-	if m, ok := parameters[key].(map[string]interface{}); ok {
-		return parseAutoScalingSettings(m)
+	m, present, err := wireStructMember(parameters[key])
+	if err != nil {
+		return nil, err
 	}
-	return nil, nil
+	if !present {
+		return nil, nil
+	}
+	return parseAutoScalingSettings(m)
+}
+
+// parseGSIAutoScalingList walks one per-index AutoScaling updates list —
+// the table-level write side and the replica-level read side share the
+// entry shape: neither IndexName nor the capacity-side member is required,
+// and an entry lacking either contributes nothing. The side names its own
+// capacity member key. A present member of the wrong wire type — the list
+// itself, an entry, IndexName, or the capacity-side member — is the
+// invalid-parameter error, never a silently skipped update.
+func parseGSIAutoScalingList(updates interface{}, capacityMember string) (map[string]*dbstore.AutoScalingSettingsDescription, error) {
+	result := map[string]*dbstore.AutoScalingSettingsDescription{}
+	if updates == nil {
+		return result, nil
+	}
+	gsiUpdates, ok := updates.([]interface{})
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+	for _, u := range gsiUpdates {
+		uMap, present, err := wireStructMember(u)
+		if err != nil {
+			return nil, err
+		}
+		if !present {
+			continue
+		}
+		indexName, present, err := wireStringMember(uMap["IndexName"])
+		if err != nil {
+			return nil, err
+		}
+		if !present || indexName == "" {
+			continue
+		}
+		as, present, err := wireStructMember(uMap[capacityMember])
+		if err != nil {
+			return nil, err
+		}
+		if !present {
+			continue
+		}
+		settings, err := parseAutoScalingSettings(as)
+		if err != nil {
+			return nil, err
+		}
+		result[indexName] = settings
+	}
+	return result, nil
 }
 
 // parseGSIAutoScalingWrite parses a GlobalSecondaryIndexUpdates list into
 // per-index write-capacity AutoScaling descriptions keyed by index name.
 func parseGSIAutoScalingWrite(updates interface{}) (map[string]*dbstore.AutoScalingSettingsDescription, error) {
-	result := map[string]*dbstore.AutoScalingSettingsDescription{}
-	gsiUpdates, ok := updates.([]interface{})
-	if !ok {
-		return result, nil
-	}
-	for _, u := range gsiUpdates {
-		uMap, ok := u.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		indexName, _ := uMap["IndexName"].(string)
-		if indexName == "" {
-			continue
-		}
-		if writeAS, ok := uMap["ProvisionedWriteCapacityAutoScalingUpdate"].(map[string]interface{}); ok {
-			settings, err := parseAutoScalingSettings(writeAS)
-			if err != nil {
-				return nil, err
-			}
-			result[indexName] = settings
-		}
-	}
-	return result, nil
+	return parseGSIAutoScalingList(updates, "ProvisionedWriteCapacityAutoScalingUpdate")
 }
 
 // parseGSIAutoScalingRead parses a ReplicaGlobalSecondaryIndexUpdates list
 // into per-index read-capacity AutoScaling descriptions keyed by index name.
 func parseGSIAutoScalingRead(updates interface{}) (map[string]*dbstore.AutoScalingSettingsDescription, error) {
-	result := map[string]*dbstore.AutoScalingSettingsDescription{}
-	gsiUpdates, ok := updates.([]interface{})
-	if !ok {
-		return result, nil
-	}
-	for _, u := range gsiUpdates {
-		uMap, ok := u.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		indexName, _ := uMap["IndexName"].(string)
-		if indexName == "" {
-			continue
-		}
-		if readAS, ok := uMap["ProvisionedReadCapacityAutoScalingUpdate"].(map[string]interface{}); ok {
-			settings, err := parseAutoScalingSettings(readAS)
-			if err != nil {
-				return nil, err
-			}
-			result[indexName] = settings
-		}
-	}
-	return result, nil
+	return parseGSIAutoScalingList(updates, "ProvisionedReadCapacityAutoScalingUpdate")
 }
 
 // mergeReplicaGSIAutoScaling merges the table-level write-side and

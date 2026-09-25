@@ -38,15 +38,6 @@ func getSortKeyName(table *dbstore.Table, indexName string) string {
 	return ""
 }
 
-func getSortKeyType(table *dbstore.Table, sortKeyName string) string {
-	for _, ad := range table.AttributeDefinitions {
-		if ad.AttributeName == sortKeyName {
-			return string(ad.AttributeType)
-		}
-	}
-	return ""
-}
-
 func sortItemsBySortKeyWithIndex(table *dbstore.Table, items []*dbstore.Item, indexName string) {
 	sortItemsBySortKeyWithIndexDirection(table, items, indexName, true)
 }

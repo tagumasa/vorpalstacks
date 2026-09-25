@@ -851,7 +851,7 @@ message AdminCreateUserRequest {
 
   optional bool forcealiascreation = 449762314;
 
-  MessageActionType messageaction = 233944615;
+  optional MessageActionType messageaction = 233944615;
 
   optional string temporarypassword = 274827278;
 
@@ -1075,7 +1075,7 @@ message AdminGetUserResponse {
 
   repeated string usermfasettinglist = 230885;
 
-  UserStatusType userstatus = 189848701;
+  optional UserStatusType userstatus = 189848701;
 
   string username = 470340826;
 
@@ -1115,7 +1115,7 @@ message AdminInitiateAuthResponse {
 
   repeated ChallengeNameType availablechallenges = 275725719;
 
-  ChallengeNameType challengename = 170761310;
+  optional ChallengeNameType challengename = 170761310;
 
   map<string, string> challengeparameters = 79757023;
 
@@ -1283,7 +1283,7 @@ message AdminRespondToAuthChallengeResponse {
 
   AuthenticationResultType authenticationresult = 519327313;
 
-  ChallengeNameType challengename = 170761310;
+  optional ChallengeNameType challengename = 170761310;
 
   map<string, string> challengeparameters = 79757023;
 
@@ -1385,7 +1385,7 @@ message AdminUpdateDeviceStatusRequest {
 
   string devicekey = 382874155;
 
-  DeviceRememberedStatusType devicerememberedstatus = 111455992;
+  optional DeviceRememberedStatusType devicerememberedstatus = 111455992;
 
   string userpoolid = 329442174;
 
@@ -1451,7 +1451,7 @@ message AdminUserGlobalSignOutResponse {
 
 message AdvancedSecurityAdditionalFlowsType {
 
-  AdvancedSecurityEnabledModeType customauthmode = 236623048;
+  optional AdvancedSecurityEnabledModeType customauthmode = 236623048;
 
 }
 
@@ -1659,11 +1659,11 @@ message AuthEventType {
 
   optional string eventid = 376916819;
 
-  EventResponseType eventresponse = 198651437;
+  optional EventResponseType eventresponse = 198651437;
 
   EventRiskType eventrisk = 8230945;
 
-  EventType eventtype = 468897896;
+  optional EventType eventtype = 468897896;
 
 }
 
@@ -1789,9 +1789,9 @@ enum ChallengeResponse {
 
 message ChallengeResponseType {
 
-  ChallengeName challengename = 170761310;
+  optional ChallengeName challengename = 170761310;
 
-  ChallengeResponse challengeresponse = 268501730;
+  optional ChallengeResponse challengeresponse = 268501730;
 
 }
 
@@ -1863,7 +1863,7 @@ message CodeDeliveryDetailsType {
 
   optional string attributename = 352717485;
 
-  DeliveryMediumType deliverymedium = 140498471;
+  optional DeliveryMediumType deliverymedium = 140498471;
 
   optional string destination = 457443680;
 
@@ -2203,7 +2203,7 @@ message CreateUserImportJobRequest {
 
   string jobname = 498531160;
 
-  PasswordHashingAlgorithmType passwordhashingalgorithm = 269273694;
+  optional PasswordHashingAlgorithmType passwordhashingalgorithm = 269273694;
 
   string userpoolid = 329442174;
 
@@ -2257,7 +2257,7 @@ message CreateUserPoolClientRequest {
 
   repeated string logouturls = 468187518;
 
-  PreventUserExistenceErrorTypes preventuserexistenceerrors = 188235606;
+  optional PreventUserExistenceErrorTypes preventuserexistenceerrors = 188235606;
 
   repeated string readattributes = 334413205;
 
@@ -2347,7 +2347,7 @@ message CreateUserPoolRequest {
 
   repeated VerifiedAttributeType autoverifiedattributes = 467729812;
 
-  DeletionProtectionType deletionprotection = 504781905;
+  optional DeletionProtectionType deletionprotection = 504781905;
 
   DeviceConfigurationType deviceconfiguration = 512944140;
 
@@ -2363,7 +2363,7 @@ message CreateUserPoolRequest {
 
   LambdaConfigType lambdaconfig = 291837797;
 
-  UserPoolMfaType mfaconfiguration = 259020766;
+  optional UserPoolMfaType mfaconfiguration = 259020766;
 
   UserPoolPolicyType policies = 40015384;
 
@@ -2383,7 +2383,7 @@ message CreateUserPoolRequest {
 
   map<string, string> userpooltags = 341705322;
 
-  UserPoolTierType userpooltier = 80461029;
+  optional UserPoolTierType userpooltier = 80461029;
 
   repeated UsernameAttributeType usernameattributes = 196392641;
 
@@ -2411,7 +2411,7 @@ message CustomDomainConfigType {
 
   string certificatearn = 92693880;
 
-  SecurityPolicyType securitypolicy = 482823102;
+  optional SecurityPolicyType securitypolicy = 482823102;
 
 }
 
@@ -2953,7 +2953,7 @@ message DomainDescriptionType {
 
   optional string s3bucket = 114031434;
 
-  DomainStatusType status = 6222352;
+  optional DomainStatusType status = 6222352;
 
   optional string userpoolid = 329442174;
 
@@ -2995,7 +2995,7 @@ message EmailConfigurationType {
 
   optional string configurationset = 42178544;
 
-  EmailSendingAccountType emailsendingaccount = 284286811;
+  optional EmailSendingAccountType emailsendingaccount = 284286811;
 
   optional string from = 410269078;
 
@@ -3145,9 +3145,9 @@ message EventRiskType {
 
   optional bool compromisedcredentialsdetected = 251099316;
 
-  RiskDecisionType riskdecision = 476551633;
+  optional RiskDecisionType riskdecision = 476551633;
 
-  RiskLevelType risklevel = 212098729;
+  optional RiskLevelType risklevel = 212098729;
 
 }
 
@@ -3571,7 +3571,7 @@ message GetUserPoolMfaConfigResponse {
 
   EmailMfaConfigType emailmfaconfiguration = 482754548;
 
-  UserPoolMfaType mfaconfiguration = 259020766;
+  optional UserPoolMfaType mfaconfiguration = 259020766;
 
   SmsMfaConfigType smsmfaconfiguration = 153073099;
 
@@ -3689,7 +3689,7 @@ message IdentityProviderType {
 
   optional string providername = 485101816;
 
-  IdentityProviderTypeType providertype = 337296789;
+  optional IdentityProviderTypeType providertype = 337296789;
 
   optional string userpoolid = 329442174;
 
@@ -3765,7 +3765,7 @@ message InitiateAuthResponse {
 
   repeated ChallengeNameType availablechallenges = 275725719;
 
-  ChallengeNameType challengename = 170761310;
+  optional ChallengeNameType challengename = 170761310;
 
   map<string, string> challengeparameters = 79757023;
 
@@ -3881,7 +3881,7 @@ message InvalidUserPoolConfigurationException {
 
 message IssuerConfigurationType {
 
-  IssuerType type = 290836590;
+  optional IssuerType type = 290836590;
 
 }
 
@@ -3901,7 +3901,7 @@ enum IssuerType {
 
 message KeyConfigurationType {
 
-  EncryptionKeyType keytype = 5029221;
+  optional EncryptionKeyType keytype = 5029221;
 
   optional string kmskeyarn = 110041649;
 
@@ -4375,7 +4375,7 @@ message MFAOptionType {
 
   optional string attributename = 352717485;
 
-  DeliveryMediumType deliverymedium = 140498471;
+  optional DeliveryMediumType deliverymedium = 140498471;
 
 }
 
@@ -4637,7 +4637,7 @@ message ProviderDescription {
 
   optional string providername = 485101816;
 
-  IdentityProviderTypeType providertype = 337296789;
+  optional IdentityProviderTypeType providertype = 337296789;
 
 }
 
@@ -4823,7 +4823,7 @@ message RespondToAuthChallengeResponse {
 
   AuthenticationResultType authenticationresult = 519327313;
 
-  ChallengeNameType challengename = 170761310;
+  optional ChallengeNameType challengename = 170761310;
 
   map<string, string> challengeparameters = 79757023;
 
@@ -4943,7 +4943,7 @@ message SMSMfaSettingsType {
 
 message SchemaAttributeType {
 
-  AttributeDataType attributedatatype = 400166480;
+  optional AttributeDataType attributedatatype = 400166480;
 
   optional bool developeronlyattribute = 195850806;
 
@@ -5083,7 +5083,7 @@ message SetUserPoolMfaConfigRequest {
 
   EmailMfaConfigType emailmfaconfiguration = 482754548;
 
-  UserPoolMfaType mfaconfiguration = 259020766;
+  optional UserPoolMfaType mfaconfiguration = 259020766;
 
   SmsMfaConfigType smsmfaconfiguration = 153073099;
 
@@ -5101,7 +5101,7 @@ message SetUserPoolMfaConfigResponse {
 
   EmailMfaConfigType emailmfaconfiguration = 482754548;
 
-  UserPoolMfaType mfaconfiguration = 259020766;
+  optional UserPoolMfaType mfaconfiguration = 259020766;
 
   SmsMfaConfigType smsmfaconfiguration = 153073099;
 
@@ -5441,11 +5441,11 @@ enum TimeUnitsType {
 
 message TokenValidityUnitsType {
 
-  TimeUnitsType accesstoken = 147070473;
+  optional TimeUnitsType accesstoken = 147070473;
 
-  TimeUnitsType idtoken = 228470;
+  optional TimeUnitsType idtoken = 228470;
 
-  TimeUnitsType refreshtoken = 253777778;
+  optional TimeUnitsType refreshtoken = 253777778;
 
 }
 
@@ -5599,7 +5599,7 @@ message UpdateDeviceStatusRequest {
 
   string devicekey = 382874155;
 
-  DeviceRememberedStatusType devicerememberedstatus = 111455992;
+  optional DeviceRememberedStatusType devicerememberedstatus = 111455992;
 
 }
 
@@ -5737,7 +5737,7 @@ message UpdateResourceServerResponse {
 
 message UpdateTermsRequest {
 
-  TermsEnforcementType enforcement = 412213242;
+  optional TermsEnforcementType enforcement = 412213242;
 
   map<string, string> links = 302123151;
 
@@ -5745,7 +5745,7 @@ message UpdateTermsRequest {
 
   optional string termsname = 303051560;
 
-  TermsSourceType termssource = 122689594;
+  optional TermsSourceType termssource = 122689594;
 
   string userpoolid = 329442174;
 
@@ -5819,7 +5819,7 @@ message UpdateUserPoolClientRequest {
 
   repeated string logouturls = 468187518;
 
-  PreventUserExistenceErrorTypes preventuserexistenceerrors = 188235606;
+  optional PreventUserExistenceErrorTypes preventuserexistenceerrors = 188235606;
 
   repeated string readattributes = 334413205;
 
@@ -5911,7 +5911,7 @@ message UpdateUserPoolRequest {
 
   repeated VerifiedAttributeType autoverifiedattributes = 467729812;
 
-  DeletionProtectionType deletionprotection = 504781905;
+  optional DeletionProtectionType deletionprotection = 504781905;
 
   DeviceConfigurationType deviceconfiguration = 512944140;
 
@@ -5927,7 +5927,7 @@ message UpdateUserPoolRequest {
 
   LambdaConfigType lambdaconfig = 291837797;
 
-  UserPoolMfaType mfaconfiguration = 259020766;
+  optional UserPoolMfaType mfaconfiguration = 259020766;
 
   UserPoolPolicyType policies = 40015384;
 
@@ -5947,7 +5947,7 @@ message UpdateUserPoolRequest {
 
   map<string, string> userpooltags = 341705322;
 
-  UserPoolTierType userpooltier = 80461029;
+  optional UserPoolTierType userpooltier = 80461029;
 
   VerificationMessageTemplateType verificationmessagetemplate = 502836004;
 
@@ -6037,7 +6037,7 @@ message UserImportJobType {
 
   optional string jobname = 498531160;
 
-  PasswordHashingAlgorithmType passwordhashingalgorithm = 269273694;
+  optional PasswordHashingAlgorithmType passwordhashingalgorithm = 269273694;
 
   optional string presignedurl = 334334652;
 
@@ -6045,7 +6045,7 @@ message UserImportJobType {
 
   optional string startdate = 445135996;
 
-  UserImportJobStatusType status = 6222352;
+  optional UserImportJobStatusType status = 6222352;
 
   optional string userpoolid = 329442174;
 
@@ -6159,7 +6159,7 @@ message UserPoolClientType {
 
   repeated string logouturls = 468187518;
 
-  PreventUserExistenceErrorTypes preventuserexistenceerrors = 188235606;
+  optional PreventUserExistenceErrorTypes preventuserexistenceerrors = 188235606;
 
   repeated string readattributes = 334413205;
 
@@ -6195,7 +6195,7 @@ message UserPoolDescriptionType {
 
   repeated string replicaregions = 13243573;
 
-  StatusType status = 6222352;
+  optional StatusType status = 6222352;
 
 }
 
@@ -6231,9 +6231,9 @@ message UserPoolReplicaType {
 
   optional string regionname = 112086463;
 
-  ReplicaRoleType role = 271285818;
+  optional ReplicaRoleType role = 271285818;
 
-  ReplicaStatusType status = 6222352;
+  optional ReplicaStatusType status = 6222352;
 
   optional string userpoolarn = 362706440;
 
@@ -6281,7 +6281,7 @@ message UserPoolType {
 
   optional string customdomain = 459317555;
 
-  DeletionProtectionType deletionprotection = 504781905;
+  optional DeletionProtectionType deletionprotection = 504781905;
 
   DeviceConfigurationType deviceconfiguration = 512944140;
 
@@ -6307,7 +6307,7 @@ message UserPoolType {
 
   optional string lastmodifieddate = 24249427;
 
-  UserPoolMfaType mfaconfiguration = 259020766;
+  optional UserPoolMfaType mfaconfiguration = 259020766;
 
   optional string name = 266367751;
 
@@ -6323,7 +6323,7 @@ message UserPoolType {
 
   optional string smsverificationmessage = 497665917;
 
-  StatusType status = 6222352;
+  optional StatusType status = 6222352;
 
   UserAttributeUpdateSettingsType userattributeupdatesettings = 319670235;
 
@@ -6331,7 +6331,7 @@ message UserPoolType {
 
   map<string, string> userpooltags = 341705322;
 
-  UserPoolTierType userpooltier = 80461029;
+  optional UserPoolTierType userpooltier = 80461029;
 
   repeated UsernameAttributeType usernameattributes = 196392641;
 
@@ -6379,7 +6379,7 @@ message UserType {
 
   optional string userlastmodifieddate = 80916802;
 
-  UserStatusType userstatus = 189848701;
+  optional UserStatusType userstatus = 189848701;
 
   optional string username = 470340826;
 
@@ -6431,7 +6431,7 @@ message UsernameExistsException {
 
 message VerificationMessageTemplateType {
 
-  DefaultEmailOptionType defaultemailoption = 2801728;
+  optional DefaultEmailOptionType defaultemailoption = 2801728;
 
   optional string emailmessage = 247992871;
 
@@ -6475,7 +6475,7 @@ message VerifySoftwareTokenResponse {
 
   optional string session = 4770968;
 
-  VerifySoftwareTokenResponseType status = 6222352;
+  optional VerifySoftwareTokenResponseType status = 6222352;
 
 }
 
@@ -6547,11 +6547,11 @@ message WebAuthnConfigurationMissingException {
 
 message WebAuthnConfigurationType {
 
-  WebAuthnFactorConfigurationType factorconfiguration = 179685965;
+  optional WebAuthnFactorConfigurationType factorconfiguration = 179685965;
 
   optional string relyingpartyid = 211618527;
 
-  UserVerificationType userverification = 263409814;
+  optional UserVerificationType userverification = 263409814;
 
 }
 

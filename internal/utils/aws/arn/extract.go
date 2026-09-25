@@ -319,9 +319,10 @@ func ExtractAPIGatewayFunctionRef(uri string) (ref string, ok bool) {
 	return ref, true
 }
 
-// ExtractBackupNameFromARN extracts the backup name from a DynamoDB backup
-// ARN (table/<table>/backup/<backup>).
-func ExtractBackupNameFromARN(arn string) string {
+// ExtractBackupIdFromARN extracts the identity segment from a DynamoDB
+// backup ARN (table/<table>/backup/<id>) — the generated id current
+// records are keyed by.
+func ExtractBackupIdFromARN(arn string) string {
 	_, _, _, _, resource := SplitARN(arn)
 	if idx := strings.Index(resource, "/backup/"); idx != -1 {
 		return resource[idx+len("/backup/"):]

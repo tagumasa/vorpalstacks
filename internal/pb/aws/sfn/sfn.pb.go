@@ -2117,7 +2117,7 @@ type CreateStateMachineInput struct {
 	Rolearn                 string                   `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Tags                    []*Tag                   `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
 	Tracingconfiguration    *TracingConfiguration    `protobuf:"bytes,491315910,opt,name=tracingconfiguration,proto3" json:"tracingconfiguration,omitempty"`
-	Type                    StateMachineType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=sfn.StateMachineType" json:"type,omitempty"`
+	Type                    *StateMachineType        `protobuf:"varint,287830350,opt,name=type,proto3,enum=sfn.StateMachineType,oneof" json:"type,omitempty"`
 	Versiondescription      *string                  `protobuf:"bytes,434714300,opt,name=versiondescription,proto3,oneof" json:"versiondescription,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -2210,8 +2210,8 @@ func (x *CreateStateMachineInput) GetTracingconfiguration() *TracingConfiguratio
 }
 
 func (x *CreateStateMachineInput) GetType() StateMachineType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return StateMachineType_STATE_MACHINE_TYPE_EXPRESS
 }
@@ -2718,7 +2718,7 @@ func (x *DescribeActivityOutput) GetName() string {
 type DescribeExecutionInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Executionarn  string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
-	Includeddata  IncludedData           `protobuf:"varint,109719114,opt,name=includeddata,proto3,enum=sfn.IncludedData" json:"includeddata,omitempty"`
+	Includeddata  *IncludedData          `protobuf:"varint,109719114,opt,name=includeddata,proto3,enum=sfn.IncludedData,oneof" json:"includeddata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2761,8 +2761,8 @@ func (x *DescribeExecutionInput) GetExecutionarn() string {
 }
 
 func (x *DescribeExecutionInput) GetIncludeddata() IncludedData {
-	if x != nil {
-		return x.Includeddata
+	if x != nil && x.Includeddata != nil {
+		return *x.Includeddata
 	}
 	return IncludedData_INCLUDED_DATA_METADATA_ONLY
 }
@@ -2780,7 +2780,7 @@ type DescribeExecutionOutput struct {
 	Outputdetails          *CloudWatchEventsExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
 	Redrivecount           *int32                                `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
 	Redrivedate            *string                               `protobuf:"bytes,152812125,opt,name=redrivedate,proto3,oneof" json:"redrivedate,omitempty"`
-	Redrivestatus          ExecutionRedriveStatus                `protobuf:"varint,247102059,opt,name=redrivestatus,proto3,enum=sfn.ExecutionRedriveStatus" json:"redrivestatus,omitempty"`
+	Redrivestatus          *ExecutionRedriveStatus               `protobuf:"varint,247102059,opt,name=redrivestatus,proto3,enum=sfn.ExecutionRedriveStatus,oneof" json:"redrivestatus,omitempty"`
 	Redrivestatusreason    *string                               `protobuf:"bytes,339085215,opt,name=redrivestatusreason,proto3,oneof" json:"redrivestatusreason,omitempty"`
 	Startdate              string                                `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	Statemachinealiasarn   *string                               `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3,oneof" json:"statemachinealiasarn,omitempty"`
@@ -2901,8 +2901,8 @@ func (x *DescribeExecutionOutput) GetRedrivedate() string {
 }
 
 func (x *DescribeExecutionOutput) GetRedrivestatus() ExecutionRedriveStatus {
-	if x != nil {
-		return x.Redrivestatus
+	if x != nil && x.Redrivestatus != nil {
+		return *x.Redrivestatus
 	}
 	return ExecutionRedriveStatus_EXECUTION_REDRIVE_STATUS_REDRIVABLE_BY_MAP_RUN
 }
@@ -3270,7 +3270,7 @@ func (x *DescribeStateMachineAliasOutput) GetUpdatedate() string {
 type DescribeStateMachineForExecutionInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Executionarn  string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
-	Includeddata  IncludedData           `protobuf:"varint,109719114,opt,name=includeddata,proto3,enum=sfn.IncludedData" json:"includeddata,omitempty"`
+	Includeddata  *IncludedData          `protobuf:"varint,109719114,opt,name=includeddata,proto3,enum=sfn.IncludedData,oneof" json:"includeddata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3313,8 +3313,8 @@ func (x *DescribeStateMachineForExecutionInput) GetExecutionarn() string {
 }
 
 func (x *DescribeStateMachineForExecutionInput) GetIncludeddata() IncludedData {
-	if x != nil {
-		return x.Includeddata
+	if x != nil && x.Includeddata != nil {
+		return *x.Includeddata
 	}
 	return IncludedData_INCLUDED_DATA_METADATA_ONLY
 }
@@ -3453,7 +3453,7 @@ func (x *DescribeStateMachineForExecutionOutput) GetVariablereferences() map[str
 
 type DescribeStateMachineInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Includeddata    IncludedData           `protobuf:"varint,109719114,opt,name=includeddata,proto3,enum=sfn.IncludedData" json:"includeddata,omitempty"`
+	Includeddata    *IncludedData          `protobuf:"varint,109719114,opt,name=includeddata,proto3,enum=sfn.IncludedData,oneof" json:"includeddata,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -3490,8 +3490,8 @@ func (*DescribeStateMachineInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeStateMachineInput) GetIncludeddata() IncludedData {
-	if x != nil {
-		return x.Includeddata
+	if x != nil && x.Includeddata != nil {
+		return *x.Includeddata
 	}
 	return IncludedData_INCLUDED_DATA_METADATA_ONLY
 }
@@ -3515,7 +3515,7 @@ type DescribeStateMachineOutput struct {
 	Revisionid              *string                  `protobuf:"bytes,369170086,opt,name=revisionid,proto3,oneof" json:"revisionid,omitempty"`
 	Rolearn                 string                   `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Statemachinearn         string                   `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
-	Status                  StateMachineStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.StateMachineStatus" json:"status,omitempty"`
+	Status                  *StateMachineStatus      `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.StateMachineStatus,oneof" json:"status,omitempty"`
 	Tracingconfiguration    *TracingConfiguration    `protobuf:"bytes,491315910,opt,name=tracingconfiguration,proto3" json:"tracingconfiguration,omitempty"`
 	Type                    StateMachineType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=sfn.StateMachineType" json:"type,omitempty"`
 	Variablereferences      map[string]string        `protobuf:"bytes,150942252,rep,name=variablereferences,proto3" json:"variablereferences,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -3624,8 +3624,8 @@ func (x *DescribeStateMachineOutput) GetStatemachinearn() string {
 }
 
 func (x *DescribeStateMachineOutput) GetStatus() StateMachineStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return StateMachineStatus_STATE_MACHINE_STATUS_ACTIVE
 }
@@ -5889,7 +5889,7 @@ func (x *KmsAccessDeniedException) GetMessage() string {
 
 type KmsInvalidStateException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Kmskeystate   KmsKeyState            `protobuf:"varint,485859435,opt,name=kmskeystate,proto3,enum=sfn.KmsKeyState" json:"kmskeystate,omitempty"`
+	Kmskeystate   *KmsKeyState           `protobuf:"varint,485859435,opt,name=kmskeystate,proto3,enum=sfn.KmsKeyState,oneof" json:"kmskeystate,omitempty"`
 	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5926,8 +5926,8 @@ func (*KmsInvalidStateException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsInvalidStateException) GetKmskeystate() KmsKeyState {
-	if x != nil {
-		return x.Kmskeystate
+	if x != nil && x.Kmskeystate != nil {
+		return *x.Kmskeystate
 	}
 	return KmsKeyState_KMS_KEY_STATE_DISABLED
 }
@@ -6424,13 +6424,13 @@ func (x *ListActivitiesOutput) GetNexttoken() string {
 }
 
 type ListExecutionsInput struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Maprunarn       *string                `protobuf:"bytes,18199994,opt,name=maprunarn,proto3,oneof" json:"maprunarn,omitempty"`
-	Maxresults      *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken       *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Redrivefilter   ExecutionRedriveFilter `protobuf:"varint,437804251,opt,name=redrivefilter,proto3,enum=sfn.ExecutionRedriveFilter" json:"redrivefilter,omitempty"`
-	Statemachinearn *string                `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3,oneof" json:"statemachinearn,omitempty"`
-	Statusfilter    ExecutionStatus        `protobuf:"varint,86045418,opt,name=statusfilter,proto3,enum=sfn.ExecutionStatus" json:"statusfilter,omitempty"`
+	state           protoimpl.MessageState  `protogen:"open.v1"`
+	Maprunarn       *string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3,oneof" json:"maprunarn,omitempty"`
+	Maxresults      *int32                  `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken       *string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Redrivefilter   *ExecutionRedriveFilter `protobuf:"varint,437804251,opt,name=redrivefilter,proto3,enum=sfn.ExecutionRedriveFilter,oneof" json:"redrivefilter,omitempty"`
+	Statemachinearn *string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3,oneof" json:"statemachinearn,omitempty"`
+	Statusfilter    *ExecutionStatus        `protobuf:"varint,86045418,opt,name=statusfilter,proto3,enum=sfn.ExecutionStatus,oneof" json:"statusfilter,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -6487,8 +6487,8 @@ func (x *ListExecutionsInput) GetNexttoken() string {
 }
 
 func (x *ListExecutionsInput) GetRedrivefilter() ExecutionRedriveFilter {
-	if x != nil {
-		return x.Redrivefilter
+	if x != nil && x.Redrivefilter != nil {
+		return *x.Redrivefilter
 	}
 	return ExecutionRedriveFilter_EXECUTION_REDRIVE_FILTER_REDRIVEN
 }
@@ -6501,8 +6501,8 @@ func (x *ListExecutionsInput) GetStatemachinearn() string {
 }
 
 func (x *ListExecutionsInput) GetStatusfilter() ExecutionStatus {
-	if x != nil {
-		return x.Statusfilter
+	if x != nil && x.Statusfilter != nil {
+		return *x.Statusfilter
 	}
 	return ExecutionStatus_EXECUTION_STATUS_ABORTED
 }
@@ -7135,7 +7135,7 @@ type LoggingConfiguration struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Destinations         []*LogDestination      `protobuf:"bytes,1617189,rep,name=destinations,proto3" json:"destinations,omitempty"`
 	Includeexecutiondata *bool                  `protobuf:"varint,203899608,opt,name=includeexecutiondata,proto3,oneof" json:"includeexecutiondata,omitempty"`
-	Level                LogLevel               `protobuf:"varint,463071198,opt,name=level,proto3,enum=sfn.LogLevel" json:"level,omitempty"`
+	Level                *LogLevel              `protobuf:"varint,463071198,opt,name=level,proto3,enum=sfn.LogLevel,oneof" json:"level,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -7185,8 +7185,8 @@ func (x *LoggingConfiguration) GetIncludeexecutiondata() bool {
 }
 
 func (x *LoggingConfiguration) GetLevel() LogLevel {
-	if x != nil {
-		return x.Level
+	if x != nil && x.Level != nil {
+		return *x.Level
 	}
 	return LogLevel_LOG_LEVEL_FATAL
 }
@@ -7840,10 +7840,10 @@ func (x *MockErrorOutput) GetError() string {
 }
 
 type MockInput struct {
-	state               protoimpl.MessageState     `protogen:"open.v1"`
-	Erroroutput         *MockErrorOutput           `protobuf:"bytes,453597273,opt,name=erroroutput,proto3" json:"erroroutput,omitempty"`
-	Fieldvalidationmode MockResponseValidationMode `protobuf:"varint,519416556,opt,name=fieldvalidationmode,proto3,enum=sfn.MockResponseValidationMode" json:"fieldvalidationmode,omitempty"`
-	Result              *string                    `protobuf:"bytes,171406885,opt,name=result,proto3,oneof" json:"result,omitempty"`
+	state               protoimpl.MessageState      `protogen:"open.v1"`
+	Erroroutput         *MockErrorOutput            `protobuf:"bytes,453597273,opt,name=erroroutput,proto3" json:"erroroutput,omitempty"`
+	Fieldvalidationmode *MockResponseValidationMode `protobuf:"varint,519416556,opt,name=fieldvalidationmode,proto3,enum=sfn.MockResponseValidationMode,oneof" json:"fieldvalidationmode,omitempty"`
+	Result              *string                     `protobuf:"bytes,171406885,opt,name=result,proto3,oneof" json:"result,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -7886,8 +7886,8 @@ func (x *MockInput) GetErroroutput() *MockErrorOutput {
 }
 
 func (x *MockInput) GetFieldvalidationmode() MockResponseValidationMode {
-	if x != nil {
-		return x.Fieldvalidationmode
+	if x != nil && x.Fieldvalidationmode != nil {
+		return *x.Fieldvalidationmode
 	}
 	return MockResponseValidationMode_MOCK_RESPONSE_VALIDATION_MODE_PRESENT
 }
@@ -8641,7 +8641,7 @@ func (x *StartExecutionOutput) GetStartdate() string {
 
 type StartSyncExecutionInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Includeddata    IncludedData           `protobuf:"varint,109719114,opt,name=includeddata,proto3,enum=sfn.IncludedData" json:"includeddata,omitempty"`
+	Includeddata    *IncludedData          `protobuf:"varint,109719114,opt,name=includeddata,proto3,enum=sfn.IncludedData,oneof" json:"includeddata,omitempty"`
 	Input           *string                `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Name            *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
@@ -8681,8 +8681,8 @@ func (*StartSyncExecutionInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartSyncExecutionInput) GetIncludeddata() IncludedData {
-	if x != nil {
-		return x.Includeddata
+	if x != nil && x.Includeddata != nil {
+		return *x.Includeddata
 	}
 	return IncludedData_INCLUDED_DATA_METADATA_ONLY
 }
@@ -10392,7 +10392,7 @@ type TestStateInput struct {
 	Context            *string                 `protobuf:"bytes,210178173,opt,name=context,proto3,oneof" json:"context,omitempty"`
 	Definition         string                  `protobuf:"bytes,68443297,opt,name=definition,proto3" json:"definition,omitempty"`
 	Input              *string                 `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
-	Inspectionlevel    InspectionLevel         `protobuf:"varint,277169476,opt,name=inspectionlevel,proto3,enum=sfn.InspectionLevel" json:"inspectionlevel,omitempty"`
+	Inspectionlevel    *InspectionLevel        `protobuf:"varint,277169476,opt,name=inspectionlevel,proto3,enum=sfn.InspectionLevel,oneof" json:"inspectionlevel,omitempty"`
 	Mock               *MockInput              `protobuf:"bytes,242883628,opt,name=mock,proto3" json:"mock,omitempty"`
 	Revealsecrets      *bool                   `protobuf:"varint,351839742,opt,name=revealsecrets,proto3,oneof" json:"revealsecrets,omitempty"`
 	Rolearn            *string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
@@ -10455,8 +10455,8 @@ func (x *TestStateInput) GetInput() string {
 }
 
 func (x *TestStateInput) GetInspectionlevel() InspectionLevel {
-	if x != nil {
-		return x.Inspectionlevel
+	if x != nil && x.Inspectionlevel != nil {
+		return *x.Inspectionlevel
 	}
 	return InspectionLevel_INSPECTION_LEVEL_TRACE
 }
@@ -10510,7 +10510,7 @@ type TestStateOutput struct {
 	Inspectiondata *InspectionData        `protobuf:"bytes,113762044,opt,name=inspectiondata,proto3" json:"inspectiondata,omitempty"`
 	Nextstate      *string                `protobuf:"bytes,525594702,opt,name=nextstate,proto3,oneof" json:"nextstate,omitempty"`
 	Output         *string                `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
-	Status         TestExecutionStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.TestExecutionStatus" json:"status,omitempty"`
+	Status         *TestExecutionStatus   `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.TestExecutionStatus,oneof" json:"status,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -10581,8 +10581,8 @@ func (x *TestStateOutput) GetOutput() string {
 }
 
 func (x *TestStateOutput) GetStatus() TestExecutionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return TestExecutionStatus_TEST_EXECUTION_STATUS_RETRIABLE
 }
@@ -11208,11 +11208,11 @@ func (x *ValidateStateMachineDefinitionDiagnostic) GetSeverity() ValidateStateMa
 }
 
 type ValidateStateMachineDefinitionInput struct {
-	state         protoimpl.MessageState                 `protogen:"open.v1"`
-	Definition    string                                 `protobuf:"bytes,68443297,opt,name=definition,proto3" json:"definition,omitempty"`
-	Maxresults    *int32                                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Severity      ValidateStateMachineDefinitionSeverity `protobuf:"varint,268193715,opt,name=severity,proto3,enum=sfn.ValidateStateMachineDefinitionSeverity" json:"severity,omitempty"`
-	Type          StateMachineType                       `protobuf:"varint,287830350,opt,name=type,proto3,enum=sfn.StateMachineType" json:"type,omitempty"`
+	state         protoimpl.MessageState                  `protogen:"open.v1"`
+	Definition    string                                  `protobuf:"bytes,68443297,opt,name=definition,proto3" json:"definition,omitempty"`
+	Maxresults    *int32                                  `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Severity      *ValidateStateMachineDefinitionSeverity `protobuf:"varint,268193715,opt,name=severity,proto3,enum=sfn.ValidateStateMachineDefinitionSeverity,oneof" json:"severity,omitempty"`
+	Type          *StateMachineType                       `protobuf:"varint,287830350,opt,name=type,proto3,enum=sfn.StateMachineType,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11262,15 +11262,15 @@ func (x *ValidateStateMachineDefinitionInput) GetMaxresults() int32 {
 }
 
 func (x *ValidateStateMachineDefinitionInput) GetSeverity() ValidateStateMachineDefinitionSeverity {
-	if x != nil {
-		return x.Severity
+	if x != nil && x.Severity != nil {
+		return *x.Severity
 	}
 	return ValidateStateMachineDefinitionSeverity_VALIDATE_STATE_MACHINE_DEFINITION_SEVERITY_WARNING
 }
 
 func (x *ValidateStateMachineDefinitionInput) GetType() StateMachineType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return StateMachineType_STATE_MACHINE_TYPE_EXPRESS
 }
@@ -11336,9 +11336,9 @@ func (x *ValidateStateMachineDefinitionOutput) GetTruncated() bool {
 }
 
 type ValidationException struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Message       *string                   `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
-	Reason        ValidationExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=sfn.ValidationExceptionReason" json:"reason,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Message       *string                    `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Reason        *ValidationExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=sfn.ValidationExceptionReason,oneof" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11381,8 +11381,8 @@ func (x *ValidationException) GetMessage() string {
 }
 
 func (x *ValidationException) GetReason() ValidationExceptionReason {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return ValidationExceptionReason_VALIDATION_EXCEPTION_REASON_API_DOES_NOT_SUPPORT_LABELED_ARNS
 }
@@ -11478,7 +11478,7 @@ const file_sfn_proto_rawDesc = "" +
 	"\f_description\"~\n" +
 	"\x1dCreateStateMachineAliasOutput\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x126\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"\xc0\x04\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"\xce\x04\n" +
 	"\x17CreateStateMachineInput\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
@@ -11489,11 +11489,12 @@ const file_sfn_proto_rawDesc = "" +
 	"\apublish\x18\x89\xb0\x80~ \x01(\bH\x00R\apublish\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.sfn.TagR\x04tags\x12Q\n" +
-	"\x14tracingconfiguration\x18\xc6ţ\xea\x01 \x01(\v2\x19.sfn.TracingConfigurationR\x14tracingconfiguration\x12-\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeR\x04type\x127\n" +
-	"\x12versiondescription\x18\xbc\xed\xa4\xcf\x01 \x01(\tH\x01R\x12versiondescription\x88\x01\x01B\n" +
+	"\x14tracingconfiguration\x18\xc6ţ\xea\x01 \x01(\v2\x19.sfn.TracingConfigurationR\x14tracingconfiguration\x122\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeH\x01R\x04type\x88\x01\x01\x127\n" +
+	"\x12versiondescription\x18\xbc\xed\xa4\xcf\x01 \x01(\tH\x02R\x12versiondescription\x88\x01\x01B\n" +
 	"\n" +
-	"\b_publishB\x15\n" +
+	"\b_publishB\a\n" +
+	"\x05_typeB\x15\n" +
 	"\x13_versiondescription\"\xca\x01\n" +
 	"\x18CreateStateMachineOutput\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x12,\n" +
@@ -11518,10 +11519,11 @@ const file_sfn_proto_rawDesc = "" +
 	"\vactivityarn\x18\x84Ǉ\x9c\x01 \x01(\tR\vactivityarn\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x12Y\n" +
 	"\x17encryptionconfiguration\x18\x97\x9a\x85P \x01(\v2\x1c.sfn.EncryptionConfigurationR\x17encryptionconfiguration\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"z\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"\x90\x01\n" +
 	"\x16DescribeExecutionInput\x12&\n" +
-	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x128\n" +
-	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\"\x96\t\n" +
+	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12=\n" +
+	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataH\x00R\fincludeddata\x88\x01\x01B\x0f\n" +
+	"\r_includeddata\"\xad\t\n" +
 	"\x17DescribeExecutionOutput\x12\x1c\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12&\n" +
@@ -11533,17 +11535,17 @@ const file_sfn_proto_rawDesc = "" +
 	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x05R\x06output\x88\x01\x01\x12S\n" +
 	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2).sfn.CloudWatchEventsExecutionDataDetailsR\routputdetails\x12+\n" +
 	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x06R\fredrivecount\x88\x01\x01\x12(\n" +
-	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tH\aR\vredrivedate\x88\x01\x01\x12D\n" +
-	"\rredrivestatus\x18\xeb\xf4\xe9u \x01(\x0e2\x1b.sfn.ExecutionRedriveStatusR\rredrivestatus\x129\n" +
-	"\x13redrivestatusreason\x18\x9f\x8fء\x01 \x01(\tH\bR\x13redrivestatusreason\x88\x01\x01\x12 \n" +
+	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tH\aR\vredrivedate\x88\x01\x01\x12I\n" +
+	"\rredrivestatus\x18\xeb\xf4\xe9u \x01(\x0e2\x1b.sfn.ExecutionRedriveStatusH\bR\rredrivestatus\x88\x01\x01\x129\n" +
+	"\x13redrivestatusreason\x18\x9f\x8fء\x01 \x01(\tH\tR\x13redrivestatusreason\x88\x01\x01\x12 \n" +
 	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12;\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tH\tR\x14statemachinealiasarn\x88\x01\x01\x12,\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tH\n" +
+	"R\x14statemachinealiasarn\x88\x01\x01\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12>\n" +
-	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tH\n" +
-	"R\x16statemachineversionarn\x88\x01\x01\x120\n" +
+	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tH\vR\x16statemachineversionarn\x88\x01\x01\x120\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x14.sfn.ExecutionStatusR\x06status\x12\"\n" +
-	"\bstopdate\x18\xda\xf2\x94V \x01(\tH\vR\bstopdate\x88\x01\x01\x12(\n" +
-	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tH\fR\vtraceheader\x88\x01\x01B\b\n" +
+	"\bstopdate\x18\xda\xf2\x94V \x01(\tH\fR\bstopdate\x88\x01\x01\x12(\n" +
+	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tH\rR\vtraceheader\x88\x01\x01B\b\n" +
 	"\x06_causeB\b\n" +
 	"\x06_errorB\b\n" +
 	"\x06_inputB\f\n" +
@@ -11552,7 +11554,8 @@ const file_sfn_proto_rawDesc = "" +
 	"\x05_nameB\t\n" +
 	"\a_outputB\x0f\n" +
 	"\r_redrivecountB\x0e\n" +
-	"\f_redrivedateB\x16\n" +
+	"\f_redrivedateB\x10\n" +
+	"\x0e_redrivestatusB\x16\n" +
 	"\x14_redrivestatusreasonB\x17\n" +
 	"\x15_statemachinealiasarnB\x19\n" +
 	"\x17_statemachineversionarnB\v\n" +
@@ -11593,10 +11596,11 @@ const file_sfn_proto_rawDesc = "" +
 	"\f_descriptionB\a\n" +
 	"\x05_nameB\x17\n" +
 	"\x15_statemachinealiasarnB\r\n" +
-	"\v_updatedate\"\x89\x01\n" +
+	"\v_updatedate\"\x9f\x01\n" +
 	"%DescribeStateMachineForExecutionInput\x12&\n" +
-	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x128\n" +
-	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\"\xa6\x06\n" +
+	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12=\n" +
+	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataH\x00R\fincludeddata\x88\x01\x01B\x0f\n" +
+	"\r_includeddata\"\xa6\x06\n" +
 	"&DescribeStateMachineForExecutionOutput\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
@@ -11622,10 +11626,11 @@ const file_sfn_proto_rawDesc = "" +
 	"\x06_labelB\f\n" +
 	"\n" +
 	"_maprunarnB\r\n" +
-	"\v_revisionid\"\x83\x01\n" +
-	"\x19DescribeStateMachineInput\x128\n" +
-	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\"\xfc\x06\n" +
+	"\v_revisionid\"\x99\x01\n" +
+	"\x19DescribeStateMachineInput\x12=\n" +
+	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataH\x00R\fincludeddata\x88\x01\x01\x12,\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearnB\x0f\n" +
+	"\r_includeddata\"\x8c\a\n" +
 	"\x1aDescribeStateMachineOutput\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x12!\n" +
 	"\n" +
@@ -11640,8 +11645,8 @@ const file_sfn_proto_rawDesc = "" +
 	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tH\x02R\n" +
 	"revisionid\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x123\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.sfn.StateMachineStatusR\x06status\x12Q\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x128\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.sfn.StateMachineStatusH\x03R\x06status\x88\x01\x01\x12Q\n" +
 	"\x14tracingconfiguration\x18\xc6ţ\xea\x01 \x01(\v2\x19.sfn.TracingConfigurationR\x14tracingconfiguration\x12-\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeR\x04type\x12j\n" +
 	"\x12variablereferences\x18\xac\xe4\xfcG \x03(\v27.sfn.DescribeStateMachineOutput.VariablereferencesEntryR\x12variablereferences\x1aE\n" +
@@ -11650,7 +11655,8 @@ const file_sfn_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
 	"\f_descriptionB\b\n" +
 	"\x06_labelB\r\n" +
-	"\v_revisionid\"\xe6\x01\n" +
+	"\v_revisionidB\t\n" +
+	"\a_status\"\xe6\x01\n" +
 	"\x17EncryptionConfiguration\x12K\n" +
 	"\x1ckmsdatakeyreuseperiodseconds\x18\xf4\x8d\x95\xd2\x01 \x01(\x05H\x00R\x1ckmsdatakeyreuseperiodseconds\x88\x01\x01\x12#\n" +
 	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tH\x01R\bkmskeyid\x88\x01\x01\x12+\n" +
@@ -11926,10 +11932,11 @@ const file_sfn_proto_rawDesc = "" +
 	"\x18KmsAccessDeniedException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x80\x01\n" +
-	"\x18KmsInvalidStateException\x126\n" +
-	"\vkmskeystate\x18\xeb\xc0\xd6\xe7\x01 \x01(\x0e2\x10.sfn.KmsKeyStateR\vkmskeystate\x12 \n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\b_message\"\x95\x01\n" +
+	"\x18KmsInvalidStateException\x12;\n" +
+	"\vkmskeystate\x18\xeb\xc0\xd6\xe7\x01 \x01(\x0e2\x10.sfn.KmsKeyStateH\x00R\vkmskeystate\x88\x01\x01\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x01R\amessage\x88\x01\x01B\x0e\n" +
+	"\f_kmskeystateB\n" +
 	"\n" +
 	"\b_message\"F\n" +
 	"\x16KmsThrottlingException\x12 \n" +
@@ -11982,22 +11989,24 @@ const file_sfn_proto_rawDesc = "" +
 	"activities\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\x80\x03\n" +
+	"_nexttoken\"\xad\x03\n" +
 	"\x13ListExecutionsInput\x12$\n" +
 	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tH\x00R\tmaprunarn\x88\x01\x01\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12E\n" +
-	"\rredrivefilter\x18۹\xe1\xd0\x01 \x01(\x0e2\x1b.sfn.ExecutionRedriveFilterR\rredrivefilter\x121\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tH\x03R\x0fstatemachinearn\x88\x01\x01\x12;\n" +
-	"\fstatusfilter\x18\xea\xe5\x83) \x01(\x0e2\x14.sfn.ExecutionStatusR\fstatusfilterB\f\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12J\n" +
+	"\rredrivefilter\x18۹\xe1\xd0\x01 \x01(\x0e2\x1b.sfn.ExecutionRedriveFilterH\x03R\rredrivefilter\x88\x01\x01\x121\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tH\x04R\x0fstatemachinearn\x88\x01\x01\x12@\n" +
+	"\fstatusfilter\x18\xea\xe5\x83) \x01(\x0e2\x14.sfn.ExecutionStatusH\x05R\fstatusfilter\x88\x01\x01B\f\n" +
 	"\n" +
 	"_maprunarnB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttokenB\x12\n" +
-	"\x10_statemachinearn\"\x85\x01\n" +
+	"_nexttokenB\x10\n" +
+	"\x0e_redrivefilterB\x12\n" +
+	"\x10_statemachinearnB\x0f\n" +
+	"\r_statusfilter\"\x85\x01\n" +
 	"\x14ListExecutionsOutput\x129\n" +
 	"\n" +
 	"executions\x18ӑ\x896 \x03(\v2\x16.sfn.ExecutionListItemR\n" +
@@ -12065,12 +12074,13 @@ const file_sfn_proto_rawDesc = "" +
 	"\x19ListTagsForResourceOutput\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.sfn.TagR\x04tags\"i\n" +
 	"\x0eLogDestination\x12W\n" +
-	"\x16cloudwatchlogsloggroup\x18\xa8\xfd\xd9\xf6\x01 \x01(\v2\x1b.sfn.CloudWatchLogsLogGroupR\x16cloudwatchlogsloggroup\"\xcf\x01\n" +
+	"\x16cloudwatchlogsloggroup\x18\xa8\xfd\xd9\xf6\x01 \x01(\v2\x1b.sfn.CloudWatchLogsLogGroupR\x16cloudwatchlogsloggroup\"\xde\x01\n" +
 	"\x14LoggingConfiguration\x129\n" +
 	"\fdestinations\x18\xa5\xdab \x03(\v2\x13.sfn.LogDestinationR\fdestinations\x12:\n" +
-	"\x14includeexecutiondata\x18\u0605\x9da \x01(\bH\x00R\x14includeexecutiondata\x88\x01\x01\x12'\n" +
-	"\x05level\x18\xde\xcf\xe7\xdc\x01 \x01(\x0e2\r.sfn.LogLevelR\x05levelB\x17\n" +
-	"\x15_includeexecutiondata\"g\n" +
+	"\x14includeexecutiondata\x18\u0605\x9da \x01(\bH\x00R\x14includeexecutiondata\x88\x01\x01\x12,\n" +
+	"\x05level\x18\xde\xcf\xe7\xdc\x01 \x01(\x0e2\r.sfn.LogLevelH\x01R\x05level\x88\x01\x01B\x17\n" +
+	"\x15_includeexecutiondataB\b\n" +
+	"\x06_level\"g\n" +
 	"\x18MapIterationEventDetails\x12\x1c\n" +
 	"\x05index\x18\xacӪH \x01(\x05H\x00R\x05index\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01B\b\n" +
@@ -12135,11 +12145,12 @@ const file_sfn_proto_rawDesc = "" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
 	"\x06_causeB\b\n" +
-	"\x06_error\"\xc9\x01\n" +
+	"\x06_error\"\xe6\x01\n" +
 	"\tMockInput\x12:\n" +
-	"\verroroutput\x18ٰ\xa5\xd8\x01 \x01(\v2\x14.sfn.MockErrorOutputR\verroroutput\x12U\n" +
-	"\x13fieldvalidationmode\x18\xec\xd5\xd6\xf7\x01 \x01(\x0e2\x1f.sfn.MockResponseValidationModeR\x13fieldvalidationmode\x12\x1e\n" +
-	"\x06result\x18\xa5\xec\xddQ \x01(\tH\x00R\x06result\x88\x01\x01B\t\n" +
+	"\verroroutput\x18ٰ\xa5\xd8\x01 \x01(\v2\x14.sfn.MockErrorOutputR\verroroutput\x12Z\n" +
+	"\x13fieldvalidationmode\x18\xec\xd5\xd6\xf7\x01 \x01(\x0e2\x1f.sfn.MockResponseValidationModeH\x00R\x13fieldvalidationmode\x88\x01\x01\x12\x1e\n" +
+	"\x06result\x18\xa5\xec\xddQ \x01(\tH\x01R\x06result\x88\x01\x01B\x16\n" +
+	"\x14_fieldvalidationmodeB\t\n" +
 	"\a_result\"\xc2\x01\n" +
 	"\x1fPublishStateMachineVersionInput\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12'\n" +
@@ -12195,13 +12206,14 @@ const file_sfn_proto_rawDesc = "" +
 	"\f_traceheader\"`\n" +
 	"\x14StartExecutionOutput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12 \n" +
-	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\"\x89\x02\n" +
-	"\x17StartSyncExecutionInput\x128\n" +
-	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\x12\x1d\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x00R\x05input\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01\x12,\n" +
+	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\"\x9f\x02\n" +
+	"\x17StartSyncExecutionInput\x12=\n" +
+	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataH\x00R\fincludeddata\x88\x01\x01\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x01R\x05input\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x02R\x04name\x88\x01\x01\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12(\n" +
-	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tH\x02R\vtraceheader\x88\x01\x01B\b\n" +
+	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tH\x03R\vtraceheader\x88\x01\x01B\x0f\n" +
+	"\r_includeddataB\b\n" +
 	"\x06_inputB\a\n" +
 	"\x05_nameB\x0e\n" +
 	"\f_traceheader\"\xed\x05\n" +
@@ -12365,42 +12377,44 @@ const file_sfn_proto_rawDesc = "" +
 	"\x13_errorcausedbystateB\x14\n" +
 	"\x12_mapitemreaderdataB\x1b\n" +
 	"\x19_mapiterationfailurecountB\x14\n" +
-	"\x12_retrierretrycount\"\x9d\x04\n" +
+	"\x12_retrierretrycount\"\xb6\x04\n" +
 	"\x0eTestStateInput\x12 \n" +
 	"\acontext\x18\xfd\xa0\x9cd \x01(\tH\x00R\acontext\x88\x01\x01\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
 	"definition\x12\x1d\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x01R\x05input\x88\x01\x01\x12B\n" +
-	"\x0finspectionlevel\x18Ċ\x95\x84\x01 \x01(\x0e2\x14.sfn.InspectionLevelR\x0finspectionlevel\x12%\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x01R\x05input\x88\x01\x01\x12G\n" +
+	"\x0finspectionlevel\x18Ċ\x95\x84\x01 \x01(\x0e2\x14.sfn.InspectionLevelH\x02R\x0finspectionlevel\x88\x01\x01\x12%\n" +
 	"\x04mock\x18\xac\xb8\xe8s \x01(\v2\x0e.sfn.MockInputR\x04mock\x12-\n" +
-	"\rrevealsecrets\x18\xfe\xcb\xe2\xa7\x01 \x01(\bH\x02R\rrevealsecrets\x88\x01\x01\x12 \n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x03R\arolearn\x88\x01\x01\x12N\n" +
+	"\rrevealsecrets\x18\xfe\xcb\xe2\xa7\x01 \x01(\bH\x03R\rrevealsecrets\x88\x01\x01\x12 \n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x04R\arolearn\x88\x01\x01\x12N\n" +
 	"\x12stateconfiguration\x18\xfd\xe2\x8d\b \x01(\v2\x1b.sfn.TestStateConfigurationR\x12stateconfiguration\x12%\n" +
-	"\tstatename\x18\xb6Ї\x81\x01 \x01(\tH\x04R\tstatename\x88\x01\x01\x12$\n" +
-	"\tvariables\x18\xc3ŭM \x01(\tH\x05R\tvariables\x88\x01\x01B\n" +
+	"\tstatename\x18\xb6Ї\x81\x01 \x01(\tH\x05R\tstatename\x88\x01\x01\x12$\n" +
+	"\tvariables\x18\xc3ŭM \x01(\tH\x06R\tvariables\x88\x01\x01B\n" +
 	"\n" +
 	"\b_contextB\b\n" +
-	"\x06_inputB\x10\n" +
+	"\x06_inputB\x12\n" +
+	"\x10_inspectionlevelB\x10\n" +
 	"\x0e_revealsecretsB\n" +
 	"\n" +
 	"\b_rolearnB\f\n" +
 	"\n" +
 	"_statenameB\f\n" +
 	"\n" +
-	"_variables\"\xb8\x02\n" +
+	"_variables\"\xc8\x02\n" +
 	"\x0fTestStateOutput\x12\x1c\n" +
 	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
 	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12>\n" +
 	"\x0einspectiondata\x18\xfc\xbd\x9f6 \x01(\v2\x13.sfn.InspectionDataR\x0einspectiondata\x12%\n" +
 	"\tnextstate\x18\xce\xe0\xcf\xfa\x01 \x01(\tH\x02R\tnextstate\x88\x01\x01\x12\x1f\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x03R\x06output\x88\x01\x01\x124\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x18.sfn.TestExecutionStatusR\x06statusB\b\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x03R\x06output\x88\x01\x01\x129\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x18.sfn.TestExecutionStatusH\x04R\x06status\x88\x01\x01B\b\n" +
 	"\x06_causeB\b\n" +
 	"\x06_errorB\f\n" +
 	"\n" +
 	"_nextstateB\t\n" +
-	"\a_output\"x\n" +
+	"\a_outputB\t\n" +
+	"\a_status\"x\n" +
 	"\vTooManyTags\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x12*\n" +
 	"\fresourcename\x18\xf7\xfd\xbc\b \x01(\tH\x01R\fresourcename\x88\x01\x01B\n" +
@@ -12465,28 +12479,31 @@ const file_sfn_proto_rawDesc = "" +
 	"\blocation\x18\xa7\xd3\xd6_ \x01(\tH\x00R\blocation\x88\x01\x01\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12J\n" +
 	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2+.sfn.ValidateStateMachineDefinitionSeverityR\bseverityB\v\n" +
-	"\t_location\"\xfb\x01\n" +
+	"\t_location\"\x9b\x02\n" +
 	"#ValidateStateMachineDefinitionInput\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
 	"definition\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12J\n" +
-	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2+.sfn.ValidateStateMachineDefinitionSeverityR\bseverity\x12-\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeR\x04typeB\r\n" +
-	"\v_maxresults\"\xf9\x01\n" +
+	"maxresults\x88\x01\x01\x12O\n" +
+	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2+.sfn.ValidateStateMachineDefinitionSeverityH\x01R\bseverity\x88\x01\x01\x122\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeH\x02R\x04type\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\v\n" +
+	"\t_severityB\a\n" +
+	"\x05_type\"\xf9\x01\n" +
 	"$ValidateStateMachineDefinitionOutput\x12R\n" +
 	"\vdiagnostics\x18\xf8\xa7\x82L \x03(\v2-.sfn.ValidateStateMachineDefinitionDiagnosticR\vdiagnostics\x12H\n" +
 	"\x06result\x18\xa5\xec\xddQ \x01(\x0e2-.sfn.ValidateStateMachineDefinitionResultCodeR\x06result\x12%\n" +
 	"\ttruncated\x18\xaa\xa2\xa7\xc2\x01 \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"\x7f\n" +
+	"_truncated\"\x8f\x01\n" +
 	"\x13ValidationException\x12 \n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x12:\n" +
-	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x1e.sfn.ValidationExceptionReasonR\x06reasonB\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x12?\n" +
+	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x1e.sfn.ValidationExceptionReasonH\x01R\x06reason\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message*a\n" +
+	"\b_messageB\t\n" +
+	"\a_reason*a\n" +
 	"\x0eEncryptionType\x12,\n" +
 	"(ENCRYPTION_TYPE_CUSTOMER_MANAGED_KMS_KEY\x10\x00\x12!\n" +
 	"\x1dENCRYPTION_TYPE_AWS_OWNED_KEY\x10\x01*j\n" +
@@ -13098,10 +13115,13 @@ func file_sfn_proto_init() {
 	file_sfn_proto_msgTypes[18].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[20].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[21].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[32].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[33].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[35].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[37].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[38].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[39].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[40].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[41].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[42].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[43].OneofWrappers = []any{}

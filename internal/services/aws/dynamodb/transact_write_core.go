@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -13,165 +14,18 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TransactGetItems / TransactWriteItems Cores — single validation and
-// persistence paths of the transactional data plane
+// TransactWriteItems Core — single validation and persistence path of the
+// transactional write plane: the ClientRequestToken idempotency window,
+// operation parsing, the two-phase executor with its validators and stream
+// capture, and the response / capacity report. The TransactGetItems half
+// lives in transact_get_core.go.
 // ---------------------------------------------------------------------------
 
-// transactGetItemsInput carries the already-typed TransactItems member plus
-// the raw wire parameters (consumed for the ReturnConsumedCapacity reporting).
-type transactGetItemsInput struct {
-	TransactItems []interface{}
-	Parameters    map[string]interface{}
-}
-
-// transactGetItemsCore resolves every referenced table, validates the key
-// types, and reads all items in one snapshot view.
-func (s *DynamoDBService) transactGetItemsCore(ctx context.Context, reqCtx *request.RequestContext, in transactGetItemsInput) (map[string]interface{}, error) {
-	transactItems := in.TransactItems
-
-	if len(transactItems) > transactMaxItems {
-		return nil, ErrInvalidParameter
-	}
-
-	if len(transactItems) == 0 {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, fmt.Errorf("transact get items: get store: %w", err)
-	}
-
-	type getItem struct {
-		tableName  string
-		key        map[string]*dbstore.AttributeValue
-		projection []string
-	}
-
-	var getItems []getItem
-	for _, item := range transactItems {
-		itemMap, ok := item.(map[string]interface{})
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-
-		getMap, ok := itemMap["Get"].(map[string]interface{})
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-
-		tableName := request.GetStringParam(getMap, "TableName")
-		if !validateResourceName(tableName) {
-			return nil, ErrInvalidParameter
-		}
-
-		key, keyErr := parseKey(getMap["Key"])
-		if keyErr != nil || key == nil {
-			return nil, ErrInvalidParameter
-		}
-
-		projection, projErr := parseProjectionExpression(getMap)
-		if projErr != nil {
-			return nil, ErrInvalidParameter
-		}
-
-		getItems = append(getItems, getItem{
-			tableName:  tableName,
-			key:        key,
-			projection: projection,
-		})
-	}
-
-	// Resolve every referenced table and validate its key types before
-	// the snapshot view: a missing table is a ResourceNotFoundException,
-	// not an empty Item slot, and key attribute types must match the
-	// table's attribute definitions.
-	for _, gi := range getItems {
-		table, tableErr := store.Tables().Get(gi.tableName)
-		if tableErr != nil || table == nil {
-			return nil, ErrTableNotFound
-		}
-		if keyErr := validateKeyTypes(table, gi.key); keyErr != nil {
-			return nil, keyErr
-		}
-	}
-
-	var responses []map[string]interface{}
-	foundKeys := make(map[string][]map[string]*dbstore.AttributeValue)
-	// Every targeted item consumes read capacity of its own, charged to its
-	// table: the ConsumedCapacity response carries one entry per table
-	// addressed, reporting that table's units.
-	tableReadUnits := make(map[string]float64)
-
-	err = store.View(ctx, func(txn *dbstore.DynamoDBTxn) error {
-		for _, gi := range getItems {
-			dbItem, err := txn.GetItem(gi.tableName, gi.key)
-			if err != nil {
-				if !dbstore.IsItemNotFound(err) {
-					return fmt.Errorf("transact get item on %s: %w", gi.tableName, err)
-				}
-				tableReadUnits[gi.tableName] += transactItemReadUnits(0)
-				responses = append(responses, map[string]interface{}{"Item": nil})
-				continue
-			}
-
-			// The charge follows the item's full size as read, before any
-			// projection narrows the returned attributes.
-			tableReadUnits[gi.tableName] += transactItemReadUnits(dbstore.CalculateItemSize(dbItem.Attributes))
-
-			attrs := dbItem.Attributes
-			if gi.projection != nil {
-				attrs = applyProjection(attrs, gi.projection)
-			}
-
-			responses = append(responses, map[string]interface{}{
-				"Item": buildItemResponse(attrs),
-			})
-			foundKeys[gi.tableName] = append(foundKeys[gi.tableName], gi.key)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("transact get items: snapshot view: %w", err)
-	}
-
-	// Every item the transactional read actually returned counts as one
-	// read event per tracked key layout. The counters cannot update inside
-	// the read-only view, so they are applied after it succeeds.
-	for tableName, keys := range foundKeys {
-		s.recordContributorReads(ctx, store, tableName, keys)
-	}
-
-	resp := map[string]interface{}{
-		"Responses": responses,
-	}
-
-	returnConsumedCapacity := getReturnConsumedCapacity(in.Parameters)
-	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
-		consumedCapacities := make([]map[string]interface{}, 0, len(tableReadUnits))
-		for tableName, units := range tableReadUnits {
-			consumedCapacities = append(consumedCapacities, buildReadConsumedCapacityResponse(tableName, units))
-		}
-		if len(consumedCapacities) > 0 {
-			resp["ConsumedCapacity"] = consumedCapacities
-		}
-	}
-
-	return resp, nil
-}
-
-// transactItemReadUnits returns the read capacity a single targeted item
-// consumes in a transactional read: DynamoDB performs two underlying reads
-// per item — one to prepare the transaction, one to commit it — over the
-// item's size rounded up to 4 KB multiples, and consumes that capacity even
-// when the item turns out to be absent, because the two reads still happen.
-func transactItemReadUnits(itemSizeBytes int64) float64 {
-	units := (itemSizeBytes + dbstore.ReadCapacityUnitBytes - 1) / dbstore.ReadCapacityUnitBytes
-	if units < 1 {
-		units = 1
-	}
-	return float64(units * 2)
+// recordIdempotencyCompletion promotes a claimed token to completed after
+// the transaction has committed. A variable so the post-commit
+// failure-safe path (log-and-continue) can be fault-injected in tests.
+var recordIdempotencyCompletion = func(store dbstore.DynamoDBStoreInterface, token, requestHash string, expiresAt time.Time, readUnits map[string]float64) error {
+	return store.Idempotency().Record(token, requestHash, dbstore.IdempotencyStateCompleted, expiresAt, readUnits)
 }
 
 // transactWriteItemsInput carries the already-typed TransactItems member plus
@@ -187,6 +41,10 @@ type transactWriteItemsInput struct {
 // transaction, and fires the post-commit Kinesis and global-table replication
 // side effects.
 func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *request.RequestContext, in transactWriteItemsInput) (map[string]interface{}, error) {
+	if in.TransactItems == nil {
+		return nil, ErrInvalidParameter
+	}
+
 	transactItems := in.TransactItems
 
 	if len(transactItems) > transactMaxItems {
@@ -202,6 +60,16 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 		return nil, ErrInvalidParameter
 	}
 
+	// Response-shaping enums are request validation: an unknown value is
+	// rejected before anything executes.
+	if _, err := getReturnConsumedCapacity(in.Parameters); err != nil {
+		return nil, err
+	}
+	collectionMetrics, err := getItemCollectionMetricsSetting(in.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, fmt.Errorf("transact write items: get store: %w", err)
@@ -212,7 +80,10 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 	// recorded outcome without re-executing, while the same token with a
 	// different payload is rejected.
 	requestHash := ""
-	claimedToken := false
+	// The deferred release covers every post-claim failure path; the
+	// committed path marks the guard before the completion record runs.
+	tokenGuard := &tokenClaimGuard{store: store}
+	defer tokenGuard.release()
 	if clientRequestToken != "" {
 		requestHash = hashTransactWriteRequest(in.Parameters)
 
@@ -252,19 +123,8 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 			unlock()
 			return nil, claimErr
 		}
-		claimedToken = true
+		tokenGuard.claim(clientRequestToken)
 		unlock()
-	}
-
-	// releaseClaimedToken drops the in-progress record after a failed
-	// execution so the client can retry the token.
-	releaseClaimedToken := func() {
-		if !claimedToken {
-			return
-		}
-		if delErr := store.Idempotency().Delete(clientRequestToken); delErr != nil {
-			logs.Error("Failed to release idempotency token claim", logs.Err(delErr))
-		}
 	}
 
 	cancellationReasons := make([]CancellationReason, len(transactItems))
@@ -274,21 +134,74 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 
 	operations, err := parseTransactWriteItems(s, store, transactItems, cancellationReasons)
 	if err != nil {
-		releaseClaimedToken()
 		return nil, err
 	}
+
+	// The aggregate of the supplied items cannot exceed the transaction
+	// limit — the request is rejected before any execution. Updates and
+	// deletes carry no supplied item; their per-item outcomes stay under
+	// the executor's own item-size rejection.
+	var aggregateSize int64
+	for _, op := range operations {
+		if op.itemData != nil {
+			aggregateSize += dbstore.CalculateItemSize(op.itemData)
+		}
+	}
+	if aggregateSize > dbstore.MaxTransactionAggregateBytes {
+		return nil, errTransactWriteAggregateExceeded()
+	}
+
+	// Serialise against other in-flight transactions and single-item
+	// writes on the same items: without cross-transaction coordination the
+	// storage engine's committed-state reads and last-writer-wins commits
+	// would let two transactions addressing one item both commit, silently
+	// losing the earlier write. A rejected item-level request fails the
+	// whole transaction with a TransactionConflict cancellation reason at
+	// that item's slot.
+	txnLockKeys := make([]string, len(operations))
+	lockKeySlot := make(map[string]int, len(operations))
+	for i := range operations {
+		k := itemLockKey(reqCtx.Region, operations[i].tableName, operations[i].key)
+		txnLockKeys[i] = k
+		lockKeySlot[k] = operations[i].idx
+	}
+	if conflictKey, free := tryLockItems(itemLockModeTxn, txnLockKeys); !free {
+		conflictReasons := make([]CancellationReason, len(transactItems))
+		for i := range conflictReasons {
+			conflictReasons[i] = CancellationReason{Code: "None"}
+		}
+		conflictReasons[lockKeySlot[conflictKey]] = CancellationReason{
+			Code:    "TransactionConflict",
+			Message: transactionConflictReasonMessage,
+		}
+		// The transaction never started, so the deferred claim guard
+		// releases the token — a client retrying it after the transient
+		// conflict must not meet the in-progress record.
+		return nil, NewTransactionCanceledError("Transaction canceled", conflictReasons)
+	}
+	defer unlockItems(itemLockModeTxn, txnLockKeys)
 
 	if err := executeTransactWriteItems(ctx, s, store, operations, cancellationReasons); err != nil {
-		releaseClaimedToken()
 		return nil, err
 	}
+	// The writes are durable: the claim survives as the completion path's
+	// record.
+	tokenGuard.markCommitted()
 
-	if claimedToken {
-		if recordErr := store.Idempotency().Record(clientRequestToken, requestHash,
-			dbstore.IdempotencyStateCompleted,
+	if tokenGuard.claimed {
+		// The transaction is already durable at this point: a failure to
+		// promote the token record must not turn the committed success
+		// into an error response — the client would retry into a token
+		// still marked in-progress, the Kinesis and global-table
+		// propagation below would be skipped, and the completion would
+		// never be recorded. The failure is logged and the completion
+		// path continues; in-window retries keep answering the documented
+		// TransactionInProgress for the rest of the window, which is the
+		// bounded outcome, and no code path re-executes the commit.
+		if recordErr := recordIdempotencyCompletion(store, clientRequestToken, requestHash,
 			time.Now().Add(idempotencyWindowMinutes*time.Minute),
 			transactReplayReadUnits(operations)); recordErr != nil {
-			return nil, recordErr
+			logs.Error("Failed to record idempotency completion after committed transaction", logs.Err(recordErr))
 		}
 	}
 
@@ -335,7 +248,7 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 	// ReturnItemCollectionMetrics=SIZE asks for one entry per item
 	// collection the committed transaction wrote; the idempotent replay
 	// path answers with the response shape only, without re-deriving it.
-	if request.GetStringParam(in.Parameters, "ReturnItemCollectionMetrics") == "SIZE" {
+	if collectionMetrics == "SIZE" {
 		if metrics := buildItemCollectionMetricsPerTable(metricsWrites); metrics != nil {
 			resp["ItemCollectionMetrics"] = metrics
 		}
@@ -345,13 +258,18 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 
 // writeOperation represents a single write operation within a transaction.
 type writeOperation struct {
-	idx                          int
-	opType                       string
-	tableName                    string
-	key                          map[string]*dbstore.AttributeValue
-	itemData                     map[string]*dbstore.AttributeValue
-	updateReq                    map[string]interface{}
-	conditionExpr                string
+	idx           int
+	opType        string
+	tableName     string
+	key           map[string]*dbstore.AttributeValue
+	itemData      map[string]*dbstore.AttributeValue
+	updateReq     map[string]interface{}
+	conditionExpr string
+	// condition is the operation's ConditionExpression, parsed and
+	// validated when the operation was built — a malformed condition or
+	// undefined substitution rejects the whole request before the
+	// transaction starts.
+	condition                    *compiledCondition
 	exprAttrNames                map[string]string
 	exprAttrValues               map[string]*dbstore.AttributeValue
 	returnValuesOnConditionCheck string
@@ -367,8 +285,7 @@ type writeOperation struct {
 }
 
 func parseTransactWriteItems(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, transactItems []interface{}, cancellationReasons []CancellationReason) ([]writeOperation, error) {
-	usedWriteKeys := make(map[string]bool)
-	usedConditionKeys := make(map[string]bool)
+	usedItemKeys := make(map[string]bool)
 	var operations []writeOperation
 
 	for idx, item := range transactItems {
@@ -377,19 +294,63 @@ func parseTransactWriteItems(s *DynamoDBService, store dbstore.DynamoDBStoreInte
 			return nil, ErrInvalidParameter
 		}
 
-		op, err := parseWriteOperation(s, store, idx, itemMap, usedWriteKeys, usedConditionKeys, cancellationReasons)
+		op, err := parseWriteOperation(s, store, idx, itemMap, usedItemKeys, cancellationReasons)
 		if err != nil {
 			return nil, err
 		}
-		if op != nil {
-			operations = append(operations, *op)
-		}
+		operations = append(operations, *op)
 	}
 
 	return operations, nil
 }
 
-func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, idx int, itemMap map[string]interface{}, usedWriteKeys map[string]bool, usedConditionKeys map[string]bool, cancellationReasons []CancellationReason) (*writeOperation, error) {
+// errTransactionDuplicateItem is the read plane's request-validation
+// rejection: the TransactGetItems documentation counts the TransactItems
+// members as targeting "distinct items" and enumerates no duplicate-item
+// circumstance among the transaction's cancellation reasons, so a Get
+// action repeated on one item is rejected with the request, before any
+// execution. The write plane answers its duplicates as a cancellation —
+// see parseWriteOperation.
+func errTransactionDuplicateItem() error {
+	return NewAPIError("com.amazon.coral.validate#ValidationException",
+		"Transaction request cannot include multiple operations on one item", http.StatusBadRequest)
+}
+
+// duplicateItemCancellation is the write plane's answer to a duplicate
+// target: a TransactionCanceledException whose reasons carry the offending
+// action's slot as the documented ValidationError pair, with every earlier
+// slot at its None default — the detection runs before any execution, so
+// nothing is written.
+func duplicateItemCancellation(idx int, cancellationReasons []CancellationReason) error {
+	cancellationReasons[idx] = CancellationReason{
+		Code:    "ValidationError",
+		Message: "One or more parameter values were invalid.",
+	}
+	return NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+}
+
+// errTransactWriteAggregateExceeded is the write plane's aggregate-size
+// rejection, verbatim from the TransactWriteItems documentation: "The
+// aggregate size of the items in the transaction exceeds 4 MB."
+func errTransactWriteAggregateExceeded() error {
+	return NewAPIError("com.amazon.coral.validate#ValidationException",
+		"The aggregate size of the items in the transaction exceeds 4 MB", http.StatusBadRequest)
+}
+
+func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, idx int, itemMap map[string]interface{}, usedItemKeys map[string]bool, cancellationReasons []CancellationReason) (*writeOperation, error) {
+	// TransactWriteItem is a union: exactly one action member may be
+	// carried, and one of them must be.
+	present := 0
+	for _, opType := range []string{"Put", "Update", "Delete", "ConditionCheck"} {
+		if v, ok := itemMap[opType]; ok && v != nil {
+			present++
+		}
+	}
+	if present != 1 {
+		return nil, NewAPIError("com.amazon.coral.validate#ValidationException",
+			"TransactWriteItem must contain exactly one of Put, Update, Delete or ConditionCheck", http.StatusBadRequest)
+	}
+
 	for _, opType := range []string{"Put", "Update", "Delete", "ConditionCheck"} {
 		opMap, ok := itemMap[opType].(map[string]interface{})
 		if !ok {
@@ -398,10 +359,14 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 
 		// Request-shape failures (malformed members, unknown or missing
 		// tables) are request-level validation errors answered with
-		// ValidationException or ResourceNotFoundException. Only semantic
-		// per-item outcomes — the same item targeted by more than one
-		// action, condition failures during execution — cancel the
-		// transaction and are reported through CancellationReasons.
+		// ValidationException or ResourceNotFoundException. Semantic
+		// per-item outcomes — two actions targeting one item, condition
+		// failures during execution — cancel the transaction and are
+		// reported through CancellationReasons: the operation
+		// documentation enumerates "more than one action ... targets the
+		// same item" among the circumstances under which the request is
+		// canceled, and lists the reason as Code "ValidationError" with
+		// the message below.
 		tableName := request.GetStringParam(opMap, "TableName")
 		if !validateResourceName(tableName) {
 			return nil, ErrInvalidParameter
@@ -422,26 +387,31 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		key, err := extractOperationKey(s, store, opType, opMap, tableName)
 		if err != nil {
 			var opErr *opParseError
-			if errors.As(err, &opErr) && opErr.code == "ResourceNotFound" {
-				return nil, ErrTableNotFound
+			if errors.As(err, &opErr) {
+				if opErr.code == "ResourceNotFound" {
+					return nil, ErrTableNotFound
+				}
+				// A key that failed a schema validation already carries its
+				// own ValidationException (type mismatch, schema mismatch,
+				// value length); flattening it to the generic invalid-
+				// parameter form would hide which constraint failed.
+				var apiErr *APIError
+				if errors.As(opErr.err, &apiErr) {
+					return nil, apiErr
+				}
 			}
 			return nil, ErrInvalidParameter
 		}
 
 		keyStr := buildKeyString(tableName, key)
-		if opType == "ConditionCheck" {
-			if usedWriteKeys[keyStr] {
-				cancellationReasons[idx] = CancellationReason{Code: "ValidationError", Message: "One or more parameter values were invalid."}
-				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
-			}
-			usedConditionKeys[keyStr] = true
-		} else {
-			if usedWriteKeys[keyStr] || usedConditionKeys[keyStr] {
-				cancellationReasons[idx] = CancellationReason{Code: "ValidationError", Message: "One or more parameter values were invalid."}
-				return nil, NewTransactionCanceledError("Transaction canceled", cancellationReasons)
-			}
-			usedWriteKeys[keyStr] = true
+		// "No two of them can operate on the same item" — the rule is
+		// uniform across all four actions, so one map records every
+		// operation's item and any second entry is the duplicate
+		// cancellation.
+		if usedItemKeys[keyStr] {
+			return nil, duplicateItemCancellation(idx, cancellationReasons)
 		}
+		usedItemKeys[keyStr] = true
 
 		opNames, namesErr := parseExpressionAttributeNames(opMap)
 		if namesErr != nil {
@@ -467,6 +437,14 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		if opType == "ConditionCheck" && op.conditionExpr == "" {
 			// ConditionExpression is required for ConditionCheck (Smithy @required).
 			return nil, ErrInvalidParameter
+		}
+
+		if op.conditionExpr != "" {
+			compiled, condErr := compileConditionExpression(op.conditionExpr, opNames, opValues)
+			if condErr != nil {
+				return nil, condErr
+			}
+			op.condition = compiled
 		}
 
 		if opType == "Put" {
@@ -517,6 +495,9 @@ func extractOperationKey(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		if key == nil {
 			return nil, &opParseError{code: "ValidationError", err: fmt.Errorf("failed to extract key")}
 		}
+		if !validateKeyAttributeValue(key) {
+			return nil, &opParseError{code: "ValidationError", err: ErrInvalidParameter}
+		}
 		if err := validateItemKeyTypes(table, itemData); err != nil {
 			return nil, &opParseError{code: "ValidationError", err: err}
 		}
@@ -528,6 +509,9 @@ func extractOperationKey(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 		return nil, &opParseError{code: "ValidationError", err: fmt.Errorf("invalid key")}
 	}
 	if err := validateKeyTypes(table, key); err != nil {
+		return nil, &opParseError{code: "ValidationError", err: err}
+	}
+	if err := validateKeySchemaMembership(table, key); err != nil {
 		return nil, &opParseError{code: "ValidationError", err: err}
 	}
 	return key, nil
@@ -554,6 +538,17 @@ func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store db
 		twoPhase.AddExecutor(storage.ExecutorFunc(func(ctx context.Context, txn storage.Transaction) error {
 			dbTxn := store.NewTxn(txn)
 			if err := executeWriteOperation(dbTxn, opPtr); err != nil {
+				// An item grown past the size cap by the operation's
+				// changes rejects the whole transaction with the
+				// documented ValidationError cancellation reason at the
+				// offending operation's slot.
+				if errors.Is(err, errTransactionItemSizeExceeded) {
+					cancellationReasons[opPtr.idx] = CancellationReason{
+						Code:    "ValidationError",
+						Message: errTransactionItemSizeExceeded.Error(),
+					}
+					return NewTransactionCanceledError("Transaction canceled", cancellationReasons)
+				}
 				return err
 			}
 			contributorEvents = append(contributorEvents, dbTxn.TakeContributorWrites()...)
@@ -574,7 +569,9 @@ func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store db
 			if tblErr != nil || table == nil || table.StreamSpecification == nil || !table.StreamSpecification.StreamEnabled {
 				continue
 			}
-			s.captureStreamChangeTxn(dbTxn, store, table, streamEventForWrite(op.opType == "Delete", op.streamWasNew), op.key, op.streamNewImage, op.streamOldImage)
+			if err := s.captureStreamChangeTxn(dbTxn, store, table, streamEventForWrite(op.opType == "Delete", op.streamWasNew), op.key, op.streamNewImage, op.streamOldImage); err != nil {
+				return err
+			}
 		}
 		return nil
 	}))
@@ -586,6 +583,18 @@ func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store db
 		var canceledErr *TransactionCanceledError
 		if errors.As(err, &canceledErr) {
 			return canceledErr
+		}
+		// A validation error surfacing from an executor — an update
+		// expression that does not parse, a key-attribute guard hit, a
+		// type mismatch — is a user error, and the operation documents
+		// user errors among the conditions that reject the request: the
+		// same ValidationException the single-item plane answers, never
+		// a bare cancellation. TransactionCanceledError is checked first
+		// because it embeds APIError. Storage faults carry no APIError
+		// and keep the bare cancellation shape.
+		var apiErr *APIError
+		if errors.As(err, &apiErr) {
+			return apiErr
 		}
 		return ErrTransactionCanceled
 	}
@@ -622,12 +631,8 @@ func validateWriteOperation(_ context.Context, txn storage.Transaction, dbTxn *d
 	// its key attributes, and an absent item sizes to zero.
 	op.itemSize = dbstore.CalculateItemSize(item.Attributes)
 
-	if op.conditionExpr != "" {
-		conditionMet, err := evaluateConditionExpression(item, op.conditionExpr, op.exprAttrNames, op.exprAttrValues)
-		if err != nil {
-			return fmt.Errorf("validator condition check %s: %w", op.tableName, err)
-		}
-		if !conditionMet {
+	if op.condition != nil {
+		if !op.condition.matches(item) {
 			reason := CancellationReason{Code: "ConditionalCheckFailed", Message: "The conditional request failed"}
 			if op.returnValuesOnConditionCheck == "ALL_OLD" && item != nil && itemExists {
 				reason.Item = buildItemResponse(item.Attributes)
@@ -660,7 +665,18 @@ func executeWriteOperation(dbTxn *dbstore.DynamoDBTxn, op *writeOperation) error
 	return nil
 }
 
+// errTransactionItemSizeExceeded is the executor-phase sentinel for an
+// item the transaction's own changes grew past the documented single-item
+// cap. The TransactWriteItems contract rejects the entire request when "An
+// item size becomes too large (bigger than 400 KB) ... because of changes
+// made by the transaction"; the message text is the service's own form for
+// an oversized item.
+var errTransactionItemSizeExceeded = errors.New("Item size has exceeded the maximum allowed size")
+
 func executePutOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool) error {
+	if dbstore.CalculateItemSize(op.itemData) > dbstore.MaxItemSizeBytes {
+		return errTransactionItemSizeExceeded
+	}
 	var oldItem *dbstore.Item
 	var oldItemSize int64
 	if exists {
@@ -718,13 +734,22 @@ func executeUpdateOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool
 			return fmt.Errorf("update get table %s: %w", op.tableName, tableErr)
 		}
 		names := op.exprAttrNames
-		paths := extractUpdatedPaths(updateExpr, names)
+		paths, exprErr := extractUpdatedPaths(updateExpr, names)
+		if exprErr != nil {
+			return exprErr
+		}
 		if err := validateNotKeyAttributes(table, paths); err != nil {
 			return err
 		}
 		if err := applyUpdateExpression(attrs, updateExpr, op.exprAttrNames, op.exprAttrValues); err != nil {
 			return fmt.Errorf("apply update expression %s: %w", op.tableName, err)
 		}
+	}
+
+	// The post-update size is checked before the write: an expression can
+	// grow an item past the cap the whole-item arrivals never exceed.
+	if dbstore.CalculateItemSize(attrs) > dbstore.MaxItemSizeBytes {
+		return errTransactionItemSizeExceeded
 	}
 
 	if err := dbTxn.StoreItemWrite(op.tableName, op.key, attrs, nil, exists, oldItemSize); err != nil {
@@ -815,7 +840,12 @@ func transactItemWriteUnits(itemSizeBytes int64) float64 {
 func buildTransactWriteResponse(params map[string]interface{}, operations []writeOperation, replay bool, replayReadUnits map[string]float64) map[string]interface{} {
 	resp := map[string]interface{}{}
 
-	returnConsumedCapacity := getReturnConsumedCapacity(params)
+	// Both callers validate the enum at their Core entry, so the error path
+	// here is defensive: an (impossible) unknown value shapes no capacity.
+	returnConsumedCapacity, capErr := getReturnConsumedCapacity(params)
+	if capErr != nil {
+		return resp
+	}
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
 		writeUnits := make(map[string]float64)
 		readUnits := make(map[string]float64)

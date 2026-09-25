@@ -1948,7 +1948,7 @@ type AccessKeyMetadata struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Accesskeyid   *string                `protobuf:"bytes,453893024,opt,name=accesskeyid,proto3,oneof" json:"accesskeyid,omitempty"`
 	Createdate    *string                `protobuf:"bytes,37690514,opt,name=createdate,proto3,oneof" json:"createdate,omitempty"`
-	Status        StatusType             `protobuf:"varint,6222352,opt,name=status,proto3,enum=iam.StatusType" json:"status,omitempty"`
+	Status        *StatusType            `protobuf:"varint,6222352,opt,name=status,proto3,enum=iam.StatusType,oneof" json:"status,omitempty"`
 	Username      *string                `protobuf:"bytes,473243898,opt,name=username,proto3,oneof" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1999,8 +1999,8 @@ func (x *AccessKeyMetadata) GetCreatedate() string {
 }
 
 func (x *AccessKeyMetadata) GetStatus() StatusType {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return StatusType_STATUS_TYPE_ACTIVE
 }
@@ -2517,9 +2517,9 @@ func (x *AttachUserPolicyRequest) GetUsername() string {
 }
 
 type AttachedPermissionsBoundary struct {
-	state                   protoimpl.MessageState            `protogen:"open.v1"`
-	Permissionsboundaryarn  *string                           `protobuf:"bytes,488828173,opt,name=permissionsboundaryarn,proto3,oneof" json:"permissionsboundaryarn,omitempty"`
-	Permissionsboundarytype PermissionsBoundaryAttachmentType `protobuf:"varint,523357118,opt,name=permissionsboundarytype,proto3,enum=iam.PermissionsBoundaryAttachmentType" json:"permissionsboundarytype,omitempty"`
+	state                   protoimpl.MessageState             `protogen:"open.v1"`
+	Permissionsboundaryarn  *string                            `protobuf:"bytes,488828173,opt,name=permissionsboundaryarn,proto3,oneof" json:"permissionsboundaryarn,omitempty"`
+	Permissionsboundarytype *PermissionsBoundaryAttachmentType `protobuf:"varint,523357118,opt,name=permissionsboundarytype,proto3,enum=iam.PermissionsBoundaryAttachmentType,oneof" json:"permissionsboundarytype,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2562,8 +2562,8 @@ func (x *AttachedPermissionsBoundary) GetPermissionsboundaryarn() string {
 }
 
 func (x *AttachedPermissionsBoundary) GetPermissionsboundarytype() PermissionsBoundaryAttachmentType {
-	if x != nil {
-		return x.Permissionsboundarytype
+	if x != nil && x.Permissionsboundarytype != nil {
+		return *x.Permissionsboundarytype
 	}
 	return PermissionsBoundaryAttachmentType_PERMISSIONS_BOUNDARY_ATTACHMENT_TYPE_POLICY
 }
@@ -2763,7 +2763,7 @@ func (x *ConcurrentModificationException) GetMessage() string {
 type ContextEntry struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Contextkeyname   *string                `protobuf:"bytes,259692145,opt,name=contextkeyname,proto3,oneof" json:"contextkeyname,omitempty"`
-	Contextkeytype   ContextKeyTypeEnum     `protobuf:"varint,4954324,opt,name=contextkeytype,proto3,enum=iam.ContextKeyTypeEnum" json:"contextkeytype,omitempty"`
+	Contextkeytype   *ContextKeyTypeEnum    `protobuf:"varint,4954324,opt,name=contextkeytype,proto3,enum=iam.ContextKeyTypeEnum,oneof" json:"contextkeytype,omitempty"`
 	Contextkeyvalues []string               `protobuf:"bytes,410115170,rep,name=contextkeyvalues,proto3" json:"contextkeyvalues,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -2807,8 +2807,8 @@ func (x *ContextEntry) GetContextkeyname() string {
 }
 
 func (x *ContextEntry) GetContextkeytype() ContextKeyTypeEnum {
-	if x != nil {
-		return x.Contextkeytype
+	if x != nil && x.Contextkeytype != nil {
+		return *x.Contextkeytype
 	}
 	return ContextKeyTypeEnum_CONTEXT_KEY_TYPE_ENUM_NUMERIC_LIST
 }
@@ -3897,12 +3897,12 @@ func (x *CreateRoleResponse) GetRole() *Role {
 }
 
 type CreateSAMLProviderRequest struct {
-	state                   protoimpl.MessageState      `protogen:"open.v1"`
-	Addprivatekey           *string                     `protobuf:"bytes,205767607,opt,name=addprivatekey,proto3,oneof" json:"addprivatekey,omitempty"`
-	Assertionencryptionmode AssertionEncryptionModeType `protobuf:"varint,474560298,opt,name=assertionencryptionmode,proto3,enum=iam.AssertionEncryptionModeType" json:"assertionencryptionmode,omitempty"`
-	Name                    string                      `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Samlmetadatadocument    string                      `protobuf:"bytes,282432645,opt,name=samlmetadatadocument,proto3" json:"samlmetadatadocument,omitempty"`
-	Tags                    []*Tag                      `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	state                   protoimpl.MessageState       `protogen:"open.v1"`
+	Addprivatekey           *string                      `protobuf:"bytes,205767607,opt,name=addprivatekey,proto3,oneof" json:"addprivatekey,omitempty"`
+	Assertionencryptionmode *AssertionEncryptionModeType `protobuf:"varint,474560298,opt,name=assertionencryptionmode,proto3,enum=iam.AssertionEncryptionModeType,oneof" json:"assertionencryptionmode,omitempty"`
+	Name                    string                       `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Samlmetadatadocument    string                       `protobuf:"bytes,282432645,opt,name=samlmetadatadocument,proto3" json:"samlmetadatadocument,omitempty"`
+	Tags                    []*Tag                       `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -3945,8 +3945,8 @@ func (x *CreateSAMLProviderRequest) GetAddprivatekey() string {
 }
 
 func (x *CreateSAMLProviderRequest) GetAssertionencryptionmode() AssertionEncryptionModeType {
-	if x != nil {
-		return x.Assertionencryptionmode
+	if x != nil && x.Assertionencryptionmode != nil {
+		return *x.Assertionencryptionmode
 	}
 	return AssertionEncryptionModeType_ASSERTION_ENCRYPTION_MODE_TYPE_REQUIRED
 }
@@ -4704,7 +4704,7 @@ type DelegationRequest struct {
 	Requestorname                 *string                `protobuf:"bytes,16690957,opt,name=requestorname,proto3,oneof" json:"requestorname,omitempty"`
 	Rolepermissionrestrictionarns []string               `protobuf:"bytes,47253157,rep,name=rolepermissionrestrictionarns,proto3" json:"rolepermissionrestrictionarns,omitempty"`
 	Sessionduration               *int32                 `protobuf:"varint,413635428,opt,name=sessionduration,proto3,oneof" json:"sessionduration,omitempty"`
-	State                         StateType              `protobuf:"varint,502047895,opt,name=state,proto3,enum=iam.StateType" json:"state,omitempty"`
+	State                         *StateType             `protobuf:"varint,502047895,opt,name=state,proto3,enum=iam.StateType,oneof" json:"state,omitempty"`
 	Updatedtime                   *string                `protobuf:"bytes,156274570,opt,name=updatedtime,proto3,oneof" json:"updatedtime,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -4867,8 +4867,8 @@ func (x *DelegationRequest) GetSessionduration() int32 {
 }
 
 func (x *DelegationRequest) GetState() StateType {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return StateType_STATE_TYPE_ACCEPTED
 }
@@ -7227,7 +7227,7 @@ func (x *FeatureEnabledException) GetMessage() string {
 type GenerateCredentialReportResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	State         ReportStateType        `protobuf:"varint,502047895,opt,name=state,proto3,enum=iam.ReportStateType" json:"state,omitempty"`
+	State         *ReportStateType       `protobuf:"varint,502047895,opt,name=state,proto3,enum=iam.ReportStateType,oneof" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7270,8 +7270,8 @@ func (x *GenerateCredentialReportResponse) GetDescription() string {
 }
 
 func (x *GenerateCredentialReportResponse) GetState() ReportStateType {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ReportStateType_REPORT_STATE_TYPE_STARTED
 }
@@ -7373,9 +7373,9 @@ func (x *GenerateOrganizationsAccessReportResponse) GetJobid() string {
 }
 
 type GenerateServiceLastAccessedDetailsRequest struct {
-	state         protoimpl.MessageState            `protogen:"open.v1"`
-	Arn           string                            `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Granularity   AccessAdvisorUsageGranularityType `protobuf:"varint,498840280,opt,name=granularity,proto3,enum=iam.AccessAdvisorUsageGranularityType" json:"granularity,omitempty"`
+	state         protoimpl.MessageState             `protogen:"open.v1"`
+	Arn           string                             `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
+	Granularity   *AccessAdvisorUsageGranularityType `protobuf:"varint,498840280,opt,name=granularity,proto3,enum=iam.AccessAdvisorUsageGranularityType,oneof" json:"granularity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7418,8 +7418,8 @@ func (x *GenerateServiceLastAccessedDetailsRequest) GetArn() string {
 }
 
 func (x *GenerateServiceLastAccessedDetailsRequest) GetGranularity() AccessAdvisorUsageGranularityType {
-	if x != nil {
-		return x.Granularity
+	if x != nil && x.Granularity != nil {
+		return *x.Granularity
 	}
 	return AccessAdvisorUsageGranularityType_ACCESS_ADVISOR_USAGE_GRANULARITY_TYPE_SERVICE_LEVEL
 }
@@ -8020,7 +8020,7 @@ type GetCredentialReportResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Content       []byte                 `protobuf:"bytes,23568227,opt,name=content,proto3,oneof" json:"content,omitempty"`
 	Generatedtime *string                `protobuf:"bytes,88097636,opt,name=generatedtime,proto3,oneof" json:"generatedtime,omitempty"`
-	Reportformat  ReportFormatType       `protobuf:"varint,67774421,opt,name=reportformat,proto3,enum=iam.ReportFormatType" json:"reportformat,omitempty"`
+	Reportformat  *ReportFormatType      `protobuf:"varint,67774421,opt,name=reportformat,proto3,enum=iam.ReportFormatType,oneof" json:"reportformat,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8070,8 +8070,8 @@ func (x *GetCredentialReportResponse) GetGeneratedtime() string {
 }
 
 func (x *GetCredentialReportResponse) GetReportformat() ReportFormatType {
-	if x != nil {
-		return x.Reportformat
+	if x != nil && x.Reportformat != nil {
+		return *x.Reportformat
 	}
 	return ReportFormatType_REPORT_FORMAT_TYPE_TEXT_CSV
 }
@@ -8129,10 +8129,10 @@ func (x *GetDelegationRequestRequest) GetDelegationrequestid() string {
 }
 
 type GetDelegationRequestResponse struct {
-	state                 protoimpl.MessageState    `protogen:"open.v1"`
-	Delegationrequest     *DelegationRequest        `protobuf:"bytes,331878529,opt,name=delegationrequest,proto3" json:"delegationrequest,omitempty"`
-	Permissioncheckresult PermissionCheckResultType `protobuf:"varint,120682140,opt,name=permissioncheckresult,proto3,enum=iam.PermissionCheckResultType" json:"permissioncheckresult,omitempty"`
-	Permissioncheckstatus PermissionCheckStatusType `protobuf:"varint,164847565,opt,name=permissioncheckstatus,proto3,enum=iam.PermissionCheckStatusType" json:"permissioncheckstatus,omitempty"`
+	state                 protoimpl.MessageState     `protogen:"open.v1"`
+	Delegationrequest     *DelegationRequest         `protobuf:"bytes,331878529,opt,name=delegationrequest,proto3" json:"delegationrequest,omitempty"`
+	Permissioncheckresult *PermissionCheckResultType `protobuf:"varint,120682140,opt,name=permissioncheckresult,proto3,enum=iam.PermissionCheckResultType,oneof" json:"permissioncheckresult,omitempty"`
+	Permissioncheckstatus *PermissionCheckStatusType `protobuf:"varint,164847565,opt,name=permissioncheckstatus,proto3,enum=iam.PermissionCheckStatusType,oneof" json:"permissioncheckstatus,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -8175,15 +8175,15 @@ func (x *GetDelegationRequestResponse) GetDelegationrequest() *DelegationRequest
 }
 
 func (x *GetDelegationRequestResponse) GetPermissioncheckresult() PermissionCheckResultType {
-	if x != nil {
-		return x.Permissioncheckresult
+	if x != nil && x.Permissioncheckresult != nil {
+		return *x.Permissioncheckresult
 	}
 	return PermissionCheckResultType_PERMISSION_CHECK_RESULT_TYPE_UNSURE
 }
 
 func (x *GetDelegationRequestResponse) GetPermissioncheckstatus() PermissionCheckStatusType {
-	if x != nil {
-		return x.Permissioncheckstatus
+	if x != nil && x.Permissioncheckstatus != nil {
+		return *x.Permissioncheckstatus
 	}
 	return PermissionCheckStatusType_PERMISSION_CHECK_STATUS_TYPE_IN_PROGRESS
 }
@@ -8484,7 +8484,7 @@ type GetHumanReadableSummaryResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Locale         *string                `protobuf:"bytes,493771704,opt,name=locale,proto3,oneof" json:"locale,omitempty"`
 	Summarycontent *string                `protobuf:"bytes,116389717,opt,name=summarycontent,proto3,oneof" json:"summarycontent,omitempty"`
-	Summarystate   SummaryStateType       `protobuf:"varint,124704997,opt,name=summarystate,proto3,enum=iam.SummaryStateType" json:"summarystate,omitempty"`
+	Summarystate   *SummaryStateType      `protobuf:"varint,124704997,opt,name=summarystate,proto3,enum=iam.SummaryStateType,oneof" json:"summarystate,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -8534,8 +8534,8 @@ func (x *GetHumanReadableSummaryResponse) GetSummarycontent() string {
 }
 
 func (x *GetHumanReadableSummaryResponse) GetSummarystate() SummaryStateType {
-	if x != nil {
-		return x.Summarystate
+	if x != nil && x.Summarystate != nil {
+		return *x.Summarystate
 	}
 	return SummaryStateType_SUMMARY_STATE_TYPE_AVAILABLE
 }
@@ -8961,7 +8961,7 @@ type GetOrganizationsAccessReportRequest struct {
 	Jobid         string                 `protobuf:"bytes,108489298,opt,name=jobid,proto3" json:"jobid,omitempty"`
 	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxitems      *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Sortkey       SortKeyType            `protobuf:"varint,407935321,opt,name=sortkey,proto3,enum=iam.SortKeyType" json:"sortkey,omitempty"`
+	Sortkey       *SortKeyType           `protobuf:"varint,407935321,opt,name=sortkey,proto3,enum=iam.SortKeyType,oneof" json:"sortkey,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9018,8 +9018,8 @@ func (x *GetOrganizationsAccessReportRequest) GetMaxitems() int32 {
 }
 
 func (x *GetOrganizationsAccessReportRequest) GetSortkey() SortKeyType {
-	if x != nil {
-		return x.Sortkey
+	if x != nil && x.Sortkey != nil {
+		return *x.Sortkey
 	}
 	return SortKeyType_SORT_KEY_TYPE_LAST_AUTHENTICATED_TIME_DESCENDING
 }
@@ -9709,14 +9709,14 @@ func (x *GetSAMLProviderRequest) GetSamlproviderarn() string {
 }
 
 type GetSAMLProviderResponse struct {
-	state                   protoimpl.MessageState      `protogen:"open.v1"`
-	Assertionencryptionmode AssertionEncryptionModeType `protobuf:"varint,474560298,opt,name=assertionencryptionmode,proto3,enum=iam.AssertionEncryptionModeType" json:"assertionencryptionmode,omitempty"`
-	Createdate              *string                     `protobuf:"bytes,37690514,opt,name=createdate,proto3,oneof" json:"createdate,omitempty"`
-	Privatekeylist          []*SAMLPrivateKey           `protobuf:"bytes,145689700,rep,name=privatekeylist,proto3" json:"privatekeylist,omitempty"`
-	Samlmetadatadocument    *string                     `protobuf:"bytes,282432645,opt,name=samlmetadatadocument,proto3,oneof" json:"samlmetadatadocument,omitempty"`
-	Samlprovideruuid        *string                     `protobuf:"bytes,241210667,opt,name=samlprovideruuid,proto3,oneof" json:"samlprovideruuid,omitempty"`
-	Tags                    []*Tag                      `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Validuntil              *string                     `protobuf:"bytes,366644404,opt,name=validuntil,proto3,oneof" json:"validuntil,omitempty"`
+	state                   protoimpl.MessageState       `protogen:"open.v1"`
+	Assertionencryptionmode *AssertionEncryptionModeType `protobuf:"varint,474560298,opt,name=assertionencryptionmode,proto3,enum=iam.AssertionEncryptionModeType,oneof" json:"assertionencryptionmode,omitempty"`
+	Createdate              *string                      `protobuf:"bytes,37690514,opt,name=createdate,proto3,oneof" json:"createdate,omitempty"`
+	Privatekeylist          []*SAMLPrivateKey            `protobuf:"bytes,145689700,rep,name=privatekeylist,proto3" json:"privatekeylist,omitempty"`
+	Samlmetadatadocument    *string                      `protobuf:"bytes,282432645,opt,name=samlmetadatadocument,proto3,oneof" json:"samlmetadatadocument,omitempty"`
+	Samlprovideruuid        *string                      `protobuf:"bytes,241210667,opt,name=samlprovideruuid,proto3,oneof" json:"samlprovideruuid,omitempty"`
+	Tags                    []*Tag                       `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	Validuntil              *string                      `protobuf:"bytes,366644404,opt,name=validuntil,proto3,oneof" json:"validuntil,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -9752,8 +9752,8 @@ func (*GetSAMLProviderResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetSAMLProviderResponse) GetAssertionencryptionmode() AssertionEncryptionModeType {
-	if x != nil {
-		return x.Assertionencryptionmode
+	if x != nil && x.Assertionencryptionmode != nil {
+		return *x.Assertionencryptionmode
 	}
 	return AssertionEncryptionModeType_ASSERTION_ENCRYPTION_MODE_TYPE_REQUIRED
 }
@@ -10053,15 +10053,15 @@ func (x *GetServiceLastAccessedDetailsRequest) GetMaxitems() int32 {
 }
 
 type GetServiceLastAccessedDetailsResponse struct {
-	state                protoimpl.MessageState            `protogen:"open.v1"`
-	Error                *ErrorDetails                     `protobuf:"bytes,328047858,opt,name=error,proto3" json:"error,omitempty"`
-	Istruncated          *bool                             `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Jobcompletiondate    string                            `protobuf:"bytes,517991255,opt,name=jobcompletiondate,proto3" json:"jobcompletiondate,omitempty"`
-	Jobcreationdate      string                            `protobuf:"bytes,201415034,opt,name=jobcreationdate,proto3" json:"jobcreationdate,omitempty"`
-	Jobstatus            JobStatusType                     `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=iam.JobStatusType" json:"jobstatus,omitempty"`
-	Jobtype              AccessAdvisorUsageGranularityType `protobuf:"varint,279889397,opt,name=jobtype,proto3,enum=iam.AccessAdvisorUsageGranularityType" json:"jobtype,omitempty"`
-	Marker               *string                           `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
-	Serviceslastaccessed []*ServiceLastAccessed            `protobuf:"bytes,264776823,rep,name=serviceslastaccessed,proto3" json:"serviceslastaccessed,omitempty"`
+	state                protoimpl.MessageState             `protogen:"open.v1"`
+	Error                *ErrorDetails                      `protobuf:"bytes,328047858,opt,name=error,proto3" json:"error,omitempty"`
+	Istruncated          *bool                              `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
+	Jobcompletiondate    string                             `protobuf:"bytes,517991255,opt,name=jobcompletiondate,proto3" json:"jobcompletiondate,omitempty"`
+	Jobcreationdate      string                             `protobuf:"bytes,201415034,opt,name=jobcreationdate,proto3" json:"jobcreationdate,omitempty"`
+	Jobstatus            JobStatusType                      `protobuf:"varint,108973639,opt,name=jobstatus,proto3,enum=iam.JobStatusType" json:"jobstatus,omitempty"`
+	Jobtype              *AccessAdvisorUsageGranularityType `protobuf:"varint,279889397,opt,name=jobtype,proto3,enum=iam.AccessAdvisorUsageGranularityType,oneof" json:"jobtype,omitempty"`
+	Marker               *string                            `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
+	Serviceslastaccessed []*ServiceLastAccessed             `protobuf:"bytes,264776823,rep,name=serviceslastaccessed,proto3" json:"serviceslastaccessed,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -10132,8 +10132,8 @@ func (x *GetServiceLastAccessedDetailsResponse) GetJobstatus() JobStatusType {
 }
 
 func (x *GetServiceLastAccessedDetailsResponse) GetJobtype() AccessAdvisorUsageGranularityType {
-	if x != nil {
-		return x.Jobtype
+	if x != nil && x.Jobtype != nil {
+		return *x.Jobtype
 	}
 	return AccessAdvisorUsageGranularityType_ACCESS_ADVISOR_USAGE_GRANULARITY_TYPE_SERVICE_LEVEL
 }
@@ -12026,12 +12026,12 @@ func (x *ListDelegationRequestsResponse) GetIstruncated() bool {
 
 type ListEntitiesForPolicyRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Entityfilter      EntityType             `protobuf:"varint,325795861,opt,name=entityfilter,proto3,enum=iam.EntityType" json:"entityfilter,omitempty"`
+	Entityfilter      *EntityType            `protobuf:"varint,325795861,opt,name=entityfilter,proto3,enum=iam.EntityType,oneof" json:"entityfilter,omitempty"`
 	Marker            *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxitems          *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Pathprefix        *string                `protobuf:"bytes,398040011,opt,name=pathprefix,proto3,oneof" json:"pathprefix,omitempty"`
 	Policyarn         string                 `protobuf:"bytes,497985859,opt,name=policyarn,proto3" json:"policyarn,omitempty"`
-	Policyusagefilter PolicyUsageType        `protobuf:"varint,102535305,opt,name=policyusagefilter,proto3,enum=iam.PolicyUsageType" json:"policyusagefilter,omitempty"`
+	Policyusagefilter *PolicyUsageType       `protobuf:"varint,102535305,opt,name=policyusagefilter,proto3,enum=iam.PolicyUsageType,oneof" json:"policyusagefilter,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -12067,8 +12067,8 @@ func (*ListEntitiesForPolicyRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListEntitiesForPolicyRequest) GetEntityfilter() EntityType {
-	if x != nil {
-		return x.Entityfilter
+	if x != nil && x.Entityfilter != nil {
+		return *x.Entityfilter
 	}
 	return EntityType_ENTITY_TYPE_GROUP
 }
@@ -12102,8 +12102,8 @@ func (x *ListEntitiesForPolicyRequest) GetPolicyarn() string {
 }
 
 func (x *ListEntitiesForPolicyRequest) GetPolicyusagefilter() PolicyUsageType {
-	if x != nil {
-		return x.Policyusagefilter
+	if x != nil && x.Policyusagefilter != nil {
+		return *x.Policyusagefilter
 	}
 	return PolicyUsageType_POLICY_USAGE_TYPE_PERMISSIONSPOLICY
 }
@@ -13610,8 +13610,8 @@ type ListPoliciesRequest struct {
 	Maxitems          *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Onlyattached      *bool                  `protobuf:"varint,264348868,opt,name=onlyattached,proto3,oneof" json:"onlyattached,omitempty"`
 	Pathprefix        *string                `protobuf:"bytes,398040011,opt,name=pathprefix,proto3,oneof" json:"pathprefix,omitempty"`
-	Policyusagefilter PolicyUsageType        `protobuf:"varint,102535305,opt,name=policyusagefilter,proto3,enum=iam.PolicyUsageType" json:"policyusagefilter,omitempty"`
-	Scope             PolicyScopeType        `protobuf:"varint,65430924,opt,name=scope,proto3,enum=iam.PolicyScopeType" json:"scope,omitempty"`
+	Policyusagefilter *PolicyUsageType       `protobuf:"varint,102535305,opt,name=policyusagefilter,proto3,enum=iam.PolicyUsageType,oneof" json:"policyusagefilter,omitempty"`
+	Scope             *PolicyScopeType       `protobuf:"varint,65430924,opt,name=scope,proto3,enum=iam.PolicyScopeType,oneof" json:"scope,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -13675,15 +13675,15 @@ func (x *ListPoliciesRequest) GetPathprefix() string {
 }
 
 func (x *ListPoliciesRequest) GetPolicyusagefilter() PolicyUsageType {
-	if x != nil {
-		return x.Policyusagefilter
+	if x != nil && x.Policyusagefilter != nil {
+		return *x.Policyusagefilter
 	}
 	return PolicyUsageType_POLICY_USAGE_TYPE_PERMISSIONSPOLICY
 }
 
 func (x *ListPoliciesRequest) GetScope() PolicyScopeType {
-	if x != nil {
-		return x.Scope
+	if x != nil && x.Scope != nil {
+		return *x.Scope
 	}
 	return PolicyScopeType_POLICY_SCOPE_TYPE_LOCAL
 }
@@ -15526,7 +15526,7 @@ func (x *ListUsersResponse) GetUsers() []*User {
 
 type ListVirtualMFADevicesRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Assignmentstatus AssignmentStatusType   `protobuf:"varint,277782963,opt,name=assignmentstatus,proto3,enum=iam.AssignmentStatusType" json:"assignmentstatus,omitempty"`
+	Assignmentstatus *AssignmentStatusType  `protobuf:"varint,277782963,opt,name=assignmentstatus,proto3,enum=iam.AssignmentStatusType,oneof" json:"assignmentstatus,omitempty"`
 	Marker           *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxitems         *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -15564,8 +15564,8 @@ func (*ListVirtualMFADevicesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListVirtualMFADevicesRequest) GetAssignmentstatus() AssignmentStatusType {
-	if x != nil {
-		return x.Assignmentstatus
+	if x != nil && x.Assignmentstatus != nil {
+		return *x.Assignmentstatus
 	}
 	return AssignmentStatusType_ASSIGNMENT_STATUS_TYPE_ANY
 }
@@ -16863,7 +16863,7 @@ func (x *PolicyEvaluationException) GetMessage() string {
 type PolicyGrantingServiceAccess struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Entityname    *string                `protobuf:"bytes,79565666,opt,name=entityname,proto3,oneof" json:"entityname,omitempty"`
-	Entitytype    PolicyOwnerEntityType  `protobuf:"varint,327275163,opt,name=entitytype,proto3,enum=iam.PolicyOwnerEntityType" json:"entitytype,omitempty"`
+	Entitytype    *PolicyOwnerEntityType `protobuf:"varint,327275163,opt,name=entitytype,proto3,enum=iam.PolicyOwnerEntityType,oneof" json:"entitytype,omitempty"`
 	Policyarn     *string                `protobuf:"bytes,497985859,opt,name=policyarn,proto3,oneof" json:"policyarn,omitempty"`
 	Policyname    string                 `protobuf:"bytes,266468029,opt,name=policyname,proto3" json:"policyname,omitempty"`
 	Policytype    PolicyType             `protobuf:"varint,470619144,opt,name=policytype,proto3,enum=iam.PolicyType" json:"policytype,omitempty"`
@@ -16909,8 +16909,8 @@ func (x *PolicyGrantingServiceAccess) GetEntityname() string {
 }
 
 func (x *PolicyGrantingServiceAccess) GetEntitytype() PolicyOwnerEntityType {
-	if x != nil {
-		return x.Entitytype
+	if x != nil && x.Entitytype != nil {
+		return *x.Entitytype
 	}
 	return PolicyOwnerEntityType_POLICY_OWNER_ENTITY_TYPE_GROUP
 }
@@ -16992,7 +16992,7 @@ type PolicyIdentifier struct {
 	state                  protoimpl.MessageState      `protogen:"open.v1"`
 	Inlinepolicyidentifier *InlinePolicyIdentifierType `protobuf:"bytes,170017278,opt,name=inlinepolicyidentifier,proto3" json:"inlinepolicyidentifier,omitempty"`
 	Policyarn              *string                     `protobuf:"bytes,497985859,opt,name=policyarn,proto3,oneof" json:"policyarn,omitempty"`
-	Policytype             PolicyIdentifierPolicyType  `protobuf:"varint,470619144,opt,name=policytype,proto3,enum=iam.PolicyIdentifierPolicyType" json:"policytype,omitempty"`
+	Policytype             *PolicyIdentifierPolicyType `protobuf:"varint,470619144,opt,name=policytype,proto3,enum=iam.PolicyIdentifierPolicyType,oneof" json:"policytype,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -17042,8 +17042,8 @@ func (x *PolicyIdentifier) GetPolicyarn() string {
 }
 
 func (x *PolicyIdentifier) GetPolicytype() PolicyIdentifierPolicyType {
-	if x != nil {
-		return x.Policytype
+	if x != nil && x.Policytype != nil {
+		return *x.Policytype
 	}
 	return PolicyIdentifierPolicyType_POLICY_IDENTIFIER_POLICY_TYPE_SCP
 }
@@ -17093,10 +17093,10 @@ func (x *PolicyNotAttachableException) GetMessage() string {
 }
 
 type PolicyParameter struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Name          *string                 `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Type          PolicyParameterTypeEnum `protobuf:"varint,290836590,opt,name=type,proto3,enum=iam.PolicyParameterTypeEnum" json:"type,omitempty"`
-	Values        []string                `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Name          *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Type          *PolicyParameterTypeEnum `protobuf:"varint,290836590,opt,name=type,proto3,enum=iam.PolicyParameterTypeEnum,oneof" json:"type,omitempty"`
+	Values        []string                 `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -17139,8 +17139,8 @@ func (x *PolicyParameter) GetName() string {
 }
 
 func (x *PolicyParameter) GetType() PolicyParameterTypeEnum {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return PolicyParameterTypeEnum_POLICY_PARAMETER_TYPE_ENUM_STRING_LIST
 }
@@ -18697,7 +18697,7 @@ type RoleTemplateVersion struct {
 	Enabled                          *bool                  `protobuf:"varint,478602303,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
 	Inlinepolicytemplates            []*InlinePolicy        `protobuf:"bytes,365952522,rep,name=inlinepolicytemplates,proto3" json:"inlinepolicytemplates,omitempty"`
 	Majorversion                     *int32                 `protobuf:"varint,248630895,opt,name=majorversion,proto3,oneof" json:"majorversion,omitempty"`
-	Managedbytype                    ManagedByTypeType      `protobuf:"varint,197665256,opt,name=managedbytype,proto3,enum=iam.ManagedByTypeType" json:"managedbytype,omitempty"`
+	Managedbytype                    *ManagedByTypeType     `protobuf:"varint,197665256,opt,name=managedbytype,proto3,enum=iam.ManagedByTypeType,oneof" json:"managedbytype,omitempty"`
 	Managedbyvalue                   *string                `protobuf:"bytes,525525461,opt,name=managedbyvalue,proto3,oneof" json:"managedbyvalue,omitempty"`
 	Managedpolicyarns                []string               `protobuf:"bytes,190920037,rep,name=managedpolicyarns,proto3" json:"managedpolicyarns,omitempty"`
 	Maxsessionduration               *int32                 `protobuf:"varint,391414912,opt,name=maxsessionduration,proto3,oneof" json:"maxsessionduration,omitempty"`
@@ -18797,8 +18797,8 @@ func (x *RoleTemplateVersion) GetMajorversion() int32 {
 }
 
 func (x *RoleTemplateVersion) GetManagedbytype() ManagedByTypeType {
-	if x != nil {
-		return x.Managedbytype
+	if x != nil && x.Managedbytype != nil {
+		return *x.Managedbytype
 	}
 	return ManagedByTypeType_MANAGED_BY_TYPE_TYPE_SERVICE
 }
@@ -20420,7 +20420,7 @@ type Statement struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Endposition      *Position              `protobuf:"bytes,52449718,opt,name=endposition,proto3" json:"endposition,omitempty"`
 	Sourcepolicyid   *string                `protobuf:"bytes,364395760,opt,name=sourcepolicyid,proto3,oneof" json:"sourcepolicyid,omitempty"`
-	Sourcepolicytype PolicySourceType       `protobuf:"varint,13742643,opt,name=sourcepolicytype,proto3,enum=iam.PolicySourceType" json:"sourcepolicytype,omitempty"`
+	Sourcepolicytype *PolicySourceType      `protobuf:"varint,13742643,opt,name=sourcepolicytype,proto3,enum=iam.PolicySourceType,oneof" json:"sourcepolicytype,omitempty"`
 	Startposition    *Position              `protobuf:"bytes,216244189,opt,name=startposition,proto3" json:"startposition,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -20471,8 +20471,8 @@ func (x *Statement) GetSourcepolicyid() string {
 }
 
 func (x *Statement) GetSourcepolicytype() PolicySourceType {
-	if x != nil {
-		return x.Sourcepolicytype
+	if x != nil && x.Sourcepolicytype != nil {
+		return *x.Sourcepolicytype
 	}
 	return PolicySourceType_POLICY_SOURCE_TYPE_GROUP
 }
@@ -22213,12 +22213,12 @@ func (*UpdateRoleResponse) Descriptor() ([]byte, []int) {
 }
 
 type UpdateSAMLProviderRequest struct {
-	state                   protoimpl.MessageState      `protogen:"open.v1"`
-	Addprivatekey           *string                     `protobuf:"bytes,205767607,opt,name=addprivatekey,proto3,oneof" json:"addprivatekey,omitempty"`
-	Assertionencryptionmode AssertionEncryptionModeType `protobuf:"varint,474560298,opt,name=assertionencryptionmode,proto3,enum=iam.AssertionEncryptionModeType" json:"assertionencryptionmode,omitempty"`
-	Removeprivatekey        *string                     `protobuf:"bytes,506848260,opt,name=removeprivatekey,proto3,oneof" json:"removeprivatekey,omitempty"`
-	Samlmetadatadocument    *string                     `protobuf:"bytes,282432645,opt,name=samlmetadatadocument,proto3,oneof" json:"samlmetadatadocument,omitempty"`
-	Samlproviderarn         string                      `protobuf:"bytes,294266533,opt,name=samlproviderarn,proto3" json:"samlproviderarn,omitempty"`
+	state                   protoimpl.MessageState       `protogen:"open.v1"`
+	Addprivatekey           *string                      `protobuf:"bytes,205767607,opt,name=addprivatekey,proto3,oneof" json:"addprivatekey,omitempty"`
+	Assertionencryptionmode *AssertionEncryptionModeType `protobuf:"varint,474560298,opt,name=assertionencryptionmode,proto3,enum=iam.AssertionEncryptionModeType,oneof" json:"assertionencryptionmode,omitempty"`
+	Removeprivatekey        *string                      `protobuf:"bytes,506848260,opt,name=removeprivatekey,proto3,oneof" json:"removeprivatekey,omitempty"`
+	Samlmetadatadocument    *string                      `protobuf:"bytes,282432645,opt,name=samlmetadatadocument,proto3,oneof" json:"samlmetadatadocument,omitempty"`
+	Samlproviderarn         string                       `protobuf:"bytes,294266533,opt,name=samlproviderarn,proto3" json:"samlproviderarn,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -22261,8 +22261,8 @@ func (x *UpdateSAMLProviderRequest) GetAddprivatekey() string {
 }
 
 func (x *UpdateSAMLProviderRequest) GetAssertionencryptionmode() AssertionEncryptionModeType {
-	if x != nil {
-		return x.Assertionencryptionmode
+	if x != nil && x.Assertionencryptionmode != nil {
+		return *x.Assertionencryptionmode
 	}
 	return AssertionEncryptionModeType_ASSERTION_ENCRYPTION_MODE_TYPE_REQUIRED
 }
@@ -23293,16 +23293,17 @@ const file_iam_proto_rawDesc = "" +
 	"\flastuseddate\x18\xd9\xc1\xc7! \x01(\tH\x00R\flastuseddate\x88\x01\x01\x12\x19\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\x12#\n" +
 	"\vservicename\x18\xe0\xaa\xdbA \x01(\tR\vservicenameB\x0f\n" +
-	"\r_lastuseddate\"\xe3\x01\n" +
+	"\r_lastuseddate\"\xf3\x01\n" +
 	"\x11AccessKeyMetadata\x12)\n" +
 	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tH\x00R\vaccesskeyid\x88\x01\x01\x12&\n" +
 	"\n" +
 	"createdate\x18\x92\xb9\xfc\x11 \x01(\tH\x01R\n" +
-	"createdate\x88\x01\x01\x12*\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x0f.iam.statusTypeR\x06status\x12#\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tH\x02R\busername\x88\x01\x01B\x0e\n" +
+	"createdate\x88\x01\x01\x12/\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x0f.iam.statusTypeH\x02R\x06status\x88\x01\x01\x12#\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tH\x03R\busername\x88\x01\x01B\x0e\n" +
 	"\f_accesskeyidB\r\n" +
-	"\v_createdateB\v\n" +
+	"\v_createdateB\t\n" +
+	"\a_statusB\v\n" +
 	"\t_username\"e\n" +
 	"5AccountNotManagementOrDelegatedAdministratorException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -23337,11 +23338,12 @@ const file_iam_proto_rawDesc = "" +
 	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolename\"[\n" +
 	"\x17AttachUserPolicyRequest\x12 \n" +
 	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tR\tpolicyarn\x12\x1e\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\xdf\x01\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tR\busername\"\x80\x02\n" +
 	"\x1bAttachedPermissionsBoundary\x12?\n" +
-	"\x16permissionsboundaryarn\x18\x8dڋ\xe9\x01 \x01(\tH\x00R\x16permissionsboundaryarn\x88\x01\x01\x12d\n" +
-	"\x17permissionsboundarytype\x18\xbe\x97\xc7\xf9\x01 \x01(\x0e2&.iam.PermissionsBoundaryAttachmentTypeR\x17permissionsboundarytypeB\x19\n" +
-	"\x17_permissionsboundaryarn\"|\n" +
+	"\x16permissionsboundaryarn\x18\x8dڋ\xe9\x01 \x01(\tH\x00R\x16permissionsboundaryarn\x88\x01\x01\x12i\n" +
+	"\x17permissionsboundarytype\x18\xbe\x97\xc7\xf9\x01 \x01(\x0e2&.iam.PermissionsBoundaryAttachmentTypeH\x01R\x17permissionsboundarytype\x88\x01\x01B\x19\n" +
+	"\x17_permissionsboundaryarnB\x1a\n" +
+	"\x18_permissionsboundarytype\"|\n" +
 	"\x0eAttachedPolicy\x12%\n" +
 	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tH\x00R\tpolicyarn\x88\x01\x01\x12&\n" +
 	"\n" +
@@ -23360,12 +23362,13 @@ const file_iam_proto_rawDesc = "" +
 	"\x1fConcurrentModificationException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xc5\x01\n" +
+	"\b_message\"\xdd\x01\n" +
 	"\fContextEntry\x12.\n" +
-	"\x0econtextkeyname\x18\xf1\xac\xea{ \x01(\tH\x00R\x0econtextkeyname\x88\x01\x01\x12B\n" +
-	"\x0econtextkeytype\x18Ա\xae\x02 \x01(\x0e2\x17.iam.ContextKeyTypeEnumR\x0econtextkeytype\x12.\n" +
+	"\x0econtextkeyname\x18\xf1\xac\xea{ \x01(\tH\x00R\x0econtextkeyname\x88\x01\x01\x12G\n" +
+	"\x0econtextkeytype\x18Ա\xae\x02 \x01(\x0e2\x17.iam.ContextKeyTypeEnumH\x01R\x0econtextkeytype\x88\x01\x01\x12.\n" +
 	"\x10contextkeyvalues\x18\xe2\xb8\xc7\xc3\x01 \x03(\tR\x10contextkeyvaluesB\x11\n" +
-	"\x0f_contextkeyname\"J\n" +
+	"\x0f_contextkeynameB\x11\n" +
+	"\x0f_contextkeytype\"J\n" +
 	"\x16CreateAccessKeyRequest\x12#\n" +
 	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tH\x00R\busername\x88\x01\x01B\v\n" +
 	"\t_username\"K\n" +
@@ -23456,14 +23459,15 @@ const file_iam_proto_rawDesc = "" +
 	"\x05_pathB\x16\n" +
 	"\x14_permissionsboundary\"7\n" +
 	"\x12CreateRoleResponse\x12!\n" +
-	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\v2\t.iam.RoleR\x04role\"\xac\x02\n" +
+	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\v2\t.iam.RoleR\x04role\"\xcd\x02\n" +
 	"\x19CreateSAMLProviderRequest\x12,\n" +
-	"\raddprivatekey\x18\xb7\x87\x8fb \x01(\tH\x00R\raddprivatekey\x88\x01\x01\x12^\n" +
-	"\x17assertionencryptionmode\x18\xaa\xee\xa4\xe2\x01 \x01(\x0e2 .iam.assertionEncryptionModeTypeR\x17assertionencryptionmode\x12\x15\n" +
+	"\raddprivatekey\x18\xb7\x87\x8fb \x01(\tH\x00R\raddprivatekey\x88\x01\x01\x12c\n" +
+	"\x17assertionencryptionmode\x18\xaa\xee\xa4\xe2\x01 \x01(\x0e2 .iam.assertionEncryptionModeTypeH\x01R\x17assertionencryptionmode\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x126\n" +
 	"\x14samlmetadatadocument\x18\x85\xa9ֆ\x01 \x01(\tR\x14samlmetadatadocument\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x10\n" +
-	"\x0e_addprivatekey\"\x85\x01\n" +
+	"\x0e_addprivatekeyB\x1a\n" +
+	"\x18_assertionencryptionmode\"\x85\x01\n" +
 	"\x1aCreateSAMLProviderResponse\x121\n" +
 	"\x0fsamlproviderarn\x18\xa5ͨ\x8c\x01 \x01(\tH\x00R\x0fsamlproviderarn\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tagsB\x12\n" +
@@ -23520,7 +23524,7 @@ const file_iam_proto_rawDesc = "" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x14.iam.PolicyParameterR\n" +
 	"parameters\x125\n" +
 	"\x11policytemplatearn\x18\xb5\xb7\xf0\xd9\x01 \x01(\tH\x00R\x11policytemplatearn\x88\x01\x01B\x14\n" +
-	"\x12_policytemplatearn\"\xee\t\n" +
+	"\x12_policytemplatearn\"\xfd\t\n" +
 	"\x11DelegationRequest\x12'\n" +
 	"\n" +
 	"approverid\x18Ơ\x88\xab\x01 \x01(\tH\x00R\n" +
@@ -23544,9 +23548,9 @@ const file_iam_proto_rawDesc = "" +
 	"\vrequestorid\x18Ø\xb5n \x01(\tH\rR\vrequestorid\x88\x01\x01\x12,\n" +
 	"\rrequestorname\x18\x8d\xde\xfa\a \x01(\tH\x0eR\rrequestorname\x88\x01\x01\x12G\n" +
 	"\x1drolepermissionrestrictionarns\x18\xa5\x8d\xc4\x16 \x03(\tR\x1drolepermissionrestrictionarns\x121\n" +
-	"\x0fsessionduration\x18䦞\xc5\x01 \x01(\x05H\x0fR\x0fsessionduration\x88\x01\x01\x12(\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x0e.iam.stateTypeR\x05state\x12(\n" +
-	"\vupdatedtime\x18\x8a\x9f\xc2J \x01(\tH\x10R\vupdatedtime\x88\x01\x01B\r\n" +
+	"\x0fsessionduration\x18䦞\xc5\x01 \x01(\x05H\x0fR\x0fsessionduration\x88\x01\x01\x12-\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x0e.iam.stateTypeH\x10R\x05state\x88\x01\x01\x12(\n" +
+	"\vupdatedtime\x18\x8a\x9f\xc2J \x01(\tH\x11R\vupdatedtime\x88\x01\x01B\r\n" +
 	"\v_approveridB\r\n" +
 	"\v_createdateB\x16\n" +
 	"\x14_delegationrequestidB\x0e\n" +
@@ -23563,7 +23567,8 @@ const file_iam_proto_rawDesc = "" +
 	"\x0f_requestmessageB\x0e\n" +
 	"\f_requestoridB\x10\n" +
 	"\x0e_requestornameB\x12\n" +
-	"\x10_sessiondurationB\x0e\n" +
+	"\x10_sessiondurationB\b\n" +
+	"\x06_stateB\x0e\n" +
 	"\f_updatedtime\"p\n" +
 	"\x16DeleteAccessKeyRequest\x12$\n" +
 	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\x12#\n" +
@@ -23728,11 +23733,12 @@ const file_iam_proto_rawDesc = "" +
 	"\x17FeatureEnabledException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x8c\x01\n" +
+	"\b_message\"\x9b\x01\n" +
 	" GenerateCredentialReportResponse\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12.\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x14.iam.ReportStateTypeR\x05stateB\x0e\n" +
-	"\f_description\"\xa5\x01\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x123\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x14.iam.ReportStateTypeH\x01R\x05state\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\b\n" +
+	"\x06_state\"\xa5\x01\n" +
 	"(GenerateOrganizationsAccessReportRequest\x12!\n" +
 	"\n" +
 	"entitypath\x18\xca\xf2\xde, \x01(\tR\n" +
@@ -23741,10 +23747,11 @@ const file_iam_proto_rawDesc = "" +
 	"\x16_organizationspolicyid\"S\n" +
 	")GenerateOrganizationsAccessReportResponse\x12\x1c\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x00R\x05jobid\x88\x01\x01B\b\n" +
-	"\x06_jobid\"\x8f\x01\n" +
+	"\x06_jobid\"\xa4\x01\n" +
 	")GenerateServiceLastAccessedDetailsRequest\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12L\n" +
-	"\vgranularity\x18\xd8\xe5\xee\xed\x01 \x01(\x0e2&.iam.AccessAdvisorUsageGranularityTypeR\vgranularity\"T\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12Q\n" +
+	"\vgranularity\x18\xd8\xe5\xee\xed\x01 \x01(\x0e2&.iam.AccessAdvisorUsageGranularityTypeH\x00R\vgranularity\x88\x01\x01B\x0e\n" +
+	"\f_granularity\"T\n" +
 	"*GenerateServiceLastAccessedDetailsResponse\x12\x1c\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tH\x00R\x05jobid\x88\x01\x01B\b\n" +
 	"\x06_jobid\"C\n" +
@@ -23792,22 +23799,25 @@ const file_iam_proto_rawDesc = "" +
 	"\x0fcontextkeynames\x18\xba\xcd\xe8\a \x03(\tR\x0fcontextkeynames\"\x84\x01\n" +
 	"'GetContextKeysForPrincipalPolicyRequest\x12,\n" +
 	"\x0fpolicyinputlist\x18\x8a\x83\xfa\x98\x01 \x03(\tR\x0fpolicyinputlist\x12+\n" +
-	"\x0fpolicysourcearn\x18\xa6\xaf\x98( \x01(\tR\x0fpolicysourcearn\"\xc9\x01\n" +
+	"\x0fpolicysourcearn\x18\xa6\xaf\x98( \x01(\tR\x0fpolicysourcearn\"\xdf\x01\n" +
 	"\x1bGetCredentialReportResponse\x12 \n" +
 	"\acontent\x18㾞\v \x01(\fH\x00R\acontent\x88\x01\x01\x12,\n" +
-	"\rgeneratedtime\x18䆁* \x01(\tH\x01R\rgeneratedtime\x88\x01\x01\x12<\n" +
-	"\freportformat\x18\xd5Ϩ  \x01(\x0e2\x15.iam.ReportFormatTypeR\freportformatB\n" +
+	"\rgeneratedtime\x18䆁* \x01(\tH\x01R\rgeneratedtime\x88\x01\x01\x12A\n" +
+	"\freportformat\x18\xd5Ϩ  \x01(\x0e2\x15.iam.ReportFormatTypeH\x02R\freportformat\x88\x01\x01B\n" +
 	"\n" +
 	"\b_contentB\x10\n" +
-	"\x0e_generatedtime\"\xb7\x01\n" +
+	"\x0e_generatedtimeB\x0f\n" +
+	"\r_reportformat\"\xb7\x01\n" +
 	"\x1bGetDelegationRequestRequest\x12D\n" +
 	"\x19delegationpermissioncheck\x18\x99\xe5\x81\x05 \x01(\bH\x00R\x19delegationpermissioncheck\x88\x01\x01\x124\n" +
 	"\x13delegationrequestid\x18\x9e\xb7\x80\x85\x01 \x01(\tR\x13delegationrequestidB\x1c\n" +
-	"\x1a_delegationpermissioncheck\"\x9a\x02\n" +
+	"\x1a_delegationpermissioncheck\"\xd8\x02\n" +
 	"\x1cGetDelegationRequestResponse\x12H\n" +
-	"\x11delegationrequest\x18\x81\xa1\xa0\x9e\x01 \x01(\v2\x16.iam.DelegationRequestR\x11delegationrequest\x12W\n" +
-	"\x15permissioncheckresult\x18\x9c\xed\xc59 \x01(\x0e2\x1e.iam.permissionCheckResultTypeR\x15permissioncheckresult\x12W\n" +
-	"\x15permissioncheckstatus\x18Ϳ\xcdN \x01(\x0e2\x1e.iam.permissionCheckStatusTypeR\x15permissioncheckstatus\"\\\n" +
+	"\x11delegationrequest\x18\x81\xa1\xa0\x9e\x01 \x01(\v2\x16.iam.DelegationRequestR\x11delegationrequest\x12\\\n" +
+	"\x15permissioncheckresult\x18\x9c\xed\xc59 \x01(\x0e2\x1e.iam.permissionCheckResultTypeH\x00R\x15permissioncheckresult\x88\x01\x01\x12\\\n" +
+	"\x15permissioncheckstatus\x18Ϳ\xcdN \x01(\x0e2\x1e.iam.permissionCheckStatusTypeH\x01R\x15permissioncheckstatus\x88\x01\x01B\x18\n" +
+	"\x16_permissioncheckresultB\x18\n" +
+	"\x16_permissioncheckstatus\"\\\n" +
 	"\x15GetGroupPolicyRequest\x12 \n" +
 	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12!\n" +
 	"\n" +
@@ -23836,13 +23846,14 @@ const file_iam_proto_rawDesc = "" +
 	"\x1eGetHumanReadableSummaryRequest\x12 \n" +
 	"\tentityarn\x18\x86\xef\xc2\xc9\x01 \x01(\tR\tentityarn\x12\x1f\n" +
 	"\x06locale\x18\xb8\xb7\xb9\xeb\x01 \x01(\tH\x00R\x06locale\x88\x01\x01B\t\n" +
-	"\a_locale\"\xce\x01\n" +
+	"\a_locale\"\xe4\x01\n" +
 	"\x1fGetHumanReadableSummaryResponse\x12\x1f\n" +
 	"\x06locale\x18\xb8\xb7\xb9\xeb\x01 \x01(\tH\x00R\x06locale\x88\x01\x01\x12.\n" +
-	"\x0esummarycontent\x18\xd5\xee\xbf7 \x01(\tH\x01R\x0esummarycontent\x88\x01\x01\x12<\n" +
-	"\fsummarystate\x18屻; \x01(\x0e2\x15.iam.summaryStateTypeR\fsummarystateB\t\n" +
+	"\x0esummarycontent\x18\xd5\xee\xbf7 \x01(\tH\x01R\x0esummarycontent\x88\x01\x01\x12A\n" +
+	"\fsummarystate\x18屻; \x01(\x0e2\x15.iam.summaryStateTypeH\x02R\fsummarystate\x88\x01\x01B\t\n" +
 	"\a_localeB\x11\n" +
-	"\x0f_summarycontent\"Q\n" +
+	"\x0f_summarycontentB\x0f\n" +
+	"\r_summarystate\"Q\n" +
 	"\x19GetInstanceProfileRequest\x124\n" +
 	"\x13instanceprofilename\x18\xedμ\xda\x01 \x01(\tR\x13instanceprofilename\"_\n" +
 	"\x1aGetInstanceProfileResponse\x12A\n" +
@@ -23879,14 +23890,16 @@ const file_iam_proto_rawDesc = "" +
 	"\x0ethumbprintlist\x18߫\x9b* \x03(\tR\x0ethumbprintlist\x12\x19\n" +
 	"\x03url\x18\xbf\xc7\xe7\xa8\x01 \x01(\tH\x01R\x03url\x88\x01\x01B\r\n" +
 	"\v_createdateB\x06\n" +
-	"\x04_url\"\xcb\x01\n" +
+	"\x04_url\"\xdc\x01\n" +
 	"#GetOrganizationsAccessReportRequest\x12\x17\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x12.\n" +
-	"\asortkey\x18ٲ\xc2\xc2\x01 \x01(\x0e2\x10.iam.sortKeyTypeR\asortkeyB\t\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x123\n" +
+	"\asortkey\x18ٲ\xc2\xc2\x01 \x01(\x0e2\x10.iam.sortKeyTypeH\x02R\asortkey\x88\x01\x01B\t\n" +
 	"\a_markerB\v\n" +
-	"\t_maxitems\"\x82\x05\n" +
+	"\t_maxitemsB\n" +
+	"\n" +
+	"\b_sortkey\"\x82\x05\n" +
 	"$GetOrganizationsAccessReportResponse\x12:\n" +
 	"\raccessdetails\x18쐣& \x03(\v2\x11.iam.AccessDetailR\raccessdetails\x129\n" +
 	"\ferrordetails\x18ʭ\x8a\xb0\x01 \x01(\v2\x11.iam.ErrorDetailsR\ferrordetails\x12(\n" +
@@ -23938,19 +23951,20 @@ const file_iam_proto_rawDesc = "" +
 	"\x1eGetRoleTemplateVersionResponse\x12N\n" +
 	"\x13roletemplateversion\x18\xe2\xfd\xd7\xca\x01 \x01(\v2\x18.iam.RoleTemplateVersionR\x13roletemplateversion\"F\n" +
 	"\x16GetSAMLProviderRequest\x12,\n" +
-	"\x0fsamlproviderarn\x18\xa5ͨ\x8c\x01 \x01(\tR\x0fsamlproviderarn\"\xe9\x03\n" +
-	"\x17GetSAMLProviderResponse\x12^\n" +
-	"\x17assertionencryptionmode\x18\xaa\xee\xa4\xe2\x01 \x01(\x0e2 .iam.assertionEncryptionModeTypeR\x17assertionencryptionmode\x12&\n" +
+	"\x0fsamlproviderarn\x18\xa5ͨ\x8c\x01 \x01(\tR\x0fsamlproviderarn\"\x8a\x04\n" +
+	"\x17GetSAMLProviderResponse\x12c\n" +
+	"\x17assertionencryptionmode\x18\xaa\xee\xa4\xe2\x01 \x01(\x0e2 .iam.assertionEncryptionModeTypeH\x00R\x17assertionencryptionmode\x88\x01\x01\x12&\n" +
 	"\n" +
-	"createdate\x18\x92\xb9\xfc\x11 \x01(\tH\x00R\n" +
+	"createdate\x18\x92\xb9\xfc\x11 \x01(\tH\x01R\n" +
 	"createdate\x88\x01\x01\x12>\n" +
 	"\x0eprivatekeylist\x18䘼E \x03(\v2\x13.iam.SAMLPrivateKeyR\x0eprivatekeylist\x12;\n" +
-	"\x14samlmetadatadocument\x18\x85\xa9ֆ\x01 \x01(\tH\x01R\x14samlmetadatadocument\x88\x01\x01\x122\n" +
-	"\x10samlprovideruuid\x18\xab\xaa\x82s \x01(\tH\x02R\x10samlprovideruuid\x88\x01\x01\x12 \n" +
+	"\x14samlmetadatadocument\x18\x85\xa9ֆ\x01 \x01(\tH\x02R\x14samlmetadatadocument\x88\x01\x01\x122\n" +
+	"\x10samlprovideruuid\x18\xab\xaa\x82s \x01(\tH\x03R\x10samlprovideruuid\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.iam.TagR\x04tags\x12'\n" +
 	"\n" +
-	"validuntil\x18\xb4\x99\xea\xae\x01 \x01(\tH\x03R\n" +
-	"validuntil\x88\x01\x01B\r\n" +
+	"validuntil\x18\xb4\x99\xea\xae\x01 \x01(\tH\x04R\n" +
+	"validuntil\x88\x01\x01B\x1a\n" +
+	"\x18_assertionencryptionmodeB\r\n" +
 	"\v_createdateB\x17\n" +
 	"\x15_samlmetadatadocumentB\x13\n" +
 	"\x11_samlprovideruuidB\r\n" +
@@ -23970,17 +23984,19 @@ const file_iam_proto_rawDesc = "" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01B\t\n" +
 	"\a_markerB\v\n" +
-	"\t_maxitems\"\xe4\x03\n" +
+	"\t_maxitems\"\xf5\x03\n" +
 	"%GetServiceLastAccessedDetailsResponse\x12+\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x11.iam.ErrorDetailsR\x05error\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x120\n" +
 	"\x11jobcompletiondate\x18\xd7\xd6\xff\xf6\x01 \x01(\tR\x11jobcompletiondate\x12+\n" +
 	"\x0fjobcreationdate\x18\xfa\xb2\x85` \x01(\tR\x0fjobcreationdate\x123\n" +
-	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x12.iam.jobStatusTypeR\tjobstatus\x12D\n" +
-	"\ajobtype\x18\xf5\x8b\xbb\x85\x01 \x01(\x0e2&.iam.AccessAdvisorUsageGranularityTypeR\ajobtype\x12\x1e\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12O\n" +
+	"\tjobstatus\x18ǜ\xfb3 \x01(\x0e2\x12.iam.jobStatusTypeR\tjobstatus\x12I\n" +
+	"\ajobtype\x18\xf5\x8b\xbb\x85\x01 \x01(\x0e2&.iam.AccessAdvisorUsageGranularityTypeH\x01R\ajobtype\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x02R\x06marker\x88\x01\x01\x12O\n" +
 	"\x14serviceslastaccessed\x18\xf7ؠ~ \x03(\v2\x18.iam.ServiceLastAccessedR\x14serviceslastaccessedB\x0e\n" +
-	"\f_istruncatedB\t\n" +
+	"\f_istruncatedB\n" +
+	"\n" +
+	"\b_jobtypeB\t\n" +
 	"\a_marker\"\xd8\x01\n" +
 	"0GetServiceLastAccessedDetailsWithEntitiesRequest\x12\x17\n" +
 	"\x05jobid\x18\xd2\xd4\xdd3 \x01(\tR\x05jobid\x12\x1e\n" +
@@ -24179,19 +24195,21 @@ const file_iam_proto_rawDesc = "" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12)\n" +
 	"\vistruncated\x18\xfa\xbc\xa4\xdb\x01 \x01(\bH\x01R\vistruncated\x88\x01\x01B\t\n" +
 	"\a_markerB\x0e\n" +
-	"\f_istruncated\"\xd5\x02\n" +
-	"\x1cListEntitiesForPolicyRequest\x127\n" +
-	"\fentityfilter\x18\x95\x80\xad\x9b\x01 \x01(\x0e2\x0f.iam.EntityTypeR\fentityfilter\x12\x1e\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x12'\n" +
+	"\f_istruncated\"\x86\x03\n" +
+	"\x1cListEntitiesForPolicyRequest\x12<\n" +
+	"\fentityfilter\x18\x95\x80\xad\x9b\x01 \x01(\x0e2\x0f.iam.EntityTypeH\x00R\fentityfilter\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x02R\bmaxitems\x88\x01\x01\x12'\n" +
 	"\n" +
-	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tH\x02R\n" +
+	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tH\x03R\n" +
 	"pathprefix\x88\x01\x01\x12 \n" +
-	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tR\tpolicyarn\x12E\n" +
-	"\x11policyusagefilter\x18\x89\xa1\xf20 \x01(\x0e2\x14.iam.PolicyUsageTypeR\x11policyusagefilterB\t\n" +
+	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tR\tpolicyarn\x12J\n" +
+	"\x11policyusagefilter\x18\x89\xa1\xf20 \x01(\x0e2\x14.iam.PolicyUsageTypeH\x04R\x11policyusagefilter\x88\x01\x01B\x0f\n" +
+	"\r_entityfilterB\t\n" +
 	"\a_markerB\v\n" +
 	"\t_maxitemsB\r\n" +
-	"\v_pathprefix\"\xaa\x02\n" +
+	"\v_pathprefixB\x14\n" +
+	"\x12_policyusagefilter\"\xaa\x02\n" +
 	"\x1dListEntitiesForPolicyResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x127\n" +
@@ -24341,20 +24359,22 @@ const file_iam_proto_rawDesc = "" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12t\n" +
 	"\x1dpoliciesgrantingserviceaccess\x18\xfb\xbf\xae+ \x03(\v2+.iam.ListPoliciesGrantingServiceAccessEntryR\x1dpoliciesgrantingserviceaccessB\x0e\n" +
 	"\f_istruncatedB\t\n" +
-	"\a_marker\"\xdd\x02\n" +
+	"\a_marker\"\x87\x03\n" +
 	"\x13ListPoliciesRequest\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01\x12*\n" +
 	"\fonlyattached\x18\xc4Ɇ~ \x01(\bH\x02R\fonlyattached\x88\x01\x01\x12'\n" +
 	"\n" +
 	"pathprefix\x18˷\xe6\xbd\x01 \x01(\tH\x03R\n" +
-	"pathprefix\x88\x01\x01\x12E\n" +
-	"\x11policyusagefilter\x18\x89\xa1\xf20 \x01(\x0e2\x14.iam.PolicyUsageTypeR\x11policyusagefilter\x12-\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\x14.iam.policyScopeTypeR\x05scopeB\t\n" +
+	"pathprefix\x88\x01\x01\x12J\n" +
+	"\x11policyusagefilter\x18\x89\xa1\xf20 \x01(\x0e2\x14.iam.PolicyUsageTypeH\x04R\x11policyusagefilter\x88\x01\x01\x122\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\x14.iam.policyScopeTypeH\x05R\x05scope\x88\x01\x01B\t\n" +
 	"\a_markerB\v\n" +
 	"\t_maxitemsB\x0f\n" +
 	"\r_onlyattachedB\r\n" +
-	"\v_pathprefix\"\xa7\x01\n" +
+	"\v_pathprefixB\x14\n" +
+	"\x12_policyusagefilterB\b\n" +
+	"\x06_scope\"\xa7\x01\n" +
 	"\x14ListPoliciesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12*\n" +
@@ -24547,11 +24567,12 @@ const file_iam_proto_rawDesc = "" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12\"\n" +
 	"\x05users\x18\xb4\xe5\xd05 \x03(\v2\t.iam.UserR\x05usersB\x0e\n" +
 	"\f_istruncatedB\t\n" +
-	"\a_marker\"\xc6\x01\n" +
-	"\x1cListVirtualMFADevicesRequest\x12I\n" +
-	"\x10assignmentstatus\x18\xb3ú\x84\x01 \x01(\x0e2\x19.iam.assignmentStatusTypeR\x10assignmentstatus\x12\x1e\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x01R\bmaxitems\x88\x01\x01B\t\n" +
+	"\a_marker\"\xe0\x01\n" +
+	"\x1cListVirtualMFADevicesRequest\x12N\n" +
+	"\x10assignmentstatus\x18\xb3ú\x84\x01 \x01(\x0e2\x19.iam.assignmentStatusTypeH\x00R\x10assignmentstatus\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x02R\bmaxitems\x88\x01\x01B\x13\n" +
+	"\x11_assignmentstatusB\t\n" +
 	"\a_markerB\v\n" +
 	"\t_maxitems\"\xcc\x01\n" +
 	"\x1dListVirtualMFADevicesResponse\x12(\n" +
@@ -24728,22 +24749,23 @@ const file_iam_proto_rawDesc = "" +
 	"\x19PolicyEvaluationException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xa1\x02\n" +
+	"\b_message\"\xb5\x02\n" +
 	"\x1bPolicyGrantingServiceAccess\x12&\n" +
 	"\n" +
 	"entityname\x18\xe2\xa6\xf8% \x01(\tH\x00R\n" +
-	"entityname\x88\x01\x01\x12>\n" +
+	"entityname\x88\x01\x01\x12C\n" +
 	"\n" +
-	"entitytype\x18\x9b\xa5\x87\x9c\x01 \x01(\x0e2\x1a.iam.policyOwnerEntityTypeR\n" +
-	"entitytype\x12%\n" +
-	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tH\x01R\tpolicyarn\x88\x01\x01\x12!\n" +
+	"entitytype\x18\x9b\xa5\x87\x9c\x01 \x01(\x0e2\x1a.iam.policyOwnerEntityTypeH\x01R\n" +
+	"entitytype\x88\x01\x01\x12%\n" +
+	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tH\x02R\tpolicyarn\x88\x01\x01\x12!\n" +
 	"\n" +
 	"policyname\x18\xbd\xf5\x87\x7f \x01(\tR\n" +
 	"policyname\x123\n" +
 	"\n" +
 	"policytype\x18\x88\xa8\xb4\xe0\x01 \x01(\x0e2\x0f.iam.policyTypeR\n" +
 	"policytypeB\r\n" +
-	"\v_entitynameB\f\n" +
+	"\v_entitynameB\r\n" +
+	"\v_entitytypeB\f\n" +
 	"\n" +
 	"_policyarn\"p\n" +
 	"\vPolicyGroup\x12 \n" +
@@ -24752,24 +24774,26 @@ const file_iam_proto_rawDesc = "" +
 	"\n" +
 	"\b_groupidB\f\n" +
 	"\n" +
-	"_groupname\"\xe8\x01\n" +
+	"_groupname\"\xfc\x01\n" +
 	"\x10PolicyIdentifier\x12Z\n" +
 	"\x16inlinepolicyidentifier\x18\xfe\x83\x89Q \x01(\v2\x1f.iam.InlinePolicyIdentifierTypeR\x16inlinepolicyidentifier\x12%\n" +
-	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tH\x00R\tpolicyarn\x88\x01\x01\x12C\n" +
+	"\tpolicyarn\x18\xc3Һ\xed\x01 \x01(\tH\x00R\tpolicyarn\x88\x01\x01\x12H\n" +
 	"\n" +
-	"policytype\x18\x88\xa8\xb4\xe0\x01 \x01(\x0e2\x1f.iam.PolicyIdentifierPolicyTypeR\n" +
-	"policytypeB\f\n" +
+	"policytype\x18\x88\xa8\xb4\xe0\x01 \x01(\x0e2\x1f.iam.PolicyIdentifierPolicyTypeH\x01R\n" +
+	"policytype\x88\x01\x01B\f\n" +
 	"\n" +
-	"_policyarn\"L\n" +
+	"_policyarnB\r\n" +
+	"\v_policytype\"L\n" +
 	"\x1cPolicyNotAttachableException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x87\x01\n" +
+	"\b_message\"\x95\x01\n" +
 	"\x0fPolicyParameter\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x124\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1c.iam.PolicyParameterTypeEnumR\x04type\x12\x19\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x129\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1c.iam.PolicyParameterTypeEnumH\x01R\x04type\x88\x01\x01\x12\x19\n" +
 	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\a\n" +
-	"\x05_name\"j\n" +
+	"\x05_nameB\a\n" +
+	"\x05_type\"j\n" +
 	"\n" +
 	"PolicyRole\x12\x1f\n" +
 	"\x06roleid\x18ݟ\xe0\xe7\x01 \x01(\tH\x00R\x06roleid\x88\x01\x01\x12#\n" +
@@ -24923,7 +24947,7 @@ const file_iam_proto_rawDesc = "" +
 	"\x1dRoleTemplateDisabledException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x87\r\n" +
+	"\b_message\"\x9e\r\n" +
 	"\x13RoleTemplateVersion\x12S\n" +
 	" assumerolepolicydocumenttemplate\x18\x87\xb8\xa1\xf5\x01 \x01(\tH\x00R assumerolepolicydocumenttemplate\x88\x01\x01\x121\n" +
 	"\x0fcreatetimestamp\x18\xbcǴ\xca\x01 \x01(\tH\x01R\x0fcreatetimestamp\x88\x01\x01\x128\n" +
@@ -24931,31 +24955,32 @@ const file_iam_proto_rawDesc = "" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12!\n" +
 	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x04R\aenabled\x88\x01\x01\x12K\n" +
 	"\x15inlinepolicytemplates\x18\x8a\xfc\xbf\xae\x01 \x03(\v2\x11.iam.InlinePolicyR\x15inlinepolicytemplates\x12*\n" +
-	"\fmajorversion\x18\xef\x9c\xc7v \x01(\x05H\x05R\fmajorversion\x88\x01\x01\x12?\n" +
-	"\rmanagedbytype\x18\xe8à^ \x01(\x0e2\x16.iam.managedByTypeTypeR\rmanagedbytype\x12/\n" +
-	"\x0emanagedbyvalue\x18\xd5\xc3\xcb\xfa\x01 \x01(\tH\x06R\x0emanagedbyvalue\x88\x01\x01\x12/\n" +
+	"\fmajorversion\x18\xef\x9c\xc7v \x01(\x05H\x05R\fmajorversion\x88\x01\x01\x12D\n" +
+	"\rmanagedbytype\x18\xe8à^ \x01(\x0e2\x16.iam.managedByTypeTypeH\x06R\rmanagedbytype\x88\x01\x01\x12/\n" +
+	"\x0emanagedbyvalue\x18\xd5\xc3\xcb\xfa\x01 \x01(\tH\aR\x0emanagedbyvalue\x88\x01\x01\x12/\n" +
 	"\x11managedpolicyarns\x18\xe5\xea\x84[ \x03(\tR\x11managedpolicyarns\x127\n" +
-	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\x05H\aR\x12maxsessionduration\x88\x01\x01\x12+\n" +
-	"\fminorversion\x18\x93\xb3\x89\x81\x01 \x01(\x05H\bR\fminorversion\x88\x01\x01\x12P\n" +
+	"\x12maxsessionduration\x18\x80\x89Һ\x01 \x01(\x05H\bR\x12maxsessionduration\x88\x01\x01\x12+\n" +
+	"\fminorversion\x18\x93\xb3\x89\x81\x01 \x01(\x05H\tR\fminorversion\x88\x01\x01\x12P\n" +
 	"\x14parametersdefinition\x18\xbd\xa9\xc3\xf2\x01 \x03(\v2\x18.iam.ParameterDefinitionR\x14parametersdefinition\x12=\n" +
-	"\x15permissionboundaryarn\x18Э\xca\xd2\x01 \x01(\tH\tR\x15permissionboundaryarn\x88\x01\x01\x12?\n" +
-	"\x16roledescriptionpattern\x18\xf2Ѳ\x81\x01 \x01(\tH\n" +
-	"R\x16roledescriptionpattern\x88\x01\x01\x121\n" +
-	"\x0frolenamepattern\x18\xb9\x8f\xd7\xc5\x01 \x01(\tH\vR\x0frolenamepattern\x88\x01\x01\x121\n" +
-	"\x0frolepathpattern\x18\xe9\xef\xe8\x99\x01 \x01(\tH\fR\x0frolepathpattern\x88\x01\x01\x12@\n" +
+	"\x15permissionboundaryarn\x18Э\xca\xd2\x01 \x01(\tH\n" +
+	"R\x15permissionboundaryarn\x88\x01\x01\x12?\n" +
+	"\x16roledescriptionpattern\x18\xf2Ѳ\x81\x01 \x01(\tH\vR\x16roledescriptionpattern\x88\x01\x01\x121\n" +
+	"\x0frolenamepattern\x18\xb9\x8f\xd7\xc5\x01 \x01(\tH\fR\x0frolenamepattern\x88\x01\x01\x121\n" +
+	"\x0frolepathpattern\x18\xe9\xef\xe8\x99\x01 \x01(\tH\rR\x0frolepathpattern\x88\x01\x01\x12@\n" +
 	"\x10roletagstemplate\x18\xcf\xec\xf5\xd5\x01 \x03(\v2\x10.iam.TagTemplateR\x10roletagstemplate\x12)\n" +
-	"\vtemplatearn\x18\x9f\x89\xb2\xb7\x01 \x01(\tH\rR\vtemplatearn\x88\x01\x01\x12+\n" +
-	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tH\x0eR\ftemplatename\x88\x01\x01\x125\n" +
-	"\x11templateversionid\x18\x81Œ\xac\x01 \x01(\tH\x0fR\x11templateversionid\x88\x01\x01\x121\n" +
-	"\x0fupdatetimestamp\x18\xd5\xee\xf8\xa1\x01 \x01(\tH\x10R\x0fupdatetimestamp\x88\x01\x01\x12/\n" +
-	"\x0eversionenabled\x18툃\xfb\x01 \x01(\bH\x11R\x0eversionenabled\x88\x01\x01B#\n" +
+	"\vtemplatearn\x18\x9f\x89\xb2\xb7\x01 \x01(\tH\x0eR\vtemplatearn\x88\x01\x01\x12+\n" +
+	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tH\x0fR\ftemplatename\x88\x01\x01\x125\n" +
+	"\x11templateversionid\x18\x81Œ\xac\x01 \x01(\tH\x10R\x11templateversionid\x88\x01\x01\x121\n" +
+	"\x0fupdatetimestamp\x18\xd5\xee\xf8\xa1\x01 \x01(\tH\x11R\x0fupdatetimestamp\x88\x01\x01\x12/\n" +
+	"\x0eversionenabled\x18툃\xfb\x01 \x01(\bH\x12R\x0eversionenabled\x88\x01\x01B#\n" +
 	"!_assumerolepolicydocumenttemplateB\x12\n" +
 	"\x10_createtimestampB\x16\n" +
 	"\x14_defaultminorversionB\x0e\n" +
 	"\f_descriptionB\n" +
 	"\n" +
 	"\b_enabledB\x0f\n" +
-	"\r_majorversionB\x11\n" +
+	"\r_majorversionB\x10\n" +
+	"\x0e_managedbytypeB\x11\n" +
 	"\x0f_managedbyvalueB\x15\n" +
 	"\x13_maxsessiondurationB\x0f\n" +
 	"\r_minorversionB\x18\n" +
@@ -25146,13 +25171,14 @@ const file_iam_proto_rawDesc = "" +
 	"\x0f_resourcepolicy\"r\n" +
 	"\x12SourceRoleTemplate\x12$\n" +
 	"\vtemplatearn\x18\x9f\x89\xb2\xb7\x01 \x01(\tR\vtemplatearn\x126\n" +
-	"\x14templateminorversion\x18ᙝ\xc6\x01 \x01(\x05R\x14templateminorversion\"\x81\x02\n" +
+	"\x14templateminorversion\x18ᙝ\xc6\x01 \x01(\x05R\x14templateminorversion\"\x9b\x02\n" +
 	"\tStatement\x122\n" +
 	"\vendposition\x18\xb6\xa3\x81\x19 \x01(\v2\r.iam.PositionR\vendposition\x12/\n" +
-	"\x0esourcepolicyid\x18\xf0\xf9\xe0\xad\x01 \x01(\tH\x00R\x0esourcepolicyid\x88\x01\x01\x12D\n" +
-	"\x10sourcepolicytype\x18\xb3\xe4\xc6\x06 \x01(\x0e2\x15.iam.PolicySourceTypeR\x10sourcepolicytype\x126\n" +
+	"\x0esourcepolicyid\x18\xf0\xf9\xe0\xad\x01 \x01(\tH\x00R\x0esourcepolicyid\x88\x01\x01\x12I\n" +
+	"\x10sourcepolicytype\x18\xb3\xe4\xc6\x06 \x01(\x0e2\x15.iam.PolicySourceTypeH\x01R\x10sourcepolicytype\x88\x01\x01\x126\n" +
 	"\rstartposition\x18ݿ\x8eg \x01(\v2\r.iam.PositionR\rstartpositionB\x11\n" +
-	"\x0f_sourcepolicyid\"4\n" +
+	"\x0f_sourcepolicyidB\x13\n" +
+	"\x11_sourcepolicytype\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"s\n" +
@@ -25286,14 +25312,15 @@ const file_iam_proto_rawDesc = "" +
 	"\brolename\x18\xb3\xf3\xbc\xc2\x01 \x01(\tR\brolenameB\x0e\n" +
 	"\f_descriptionB\x15\n" +
 	"\x13_maxsessionduration\"\x14\n" +
-	"\x12UpdateRoleResponse\"\x89\x03\n" +
+	"\x12UpdateRoleResponse\"\xaa\x03\n" +
 	"\x19UpdateSAMLProviderRequest\x12,\n" +
-	"\raddprivatekey\x18\xb7\x87\x8fb \x01(\tH\x00R\raddprivatekey\x88\x01\x01\x12^\n" +
-	"\x17assertionencryptionmode\x18\xaa\xee\xa4\xe2\x01 \x01(\x0e2 .iam.assertionEncryptionModeTypeR\x17assertionencryptionmode\x123\n" +
-	"\x10removeprivatekey\x18\x84\xc8\xd7\xf1\x01 \x01(\tH\x01R\x10removeprivatekey\x88\x01\x01\x12;\n" +
-	"\x14samlmetadatadocument\x18\x85\xa9ֆ\x01 \x01(\tH\x02R\x14samlmetadatadocument\x88\x01\x01\x12,\n" +
+	"\raddprivatekey\x18\xb7\x87\x8fb \x01(\tH\x00R\raddprivatekey\x88\x01\x01\x12c\n" +
+	"\x17assertionencryptionmode\x18\xaa\xee\xa4\xe2\x01 \x01(\x0e2 .iam.assertionEncryptionModeTypeH\x01R\x17assertionencryptionmode\x88\x01\x01\x123\n" +
+	"\x10removeprivatekey\x18\x84\xc8\xd7\xf1\x01 \x01(\tH\x02R\x10removeprivatekey\x88\x01\x01\x12;\n" +
+	"\x14samlmetadatadocument\x18\x85\xa9ֆ\x01 \x01(\tH\x03R\x14samlmetadatadocument\x88\x01\x01\x12,\n" +
 	"\x0fsamlproviderarn\x18\xa5ͨ\x8c\x01 \x01(\tR\x0fsamlproviderarnB\x10\n" +
-	"\x0e_addprivatekeyB\x13\n" +
+	"\x0e_addprivatekeyB\x1a\n" +
+	"\x18_assertionencryptionmodeB\x13\n" +
 	"\x11_removeprivatekeyB\x17\n" +
 	"\x15_samlmetadatadocument\"c\n" +
 	"\x1aUpdateSAMLProviderResponse\x121\n" +
@@ -26827,12 +26854,14 @@ func file_iam_proto_init() {
 	file_iam_proto_msgTypes[104].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[105].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[106].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[107].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[108].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[110].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[111].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[112].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[120].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[121].OneofWrappers = []any{}
+	file_iam_proto_msgTypes[122].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[125].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[126].OneofWrappers = []any{}
 	file_iam_proto_msgTypes[127].OneofWrappers = []any{}

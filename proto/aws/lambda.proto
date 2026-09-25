@@ -350,7 +350,7 @@ message AddPermissionRequest {
 
   string functionname = 468698147;
 
-  FunctionUrlAuthType functionurlauthtype = 417744441;
+  optional FunctionUrlAuthType functionurlauthtype = 417744441;
 
   optional bool invokedviafunctionurl = 425988239;
 
@@ -610,7 +610,7 @@ message CapacityProviderLoggingConfig {
 
   optional string loggroup = 148580073;
 
-  SystemLogLevel systemloglevel = 530478525;
+  optional SystemLogLevel systemloglevel = 530478525;
 
 }
 
@@ -640,7 +640,7 @@ message CapacityProviderScalingConfig {
 
   optional int32 maxvcpucount = 336271977;
 
-  CapacityProviderScalingMode scalingmode = 210356138;
+  optional CapacityProviderScalingMode scalingmode = 210356138;
 
   repeated TargetTrackingScalingPolicy scalingpolicies = 289494257;
 
@@ -886,7 +886,7 @@ message CodeSigningConfigNotFoundException {
 
 message CodeSigningPolicies {
 
-  CodeSigningPolicy untrustedartifactondeployment = 67707554;
+  optional CodeSigningPolicy untrustedartifactondeployment = 67707554;
 
 }
 
@@ -1124,7 +1124,7 @@ message CreateEventSourceMappingRequest {
 
   repeated SourceAccessConfiguration sourceaccessconfigurations = 371593554;
 
-  EventSourcePosition startingposition = 428771919;
+  optional EventSourcePosition startingposition = 428771919;
 
   optional string startingpositiontimestamp = 144323607;
 
@@ -1174,15 +1174,15 @@ message CreateFunctionRequest {
 
   optional int32 memorysize = 55523120;
 
-  PackageType packagetype = 517524132;
+  optional PackageType packagetype = 517524132;
 
   optional bool publish = 207759785;
 
-  FunctionVersionLatestPublished publishto = 524127682;
+  optional FunctionVersionLatestPublished publishto = 524127682;
 
   string role = 271285818;
 
-  Runtime runtime = 359311308;
+  optional Runtime runtime = 359311308;
 
   SnapStart snapstart = 283273032;
 
@@ -1208,7 +1208,7 @@ message CreateFunctionUrlConfigRequest {
 
   string functionname = 468698147;
 
-  InvokeMode invokemode = 414956667;
+  optional InvokeMode invokemode = 414956667;
 
   optional string qualifier = 526670560;
 
@@ -1228,7 +1228,7 @@ message CreateFunctionUrlConfigResponse {
 
   string functionurl = 449381947;
 
-  InvokeMode invokemode = 414956667;
+  optional InvokeMode invokemode = 414956667;
 
 }
 
@@ -1408,7 +1408,7 @@ message DocumentDBEventSourceConfig {
 
   optional string databasename = 89545052;
 
-  FullDocument fulldocument = 450918030;
+  optional FullDocument fulldocument = 450918030;
 
 }
 
@@ -1650,7 +1650,7 @@ message Event {
 
   optional string eventtimestamp = 184687758;
 
-  EventType eventtype = 468897896;
+  optional EventType eventtype = 468897896;
 
   ExecutionFailedDetails executionfaileddetails = 177664947;
 
@@ -1780,7 +1780,7 @@ message EventSourceMappingConfiguration {
 
   repeated SourceAccessConfiguration sourceaccessconfigurations = 371593554;
 
-  EventSourcePosition startingposition = 428771919;
+  optional EventSourcePosition startingposition = 428771919;
 
   optional string startingpositiontimestamp = 144323607;
 
@@ -1802,7 +1802,7 @@ message EventSourceMappingConfiguration {
 
 message EventSourceMappingLoggingConfig {
 
-  EventSourceMappingSystemLogLevel systemloglevel = 530478525;
+  optional EventSourceMappingSystemLogLevel systemloglevel = 530478525;
 
 }
 
@@ -2074,7 +2074,7 @@ message FunctionCode {
 
   optional string s3key = 490298907;
 
-  S3ObjectStorageMode s3objectstoragemode = 83724023;
+  optional S3ObjectStorageMode s3objectstoragemode = 83724023;
 
   optional string s3objectversion = 194809669;
 
@@ -2158,11 +2158,11 @@ message FunctionConfiguration {
 
   optional string lastmodified = 434048551;
 
-  LastUpdateStatus lastupdatestatus = 269946843;
+  optional LastUpdateStatus lastupdatestatus = 269946843;
 
   optional string lastupdatestatusreason = 165558159;
 
-  LastUpdateStatusReasonCode lastupdatestatusreasoncode = 275687348;
+  optional LastUpdateStatusReasonCode lastupdatestatusreasoncode = 275687348;
 
   repeated Layer layers = 478144896;
 
@@ -2172,13 +2172,13 @@ message FunctionConfiguration {
 
   optional int32 memorysize = 55523120;
 
-  PackageType packagetype = 517524132;
+  optional PackageType packagetype = 517524132;
 
   optional string revisionid = 499618182;
 
   optional string role = 271285818;
 
-  Runtime runtime = 359311308;
+  optional Runtime runtime = 359311308;
 
   RuntimeVersionConfig runtimeversionconfig = 486723720;
 
@@ -2188,11 +2188,11 @@ message FunctionConfiguration {
 
   SnapStartResponse snapstart = 283273032;
 
-  State state = 502047895;
+  optional State state = 502047895;
 
   optional string statereason = 376138483;
 
-  StateReasonCode statereasoncode = 319263936;
+  optional StateReasonCode statereasoncode = 319263936;
 
   TenancyConfig tenancyconfig = 215700986;
 
@@ -2268,7 +2268,7 @@ message FunctionUrlConfig {
 
   string functionurl = 449381947;
 
-  InvokeMode invokemode = 414956667;
+  optional InvokeMode invokemode = 414956667;
 
   string lastmodifiedtime = 236912992;
 
@@ -2544,7 +2544,7 @@ message GetFunctionRecursionConfigRequest {
 
 message GetFunctionRecursionConfigResponse {
 
-  RecursiveLoop recursiveloop = 2821758;
+  optional RecursiveLoop recursiveloop = 2821758;
 
 }
 
@@ -2620,7 +2620,7 @@ message GetFunctionUrlConfigResponse {
 
   string functionurl = 449381947;
 
-  InvokeMode invokemode = 414956667;
+  optional InvokeMode invokemode = 414956667;
 
   string lastmodifiedtime = 236912992;
 
@@ -2730,7 +2730,7 @@ message GetProvisionedConcurrencyConfigResponse {
 
   optional int32 requestedprovisionedconcurrentexecutions = 58431158;
 
-  ProvisionedConcurrencyStatusEnum status = 6222352;
+  optional ProvisionedConcurrencyStatusEnum status = 6222352;
 
   optional string statusreason = 139234172;
 
@@ -2772,7 +2772,7 @@ message GetRuntimeManagementConfigResponse {
 
   optional string runtimeversionarn = 532500669;
 
-  UpdateRuntimeOn updateruntimeon = 285197810;
+  optional UpdateRuntimeOn updateruntimeon = 285197810;
 
 }
 
@@ -2938,9 +2938,9 @@ message InvocationRequest {
 
   string functionname = 468698147;
 
-  InvocationType invocationtype = 492784524;
+  optional InvocationType invocationtype = 492784524;
 
-  LogType logtype = 116703930;
+  optional LogType logtype = 116703930;
 
   optional bytes payload = 6526790 [(aws.http_payload) = true];
 
@@ -3042,9 +3042,9 @@ message InvokeWithResponseStreamRequest {
 
   string functionname = 468698147;
 
-  ResponseStreamingInvocationType invocationtype = 492784524;
+  optional ResponseStreamingInvocationType invocationtype = 492784524;
 
-  LogType logtype = 116703930;
+  optional LogType logtype = 116703930;
 
   optional bytes payload = 6526790 [(aws.http_payload) = true];
 
@@ -3134,7 +3134,7 @@ message KMSNotFoundException {
 
 message KafkaSchemaRegistryAccessConfig {
 
-  KafkaSchemaRegistryAuthType type = 290836590;
+  optional KafkaSchemaRegistryAuthType type = 290836590;
 
   optional string uri = 443116318;
 
@@ -3160,7 +3160,7 @@ message KafkaSchemaRegistryConfig {
 
   repeated KafkaSchemaRegistryAccessConfig accessconfigs = 217772895;
 
-  SchemaRegistryEventRecordFormat eventrecordformat = 212276390;
+  optional SchemaRegistryEventRecordFormat eventrecordformat = 212276390;
 
   optional string schemaregistryuri = 227288142;
 
@@ -3184,7 +3184,7 @@ enum KafkaSchemaValidationAttribute {
 
 message KafkaSchemaValidationConfig {
 
-  KafkaSchemaValidationAttribute attribute = 49977488;
+  optional KafkaSchemaValidationAttribute attribute = 49977488;
 
 }
 
@@ -3318,7 +3318,7 @@ message LayerVersionContentInput {
 
   optional string s3key = 490298907;
 
-  S3ObjectStorageMode s3objectstoragemode = 83724023;
+  optional S3ObjectStorageMode s3objectstoragemode = 83724023;
 
   optional string s3objectversion = 194809669;
 
@@ -3414,7 +3414,7 @@ message ListCapacityProvidersRequest {
 
   optional int32 maxitems = 506899220;
 
-  CapacityProviderState state = 502047895;
+  optional CapacityProviderState state = 502047895;
 
 }
 
@@ -3602,7 +3602,7 @@ message ListFunctionsByCodeSigningConfigResponse {
 
 message ListFunctionsRequest {
 
-  FunctionVersion functionversion = 365780244;
+  optional FunctionVersion functionversion = 365780244;
 
   optional string marker = 89353912;
 
@@ -3628,9 +3628,9 @@ message ListFunctionsResponse {
 
 message ListLayerVersionsRequest {
 
-  Architecture compatiblearchitecture = 27235489;
+  optional Architecture compatiblearchitecture = 27235489;
 
-  Runtime compatibleruntime = 238958294;
+  optional Runtime compatibleruntime = 238958294;
 
   string layername = 497423638;
 
@@ -3654,9 +3654,9 @@ message ListLayerVersionsResponse {
 
 message ListLayersRequest {
 
-  Architecture compatiblearchitecture = 27235489;
+  optional Architecture compatiblearchitecture = 27235489;
 
-  Runtime compatibleruntime = 238958294;
+  optional Runtime compatibleruntime = 238958294;
 
   optional string marker = 89353912;
 
@@ -3760,13 +3760,13 @@ enum LogType {
 
 message LoggingConfig {
 
-  ApplicationLogLevel applicationloglevel = 282824602;
+  optional ApplicationLogLevel applicationloglevel = 282824602;
 
-  LogFormat logformat = 198463503;
+  optional LogFormat logformat = 198463503;
 
   optional string loggroup = 148580073;
 
-  SystemLogLevel systemloglevel = 530478525;
+  optional SystemLogLevel systemloglevel = 530478525;
 
 }
 
@@ -3982,7 +3982,7 @@ message PropagateTags {
 
   map<string, string> explicittags = 336219221;
 
-  PropagateTagsMode mode = 323909427;
+  optional PropagateTagsMode mode = 323909427;
 
 }
 
@@ -4012,7 +4012,7 @@ message ProvisionedConcurrencyConfigListItem {
 
   optional int32 requestedprovisionedconcurrentexecutions = 58431158;
 
-  ProvisionedConcurrencyStatusEnum status = 6222352;
+  optional ProvisionedConcurrencyStatusEnum status = 6222352;
 
   optional string statusreason = 139234172;
 
@@ -4120,7 +4120,7 @@ message PublishVersionRequest {
 
   string functionname = 468698147;
 
-  FunctionVersionLatestPublished publishto = 524127682;
+  optional FunctionVersionLatestPublished publishto = 524127682;
 
   optional string revisionid = 499618182;
 
@@ -4186,7 +4186,7 @@ message PutFunctionRecursionConfigRequest {
 
 message PutFunctionRecursionConfigResponse {
 
-  RecursiveLoop recursiveloop = 2821758;
+  optional RecursiveLoop recursiveloop = 2821758;
 
 }
 
@@ -4206,7 +4206,7 @@ message PutFunctionScalingConfigRequest {
 
 message PutFunctionScalingConfigResponse {
 
-  State functionstate = 63089739;
+  optional State functionstate = 63089739;
 
 }
 
@@ -4234,7 +4234,7 @@ message PutProvisionedConcurrencyConfigResponse {
 
   optional int32 requestedprovisionedconcurrentexecutions = 58431158;
 
-  ProvisionedConcurrencyStatusEnum status = 6222352;
+  optional ProvisionedConcurrencyStatusEnum status = 6222352;
 
   optional string statusreason = 139234172;
 
@@ -4572,7 +4572,7 @@ message RuntimeVersionError {
 
 message S3FilesConfig {
 
-  DirectS3Read directs3read = 155020371;
+  optional DirectS3Read directs3read = 155020371;
 
 }
 
@@ -4752,7 +4752,7 @@ message ServiceQuotaExceededException {
 
 message SnapStart {
 
-  SnapStartApplyOn applyon = 531091671;
+  optional SnapStartApplyOn applyon = 531091671;
 
 }
 
@@ -4818,9 +4818,9 @@ message SnapStartRegenerationFailureException {
 
 message SnapStartResponse {
 
-  SnapStartApplyOn applyon = 531091671;
+  optional SnapStartApplyOn applyon = 531091671;
 
-  SnapStartOptimizationStatus optimizationstatus = 155803311;
+  optional SnapStartOptimizationStatus optimizationstatus = 155803311;
 
 }
 
@@ -4842,7 +4842,7 @@ message SnapStartTimeoutException {
 
 message SourceAccessConfiguration {
 
-  SourceAccessType type = 290836590;
+  optional SourceAccessType type = 290836590;
 
   optional string uri = 443116318;
 
@@ -5154,7 +5154,7 @@ enum ThrottleReason {
 
 message TooManyRequestsException {
 
-  ThrottleReason reason = 20005178;
+  optional ThrottleReason reason = 20005178;
 
   optional string type = 290836590;
 
@@ -5180,7 +5180,7 @@ message TraceHeader {
 
 message TracingConfig {
 
-  TracingMode mode = 323909427;
+  optional TracingMode mode = 323909427;
 
 }
 
@@ -5190,7 +5190,7 @@ message TracingConfig {
 
 message TracingConfigResponse {
 
-  TracingMode mode = 323909427;
+  optional TracingMode mode = 323909427;
 
 }
 
@@ -5352,7 +5352,7 @@ message UpdateFunctionCodeRequest {
 
   optional bool publish = 207759785;
 
-  FunctionVersionLatestPublished publishto = 524127682;
+  optional FunctionVersionLatestPublished publishto = 524127682;
 
   optional string revisionid = 499618182;
 
@@ -5360,7 +5360,7 @@ message UpdateFunctionCodeRequest {
 
   optional string s3key = 490298907;
 
-  S3ObjectStorageMode s3objectstoragemode = 83724023;
+  optional S3ObjectStorageMode s3objectstoragemode = 83724023;
 
   optional string s3objectversion = 194809669;
 
@@ -5406,7 +5406,7 @@ message UpdateFunctionConfigurationRequest {
 
   optional string role = 271285818;
 
-  Runtime runtime = 359311308;
+  optional Runtime runtime = 359311308;
 
   SnapStart snapstart = 283273032;
 
@@ -5438,13 +5438,13 @@ message UpdateFunctionEventInvokeConfigRequest {
 
 message UpdateFunctionUrlConfigRequest {
 
-  FunctionUrlAuthType authtype = 477704248;
+  optional FunctionUrlAuthType authtype = 477704248;
 
   Cors cors = 260753653;
 
   string functionname = 468698147;
 
-  InvokeMode invokemode = 414956667;
+  optional InvokeMode invokemode = 414956667;
 
   optional string qualifier = 526670560;
 
@@ -5464,7 +5464,7 @@ message UpdateFunctionUrlConfigResponse {
 
   string functionurl = 449381947;
 
-  InvokeMode invokemode = 414956667;
+  optional InvokeMode invokemode = 414956667;
 
   string lastmodifiedtime = 236912992;
 

@@ -2,17 +2,34 @@
 package dynamodb
 
 import (
+	"errors"
 	"time"
 
-	types "vorpalstacks/internal/common/tags"
+	"github.com/google/uuid"
+
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
+// Default throughput quotas per the DynamoDB quotas documentation, per
+// Region: a table may provision at most 40,000 read and 40,000 write
+// capacity units, and the account-wide total across all provisioned tables
+// and GSIs is 80,000 read and 80,000 write capacity units.
+const (
+	AccountMaxReadCapacityUnits  = 80000
+	AccountMaxWriteCapacityUnits = 80000
+	TableMaxReadCapacityUnits    = 40000
+	TableMaxWriteCapacityUnits   = 40000
+)
+
 func tableBucketName(region string) string {
 	return "dynamodb_tables-" + region
+}
+
+func autoScalingBucketName(region string) string {
+	return "dynamodb_autoscaling-" + region
 }
 
 // TableStore manages DynamoDB table metadata in persistent storage.
@@ -32,14 +49,19 @@ func NewTableStore(store storage.BasicStorage, accountId, region string) *TableS
 		TagStore:         common.NewTagStoreWithRegion(store, "dynamodb", region, common.StandardTagBudget("com.amazon.coral.validate#ValidationException")),
 		arnBuilder:       svcarn.NewARNBuilder(accountId, region).DynamoDB(),
 		region:           region,
-		autoScalingStore: common.NewBaseStore(store.Bucket("dynamodb_autoscaling-"+region), "dynamodb"),
+		autoScalingStore: common.NewBaseStore(store.Bucket(autoScalingBucketName(region)), "dynamodb"),
 	}
 }
 
-// Get retrieves a table by its name.
+// Get retrieves a table by its name. Absence answers with the package
+// sentinel (wrapped in the store-error shape with the key), so both read
+// paths of a table report one not-found contract.
 func (s *TableStore) Get(name string) (*Table, error) {
 	var pbTable pb.Table
 	if err := s.BaseStore.GetProto(name, &pbTable); err != nil {
+		if common.IsNotFound(err) {
+			return nil, common.NewStoreErrorWithKey("dynamodb", "get", name, ErrTableNotFound)
+		}
 		return nil, err
 	}
 	return ProtoToTable(&pbTable), nil
@@ -56,7 +78,6 @@ type CreateTableParams struct {
 	GlobalSecondaryIndexes    []*GlobalSecondaryIndex
 	LocalSecondaryIndexes     []*LocalSecondaryIndex
 	StreamSpecification       *StreamSpecification
-	Tags                      []types.Tag
 	DeletionProtectionEnabled bool
 }
 
@@ -69,9 +90,15 @@ func (s *TableStore) Create(params CreateTableParams) (*Table, error) {
 	}
 
 	now := time.Now().UTC()
+	// The table UUID is minted here, at the single creation path every
+	// surface (create, restore, import, replica join) funnels through: the
+	// identity is stable for the table's lifetime and distinct across
+	// same-name generations, matching the model's TableId pattern
+	// (^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$).
 	table := &Table{
 		Name:                      params.Name,
 		ARN:                       s.arnBuilder.Table(params.Name),
+		TableId:                   uuid.NewString(),
 		Status:                    TableStatusActive,
 		CreationDateTime:          now,
 		LastUpdatedDateTime:       now,
@@ -82,19 +109,19 @@ func (s *TableStore) Create(params CreateTableParams) (*Table, error) {
 		GlobalSecondaryIndexes:    params.GlobalSecondaryIndexes,
 		LocalSecondaryIndexes:     params.LocalSecondaryIndexes,
 		StreamSpecification:       params.StreamSpecification,
-		Tags:                      params.Tags,
 		TableSizeBytes:            0,
 		ItemCount:                 0,
 		DeletionProtectionEnabled: params.DeletionProtectionEnabled,
 	}
 
 	for _, g := range table.GlobalSecondaryIndexes {
-		g.IndexArn = table.ARN + "/index/" + g.IndexName
+		g.IndexArn = s.arnBuilder.Index(params.Name, g.IndexName)
 	}
 
 	if params.StreamSpecification != nil && params.StreamSpecification.StreamEnabled {
-		table.StreamArn = table.ARN + "/stream/" + now.Format("2006-01-02T15:04:05.000")
-		table.LatestStreamLabel = now.Format("2006-01-02T15:04:05.000")
+		streamLabel := now.Format("2006-01-02T15:04:05.000")
+		table.StreamArn = s.arnBuilder.TableStream(params.Name, streamLabel)
+		table.LatestStreamLabel = streamLabel
 	}
 
 	if err := s.BaseStore.PutProto(params.Name, TableToProto(table)); err != nil {
@@ -162,12 +189,18 @@ func (s *TableStore) WithTableLock(name string, fn func() error) error {
 // lock with immediate (non-batch) writes, so concurrent metric flushes and
 // locked table updates cannot lose increments. A table that no longer
 // exists (deleted after the carrying write committed) is not an error: its
-// counters no longer exist.
-func (s *TableStore) applyMetricDeltas(name string, countDelta, sizeDelta int64) error {
+// counters no longer exist — and neither is a record of a DIFFERENT
+// generation under the same name (a successor created between the write's
+// commit and this flush): the queued deltas belong to a generation whose
+// counters are gone, not to whatever carries the name now.
+func (s *TableStore) applyMetricDeltas(name, tableId string, countDelta, sizeDelta int64) error {
 	if countDelta == 0 && sizeDelta == 0 {
 		return nil
 	}
 	_, err := s.Update(name, func(table *Table) error {
+		if tableId != "" && table.TableId != tableId {
+			return errTableGenerationGone
+		}
 		table.ItemCount += countDelta
 		if table.ItemCount < 0 {
 			table.ItemCount = 0
@@ -178,17 +211,10 @@ func (s *TableStore) applyMetricDeltas(name string, countDelta, sizeDelta int64)
 		}
 		return nil
 	})
-	if err != nil && common.IsNotFound(err) {
+	if err != nil && (common.IsNotFound(err) || errors.Is(err, errTableGenerationGone)) {
 		return nil
 	}
 	return err
-}
-
-// Delete removes a DynamoDB table by name.
-func (s *TableStore) Delete(name string) error {
-	return s.keyLocker.WithLock(name, func() error {
-		return s.BaseStore.Delete(name)
-	})
 }
 
 // Exists checks if a DynamoDB table exists.
@@ -198,34 +224,7 @@ func (s *TableStore) Exists(name string) bool {
 
 // List returns a list of DynamoDB tables with pagination.
 func (s *TableStore) List(marker string, limit int) ([]*Table, string, error) {
-	opts := common.ListOptions{
-		Marker:   marker,
-		MaxItems: limit,
-	}
-	result, err := common.ListProto[*pb.Table](s.BaseStore, opts, func() *pb.Table { return &pb.Table{} }, nil)
-	if err != nil {
-		return nil, "", err
-	}
-	tables := make([]*Table, len(result.Items))
-	for i, pbTable := range result.Items {
-		tables[i] = ProtoToTable(pbTable)
-	}
-	if !result.IsTruncated {
-		return tables, "", nil
-	}
-	return tables, result.NextMarker, nil
-}
-
-// UpdateItemCount updates the item count for a DynamoDB table through the
-// locked metric-delta path shared with the post-commit flush.
-func (s *TableStore) UpdateItemCount(name string, delta int64) error {
-	return s.applyMetricDeltas(name, delta, 0)
-}
-
-// UpdateTableSize updates the table size for a DynamoDB table through the
-// locked metric-delta path shared with the post-commit flush.
-func (s *TableStore) UpdateTableSize(name string, delta int64) error {
-	return s.applyMetricDeltas(name, 0, delta)
+	return listProtoConverted(s.BaseStore, marker, limit, func() *pb.Table { return &pb.Table{} }, ProtoToTable, nil)
 }
 
 // ARNBuilder returns the ARN builder for DynamoDB tables.
@@ -274,14 +273,32 @@ func (s *TableStore) GetPointInTimeRecovery(name string) (*PointInTimeRecoveryDe
 	return table.PointInTimeRecovery, nil
 }
 
-// SetResourcePolicy sets the resource policy for a DynamoDB table.
-func (s *TableStore) SetResourcePolicy(name string, policy string) error {
+// PolicyRevisionUnchecked instructs the revision-checked resource policy
+// writes to skip the optimistic-lock comparison — the store-side value of
+// the wire contract's absent ExpectedRevisionId.
+const PolicyRevisionUnchecked = -1
+
+// SetResourcePolicyExpected sets the table's resource policy and advances
+// the revision inside one locked read-modify-write of the table record:
+// the write applies only when the current revision equals expectedRev, so
+// two concurrent writers that both observed the same revision cannot both
+// apply — the loser answers ErrPolicyRevisionMismatch. Returns the new
+// revision number.
+func (s *TableStore) SetResourcePolicyExpected(name string, policy string, expectedRev int) (int, error) {
+	var newRev int
 	_, err := s.Update(name, func(table *Table) error {
+		if expectedRev != PolicyRevisionUnchecked && table.ResourcePolicyRevisionId != expectedRev {
+			return ErrPolicyRevisionMismatch
+		}
 		table.ResourcePolicy = policy
 		table.ResourcePolicyRevisionId++
+		newRev = table.ResourcePolicyRevisionId
 		return nil
 	})
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return newRev, nil
 }
 
 // GetResourcePolicyRevisionId returns the current resource policy revision
@@ -303,13 +320,28 @@ func (s *TableStore) GetResourcePolicy(name string) (string, error) {
 	return table.ResourcePolicy, nil
 }
 
-// DeleteResourcePolicy removes the resource policy from a DynamoDB table.
-func (s *TableStore) DeleteResourcePolicy(name string) error {
+// DeleteResourcePolicyExpected removes the resource policy from a table
+// under the same revision-checked, locked write SetResourcePolicyExpected
+// applies. A successful delete advances the revision too: the delete
+// output's documented RevisionId member is a fresh id, and without the
+// advance the token would sit unmoved and a concurrent put holding the
+// same expected revision could still apply past the delete. Returns the
+// new revision number.
+func (s *TableStore) DeleteResourcePolicyExpected(name string, expectedRev int) (int, error) {
+	var newRev int
 	_, err := s.Update(name, func(table *Table) error {
+		if expectedRev != PolicyRevisionUnchecked && table.ResourcePolicyRevisionId != expectedRev {
+			return ErrPolicyRevisionMismatch
+		}
 		table.ResourcePolicy = ""
+		table.ResourcePolicyRevisionId++
+		newRev = table.ResourcePolicyRevisionId
 		return nil
 	})
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return newRev, nil
 }
 
 // SetKinesisStreamingDestination sets the Kinesis streaming destination for a DynamoDB table.
@@ -323,7 +355,7 @@ func (s *TableStore) SetKinesisStreamingDestination(name string, destinations []
 
 // SetContributorInsights enables or disables contributor insights for a DynamoDB table.
 // When mode is empty, the existing ContributorInsightsMode is preserved.
-func (s *TableStore) SetContributorInsights(name string, enabled bool, mode string) error {
+func (s *TableStore) SetContributorInsights(name string, enabled bool, mode ContributorInsightsMode) error {
 	_, err := s.Update(name, func(table *Table) error {
 		table.ContributorInsightsEnabled = enabled
 		if mode != "" {
@@ -335,12 +367,29 @@ func (s *TableStore) SetContributorInsights(name string, enabled bool, mode stri
 	return err
 }
 
-// SetAutoScalingSettings stores the auto-scaling settings for a table as a
-// typed protobuf record. Auto-scaling policy execution (Application Auto
-// Scaling) is not implemented; these settings round-trip for API
-// compatibility.
-func (s *TableStore) SetAutoScalingSettings(name string, settings *TableReplicaAutoScalingSettings) error {
-	return s.autoScalingStore.PutProto(name, tableReplicaAutoScalingToProto(settings))
+// UpdateAutoScalingSettings applies merge to the stored auto-scaling
+// settings under the table's record lock and persists the result — the
+// locked read-modify-write the whole-record Update provides for table
+// records, for the settings record that lives in its own bucket keyed by
+// the same table name. An unlocked read-merge-write here lets two
+// concurrent updates start from the same stored state, and the second
+// write silently discards the first's replicas. Auto-scaling policy
+// execution (Application Auto Scaling) is not implemented; the settings
+// round-trip for API compatibility.
+func (s *TableStore) UpdateAutoScalingSettings(name string, merge func(existing *TableReplicaAutoScalingSettings) *TableReplicaAutoScalingSettings) (*TableReplicaAutoScalingSettings, error) {
+	var merged *TableReplicaAutoScalingSettings
+	err := s.keyLocker.WithLock(name, func() error {
+		existing, err := s.GetAutoScalingSettings(name)
+		if err != nil {
+			return err
+		}
+		merged = merge(existing)
+		return s.autoScalingStore.PutProto(name, tableReplicaAutoScalingToProto(merged))
+	})
+	if err != nil {
+		return nil, err
+	}
+	return merged, nil
 }
 
 // GetAutoScalingSettings returns the stored auto-scaling settings for a

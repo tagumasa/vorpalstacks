@@ -203,7 +203,7 @@ type SNSServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	DeleteTopic(context.Context, *connect.Request[sns.DeleteTopicInput]) (*connect.Response[common.Empty], error)
-	// Retrieves the specified inline DataProtectionPolicy document that is stored in the specified Amazon SNS topic.
+	// Amazon SNS message data protection is no longer available to new customers. For more information and guidance on alternatives, see Amazon SNS message data protection availability change. Retrieves ...
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetDataProtectionPolicy(context.Context, *connect.Request[sns.GetDataProtectionPolicyInput]) (*connect.Response[sns.GetDataProtectionPolicyResponse], error)
@@ -279,7 +279,7 @@ type SNSServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	PublishBatch(context.Context, *connect.Request[sns.PublishBatchInput]) (*connect.Response[sns.PublishBatchResponse], error)
-	// Adds or updates an inline policy document that is stored in the specified Amazon SNS topic.
+	// Amazon SNS message data protection is no longer available to new customers. For more information and guidance on alternatives, see Amazon SNS message data protection availability change. Adds or up...
 	// HTTP: POST /
 	// Protocol: awsQuery
 	PutDataProtectionPolicy(context.Context, *connect.Request[sns.PutDataProtectionPolicyInput]) (*connect.Response[common.Empty], error)
@@ -897,7 +897,7 @@ type SNSServiceHandler interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	DeleteTopic(context.Context, *connect.Request[sns.DeleteTopicInput]) (*connect.Response[common.Empty], error)
-	// Retrieves the specified inline DataProtectionPolicy document that is stored in the specified Amazon SNS topic.
+	// Amazon SNS message data protection is no longer available to new customers. For more information and guidance on alternatives, see Amazon SNS message data protection availability change. Retrieves ...
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetDataProtectionPolicy(context.Context, *connect.Request[sns.GetDataProtectionPolicyInput]) (*connect.Response[sns.GetDataProtectionPolicyResponse], error)
@@ -973,7 +973,7 @@ type SNSServiceHandler interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	PublishBatch(context.Context, *connect.Request[sns.PublishBatchInput]) (*connect.Response[sns.PublishBatchResponse], error)
-	// Adds or updates an inline policy document that is stored in the specified Amazon SNS topic.
+	// Amazon SNS message data protection is no longer available to new customers. For more information and guidance on alternatives, see Amazon SNS message data protection availability change. Adds or up...
 	// HTTP: POST /
 	// Protocol: awsQuery
 	PutDataProtectionPolicy(context.Context, *connect.Request[sns.PutDataProtectionPolicyInput]) (*connect.Response[common.Empty], error)

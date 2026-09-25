@@ -5,8 +5,10 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/kmsutil"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
@@ -16,16 +18,36 @@ import (
 
 // DynamoDBService provides DynamoDB operations for managing tables, items, and other resources.
 type DynamoDBService struct {
-	accountID            string
-	stores               sync.Map // region → dynamodbstore.DynamoDBStoreInterface
-	storageManager       *storage.RegionStorageManager
-	bus                  eventbus.ServiceBus
-	bgCtx                context.Context
-	bgCancel             context.CancelFunc
-	bgWg                 sync.WaitGroup
-	idempotencySweepOnce sync.Once
-	journalSweepOnce     sync.Once
-	streamSweepOnce      sync.Once
+	accountID             string
+	stores                sync.Map // region → dynamodbstore.DynamoDBStoreInterface
+	storageManager        *storage.RegionStorageManager
+	bus                   eventbus.ServiceBus
+	bgCtx                 context.Context
+	bgCancel              context.CancelFunc
+	bgWg                  sync.WaitGroup
+	idempotencySweepOnce  sync.Once
+	journalSweepOnce      sync.Once
+	streamSweepOnce       sync.Once
+	systemBackupSweepOnce sync.Once
+	// escalationMu guards the lazy creation of the background lifecycle
+	// (bgCtx/bgCancel, for services built outside NewDynamoDBService) and
+	// of the replication escalation worker and its queue (created on the
+	// first exhausted delivery, which services built outside the
+	// constructor also reach). Every background goroutine, the worker
+	// included, derives its lifetime from bgCtx, so Close cancels one
+	// context and stops them all — a worker a late delivery creates
+	// included, however the creation races the close. escalationsEnqueued
+	// counts every enqueue including the worker's own re-queues — the
+	// monotonic observation point, since the queue's instantaneous length
+	// oscillates as the worker drains it.
+	escalationMu           sync.Mutex
+	replicationEscalations chan replicationEscalation
+	escalationsEnqueued    atomic.Int64
+	// kmsResolver settles SSE key identifiers into their ARN form
+	// through the KMS service's resolution contract; nil leaves the
+	// deterministic ARN construction as the fallback.
+	kmsResolver kmsutil.Resolver
+
 	// kinesisDestMu serialises Kinesis streaming destination transitions
 	// (handler writes and the delayed background transitions) so a stale
 	// write-back can never resurrect a destination a newer request has
@@ -51,15 +73,30 @@ func NewDynamoDBService(accountID string) *DynamoDBService {
 	s.ensureRetentionSweeper()
 	s.ensureJournalSweeper()
 	s.ensureIdempotencySweeper()
+	s.ensureSystemBackupSweeper()
 	return s
+}
+
+// ensureBackgroundLifecycle returns the service's background context and
+// its cancel, creating the pair when the service was built without the
+// constructor — the replication goroutines run on such services too, and
+// the escalation worker they spawn derives its lifetime from this context.
+// The caller holds escalationMu: the pair's creation and every read the
+// shutdown path makes of it serialise under the mutex.
+func (s *DynamoDBService) ensureBackgroundLifecycle() (context.Context, context.CancelFunc) {
+	if s.bgCtx == nil {
+		s.bgCtx, s.bgCancel = context.WithCancel(context.Background())
+	}
+	return s.bgCtx, s.bgCancel
 }
 
 // Close stops background goroutines (TTL workers, state-transition
 // goroutines) in all cached stores and waits for them to finish.
 func (s *DynamoDBService) Close() {
-	if s.bgCancel != nil {
-		s.bgCancel()
-	}
+	s.escalationMu.Lock()
+	_, bgCancel := s.ensureBackgroundLifecycle()
+	s.escalationMu.Unlock()
+	bgCancel()
 	s.bgWg.Wait()
 	s.stores.Range(func(_, v any) bool {
 		if c, ok := v.(interface{ Close() }); ok {
@@ -109,7 +146,11 @@ func (s *DynamoDBService) storeForRegion(region string) (dynamodbstore.DynamoDBS
 		if err != nil {
 			return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
 		}
-		return dynamodbstore.NewDynamoDBStore(basicStorage, s.accountID, region), nil
+		globalStorage, err := s.storageManager.GetGlobalStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get global storage: %w", err)
+		}
+		return dynamodbstore.NewDynamoDBStore(basicStorage, globalStorage, s.accountID, region), nil
 	})
 }
 
@@ -123,7 +164,11 @@ func (s *DynamoDBService) store(reqCtx *request.RequestContext) (dynamodbstore.D
 		if !ok {
 			return nil, fmt.Errorf("storage does not implement TransactionalStorageWith2PC")
 		}
-		return dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, reqCtx.GetRegion()), nil
+		globalStorage, err := reqCtx.GetGlobalStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get global storage: %w", err)
+		}
+		return dynamodbstore.NewDynamoDBStore(txnStorage, globalStorage, s.accountID, reqCtx.GetRegion()), nil
 	})
 }
 

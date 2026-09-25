@@ -23,27 +23,13 @@ func (s *DynamoDBService) buildTableDescription(table *dbstore.Table, replicas [
 			"BillingMode": string(table.BillingMode),
 		},
 	}
-
-	if table.ProvisionedThroughput != nil {
-		pt := map[string]interface{}{
-			"ReadCapacityUnits":  table.ProvisionedThroughput.ReadCapacityUnits,
-			"WriteCapacityUnits": table.ProvisionedThroughput.WriteCapacityUnits,
-		}
-		if !table.ProvisionedThroughput.LastDecreaseDateTime.IsZero() {
-			pt["LastDecreaseDateTime"] = table.ProvisionedThroughput.LastDecreaseDateTime.Unix()
-		}
-		if !table.ProvisionedThroughput.LastIncreaseDateTime.IsZero() {
-			pt["LastIncreaseDateTime"] = table.ProvisionedThroughput.LastIncreaseDateTime.Unix()
-		}
-		pt["NumberOfDecreasesToday"] = table.ProvisionedThroughput.NumberOfDecreasesToday
-		desc["ProvisionedThroughput"] = pt
-	} else {
-		desc["ProvisionedThroughput"] = map[string]interface{}{
-			"ReadCapacityUnits":      0,
-			"WriteCapacityUnits":     0,
-			"NumberOfDecreasesToday": 0,
-		}
+	// The table UUID is emitted only once minted; records written before
+	// the identity existed carry none and the optional member stays absent.
+	if table.TableId != "" {
+		desc["TableId"] = table.TableId
 	}
+
+	desc["ProvisionedThroughput"] = buildProvisionedThroughputDescriptionResponse(table.ProvisionedThroughput, true)
 
 	if len(table.GlobalSecondaryIndexes) > 0 {
 		desc["GlobalSecondaryIndexes"] = buildGSIsResponse(table.GlobalSecondaryIndexes)
@@ -70,10 +56,14 @@ func (s *DynamoDBService) buildTableDescription(table *dbstore.Table, replicas [
 
 	if table.SSEDescription != nil {
 		desc["SSEDescription"] = map[string]interface{}{
-			"Status":          table.SSEDescription.Status,
+			"Status":          string(table.SSEDescription.Status),
 			"SSEType":         string(table.SSEDescription.SSEType),
 			"KMSMasterKeyArn": table.SSEDescription.KMSMasterKeyArn,
 		}
+	}
+
+	if odt := buildOnDemandThroughputResponse(table.OnDemandThroughput); odt != nil {
+		desc["OnDemandThroughput"] = odt
 	}
 
 	if table.WarmThroughput != nil {
@@ -98,7 +88,7 @@ func (s *DynamoDBService) buildTableDescription(table *dbstore.Table, replicas [
 		desc["RestoreSummary"] = restoreSummary
 	}
 
-	tableClass := table.TableClass
+	tableClass := string(table.TableClass)
 	if tableClass == "" {
 		tableClass = "STANDARD"
 	}
@@ -106,9 +96,11 @@ func (s *DynamoDBService) buildTableDescription(table *dbstore.Table, replicas [
 		"TableClass": tableClass,
 	}
 
-	desc["Replicas"] = replicas
-	if desc["Replicas"] == nil {
-		desc["Replicas"] = []interface{}{}
+	// Replicas is the global-table replication rendering; a standalone
+	// table carries none and the member stays absent — the protocol omits
+	// unset members rather than carrying an empty list.
+	if replicas != nil {
+		desc["Replicas"] = replicas
 	}
 
 	return desc
@@ -148,20 +140,40 @@ func buildGSIsResponse(gsis []*dbstore.GlobalSecondaryIndex) []map[string]interf
 			"ItemCount":      g.ItemCount,
 			"IndexSizeBytes": g.IndexSizeBytes,
 		}
-		if g.ProvisionedThroughput != nil {
-			idx["ProvisionedThroughput"] = map[string]interface{}{
-				"ReadCapacityUnits":  g.ProvisionedThroughput.ReadCapacityUnits,
-				"WriteCapacityUnits": g.ProvisionedThroughput.WriteCapacityUnits,
-			}
-		} else {
-			idx["ProvisionedThroughput"] = map[string]interface{}{
-				"ReadCapacityUnits":  0,
-				"WriteCapacityUnits": 0,
+		idx["ProvisionedThroughput"] = buildProvisionedThroughputDescriptionResponse(g.ProvisionedThroughput, false)
+		if odt := buildOnDemandThroughputResponse(g.OnDemandThroughput); odt != nil {
+			idx["OnDemandThroughput"] = odt
+		}
+		if g.WarmThroughput != nil {
+			idx["WarmThroughput"] = map[string]interface{}{
+				"ReadUnitsPerSecond":  g.WarmThroughput.ReadUnitsPerSecond,
+				"WriteUnitsPerSecond": g.WarmThroughput.WriteUnitsPerSecond,
 			}
 		}
 		result[i] = idx
 	}
 	return result
+}
+
+// buildOnDemandThroughputResponse renders the on-demand maximum pair
+// presence-aware: a member the request never carried stays unset in the
+// stored record (zero) and is rendered absent, never as zero — only a
+// set limit or the removal sentinel reaches the wire.
+func buildOnDemandThroughputResponse(odt *dbstore.OnDemandThroughput) map[string]interface{} {
+	if odt == nil {
+		return nil
+	}
+	resp := map[string]interface{}{}
+	if odt.MaxReadRequestUnits != 0 {
+		resp["MaxReadRequestUnits"] = odt.MaxReadRequestUnits
+	}
+	if odt.MaxWriteRequestUnits != 0 {
+		resp["MaxWriteRequestUnits"] = odt.MaxWriteRequestUnits
+	}
+	if len(resp) == 0 {
+		return nil
+	}
+	return resp
 }
 
 func buildLSIsResponse(lsis []*dbstore.LocalSecondaryIndex) []map[string]interface{} {
@@ -189,7 +201,7 @@ func buildVectorIndexesResponse(vis []*dbstore.VectorIndex) []map[string]interfa
 			"IndexArn":         v.IndexArn,
 			"VectorAttribute":  map[string]interface{}{"AttributeName": v.VectorAttributeName},
 			"Dimensions":       v.Dimensions,
-			"DistanceFunction": v.DistanceFunction,
+			"DistanceFunction": string(v.DistanceFunction),
 			"Projection":       buildProjectionResponse(v.Projection),
 			"IndexStatus":      string(v.IndexStatus),
 			"ItemCount":        v.ItemCount,
@@ -200,7 +212,7 @@ func buildVectorIndexesResponse(vis []*dbstore.VectorIndex) []map[string]interfa
 			for j, e := range v.SearchSchema {
 				schema[j] = map[string]interface{}{
 					"AttributeName":           e.AttributeName,
-					"SearchSchemaElementType": e.SearchSchemaElementType,
+					"SearchSchemaElementType": string(e.SearchSchemaElementType),
 				}
 			}
 			idx["SearchSchema"] = schema
@@ -218,7 +230,7 @@ func buildProjectionResponse(p *dbstore.Projection) map[string]interface{} {
 		return map[string]interface{}{"ProjectionType": "ALL"}
 	}
 	resp := map[string]interface{}{
-		"ProjectionType": p.ProjectionType,
+		"ProjectionType": string(p.ProjectionType),
 	}
 	if len(p.NonKeyAttributes) > 0 {
 		resp["NonKeyAttributes"] = p.NonKeyAttributes

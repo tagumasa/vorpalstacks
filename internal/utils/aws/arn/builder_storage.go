@@ -39,9 +39,13 @@ func (b *DynamoDBBuilder) Index(table, index string) string {
 	return b.Build("dynamodb", "table/"+table+"/index/"+index)
 }
 
-// Backup constructs an ARN for a DynamoDB table backup.
-func (b *DynamoDBBuilder) Backup(table, backup string) string {
-	return b.Build("dynamodb", "table/"+table+"/backup/"+backup)
+// Backup constructs an ARN for a DynamoDB table backup. The identity
+// segment after /backup/ is the backup's generated id, never its name —
+// the documented example shows table/Music/backup/01489602797149-73d8d5bc
+// for the backup named MusicBackup — so same-named backups of one table
+// carry distinct ARNs.
+func (b *DynamoDBBuilder) Backup(table, id string) string {
+	return b.Build("dynamodb", "table/"+table+"/backup/"+id)
 }
 
 // GlobalTable constructs an ARN for a DynamoDB global table.
@@ -49,14 +53,22 @@ func (b *DynamoDBBuilder) GlobalTable(name string) string {
 	return b.Build("dynamodb", "globaltable/"+name)
 }
 
-// Export constructs an ARN for a DynamoDB table export.
+// Export constructs an ARN for a DynamoDB table export. The resource
+// path embeds the exporting table — the documented format is
+// arn:aws:dynamodb:<region>:<account>:table/<TableName>/export/<id> —
+// because the ID segment alone distinguishes concurrent exports of
+// the same table, it carries the creation's unique identity.
 func (b *DynamoDBBuilder) Export(tableArn, exportId string) string {
-	return b.Build("dynamodb", "export/"+exportId)
+	_, _, _, _, resource := SplitARN(tableArn)
+	return b.Build("dynamodb", resource+"/export/"+exportId)
 }
 
-// Import constructs an ARN for a DynamoDB table import.
+// Import constructs an ARN for a DynamoDB table import, embedding the
+// importing table's resource path the same way Export does for the
+// export family.
 func (b *DynamoDBBuilder) Import(tableArn, importId string) string {
-	return b.Build("dynamodb", "import/"+importId)
+	_, _, _, _, resource := SplitARN(tableArn)
+	return b.Build("dynamodb", resource+"/import/"+importId)
 }
 
 // ParseTableName extracts the table name from a DynamoDB table ARN.

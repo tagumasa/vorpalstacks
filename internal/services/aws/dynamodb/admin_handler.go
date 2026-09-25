@@ -66,7 +66,7 @@ func (h *AdminHandler) DescribeTable(ctx context.Context, req *connect.Request[p
 func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.CreateTableInput]) (*connect.Response[pb.CreateTableOutput], error) {
 	region := defaults.GetRegionFromHeader(req.Header())
 
-	desc, err := h.service.adminCreateTable(region, req.Msg)
+	desc, err := h.service.adminCreateTable(ctx, region, req.Msg)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

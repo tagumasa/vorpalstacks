@@ -1,8 +1,11 @@
 package dynamodb
 
-// This file carries the PartiQL execution engines: the per-statement-type
-// Cores backing ExecuteStatement and ExecuteTransaction, plus the SET clause
-// appliers they share. The handlers in partiql_operations.go and
+// This file carries the PartiQL execution engines: the ExecuteStatement Core,
+// the shared per-verb write engines on the write plane both the standalone
+// statements and the ExecuteTransaction statements run on, and the
+// statement-shape helpers (WHERE/key extraction, table-name resolution,
+// ordering) those engines consume; the write-clause appliers they drive live
+// in partiql_write_apply.go. The handlers in partiql_operations.go and
 // partiql_transaction.go parse and dispatch; everything here owns validation
 // and persistence.
 
@@ -11,15 +14,99 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 	"vorpalstacks/pkg/sqlparser"
 )
+
+// executeStatementInput carries the raw wire parameters of ExecuteStatement.
+type executeStatementInput struct {
+	Parameters map[string]interface{}
+}
+
+// executeStatementCore is the single validation and persistence path of the
+// ExecuteStatement operation: statement validation, placeholder
+// normalisation with the parameter-count check, the response-shaping enums,
+// then dispatch to the per-verb engine and the response's ConsumedCapacity
+// assembly.
+func (s *DynamoDBService) executeStatementCore(ctx context.Context, reqCtx *request.RequestContext, in executeStatementInput) (interface{}, error) {
+	statement := request.GetStringParam(in.Parameters, "Statement")
+	if !validatePartiQLStatement(statement) {
+		return nil, ErrInvalidParameter
+	}
+
+	params := parsePartiQLParams(in.Parameters)
+	// Normalise `?` placeholders into their explicit whole-statement :vN
+	// form before dispatch: the engines' parses (including the manual
+	// UPDATE path's per-segment re-parses) then share one numbering, and
+	// the count check rejects a parameter list that does not carry exactly
+	// one value per placeholder.
+	statement, placeholderCount := preparePartiQLStatement(statement)
+	if err := validateParameterCount(placeholderCount, params); err != nil {
+		return nil, err
+	}
+	consistentRead, crErr := validateBoolParam(in.Parameters, "ConsistentRead", false)
+	if crErr != nil {
+		return nil, crErr
+	}
+	// Limit targets the model's PositiveIntegerObject (range 1+): an
+	// explicitly-present value below 1 is rejected, never read as "no
+	// limit" — GetIntParam cannot distinguish an explicit 0 from an
+	// absent member, so the presence check carries the range decision.
+	limit := request.GetIntParam(in.Parameters, "Limit")
+	if _, present := in.Parameters["Limit"]; present && !validateExecuteStatementLimit(limit) {
+		return nil, ErrInvalidParameter
+	}
+	nextToken := request.GetStringParam(in.Parameters, "NextToken")
+	returnValuesOnConditionCheckFailure := request.GetStringParam(in.Parameters, "ReturnValuesOnConditionCheckFailure")
+
+	// Response-shaping enums are request validation: an unknown value is
+	// rejected before anything executes.
+	returnConsumedCapacity, err := getReturnConsumedCapacity(in.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	upperStmt := strings.ToUpper(strings.TrimSpace(statement))
+	var result interface{}
+
+	switch {
+	case strings.HasPrefix(upperStmt, "SELECT"):
+		result, err = s.executePartiQLSelectEnhanced(ctx, reqCtx, statement, params, consistentRead, limit, nextToken)
+	case strings.HasPrefix(upperStmt, "INSERT"):
+		result, err = s.executePartiQLInsert(ctx, reqCtx, statement, params)
+	case strings.HasPrefix(upperStmt, "UPDATE"):
+		result, err = s.executePartiQLUpdate(ctx, reqCtx, statement, params, returnValuesOnConditionCheckFailure)
+	case strings.HasPrefix(upperStmt, "DELETE"):
+		result, err = s.executePartiQLDelete(ctx, reqCtx, statement, params, returnValuesOnConditionCheckFailure)
+	default:
+		return nil, ErrInvalidParameter
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
+		tableName := extractTableNameFromStatement(statement)
+		// The statement-level charge reports the unit helpers' minimum: an
+		// eventually consistent read of a sub-4 KB item, a sub-1 KB write.
+		capacityUnits := itemReadUnits(0, false)
+		if strings.HasPrefix(upperStmt, "INSERT") || strings.HasPrefix(upperStmt, "UPDATE") || strings.HasPrefix(upperStmt, "DELETE") {
+			capacityUnits = itemWriteUnits(0)
+		}
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			resultMap["ConsumedCapacity"] = buildConsumedCapacityResponse(tableName, capacityUnits)
+		}
+	}
+
+	return result, nil
+}
 
 func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, consistentRead bool, limit int, nextToken string) (interface{}, error) {
 	tableName, whereExpr, orderBy, selectCols := parseSelectStatementWithOrderBy(statement)
@@ -45,15 +132,21 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
 
 	// Decode pagination offset before scanning so we can calculate
-	// how many items to collect before early termination.
+	// how many items to collect before early termination. A malformed
+	// token — not base64, not the offset JSON, or a non-positive offset —
+	// is a rejected request, not an absent cursor: restarting from the
+	// first page would silently re-serve it.
 	startOffset := 0
 	if nextToken != "" {
-		if decoded, decErr := base64.StdEncoding.DecodeString(nextToken); decErr == nil {
-			var offset int
-			if json.Unmarshal(decoded, &offset) == nil && offset > 0 {
-				startOffset = offset
-			}
+		decoded, decErr := base64.StdEncoding.DecodeString(nextToken)
+		if decErr != nil {
+			return nil, ErrInvalidParameter
 		}
+		var offset int
+		if json.Unmarshal(decoded, &offset) != nil || offset <= 0 {
+			return nil, ErrInvalidParameter
+		}
+		startOffset = offset
 	}
 
 	// When no ORDER BY is present, filter inside the scan callback and
@@ -65,14 +158,12 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 	}
 
 	var items []*dbstore.Item
-	scannedCount := 0
 	// sawMore records that a matching item was rejected because the window
 	// was full — the proof that a further page exists, which the early
 	// termination would otherwise discard along with the item.
 	sawMore := false
 
 	scanCallback := func(item *dbstore.Item) error {
-		scannedCount++
 		if whereExpr != nil && !evaluateExpr(item.Attributes, whereExpr, params) {
 			return nil
 		}
@@ -128,10 +219,11 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 
 	_ = consistentRead
 
+	// ExecuteStatementOutput defines Items, NextToken and ConsumedCapacity
+	// (assembled by the Core) alone: the Query/Scan response members Count
+	// and ScannedCount have no counterpart on this operation.
 	resp := map[string]interface{}{
-		"Items":        result,
-		"Count":        len(result),
-		"ScannedCount": scannedCount,
+		"Items": result,
 	}
 	if newNextToken != "" {
 		resp["NextToken"] = newNextToken
@@ -139,240 +231,430 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 	return resp, nil
 }
 
-func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (interface{}, error) {
+// partiqlWritePlane carries the adapters one shared per-verb write engine
+// runs against: the storage transaction every read and write goes through,
+// the table and item resolution strategies, and the change-capture
+// strategy. The standalone ExecuteStatement engines supply a fresh
+// single-statement transaction with the store's committed-state reads and
+// an immediate stream capture; the ExecuteTransaction statements supply
+// the caller's running transaction with transactional reads and the
+// capture that queues the change for the post-commit propagation. One
+// engine body per verb then owns the whole write path exactly once.
+type partiqlWritePlane struct {
+	txn      *dbstore.DynamoDBTxn
+	getTable func(name string) (*dbstore.Table, error)
+	getItem  func(tableName string, key map[string]*dbstore.AttributeValue) (*dbstore.Item, error)
+	capture  func(table *dbstore.Table, eventName dbstore.StreamEventName, keys, newImage, oldImage map[string]*dbstore.AttributeValue) error
+}
+
+// partiqlWriteResult records what a shared write engine body did, for the
+// calling plane's post-commit propagation and response shaping. A DELETE
+// whose key addresses no stored item commits as a no-op and reports a nil
+// result. The RETURNING clause the statement carried (canonical form) and
+// the top-level attribute names it wrote feed the write-response builder's
+// image choice.
+type partiqlWriteResult struct {
+	table     *dbstore.Table
+	keys      map[string]*dbstore.AttributeValue
+	newImage  map[string]*dbstore.AttributeValue
+	oldImage  map[string]*dbstore.AttributeValue
+	returning string
+	modified  []string
+}
+
+// standaloneWritePlane returns the write plane of a single-statement
+// ExecuteStatement write: tables resolve through the store (a missing table
+// answers the service's table-not-found sentinel) and the stream change is
+// captured inside the statement's own transaction.
+func (s *DynamoDBService) standaloneWritePlane(store dbstore.DynamoDBStoreInterface, txn *dbstore.DynamoDBTxn) partiqlWritePlane {
+	return partiqlWritePlane{
+		txn: txn,
+		getTable: func(name string) (*dbstore.Table, error) {
+			if !store.Tables().Exists(name) {
+				return nil, ErrTableNotFound
+			}
+			return store.Tables().Get(name)
+		},
+		getItem: store.Items().Get,
+		capture: func(table *dbstore.Table, eventName dbstore.StreamEventName, keys, newImage, oldImage map[string]*dbstore.AttributeValue) error {
+			return s.captureStreamChangeTxn(txn, store, table, eventName, keys, newImage, oldImage)
+		},
+	}
+}
+
+// runInsert executes the shared INSERT engine body: table resolution with
+// the write-requires-ACTIVE rule, key and item validation against the
+// single-item write plane's own bounds, the duplicate-key rejection, the
+// store write and the change capture.
+func (p partiqlWritePlane) runInsert(statement string, params *partiQLParams) (partiqlWriteResult, error) {
 	tableName, itemData, err := parseInsertStatementWithParams(statement, params)
 	if err != nil {
-		return nil, err
+		return partiqlWriteResult{}, err
 	}
 
-	store, err := s.store(reqCtx)
+	table, err := p.getTable(tableName)
 	if err != nil {
-		return nil, err
-	}
-
-	if !store.Tables().Exists(tableName) {
-		return nil, ErrTableNotFound
-	}
-
-	table, err := store.Tables().Get(tableName)
-	if err != nil {
-		return nil, err
+		return partiqlWriteResult{}, err
 	}
 	// A table mid-restore (CREATING) must not be mutated: a write statement
 	// follows the write-requires-ACTIVE rule of the single-item writes.
 	if table.Status != dbstore.TableStatusActive {
-		return nil, ErrTableNotActive
+		return partiqlWriteResult{}, ErrTableNotActive
 	}
 
 	keyAttrs := buildKeyFromSchema(table.KeySchema, itemData)
 	if keyAttrs == nil {
-		return nil, ErrInvalidParameter
+		return partiqlWriteResult{}, ErrInvalidParameter
+	}
+	// The single-item write plane's validations bind here too: the item's
+	// key and index-key attribute types must match the schema definitions,
+	// and the composed item must stay within the documented item size —
+	// the same item cannot be legal on the PutItem plane and illegal here.
+	if err := validateItemKeyTypes(table, itemData); err != nil {
+		return partiqlWriteResult{}, err
+	}
+	if dbstore.CalculateItemSize(itemData) > dbstore.MaxItemSizeBytes {
+		return partiqlWriteResult{}, ErrInvalidParameter
 	}
 
-	var isNewItem bool
+	if _, err = p.txn.GetItem(tableName, keyAttrs); err != nil {
+		if !dbstore.IsItemNotFound(err) {
+			return partiqlWriteResult{}, err
+		}
+	} else {
+		return partiqlWriteResult{}, ErrConditionalCheckFailed
+	}
 
-	err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-		_, err := txn.GetItem(tableName, keyAttrs)
+	if err := p.txn.StoreItemWrite(tableName, keyAttrs, itemData, nil, false, 0); err != nil {
+		return partiqlWriteResult{}, err
+	}
+
+	if err := p.capture(table, dbstore.StreamEventInsert, keyAttrs, itemData, nil); err != nil {
+		return partiqlWriteResult{}, err
+	}
+
+	return partiqlWriteResult{table: table, keys: keyAttrs, newImage: itemData}, nil
+}
+
+// derivePartiQLWriteLockKey resolves the item registry key one write
+// statement's engine body will address — INSERT from the parsed item's
+// schema keys, UPDATE and DELETE from the WHERE clause's primary-key
+// equalities — the single derivation shared by the standalone write
+// plane and the batch transaction. strict selects the failure strategy:
+// the transactional caller answers request-level state directly (a
+// missing table answers the documented ResourceNotFoundException, never
+// a raw storage error and never a per-statement cancellation; a
+// non-ACTIVE table answers the ResourceInUseException shape the
+// single-write planes apply), while the standalone caller defers to the
+// engine body's own per-verb semantics and locks nothing. A statement
+// that is not a write, does not parse, or whose key does not resolve
+// cleanly contributes no key under either strategy.
+func derivePartiQLWriteLockKey(store dbstore.DynamoDBStoreInterface, region, statement string, params *partiQLParams, strict bool) (string, error) {
+	upperStmt := strings.ToUpper(strings.TrimSpace(statement))
+	switch {
+	case strings.HasPrefix(upperStmt, "INSERT"):
+		tableName, itemData, err := parseInsertStatementWithParams(statement, params)
 		if err != nil {
-			if !dbstore.IsItemNotFound(err) {
-				return err
+			return "", nil
+		}
+		table, terr := store.Tables().Get(tableName)
+		if terr != nil || table == nil {
+			if !strict {
+				return "", nil
 			}
-			isNewItem = true
+			if tableMissing(terr) {
+				return "", ErrResourceNotFound
+			}
+			return "", terr
+		}
+		if strict && table.Status != dbstore.TableStatusActive {
+			return "", ErrTableNotActive
+		}
+		keyAttrs := buildKeyFromSchema(table.KeySchema, itemData)
+		if keyAttrs == nil {
+			return "", nil
+		}
+		return itemLockKey(region, tableName, keyAttrs), nil
+	case strings.HasPrefix(upperStmt, "UPDATE"), strings.HasPrefix(upperStmt, "DELETE"):
+		var tableName string
+		var whereExpr sqlparser.Expr
+		if strings.HasPrefix(upperStmt, "UPDATE") {
+			tableName, _, whereExpr, _ = parseUpdateStatement(statement)
 		} else {
-			return ErrConditionalCheckFailed
+			tableName, whereExpr, _ = parseDeleteStatement(statement)
 		}
-
-		if err := txn.PutItem(tableName, keyAttrs, itemData); err != nil {
-			return err
+		if tableName == "" {
+			return "", nil
 		}
-
-		newItem := &dbstore.Item{
-			TableName:  tableName,
-			Key:        keyAttrs,
-			Attributes: itemData,
-		}
-		if err := txn.PutIndexEntries(tableName, newItem); err != nil {
-			return err
-		}
-
-		if isNewItem {
-			if err := txn.UpdateItemCount(tableName, 1); err != nil {
-				return err
+		table, terr := store.Tables().Get(tableName)
+		if terr != nil || table == nil {
+			if !strict {
+				return "", nil
 			}
-			newItemSize := dbstore.CalculateItemSize(itemData)
-			if err := txn.UpdateTableSize(tableName, newItemSize); err != nil {
-				return err
+			if tableMissing(terr) {
+				return "", ErrResourceNotFound
 			}
+			return "", terr
 		}
+		if strict && table.Status != dbstore.TableStatusActive {
+			return "", ErrTableNotActive
+		}
+		keyAttrs, ok := resolvePrimaryKeyFromWhere(whereExpr, table.KeySchema, params)
+		if !ok {
+			return "", nil
+		}
+		return itemLockKey(region, tableName, keyAttrs), nil
+	default:
+		return "", nil
+	}
+}
 
-		s.captureStreamChangeTxn(txn, store, table, dbstore.StreamEventInsert, keyAttrs, itemData, nil)
+// partiQLWriteLockKey is the standalone plane's face of the shared
+// derivation: a statement whose key does not derive locks nothing; the
+// engine body answers it with its own per-verb semantics.
+func (s *DynamoDBService) partiQLWriteLockKey(store dbstore.DynamoDBStoreInterface, reqCtx *request.RequestContext, statement string, params *partiQLParams) string {
+	lockKey, _ := derivePartiQLWriteLockKey(store, reqCtx.Region, statement, params, false)
+	return lockKey
+}
 
-		return nil
-	})
+// lockStandaloneWriteStatement acquires the item registry lock a standalone
+// write statement owes before its engine body runs. The read-modify-write
+// transaction serialises against in-flight TransactWriteItems on the same
+// item — the registry coordination the single-item write plane applies; a
+// rejection answers TransactionConflictException.
+func (s *DynamoDBService) lockStandaloneWriteStatement(store dbstore.DynamoDBStoreInterface, reqCtx *request.RequestContext, statement string, params *partiQLParams) (func(), error) {
+	lockKey := s.partiQLWriteLockKey(store, reqCtx, statement, params)
+	if lockKey == "" {
+		return func() {}, nil
+	}
+	if _, free := tryLockItems(itemLockModeItem, []string{lockKey}); !free {
+		return nil, ErrTransactionConflict
+	}
+	return func() { unlockItems(itemLockModeItem, []string{lockKey}) }, nil
+}
+
+func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (interface{}, error) {
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+	release, lockErr := s.lockStandaloneWriteStatement(store, reqCtx, statement, params)
+	if lockErr != nil {
+		return nil, lockErr
+	}
+	defer release()
 
-	s.emitChangePropagation(store, reqCtx.GetRegion(), table, dbstore.StreamEventInsert, keyAttrs, itemData, nil, s.replicaPutOp(table, keyAttrs, itemData))
+	var result partiqlWriteResult
+	err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+		var runErr error
+		result, runErr = s.standaloneWritePlane(store, txn).runInsert(statement, params)
+		return runErr
+	})
+	if err != nil {
+		// The standalone plane answers the documented
+		// DuplicateItemException for the duplicate primary key — the
+		// transactional plane keeps the ConditionalCheckFailed cancellation
+		// reason, whose code list defines no DuplicateItem code.
+		if errors.Is(err, ErrConditionalCheckFailed) {
+			return nil, ErrDuplicateItem
+		}
+		return nil, err
+	}
+
+	s.emitChangePropagation(store, reqCtx.GetRegion(), result.table, dbstore.StreamEventInsert, result.keys, result.newImage, result.oldImage, s.replicaPutOp(result.table, result.keys, result.newImage))
 
 	return response.EmptyResponse(), nil
 }
 
-func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (ret interface{}, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			resilience.LogPanic("dynamodb partiql update", r)
-			err = fmt.Errorf("panic in executePartiQLUpdate: %v", r)
-		}
-	}()
-
-	tableName, clauses, whereExpr := parseUpdateStatement(statement)
+// runUpdate executes the shared UPDATE engine body: clause presence, the
+// write-requires-ACTIVE rule, the key-attribute guard, the single-item
+// WHERE contract with the UPDATE zero-match contract, the clause
+// application with the post-clause size bound, the store write and the
+// change capture.
+func (p partiqlWritePlane) runUpdate(statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (partiqlWriteResult, error) {
+	tableName, clauses, whereExpr, parseErr := parseUpdateStatement(statement)
+	if parseErr != nil {
+		return partiqlWriteResult{}, parseErr
+	}
 	if tableName == "" {
-		return nil, ErrInvalidParameter
+		return partiqlWriteResult{}, ErrInvalidParameter
 	}
 
 	// At least one clause must be present.
 	if len(clauses.setAssignments) == 0 && len(clauses.removeAttrs) == 0 &&
 		len(clauses.addAssignments) == 0 && len(clauses.deleteAssignments) == 0 {
-		return nil, ErrInvalidParameter
+		return partiqlWriteResult{}, ErrInvalidParameter
 	}
 
-	store, err := s.store(reqCtx)
+	table, err := p.getTable(tableName)
 	if err != nil {
-		return nil, err
-	}
-
-	if !store.Tables().Exists(tableName) {
-		return nil, ErrTableNotFound
-	}
-
-	table, err := store.Tables().Get(tableName)
-	if err != nil {
-		return nil, err
+		return partiqlWriteResult{}, err
 	}
 	// A table mid-restore (CREATING) must not be mutated: a write statement
 	// follows the write-requires-ACTIVE rule of the single-item writes.
 	if table.Status != dbstore.TableStatusActive {
-		return nil, ErrTableNotActive
+		return partiqlWriteResult{}, ErrTableNotActive
 	}
 
 	// The key attributes identify the item being updated; no UPDATE clause
 	// may write them.
 	if err := validateNotKeyAttributes(table, updateClauseTargetNames(clauses)); err != nil {
-		return nil, err
+		return partiqlWriteResult{}, err
 	}
 
-	// The AWS single-item contract: the WHERE clause carries a partition-key
-	// equality and the statement matches at most one item.
-	item, preFilterItems, scannedCount, err := matchSingleTargetItem(
-		func(pkValue string, cb func(*dbstore.Item) error) error {
-			return store.Items().ScanByPartitionKey(tableName, pkValue, cb)
-		}, table, whereExpr, params, "UPDATE", returnValuesOnConditionCheckFailure == "ALL_OLD")
+	// The AWS single-item contract: the WHERE clause resolves to a single
+	// primary-key value and the statement addresses the item under that key.
+	item, found, conditionHeld, err := matchKeyedTargetItem(
+		func(key map[string]*dbstore.AttributeValue) (*dbstore.Item, error) {
+			return p.getItem(tableName, key)
+		}, table, whereExpr, params, "UPDATE")
 	if err != nil {
-		return nil, err
+		return partiqlWriteResult{}, err
 	}
 
-	if item == nil && len(preFilterItems) > 0 {
-		oldItems := make([]map[string]interface{}, 0, len(preFilterItems))
-		for _, pi := range preFilterItems {
-			oldItems = append(oldItems, buildItemResponse(pi.Attributes))
+	// The UPDATE zero-match contract is unqualified: a WHERE clause that
+	// evaluates true for no item fails the condition check — whether the key
+	// addresses no stored item or the remaining predicates reject it.
+	if !found || !conditionHeld {
+		var existing *dbstore.Item
+		if found {
+			existing = item
 		}
-		return map[string]interface{}{
-			"Items":        oldItems,
-			"Count":        0,
-			"ScannedCount": scannedCount,
-		}, nil
+		return partiqlWriteResult{}, conditionalCheckFailedError(returnValuesOnConditionCheckFailure, existing)
 	}
 
-	updatedCount := 0
-	if item != nil {
-		oldSize := dbstore.CalculateItemSize(item.Attributes)
+	oldSize := dbstore.CalculateItemSize(item.Attributes)
 
-		oldItem := &dbstore.Item{
-			TableName:  tableName,
-			Key:        copyAttributes(item.Key),
-			Attributes: copyAttributes(item.Attributes),
-		}
-
-		if err := applySetAssignments(item.Attributes, clauses.setAssignments, params); err != nil {
-			return nil, err
-		}
-		applyRemoveAttrs(item.Attributes, clauses.removeAttrs)
-		if err := applyAddAssignments(item.Attributes, clauses.addAssignments, params); err != nil {
-			return nil, err
-		}
-		if err := applyDeleteAssignments(item.Attributes, clauses.deleteAssignments, params); err != nil {
-			return nil, err
-		}
-
-		newSize := dbstore.CalculateItemSize(item.Attributes)
-		sizeDelta := newSize - oldSize
-
-		err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-			if err := txn.DeleteIndexEntries(tableName, oldItem); err != nil {
-				return err
-			}
-
-			if err := txn.PutItem(tableName, item.Key, item.Attributes); err != nil {
-				return err
-			}
-
-			updatedItem := &dbstore.Item{
-				TableName:  tableName,
-				Key:        item.Key,
-				Attributes: item.Attributes,
-			}
-			if err := txn.PutIndexEntries(tableName, updatedItem); err != nil {
-				return err
-			}
-
-			if sizeDelta != 0 {
-				if err := txn.UpdateTableSize(tableName, sizeDelta); err != nil {
-					return err
-				}
-			}
-
-			s.captureStreamChangeTxn(txn, store, table, dbstore.StreamEventModify, item.Key, item.Attributes, oldItem.Attributes)
-
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-		s.emitChangePropagation(store, reqCtx.GetRegion(), table, dbstore.StreamEventModify, item.Key, item.Attributes, oldItem.Attributes, s.replicaPutOp(table, item.Key, item.Attributes))
-		updatedCount = 1
+	oldItem := &dbstore.Item{
+		TableName:  tableName,
+		Key:        copyAttributes(item.Key),
+		Attributes: copyAttributes(item.Attributes),
 	}
 
-	return map[string]interface{}{
-		"Items":        []map[string]interface{}{},
-		"Count":        updatedCount,
-		"ScannedCount": scannedCount,
+	// One statement is one update of one item: every operand and action
+	// base reads the pre-statement image — the documented multi-action
+	// evaluation basis — while the writes apply to the item.
+	before := copyAttributes(item.Attributes)
+	if err := applySetAssignments(item.Attributes, before, clauses.setAssignments, params); err != nil {
+		return partiqlWriteResult{}, err
+	}
+	if err := applyRemoveAttrs(item.Attributes, clauses.removeAttrs); err != nil {
+		return partiqlWriteResult{}, err
+	}
+	if err := applyAddAssignments(item.Attributes, before, clauses.addAssignments, params); err != nil {
+		return partiqlWriteResult{}, err
+	}
+	if err := applyDeleteAssignments(item.Attributes, before, clauses.deleteAssignments, params); err != nil {
+		return partiqlWriteResult{}, err
+	}
+
+	// The post-clause image must stay within the documented item size, the
+	// single-item update plane's own bound.
+	if dbstore.CalculateItemSize(item.Attributes) > dbstore.MaxItemSizeBytes {
+		return partiqlWriteResult{}, ErrInvalidParameter
+	}
+
+	if err := p.txn.StoreItemWrite(tableName, item.Key, item.Attributes, oldItem, true, oldSize); err != nil {
+		return partiqlWriteResult{}, err
+	}
+
+	if err := p.capture(table, dbstore.StreamEventModify, item.Key, item.Attributes, oldItem.Attributes); err != nil {
+		return partiqlWriteResult{}, err
+	}
+
+	return partiqlWriteResult{
+		table:     table,
+		keys:      item.Key,
+		newImage:  item.Attributes,
+		oldImage:  oldItem.Attributes,
+		returning: clauses.returning,
+		modified:  updateClauseTargetNames(clauses),
 	}, nil
 }
 
-func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (ret interface{}, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			resilience.LogPanic("dynamodb partiql delete", r)
-			err = fmt.Errorf("panic in executePartiQLDelete: %v", r)
-		}
-	}()
-
-	tableName, whereExpr := parseDeleteStatement(statement)
-	if tableName == "" {
-		return nil, ErrInvalidParameter
+// buildPartiqlWriteResponse shapes every standalone PartiQL write
+// statement's response from the write plane's result: without a RETURNING
+// clause the Items list is empty, with one it carries the clause's chosen
+// image of the single written item. One builder serves the UPDATE and
+// DELETE planes, so the two response faces cannot drift apart.
+func buildPartiqlWriteResponse(result *partiqlWriteResult) map[string]interface{} {
+	items := []map[string]interface{}{}
+	if result != nil && result.returning != "" {
+		items = append(items, buildItemResponse(result.returningImage()))
 	}
+	return map[string]interface{}{"Items": items}
+}
 
+// returningImage resolves the RETURNING clause the write recorded into the
+// image it names: the full old or new image of the written item, or that
+// image restricted to the attributes the statement wrote. A modified
+// attribute the chosen image does not carry (a SET target with no old
+// value) simply does not appear.
+func (r *partiqlWriteResult) returningImage() map[string]*dbstore.AttributeValue {
+	var image map[string]*dbstore.AttributeValue
+	switch r.returning {
+	case "ALL OLD *":
+		image = r.oldImage
+	case "MODIFIED OLD *":
+		image = restrictAttributes(r.oldImage, r.modified)
+	case "ALL NEW *":
+		image = r.newImage
+	case "MODIFIED NEW *":
+		image = restrictAttributes(r.newImage, r.modified)
+	}
+	if image == nil {
+		image = map[string]*dbstore.AttributeValue{}
+	}
+	return image
+}
+
+func restrictAttributes(image map[string]*dbstore.AttributeValue, names []string) map[string]*dbstore.AttributeValue {
+	restricted := make(map[string]*dbstore.AttributeValue, len(names))
+	for _, name := range names {
+		if v, ok := image[name]; ok && v != nil {
+			restricted[name] = v
+		}
+	}
+	return restricted
+}
+
+func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
+	release, lockErr := s.lockStandaloneWriteStatement(store, reqCtx, statement, params)
+	if lockErr != nil {
+		return nil, lockErr
+	}
+	defer release()
 
-	if !store.Tables().Exists(tableName) {
-		return nil, ErrTableNotFound
+	var result partiqlWriteResult
+	err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+		var runErr error
+		result, runErr = s.standaloneWritePlane(store, txn).runUpdate(statement, params, returnValuesOnConditionCheckFailure)
+		return runErr
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	table, err := store.Tables().Get(tableName)
+	s.emitChangePropagation(store, reqCtx.GetRegion(), result.table, dbstore.StreamEventModify, result.keys, result.newImage, result.oldImage, s.replicaPutOp(result.table, result.keys, result.newImage))
+
+	return buildPartiqlWriteResponse(&result), nil
+}
+
+// runDelete executes the shared DELETE engine body: the write-requires-
+// ACTIVE rule, the single-item WHERE contract with the DELETE zero-match
+// contract, the store delete and the change capture. A key no stored item
+// carries commits the no-op statement and reports a nil result.
+func (p partiqlWritePlane) runDelete(statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (*partiqlWriteResult, error) {
+	tableName, whereExpr, returning := parseDeleteStatement(statement)
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	table, err := p.getTable(tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -382,281 +664,284 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 		return nil, ErrTableNotActive
 	}
 
-	// The AWS single-item contract: the WHERE clause carries a partition-key
-	// equality and the statement matches at most one item.
-	item, preFilterItems, scannedCount, err := matchSingleTargetItem(
-		func(pkValue string, cb func(*dbstore.Item) error) error {
-			return store.Items().ScanByPartitionKey(tableName, pkValue, cb)
-		}, table, whereExpr, params, "DELETE", returnValuesOnConditionCheckFailure == "ALL_OLD")
+	// The AWS single-item contract: the WHERE clause resolves to a single
+	// primary-key value and the statement addresses the item under that key.
+	item, found, conditionHeld, err := matchKeyedTargetItem(
+		func(key map[string]*dbstore.AttributeValue) (*dbstore.Item, error) {
+			return p.getItem(tableName, key)
+		}, table, whereExpr, params, "DELETE")
 	if err != nil {
 		return nil, err
 	}
 
-	if item == nil && len(preFilterItems) > 0 {
-		oldItems := make([]map[string]interface{}, 0, len(preFilterItems))
-		for _, pi := range preFilterItems {
-			oldItems = append(oldItems, buildItemResponse(pi.Attributes))
-		}
-		return map[string]interface{}{
-			"Items":        oldItems,
-			"Count":        0,
-			"ScannedCount": scannedCount,
-		}, nil
+	// The DELETE zero-match contract is two-tier: a primary key no stored
+	// item carries answers SUCCESS with zero items deleted, while a stored
+	// item whose further WHERE predicates reject the statement fails the
+	// condition check.
+	if !found {
+		return nil, nil
+	}
+	if !conditionHeld {
+		return nil, conditionalCheckFailedError(returnValuesOnConditionCheckFailure, item)
 	}
 
-	deletedCount := 0
-	if item != nil {
-		itemSize := dbstore.CalculateItemSize(item.Attributes)
-		err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-			if err := txn.DeleteIndexEntries(tableName, item); err != nil {
-				return err
-			}
-
-			if err := txn.DeleteItem(tableName, item.Key); err != nil {
-				return err
-			}
-
-			if err := txn.UpdateItemCount(tableName, -1); err != nil {
-				return err
-			}
-
-			if err := txn.UpdateTableSize(tableName, -itemSize); err != nil {
-				return err
-			}
-
-			s.captureStreamChangeTxn(txn, store, table, dbstore.StreamEventRemove, item.Key, nil, item.Attributes)
-
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-		s.emitChangePropagation(store, reqCtx.GetRegion(), table, dbstore.StreamEventRemove, item.Key, nil, item.Attributes, s.replicaDeleteOp(table, item.Key))
-		deletedCount = 1
+	if err := p.txn.DeleteItemWrite(tableName, item.Key, item, true, dbstore.CalculateItemSize(item.Attributes)); err != nil {
+		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Items":        []map[string]interface{}{},
-		"Count":        deletedCount,
-		"ScannedCount": scannedCount,
-	}, nil
+	if err := p.capture(table, dbstore.StreamEventRemove, item.Key, nil, item.Attributes); err != nil {
+		return nil, err
+	}
+
+	return &partiqlWriteResult{table: table, keys: item.Key, oldImage: item.Attributes, returning: returning}, nil
 }
 
-// applyAddAssignments performs DynamoDB ADD operations: if the attribute
-// is a number, add the value numerically; if it is a set, add elements.
-// Returns ErrTypeMismatch when the existing attribute and the ADD value
-// have incompatible types.
-func applyAddAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) error {
-	for _, asgn := range assignments {
-		existing := attrs[asgn.attrName]
-		addValue, err := exprToAttributeValueWithParams(asgn.value, params)
-		if err != nil {
-			return err
-		}
-
-		if existing == nil {
-			// Attribute does not exist — ADD creates it.
-			attrs[asgn.attrName] = addValue
-			continue
-		}
-
-		// Numeric ADD.
-		if existing.N != nil && addValue.N != nil {
-			result, addErr := addNumbers(*existing.N, *addValue.N)
-			if addErr != nil {
-				return addErr
-			}
-			r := result
-			attrs[asgn.attrName] = &dbstore.AttributeValue{N: &r}
-			continue
-		}
-
-		// String set ADD.
-		if existing.SS != nil && addValue.SS != nil {
-			setMap := make(map[string]bool)
-			for _, s := range existing.SS {
-				setMap[s] = true
-			}
-			for _, s := range addValue.SS {
-				setMap[s] = true
-			}
-			merged := make([]string, 0, len(setMap))
-			for s := range setMap {
-				merged = append(merged, s)
-			}
-			attrs[asgn.attrName] = dbstore.StringSet(merged)
-			continue
-		}
-
-		// Number set ADD.
-		if existing.NS != nil && addValue.NS != nil {
-			setMap := make(map[string]bool)
-			for _, n := range existing.NS {
-				setMap[n] = true
-			}
-			for _, n := range addValue.NS {
-				setMap[n] = true
-			}
-			merged := make([]string, 0, len(setMap))
-			for n := range setMap {
-				merged = append(merged, n)
-			}
-			attrs[asgn.attrName] = dbstore.NumberSet(merged)
-			continue
-		}
-
-		// Binary set ADD.
-		if existing.BS != nil && addValue.BS != nil {
-			existingSet := make(map[string]bool)
-			for _, b := range existing.BS {
-				existingSet[string(b)] = true
-			}
-			for _, b := range addValue.BS {
-				if !existingSet[string(b)] {
-					existing.BS = append(existing.BS, b)
-				}
-			}
-			attrs[asgn.attrName] = dbstore.BinarySet(existing.BS)
-			continue
-		}
-
-		// No compatible type pair matched — type mismatch.
-		return ErrTypeMismatch
+func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, returnValuesOnConditionCheckFailure string) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	release, lockErr := s.lockStandaloneWriteStatement(store, reqCtx, statement, params)
+	if lockErr != nil {
+		return nil, lockErr
+	}
+	defer release()
+
+	var result *partiqlWriteResult
+	err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+		var runErr error
+		result, runErr = s.standaloneWritePlane(store, txn).runDelete(statement, params, returnValuesOnConditionCheckFailure)
+		return runErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	if result != nil {
+		s.emitChangePropagation(store, reqCtx.GetRegion(), result.table, dbstore.StreamEventRemove, result.keys, nil, result.oldImage, s.replicaDeleteOp(result.table, result.keys))
+	}
+
+	return buildPartiqlWriteResponse(result), nil
 }
 
-// applyDeleteAssignments performs DynamoDB DELETE operations: remove
-// elements from a set attribute (SS, NS, or BS). Returns
-// ErrTypeMismatch when the existing attribute and the DELETE value
-// have incompatible types.
-func applyDeleteAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) error {
-	for _, asgn := range assignments {
-		existing := attrs[asgn.attrName]
-		delValue, err := exprToAttributeValueWithParams(asgn.value, params)
-		if err != nil {
-			return err
-		}
-		if existing == nil {
-			continue
-		}
-
-		// String set DELETE.
-		if existing.SS != nil && delValue.SS != nil {
-			delSet := make(map[string]bool)
-			for _, s := range delValue.SS {
-				delSet[s] = true
-			}
-			var remaining []string
-			for _, s := range existing.SS {
-				if !delSet[s] {
-					remaining = append(remaining, s)
-				}
-			}
-			if len(remaining) == 0 {
-				delete(attrs, asgn.attrName)
-			} else {
-				attrs[asgn.attrName] = dbstore.StringSet(remaining)
-			}
-			continue
-		}
-
-		// Number set DELETE.
-		if existing.NS != nil && delValue.NS != nil {
-			delSet := make(map[string]bool)
-			for _, n := range delValue.NS {
-				delSet[n] = true
-			}
-			var remaining []string
-			for _, n := range existing.NS {
-				if !delSet[n] {
-					remaining = append(remaining, n)
-				}
-			}
-			if len(remaining) == 0 {
-				delete(attrs, asgn.attrName)
-			} else {
-				attrs[asgn.attrName] = dbstore.NumberSet(remaining)
-			}
-			continue
-		}
-
-		// Binary set DELETE.
-		if existing.BS != nil && delValue.BS != nil {
-			delSet := make(map[string]bool)
-			for _, b := range delValue.BS {
-				delSet[string(b)] = true
-			}
-			var remaining [][]byte
-			for _, b := range existing.BS {
-				if !delSet[string(b)] {
-					remaining = append(remaining, b)
-				}
-			}
-			if len(remaining) == 0 {
-				delete(attrs, asgn.attrName)
-			} else {
-				attrs[asgn.attrName] = dbstore.BinarySet(remaining)
-			}
-			continue
-		}
-
-		// No compatible type pair matched — type mismatch.
-		return ErrTypeMismatch
+// resolvePrimaryKeyFromWhere extracts the equality bound to every
+// primary-key attribute of the table from an UPDATE/DELETE WHERE clause.
+// ok=false when the clause does not carry an equality on every key
+// attribute: the documented contract requires the condition to "resolve to
+// a single primary key value".
+func resolvePrimaryKeyFromWhere(expr sqlparser.Expr, keySchema []*dbstore.KeySchemaElement, params *partiQLParams) (map[string]*dbstore.AttributeValue, bool) {
+	if expr == nil {
+		return nil, false
 	}
-	return nil
+	equalities := make(map[string]*dbstore.AttributeValue)
+	collectWhereEqualities(expr, equalities, params)
+	key := make(map[string]*dbstore.AttributeValue, len(keySchema))
+	for _, ks := range keySchema {
+		attr, ok := equalities[ks.AttributeName]
+		if !ok {
+			return nil, false
+		}
+		key[ks.AttributeName] = attr
+	}
+	return key, true
 }
 
-// matchSingleTargetItem enforces the AWS single-item contract shared by every
-// UPDATE and DELETE engine: the WHERE clause is required, must carry a
-// partition-key equality, and the statement must match exactly one item. The
-// scan collects at most two matches so a multi-item match is detected without
-// walking the whole partition. wantOldAll keeps the items the WHERE rejected,
-// for the zero-match response of statements that asked for ALL_OLD values.
-// The scan adapter runs a partition scan of the caller's choosing (store or
-// transaction) with the encoded partition value the matcher resolved.
-func matchSingleTargetItem(
-	scanByPartitionKey func(pkValue string, cb func(*dbstore.Item) error) error,
+// collectWhereEqualities gathers the attribute-equality comparisons of a
+// WHERE clause tree. Only top-level AND combinations contribute: an
+// equality under OR does not identify the key on its own.
+func collectWhereEqualities(expr sqlparser.Expr, out map[string]*dbstore.AttributeValue, params *partiQLParams) {
+	switch e := expr.(type) {
+	case *sqlparser.ComparisonExpr:
+		if e.Operator != sqlparser.EqualStr {
+			return
+		}
+		if col, ok := e.Left.(*sqlparser.ColName); ok {
+			if v := extractValueAttr(e.Right, params); v != nil {
+				out[col.Name.String()] = v
+			}
+		}
+	case *sqlparser.AndExpr:
+		collectWhereEqualities(e.Left, out, params)
+		collectWhereEqualities(e.Right, out, params)
+	}
+}
+
+// matchKeyedTargetItem enforces the AWS single-item contract shared by every
+// UPDATE and DELETE engine: the WHERE clause must resolve to a single
+// primary-key value (an equality on every key attribute), and the statement
+// addresses the item under that key. The getItem adapter runs the key
+// lookup of the caller's choosing (store or transaction). The flags report
+// whether the key resolved to a stored item and whether the WHERE clause
+// evaluated true on it — the verb-specific engines turn the flag
+// combinations into the documented outcomes (an absent key and a rejected
+// condition are different results for DELETE).
+func matchKeyedTargetItem(
+	getItem func(key map[string]*dbstore.AttributeValue) (*dbstore.Item, error),
 	table *dbstore.Table,
 	whereExpr sqlparser.Expr,
 	params *partiQLParams,
 	stmtVerb string,
-	wantOldAll bool,
-) (item *dbstore.Item, preFilter []*dbstore.Item, scanned int, err error) {
-	if whereExpr == nil {
-		return nil, nil, 0, ErrInvalidParameter
+) (item *dbstore.Item, found, conditionHeld bool, err error) {
+	key, ok := resolvePrimaryKeyFromWhere(whereExpr, table.KeySchema, params)
+	if !ok {
+		return nil, false, false, NewAPIError("com.amazon.coral.validate#ValidationException",
+			stmtVerb+" statement WHERE clause must resolve to a single primary key value", http.StatusBadRequest)
 	}
-	pkValue := extractPartitionKeyFromWhere(whereExpr, getHashKeyName(table), params)
-	if pkValue == "" {
-		return nil, nil, 0, ErrInvalidParameter
+	if typeErr := validateKeyTypes(table, key); typeErr != nil {
+		return nil, false, false, typeErr
 	}
 
-	var matches []*dbstore.Item
-	scanErr := scanByPartitionKey(pkValue, func(candidate *dbstore.Item) error {
-		scanned++
-		if !evaluateExpr(candidate.Attributes, whereExpr, params) {
-			if wantOldAll {
-				preFilter = append(preFilter, candidate)
+	item, getErr := getItem(key)
+	if getErr != nil {
+		if dbstore.IsItemNotFound(getErr) {
+			return nil, false, false, nil
+		}
+		return nil, false, false, getErr
+	}
+	if !evaluateExpr(item.Attributes, whereExpr, params) {
+		return item, true, false, nil
+	}
+	return item, true, true, nil
+}
+
+func buildKeyFromSchema(keySchema []*dbstore.KeySchemaElement, itemData map[string]*dbstore.AttributeValue) map[string]*dbstore.AttributeValue {
+	key := make(map[string]*dbstore.AttributeValue)
+	for _, ks := range keySchema {
+		if attr, exists := itemData[ks.AttributeName]; exists {
+			key[ks.AttributeName] = attr
+		}
+	}
+	if len(key) < len(keySchema) {
+		return nil
+	}
+	return key
+}
+
+// extractPartitionKeyFromWhere extracts the partition-key equality value
+// from a WHERE clause and renders it with the store key encoding, so the
+// partition scan prefix matches stored keys of every key type (a raw number
+// literal or stringified parameter matches nothing on encoded keys).
+func extractPartitionKeyFromWhere(expr sqlparser.Expr, pkName string, params *partiQLParams) string {
+	if expr == nil || pkName == "" {
+		return ""
+	}
+
+	if cmp, ok := expr.(*sqlparser.ComparisonExpr); ok {
+		if col, ok := cmp.Left.(*sqlparser.ColName); ok {
+			if col.Name.String() == pkName && cmp.Operator == sqlparser.EqualStr {
+				return dbstore.EncodeKeyValue(extractValueAttr(cmp.Right, params))
 			}
+		}
+	}
+
+	if and, ok := expr.(*sqlparser.AndExpr); ok {
+		if val := extractPartitionKeyFromWhere(and.Left, pkName, params); val != "" {
+			return val
+		}
+		return extractPartitionKeyFromWhere(and.Right, pkName, params)
+	}
+
+	return ""
+}
+
+// extractValueAttr materialises a WHERE-clause literal or bound parameter as
+// an AttributeValue via the shared value materialiser. An unresolvable
+// expression yields nil, which never matches a partition key.
+func extractValueAttr(expr sqlparser.Expr, params *partiQLParams) *dbstore.AttributeValue {
+	switch expr.(type) {
+	case *sqlparser.SQLVal, *sqlparser.ObjectLiteral, *sqlparser.ValTuple, *sqlparser.NullVal, *sqlparser.BoolVal:
+		v, err := exprToAttributeValueWithParams(expr, params)
+		if err != nil {
 			return nil
 		}
-		matches = append(matches, candidate)
-		if len(matches) >= 2 {
-			return errScanSufficient
+		return v
+	}
+	return nil
+}
+
+func extractTableNameFromStatement(statement string) string {
+	upper := strings.ToUpper(statement)
+	var rest string
+
+	switch {
+	case strings.HasPrefix(upper, "SELECT"):
+		fromIdx := strings.Index(upper, " FROM ")
+		if fromIdx == -1 {
+			return ""
 		}
-		return nil
-	})
-	if scanErr != nil && !errors.Is(scanErr, errScanSufficient) {
-		return nil, nil, scanned, scanErr
+		rest = strings.TrimSpace(statement[fromIdx+6:])
+	case strings.HasPrefix(upper, "INSERT"):
+		intoIdx := strings.Index(upper, " INTO ")
+		if intoIdx == -1 {
+			return ""
+		}
+		rest = strings.TrimSpace(statement[intoIdx+6:])
+	case strings.HasPrefix(upper, "UPDATE"):
+		rest = strings.TrimSpace(statement[6:])
+	case strings.HasPrefix(upper, "DELETE"):
+		fromIdx := strings.Index(upper, " FROM ")
+		if fromIdx == -1 {
+			return ""
+		}
+		rest = strings.TrimSpace(statement[fromIdx+6:])
+	default:
+		return ""
 	}
 
-	// AWS rejects UPDATE/DELETE statements that match more than one item.
-	if len(matches) > 1 {
-		return nil, nil, scanned, NewAPIError("com.amazonaws.dynamodb.v20120810#ValidationException",
-			stmtVerb+" statement must match exactly one item", http.StatusBadRequest)
+	if strings.HasPrefix(rest, "\"") {
+		endQuote := strings.Index(rest[1:], "\"")
+		if endQuote != -1 {
+			return rest[1 : endQuote+1]
+		}
 	}
-	if len(matches) == 1 {
-		item = matches[0]
+	parts := strings.Fields(rest)
+	if len(parts) > 0 {
+		return parts[0]
 	}
-	return item, preFilter, scanned, nil
+	return ""
+}
+
+func sortItemsByOrderBy(items []*dbstore.Item, orderBy *orderByClause) []*dbstore.Item {
+	if orderBy == nil || orderBy.column == "" || len(items) <= 1 {
+		return items
+	}
+
+	sorted := make([]*dbstore.Item, len(items))
+	copy(sorted, items)
+
+	// The comparator counts type mismatches and equal values as ties that
+	// "keep the stable order" (compareItemsByAttr's contract) — a promise
+	// only a stable sort keeps.
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return compareItemsByAttr(sorted[i], sorted[j], orderBy.column, orderBy.direction) < 0
+	})
+	return sorted
+}
+
+// compareItemsByAttr orders two items by one attribute using DynamoDB
+// ordering: same-type S/N/B compare (numbers numerically); any other pair
+// — including type mismatches — is unordered and keeps the stable order.
+// Items missing the attribute sort first.
+func compareItemsByAttr(a, b *dbstore.Item, attrName, direction string) int {
+	aVal, aOk := a.Attributes[attrName]
+	bVal, bOk := b.Attributes[attrName]
+
+	if !aOk && !bOk {
+		return 0
+	}
+	if !aOk {
+		return -1
+	}
+	if !bOk {
+		return 1
+	}
+
+	cmp, ok := compareOrderedValues(aVal, bVal)
+	if !ok {
+		return 0
+	}
+
+	if direction == "DESC" {
+		return -cmp
+	}
+	return cmp
 }

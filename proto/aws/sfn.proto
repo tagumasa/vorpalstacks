@@ -446,7 +446,7 @@ message CreateStateMachineInput {
 
   TracingConfiguration tracingconfiguration = 491315910;
 
-  StateMachineType type = 287830350;
+  optional StateMachineType type = 287830350;
 
   optional string versiondescription = 434714300;
 
@@ -548,7 +548,7 @@ message DescribeExecutionInput {
 
   string executionarn = 314526573;
 
-  IncludedData includeddata = 109719114;
+  optional IncludedData includeddata = 109719114;
 
 }
 
@@ -578,7 +578,7 @@ message DescribeExecutionOutput {
 
   optional string redrivedate = 152812125;
 
-  ExecutionRedriveStatus redrivestatus = 247102059;
+  optional ExecutionRedriveStatus redrivestatus = 247102059;
 
   optional string redrivestatusreason = 339085215;
 
@@ -668,7 +668,7 @@ message DescribeStateMachineForExecutionInput {
 
   string executionarn = 314526573;
 
-  IncludedData includeddata = 109719114;
+  optional IncludedData includeddata = 109719114;
 
 }
 
@@ -706,7 +706,7 @@ message DescribeStateMachineForExecutionOutput {
 
 message DescribeStateMachineInput {
 
-  IncludedData includeddata = 109719114;
+  optional IncludedData includeddata = 109719114;
 
   string statemachinearn = 393321971;
 
@@ -736,7 +736,7 @@ message DescribeStateMachineOutput {
 
   string statemachinearn = 393321971;
 
-  StateMachineStatus status = 441153520;
+  optional StateMachineStatus status = 441153520;
 
   TracingConfiguration tracingconfiguration = 491315910;
 
@@ -1472,7 +1472,7 @@ message KmsAccessDeniedException {
 
 message KmsInvalidStateException {
 
-  KmsKeyState kmskeystate = 485859435;
+  optional KmsKeyState kmskeystate = 485859435;
 
   optional string message = 82970853;
 
@@ -1612,11 +1612,11 @@ message ListExecutionsInput {
 
   optional string nexttoken = 115833246;
 
-  ExecutionRedriveFilter redrivefilter = 437804251;
+  optional ExecutionRedriveFilter redrivefilter = 437804251;
 
   optional string statemachinearn = 393321971;
 
-  ExecutionStatus statusfilter = 86045418;
+  optional ExecutionStatus statusfilter = 86045418;
 
 }
 
@@ -1766,7 +1766,7 @@ message LoggingConfiguration {
 
   optional bool includeexecutiondata = 203899608;
 
-  LogLevel level = 463071198;
+  optional LogLevel level = 463071198;
 
 }
 
@@ -1944,7 +1944,7 @@ message MockInput {
 
   MockErrorOutput erroroutput = 453597273;
 
-  MockResponseValidationMode fieldvalidationmode = 519416556;
+  optional MockResponseValidationMode fieldvalidationmode = 519416556;
 
   optional string result = 171406885;
 
@@ -2112,7 +2112,7 @@ message StartExecutionOutput {
 
 message StartSyncExecutionInput {
 
-  IncludedData includeddata = 109719114;
+  optional IncludedData includeddata = 109719114;
 
   optional string input = 433614716;
 
@@ -2560,7 +2560,7 @@ message TestStateInput {
 
   optional string input = 433614716;
 
-  InspectionLevel inspectionlevel = 277169476;
+  optional InspectionLevel inspectionlevel = 277169476;
 
   MockInput mock = 242883628;
 
@@ -2590,7 +2590,7 @@ message TestStateOutput {
 
   optional string output = 430526213;
 
-  TestExecutionStatus status = 441153520;
+  optional TestExecutionStatus status = 441153520;
 
 }
 
@@ -2730,9 +2730,9 @@ message ValidateStateMachineDefinitionInput {
 
   optional int32 maxresults = 465170002;
 
-  ValidateStateMachineDefinitionSeverity severity = 268193715;
+  optional ValidateStateMachineDefinitionSeverity severity = 268193715;
 
-  StateMachineType type = 287830350;
+  optional StateMachineType type = 287830350;
 
 }
 
@@ -2776,7 +2776,7 @@ message ValidationException {
 
   optional string message = 82970853;
 
-  ValidationExceptionReason reason = 413359642;
+  optional ValidationExceptionReason reason = 413359642;
 
 }
 

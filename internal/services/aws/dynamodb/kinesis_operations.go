@@ -9,28 +9,9 @@ import (
 
 // DescribeKinesisStreamingDestination returns the Kinesis streaming destination for a table.
 func (s *DynamoDBService) DescribeKinesisStreamingDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-
-	var destinations []map[string]interface{}
-	for _, d := range table.KinesisDataStreamDestinations {
-		dest := map[string]interface{}{
-			"StreamArn":                    d.StreamArn,
-			"DestinationStatus":            d.DestinationStatus,
-			"DestinationStatusDescription": d.DestinationStatusDescription,
-		}
-		if d.ApproximateCreationDateTimePrecision != "" {
-			dest["ApproximateCreationDateTimePrecision"] = d.ApproximateCreationDateTimePrecision
-		}
-		destinations = append(destinations, dest)
-	}
-
-	return map[string]interface{}{
-		"KinesisDataStreamDestinations": destinations,
-		"TableName":                     table.Name,
-	}, nil
+	return s.describeKinesisStreamingDestinationCore(ctx, reqCtx, describeKinesisStreamingDestinationInput{
+		Parameters: req.Parameters,
+	})
 }
 
 // EnableKinesisStreamingDestination enables Kinesis streaming for a DynamoDB table.

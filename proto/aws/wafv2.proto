@@ -368,7 +368,7 @@ message AWSManagedRulesAntiDDoSRuleSet {
 
   ClientSideActionConfig clientsideactionconfig = 55744822;
 
-  SensitivityToAct sensitivitytoblock = 531809347;
+  optional SensitivityToAct sensitivitytoblock = 531809347;
 
 }
 
@@ -568,7 +568,7 @@ enum BlockchainChain {
 
 message Body {
 
-  OversizeHandling oversizehandling = 139375132;
+  optional OversizeHandling oversizehandling = 139375132;
 
 }
 
@@ -642,7 +642,7 @@ message CaptchaConfig {
 
 message CaptchaResponse {
 
-  FailureReason failurereason = 232322142;
+  optional FailureReason failurereason = 232322142;
 
   optional int32 responsecode = 447553700;
 
@@ -676,7 +676,7 @@ message ChallengeConfig {
 
 message ChallengeResponse {
 
-  FailureReason failurereason = 232322142;
+  optional FailureReason failurereason = 232322142;
 
   optional int32 responsecode = 447553700;
 
@@ -710,7 +710,7 @@ message ClientSideAction {
 
   repeated Regex exempturiregularexpressions = 148735428;
 
-  SensitivityToAct sensitivity = 30112173;
+  optional SensitivityToAct sensitivity = 30112173;
 
   UsageOfAction usageofaction = 213215420;
 
@@ -1658,9 +1658,9 @@ message DeleteIPSetResponse {
 
 message DeleteLoggingConfigurationRequest {
 
-  LogScope logscope = 188235840;
+  optional LogScope logscope = 188235840;
 
-  LogType logtype = 116703930;
+  optional LogType logtype = 116703930;
 
   string resourcearn = 364280877;
 
@@ -2126,9 +2126,9 @@ message GetIPSetResponse {
 
 message GetLoggingConfigurationRequest {
 
-  LogScope logscope = 188235840;
+  optional LogScope logscope = 188235840;
 
-  LogType logtype = 116703930;
+  optional LogType logtype = 116703930;
 
   string resourcearn = 364280877;
 
@@ -2254,7 +2254,7 @@ message GetRevenueStatisticsRequest {
 
   repeated MonetizationFilter filters = 188393197;
 
-  GroupByType groupby = 125823402;
+  optional GroupByType groupby = 125823402;
 
   optional int32 limit = 412502741;
 
@@ -2262,9 +2262,9 @@ message GetRevenueStatisticsRequest {
 
   Scope scope = 65430924;
 
-  RankingSortBy sortby = 186052369;
+  optional RankingSortBy sortby = 186052369;
 
-  SortOrder sortorder = 274231684;
+  optional SortOrder sortorder = 274231684;
 
   RankingStatisticType statistictype = 76638614;
 
@@ -2314,7 +2314,7 @@ message GetRevenueStatisticsTimeSeriesRequest {
 
   repeated MonetizationFilter filters = 188393197;
 
-  GroupByType groupby = 125823402;
+  optional GroupByType groupby = 125823402;
 
   IntervalType interval = 463550873;
 
@@ -2350,7 +2350,7 @@ message GetRuleGroupRequest {
 
   optional string name = 266367751;
 
-  Scope scope = 65430924;
+  optional Scope scope = 65430924;
 
 }
 
@@ -2458,7 +2458,7 @@ message GetWebACLRequest {
 
   optional string name = 266367751;
 
-  Scope scope = 65430924;
+  optional Scope scope = 65430924;
 
 }
 
@@ -2694,13 +2694,13 @@ message JA4Fingerprint {
 
 message JsonBody {
 
-  BodyParsingFallbackBehavior invalidfallbackbehavior = 302950641;
+  optional BodyParsingFallbackBehavior invalidfallbackbehavior = 302950641;
 
   JsonMatchPattern matchpattern = 294565637;
 
   JsonMatchScope matchscope = 272445459;
 
-  OversizeHandling oversizehandling = 139375132;
+  optional OversizeHandling oversizehandling = 139375132;
 
 }
 
@@ -2882,7 +2882,7 @@ message ListLoggingConfigurationsRequest {
 
   optional int32 limit = 412502741;
 
-  LogScope logscope = 188235840;
+  optional LogScope logscope = 188235840;
 
   optional string nextmarker = 531333283;
 
@@ -2970,7 +2970,7 @@ message ListRegexPatternSetsResponse {
 
 message ListResourcesForWebACLRequest {
 
-  ResourceType resourcetype = 301342558;
+  optional ResourceType resourcetype = 301342558;
 
   string webaclarn = 82506659;
 
@@ -3020,9 +3020,9 @@ message ListSettlementRecordsRequest {
 
   Scope scope = 65430924;
 
-  SettlementSortBy sortby = 186052369;
+  optional SettlementSortBy sortby = 186052369;
 
-  SortOrder sortorder = 274231684;
+  optional SortOrder sortorder = 274231684;
 
   TimeWindow timewindow = 140543513;
 
@@ -3110,9 +3110,9 @@ message LoggingConfiguration {
 
   repeated string logdestinationconfigs = 22070207;
 
-  LogScope logscope = 188235840;
+  optional LogScope logscope = 188235840;
 
-  LogType logtype = 116703930;
+  optional LogType logtype = 116703930;
 
   LoggingFilter loggingfilter = 28441529;
 
@@ -3190,7 +3190,7 @@ message ManagedRuleGroupConfig {
 
   PasswordField passwordfield = 318147221;
 
-  PayloadType payloadtype = 510845422;
+  optional PayloadType payloadtype = 510845422;
 
   UsernameField usernamefield = 125830068;
 
@@ -3352,7 +3352,7 @@ message MonetizationConfig {
 
   CryptoConfig cryptoconfig = 510843391;
 
-  CurrencyMode currencymode = 117263358;
+  optional CurrencyMode currencymode = 117263358;
 
 }
 
@@ -3890,7 +3890,7 @@ message RateBasedStatementManagedKeysIPSet {
 
   repeated string addresses = 375939972;
 
-  IPAddressVersion ipaddressversion = 313363841;
+  optional IPAddressVersion ipaddressversion = 313363841;
 
 }
 
@@ -4254,7 +4254,7 @@ message ResponseInspectionStatusCode {
 
 message RevenueBreakdown {
 
-  Currency currency = 342827607;
+  optional Currency currency = 342827607;
 
   optional string totalamount = 45332786;
 
@@ -4490,7 +4490,7 @@ message SettlementRecord {
 
   optional string contentpath = 524626210;
 
-  Currency currency = 342827607;
+  optional Currency currency = 342827607;
 
   optional string intent = 158359916;
 
@@ -4652,7 +4652,7 @@ message SqliMatchStatement {
 
   repeated PreParseTextTransformation preparsetexttransformations = 68274401;
 
-  SensitivityLevel sensitivitylevel = 12020595;
+  optional SensitivityLevel sensitivitylevel = 12020595;
 
   repeated TextTransformation texttransformations = 261837309;
 
@@ -5024,7 +5024,7 @@ message UpdateWebACLResponse {
 
 message UriFragment {
 
-  FallbackBehavior fallbackbehavior = 440114542;
+  optional FallbackBehavior fallbackbehavior = 440114542;
 
 }
 
@@ -5160,7 +5160,7 @@ message WAFInvalidOperationException {
 
 message WAFInvalidParameterException {
 
-  ParameterExceptionField field = 263732488;
+  optional ParameterExceptionField field = 263732488;
 
   optional string parameter = 407419825;
 

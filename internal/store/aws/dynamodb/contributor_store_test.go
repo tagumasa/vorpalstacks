@@ -124,6 +124,19 @@ func TestContributorLayoutsAndKeyString(t *testing.T) {
 	if got := ContributorKeyString(composite, key, ContributorLayoutFullKey); got != `["s:v","n:7"]` {
 		t.Fatalf("expected full key [\"s:v\",\"n:7\"], got %s", got)
 	}
+
+	// Binary key values hex-encode: the rendered slice is JSON-marshalled,
+	// and raw bytes that differ only in invalid UTF-8 positions would
+	// collapse onto the same U+FFFD replacement and merge two distinct
+	// keys onto one counter.
+	reversedBytes := map[string]*AttributeValue{"pk": {B: []byte{0xff, 0xfe}}, "sk": {S: &s}}
+	swappedBytes := map[string]*AttributeValue{"pk": {B: []byte{0xfe, 0xff}}, "sk": {S: &s}}
+	if got := ContributorKeyString(composite, reversedBytes, ContributorLayoutPartitionKey); got != `["b:fffe"]` {
+		t.Fatalf("expected hex-encoded binary key [\"b:fffe\"], got %s", got)
+	}
+	if ContributorKeyString(composite, reversedBytes, ContributorLayoutPartitionKey) == ContributorKeyString(composite, swappedBytes, ContributorLayoutPartitionKey) {
+		t.Fatal("distinct binary keys collapsed onto the same counter key")
+	}
 }
 
 func TestRecordAccessTxnCommitsWithTransaction(t *testing.T) {
@@ -157,7 +170,7 @@ func TestRecordContributorReadsAtomicity(t *testing.T) {
 	}
 	defer st.Close()
 
-	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(CreateTableParams{
 		Name:                 "Tbl",
 		KeySchema:            []*KeySchemaElement{{AttributeName: "id", KeyType: KeyTypeHash}},

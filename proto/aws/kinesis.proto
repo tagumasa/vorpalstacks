@@ -1379,7 +1379,7 @@ message PutRecordInput {
 
 message PutRecordOutput {
 
-  EncryptionType encryptiontype = 264007605;
+  optional EncryptionType encryptiontype = 264007605;
 
   string sequencenumber = 98094362;
 
@@ -1411,7 +1411,7 @@ message PutRecordsInput {
 
 message PutRecordsOutput {
 
-  EncryptionType encryptiontype = 264007605;
+  optional EncryptionType encryptiontype = 264007605;
 
   optional int32 failedrecordcount = 89270457;
 
@@ -1471,7 +1471,7 @@ message Record {
 
   bytes data = 525498822;
 
-  EncryptionType encryptiontype = 264007605;
+  optional EncryptionType encryptiontype = 264007605;
 
   string partitionkey = 379379617;
 
@@ -1639,7 +1639,7 @@ message S3StorageConfiguration {
 
   optional string outputkeytemplate = 216170386;
 
-  S3StorageClass storageclass = 393282631;
+  optional S3StorageClass storageclass = 393282631;
 
 }
 
@@ -1867,7 +1867,7 @@ message StopStreamEncryptionInput {
 
 message StreamDescription {
 
-  EncryptionType encryptiontype = 264007605;
+  optional EncryptionType encryptiontype = 264007605;
 
   repeated EnhancedMetrics enhancedmonitoring = 452259826;
 
@@ -1901,7 +1901,7 @@ message StreamDescriptionSummary {
 
   optional int32 consumercount = 448084721;
 
-  EncryptionType encryptiontype = 264007605;
+  optional EncryptionType encryptiontype = 264007605;
 
   repeated EnhancedMetrics enhancedmonitoring = 452259826;
 

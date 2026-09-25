@@ -31,7 +31,10 @@ func BuildAttributeValueWire(av *AttributeValue) map[string]interface{} {
 	if av.BOOL != nil {
 		result["BOOL"] = *av.BOOL
 	}
-	if av.NULL != nil && *av.NULL {
+	// Key presence carries the null type on the wire; the flag's value is
+	// not representable (the parser normalises any NULL value to true), so
+	// the member renders whenever the pointer is set.
+	if av.NULL != nil {
 		result["NULL"] = true
 	}
 	if av.SS != nil {
@@ -79,6 +82,26 @@ func BuildItemWire(attrs map[string]*AttributeValue) map[string]interface{} {
 	return result
 }
 
+// wireStringSet normalises one set member's wire shape: the paired builder
+// renders []string, while a JSON-decoded document carries its array as
+// []interface{} — both name the same set, so both decode. Entries that are
+// not strings are skipped, the same tolerance every branch applied.
+func wireStringSet(v interface{}) ([]string, bool) {
+	switch set := v.(type) {
+	case []string:
+		return set, true
+	case []interface{}:
+		entries := make([]string, 0, len(set))
+		for _, entry := range set {
+			if s, isStr := entry.(string); isStr {
+				entries = append(entries, s)
+			}
+		}
+		return entries, true
+	}
+	return nil, false
+}
+
 // ParseAttributeValueWire decodes one wire-shaped attribute value back into
 // its typed form; values BuildAttributeValueWire produced round-trip
 // exactly. Unknown shapes decode as nil.
@@ -105,26 +128,16 @@ func ParseAttributeValueWire(m map[string]interface{}) *AttributeValue {
 		flag := true
 		av.NULL = &flag
 	}
-	if v, ok := m["SS"].([]string); ok {
+	if v, ok := wireStringSet(m["SS"]); ok {
 		av.SS = v
 	}
-	if v, ok := m["NS"].([]string); ok {
+	if v, ok := wireStringSet(m["NS"]); ok {
 		av.NS = v
 	}
-	if v, ok := m["BS"].([]interface{}); ok {
-		set := make([][]byte, 0, len(v))
-		for _, entry := range v {
-			if encoded, isStr := entry.(string); isStr {
-				if raw, err := base64.StdEncoding.DecodeString(encoded); err == nil {
-					set = append(set, raw)
-				}
-			}
-		}
-		av.BS = set
-	} else if v, ok := m["BS"].([]string); ok {
-		set := make([][]byte, 0, len(v))
-		for _, encoded := range v {
-			if raw, err := base64.StdEncoding.DecodeString(encoded); err == nil {
+	if encoded, ok := wireStringSet(m["BS"]); ok {
+		set := make([][]byte, 0, len(encoded))
+		for _, e := range encoded {
+			if raw, err := base64.StdEncoding.DecodeString(e); err == nil {
 				set = append(set, raw)
 			}
 		}

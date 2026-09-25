@@ -971,7 +971,7 @@ func (x *CreatePlatformEndpointInput) GetToken() string {
 
 type CreateSMSSandboxPhoneNumberInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Languagecode  LanguageCodeString     `protobuf:"varint,281903107,opt,name=languagecode,proto3,enum=sns.LanguageCodeString" json:"languagecode,omitempty"`
+	Languagecode  *LanguageCodeString    `protobuf:"varint,281903107,opt,name=languagecode,proto3,enum=sns.LanguageCodeString,oneof" json:"languagecode,omitempty"`
 	Phonenumber   string                 `protobuf:"bytes,379600239,opt,name=phonenumber,proto3" json:"phonenumber,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1008,8 +1008,8 @@ func (*CreateSMSSandboxPhoneNumberInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateSMSSandboxPhoneNumberInput) GetLanguagecode() LanguageCodeString {
-	if x != nil {
-		return x.Languagecode
+	if x != nil && x.Languagecode != nil {
+		return *x.Languagecode
 	}
 	return LanguageCodeString_LANGUAGE_CODE_STRING_ZH_CN
 }
@@ -3823,7 +3823,7 @@ type PhoneNumberInformation struct {
 	Iso2Countrycode    *string                `protobuf:"bytes,283246908,opt,name=iso2countrycode,proto3,oneof" json:"iso2countrycode,omitempty"`
 	Numbercapabilities []NumberCapability     `protobuf:"varint,54004711,rep,packed,name=numbercapabilities,proto3,enum=sns.NumberCapability" json:"numbercapabilities,omitempty"`
 	Phonenumber        *string                `protobuf:"bytes,379600239,opt,name=phonenumber,proto3,oneof" json:"phonenumber,omitempty"`
-	Routetype          RouteType              `protobuf:"varint,170172127,opt,name=routetype,proto3,enum=sns.RouteType" json:"routetype,omitempty"`
+	Routetype          *RouteType             `protobuf:"varint,170172127,opt,name=routetype,proto3,enum=sns.RouteType,oneof" json:"routetype,omitempty"`
 	Status             *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -3888,8 +3888,8 @@ func (x *PhoneNumberInformation) GetPhonenumber() string {
 }
 
 func (x *PhoneNumberInformation) GetRoutetype() RouteType {
-	if x != nil {
-		return x.Routetype
+	if x != nil && x.Routetype != nil {
+		return *x.Routetype
 	}
 	return RouteType_ROUTE_TYPE_TRANSACTIONAL
 }
@@ -4606,9 +4606,9 @@ func (x *ResourceNotFoundException) GetMessage() string {
 }
 
 type SMSSandboxPhoneNumber struct {
-	state         protoimpl.MessageState                  `protogen:"open.v1"`
-	Phonenumber   *string                                 `protobuf:"bytes,379600239,opt,name=phonenumber,proto3,oneof" json:"phonenumber,omitempty"`
-	Status        SMSSandboxPhoneNumberVerificationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=sns.SMSSandboxPhoneNumberVerificationStatus" json:"status,omitempty"`
+	state         protoimpl.MessageState                   `protogen:"open.v1"`
+	Phonenumber   *string                                  `protobuf:"bytes,379600239,opt,name=phonenumber,proto3,oneof" json:"phonenumber,omitempty"`
+	Status        *SMSSandboxPhoneNumberVerificationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=sns.SMSSandboxPhoneNumberVerificationStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4651,8 +4651,8 @@ func (x *SMSSandboxPhoneNumber) GetPhonenumber() string {
 }
 
 func (x *SMSSandboxPhoneNumber) GetStatus() SMSSandboxPhoneNumberVerificationStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SMSSandboxPhoneNumberVerificationStatus_S_M_S_SANDBOX_PHONE_NUMBER_VERIFICATION_STATUS_VERIFIED
 }
@@ -6085,10 +6085,11 @@ const file_sns_proto_rawDesc = "" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
-	"\x0f_customuserdata\"\x89\x01\n" +
-	" CreateSMSSandboxPhoneNumberInput\x12?\n" +
-	"\flanguagecode\x18\x83\x80\xb6\x86\x01 \x01(\x0e2\x17.sns.LanguageCodeStringR\flanguagecode\x12$\n" +
-	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tR\vphonenumber\"#\n" +
+	"\x0f_customuserdata\"\x9f\x01\n" +
+	" CreateSMSSandboxPhoneNumberInput\x12D\n" +
+	"\flanguagecode\x18\x83\x80\xb6\x86\x01 \x01(\x0e2\x17.sns.LanguageCodeStringH\x00R\flanguagecode\x88\x01\x01\x12$\n" +
+	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tR\vphonenumberB\x0f\n" +
+	"\r_languagecode\"#\n" +
 	"!CreateSMSSandboxPhoneNumberResult\"\xaa\x02\n" +
 	"\x10CreateTopicInput\x12H\n" +
 	"\n" +
@@ -6341,18 +6342,20 @@ const file_sns_proto_rawDesc = "" +
 	"\x11OptedOutException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xf4\x02\n" +
+	"\b_message\"\x87\x03\n" +
 	"\x16PhoneNumberInformation\x12$\n" +
 	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x00R\tcreatedat\x88\x01\x01\x121\n" +
 	"\x0fiso2countrycode\x18\xbc\x82\x88\x87\x01 \x01(\tH\x01R\x0fiso2countrycode\x88\x01\x01\x12H\n" +
 	"\x12numbercapabilities\x18\xe7\x97\xe0\x19 \x03(\x0e2\x15.sns.NumberCapabilityR\x12numbercapabilities\x12)\n" +
-	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tH\x02R\vphonenumber\x88\x01\x01\x12/\n" +
-	"\troutetype\x18߽\x92Q \x01(\x0e2\x0e.sns.RouteTypeR\troutetype\x12\x1e\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x03R\x06status\x88\x01\x01B\f\n" +
+	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tH\x02R\vphonenumber\x88\x01\x01\x124\n" +
+	"\troutetype\x18߽\x92Q \x01(\x0e2\x0e.sns.RouteTypeH\x03R\troutetype\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x04R\x06status\x88\x01\x01B\f\n" +
 	"\n" +
 	"_createdatB\x12\n" +
 	"\x10_iso2countrycodeB\x0e\n" +
-	"\f_phonenumberB\t\n" +
+	"\f_phonenumberB\f\n" +
+	"\n" +
+	"_routetypeB\t\n" +
 	"\a_status\"\xfc\x01\n" +
 	"\x13PlatformApplication\x12K\n" +
 	"\n" +
@@ -6440,11 +6443,12 @@ const file_sns_proto_rawDesc = "" +
 	"\x19ResourceNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x9b\x01\n" +
+	"\b_message\"\xab\x01\n" +
 	"\x15SMSSandboxPhoneNumber\x12)\n" +
-	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tH\x00R\vphonenumber\x88\x01\x01\x12G\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2,.sns.SMSSandboxPhoneNumberVerificationStatusR\x06statusB\x0e\n" +
-	"\f_phonenumber\"\xd4\x01\n" +
+	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tH\x00R\vphonenumber\x88\x01\x01\x12L\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2,.sns.SMSSandboxPhoneNumberVerificationStatusH\x01R\x06status\x88\x01\x01B\x0e\n" +
+	"\f_phonenumberB\t\n" +
+	"\a_status\"\xd4\x01\n" +
 	"\x1aSetEndpointAttributesInput\x12R\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2/.sns.SetEndpointAttributesInput.AttributesEntryR\n" +
@@ -6933,6 +6937,7 @@ func file_sns_proto_init() {
 	file_sns_proto_msgTypes[10].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[12].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[13].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[14].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[16].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[17].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[23].OneofWrappers = []any{}

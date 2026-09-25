@@ -8592,7 +8592,7 @@ type DescribeEventsMessage struct {
 	Marker           *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords       *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Sourceidentifier *string                `protobuf:"bytes,190015756,opt,name=sourceidentifier,proto3,oneof" json:"sourceidentifier,omitempty"`
-	Sourcetype       SourceType             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=neptune.SourceType" json:"sourcetype,omitempty"`
+	Sourcetype       *SourceType            `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=neptune.SourceType,oneof" json:"sourcetype,omitempty"`
 	Starttime        *string                `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -8678,8 +8678,8 @@ func (x *DescribeEventsMessage) GetSourceidentifier() string {
 }
 
 func (x *DescribeEventsMessage) GetSourcetype() SourceType {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return SourceType_SOURCE_TYPE_DB_PARAMETER_GROUP
 }
@@ -9298,7 +9298,7 @@ type Event struct {
 	Message          *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Sourcearn        *string                `protobuf:"bytes,439903072,opt,name=sourcearn,proto3,oneof" json:"sourcearn,omitempty"`
 	Sourceidentifier *string                `protobuf:"bytes,190015756,opt,name=sourceidentifier,proto3,oneof" json:"sourceidentifier,omitempty"`
-	Sourcetype       SourceType             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=neptune.SourceType" json:"sourcetype,omitempty"`
+	Sourcetype       *SourceType            `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=neptune.SourceType,oneof" json:"sourcetype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -9369,8 +9369,8 @@ func (x *Event) GetSourceidentifier() string {
 }
 
 func (x *Event) GetSourcetype() SourceType {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return SourceType_SOURCE_TYPE_DB_PARAMETER_GROUP
 }
@@ -9947,7 +9947,7 @@ type FailoverState struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Fromdbclusterarn  *string                `protobuf:"bytes,119220095,opt,name=fromdbclusterarn,proto3,oneof" json:"fromdbclusterarn,omitempty"`
 	Isdatalossallowed *bool                  `protobuf:"varint,28895927,opt,name=isdatalossallowed,proto3,oneof" json:"isdatalossallowed,omitempty"`
-	Status            FailoverStatus         `protobuf:"varint,6222352,opt,name=status,proto3,enum=neptune.FailoverStatus" json:"status,omitempty"`
+	Status            *FailoverStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=neptune.FailoverStatus,oneof" json:"status,omitempty"`
 	Todbclusterarn    *string                `protobuf:"bytes,469618472,opt,name=todbclusterarn,proto3,oneof" json:"todbclusterarn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -9998,8 +9998,8 @@ func (x *FailoverState) GetIsdatalossallowed() bool {
 }
 
 func (x *FailoverState) GetStatus() FailoverStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return FailoverStatus_FAILOVER_STATUS_PENDING
 }
@@ -13102,7 +13102,7 @@ func (x *OrderableDBInstanceOptionsMessage) GetOrderabledbinstanceoptions() []*O
 type Parameter struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Allowedvalues        *string                `protobuf:"bytes,294513354,opt,name=allowedvalues,proto3,oneof" json:"allowedvalues,omitempty"`
-	Applymethod          ApplyMethod            `protobuf:"varint,521377563,opt,name=applymethod,proto3,enum=neptune.ApplyMethod" json:"applymethod,omitempty"`
+	Applymethod          *ApplyMethod           `protobuf:"varint,521377563,opt,name=applymethod,proto3,enum=neptune.ApplyMethod,oneof" json:"applymethod,omitempty"`
 	Applytype            *string                `protobuf:"bytes,65384676,opt,name=applytype,proto3,oneof" json:"applytype,omitempty"`
 	Datatype             *string                `protobuf:"bytes,67988590,opt,name=datatype,proto3,oneof" json:"datatype,omitempty"`
 	Description          *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
@@ -13153,8 +13153,8 @@ func (x *Parameter) GetAllowedvalues() string {
 }
 
 func (x *Parameter) GetApplymethod() ApplyMethod {
-	if x != nil {
-		return x.Applymethod
+	if x != nil && x.Applymethod != nil {
+		return *x.Applymethod
 	}
 	return ApplyMethod_APPLY_METHOD_PENDING_REBOOT
 }
@@ -17216,7 +17216,7 @@ const file_neptune_proto_rawDesc = "" +
 	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tH\x02R\x10subscriptionname\x88\x01\x01B\t\n" +
 	"\a_markerB\r\n" +
 	"\v_maxrecordsB\x13\n" +
-	"\x11_subscriptionname\"\xea\x03\n" +
+	"\x11_subscriptionname\"\xfe\x03\n" +
 	"\x15DescribeEventsMessage\x12#\n" +
 	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x00R\bduration\x88\x01\x01\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x01R\aendtime\x88\x01\x01\x12+\n" +
@@ -17226,17 +17226,18 @@ const file_neptune_proto_rawDesc = "" +
 	"\n" +
 	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x03R\n" +
 	"maxrecords\x88\x01\x01\x122\n" +
-	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x04R\x10sourceidentifier\x88\x01\x01\x126\n" +
+	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x04R\x10sourceidentifier\x88\x01\x01\x12;\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x13.neptune.SourceTypeR\n" +
-	"sourcetype\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01B\v\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x13.neptune.SourceTypeH\x05R\n" +
+	"sourcetype\x88\x01\x01\x12%\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x06R\tstarttime\x88\x01\x01B\v\n" +
 	"\t_durationB\n" +
 	"\n" +
 	"\b_endtimeB\t\n" +
 	"\a_markerB\r\n" +
 	"\v_maxrecordsB\x13\n" +
-	"\x11_sourceidentifierB\f\n" +
+	"\x11_sourceidentifierB\r\n" +
+	"\v_sourcetypeB\f\n" +
 	"\n" +
 	"_starttime\"\xdf\x01\n" +
 	"\x1dDescribeGlobalClustersMessage\x12@\n" +
@@ -17312,22 +17313,23 @@ const file_neptune_proto_rawDesc = "" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x12.neptune.ParameterR\n" +
 	"parametersB\x19\n" +
 	"\x17_dbparametergroupfamilyB\t\n" +
-	"\a_marker\"\xbe\x02\n" +
+	"\a_marker\"\xd2\x02\n" +
 	"\x05Event\x12\x1b\n" +
 	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tH\x00R\x04date\x88\x01\x01\x12+\n" +
 	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x01R\amessage\x88\x01\x01\x12%\n" +
 	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\x02R\tsourcearn\x88\x01\x01\x122\n" +
-	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x03R\x10sourceidentifier\x88\x01\x01\x126\n" +
+	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x03R\x10sourceidentifier\x88\x01\x01\x12;\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x13.neptune.SourceTypeR\n" +
-	"sourcetypeB\a\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x13.neptune.SourceTypeH\x04R\n" +
+	"sourcetype\x88\x01\x01B\a\n" +
 	"\x05_dateB\n" +
 	"\n" +
 	"\b_messageB\f\n" +
 	"\n" +
 	"_sourcearnB\x13\n" +
-	"\x11_sourceidentifier\"x\n" +
+	"\x11_sourceidentifierB\r\n" +
+	"\v_sourcetype\"x\n" +
 	"\x12EventCategoriesMap\x12+\n" +
 	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12&\n" +
 	"\n" +
@@ -17387,14 +17389,15 @@ const file_neptune_proto_rawDesc = "" +
 	"\x0e_allowdatalossB\r\n" +
 	"\v_switchover\"_\n" +
 	"\x1bFailoverGlobalClusterResult\x12@\n" +
-	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\x9c\x02\n" +
+	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\xac\x02\n" +
 	"\rFailoverState\x122\n" +
 	"\x10fromdbclusterarn\x18\xff\xce\xec8 \x01(\tH\x00R\x10fromdbclusterarn\x88\x01\x01\x124\n" +
-	"\x11isdatalossallowed\x18\xb7\xd5\xe3\r \x01(\bH\x01R\x11isdatalossallowed\x88\x01\x01\x122\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.neptune.FailoverStatusR\x06status\x12/\n" +
-	"\x0etodbclusterarn\x18\xa8\x9e\xf7\xdf\x01 \x01(\tH\x02R\x0etodbclusterarn\x88\x01\x01B\x13\n" +
+	"\x11isdatalossallowed\x18\xb7\xd5\xe3\r \x01(\bH\x01R\x11isdatalossallowed\x88\x01\x01\x127\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.neptune.FailoverStatusH\x02R\x06status\x88\x01\x01\x12/\n" +
+	"\x0etodbclusterarn\x18\xa8\x9e\xf7\xdf\x01 \x01(\tH\x03R\x0etodbclusterarn\x88\x01\x01B\x13\n" +
 	"\x11_fromdbclusterarnB\x14\n" +
-	"\x12_isdatalossallowedB\x11\n" +
+	"\x12_isdatalossallowedB\t\n" +
+	"\a_statusB\x11\n" +
 	"\x0f_todbclusterarn\":\n" +
 	"\x06Filter\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
@@ -17776,19 +17779,20 @@ const file_neptune_proto_rawDesc = "" +
 	"!OrderableDBInstanceOptionsMessage\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12e\n" +
 	"\x1aorderabledbinstanceoptions\x18\x8d\xca\xfd\r \x03(\v2\".neptune.OrderableDBInstanceOptionR\x1aorderabledbinstanceoptionsB\t\n" +
-	"\a_marker\"\xeb\x04\n" +
+	"\a_marker\"\x80\x05\n" +
 	"\tParameter\x12-\n" +
-	"\rallowedvalues\x18\xcaշ\x8c\x01 \x01(\tH\x00R\rallowedvalues\x88\x01\x01\x12:\n" +
-	"\vapplymethod\x18\x9b\xae\xce\xf8\x01 \x01(\x0e2\x14.neptune.ApplyMethodR\vapplymethod\x12$\n" +
-	"\tapplytype\x18\xe4\xe1\x96\x1f \x01(\tH\x01R\tapplytype\x88\x01\x01\x12\"\n" +
-	"\bdatatype\x18\xeeص  \x01(\tH\x02R\bdatatype\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12+\n" +
-	"\fismodifiable\x18\xe0\xf5\xc1\xb4\x01 \x01(\bH\x04R\fismodifiable\x88\x01\x01\x12;\n" +
-	"\x14minimumengineversion\x18\x94\xef\xba\xd5\x01 \x01(\tH\x05R\x14minimumengineversion\x88\x01\x01\x12-\n" +
-	"\rparametername\x18\x94\x8e\xf4\x97\x01 \x01(\tH\x06R\rparametername\x88\x01\x01\x12/\n" +
-	"\x0eparametervalue\x18\xc2\xf4\xe1\xe0\x01 \x01(\tH\aR\x0eparametervalue\x88\x01\x01\x12\x1e\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\bR\x06source\x88\x01\x01B\x10\n" +
-	"\x0e_allowedvaluesB\f\n" +
+	"\rallowedvalues\x18\xcaշ\x8c\x01 \x01(\tH\x00R\rallowedvalues\x88\x01\x01\x12?\n" +
+	"\vapplymethod\x18\x9b\xae\xce\xf8\x01 \x01(\x0e2\x14.neptune.ApplyMethodH\x01R\vapplymethod\x88\x01\x01\x12$\n" +
+	"\tapplytype\x18\xe4\xe1\x96\x1f \x01(\tH\x02R\tapplytype\x88\x01\x01\x12\"\n" +
+	"\bdatatype\x18\xeeص  \x01(\tH\x03R\bdatatype\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x04R\vdescription\x88\x01\x01\x12+\n" +
+	"\fismodifiable\x18\xe0\xf5\xc1\xb4\x01 \x01(\bH\x05R\fismodifiable\x88\x01\x01\x12;\n" +
+	"\x14minimumengineversion\x18\x94\xef\xba\xd5\x01 \x01(\tH\x06R\x14minimumengineversion\x88\x01\x01\x12-\n" +
+	"\rparametername\x18\x94\x8e\xf4\x97\x01 \x01(\tH\aR\rparametername\x88\x01\x01\x12/\n" +
+	"\x0eparametervalue\x18\xc2\xf4\xe1\xe0\x01 \x01(\tH\bR\x0eparametervalue\x88\x01\x01\x12\x1e\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\tR\x06source\x88\x01\x01B\x10\n" +
+	"\x0e_allowedvaluesB\x0e\n" +
+	"\f_applymethodB\f\n" +
 	"\n" +
 	"_applytypeB\v\n" +
 	"\t_datatypeB\x0e\n" +

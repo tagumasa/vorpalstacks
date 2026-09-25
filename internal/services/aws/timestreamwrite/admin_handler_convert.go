@@ -3,6 +3,7 @@ package timestreamwrite
 import (
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"google.golang.org/protobuf/proto"
 
@@ -55,11 +56,11 @@ func toPbTable(t *TableResult) *pb.Table {
 
 	switch t.TableStatus {
 	case tsstore.TableStatusActive:
-		table.Tablestatus = pb.TableStatus_TABLE_STATUS_ACTIVE
+		table.Tablestatus = pbutil.Enum(pb.TableStatus_TABLE_STATUS_ACTIVE)
 	case tsstore.TableStatusDeleting:
-		table.Tablestatus = pb.TableStatus_TABLE_STATUS_DELETING
+		table.Tablestatus = pbutil.Enum(pb.TableStatus_TABLE_STATUS_DELETING)
 	case tsstore.TableStatusRestoring:
-		table.Tablestatus = pb.TableStatus_TABLE_STATUS_RESTORING
+		table.Tablestatus = pbutil.Enum(pb.TableStatus_TABLE_STATUS_RESTORING)
 	}
 
 	if t.RetentionProperties != nil {
@@ -84,9 +85,9 @@ func toPbTable(t *TableResult) *pb.Table {
 			}
 			switch pk.EnforcementInRecord {
 			case tsstore.EnforcementInRecordRequired:
-				cpk.Enforcementinrecord = pb.PartitionKeyEnforcementLevel_PARTITION_KEY_ENFORCEMENT_LEVEL_REQUIRED
+				cpk.Enforcementinrecord = pbutil.Enum(pb.PartitionKeyEnforcementLevel_PARTITION_KEY_ENFORCEMENT_LEVEL_REQUIRED)
 			default:
-				cpk.Enforcementinrecord = pb.PartitionKeyEnforcementLevel_PARTITION_KEY_ENFORCEMENT_LEVEL_OPTIONAL
+				cpk.Enforcementinrecord = pbutil.Enum(pb.PartitionKeyEnforcementLevel_PARTITION_KEY_ENFORCEMENT_LEVEL_OPTIONAL)
 			}
 			schema.Compositepartitionkey = append(schema.Compositepartitionkey, cpk)
 		}

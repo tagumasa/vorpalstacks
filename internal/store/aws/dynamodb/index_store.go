@@ -55,9 +55,9 @@ func (s *IndexStore) BuildGSIKey(table *Table, gsi *GlobalSecondaryIndex, item *
 		if rangeValue == "" {
 			return ""
 		}
-		return table.Name + KeySep + gsi.IndexName + KeySep + hashValue + KeySep + rangeValue + KeySep + primaryKey
+		return BuildIndexScanKey(table.Name, gsi.IndexName, hashValue, rangeValue, primaryKey)
 	}
-	return table.Name + KeySep + gsi.IndexName + KeySep + hashValue + KeySep + primaryKey
+	return BuildIndexScanKey(table.Name, gsi.IndexName, hashValue, "", primaryKey)
 }
 
 // BuildLSIKey constructs the Pebble key for an LSI index entry.
@@ -81,7 +81,7 @@ func (s *IndexStore) BuildLSIKey(table *Table, lsi *LocalSecondaryIndex, item *I
 		return ""
 	}
 
-	return table.Name + KeySep + lsi.IndexName + KeySep + hashValue + KeySep + rangeValue + KeySep + primaryKey
+	return BuildIndexScanKey(table.Name, lsi.IndexName, hashValue, rangeValue, primaryKey)
 }
 
 func (s *IndexStore) getAttributeValueForIndex(item *Item, attrName string) string {
@@ -98,46 +98,54 @@ func (s *IndexStore) getAttributeValueForIndex(item *Item, attrName string) stri
 // Index entry CRUD (transactional)
 // ---------------------------------------------------------------------------
 
-// PutIndexEntries writes all GSI and LSI index entries for an item
-// within the given transaction.
-func (s *IndexStore) PutIndexEntries(txn storage.Transaction, table *Table, item *Item) error {
+// applyIndexEntry writes or removes one secondary-index entry inside the
+// transaction. The builder returns "" when the item lacks the index key
+// attributes — such an item holds no entry — and a written entry's value
+// is the item's primary key so the query path can resolve the entry to
+// its item.
+func applyIndexEntry(txn storage.Transaction, bucketName, indexKey, primaryKey string, remove bool) error {
+	if indexKey == "" {
+		return nil
+	}
+	bucket := txn.Bucket(bucketName)
+	if remove {
+		return bucket.Delete([]byte(indexKey))
+	}
+	return bucket.Put([]byte(indexKey), []byte(primaryKey))
+}
+
+// forEachIndex walks the table's two index families, applying the family's
+// step to every index — the put and delete paths differ only in the steps.
+func (s *IndexStore) forEachIndex(txn storage.Transaction, table *Table, item *Item,
+	gsiStep func(*IndexStore, storage.Transaction, *Table, *GlobalSecondaryIndex, *Item) error,
+	lsiStep func(*IndexStore, storage.Transaction, *Table, *LocalSecondaryIndex, *Item) error) error {
 	for _, gsi := range table.GlobalSecondaryIndexes {
-		if err := s.putGSIEntry(txn, table, gsi, item); err != nil {
+		if err := gsiStep(s, txn, table, gsi, item); err != nil {
 			return err
 		}
 	}
 	for _, lsi := range table.LocalSecondaryIndexes {
-		if err := s.putLSIEntry(txn, table, lsi, item); err != nil {
+		if err := lsiStep(s, txn, table, lsi, item); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// PutIndexEntries writes all GSI and LSI index entries for an item
+// within the given transaction.
+func (s *IndexStore) PutIndexEntries(txn storage.Transaction, table *Table, item *Item) error {
+	return s.forEachIndex(txn, table, item, (*IndexStore).putGSIEntry, (*IndexStore).putLSIEntry)
 }
 
 // DeleteIndexEntries removes all GSI and LSI index entries for an item
 // within the given transaction.
 func (s *IndexStore) DeleteIndexEntries(txn storage.Transaction, table *Table, item *Item) error {
-	for _, gsi := range table.GlobalSecondaryIndexes {
-		if err := s.deleteGSIEntry(txn, table, gsi, item); err != nil {
-			return err
-		}
-	}
-	for _, lsi := range table.LocalSecondaryIndexes {
-		if err := s.deleteLSIEntry(txn, table, lsi, item); err != nil {
-			return err
-		}
-	}
-	return nil
+	return s.forEachIndex(txn, table, item, (*IndexStore).deleteGSIEntry, (*IndexStore).deleteLSIEntry)
 }
 
 func (s *IndexStore) putGSIEntry(txn storage.Transaction, table *Table, gsi *GlobalSecondaryIndex, item *Item) error {
-	indexKey := s.BuildGSIKey(table, gsi, item)
-	if indexKey == "" {
-		return nil
-	}
-	primaryKey := EncodeItemKey(table.Name, item.Key, table)
-	bucket := txn.Bucket(gsiIndexBucketName(s.region))
-	return bucket.Put([]byte(indexKey), []byte(primaryKey))
+	return applyIndexEntry(txn, gsiIndexBucketName(s.region), s.BuildGSIKey(table, gsi, item), EncodeItemKey(table.Name, item.Key, table), false)
 }
 
 // PutIndexEntriesForIndex writes only the named GSI's index entry for an
@@ -165,31 +173,15 @@ func (s *IndexStore) DeleteIndexEntriesForIndex(txn storage.Transaction, tableNa
 }
 
 func (s *IndexStore) deleteGSIEntry(txn storage.Transaction, table *Table, gsi *GlobalSecondaryIndex, item *Item) error {
-	indexKey := s.BuildGSIKey(table, gsi, item)
-	if indexKey == "" {
-		return nil
-	}
-	bucket := txn.Bucket(gsiIndexBucketName(s.region))
-	return bucket.Delete([]byte(indexKey))
+	return applyIndexEntry(txn, gsiIndexBucketName(s.region), s.BuildGSIKey(table, gsi, item), "", true)
 }
 
 func (s *IndexStore) putLSIEntry(txn storage.Transaction, table *Table, lsi *LocalSecondaryIndex, item *Item) error {
-	indexKey := s.BuildLSIKey(table, lsi, item)
-	if indexKey == "" {
-		return nil
-	}
-	primaryKey := EncodeItemKey(table.Name, item.Key, table)
-	bucket := txn.Bucket(lsiIndexBucketName(s.region))
-	return bucket.Put([]byte(indexKey), []byte(primaryKey))
+	return applyIndexEntry(txn, lsiIndexBucketName(s.region), s.BuildLSIKey(table, lsi, item), EncodeItemKey(table.Name, item.Key, table), false)
 }
 
 func (s *IndexStore) deleteLSIEntry(txn storage.Transaction, table *Table, lsi *LocalSecondaryIndex, item *Item) error {
-	indexKey := s.BuildLSIKey(table, lsi, item)
-	if indexKey == "" {
-		return nil
-	}
-	bucket := txn.Bucket(lsiIndexBucketName(s.region))
-	return bucket.Delete([]byte(indexKey))
+	return applyIndexEntry(txn, lsiIndexBucketName(s.region), s.BuildLSIKey(table, lsi, item), "", true)
 }
 
 // ---------------------------------------------------------------------------

@@ -11,21 +11,42 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-func globalTableBucketName(region string) string {
-	return "dynamodb_global_tables-" + region
+// UpdateGlobalTableSettings request list bounds, from the API model's
+// length traits: the replica settings update list carries at most 50
+// entries, and each replica's per-index settings update list at most 20.
+const (
+	MaxReplicaSettingsUpdates    = 50
+	MaxReplicaGSISettingsUpdates = 20
+)
+
+// globalTableBucketName is the bucket the global-table record lives in.
+// Global-table membership is account-global metadata — one record every
+// region reads and writes identically — so the bucket has no region
+// suffix: it sits in the account-global storage, and a region-suffixed
+// name would recreate the per-region record the account-global binding
+// exists to prevent.
+func globalTableBucketName() string {
+	return "dynamodb_global_tables"
 }
+
+// globalTableMu serialises read-modify-write cycles over the global-table
+// record space. Every store instance binds to the same account-global
+// bucket, so the lock spans all of them: a per-instance mutex could not
+// exclude a concurrent Update running through another region's store.
+var globalTableMu sync.Mutex
 
 // GlobalTableStore manages DynamoDB global tables in persistent storage.
 type GlobalTableStore struct {
 	*common.BaseStore
 	arnBuilder *svcarn.DynamoDBBuilder
-	mu         sync.Mutex
 }
 
-// NewGlobalTableStore creates a new store for DynamoDB global tables.
+// NewGlobalTableStore creates a new store for DynamoDB global tables. The
+// store argument is the account-global storage handle, not the caller's
+// regional storage: the record must resolve identically from every region.
 func NewGlobalTableStore(store storage.BasicStorage, accountId, region string) *GlobalTableStore {
 	return &GlobalTableStore{
-		BaseStore:  common.NewBaseStore(store.Bucket(globalTableBucketName(region)), "dynamodb_global_tables"),
+		BaseStore:  common.NewBaseStore(store.Bucket(globalTableBucketName()), "dynamodb_global_tables"),
 		arnBuilder: svcarn.NewARNBuilder(accountId, region).DynamoDB(),
 	}
 }
@@ -41,8 +62,8 @@ func (s *GlobalTableStore) Get(name string) (*GlobalTable, error) {
 
 // Create creates a new global table.
 func (s *GlobalTableStore) Create(name string, replicationGroup []*Replica) (*GlobalTable, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	globalTableMu.Lock()
+	defer globalTableMu.Unlock()
 	if s.Exists(name) {
 		return nil, ErrTableAlreadyExists
 	}
@@ -51,7 +72,7 @@ func (s *GlobalTableStore) Create(name string, replicationGroup []*Replica) (*Gl
 	globalTable := &GlobalTable{
 		GlobalTableName:   name,
 		GlobalTableArn:    s.arnBuilder.GlobalTable(name),
-		GlobalTableStatus: "ACTIVE",
+		GlobalTableStatus: GlobalTableStatusActive,
 		CreationDateTime:  now,
 		ReplicationGroup:  replicationGroup,
 	}
@@ -61,15 +82,6 @@ func (s *GlobalTableStore) Create(name string, replicationGroup []*Replica) (*Gl
 	}
 
 	return globalTable, nil
-}
-
-// Put stores a global table under the store lock. Callers that read the
-// record before writing it must use Update instead, which holds the lock
-// across both halves of the read-modify-write.
-func (s *GlobalTableStore) Put(globalTable *GlobalTable) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.put(globalTable)
 }
 
 // put writes the global-table record without locking; the caller must
@@ -84,8 +96,8 @@ func (s *GlobalTableStore) put(globalTable *GlobalTable) error {
 // layer is read-committed, so an unlocked Get→Put sequence can lose
 // concurrent replica or settings changes.
 func (s *GlobalTableStore) Update(name string, mutate func(*GlobalTable) error) (*GlobalTable, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	globalTableMu.Lock()
+	defer globalTableMu.Unlock()
 	globalTable, err := s.Get(name)
 	if err != nil {
 		return nil, err
@@ -99,9 +111,42 @@ func (s *GlobalTableStore) Update(name string, mutate func(*GlobalTable) error) 
 	return globalTable, nil
 }
 
-// Delete deletes a global table by name.
+// Delete deletes a global table by name. The deletion takes the store
+// lock: an unlocked delete could interleave with a locked
+// read-modify-write cycle over the same record and resurrect state the
+// cycle was removing.
 func (s *GlobalTableStore) Delete(name string) error {
+	globalTableMu.Lock()
+	defer globalTableMu.Unlock()
 	return s.BaseStore.Delete(name)
+}
+
+// DeleteIfEmpty removes the global table record only when its replication
+// group has no members left, holding the store lock across the emptiness
+// read and the delete — the atomic conditional delete. An unlocked
+// check-then-delete could erase a record a concurrent member re-add had
+// just repopulated between the two steps. The boolean reports whether the
+// record was deleted; an absent record answers (false, nil).
+func (s *GlobalTableStore) DeleteIfEmpty(name string) (bool, error) {
+	globalTableMu.Lock()
+	defer globalTableMu.Unlock()
+	globalTable, err := s.Get(name)
+	if err != nil {
+		if common.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	if len(globalTable.ReplicationGroup) != 0 {
+		return false, nil
+	}
+	if err := s.BaseStore.Delete(name); err != nil {
+		if common.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 // Exists checks if a global table exists.
@@ -111,28 +156,5 @@ func (s *GlobalTableStore) Exists(name string) bool {
 
 // List lists global tables.
 func (s *GlobalTableStore) List(marker string, limit int) ([]*GlobalTable, string, error) {
-	opts := common.ListOptions{
-		Marker:   marker,
-		MaxItems: limit,
-	}
-
-	result, err := common.ListProto[*storage_dynamodb.GlobalTable](s.BaseStore, opts, func() *storage_dynamodb.GlobalTable { return &storage_dynamodb.GlobalTable{} }, nil)
-	if err != nil {
-		return nil, "", err
-	}
-
-	globalTables := make([]*GlobalTable, len(result.Items))
-	for i, pbGlobalTable := range result.Items {
-		globalTables[i] = ProtoToGlobalTable(pbGlobalTable)
-	}
-
-	if !result.IsTruncated {
-		return globalTables, "", nil
-	}
-	return globalTables, result.NextMarker, nil
-}
-
-// ARNBuilder returns the ARN builder for DynamoDB.
-func (s *GlobalTableStore) ARNBuilder() *svcarn.DynamoDBBuilder {
-	return s.arnBuilder
+	return listProtoConverted(s.BaseStore, marker, limit, func() *storage_dynamodb.GlobalTable { return &storage_dynamodb.GlobalTable{} }, ProtoToGlobalTable, nil)
 }

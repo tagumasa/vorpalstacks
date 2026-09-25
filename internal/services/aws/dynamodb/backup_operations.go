@@ -19,16 +19,7 @@ func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.Requ
 	}
 
 	return map[string]interface{}{
-		"BackupDetails": map[string]interface{}{
-			"BackupArn":              backup.BackupArn,
-			"BackupName":             backup.BackupName,
-			"BackupSizeBytes":        backup.BackupSizeBytes,
-			"BackupStatus":           string(backup.BackupStatus),
-			"BackupType":             string(backup.BackupType),
-			"BackupCreationDateTime": backup.BackupCreationDateTime.Unix(),
-			"SourceTableName":        backup.SourceTableName,
-			"SourceTableArn":         backup.SourceTableArn,
-		},
+		"BackupDetails": buildBackupDetailsResponse(backup, backup.BackupStatus),
 	}, nil
 }
 
@@ -41,16 +32,8 @@ func (s *DynamoDBService) DeleteBackup(ctx context.Context, reqCtx *request.Requ
 
 	return map[string]interface{}{
 		"BackupDescription": map[string]interface{}{
-			"BackupDetails": map[string]interface{}{
-				"BackupArn":              backup.BackupArn,
-				"BackupName":             backup.BackupName,
-				"BackupStatus":           "DELETED",
-				"BackupType":             string(backup.BackupType),
-				"BackupCreationDateTime": backup.BackupCreationDateTime.Unix(),
-			},
-			"SourceTableDetails": map[string]interface{}{
-				"TableName": backup.SourceTableName,
-			},
+			"BackupDetails":      buildBackupDetailsResponse(backup, dbstore.BackupStatusDeleted),
+			"SourceTableDetails": buildSourceTableDetailsResponse(backup),
 		},
 	}, nil
 }
@@ -64,50 +47,40 @@ func (s *DynamoDBService) DescribeBackup(ctx context.Context, reqCtx *request.Re
 
 	return map[string]interface{}{
 		"BackupDescription": map[string]interface{}{
-			"BackupDetails": map[string]interface{}{
-				"BackupArn":              backup.BackupArn,
-				"BackupName":             backup.BackupName,
-				"BackupSizeBytes":        backup.BackupSizeBytes,
-				"BackupStatus":           string(backup.BackupStatus),
-				"BackupType":             string(backup.BackupType),
-				"BackupCreationDateTime": backup.BackupCreationDateTime.Unix(),
-			},
-			"SourceTableDetails": map[string]interface{}{
-				"TableName":             backup.SourceTableName,
-				"TableArn":              backup.SourceTableArn,
-				"TableSizeBytes":        backup.SourceTableSizeBytes,
-				"TableCreationDateTime": backup.SourceTableCreationTime.Unix(),
-				"ItemCount":             backup.SourceTableItemCount,
-				"KeySchema":             buildKeySchemaResponse(backup.KeySchema),
-				"ProvisionedThroughput": func() map[string]interface{} {
-					if backup.ProvisionedThroughput != nil {
-						return map[string]interface{}{
-							"ReadCapacityUnits":      backup.ProvisionedThroughput.ReadCapacityUnits,
-							"WriteCapacityUnits":     backup.ProvisionedThroughput.WriteCapacityUnits,
-							"NumberOfDecreasesToday": backup.ProvisionedThroughput.NumberOfDecreasesToday,
-						}
-					}
-					return map[string]interface{}{
-						"ReadCapacityUnits":      int64(0),
-						"WriteCapacityUnits":     int64(0),
-						"NumberOfDecreasesToday": int64(0),
-					}
-				}(),
-			},
+			"BackupDetails":      buildBackupDetailsResponse(backup, backup.BackupStatus),
+			"SourceTableDetails": buildSourceTableDetailsResponse(backup),
 		},
 	}, nil
 }
 
 // ListBackups lists the backups of a DynamoDB table.
 func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	coreResult, err := s.listBackupsCore(ctx, reqCtx, ListBackupsCoreInput{
+	// The model members are TimeRangeLowerBound/TimeRangeUpperBound, and
+	// presence decides: an explicit epoch bound filters, an omitted member
+	// does not — the zero epoch is a real bound, not an omission.
+	lowerBound, lowerSet, lowerErr := intParamWithPresence(req.Parameters, "TimeRangeLowerBound")
+	if lowerErr != nil {
+		return nil, lowerErr
+	}
+	upperBound, upperSet, upperErr := intParamWithPresence(req.Parameters, "TimeRangeUpperBound")
+	if upperErr != nil {
+		return nil, upperErr
+	}
+	in := ListBackupsCoreInput{
 		TableName:               request.GetStringParam(req.Parameters, "TableName"),
 		BackupTypeFilter:        request.GetStringParam(req.Parameters, "BackupTypeFilter"),
-		TimeRangeLowerBound:     request.GetInt64Param(req.Parameters, "TimeRangeLowerBoundDateTime"),
-		TimeRangeUpperBound:     request.GetInt64Param(req.Parameters, "TimeRangeUpperBoundDateTime"),
 		Limit:                   request.GetIntParam(req.Parameters, "Limit"),
 		ExclusiveStartBackupArn: request.GetStringParam(req.Parameters, "ExclusiveStartBackupArn"),
-	})
+	}
+	if lowerSet {
+		lb := int64(lowerBound)
+		in.TimeRangeLowerBound = &lb
+	}
+	if upperSet {
+		ub := int64(upperBound)
+		in.TimeRangeUpperBound = &ub
+	}
+	coreResult, err := s.listBackupsCore(ctx, reqCtx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -123,6 +96,10 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 			"BackupCreationDateTime": b.BackupCreationDateTime.Unix(),
 			"TableName":              b.SourceTableName,
 			"TableArn":               b.SourceTableArn,
+			"TableId":                b.SourceTableId,
+			"BillingModeSummary": map[string]interface{}{
+				"BillingMode": string(b.BillingMode),
+			},
 		})
 	}
 
@@ -138,9 +115,14 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 
 // RestoreTableFromBackup restores a table from a DynamoDB backup.
 func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	overrides, err := parseRestoreOverridesWire(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	table, err := s.restoreTableFromBackupCore(ctx, reqCtx, RestoreTableFromBackupCoreInput{
 		BackupArn:       request.GetStringParam(req.Parameters, "BackupArn"),
 		TargetTableName: request.GetStringParam(req.Parameters, "TargetTableName"),
+		Overrides:       overrides,
 	})
 	if err != nil {
 		return nil, err
@@ -222,51 +204,73 @@ func parseProvisionedThroughputOverride(params map[string]interface{}) *dbstore.
 	}
 }
 
+// indexOverrideFields holds the override members shared by the global and
+// local secondary index families: both carry index name, key schema and
+// projection on the wire, and every member is optional — an override that
+// omits one leaves the restored index's value untouched.
+type indexOverrideFields struct {
+	IndexName  string
+	KeySchema  []*dbstore.KeySchemaElement
+	Projection *dbstore.Projection
+}
+
+// parseIndexOverrideEntry extracts the shared members of one override
+// entry.
+func parseIndexOverrideEntry(m map[string]interface{}) indexOverrideFields {
+	var f indexOverrideFields
+	if name, ok := m["IndexName"].(string); ok {
+		f.IndexName = name
+	}
+	if ksList, ok := m["KeySchema"].([]interface{}); ok {
+		for _, ksRaw := range ksList {
+			ksMap, ok := ksRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			ks := &dbstore.KeySchemaElement{}
+			if n, ok := ksMap["AttributeName"].(string); ok {
+				ks.AttributeName = n
+			}
+			if t, ok := ksMap["KeyType"].(string); ok {
+				ks.KeyType = dbstore.KeyType(t)
+			}
+			f.KeySchema = append(f.KeySchema, ks)
+		}
+	}
+	if proj, ok := m["Projection"].(map[string]interface{}); ok {
+		f.Projection = &dbstore.Projection{}
+		if pt, ok := proj["ProjectionType"].(string); ok {
+			f.Projection.ProjectionType = dbstore.ProjectionType(pt)
+		}
+		if nkaList, ok := proj["NonKeyAttributes"].([]interface{}); ok {
+			for _, nkaRaw := range nkaList {
+				if nka, ok := nkaRaw.(string); ok {
+					f.Projection.NonKeyAttributes = append(f.Projection.NonKeyAttributes, nka)
+				}
+			}
+		}
+	}
+	return f
+}
+
 // parseGSIOverrideList extracts the GlobalSecondaryIndexOverride parameter
 // from a RestoreTableToPointInTime request.
-func parseGSIOverrideList(params map[string]interface{}) []*dbstore.GlobalSecondaryIndex {
+func parseGSIOverrideList(params map[string]interface{}) ([]*dbstore.GlobalSecondaryIndex, error) {
 	rawList, ok := params["GlobalSecondaryIndexOverride"].([]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
-	var result []*dbstore.GlobalSecondaryIndex
+	result := make([]*dbstore.GlobalSecondaryIndex, 0, len(rawList))
 	for _, raw := range rawList {
 		m, ok := raw.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		idx := &dbstore.GlobalSecondaryIndex{}
-		if name, ok := m["IndexName"].(string); ok {
-			idx.IndexName = name
-		}
-		if ksList, ok := m["KeySchema"].([]interface{}); ok {
-			for _, ksRaw := range ksList {
-				ksMap, ok := ksRaw.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				ks := &dbstore.KeySchemaElement{}
-				if n, ok := ksMap["AttributeName"].(string); ok {
-					ks.AttributeName = n
-				}
-				if t, ok := ksMap["KeyType"].(string); ok {
-					ks.KeyType = dbstore.KeyType(t)
-				}
-				idx.KeySchema = append(idx.KeySchema, ks)
-			}
-		}
-		if proj, ok := m["Projection"].(map[string]interface{}); ok {
-			idx.Projection = &dbstore.Projection{}
-			if pt, ok := proj["ProjectionType"].(string); ok {
-				idx.Projection.ProjectionType = pt
-			}
-			if nkaList, ok := proj["NonKeyAttributes"].([]interface{}); ok {
-				for _, nkaRaw := range nkaList {
-					if nka, ok := nkaRaw.(string); ok {
-						idx.Projection.NonKeyAttributes = append(idx.Projection.NonKeyAttributes, nka)
-					}
-				}
-			}
+		f := parseIndexOverrideEntry(m)
+		idx := &dbstore.GlobalSecondaryIndex{
+			IndexName:  f.IndexName,
+			KeySchema:  f.KeySchema,
+			Projection: f.Projection,
 		}
 		if pt, ok := m["ProvisionedThroughput"].(map[string]interface{}); ok {
 			idx.ProvisionedThroughput = &dbstore.ProvisionedThroughput{}
@@ -277,9 +281,19 @@ func parseGSIOverrideList(params map[string]interface{}) []*dbstore.GlobalSecond
 				idx.ProvisionedThroughput.WriteCapacityUnits = int64(v)
 			}
 		}
+		if odt, ok := m["OnDemandThroughput"].(map[string]interface{}); ok {
+			parsed, odtErr := parseOnDemandThroughputMap(odt)
+			if odtErr != nil {
+				return nil, odtErr
+			}
+			idx.OnDemandThroughput = parsed
+		}
+		if wt, ok := m["WarmThroughput"].(map[string]interface{}); ok {
+			idx.WarmThroughput = parseWarmThroughputMap(wt)
+		}
 		result = append(result, idx)
 	}
-	return result
+	return result, nil
 }
 
 // parseLSIOverrideList extracts the LocalSecondaryIndexOverride parameter
@@ -289,106 +303,20 @@ func parseLSIOverrideList(params map[string]interface{}) []*dbstore.LocalSeconda
 	if !ok {
 		return nil
 	}
-	var result []*dbstore.LocalSecondaryIndex
+	result := make([]*dbstore.LocalSecondaryIndex, 0, len(rawList))
 	for _, raw := range rawList {
 		m, ok := raw.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		idx := &dbstore.LocalSecondaryIndex{}
-		if name, ok := m["IndexName"].(string); ok {
-			idx.IndexName = name
-		}
-		if ksList, ok := m["KeySchema"].([]interface{}); ok {
-			for _, ksRaw := range ksList {
-				ksMap, ok := ksRaw.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				ks := &dbstore.KeySchemaElement{}
-				if n, ok := ksMap["AttributeName"].(string); ok {
-					ks.AttributeName = n
-				}
-				if t, ok := ksMap["KeyType"].(string); ok {
-					ks.KeyType = dbstore.KeyType(t)
-				}
-				idx.KeySchema = append(idx.KeySchema, ks)
-			}
-		}
-		if proj, ok := m["Projection"].(map[string]interface{}); ok {
-			idx.Projection = &dbstore.Projection{}
-			if pt, ok := proj["ProjectionType"].(string); ok {
-				idx.Projection.ProjectionType = pt
-			}
-			if nkaList, ok := proj["NonKeyAttributes"].([]interface{}); ok {
-				for _, nkaRaw := range nkaList {
-					if nka, ok := nkaRaw.(string); ok {
-						idx.Projection.NonKeyAttributes = append(idx.Projection.NonKeyAttributes, nka)
-					}
-				}
-			}
-		}
-		result = append(result, idx)
+		f := parseIndexOverrideEntry(m)
+		result = append(result, &dbstore.LocalSecondaryIndex{
+			IndexName:  f.IndexName,
+			KeySchema:  f.KeySchema,
+			Projection: f.Projection,
+		})
 	}
 	return result
-}
-
-// selectGSIOverrides narrows the restored table's global secondary indexes
-// to those named by the override list, applying the provided projection and
-// throughput settings. Restore overrides select from the existing indexes:
-// an override naming an unknown index, or one replacing the key schema, is
-// a validation error.
-func selectGSIOverrides(existing []*dbstore.GlobalSecondaryIndex, overrides []*dbstore.GlobalSecondaryIndex) ([]*dbstore.GlobalSecondaryIndex, error) {
-	byName := make(map[string]*dbstore.GlobalSecondaryIndex, len(existing))
-	for _, g := range existing {
-		byName[g.IndexName] = g
-	}
-	selected := make([]*dbstore.GlobalSecondaryIndex, 0, len(overrides))
-	for _, ov := range overrides {
-		base, ok := byName[ov.IndexName]
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-		if len(ov.KeySchema) > 0 && !keySchemasEqual(ov.KeySchema, base.KeySchema) {
-			return nil, ErrInvalidParameter
-		}
-		restored := *base
-		if ov.Projection != nil {
-			restored.Projection = ov.Projection
-		}
-		if ov.ProvisionedThroughput != nil {
-			restored.ProvisionedThroughput = ov.ProvisionedThroughput
-		}
-		selected = append(selected, &restored)
-	}
-	return selected, nil
-}
-
-// selectLSIOverrides narrows the restored table's local secondary indexes
-// to those named by the override list, applying the provided projection.
-// Local secondary index key schemas cannot change, so an override naming an
-// unknown index or a different key schema is a validation error.
-func selectLSIOverrides(existing []*dbstore.LocalSecondaryIndex, overrides []*dbstore.LocalSecondaryIndex) ([]*dbstore.LocalSecondaryIndex, error) {
-	byName := make(map[string]*dbstore.LocalSecondaryIndex, len(existing))
-	for _, l := range existing {
-		byName[l.IndexName] = l
-	}
-	selected := make([]*dbstore.LocalSecondaryIndex, 0, len(overrides))
-	for _, ov := range overrides {
-		base, ok := byName[ov.IndexName]
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-		if len(ov.KeySchema) > 0 && !keySchemasEqual(ov.KeySchema, base.KeySchema) {
-			return nil, ErrInvalidParameter
-		}
-		restored := *base
-		if ov.Projection != nil {
-			restored.Projection = ov.Projection
-		}
-		selected = append(selected, &restored)
-	}
-	return selected, nil
 }
 
 // keySchemasEqual compares two key schemas element by element.
@@ -402,4 +330,60 @@ func keySchemasEqual(a, b []*dbstore.KeySchemaElement) bool {
 		}
 	}
 	return true
+}
+
+// parseOnDemandThroughputOverride extracts the OnDemandThroughputOverride
+// member shared by both restore inputs; an absent member returns nil.
+func parseOnDemandThroughputOverride(params map[string]interface{}) (*dbstore.OnDemandThroughput, error) {
+	odt, ok := params["OnDemandThroughputOverride"].(map[string]interface{})
+	if !ok {
+		return nil, nil
+	}
+	return parseOnDemandThroughputMap(odt)
+}
+
+// parseVectorIndexOverrideList extracts the VectorIndexOverride member
+// shared by both restore inputs; an absent member returns nil.
+func parseVectorIndexOverrideList(params map[string]interface{}) ([]*dbstore.VectorIndex, error) {
+	rawList, ok := params["VectorIndexOverride"].([]interface{})
+	if !ok {
+		return nil, nil
+	}
+	return parseVectorIndexList(rawList)
+}
+
+// parseRestoreOverridesWire reads the override member family the model
+// defines identically on RestoreTableFromBackupInput and
+// RestoreTableToPointInTimeInput. Every member is optional; an absent
+// member leaves the zero value, which the core reads as "keep the base
+// setting".
+func parseRestoreOverridesWire(params map[string]interface{}) (RestoreOverrides, error) {
+	var overrides RestoreOverrides
+	if bm := request.GetStringParam(params, "BillingModeOverride"); bm != "" {
+		overrides.BillingMode = dbstore.BillingMode(bm)
+	}
+	overrides.ProvisionedThroughput = parseProvisionedThroughputOverride(params)
+	odtOverride, odtErr := parseOnDemandThroughputOverride(params)
+	if odtErr != nil {
+		return overrides, odtErr
+	}
+	overrides.OnDemandThroughput = odtOverride
+	desc, disable, err := parseSSESpecification(params["SSESpecificationOverride"])
+	if err != nil {
+		return overrides, err
+	}
+	overrides.SSEDescription = desc
+	overrides.SSEDisable = disable
+	gsiOverrides, gsiErr := parseGSIOverrideList(params)
+	if gsiErr != nil {
+		return overrides, gsiErr
+	}
+	overrides.GlobalSecondaryIndexes = gsiOverrides
+	overrides.LocalSecondaryIndexes = parseLSIOverrideList(params)
+	vectorIdx, err := parseVectorIndexOverrideList(params)
+	if err != nil {
+		return overrides, err
+	}
+	overrides.VectorIndexes = vectorIdx
+	return overrides, nil
 }

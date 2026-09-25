@@ -995,7 +995,7 @@ message AccessKeyMetadata {
 
   optional string createdate = 37690514;
 
-  statusType status = 6222352;
+  optional statusType status = 6222352;
 
   optional string username = 473243898;
 
@@ -1107,7 +1107,7 @@ message AttachedPermissionsBoundary {
 
   optional string permissionsboundaryarn = 488828173;
 
-  PermissionsBoundaryAttachmentType permissionsboundarytype = 523357118;
+  optional PermissionsBoundaryAttachmentType permissionsboundarytype = 523357118;
 
 }
 
@@ -1173,7 +1173,7 @@ message ContextEntry {
 
   optional string contextkeyname = 259692145;
 
-  ContextKeyTypeEnum contextkeytype = 4954324;
+  optional ContextKeyTypeEnum contextkeytype = 4954324;
 
   repeated string contextkeyvalues = 410115170;
 
@@ -1443,7 +1443,7 @@ message CreateSAMLProviderRequest {
 
   optional string addprivatekey = 205767607;
 
-  assertionEncryptionModeType assertionencryptionmode = 474560298;
+  optional assertionEncryptionModeType assertionencryptionmode = 474560298;
 
   string name = 266367751;
 
@@ -1645,7 +1645,7 @@ message DelegationRequest {
 
   optional int32 sessionduration = 413635428;
 
-  stateType state = 502047895;
+  optional stateType state = 502047895;
 
   optional string updatedtime = 156274570;
 
@@ -2165,7 +2165,7 @@ message GenerateCredentialReportResponse {
 
   optional string description = 115243530;
 
-  ReportStateType state = 502047895;
+  optional ReportStateType state = 502047895;
 
 }
 
@@ -2193,7 +2193,7 @@ message GenerateServiceLastAccessedDetailsRequest {
 
   string arn = 402345373;
 
-  AccessAdvisorUsageGranularityType granularity = 498840280;
+  optional AccessAdvisorUsageGranularityType granularity = 498840280;
 
 }
 
@@ -2329,7 +2329,7 @@ message GetCredentialReportResponse {
 
   optional string generatedtime = 88097636;
 
-  ReportFormatType reportformat = 67774421;
+  optional ReportFormatType reportformat = 67774421;
 
 }
 
@@ -2349,9 +2349,9 @@ message GetDelegationRequestResponse {
 
   DelegationRequest delegationrequest = 331878529;
 
-  permissionCheckResultType permissioncheckresult = 120682140;
+  optional permissionCheckResultType permissioncheckresult = 120682140;
 
-  permissionCheckStatusType permissioncheckstatus = 164847565;
+  optional permissionCheckStatusType permissioncheckstatus = 164847565;
 
 }
 
@@ -2425,7 +2425,7 @@ message GetHumanReadableSummaryResponse {
 
   optional string summarycontent = 116389717;
 
-  summaryStateType summarystate = 124704997;
+  optional summaryStateType summarystate = 124704997;
 
 }
 
@@ -2525,7 +2525,7 @@ message GetOrganizationsAccessReportRequest {
 
   optional int32 maxitems = 506899220;
 
-  sortKeyType sortkey = 407935321;
+  optional sortKeyType sortkey = 407935321;
 
 }
 
@@ -2675,7 +2675,7 @@ message GetSAMLProviderRequest {
 
 message GetSAMLProviderResponse {
 
-  assertionEncryptionModeType assertionencryptionmode = 474560298;
+  optional assertionEncryptionModeType assertionencryptionmode = 474560298;
 
   optional string createdate = 37690514;
 
@@ -2757,7 +2757,7 @@ message GetServiceLastAccessedDetailsResponse {
 
   jobStatusType jobstatus = 108973639;
 
-  AccessAdvisorUsageGranularityType jobtype = 279889397;
+  optional AccessAdvisorUsageGranularityType jobtype = 279889397;
 
   optional string marker = 89353912;
 
@@ -3179,7 +3179,7 @@ message ListDelegationRequestsResponse {
 
 message ListEntitiesForPolicyRequest {
 
-  EntityType entityfilter = 325795861;
+  optional EntityType entityfilter = 325795861;
 
   optional string marker = 89353912;
 
@@ -3189,7 +3189,7 @@ message ListEntitiesForPolicyRequest {
 
   string policyarn = 497985859;
 
-  PolicyUsageType policyusagefilter = 102535305;
+  optional PolicyUsageType policyusagefilter = 102535305;
 
 }
 
@@ -3519,9 +3519,9 @@ message ListPoliciesRequest {
 
   optional string pathprefix = 398040011;
 
-  PolicyUsageType policyusagefilter = 102535305;
+  optional PolicyUsageType policyusagefilter = 102535305;
 
-  policyScopeType scope = 65430924;
+  optional policyScopeType scope = 65430924;
 
 }
 
@@ -3915,7 +3915,7 @@ message ListUsersResponse {
 
 message ListVirtualMFADevicesRequest {
 
-  assignmentStatusType assignmentstatus = 277782963;
+  optional assignmentStatusType assignmentstatus = 277782963;
 
   optional string marker = 89353912;
 
@@ -4249,7 +4249,7 @@ message PolicyGrantingServiceAccess {
 
   optional string entityname = 79565666;
 
-  policyOwnerEntityType entitytype = 327275163;
+  optional policyOwnerEntityType entitytype = 327275163;
 
   optional string policyarn = 497985859;
 
@@ -4281,7 +4281,7 @@ message PolicyIdentifier {
 
   optional string policyarn = 497985859;
 
-  PolicyIdentifierPolicyType policytype = 470619144;
+  optional PolicyIdentifierPolicyType policytype = 470619144;
 
 }
 
@@ -4321,7 +4321,7 @@ message PolicyParameter {
 
   optional string name = 266367751;
 
-  PolicyParameterTypeEnum type = 290836590;
+  optional PolicyParameterTypeEnum type = 290836590;
 
   repeated string values = 223158876;
 
@@ -4737,7 +4737,7 @@ message RoleTemplateVersion {
 
   optional int32 majorversion = 248630895;
 
-  managedByTypeType managedbytype = 197665256;
+  optional managedByTypeType managedbytype = 197665256;
 
   optional string managedbyvalue = 525525461;
 
@@ -5127,7 +5127,7 @@ message Statement {
 
   optional string sourcepolicyid = 364395760;
 
-  PolicySourceType sourcepolicytype = 13742643;
+  optional PolicySourceType sourcepolicytype = 13742643;
 
   Position startposition = 216244189;
 
@@ -5485,7 +5485,7 @@ message UpdateSAMLProviderRequest {
 
   optional string addprivatekey = 205767607;
 
-  assertionEncryptionModeType assertionencryptionmode = 474560298;
+  optional assertionEncryptionModeType assertionencryptionmode = 474560298;
 
   optional string removeprivatekey = 506848260;
 

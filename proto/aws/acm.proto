@@ -235,11 +235,11 @@ message AcmCertificateMetadata {
 
   optional string acmeendpointarn = 94900702;
 
-  CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
+  optional CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
 
   optional string createdat = 258192751;
 
-  CertificateExport exportoption = 19500687;
+  optional CertificateExport exportoption = 19500687;
 
   optional bool exported = 491164947;
 
@@ -249,19 +249,19 @@ message AcmCertificateMetadata {
 
   optional string issuedat = 17449786;
 
-  CertificateManagedBy managedby = 455511232;
+  optional CertificateManagedBy managedby = 455511232;
 
-  RenewalEligibility renewaleligibility = 172871849;
+  optional RenewalEligibility renewaleligibility = 172871849;
 
-  RenewalStatus renewalstatus = 277232086;
+  optional RenewalStatus renewalstatus = 277232086;
 
   optional string revokedat = 63251417;
 
-  CertificateStatus status = 6222352;
+  optional CertificateStatus status = 6222352;
 
-  CertificateType type = 290836590;
+  optional CertificateType type = 290836590;
 
-  ValidationMethod validationmethod = 58092520;
+  optional ValidationMethod validationmethod = 58092520;
 
 }
 
@@ -275,23 +275,23 @@ message AcmCertificateMetadataFilter {
 
   optional string acmeendpointarn = 94900702;
 
-  CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
+  optional CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
 
-  CertificateExport exportoption = 19500687;
+  optional CertificateExport exportoption = 19500687;
 
   optional bool exported = 491164947;
 
   optional bool inuse = 398346234;
 
-  CertificateManagedBy managedby = 455511232;
+  optional CertificateManagedBy managedby = 455511232;
 
-  RenewalStatus renewalstatus = 277232086;
+  optional RenewalStatus renewalstatus = 277232086;
 
-  CertificateStatus status = 6222352;
+  optional CertificateStatus status = 6222352;
 
-  CertificateType type = 290836590;
+  optional CertificateType type = 290836590;
 
-  ValidationMethod validationmethod = 58092520;
+  optional ValidationMethod validationmethod = 58092520;
 
 }
 
@@ -311,7 +311,7 @@ message AcmeAccount {
 
   optional string publickeythumbprint = 265215433;
 
-  AcmeAccountStatus status = 6222352;
+  optional AcmeAccountStatus status = 6222352;
 
 }
 
@@ -343,7 +343,7 @@ message AcmeAccountSummary {
 
   optional string publickeythumbprint = 265215433;
 
-  AcmeAccountStatus status = 6222352;
+  optional AcmeAccountStatus status = 6222352;
 
 }
 
@@ -383,9 +383,9 @@ message AcmeDomainValidation {
 
   PrevalidationDetails prevalidationdetails = 84866774;
 
-  PrevalidationType prevalidationtype = 170164414;
+  optional PrevalidationType prevalidationtype = 170164414;
 
-  AcmeDomainValidationStatus status = 6222352;
+  optional AcmeDomainValidationStatus status = 6222352;
 
   optional string updatedat = 213581206;
 
@@ -447,9 +447,9 @@ message AcmeDomainValidationSummary {
 
   PrevalidationDetails prevalidationdetails = 84866774;
 
-  PrevalidationType prevalidationtype = 170164414;
+  optional PrevalidationType prevalidationtype = 170164414;
 
-  AcmeDomainValidationStatus status = 6222352;
+  optional AcmeDomainValidationStatus status = 6222352;
 
   optional string updatedat = 213581206;
 
@@ -463,13 +463,13 @@ message AcmeEndpoint {
 
   optional string acmeendpointarn = 94900702;
 
-  AcmeAuthorizationBehavior authorizationbehavior = 132109481;
+  optional AcmeAuthorizationBehavior authorizationbehavior = 132109481;
 
   CertificateAuthority certificateauthority = 310340518;
 
   repeated Tag certificatetags = 340578970;
 
-  AcmeContact contact = 330077380;
+  optional AcmeContact contact = 330077380;
 
   optional string createdat = 258192751;
 
@@ -477,7 +477,7 @@ message AcmeEndpoint {
 
   optional string failurereason = 232322142;
 
-  AcmeEndpointStatus status = 6222352;
+  optional AcmeEndpointStatus status = 6222352;
 
   optional string updatedat = 213581206;
 
@@ -505,13 +505,13 @@ message AcmeEndpointSummary {
 
   optional string acmeendpointarn = 94900702;
 
-  AcmeAuthorizationBehavior authorizationbehavior = 132109481;
+  optional AcmeAuthorizationBehavior authorizationbehavior = 132109481;
 
   CertificateAuthority certificateauthority = 310340518;
 
   repeated Tag certificatetags = 340578970;
 
-  AcmeContact contact = 330077380;
+  optional AcmeContact contact = 330077380;
 
   optional string createdat = 258192751;
 
@@ -519,7 +519,7 @@ message AcmeEndpointSummary {
 
   optional string failurereason = 232322142;
 
-  AcmeEndpointStatus status = 6222352;
+  optional AcmeEndpointStatus status = 6222352;
 
   optional string updatedat = 213581206;
 
@@ -607,7 +607,7 @@ message CertificateDetail {
 
   optional string certificateauthorityarn = 266069181;
 
-  CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
+  optional CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
 
   optional string createdat = 258192751;
 
@@ -617,7 +617,7 @@ message CertificateDetail {
 
   repeated ExtendedKeyUsage extendedkeyusages = 531267688;
 
-  FailureReason failurereason = 232322142;
+  optional FailureReason failurereason = 232322142;
 
   optional string importedat = 348649225;
 
@@ -627,11 +627,11 @@ message CertificateDetail {
 
   optional string issuer = 528708823;
 
-  KeyAlgorithm keyalgorithm = 452317818;
+  optional KeyAlgorithm keyalgorithm = 452317818;
 
   repeated KeyUsage keyusages = 345433681;
 
-  CertificateManagedBy managedby = 455511232;
+  optional CertificateManagedBy managedby = 455511232;
 
   optional string notafter = 287678033;
 
@@ -639,11 +639,11 @@ message CertificateDetail {
 
   CertificateOptions options = 356388166;
 
-  RenewalEligibility renewaleligibility = 172871849;
+  optional RenewalEligibility renewaleligibility = 172871849;
 
   RenewalSummary renewalsummary = 125255166;
 
-  RevocationReason revocationreason = 331836358;
+  optional RevocationReason revocationreason = 331836358;
 
   optional string revokedat = 63251417;
 
@@ -651,13 +651,13 @@ message CertificateDetail {
 
   optional string signaturealgorithm = 476410739;
 
-  CertificateStatus status = 6222352;
+  optional CertificateStatus status = 6222352;
 
   optional string subject = 7939312;
 
   repeated string subjectalternativenames = 109998119;
 
-  CertificateType type = 290836590;
+  optional CertificateType type = 290836590;
 
   UpdateSummary updatesummary = 512986845;
 
@@ -739,11 +739,11 @@ message CertificateMetadata {
 
 message CertificateOptions {
 
-  CertificateTransparencyLoggingPreference certificatetransparencyloggingpreference = 414636075;
+  optional CertificateTransparencyLoggingPreference certificatetransparencyloggingpreference = 414636075;
 
-  CertificateExport export = 140724692;
+  optional CertificateExport export = 140724692;
 
-  ValidationMethod validationmethod = 58092520;
+  optional ValidationMethod validationmethod = 58092520;
 
 }
 
@@ -789,13 +789,13 @@ message CertificateSummary {
 
   optional string certificatearn = 92693880;
 
-  CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
+  optional CertificateKeyPairOrigin certificatekeypairorigin = 301725618;
 
   optional string createdat = 258192751;
 
   optional string domainname = 194914027;
 
-  CertificateExport exportoption = 19500687;
+  optional CertificateExport exportoption = 19500687;
 
   optional bool exported = 491164947;
 
@@ -809,25 +809,25 @@ message CertificateSummary {
 
   optional string issuedat = 17449786;
 
-  KeyAlgorithm keyalgorithm = 452317818;
+  optional KeyAlgorithm keyalgorithm = 452317818;
 
   repeated KeyUsageName keyusages = 345433681;
 
-  CertificateManagedBy managedby = 455511232;
+  optional CertificateManagedBy managedby = 455511232;
 
   optional string notafter = 287678033;
 
   optional string notbefore = 459074038;
 
-  RenewalEligibility renewaleligibility = 172871849;
+  optional RenewalEligibility renewaleligibility = 172871849;
 
   optional string revokedat = 63251417;
 
-  CertificateStatus status = 6222352;
+  optional CertificateStatus status = 6222352;
 
   repeated string subjectalternativenamesummaries = 248841448;
 
-  CertificateType type = 290836590;
+  optional CertificateType type = 290836590;
 
 }
 
@@ -919,7 +919,7 @@ message CreateAcmeEndpointRequest {
 
   repeated Tag certificatetags = 340578970;
 
-  AcmeContact contact = 330077380;
+  optional AcmeContact contact = 330077380;
 
   optional string idempotencytoken = 56833648;
 
@@ -1179,11 +1179,11 @@ message DnsValidationChallenge {
 
 message DomainScope {
 
-  DomainScopeOption exactdomain = 75573201;
+  optional DomainScopeOption exactdomain = 75573201;
 
-  DomainScopeOption subdomains = 260450007;
+  optional DomainScopeOption subdomains = 260450007;
 
-  DomainScopeOption wildcards = 452219829;
+  optional DomainScopeOption wildcards = 452219829;
 
 }
 
@@ -1225,9 +1225,9 @@ message DomainValidation {
 
   repeated string validationemails = 375615664;
 
-  ValidationMethod validationmethod = 58092520;
+  optional ValidationMethod validationmethod = 58092520;
 
-  DomainStatus validationstatus = 426907749;
+  optional DomainStatus validationstatus = 426907749;
 
 }
 
@@ -1237,9 +1237,9 @@ message DomainValidation {
 
 message DomainValidationMethodUpdateSummary {
 
-  ValidationMethod from = 410269078;
+  optional ValidationMethod from = 410269078;
 
-  ValidationMethod to = 32872005;
+  optional ValidationMethod to = 32872005;
 
 }
 
@@ -1331,7 +1331,7 @@ message ExportCertificateResponse {
 
 message ExtendedKeyUsage {
 
-  ExtendedKeyUsageName name = 266367751;
+  optional ExtendedKeyUsageName name = 266367751;
 
   optional string oid = 504527812;
 
@@ -1375,7 +1375,7 @@ message FailureDetails {
 
   optional string message = 235854213;
 
-  AcmeDomainValidationFailureReason reason = 20005178;
+  optional AcmeDomainValidationFailureReason reason = 20005178;
 
 }
 
@@ -1425,7 +1425,7 @@ enum FailureReason {
 
 message Filters {
 
-  CertificateExport exportoption = 442051119;
+  optional CertificateExport exportoption = 442051119;
 
   repeated ExtendedKeyUsageName extendedkeyusage = 420785679;
 
@@ -1433,7 +1433,7 @@ message Filters {
 
   repeated KeyUsageName keyusage = 502227108;
 
-  CertificateManagedBy managedby = 401567328;
+  optional CertificateManagedBy managedby = 401567328;
 
 }
 
@@ -1635,7 +1635,7 @@ enum KeyAlgorithm {
 
 message KeyUsage {
 
-  KeyUsageName name = 266367751;
+  optional KeyUsageName name = 266367751;
 
 }
 
@@ -1799,9 +1799,9 @@ message ListCertificatesRequest {
 
   optional string nexttoken = 216957566;
 
-  SortBy sortby = 186052369;
+  optional SortBy sortby = 186052369;
 
-  SortOrder sortorder = 274231684;
+  optional SortOrder sortorder = 274231684;
 
 }
 
@@ -1979,7 +1979,7 @@ message RenewalSummary {
 
   RenewalStatus renewalstatus = 277232086;
 
-  FailureReason renewalstatusreason = 206499082;
+  optional FailureReason renewalstatusreason = 206499082;
 
   string updatedat = 213581206;
 
@@ -1997,9 +1997,9 @@ message RequestCertificateRequest {
 
   optional string idempotencytoken = 56833648;
 
-  KeyAlgorithm keyalgorithm = 452317818;
+  optional KeyAlgorithm keyalgorithm = 452317818;
 
-  CertificateManagedBy managedby = 455511232;
+  optional CertificateManagedBy managedby = 455511232;
 
   CertificateOptions options = 356388166;
 
@@ -2007,7 +2007,7 @@ message RequestCertificateRequest {
 
   repeated Tag tags = 381526209;
 
-  ValidationMethod validationmethod = 58092520;
+  optional ValidationMethod validationmethod = 58092520;
 
 }
 
@@ -2149,9 +2149,9 @@ message SearchCertificatesRequest {
 
   optional string nexttoken = 216957566;
 
-  SearchCertificatesSortBy sortby = 186052369;
+  optional SearchCertificatesSortBy sortby = 186052369;
 
-  SearchCertificatesSortOrder sortorder = 274231684;
+  optional SearchCertificatesSortOrder sortorder = 274231684;
 
 }
 
@@ -2387,11 +2387,11 @@ message UpdateAcmeEndpointRequest {
 
   string acmeendpointarn = 94900702;
 
-  AcmeAuthorizationBehavior authorizationbehavior = 132109481;
+  optional AcmeAuthorizationBehavior authorizationbehavior = 132109481;
 
   CertificateAuthority certificateauthority = 310340518;
 
-  AcmeContact contact = 330077380;
+  optional AcmeContact contact = 330077380;
 
 }
 
@@ -2427,9 +2427,9 @@ message UpdateSummary {
 
   optional string requestedat = 392290807;
 
-  UpdateStatus status = 6222352;
+  optional UpdateStatus status = 6222352;
 
-  UpdateType type = 290836590;
+  optional UpdateType type = 290836590;
 
   optional string updatedat = 213581206;
 
@@ -2463,9 +2463,9 @@ message ValidationConfiguration {
 
   ValidationChallenge validationchallenge = 468787740;
 
-  ValidationMethod validationmethod = 58092520;
+  optional ValidationMethod validationmethod = 58092520;
 
-  DomainStatus validationstatus = 426907749;
+  optional DomainStatus validationstatus = 426907749;
 
 }
 
@@ -2497,11 +2497,11 @@ enum ValidationMethod {
 
 message X509AttributeFilter {
 
-  ExtendedKeyUsageName extendedkeyusage = 135993903;
+  optional ExtendedKeyUsageName extendedkeyusage = 135993903;
 
-  KeyAlgorithm keyalgorithm = 452317818;
+  optional KeyAlgorithm keyalgorithm = 452317818;
 
-  KeyUsageName keyusage = 357216772;
+  optional KeyUsageName keyusage = 357216772;
 
   TimestampRange notafter = 287678033;
 
@@ -2525,7 +2525,7 @@ message X509Attributes {
 
   DistinguishedName issuer = 528708823;
 
-  KeyAlgorithm keyalgorithm = 452317818;
+  optional KeyAlgorithm keyalgorithm = 452317818;
 
   repeated KeyUsageName keyusages = 345433681;
 

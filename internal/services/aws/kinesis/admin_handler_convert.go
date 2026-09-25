@@ -4,6 +4,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/utils/timeutils"
 
+	"vorpalstacks/internal/common/pbutil"
 	"vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/kinesis"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
@@ -50,7 +51,7 @@ func toPbStreamDescription(stream *kinesisstore.Stream, shards []*kinesisstore.S
 	}
 
 	if stream.EncryptionType != "" {
-		sd.Encryptiontype = toPbEncryptionType(stream.EncryptionType)
+		sd.Encryptiontype = pbutil.Enum(toPbEncryptionType(stream.EncryptionType))
 		sd.Keyid = proto.String(stream.KeyID)
 	}
 

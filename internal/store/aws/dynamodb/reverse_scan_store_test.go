@@ -17,7 +17,7 @@ func newReverseQueryFixture(t *testing.T) *DynamoDBStore {
 	}
 	t.Cleanup(func() { st.Close() })
 
-	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	gsi := &GlobalSecondaryIndex{
 		IndexName: "gsi",
 		KeySchema: []*KeySchemaElement{
@@ -367,5 +367,51 @@ func TestPaginatedScansDeliverEveryItem(t *testing.T) {
 	}
 	if len(reverseSKs) != len(wantReverse) {
 		t.Fatalf("reverse partition walk = %v, want %v", reverseSKs, wantReverse)
+	}
+}
+
+// TestTxnWalksDeliverThroughTheSharedCore pins the transaction walks'
+// delivery semantics on the shared walk core: Scan delivers every item of
+// the table in key order, and ScanByPartitionKey delivers exactly the
+// items of one partition — the encoded partition component is prefix-free,
+// so a same-prefixed foreign partition cannot leak into the page.
+func TestTxnWalksDeliverThroughTheSharedCore(t *testing.T) {
+	store := newReverseQueryFixture(t)
+	putReverseFixtureItem(t, store, "k1", "01")
+	putReverseFixtureItem(t, store, "k2", "02")
+	putReverseFixtureItem(t, store, "k3", "03")
+
+	var scanned []string
+	err := store.View(t.Context(), func(txn *DynamoDBTxn) error {
+		return txn.Scan("IdxTbl", func(item *Item) error {
+			scanned = append(scanned, *item.Key["id"].S+"/"+*item.Key["sk"].S)
+			return nil
+		})
+	})
+	if err != nil {
+		t.Fatalf("txn scan: %v", err)
+	}
+	want := []string{"k1/01", "k2/02", "k3/03"}
+	if len(scanned) != len(want) {
+		t.Fatalf("txn scan delivered %v, want %v", scanned, want)
+	}
+	for i, key := range want {
+		if scanned[i] != key {
+			t.Fatalf("txn scan delivered %v, want %v", scanned, want)
+		}
+	}
+
+	var partition []string
+	err = store.View(t.Context(), func(txn *DynamoDBTxn) error {
+		return txn.ScanByPartitionKey("IdxTbl", EncodeKeyValue(strAttr("k2")), func(item *Item) error {
+			partition = append(partition, *item.Key["sk"].S)
+			return nil
+		})
+	})
+	if err != nil {
+		t.Fatalf("txn partition scan: %v", err)
+	}
+	if len(partition) != 1 || partition[0] != "02" {
+		t.Fatalf("txn partition scan delivered %v, want [02]", partition)
 	}
 }

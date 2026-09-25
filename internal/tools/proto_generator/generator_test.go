@@ -120,6 +120,8 @@ func TestFieldIsOptional(t *testing.T) {
 		{"repeated message", FieldData{Type: "repeated Tag"}, false},
 		{"map field", FieldData{Type: "map<string, string>"}, false},
 		{"message reference", FieldData{Type: "SomeShape"}, false},
+		{"non-required enum reference", FieldData{Type: "BillingMode", IsEnumRef: true}, true},
+		{"required enum reference", FieldData{Type: "BillingMode", IsEnumRef: true, IsRequired: true}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

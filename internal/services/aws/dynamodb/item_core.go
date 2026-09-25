@@ -21,21 +21,45 @@ type ConditionChecker func(existing *dbstore.Item, isNotFound bool) error
 
 // conditionSpec carries a condition expression and its substitution maps —
 // the parsed form the item write Cores receive from both planes. An empty
-// Expr means the write is unconditional.
+// Expr with no tree means the write is unconditional. The legacy
+// translators set tree alone: they build the typed condition structurally
+// from already-validated wire members, so no expression string exists to
+// parse.
 type conditionSpec struct {
 	Expr   string
 	Names  map[string]string
 	Values map[string]*dbstore.AttributeValue
+	tree   condNode
+}
+
+// compile returns the validated condition tree for the spec: the
+// structurally built tree when one is present, the parsed expression
+// otherwise. A spec with neither form carries no condition.
+func (s conditionSpec) compile() (*compiledCondition, error) {
+	if s.tree != nil {
+		return &compiledCondition{root: s.tree}, nil
+	}
+	if s.Expr == "" {
+		return nil, nil
+	}
+	return compileConditionExpression(s.Expr, s.Names, s.Values)
 }
 
 // buildConditionChecker turns a condition specification into the
-// ConditionChecker a write Core evaluates inside its transaction. A missing
-// item is evaluated against a synthetic empty item carrying only the key, so
-// attribute_not_exists conditions behave as documented. A nil Expr yields a
-// nil checker — unconditional write.
-func buildConditionChecker(tableName string, key map[string]*dbstore.AttributeValue, cond conditionSpec) ConditionChecker {
-	if cond.Expr == "" {
-		return nil
+// ConditionChecker a write Core evaluates inside its transaction. The
+// expression is parsed and validated here, once per request — a malformed
+// condition or an undefined substitution is a ValidationException before
+// any write runs. A missing item is evaluated against a synthetic empty
+// item carrying only the key, so attribute_not_exists conditions behave as
+// documented. A spec with no condition yields a nil checker —
+// unconditional write.
+func buildConditionChecker(tableName string, key map[string]*dbstore.AttributeValue, cond conditionSpec) (ConditionChecker, error) {
+	compiled, err := cond.compile()
+	if err != nil {
+		return nil, err
+	}
+	if compiled == nil {
+		return nil, nil
 	}
 	return func(existing *dbstore.Item, isNotFound bool) error {
 		evalItem := existing
@@ -46,23 +70,34 @@ func buildConditionChecker(tableName string, key map[string]*dbstore.AttributeVa
 				Attributes: make(map[string]*dbstore.AttributeValue),
 			}
 		}
-		met, err := evaluateConditionExpression(evalItem, cond.Expr, cond.Names, cond.Values)
-		if err != nil {
-			return err
-		}
-		if !met {
+		if !compiled.matches(evalItem) {
 			return ErrConditionalCheckFailed
 		}
 		return nil
-	}
+	}, nil
 }
 
-// validateReturnValuesNoneAllOld rejects ReturnValues other than NONE and
-// ALL_OLD — the only values PutItem and DeleteItem recognise (model
-// ReturnValues member: "PutItem does not recognize any values other than
-// NONE or ALL_OLD"). An empty value means the parameter was omitted.
-func validateReturnValuesNoneAllOld(returnValues string) bool {
-	return returnValues == "" || returnValues == "NONE" || returnValues == "ALL_OLD"
+// validateReturnValuesNoneAllOld rejects ReturnValues-family members whose
+// value is neither NONE nor ALL_OLD — the value set two wire members share:
+// the ReturnValues member PutItem and DeleteItem recognise (model ReturnValues
+// member: "PutItem does not recognize any values other than NONE or ALL_OLD")
+// and the ReturnValuesOnConditionCheckFailure enum, whose declared values are
+// exactly NONE and ALL_OLD. An empty value means the parameter was omitted.
+func validateReturnValuesNoneAllOld(v string) bool {
+	return v == "" || v == "NONE" || v == "ALL_OLD"
+}
+
+// conditionalCheckFailedError answers a failed condition check for a write
+// Core: when the request asked for the old image on failure
+// (ReturnValuesOnConditionCheckFailure ALL_OLD) and an item exists at the
+// addressed key, the exception carries that item (model exception shape:
+// members message and Item, the Item documented as "Item which caused the
+// ConditionalCheckFailedException"); otherwise it is the plain sentinel.
+func conditionalCheckFailedError(returnOnFailure string, existing *dbstore.Item) error {
+	if returnOnFailure == "ALL_OLD" && existing != nil {
+		return NewConditionalCheckFailedError(buildItemResponse(existing.Attributes))
+	}
+	return ErrConditionalCheckFailed
 }
 
 // ---------------------------------------------------------------------------
@@ -74,20 +109,42 @@ func validateReturnValuesNoneAllOld(returnValues string) bool {
 // delegate to these functions to ensure identical side-effect behaviour.
 // ---------------------------------------------------------------------------
 
+// GetItemCoreResult carries the read item and the read capacity it
+// consumes (the full stored item's size rounded up to the 4 KB
+// granularity, halved for an eventually consistent read), so the response
+// planes report the charge without touching the store's size algorithm.
+type GetItemCoreResult struct {
+	Item      *dbstore.Item
+	ReadUnits float64
+}
+
 // getItemCore validates the key and retrieves a single item by primary key.
 // It returns dbstore.ItemNotFound when the item does not exist.
-func (s *DynamoDBService) getItemCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, table *dbstore.Table, key map[string]*dbstore.AttributeValue) (*dbstore.Item, error) {
+func (s *DynamoDBService) getItemCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, table *dbstore.Table, key map[string]*dbstore.AttributeValue, consistentReadRaw interface{}, returnConsumedCapacity string) (*GetItemCoreResult, error) {
+	consistentRead, crErr := validateBoolValue(consistentReadRaw, false)
+	if crErr != nil {
+		return nil, crErr
+	}
+	if err := validateReturnConsumedCapacityValue(returnConsumedCapacity); err != nil {
+		return nil, err
+	}
 	if !validateKeyAttributeValue(key) {
 		return nil, ErrInvalidParameter
 	}
 	if err := validateKeyTypes(table, key); err != nil {
 		return nil, err
 	}
+	if err := validateKeySchemaMembership(table, key); err != nil {
+		return nil, err
+	}
 	item, err := store.Items().Get(table.Name, key)
 	if err == nil {
 		s.recordContributorReads(ctx, store, table.Name, []map[string]*dbstore.AttributeValue{key})
+		// The charge follows the item's full size as read, before any
+		// projection narrows the returned attributes.
+		return &GetItemCoreResult{Item: item, ReadUnits: itemReadUnits(dbstore.CalculateItemSize(item.Attributes), consistentRead)}, nil
 	}
-	return item, err
+	return nil, err
 }
 
 // recordContributorReads counts one read event per key in the contributor
@@ -135,12 +192,23 @@ type PutItemCoreInput struct {
 	Item         map[string]*dbstore.AttributeValue
 	Condition    conditionSpec
 	ReturnValues string
+	// ReturnConsumedCapacity and ReturnItemCollectionMetrics are the
+	// response-shaping members as extracted; the core's validation is the
+	// single enum check — an unknown value rejects the request before any
+	// write runs, and the handler shapes its response from the same values.
+	ReturnConsumedCapacity              string
+	ReturnItemCollectionMetrics         string
+	ReturnValuesOnConditionCheckFailure string
 }
 
 // PutItemCoreResult holds the stored item and the item it overwrote.
 type PutItemCoreResult struct {
 	StoredItem *dbstore.Item
 	OldItem    *dbstore.Item
+	// WriteUnits is the write capacity the stored item consumes (its size
+	// rounded up to the 1 KB granularity), for the ConsumedCapacity
+	// response.
+	WriteUnits float64
 }
 
 // putItemCore validates the write, then creates or replaces an item,
@@ -154,9 +222,18 @@ func (s *DynamoDBService) putItemCore(
 	region string,
 	in PutItemCoreInput,
 ) (*PutItemCoreResult, error) {
+	if err := validateReturnConsumedCapacityValue(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+	if err := validateItemCollectionMetricsValue(in.ReturnItemCollectionMetrics); err != nil {
+		return nil, err
+	}
 	table := in.Table
 
 	if !validateReturnValuesNoneAllOld(in.ReturnValues) {
+		return nil, ErrInvalidParameter
+	}
+	if !validateReturnValuesNoneAllOld(in.ReturnValuesOnConditionCheckFailure) {
 		return nil, ErrInvalidParameter
 	}
 	if itemSize := dbstore.CalculateItemSize(in.Item); itemSize > dbstore.MaxItemSizeBytes {
@@ -175,7 +252,22 @@ func (s *DynamoDBService) putItemCore(
 		return nil, err
 	}
 	item := in.Item
-	conditionChecker := buildConditionChecker(table.Name, key, in.Condition)
+	conditionChecker, condErr := buildConditionChecker(table.Name, key, in.Condition)
+	if condErr != nil {
+		return nil, condErr
+	}
+
+	// The read-modify-write transaction serialises against in-flight
+	// TransactWriteItems on the same item: the storage engine's
+	// transactions read committed state and commit last-writer-wins, so
+	// without this coordination both writes would commit and one would be
+	// silently lost. Concurrent single-item writes never conflict — they
+	// stay legal last-writer-wins.
+	singleLockKey := itemLockKey(region, table.Name, key)
+	if _, ok := tryLockItems(itemLockModeItem, []string{singleLockKey}); !ok {
+		return nil, ErrTransactionConflict
+	}
+	defer unlockItems(itemLockModeItem, []string{singleLockKey})
 
 	var storedItem, oldItem *dbstore.Item
 	var isNew bool
@@ -194,6 +286,9 @@ func (s *DynamoDBService) putItemCore(
 
 		if conditionChecker != nil {
 			if condErr := conditionChecker(existingItem, isNew); condErr != nil {
+				if errors.Is(condErr, ErrConditionalCheckFailed) {
+					return conditionalCheckFailedError(in.ReturnValuesOnConditionCheckFailure, existingItem)
+				}
 				return condErr
 			}
 		}
@@ -211,7 +306,9 @@ func (s *DynamoDBService) putItemCore(
 			return err
 		}
 
-		s.captureStreamChangeTxn(txn, store, table, streamEventForWrite(false, isNew), key, storedItem.Attributes, oldItemAttributes(oldItem))
+		if err := s.captureStreamChangeTxn(txn, store, table, streamEventForWrite(false, isNew), key, storedItem.Attributes, oldItemAttributes(oldItem)); err != nil {
+			return err
+		}
 
 		return nil
 	})
@@ -221,7 +318,7 @@ func (s *DynamoDBService) putItemCore(
 
 	s.emitChangePropagation(store, region, table, streamEventForWrite(false, isNew), key, storedItem.Attributes, oldItemAttributes(oldItem), s.replicaPutOp(table, key, item))
 
-	return &PutItemCoreResult{StoredItem: storedItem, OldItem: oldItem}, nil
+	return &PutItemCoreResult{StoredItem: storedItem, OldItem: oldItem, WriteUnits: itemWriteUnits(dbstore.CalculateItemSize(storedItem.Attributes))}, nil
 }
 
 // DeleteItemCoreInput is the service-layer DTO for DeleteItem on both the
@@ -231,12 +328,23 @@ type DeleteItemCoreInput struct {
 	Key          map[string]*dbstore.AttributeValue
 	Condition    conditionSpec
 	ReturnValues string
+	// ReturnConsumedCapacity and ReturnItemCollectionMetrics are the
+	// response-shaping members as extracted; the core's validation is the
+	// single enum check — an unknown value rejects the request before any
+	// write runs, and the handler shapes its response from the same values.
+	ReturnConsumedCapacity              string
+	ReturnItemCollectionMetrics         string
+	ReturnValuesOnConditionCheckFailure string
 }
 
 // DeleteItemCoreResult holds the item that was removed (nil when the key did
 // not exist).
 type DeleteItemCoreResult struct {
 	OldItem *dbstore.Item
+	// WriteUnits is the write capacity the deletion consumes (the deleted
+	// item's size rounded up to the 1 KB granularity, the one-unit minimum
+	// when nothing existed), for the ConsumedCapacity response.
+	WriteUnits float64
 }
 
 // deleteItemCore validates the key, then removes the item by primary key,
@@ -250,9 +358,18 @@ func (s *DynamoDBService) deleteItemCore(
 	region string,
 	in DeleteItemCoreInput,
 ) (*DeleteItemCoreResult, error) {
+	if err := validateReturnConsumedCapacityValue(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+	if err := validateItemCollectionMetricsValue(in.ReturnItemCollectionMetrics); err != nil {
+		return nil, err
+	}
 	table := in.Table
 
 	if !validateReturnValuesNoneAllOld(in.ReturnValues) {
+		return nil, ErrInvalidParameter
+	}
+	if !validateReturnValuesNoneAllOld(in.ReturnValuesOnConditionCheckFailure) {
 		return nil, ErrInvalidParameter
 	}
 	if !validateKeyAttributeValue(in.Key) {
@@ -261,8 +378,23 @@ func (s *DynamoDBService) deleteItemCore(
 	if err := validateKeyTypes(table, in.Key); err != nil {
 		return nil, err
 	}
+	if err := validateKeySchemaMembership(table, in.Key); err != nil {
+		return nil, err
+	}
 	key := in.Key
-	conditionChecker := buildConditionChecker(table.Name, key, in.Condition)
+	conditionChecker, condErr := buildConditionChecker(table.Name, key, in.Condition)
+	if condErr != nil {
+		return nil, condErr
+	}
+
+	// Serialise the read-modify-write against in-flight TransactWriteItems
+	// on the same item (see putItemCore for the storage-level rationale);
+	// concurrent single-item writes never conflict.
+	singleLockKey := itemLockKey(region, table.Name, key)
+	if _, ok := tryLockItems(itemLockModeItem, []string{singleLockKey}); !ok {
+		return nil, ErrTransactionConflict
+	}
+	defer unlockItems(itemLockModeItem, []string{singleLockKey})
 
 	var oldItem *dbstore.Item
 	err := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
@@ -281,6 +413,9 @@ func (s *DynamoDBService) deleteItemCore(
 
 		if conditionChecker != nil {
 			if condErr := conditionChecker(existingItem, false); condErr != nil {
+				if errors.Is(condErr, ErrConditionalCheckFailed) {
+					return conditionalCheckFailedError(in.ReturnValuesOnConditionCheckFailure, existingItem)
+				}
 				return condErr
 			}
 		}
@@ -291,7 +426,9 @@ func (s *DynamoDBService) deleteItemCore(
 			if err := txn.DeleteItemWrite(table.Name, key, oldItem, true, dbstore.CalculateItemSize(oldItem.Attributes)); err != nil {
 				return err
 			}
-			s.captureStreamChangeTxn(txn, store, table, dbstore.StreamEventRemove, key, nil, oldItem.Attributes)
+			if err := s.captureStreamChangeTxn(txn, store, table, dbstore.StreamEventRemove, key, nil, oldItem.Attributes); err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -306,7 +443,13 @@ func (s *DynamoDBService) deleteItemCore(
 
 	s.replicateToGlobalTableReplicas(store, region, table.Name, s.replicaDeleteOp(table, key))
 
-	return &DeleteItemCoreResult{OldItem: oldItem}, nil
+	// The write charge follows the deleted item's size; deleting a missing
+	// key still consumes the one-unit minimum.
+	var deletedSize int64
+	if oldItem != nil {
+		deletedSize = dbstore.CalculateItemSize(oldItem.Attributes)
+	}
+	return &DeleteItemCoreResult{OldItem: oldItem, WriteUnits: itemWriteUnits(deletedSize)}, nil
 }
 
 // isItemNotFound reports whether the error is the store's item-not-found
@@ -425,6 +568,13 @@ type UpdateItemInput struct {
 	ExprAttrNames  map[string]string
 	ExprAttrValues map[string]*dbstore.AttributeValue
 	ReturnValues   string
+	// ReturnConsumedCapacity and ReturnItemCollectionMetrics are the
+	// response-shaping members as extracted; the core's validation is the
+	// single enum check — an unknown value rejects the request before any
+	// write runs, and the handler shapes its response from the same values.
+	ReturnConsumedCapacity              string
+	ReturnItemCollectionMetrics         string
+	ReturnValuesOnConditionCheckFailure string
 }
 
 // UpdateItemResult holds the output of updateItemCore for response formatting.
@@ -433,6 +583,10 @@ type UpdateItemResult struct {
 	OldItem          *dbstore.Item
 	UpdatedAttrNames []string
 	WasNewItem       bool
+	// WriteUnits is the write capacity the stored item consumes (its size
+	// rounded up to the 1 KB granularity), for the ConsumedCapacity
+	// response.
+	WriteUnits float64
 }
 
 // updateItemCore is the single entry point for item updates shared by the
@@ -448,12 +602,21 @@ func (s *DynamoDBService) updateItemCore(
 	table *dbstore.Table,
 	in UpdateItemInput,
 ) (*UpdateItemResult, error) {
+	if err := validateReturnConsumedCapacityValue(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+	if err := validateItemCollectionMetricsValue(in.ReturnItemCollectionMetrics); err != nil {
+		return nil, err
+	}
 	tableName := table.Name
 
 	if !validateKeyAttributeValue(in.Key) {
 		return nil, ErrInvalidParameter
 	}
 	if err := validateKeyTypes(table, in.Key); err != nil {
+		return nil, err
+	}
+	if err := validateKeySchemaMembership(table, in.Key); err != nil {
 		return nil, err
 	}
 	// UpdateExpression and the legacy AttributeUpdates member are mutually
@@ -468,17 +631,32 @@ func (s *DynamoDBService) updateItemCore(
 	default:
 		return nil, ErrInvalidParameter
 	}
+	if !validateReturnValuesNoneAllOld(in.ReturnValuesOnConditionCheckFailure) {
+		return nil, ErrInvalidParameter
+	}
 
 	var oldItem *dbstore.Item
 	var storedItem *dbstore.Item
 	var updatedAttrNames []string
 	var oldItemSize int64
 	var wasNewItem bool
-	conditionChecker := buildConditionChecker(tableName, in.Key, conditionSpec{
+	conditionChecker, condErr := buildConditionChecker(tableName, in.Key, conditionSpec{
 		Expr:   in.ConditionExpr,
 		Names:  in.ExprAttrNames,
 		Values: in.ExprAttrValues,
 	})
+	if condErr != nil {
+		return nil, condErr
+	}
+
+	// Serialise the read-modify-write against in-flight TransactWriteItems
+	// on the same item (see putItemCore for the storage-level rationale);
+	// concurrent single-item writes never conflict.
+	singleLockKey := itemLockKey(region, tableName, in.Key)
+	if _, ok := tryLockItems(itemLockModeItem, []string{singleLockKey}); !ok {
+		return nil, ErrTransactionConflict
+	}
+	defer unlockItems(itemLockModeItem, []string{singleLockKey})
 
 	err := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
 		existingItem, err := txn.GetItem(tableName, in.Key)
@@ -509,6 +687,9 @@ func (s *DynamoDBService) updateItemCore(
 			oldItemSize = dbstore.CalculateItemSize(item.Attributes)
 			if conditionChecker != nil {
 				if condErr := conditionChecker(item, false); condErr != nil {
+					if errors.Is(condErr, ErrConditionalCheckFailed) {
+						return conditionalCheckFailedError(in.ReturnValuesOnConditionCheckFailure, item)
+					}
 					return condErr
 				}
 			}
@@ -532,16 +713,16 @@ func (s *DynamoDBService) updateItemCore(
 		}
 
 		if in.UpdateExpr != "" {
-			paths := extractUpdatedPaths(in.UpdateExpr, in.ExprAttrNames)
+			paths, exprErr := extractUpdatedPaths(in.UpdateExpr, in.ExprAttrNames)
+			if exprErr != nil {
+				return exprErr
+			}
 			if err := validateNotKeyAttributes(table, paths); err != nil {
 				return err
 			}
 			var err error
 			updatedAttrNames, err = applyUpdateExpressionWithTracking(item.Attributes, in.UpdateExpr, in.ExprAttrNames, in.ExprAttrValues)
 			if err != nil {
-				if errors.Is(err, ErrTypeMismatch) {
-					return ErrInvalidParameter
-				}
 				return err
 			}
 		} else if in.AttrUpdates != nil {
@@ -575,7 +756,9 @@ func (s *DynamoDBService) updateItemCore(
 		}
 
 		eventName := streamEventForWrite(false, wasNewItem)
-		s.captureStreamChangeTxn(txn, store, table, eventName, in.Key, storedItem.Attributes, oldItemAttributes(oldItem))
+		if err := s.captureStreamChangeTxn(txn, store, table, eventName, in.Key, storedItem.Attributes, oldItemAttributes(oldItem)); err != nil {
+			return err
+		}
 
 		return nil
 	})
@@ -590,5 +773,6 @@ func (s *DynamoDBService) updateItemCore(
 		OldItem:          oldItem,
 		UpdatedAttrNames: updatedAttrNames,
 		WasNewItem:       wasNewItem,
+		WriteUnits:       itemWriteUnits(dbstore.CalculateItemSize(storedItem.Attributes)),
 	}, nil
 }

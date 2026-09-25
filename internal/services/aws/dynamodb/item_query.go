@@ -8,7 +8,7 @@ import (
 
 // Query retrieves items based on their key condition expression.
 func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.queryCore(ctx, reqCtx, queryInput{Parameters: req.Parameters})
+	return s.queryCore(ctx, reqCtx, req.Parameters)
 }
 
 // Scan retrieves all items in the specified table or index.
@@ -38,10 +38,18 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 		resp["LastEvaluatedKey"] = buildItemResponse(result.LastEvaluatedKey)
 	}
 
-	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)
+	// scanCore has already validated the enum; the read here only shapes
+	// the response.
+	returnConsumedCapacity := request.GetStringParam(req.Parameters, "ReturnConsumedCapacity")
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
-		isLSI := result.IndexName != "" && !isGSI(table, result.IndexName)
-		resp["ConsumedCapacity"] = buildConsumedCapacityResponseWithIndex(table.Name, result.IndexName, result.CapacityUnits, isLSI)
+		// TOTAL reports only the aggregate; INDEXES adds the per-table and
+		// per-index breakdown.
+		if returnConsumedCapacity == "INDEXES" {
+			isLSI := result.IndexName != "" && !isGSI(table, result.IndexName)
+			resp["ConsumedCapacity"] = buildConsumedCapacityResponseWithIndex(table.Name, result.IndexName, result.CapacityUnits, isLSI)
+		} else {
+			resp["ConsumedCapacity"] = buildConsumedCapacityResponse(table.Name, result.CapacityUnits)
+		}
 	}
 
 	return resp, nil

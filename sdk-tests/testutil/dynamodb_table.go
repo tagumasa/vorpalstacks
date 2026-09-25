@@ -475,7 +475,6 @@ func (r *TestRunner) dynamoDBTableEdgeCaseTests(ctx context.Context, client *dyn
 			TableName: aws.String(sseTable),
 			SSESpecification: &types.SSESpecification{
 				Enabled: aws.Bool(true),
-				SSEType: types.SSETypeAes256,
 			},
 		})
 		if err != nil {
@@ -489,6 +488,9 @@ func (r *TestRunner) dynamoDBTableEdgeCaseTests(ctx context.Context, client *dyn
 		}
 		if resp.TableDescription.SSEDescription.Status != types.SSEStatusEnabled {
 			return fmt.Errorf("expected SSEStatus=ENABLED, got %v", resp.TableDescription.SSEDescription.Status)
+		}
+		if resp.TableDescription.SSEDescription.SSEType != types.SSETypeKms {
+			return fmt.Errorf("expected SSEType=KMS, got %v", resp.TableDescription.SSEDescription.SSEType)
 		}
 		return nil
 	}))
@@ -685,7 +687,6 @@ func (r *TestRunner) dynamoDBTableEdgeCaseTests(ctx context.Context, client *dyn
 			BillingMode: types.BillingModePayPerRequest,
 			SSESpecification: &types.SSESpecification{
 				Enabled: aws.Bool(true),
-				SSEType: types.SSETypeAes256,
 			},
 		})
 		if err != nil {
@@ -702,8 +703,8 @@ func (r *TestRunner) dynamoDBTableEdgeCaseTests(ctx context.Context, client *dyn
 		if resp.TableDescription.SSEDescription.Status != types.SSEStatusEnabled {
 			return fmt.Errorf("expected SSEStatus=ENABLED, got %v", resp.TableDescription.SSEDescription.Status)
 		}
-		if resp.TableDescription.SSEDescription.SSEType != types.SSETypeAes256 {
-			return fmt.Errorf("expected SSEType=AES256, got %v", resp.TableDescription.SSEDescription.SSEType)
+		if resp.TableDescription.SSEDescription.SSEType != types.SSETypeKms {
+			return fmt.Errorf("expected SSEType=KMS, got %v", resp.TableDescription.SSEDescription.SSEType)
 		}
 		return nil
 	}))

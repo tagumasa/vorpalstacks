@@ -1839,7 +1839,7 @@ type Authorizer struct {
 	Identityvalidationexpression *string                `protobuf:"bytes,227211199,opt,name=identityvalidationexpression,proto3,oneof" json:"identityvalidationexpression,omitempty"`
 	Name                         *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Providerarns                 []string               `protobuf:"bytes,301486689,rep,name=providerarns,proto3" json:"providerarns,omitempty"`
-	Type                         AuthorizerType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.AuthorizerType" json:"type,omitempty"`
+	Type                         *AuthorizerType        `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.AuthorizerType,oneof" json:"type,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -1938,8 +1938,8 @@ func (x *Authorizer) GetProviderarns() []string {
 }
 
 func (x *Authorizer) GetType() AuthorizerType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return AuthorizerType_AUTHORIZER_TYPE_REQUEST
 }
@@ -2695,7 +2695,7 @@ func (x *CreateBasePathMappingRequest) GetStage() string {
 type CreateDeploymentRequest struct {
 	state               protoimpl.MessageState    `protogen:"open.v1"`
 	Cacheclusterenabled *bool                     `protobuf:"varint,63967991,opt,name=cacheclusterenabled,proto3,oneof" json:"cacheclusterenabled,omitempty"`
-	Cacheclustersize    CacheClusterSize          `protobuf:"varint,232189861,opt,name=cacheclustersize,proto3,enum=apigateway.CacheClusterSize" json:"cacheclustersize,omitempty"`
+	Cacheclustersize    *CacheClusterSize         `protobuf:"varint,232189861,opt,name=cacheclustersize,proto3,enum=apigateway.CacheClusterSize,oneof" json:"cacheclustersize,omitempty"`
 	Canarysettings      *DeploymentCanarySettings `protobuf:"bytes,285544261,opt,name=canarysettings,proto3" json:"canarysettings,omitempty"`
 	Description         *string                   `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Restapiid           string                    `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
@@ -2745,8 +2745,8 @@ func (x *CreateDeploymentRequest) GetCacheclusterenabled() bool {
 }
 
 func (x *CreateDeploymentRequest) GetCacheclustersize() CacheClusterSize {
-	if x != nil {
-		return x.Cacheclustersize
+	if x != nil && x.Cacheclustersize != nil {
+		return *x.Cacheclustersize
 	}
 	return CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_237_GB
 }
@@ -3004,15 +3004,15 @@ type CreateDomainNameRequest struct {
 	Certificatename                     *string                       `protobuf:"bytes,140276948,opt,name=certificatename,proto3,oneof" json:"certificatename,omitempty"`
 	Certificateprivatekey               *string                       `protobuf:"bytes,277544067,opt,name=certificateprivatekey,proto3,oneof" json:"certificateprivatekey,omitempty"`
 	Domainname                          string                        `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Endpointaccessmode                  EndpointAccessMode            `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode" json:"endpointaccessmode,omitempty"`
+	Endpointaccessmode                  *EndpointAccessMode           `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode,oneof" json:"endpointaccessmode,omitempty"`
 	Endpointconfiguration               *EndpointConfiguration        `protobuf:"bytes,487543735,opt,name=endpointconfiguration,proto3" json:"endpointconfiguration,omitempty"`
 	Mutualtlsauthentication             *MutualTlsAuthenticationInput `protobuf:"bytes,99462043,opt,name=mutualtlsauthentication,proto3" json:"mutualtlsauthentication,omitempty"`
 	Ownershipverificationcertificatearn *string                       `protobuf:"bytes,100550548,opt,name=ownershipverificationcertificatearn,proto3,oneof" json:"ownershipverificationcertificatearn,omitempty"`
 	Policy                              *string                       `protobuf:"bytes,247528064,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	Regionalcertificatearn              *string                       `protobuf:"bytes,137066579,opt,name=regionalcertificatearn,proto3,oneof" json:"regionalcertificatearn,omitempty"`
 	Regionalcertificatename             *string                       `protobuf:"bytes,431716941,opt,name=regionalcertificatename,proto3,oneof" json:"regionalcertificatename,omitempty"`
-	Routingmode                         RoutingMode                   `protobuf:"varint,506342119,opt,name=routingmode,proto3,enum=apigateway.RoutingMode" json:"routingmode,omitempty"`
-	Securitypolicy                      SecurityPolicy                `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy" json:"securitypolicy,omitempty"`
+	Routingmode                         *RoutingMode                  `protobuf:"varint,506342119,opt,name=routingmode,proto3,enum=apigateway.RoutingMode,oneof" json:"routingmode,omitempty"`
+	Securitypolicy                      *SecurityPolicy               `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy,oneof" json:"securitypolicy,omitempty"`
 	Tags                                map[string]string             `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
@@ -3091,8 +3091,8 @@ func (x *CreateDomainNameRequest) GetDomainname() string {
 }
 
 func (x *CreateDomainNameRequest) GetEndpointaccessmode() EndpointAccessMode {
-	if x != nil {
-		return x.Endpointaccessmode
+	if x != nil && x.Endpointaccessmode != nil {
+		return *x.Endpointaccessmode
 	}
 	return EndpointAccessMode_ENDPOINT_ACCESS_MODE_STRICT
 }
@@ -3140,15 +3140,15 @@ func (x *CreateDomainNameRequest) GetRegionalcertificatename() string {
 }
 
 func (x *CreateDomainNameRequest) GetRoutingmode() RoutingMode {
-	if x != nil {
-		return x.Routingmode
+	if x != nil && x.Routingmode != nil {
+		return *x.Routingmode
 	}
 	return RoutingMode_ROUTING_MODE_ROUTING_RULE_THEN_BASE_PATH_MAPPING
 }
 
 func (x *CreateDomainNameRequest) GetSecuritypolicy() SecurityPolicy {
-	if x != nil {
-		return x.Securitypolicy
+	if x != nil && x.Securitypolicy != nil {
+		return *x.Securitypolicy
 	}
 	return SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_PQ_2025_09
 }
@@ -3366,17 +3366,17 @@ func (x *CreateResourceRequest) GetRestapiid() string {
 
 type CreateRestApiRequest struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Apikeysource              ApiKeySourceType       `protobuf:"varint,108531220,opt,name=apikeysource,proto3,enum=apigateway.ApiKeySourceType" json:"apikeysource,omitempty"`
+	Apikeysource              *ApiKeySourceType      `protobuf:"varint,108531220,opt,name=apikeysource,proto3,enum=apigateway.ApiKeySourceType,oneof" json:"apikeysource,omitempty"`
 	Binarymediatypes          []string               `protobuf:"bytes,406416146,rep,name=binarymediatypes,proto3" json:"binarymediatypes,omitempty"`
 	Clonefrom                 *string                `protobuf:"bytes,263376551,opt,name=clonefrom,proto3,oneof" json:"clonefrom,omitempty"`
 	Description               *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Disableexecuteapiendpoint *bool                  `protobuf:"varint,148140696,opt,name=disableexecuteapiendpoint,proto3,oneof" json:"disableexecuteapiendpoint,omitempty"`
-	Endpointaccessmode        EndpointAccessMode     `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode" json:"endpointaccessmode,omitempty"`
+	Endpointaccessmode        *EndpointAccessMode    `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode,oneof" json:"endpointaccessmode,omitempty"`
 	Endpointconfiguration     *EndpointConfiguration `protobuf:"bytes,487543735,opt,name=endpointconfiguration,proto3" json:"endpointconfiguration,omitempty"`
 	Minimumcompressionsize    *int32                 `protobuf:"varint,254902719,opt,name=minimumcompressionsize,proto3,oneof" json:"minimumcompressionsize,omitempty"`
 	Name                      string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Policy                    *string                `protobuf:"bytes,247528064,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
-	Securitypolicy            SecurityPolicy         `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy" json:"securitypolicy,omitempty"`
+	Securitypolicy            *SecurityPolicy        `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy,oneof" json:"securitypolicy,omitempty"`
 	Tags                      map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Version                   *string                `protobuf:"bytes,108113560,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -3414,8 +3414,8 @@ func (*CreateRestApiRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateRestApiRequest) GetApikeysource() ApiKeySourceType {
-	if x != nil {
-		return x.Apikeysource
+	if x != nil && x.Apikeysource != nil {
+		return *x.Apikeysource
 	}
 	return ApiKeySourceType_API_KEY_SOURCE_TYPE_AUTHORIZER
 }
@@ -3449,8 +3449,8 @@ func (x *CreateRestApiRequest) GetDisableexecuteapiendpoint() bool {
 }
 
 func (x *CreateRestApiRequest) GetEndpointaccessmode() EndpointAccessMode {
-	if x != nil {
-		return x.Endpointaccessmode
+	if x != nil && x.Endpointaccessmode != nil {
+		return *x.Endpointaccessmode
 	}
 	return EndpointAccessMode_ENDPOINT_ACCESS_MODE_STRICT
 }
@@ -3484,8 +3484,8 @@ func (x *CreateRestApiRequest) GetPolicy() string {
 }
 
 func (x *CreateRestApiRequest) GetSecuritypolicy() SecurityPolicy {
-	if x != nil {
-		return x.Securitypolicy
+	if x != nil && x.Securitypolicy != nil {
+		return *x.Securitypolicy
 	}
 	return SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_PQ_2025_09
 }
@@ -3507,7 +3507,7 @@ func (x *CreateRestApiRequest) GetVersion() string {
 type CreateStageRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Cacheclusterenabled  *bool                  `protobuf:"varint,63967991,opt,name=cacheclusterenabled,proto3,oneof" json:"cacheclusterenabled,omitempty"`
-	Cacheclustersize     CacheClusterSize       `protobuf:"varint,232189861,opt,name=cacheclustersize,proto3,enum=apigateway.CacheClusterSize" json:"cacheclustersize,omitempty"`
+	Cacheclustersize     *CacheClusterSize      `protobuf:"varint,232189861,opt,name=cacheclustersize,proto3,enum=apigateway.CacheClusterSize,oneof" json:"cacheclustersize,omitempty"`
 	Canarysettings       *CanarySettings        `protobuf:"bytes,285544261,opt,name=canarysettings,proto3" json:"canarysettings,omitempty"`
 	Deploymentid         string                 `protobuf:"bytes,439369188,opt,name=deploymentid,proto3" json:"deploymentid,omitempty"`
 	Description          *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
@@ -3559,8 +3559,8 @@ func (x *CreateStageRequest) GetCacheclusterenabled() bool {
 }
 
 func (x *CreateStageRequest) GetCacheclustersize() CacheClusterSize {
-	if x != nil {
-		return x.Cacheclustersize
+	if x != nil && x.Cacheclustersize != nil {
+		return *x.Cacheclustersize
 	}
 	return CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_237_GB
 }
@@ -5534,9 +5534,9 @@ type DomainName struct {
 	Domainname                          *string                  `protobuf:"bytes,390326667,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
 	Domainnamearn                       *string                  `protobuf:"bytes,244019094,opt,name=domainnamearn,proto3,oneof" json:"domainnamearn,omitempty"`
 	Domainnameid                        *string                  `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
-	Domainnamestatus                    DomainNameStatus         `protobuf:"varint,275080629,opt,name=domainnamestatus,proto3,enum=apigateway.DomainNameStatus" json:"domainnamestatus,omitempty"`
+	Domainnamestatus                    *DomainNameStatus        `protobuf:"varint,275080629,opt,name=domainnamestatus,proto3,enum=apigateway.DomainNameStatus,oneof" json:"domainnamestatus,omitempty"`
 	Domainnamestatusmessage             *string                  `protobuf:"bytes,335045044,opt,name=domainnamestatusmessage,proto3,oneof" json:"domainnamestatusmessage,omitempty"`
-	Endpointaccessmode                  EndpointAccessMode       `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode" json:"endpointaccessmode,omitempty"`
+	Endpointaccessmode                  *EndpointAccessMode      `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode,oneof" json:"endpointaccessmode,omitempty"`
 	Endpointconfiguration               *EndpointConfiguration   `protobuf:"bytes,487543735,opt,name=endpointconfiguration,proto3" json:"endpointconfiguration,omitempty"`
 	Managementpolicy                    *string                  `protobuf:"bytes,90103737,opt,name=managementpolicy,proto3,oneof" json:"managementpolicy,omitempty"`
 	Mutualtlsauthentication             *MutualTlsAuthentication `protobuf:"bytes,99462043,opt,name=mutualtlsauthentication,proto3" json:"mutualtlsauthentication,omitempty"`
@@ -5546,8 +5546,8 @@ type DomainName struct {
 	Regionalcertificatename             *string                  `protobuf:"bytes,431716941,opt,name=regionalcertificatename,proto3,oneof" json:"regionalcertificatename,omitempty"`
 	Regionaldomainname                  *string                  `protobuf:"bytes,198256560,opt,name=regionaldomainname,proto3,oneof" json:"regionaldomainname,omitempty"`
 	Regionalhostedzoneid                *string                  `protobuf:"bytes,467276949,opt,name=regionalhostedzoneid,proto3,oneof" json:"regionalhostedzoneid,omitempty"`
-	Routingmode                         RoutingMode              `protobuf:"varint,506342119,opt,name=routingmode,proto3,enum=apigateway.RoutingMode" json:"routingmode,omitempty"`
-	Securitypolicy                      SecurityPolicy           `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy" json:"securitypolicy,omitempty"`
+	Routingmode                         *RoutingMode             `protobuf:"varint,506342119,opt,name=routingmode,proto3,enum=apigateway.RoutingMode,oneof" json:"routingmode,omitempty"`
+	Securitypolicy                      *SecurityPolicy          `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy,oneof" json:"securitypolicy,omitempty"`
 	Tags                                map[string]string        `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
@@ -5640,8 +5640,8 @@ func (x *DomainName) GetDomainnameid() string {
 }
 
 func (x *DomainName) GetDomainnamestatus() DomainNameStatus {
-	if x != nil {
-		return x.Domainnamestatus
+	if x != nil && x.Domainnamestatus != nil {
+		return *x.Domainnamestatus
 	}
 	return DomainNameStatus_DOMAIN_NAME_STATUS_UPDATING
 }
@@ -5654,8 +5654,8 @@ func (x *DomainName) GetDomainnamestatusmessage() string {
 }
 
 func (x *DomainName) GetEndpointaccessmode() EndpointAccessMode {
-	if x != nil {
-		return x.Endpointaccessmode
+	if x != nil && x.Endpointaccessmode != nil {
+		return *x.Endpointaccessmode
 	}
 	return EndpointAccessMode_ENDPOINT_ACCESS_MODE_STRICT
 }
@@ -5724,15 +5724,15 @@ func (x *DomainName) GetRegionalhostedzoneid() string {
 }
 
 func (x *DomainName) GetRoutingmode() RoutingMode {
-	if x != nil {
-		return x.Routingmode
+	if x != nil && x.Routingmode != nil {
+		return *x.Routingmode
 	}
 	return RoutingMode_ROUTING_MODE_ROUTING_RULE_THEN_BASE_PATH_MAPPING
 }
 
 func (x *DomainName) GetSecuritypolicy() SecurityPolicy {
-	if x != nil {
-		return x.Securitypolicy
+	if x != nil && x.Securitypolicy != nil {
+		return *x.Securitypolicy
 	}
 	return SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_PQ_2025_09
 }
@@ -5745,12 +5745,12 @@ func (x *DomainName) GetTags() map[string]string {
 }
 
 type DomainNameAccessAssociation struct {
-	state                          protoimpl.MessageState      `protogen:"open.v1"`
-	Accessassociationsource        *string                     `protobuf:"bytes,328257828,opt,name=accessassociationsource,proto3,oneof" json:"accessassociationsource,omitempty"`
-	Accessassociationsourcetype    AccessAssociationSourceType `protobuf:"varint,176397628,opt,name=accessassociationsourcetype,proto3,enum=apigateway.AccessAssociationSourceType" json:"accessassociationsourcetype,omitempty"`
-	Domainnameaccessassociationarn *string                     `protobuf:"bytes,281017927,opt,name=domainnameaccessassociationarn,proto3,oneof" json:"domainnameaccessassociationarn,omitempty"`
-	Domainnamearn                  *string                     `protobuf:"bytes,244019094,opt,name=domainnamearn,proto3,oneof" json:"domainnamearn,omitempty"`
-	Tags                           map[string]string           `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state                          protoimpl.MessageState       `protogen:"open.v1"`
+	Accessassociationsource        *string                      `protobuf:"bytes,328257828,opt,name=accessassociationsource,proto3,oneof" json:"accessassociationsource,omitempty"`
+	Accessassociationsourcetype    *AccessAssociationSourceType `protobuf:"varint,176397628,opt,name=accessassociationsourcetype,proto3,enum=apigateway.AccessAssociationSourceType,oneof" json:"accessassociationsourcetype,omitempty"`
+	Domainnameaccessassociationarn *string                      `protobuf:"bytes,281017927,opt,name=domainnameaccessassociationarn,proto3,oneof" json:"domainnameaccessassociationarn,omitempty"`
+	Domainnamearn                  *string                      `protobuf:"bytes,244019094,opt,name=domainnamearn,proto3,oneof" json:"domainnamearn,omitempty"`
+	Tags                           map[string]string            `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -5793,8 +5793,8 @@ func (x *DomainNameAccessAssociation) GetAccessassociationsource() string {
 }
 
 func (x *DomainNameAccessAssociation) GetAccessassociationsourcetype() AccessAssociationSourceType {
-	if x != nil {
-		return x.Accessassociationsourcetype
+	if x != nil && x.Accessassociationsourcetype != nil {
+		return *x.Accessassociationsourcetype
 	}
 	return AccessAssociationSourceType_ACCESS_ASSOCIATION_SOURCE_TYPE_VPCE
 }
@@ -5926,7 +5926,7 @@ func (x *DomainNames) GetPosition() string {
 
 type EndpointConfiguration struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Ipaddresstype  IpAddressType          `protobuf:"varint,393863813,opt,name=ipaddresstype,proto3,enum=apigateway.IpAddressType" json:"ipaddresstype,omitempty"`
+	Ipaddresstype  *IpAddressType         `protobuf:"varint,393863813,opt,name=ipaddresstype,proto3,enum=apigateway.IpAddressType,oneof" json:"ipaddresstype,omitempty"`
 	Types          []EndpointType         `protobuf:"varint,534824091,rep,packed,name=types,proto3,enum=apigateway.EndpointType" json:"types,omitempty"`
 	Vpcendpointids []string               `protobuf:"bytes,135085374,rep,name=vpcendpointids,proto3" json:"vpcendpointids,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -5964,8 +5964,8 @@ func (*EndpointConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *EndpointConfiguration) GetIpaddresstype() IpAddressType {
-	if x != nil {
-		return x.Ipaddresstype
+	if x != nil && x.Ipaddresstype != nil {
+		return *x.Ipaddresstype
 	}
 	return IpAddressType_IP_ADDRESS_TYPE_DUALSTACK
 }
@@ -6153,7 +6153,7 @@ type GatewayResponse struct {
 	Defaultresponse    *bool                  `protobuf:"varint,164690914,opt,name=defaultresponse,proto3,oneof" json:"defaultresponse,omitempty"`
 	Responseparameters map[string]string      `protobuf:"bytes,64271839,rep,name=responseparameters,proto3" json:"responseparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Responsetemplates  map[string]string      `protobuf:"bytes,107376570,rep,name=responsetemplates,proto3" json:"responsetemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Responsetype       GatewayResponseType    `protobuf:"varint,377935935,opt,name=responsetype,proto3,enum=apigateway.GatewayResponseType" json:"responsetype,omitempty"`
+	Responsetype       *GatewayResponseType   `protobuf:"varint,377935935,opt,name=responsetype,proto3,enum=apigateway.GatewayResponseType,oneof" json:"responsetype,omitempty"`
 	Statuscode         *string                `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -6211,8 +6211,8 @@ func (x *GatewayResponse) GetResponsetemplates() map[string]string {
 }
 
 func (x *GatewayResponse) GetResponsetype() GatewayResponseType {
-	if x != nil {
-		return x.Responsetype
+	if x != nil && x.Responsetype != nil {
+		return *x.Responsetype
 	}
 	return GatewayResponseType_GATEWAY_RESPONSE_TYPE_WAF_FILTERED
 }
@@ -7003,12 +7003,12 @@ func (x *GetDocumentationPartRequest) GetRestapiid() string {
 type GetDocumentationPartsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Limit          *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Locationstatus LocationStatusType     `protobuf:"varint,532215305,opt,name=locationstatus,proto3,enum=apigateway.LocationStatusType" json:"locationstatus,omitempty"`
+	Locationstatus *LocationStatusType    `protobuf:"varint,532215305,opt,name=locationstatus,proto3,enum=apigateway.LocationStatusType,oneof" json:"locationstatus,omitempty"`
 	Namequery      *string                `protobuf:"bytes,51018795,opt,name=namequery,proto3,oneof" json:"namequery,omitempty"`
 	Path           *string                `protobuf:"bytes,75975991,opt,name=path,proto3,oneof" json:"path,omitempty"`
 	Position       *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Restapiid      string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Type           DocumentationPartType  `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.DocumentationPartType" json:"type,omitempty"`
+	Type           *DocumentationPartType `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.DocumentationPartType,oneof" json:"type,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -7051,8 +7051,8 @@ func (x *GetDocumentationPartsRequest) GetLimit() int32 {
 }
 
 func (x *GetDocumentationPartsRequest) GetLocationstatus() LocationStatusType {
-	if x != nil {
-		return x.Locationstatus
+	if x != nil && x.Locationstatus != nil {
+		return *x.Locationstatus
 	}
 	return LocationStatusType_LOCATION_STATUS_TYPE_DOCUMENTED
 }
@@ -7086,8 +7086,8 @@ func (x *GetDocumentationPartsRequest) GetRestapiid() string {
 }
 
 func (x *GetDocumentationPartsRequest) GetType() DocumentationPartType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return DocumentationPartType_DOCUMENTATION_PART_TYPE_AUTHORIZER
 }
@@ -7208,7 +7208,7 @@ type GetDomainNameAccessAssociationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
-	Resourceowner ResourceOwner          `protobuf:"varint,259175301,opt,name=resourceowner,proto3,enum=apigateway.ResourceOwner" json:"resourceowner,omitempty"`
+	Resourceowner *ResourceOwner         `protobuf:"varint,259175301,opt,name=resourceowner,proto3,enum=apigateway.ResourceOwner,oneof" json:"resourceowner,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7258,8 +7258,8 @@ func (x *GetDomainNameAccessAssociationsRequest) GetPosition() string {
 }
 
 func (x *GetDomainNameAccessAssociationsRequest) GetResourceowner() ResourceOwner {
-	if x != nil {
-		return x.Resourceowner
+	if x != nil && x.Resourceowner != nil {
+		return *x.Resourceowner
 	}
 	return ResourceOwner_RESOURCE_OWNER_OTHER_ACCOUNTS
 }
@@ -7320,7 +7320,7 @@ type GetDomainNamesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
-	Resourceowner ResourceOwner          `protobuf:"varint,259175301,opt,name=resourceowner,proto3,enum=apigateway.ResourceOwner" json:"resourceowner,omitempty"`
+	Resourceowner *ResourceOwner         `protobuf:"varint,259175301,opt,name=resourceowner,proto3,enum=apigateway.ResourceOwner,oneof" json:"resourceowner,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7370,8 +7370,8 @@ func (x *GetDomainNamesRequest) GetPosition() string {
 }
 
 func (x *GetDomainNamesRequest) GetResourceowner() ResourceOwner {
-	if x != nil {
-		return x.Resourceowner
+	if x != nil && x.Resourceowner != nil {
+		return *x.Resourceowner
 	}
 	return ResourceOwner_RESOURCE_OWNER_OTHER_ACCOUNTS
 }
@@ -9124,7 +9124,7 @@ type ImportDocumentationPartsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Body           []byte                 `protobuf:"bytes,464157046,opt,name=body,proto3" json:"body,omitempty"`
 	Failonwarnings *bool                  `protobuf:"varint,434363958,opt,name=failonwarnings,proto3,oneof" json:"failonwarnings,omitempty"`
-	Mode           PutMode                `protobuf:"varint,208592915,opt,name=mode,proto3,enum=apigateway.PutMode" json:"mode,omitempty"`
+	Mode           *PutMode               `protobuf:"varint,208592915,opt,name=mode,proto3,enum=apigateway.PutMode,oneof" json:"mode,omitempty"`
 	Restapiid      string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -9175,8 +9175,8 @@ func (x *ImportDocumentationPartsRequest) GetFailonwarnings() bool {
 }
 
 func (x *ImportDocumentationPartsRequest) GetMode() PutMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return PutMode_PUT_MODE_OVERWRITE
 }
@@ -9253,8 +9253,8 @@ type Integration struct {
 	Cachekeyparameters   []string                        `protobuf:"bytes,481441313,rep,name=cachekeyparameters,proto3" json:"cachekeyparameters,omitempty"`
 	Cachenamespace       *string                         `protobuf:"bytes,85102753,opt,name=cachenamespace,proto3,oneof" json:"cachenamespace,omitempty"`
 	Connectionid         *string                         `protobuf:"bytes,450027965,opt,name=connectionid,proto3,oneof" json:"connectionid,omitempty"`
-	Connectiontype       ConnectionType                  `protobuf:"varint,336253170,opt,name=connectiontype,proto3,enum=apigateway.ConnectionType" json:"connectiontype,omitempty"`
-	Contenthandling      ContentHandlingStrategy         `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy" json:"contenthandling,omitempty"`
+	Connectiontype       *ConnectionType                 `protobuf:"varint,336253170,opt,name=connectiontype,proto3,enum=apigateway.ConnectionType,oneof" json:"connectiontype,omitempty"`
+	Contenthandling      *ContentHandlingStrategy        `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy,oneof" json:"contenthandling,omitempty"`
 	Credentials          *string                         `protobuf:"bytes,150838226,opt,name=credentials,proto3,oneof" json:"credentials,omitempty"`
 	Httpmethod           *string                         `protobuf:"bytes,115276273,opt,name=httpmethod,proto3,oneof" json:"httpmethod,omitempty"`
 	Integrationresponses map[string]*IntegrationResponse `protobuf:"bytes,386580464,rep,name=integrationresponses,proto3" json:"integrationresponses,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -9262,10 +9262,10 @@ type Integration struct {
 	Passthroughbehavior  *string                         `protobuf:"bytes,310796908,opt,name=passthroughbehavior,proto3,oneof" json:"passthroughbehavior,omitempty"`
 	Requestparameters    map[string]string               `protobuf:"bytes,523499939,rep,name=requestparameters,proto3" json:"requestparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Requesttemplates     map[string]string               `protobuf:"bytes,333512166,rep,name=requesttemplates,proto3" json:"requesttemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Responsetransfermode ResponseTransferMode            `protobuf:"varint,458910787,opt,name=responsetransfermode,proto3,enum=apigateway.ResponseTransferMode" json:"responsetransfermode,omitempty"`
+	Responsetransfermode *ResponseTransferMode           `protobuf:"varint,458910787,opt,name=responsetransfermode,proto3,enum=apigateway.ResponseTransferMode,oneof" json:"responsetransfermode,omitempty"`
 	Timeoutinmillis      *int32                          `protobuf:"varint,378229126,opt,name=timeoutinmillis,proto3,oneof" json:"timeoutinmillis,omitempty"`
 	Tlsconfig            *TlsConfig                      `protobuf:"bytes,108946693,opt,name=tlsconfig,proto3" json:"tlsconfig,omitempty"`
-	Type                 IntegrationType                 `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.IntegrationType" json:"type,omitempty"`
+	Type                 *IntegrationType                `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.IntegrationType,oneof" json:"type,omitempty"`
 	Uri                  *string                         `protobuf:"bytes,395269118,opt,name=uri,proto3,oneof" json:"uri,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -9323,15 +9323,15 @@ func (x *Integration) GetConnectionid() string {
 }
 
 func (x *Integration) GetConnectiontype() ConnectionType {
-	if x != nil {
-		return x.Connectiontype
+	if x != nil && x.Connectiontype != nil {
+		return *x.Connectiontype
 	}
 	return ConnectionType_CONNECTION_TYPE_INTERNET
 }
 
 func (x *Integration) GetContenthandling() ContentHandlingStrategy {
-	if x != nil {
-		return x.Contenthandling
+	if x != nil && x.Contenthandling != nil {
+		return *x.Contenthandling
 	}
 	return ContentHandlingStrategy_CONTENT_HANDLING_STRATEGY_CONVERT_TO_BINARY
 }
@@ -9386,8 +9386,8 @@ func (x *Integration) GetRequesttemplates() map[string]string {
 }
 
 func (x *Integration) GetResponsetransfermode() ResponseTransferMode {
-	if x != nil {
-		return x.Responsetransfermode
+	if x != nil && x.Responsetransfermode != nil {
+		return *x.Responsetransfermode
 	}
 	return ResponseTransferMode_RESPONSE_TRANSFER_MODE_STREAM
 }
@@ -9407,8 +9407,8 @@ func (x *Integration) GetTlsconfig() *TlsConfig {
 }
 
 func (x *Integration) GetType() IntegrationType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return IntegrationType_INTEGRATION_TYPE_HTTP
 }
@@ -9421,12 +9421,12 @@ func (x *Integration) GetUri() string {
 }
 
 type IntegrationResponse struct {
-	state              protoimpl.MessageState  `protogen:"open.v1"`
-	Contenthandling    ContentHandlingStrategy `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy" json:"contenthandling,omitempty"`
-	Responseparameters map[string]string       `protobuf:"bytes,64271839,rep,name=responseparameters,proto3" json:"responseparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Responsetemplates  map[string]string       `protobuf:"bytes,107376570,rep,name=responsetemplates,proto3" json:"responsetemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Selectionpattern   *string                 `protobuf:"bytes,470634042,opt,name=selectionpattern,proto3,oneof" json:"selectionpattern,omitempty"`
-	Statuscode         *string                 `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
+	state              protoimpl.MessageState   `protogen:"open.v1"`
+	Contenthandling    *ContentHandlingStrategy `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy,oneof" json:"contenthandling,omitempty"`
+	Responseparameters map[string]string        `protobuf:"bytes,64271839,rep,name=responseparameters,proto3" json:"responseparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Responsetemplates  map[string]string        `protobuf:"bytes,107376570,rep,name=responsetemplates,proto3" json:"responsetemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Selectionpattern   *string                  `protobuf:"bytes,470634042,opt,name=selectionpattern,proto3,oneof" json:"selectionpattern,omitempty"`
+	Statuscode         *string                  `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -9462,8 +9462,8 @@ func (*IntegrationResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *IntegrationResponse) GetContenthandling() ContentHandlingStrategy {
-	if x != nil {
-		return x.Contenthandling
+	if x != nil && x.Contenthandling != nil {
+		return *x.Contenthandling
 	}
 	return ContentHandlingStrategy_CONTENT_HANDLING_STRATEGY_CONVERT_TO_BINARY
 }
@@ -9733,17 +9733,17 @@ func (x *MethodResponse) GetStatuscode() string {
 }
 
 type MethodSetting struct {
-	state                                  protoimpl.MessageState                 `protogen:"open.v1"`
-	Cachedataencrypted                     *bool                                  `protobuf:"varint,481075060,opt,name=cachedataencrypted,proto3,oneof" json:"cachedataencrypted,omitempty"`
-	Cachettlinseconds                      *int32                                 `protobuf:"varint,79996982,opt,name=cachettlinseconds,proto3,oneof" json:"cachettlinseconds,omitempty"`
-	Cachingenabled                         *bool                                  `protobuf:"varint,489524028,opt,name=cachingenabled,proto3,oneof" json:"cachingenabled,omitempty"`
-	Datatraceenabled                       *bool                                  `protobuf:"varint,363519852,opt,name=datatraceenabled,proto3,oneof" json:"datatraceenabled,omitempty"`
-	Logginglevel                           *string                                `protobuf:"bytes,59396637,opt,name=logginglevel,proto3,oneof" json:"logginglevel,omitempty"`
-	Metricsenabled                         *bool                                  `protobuf:"varint,142460292,opt,name=metricsenabled,proto3,oneof" json:"metricsenabled,omitempty"`
-	Requireauthorizationforcachecontrol    *bool                                  `protobuf:"varint,529394912,opt,name=requireauthorizationforcachecontrol,proto3,oneof" json:"requireauthorizationforcachecontrol,omitempty"`
-	Throttlingburstlimit                   *int32                                 `protobuf:"varint,402901688,opt,name=throttlingburstlimit,proto3,oneof" json:"throttlingburstlimit,omitempty"`
-	Throttlingratelimit                    *float64                               `protobuf:"fixed64,371718088,opt,name=throttlingratelimit,proto3,oneof" json:"throttlingratelimit,omitempty"`
-	Unauthorizedcachecontrolheaderstrategy UnauthorizedCacheControlHeaderStrategy `protobuf:"varint,476741277,opt,name=unauthorizedcachecontrolheaderstrategy,proto3,enum=apigateway.UnauthorizedCacheControlHeaderStrategy" json:"unauthorizedcachecontrolheaderstrategy,omitempty"`
+	state                                  protoimpl.MessageState                  `protogen:"open.v1"`
+	Cachedataencrypted                     *bool                                   `protobuf:"varint,481075060,opt,name=cachedataencrypted,proto3,oneof" json:"cachedataencrypted,omitempty"`
+	Cachettlinseconds                      *int32                                  `protobuf:"varint,79996982,opt,name=cachettlinseconds,proto3,oneof" json:"cachettlinseconds,omitempty"`
+	Cachingenabled                         *bool                                   `protobuf:"varint,489524028,opt,name=cachingenabled,proto3,oneof" json:"cachingenabled,omitempty"`
+	Datatraceenabled                       *bool                                   `protobuf:"varint,363519852,opt,name=datatraceenabled,proto3,oneof" json:"datatraceenabled,omitempty"`
+	Logginglevel                           *string                                 `protobuf:"bytes,59396637,opt,name=logginglevel,proto3,oneof" json:"logginglevel,omitempty"`
+	Metricsenabled                         *bool                                   `protobuf:"varint,142460292,opt,name=metricsenabled,proto3,oneof" json:"metricsenabled,omitempty"`
+	Requireauthorizationforcachecontrol    *bool                                   `protobuf:"varint,529394912,opt,name=requireauthorizationforcachecontrol,proto3,oneof" json:"requireauthorizationforcachecontrol,omitempty"`
+	Throttlingburstlimit                   *int32                                  `protobuf:"varint,402901688,opt,name=throttlingburstlimit,proto3,oneof" json:"throttlingburstlimit,omitempty"`
+	Throttlingratelimit                    *float64                                `protobuf:"fixed64,371718088,opt,name=throttlingratelimit,proto3,oneof" json:"throttlingratelimit,omitempty"`
+	Unauthorizedcachecontrolheaderstrategy *UnauthorizedCacheControlHeaderStrategy `protobuf:"varint,476741277,opt,name=unauthorizedcachecontrolheaderstrategy,proto3,enum=apigateway.UnauthorizedCacheControlHeaderStrategy,oneof" json:"unauthorizedcachecontrolheaderstrategy,omitempty"`
 	unknownFields                          protoimpl.UnknownFields
 	sizeCache                              protoimpl.SizeCache
 }
@@ -9842,8 +9842,8 @@ func (x *MethodSetting) GetThrottlingratelimit() float64 {
 }
 
 func (x *MethodSetting) GetUnauthorizedcachecontrolheaderstrategy() UnauthorizedCacheControlHeaderStrategy {
-	if x != nil {
-		return x.Unauthorizedcachecontrolheaderstrategy
+	if x != nil && x.Unauthorizedcachecontrolheaderstrategy != nil {
+		return *x.Unauthorizedcachecontrolheaderstrategy
 	}
 	return UnauthorizedCacheControlHeaderStrategy_UNAUTHORIZED_CACHE_CONTROL_HEADER_STRATEGY_SUCCEED_WITH_RESPONSE_HEADER
 }
@@ -10187,7 +10187,7 @@ func (x *NotFoundException) GetMessage() string {
 type PatchOperation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	From          *string                `protobuf:"bytes,365789302,opt,name=from,proto3,oneof" json:"from,omitempty"`
-	Op            Op                     `protobuf:"varint,523513003,opt,name=op,proto3,enum=apigateway.Op" json:"op,omitempty"`
+	Op            *Op                    `protobuf:"varint,523513003,opt,name=op,proto3,enum=apigateway.Op,oneof" json:"op,omitempty"`
 	Path          *string                `protobuf:"bytes,75975991,opt,name=path,proto3,oneof" json:"path,omitempty"`
 	Value         *string                `protobuf:"bytes,39769035,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10232,8 +10232,8 @@ func (x *PatchOperation) GetFrom() string {
 }
 
 func (x *PatchOperation) GetOp() Op {
-	if x != nil {
-		return x.Op
+	if x != nil && x.Op != nil {
+		return *x.Op
 	}
 	return Op_OP_ADD
 }
@@ -10329,26 +10329,26 @@ func (x *PutGatewayResponseRequest) GetStatuscode() string {
 }
 
 type PutIntegrationRequest struct {
-	state                 protoimpl.MessageState  `protogen:"open.v1"`
-	Cachekeyparameters    []string                `protobuf:"bytes,481441313,rep,name=cachekeyparameters,proto3" json:"cachekeyparameters,omitempty"`
-	Cachenamespace        *string                 `protobuf:"bytes,85102753,opt,name=cachenamespace,proto3,oneof" json:"cachenamespace,omitempty"`
-	Connectionid          *string                 `protobuf:"bytes,450027965,opt,name=connectionid,proto3,oneof" json:"connectionid,omitempty"`
-	Connectiontype        ConnectionType          `protobuf:"varint,336253170,opt,name=connectiontype,proto3,enum=apigateway.ConnectionType" json:"connectiontype,omitempty"`
-	Contenthandling       ContentHandlingStrategy `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy" json:"contenthandling,omitempty"`
-	Credentials           *string                 `protobuf:"bytes,150838226,opt,name=credentials,proto3,oneof" json:"credentials,omitempty"`
-	Httpmethod            string                  `protobuf:"bytes,115276273,opt,name=httpmethod,proto3" json:"httpmethod,omitempty"`
-	Integrationhttpmethod *string                 `protobuf:"bytes,355314073,opt,name=integrationhttpmethod,proto3,oneof" json:"integrationhttpmethod,omitempty"`
-	Integrationtarget     *string                 `protobuf:"bytes,17646705,opt,name=integrationtarget,proto3,oneof" json:"integrationtarget,omitempty"`
-	Passthroughbehavior   *string                 `protobuf:"bytes,310796908,opt,name=passthroughbehavior,proto3,oneof" json:"passthroughbehavior,omitempty"`
-	Requestparameters     map[string]string       `protobuf:"bytes,523499939,rep,name=requestparameters,proto3" json:"requestparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Requesttemplates      map[string]string       `protobuf:"bytes,333512166,rep,name=requesttemplates,proto3" json:"requesttemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Resourceid            string                  `protobuf:"bytes,318922417,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
-	Responsetransfermode  ResponseTransferMode    `protobuf:"varint,458910787,opt,name=responsetransfermode,proto3,enum=apigateway.ResponseTransferMode" json:"responsetransfermode,omitempty"`
-	Restapiid             string                  `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Timeoutinmillis       *int32                  `protobuf:"varint,378229126,opt,name=timeoutinmillis,proto3,oneof" json:"timeoutinmillis,omitempty"`
-	Tlsconfig             *TlsConfig              `protobuf:"bytes,108946693,opt,name=tlsconfig,proto3" json:"tlsconfig,omitempty"`
-	Type                  IntegrationType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.IntegrationType" json:"type,omitempty"`
-	Uri                   *string                 `protobuf:"bytes,395269118,opt,name=uri,proto3,oneof" json:"uri,omitempty"`
+	state                 protoimpl.MessageState   `protogen:"open.v1"`
+	Cachekeyparameters    []string                 `protobuf:"bytes,481441313,rep,name=cachekeyparameters,proto3" json:"cachekeyparameters,omitempty"`
+	Cachenamespace        *string                  `protobuf:"bytes,85102753,opt,name=cachenamespace,proto3,oneof" json:"cachenamespace,omitempty"`
+	Connectionid          *string                  `protobuf:"bytes,450027965,opt,name=connectionid,proto3,oneof" json:"connectionid,omitempty"`
+	Connectiontype        *ConnectionType          `protobuf:"varint,336253170,opt,name=connectiontype,proto3,enum=apigateway.ConnectionType,oneof" json:"connectiontype,omitempty"`
+	Contenthandling       *ContentHandlingStrategy `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy,oneof" json:"contenthandling,omitempty"`
+	Credentials           *string                  `protobuf:"bytes,150838226,opt,name=credentials,proto3,oneof" json:"credentials,omitempty"`
+	Httpmethod            string                   `protobuf:"bytes,115276273,opt,name=httpmethod,proto3" json:"httpmethod,omitempty"`
+	Integrationhttpmethod *string                  `protobuf:"bytes,355314073,opt,name=integrationhttpmethod,proto3,oneof" json:"integrationhttpmethod,omitempty"`
+	Integrationtarget     *string                  `protobuf:"bytes,17646705,opt,name=integrationtarget,proto3,oneof" json:"integrationtarget,omitempty"`
+	Passthroughbehavior   *string                  `protobuf:"bytes,310796908,opt,name=passthroughbehavior,proto3,oneof" json:"passthroughbehavior,omitempty"`
+	Requestparameters     map[string]string        `protobuf:"bytes,523499939,rep,name=requestparameters,proto3" json:"requestparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Requesttemplates      map[string]string        `protobuf:"bytes,333512166,rep,name=requesttemplates,proto3" json:"requesttemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Resourceid            string                   `protobuf:"bytes,318922417,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
+	Responsetransfermode  *ResponseTransferMode    `protobuf:"varint,458910787,opt,name=responsetransfermode,proto3,enum=apigateway.ResponseTransferMode,oneof" json:"responsetransfermode,omitempty"`
+	Restapiid             string                   `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
+	Timeoutinmillis       *int32                   `protobuf:"varint,378229126,opt,name=timeoutinmillis,proto3,oneof" json:"timeoutinmillis,omitempty"`
+	Tlsconfig             *TlsConfig               `protobuf:"bytes,108946693,opt,name=tlsconfig,proto3" json:"tlsconfig,omitempty"`
+	Type                  IntegrationType          `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.IntegrationType" json:"type,omitempty"`
+	Uri                   *string                  `protobuf:"bytes,395269118,opt,name=uri,proto3,oneof" json:"uri,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -10405,15 +10405,15 @@ func (x *PutIntegrationRequest) GetConnectionid() string {
 }
 
 func (x *PutIntegrationRequest) GetConnectiontype() ConnectionType {
-	if x != nil {
-		return x.Connectiontype
+	if x != nil && x.Connectiontype != nil {
+		return *x.Connectiontype
 	}
 	return ConnectionType_CONNECTION_TYPE_INTERNET
 }
 
 func (x *PutIntegrationRequest) GetContenthandling() ContentHandlingStrategy {
-	if x != nil {
-		return x.Contenthandling
+	if x != nil && x.Contenthandling != nil {
+		return *x.Contenthandling
 	}
 	return ContentHandlingStrategy_CONTENT_HANDLING_STRATEGY_CONVERT_TO_BINARY
 }
@@ -10475,8 +10475,8 @@ func (x *PutIntegrationRequest) GetResourceid() string {
 }
 
 func (x *PutIntegrationRequest) GetResponsetransfermode() ResponseTransferMode {
-	if x != nil {
-		return x.Responsetransfermode
+	if x != nil && x.Responsetransfermode != nil {
+		return *x.Responsetransfermode
 	}
 	return ResponseTransferMode_RESPONSE_TRANSFER_MODE_STREAM
 }
@@ -10517,15 +10517,15 @@ func (x *PutIntegrationRequest) GetUri() string {
 }
 
 type PutIntegrationResponseRequest struct {
-	state              protoimpl.MessageState  `protogen:"open.v1"`
-	Contenthandling    ContentHandlingStrategy `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy" json:"contenthandling,omitempty"`
-	Httpmethod         string                  `protobuf:"bytes,115276273,opt,name=httpmethod,proto3" json:"httpmethod,omitempty"`
-	Resourceid         string                  `protobuf:"bytes,318922417,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
-	Responseparameters map[string]string       `protobuf:"bytes,64271839,rep,name=responseparameters,proto3" json:"responseparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Responsetemplates  map[string]string       `protobuf:"bytes,107376570,rep,name=responsetemplates,proto3" json:"responsetemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Restapiid          string                  `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Selectionpattern   *string                 `protobuf:"bytes,470634042,opt,name=selectionpattern,proto3,oneof" json:"selectionpattern,omitempty"`
-	Statuscode         string                  `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	state              protoimpl.MessageState   `protogen:"open.v1"`
+	Contenthandling    *ContentHandlingStrategy `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy,oneof" json:"contenthandling,omitempty"`
+	Httpmethod         string                   `protobuf:"bytes,115276273,opt,name=httpmethod,proto3" json:"httpmethod,omitempty"`
+	Resourceid         string                   `protobuf:"bytes,318922417,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
+	Responseparameters map[string]string        `protobuf:"bytes,64271839,rep,name=responseparameters,proto3" json:"responseparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Responsetemplates  map[string]string        `protobuf:"bytes,107376570,rep,name=responsetemplates,proto3" json:"responsetemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Restapiid          string                   `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
+	Selectionpattern   *string                  `protobuf:"bytes,470634042,opt,name=selectionpattern,proto3,oneof" json:"selectionpattern,omitempty"`
+	Statuscode         string                   `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -10561,8 +10561,8 @@ func (*PutIntegrationResponseRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutIntegrationResponseRequest) GetContenthandling() ContentHandlingStrategy {
-	if x != nil {
-		return x.Contenthandling
+	if x != nil && x.Contenthandling != nil {
+		return *x.Contenthandling
 	}
 	return ContentHandlingStrategy_CONTENT_HANDLING_STRATEGY_CONVERT_TO_BINARY
 }
@@ -10828,7 +10828,7 @@ type PutRestApiRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Body           []byte                 `protobuf:"bytes,464157046,opt,name=body,proto3" json:"body,omitempty"`
 	Failonwarnings *bool                  `protobuf:"varint,434363958,opt,name=failonwarnings,proto3,oneof" json:"failonwarnings,omitempty"`
-	Mode           PutMode                `protobuf:"varint,208592915,opt,name=mode,proto3,enum=apigateway.PutMode" json:"mode,omitempty"`
+	Mode           *PutMode               `protobuf:"varint,208592915,opt,name=mode,proto3,enum=apigateway.PutMode,oneof" json:"mode,omitempty"`
 	Parameters     map[string]string      `protobuf:"bytes,145043162,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Restapiid      string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -10880,8 +10880,8 @@ func (x *PutRestApiRequest) GetFailonwarnings() bool {
 }
 
 func (x *PutRestApiRequest) GetMode() PutMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return PutMode_PUT_MODE_OVERWRITE
 }
@@ -10904,7 +10904,7 @@ type QuotaSettings struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Offset        *int32                 `protobuf:"varint,348705739,opt,name=offset,proto3,oneof" json:"offset,omitempty"`
-	Period        QuotaPeriodType        `protobuf:"varint,432621317,opt,name=period,proto3,enum=apigateway.QuotaPeriodType" json:"period,omitempty"`
+	Period        *QuotaPeriodType       `protobuf:"varint,432621317,opt,name=period,proto3,enum=apigateway.QuotaPeriodType,oneof" json:"period,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10954,8 +10954,8 @@ func (x *QuotaSettings) GetOffset() int32 {
 }
 
 func (x *QuotaSettings) GetPeriod() QuotaPeriodType {
-	if x != nil {
-		return x.Period
+	if x != nil && x.Period != nil {
+		return *x.Period
 	}
 	return QuotaPeriodType_QUOTA_PERIOD_TYPE_WEEK
 }
@@ -11262,21 +11262,21 @@ func (x *Resources) GetPosition() string {
 
 type RestApi struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Apikeysource              ApiKeySourceType       `protobuf:"varint,108531220,opt,name=apikeysource,proto3,enum=apigateway.ApiKeySourceType" json:"apikeysource,omitempty"`
-	Apistatus                 ApiStatus              `protobuf:"varint,200568018,opt,name=apistatus,proto3,enum=apigateway.ApiStatus" json:"apistatus,omitempty"`
+	Apikeysource              *ApiKeySourceType      `protobuf:"varint,108531220,opt,name=apikeysource,proto3,enum=apigateway.ApiKeySourceType,oneof" json:"apikeysource,omitempty"`
+	Apistatus                 *ApiStatus             `protobuf:"varint,200568018,opt,name=apistatus,proto3,enum=apigateway.ApiStatus,oneof" json:"apistatus,omitempty"`
 	Apistatusmessage          *string                `protobuf:"bytes,353995209,opt,name=apistatusmessage,proto3,oneof" json:"apistatusmessage,omitempty"`
 	Binarymediatypes          []string               `protobuf:"bytes,406416146,rep,name=binarymediatypes,proto3" json:"binarymediatypes,omitempty"`
 	Createddate               *string                `protobuf:"bytes,53061200,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
 	Description               *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Disableexecuteapiendpoint *bool                  `protobuf:"varint,148140696,opt,name=disableexecuteapiendpoint,proto3,oneof" json:"disableexecuteapiendpoint,omitempty"`
-	Endpointaccessmode        EndpointAccessMode     `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode" json:"endpointaccessmode,omitempty"`
+	Endpointaccessmode        *EndpointAccessMode    `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode,oneof" json:"endpointaccessmode,omitempty"`
 	Endpointconfiguration     *EndpointConfiguration `protobuf:"bytes,487543735,opt,name=endpointconfiguration,proto3" json:"endpointconfiguration,omitempty"`
 	Id                        *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Minimumcompressionsize    *int32                 `protobuf:"varint,254902719,opt,name=minimumcompressionsize,proto3,oneof" json:"minimumcompressionsize,omitempty"`
 	Name                      *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Policy                    *string                `protobuf:"bytes,247528064,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	Rootresourceid            *string                `protobuf:"bytes,360157585,opt,name=rootresourceid,proto3,oneof" json:"rootresourceid,omitempty"`
-	Securitypolicy            SecurityPolicy         `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy" json:"securitypolicy,omitempty"`
+	Securitypolicy            *SecurityPolicy        `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy,oneof" json:"securitypolicy,omitempty"`
 	Tags                      map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Version                   *string                `protobuf:"bytes,108113560,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	Warnings                  []string               `protobuf:"bytes,185617301,rep,name=warnings,proto3" json:"warnings,omitempty"`
@@ -11315,15 +11315,15 @@ func (*RestApi) Descriptor() ([]byte, []int) {
 }
 
 func (x *RestApi) GetApikeysource() ApiKeySourceType {
-	if x != nil {
-		return x.Apikeysource
+	if x != nil && x.Apikeysource != nil {
+		return *x.Apikeysource
 	}
 	return ApiKeySourceType_API_KEY_SOURCE_TYPE_AUTHORIZER
 }
 
 func (x *RestApi) GetApistatus() ApiStatus {
-	if x != nil {
-		return x.Apistatus
+	if x != nil && x.Apistatus != nil {
+		return *x.Apistatus
 	}
 	return ApiStatus_API_STATUS_UPDATING
 }
@@ -11364,8 +11364,8 @@ func (x *RestApi) GetDisableexecuteapiendpoint() bool {
 }
 
 func (x *RestApi) GetEndpointaccessmode() EndpointAccessMode {
-	if x != nil {
-		return x.Endpointaccessmode
+	if x != nil && x.Endpointaccessmode != nil {
+		return *x.Endpointaccessmode
 	}
 	return EndpointAccessMode_ENDPOINT_ACCESS_MODE_STRICT
 }
@@ -11413,8 +11413,8 @@ func (x *RestApi) GetRootresourceid() string {
 }
 
 func (x *RestApi) GetSecuritypolicy() SecurityPolicy {
-	if x != nil {
-		return x.Securitypolicy
+	if x != nil && x.Securitypolicy != nil {
+		return *x.Securitypolicy
 	}
 	return SecurityPolicy_SECURITY_POLICY_SECURITYPOLICY_TLS13_1_2_PQ_2025_09
 }
@@ -11796,8 +11796,8 @@ type Stage struct {
 	state                protoimpl.MessageState    `protogen:"open.v1"`
 	Accesslogsettings    *AccessLogSettings        `protobuf:"bytes,76216807,opt,name=accesslogsettings,proto3" json:"accesslogsettings,omitempty"`
 	Cacheclusterenabled  *bool                     `protobuf:"varint,63967991,opt,name=cacheclusterenabled,proto3,oneof" json:"cacheclusterenabled,omitempty"`
-	Cacheclustersize     CacheClusterSize          `protobuf:"varint,232189861,opt,name=cacheclustersize,proto3,enum=apigateway.CacheClusterSize" json:"cacheclustersize,omitempty"`
-	Cacheclusterstatus   CacheClusterStatus        `protobuf:"varint,385293784,opt,name=cacheclusterstatus,proto3,enum=apigateway.CacheClusterStatus" json:"cacheclusterstatus,omitempty"`
+	Cacheclustersize     *CacheClusterSize         `protobuf:"varint,232189861,opt,name=cacheclustersize,proto3,enum=apigateway.CacheClusterSize,oneof" json:"cacheclustersize,omitempty"`
+	Cacheclusterstatus   *CacheClusterStatus       `protobuf:"varint,385293784,opt,name=cacheclusterstatus,proto3,enum=apigateway.CacheClusterStatus,oneof" json:"cacheclusterstatus,omitempty"`
 	Canarysettings       *CanarySettings           `protobuf:"bytes,285544261,opt,name=canarysettings,proto3" json:"canarysettings,omitempty"`
 	Clientcertificateid  *string                   `protobuf:"bytes,276222909,opt,name=clientcertificateid,proto3,oneof" json:"clientcertificateid,omitempty"`
 	Createddate          *string                   `protobuf:"bytes,53061200,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
@@ -11860,15 +11860,15 @@ func (x *Stage) GetCacheclusterenabled() bool {
 }
 
 func (x *Stage) GetCacheclustersize() CacheClusterSize {
-	if x != nil {
-		return x.Cacheclustersize
+	if x != nil && x.Cacheclustersize != nil {
+		return *x.Cacheclustersize
 	}
 	return CacheClusterSize_CACHE_CLUSTER_SIZE_SIZE_237_GB
 }
 
 func (x *Stage) GetCacheclusterstatus() CacheClusterStatus {
-	if x != nil {
-		return x.Cacheclusterstatus
+	if x != nil && x.Cacheclusterstatus != nil {
+		return *x.Cacheclusterstatus
 	}
 	return CacheClusterStatus_CACHE_CLUSTER_STATUS_FLUSH_IN_PROGRESS
 }
@@ -14501,7 +14501,7 @@ type VpcLink struct {
 	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Id            *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Status        VpcLinkStatus          `protobuf:"varint,441153520,opt,name=status,proto3,enum=apigateway.VpcLinkStatus" json:"status,omitempty"`
+	Status        *VpcLinkStatus         `protobuf:"varint,441153520,opt,name=status,proto3,enum=apigateway.VpcLinkStatus,oneof" json:"status,omitempty"`
 	Statusmessage *string                `protobuf:"bytes,474462255,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	Tags          map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Targetarns    []string               `protobuf:"bytes,46319317,rep,name=targetarns,proto3" json:"targetarns,omitempty"`
@@ -14561,8 +14561,8 @@ func (x *VpcLink) GetName() string {
 }
 
 func (x *VpcLink) GetStatus() VpcLinkStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return VpcLinkStatus_VPC_LINK_STATUS_PENDING
 }
@@ -14699,7 +14699,7 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
 	"\x05value\x18\x02 \x01(\v2\x1c.apigateway.ThrottleSettingsR\x05value:\x028\x01B\b\n" +
 	"\x06_apiidB\b\n" +
-	"\x06_stage\"\x95\x05\n" +
+	"\x06_stage\"\xa3\x05\n" +
 	"\n" +
 	"Authorizer\x12\"\n" +
 	"\bauthtype\x18\xd8\xf6\xceM \x01(\tH\x00R\bauthtype\x88\x01\x01\x12<\n" +
@@ -14710,8 +14710,8 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0eidentitysource\x18\xffȘ\x88\x01 \x01(\tH\x05R\x0eidentitysource\x88\x01\x01\x12J\n" +
 	"\x1cidentityvalidationexpression\x18\xbf\xef\xabl \x01(\tH\x06R\x1cidentityvalidationexpression\x88\x01\x01\x12\x1a\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\aR\x04name\x88\x01\x01\x12&\n" +
-	"\fproviderarns\x18\xe1\xa4\xe1\x8f\x01 \x03(\tR\fproviderarns\x122\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1a.apigateway.AuthorizerTypeR\x04typeB\v\n" +
+	"\fproviderarns\x18\xe1\xa4\xe1\x8f\x01 \x03(\tR\fproviderarns\x127\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1a.apigateway.AuthorizerTypeH\bR\x04type\x88\x01\x01B\v\n" +
 	"\t_authtypeB\x18\n" +
 	"\x16_authorizercredentialsB\x1f\n" +
 	"\x1d_authorizerresultttlinsecondsB\x10\n" +
@@ -14719,7 +14719,8 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x03_idB\x11\n" +
 	"\x0f_identitysourceB\x1f\n" +
 	"\x1d_identityvalidationexpressionB\a\n" +
-	"\x05_name\"q\n" +
+	"\x05_nameB\a\n" +
+	"\x05_type\"q\n" +
 	"\vAuthorizers\x120\n" +
 	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x16.apigateway.AuthorizerR\x05items\x12#\n" +
 	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
@@ -14822,21 +14823,22 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x05stage\x18\xae\xb4\xeaB \x01(\tH\x02R\x05stage\x88\x01\x01B\v\n" +
 	"\t_basepathB\x0f\n" +
 	"\r_domainnameidB\b\n" +
-	"\x06_stage\"\xbc\x05\n" +
+	"\x06_stage\"\xd6\x05\n" +
 	"\x17CreateDeploymentRequest\x128\n" +
-	"\x13cacheclusterenabled\x18\xf7\xa5\xc0\x1e \x01(\bH\x00R\x13cacheclusterenabled\x88\x01\x01\x12K\n" +
-	"\x10cacheclustersize\x18\xa5\xdf\xdbn \x01(\x0e2\x1c.apigateway.CacheClusterSizeR\x10cacheclustersize\x12P\n" +
+	"\x13cacheclusterenabled\x18\xf7\xa5\xc0\x1e \x01(\bH\x00R\x13cacheclusterenabled\x88\x01\x01\x12P\n" +
+	"\x10cacheclustersize\x18\xa5\xdf\xdbn \x01(\x0e2\x1c.apigateway.CacheClusterSizeH\x01R\x10cacheclustersize\x88\x01\x01\x12P\n" +
 	"\x0ecanarysettings\x18Ş\x94\x88\x01 \x01(\v2$.apigateway.DeploymentCanarySettingsR\x0ecanarysettings\x12)\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12 \n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x123\n" +
-	"\x10stagedescription\x18\x82\xe8\xcb\xec\x01 \x01(\tH\x02R\x10stagedescription\x88\x01\x01\x12$\n" +
-	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tH\x03R\tstagename\x88\x01\x01\x12/\n" +
-	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\x04R\x0etracingenabled\x88\x01\x01\x12S\n" +
+	"\x10stagedescription\x18\x82\xe8\xcb\xec\x01 \x01(\tH\x03R\x10stagedescription\x88\x01\x01\x12$\n" +
+	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tH\x04R\tstagename\x88\x01\x01\x12/\n" +
+	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\x05R\x0etracingenabled\x88\x01\x01\x12S\n" +
 	"\tvariables\x18\xc3ŭM \x03(\v22.apigateway.CreateDeploymentRequest.VariablesEntryR\tvariables\x1a<\n" +
 	"\x0eVariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x16\n" +
-	"\x14_cacheclusterenabledB\x0e\n" +
+	"\x14_cacheclusterenabledB\x13\n" +
+	"\x11_cacheclustersizeB\x0e\n" +
 	"\f_descriptionB\x13\n" +
 	"\x11_stagedescriptionB\f\n" +
 	"\n" +
@@ -14863,7 +14865,7 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2>.apigateway.CreateDomainNameAccessAssociationRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb5\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfe\n" +
 	"\n" +
 	"\x17CreateDomainNameRequest\x12/\n" +
 	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x120\n" +
@@ -14873,16 +14875,17 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x15certificateprivatekey\x18\x83\xf9\xab\x84\x01 \x01(\tH\x04R\x15certificateprivatekey\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12R\n" +
-	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeR\x12endpointaccessmode\x12[\n" +
+	"domainname\x12W\n" +
+	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeH\x05R\x12endpointaccessmode\x88\x01\x01\x12[\n" +
 	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x12e\n" +
 	"\x17mutualtlsauthentication\x18\x9b\u05f6/ \x01(\v2(.apigateway.MutualTlsAuthenticationInputR\x17mutualtlsauthentication\x12X\n" +
-	"#ownershipverificationcertificatearn\x18\x94\x8f\xf9/ \x01(\tH\x05R#ownershipverificationcertificatearn\x88\x01\x01\x12\x1e\n" +
-	"\x06policy\x18\x80\xf5\x83v \x01(\tH\x06R\x06policy\x88\x01\x01\x12>\n" +
-	"\x16regionalcertificatearn\x18\xd3\xf0\xadA \x01(\tH\aR\x16regionalcertificatearn\x88\x01\x01\x12A\n" +
-	"\x17regionalcertificatename\x18\xcd\xf4\xed\xcd\x01 \x01(\tH\bR\x17regionalcertificatename\x88\x01\x01\x12=\n" +
-	"\vroutingmode\x18\xe7ո\xf1\x01 \x01(\x0e2\x17.apigateway.RoutingModeR\vroutingmode\x12F\n" +
-	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyR\x0esecuritypolicy\x12E\n" +
+	"#ownershipverificationcertificatearn\x18\x94\x8f\xf9/ \x01(\tH\x06R#ownershipverificationcertificatearn\x88\x01\x01\x12\x1e\n" +
+	"\x06policy\x18\x80\xf5\x83v \x01(\tH\aR\x06policy\x88\x01\x01\x12>\n" +
+	"\x16regionalcertificatearn\x18\xd3\xf0\xadA \x01(\tH\bR\x16regionalcertificatearn\x88\x01\x01\x12A\n" +
+	"\x17regionalcertificatename\x18\xcd\xf4\xed\xcd\x01 \x01(\tH\tR\x17regionalcertificatename\x88\x01\x01\x12B\n" +
+	"\vroutingmode\x18\xe7ո\xf1\x01 \x01(\x0e2\x17.apigateway.RoutingModeH\n" +
+	"R\vroutingmode\x88\x01\x01\x12K\n" +
+	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyH\vR\x0esecuritypolicy\x88\x01\x01\x12E\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2-.apigateway.CreateDomainNameRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -14891,11 +14894,14 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x10_certificatebodyB\x13\n" +
 	"\x11_certificatechainB\x12\n" +
 	"\x10_certificatenameB\x18\n" +
-	"\x16_certificateprivatekeyB&\n" +
+	"\x16_certificateprivatekeyB\x15\n" +
+	"\x13_endpointaccessmodeB&\n" +
 	"$_ownershipverificationcertificatearnB\t\n" +
 	"\a_policyB\x19\n" +
 	"\x17_regionalcertificatearnB\x1a\n" +
-	"\x18_regionalcertificatename\"\xda\x01\n" +
+	"\x18_regionalcertificatenameB\x0e\n" +
+	"\f_routingmodeB\x11\n" +
+	"\x0f_securitypolicy\"\xda\x01\n" +
 	"\x12CreateModelRequest\x12$\n" +
 	"\vcontenttype\x18\xb3ƭ\x86\x01 \x01(\tR\vcontenttype\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
@@ -14915,43 +14921,46 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x15CreateResourceRequest\x12\x1d\n" +
 	"\bparentid\x18\xa9\xea\xc82 \x01(\tR\bparentid\x12\x1e\n" +
 	"\bpathpart\x18Ѓ\xd4\xe8\x01 \x01(\tR\bpathpart\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x9f\a\n" +
-	"\x14CreateRestApiRequest\x12C\n" +
-	"\fapikeysource\x18\x94\x9c\xe03 \x01(\x0e2\x1c.apigateway.ApiKeySourceTypeR\fapikeysource\x12.\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xe9\a\n" +
+	"\x14CreateRestApiRequest\x12H\n" +
+	"\fapikeysource\x18\x94\x9c\xe03 \x01(\x0e2\x1c.apigateway.ApiKeySourceTypeH\x00R\fapikeysource\x88\x01\x01\x12.\n" +
 	"\x10binarymediatypes\x18\x92\xd6\xe5\xc1\x01 \x03(\tR\x10binarymediatypes\x12$\n" +
-	"\tclonefrom\x18\xa7\x9d\xcb} \x01(\tH\x00R\tclonefrom\x88\x01\x01\x12)\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12D\n" +
-	"\x19disableexecuteapiendpoint\x18\x98\xe5\xd1F \x01(\bH\x02R\x19disableexecuteapiendpoint\x88\x01\x01\x12R\n" +
-	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeR\x12endpointaccessmode\x12[\n" +
+	"\tclonefrom\x18\xa7\x9d\xcb} \x01(\tH\x01R\tclonefrom\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x12D\n" +
+	"\x19disableexecuteapiendpoint\x18\x98\xe5\xd1F \x01(\bH\x03R\x19disableexecuteapiendpoint\x88\x01\x01\x12W\n" +
+	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeH\x04R\x12endpointaccessmode\x88\x01\x01\x12[\n" +
 	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x12>\n" +
-	"\x16minimumcompressionsize\x18\xbf\x83\xc6y \x01(\x05H\x03R\x16minimumcompressionsize\x88\x01\x01\x12\x15\n" +
+	"\x16minimumcompressionsize\x18\xbf\x83\xc6y \x01(\x05H\x05R\x16minimumcompressionsize\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1e\n" +
-	"\x06policy\x18\x80\xf5\x83v \x01(\tH\x04R\x06policy\x88\x01\x01\x12F\n" +
-	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyR\x0esecuritypolicy\x12B\n" +
+	"\x06policy\x18\x80\xf5\x83v \x01(\tH\x06R\x06policy\x88\x01\x01\x12K\n" +
+	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyH\aR\x0esecuritypolicy\x88\x01\x01\x12B\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2*.apigateway.CreateRestApiRequest.TagsEntryR\x04tags\x12 \n" +
-	"\aversion\x18\x98\xdd\xc63 \x01(\tH\x05R\aversion\x88\x01\x01\x1a7\n" +
+	"\aversion\x18\x98\xdd\xc63 \x01(\tH\bR\aversion\x88\x01\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\f\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_apikeysourceB\f\n" +
 	"\n" +
 	"_clonefromB\x0e\n" +
 	"\f_descriptionB\x1c\n" +
-	"\x1a_disableexecuteapiendpointB\x19\n" +
+	"\x1a_disableexecuteapiendpointB\x15\n" +
+	"\x13_endpointaccessmodeB\x19\n" +
 	"\x17_minimumcompressionsizeB\t\n" +
-	"\a_policyB\n" +
+	"\a_policyB\x11\n" +
+	"\x0f_securitypolicyB\n" +
 	"\n" +
-	"\b_version\"\xc3\x06\n" +
+	"\b_version\"\xdd\x06\n" +
 	"\x12CreateStageRequest\x128\n" +
-	"\x13cacheclusterenabled\x18\xf7\xa5\xc0\x1e \x01(\bH\x00R\x13cacheclusterenabled\x88\x01\x01\x12K\n" +
-	"\x10cacheclustersize\x18\xa5\xdf\xdbn \x01(\x0e2\x1c.apigateway.CacheClusterSizeR\x10cacheclustersize\x12F\n" +
+	"\x13cacheclusterenabled\x18\xf7\xa5\xc0\x1e \x01(\bH\x00R\x13cacheclusterenabled\x88\x01\x01\x12P\n" +
+	"\x10cacheclustersize\x18\xa5\xdf\xdbn \x01(\x0e2\x1c.apigateway.CacheClusterSizeH\x01R\x10cacheclustersize\x88\x01\x01\x12F\n" +
 	"\x0ecanarysettings\x18Ş\x94\x88\x01 \x01(\v2\x1a.apigateway.CanarySettingsR\x0ecanarysettings\x12&\n" +
 	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tR\fdeploymentid\x12)\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12:\n" +
-	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tH\x02R\x14documentationversion\x88\x01\x01\x12 \n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x12:\n" +
+	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tH\x03R\x14documentationversion\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1f\n" +
 	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\x12@\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2(.apigateway.CreateStageRequest.TagsEntryR\x04tags\x12/\n" +
-	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\x03R\x0etracingenabled\x88\x01\x01\x12N\n" +
+	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\x04R\x0etracingenabled\x88\x01\x01\x12N\n" +
 	"\tvariables\x18\xc3ŭM \x03(\v2-.apigateway.CreateStageRequest.VariablesEntryR\tvariables\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -14959,7 +14968,8 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0eVariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x16\n" +
-	"\x14_cacheclusterenabledB\x0e\n" +
+	"\x14_cacheclusterenabledB\x13\n" +
+	"\x11_cacheclustersizeB\x0e\n" +
 	"\f_descriptionB\x17\n" +
 	"\x15_documentationversionB\x11\n" +
 	"\x0f_tracingenabled\"x\n" +
@@ -15149,7 +15159,7 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x15DocumentationVersions\x12:\n" +
 	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2 .apigateway.DocumentationVersionR\x05items\x12#\n" +
 	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
-	"\t_position\"\xf0\x0e\n" +
+	"\t_position\"\xd3\x0f\n" +
 	"\n" +
 	"DomainName\x12/\n" +
 	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x120\n" +
@@ -15161,22 +15171,22 @@ const file_apigateway_proto_rawDesc = "" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tH\x05R\n" +
 	"domainname\x88\x01\x01\x12,\n" +
 	"\rdomainnamearn\x18\x96߭t \x01(\tH\x06R\rdomainnamearn\x88\x01\x01\x12+\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\aR\fdomainnameid\x88\x01\x01\x12L\n" +
-	"\x10domainnamestatus\x18\xb5˕\x83\x01 \x01(\x0e2\x1c.apigateway.DomainNameStatusR\x10domainnamestatus\x12A\n" +
-	"\x17domainnamestatusmessage\x18\xb4\xc3\xe1\x9f\x01 \x01(\tH\bR\x17domainnamestatusmessage\x88\x01\x01\x12R\n" +
-	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeR\x12endpointaccessmode\x12[\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\aR\fdomainnameid\x88\x01\x01\x12Q\n" +
+	"\x10domainnamestatus\x18\xb5˕\x83\x01 \x01(\x0e2\x1c.apigateway.DomainNameStatusH\bR\x10domainnamestatus\x88\x01\x01\x12A\n" +
+	"\x17domainnamestatusmessage\x18\xb4\xc3\xe1\x9f\x01 \x01(\tH\tR\x17domainnamestatusmessage\x88\x01\x01\x12W\n" +
+	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeH\n" +
+	"R\x12endpointaccessmode\x88\x01\x01\x12[\n" +
 	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x122\n" +
-	"\x10managementpolicy\x18\xb9\xbf\xfb* \x01(\tH\tR\x10managementpolicy\x88\x01\x01\x12`\n" +
+	"\x10managementpolicy\x18\xb9\xbf\xfb* \x01(\tH\vR\x10managementpolicy\x88\x01\x01\x12`\n" +
 	"\x17mutualtlsauthentication\x18\x9b\u05f6/ \x01(\v2#.apigateway.MutualTlsAuthenticationR\x17mutualtlsauthentication\x12X\n" +
-	"#ownershipverificationcertificatearn\x18\x94\x8f\xf9/ \x01(\tH\n" +
-	"R#ownershipverificationcertificatearn\x88\x01\x01\x12\x1e\n" +
-	"\x06policy\x18\x80\xf5\x83v \x01(\tH\vR\x06policy\x88\x01\x01\x12>\n" +
-	"\x16regionalcertificatearn\x18\xd3\xf0\xadA \x01(\tH\fR\x16regionalcertificatearn\x88\x01\x01\x12A\n" +
-	"\x17regionalcertificatename\x18\xcd\xf4\xed\xcd\x01 \x01(\tH\rR\x17regionalcertificatename\x88\x01\x01\x126\n" +
-	"\x12regionaldomainname\x18\xb0\xcf\xc4^ \x01(\tH\x0eR\x12regionaldomainname\x88\x01\x01\x12;\n" +
-	"\x14regionalhostedzoneid\x18\x95\xa9\xe8\xde\x01 \x01(\tH\x0fR\x14regionalhostedzoneid\x88\x01\x01\x12=\n" +
-	"\vroutingmode\x18\xe7ո\xf1\x01 \x01(\x0e2\x17.apigateway.RoutingModeR\vroutingmode\x12F\n" +
-	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyR\x0esecuritypolicy\x128\n" +
+	"#ownershipverificationcertificatearn\x18\x94\x8f\xf9/ \x01(\tH\fR#ownershipverificationcertificatearn\x88\x01\x01\x12\x1e\n" +
+	"\x06policy\x18\x80\xf5\x83v \x01(\tH\rR\x06policy\x88\x01\x01\x12>\n" +
+	"\x16regionalcertificatearn\x18\xd3\xf0\xadA \x01(\tH\x0eR\x16regionalcertificatearn\x88\x01\x01\x12A\n" +
+	"\x17regionalcertificatename\x18\xcd\xf4\xed\xcd\x01 \x01(\tH\x0fR\x17regionalcertificatename\x88\x01\x01\x126\n" +
+	"\x12regionaldomainname\x18\xb0\xcf\xc4^ \x01(\tH\x10R\x12regionaldomainname\x88\x01\x01\x12;\n" +
+	"\x14regionalhostedzoneid\x18\x95\xa9\xe8\xde\x01 \x01(\tH\x11R\x14regionalhostedzoneid\x88\x01\x01\x12B\n" +
+	"\vroutingmode\x18\xe7ո\xf1\x01 \x01(\x0e2\x17.apigateway.RoutingModeH\x12R\vroutingmode\x88\x01\x01\x12K\n" +
+	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyH\x13R\x0esecuritypolicy\x88\x01\x01\x128\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2 .apigateway.DomainName.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -15188,25 +15198,30 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x19_distributionhostedzoneidB\r\n" +
 	"\v_domainnameB\x10\n" +
 	"\x0e_domainnamearnB\x0f\n" +
-	"\r_domainnameidB\x1a\n" +
-	"\x18_domainnamestatusmessageB\x13\n" +
+	"\r_domainnameidB\x13\n" +
+	"\x11_domainnamestatusB\x1a\n" +
+	"\x18_domainnamestatusmessageB\x15\n" +
+	"\x13_endpointaccessmodeB\x13\n" +
 	"\x11_managementpolicyB&\n" +
 	"$_ownershipverificationcertificatearnB\t\n" +
 	"\a_policyB\x19\n" +
 	"\x17_regionalcertificatearnB\x1a\n" +
 	"\x18_regionalcertificatenameB\x15\n" +
 	"\x13_regionaldomainnameB\x17\n" +
-	"\x15_regionalhostedzoneid\"\xa2\x04\n" +
+	"\x15_regionalhostedzoneidB\x0e\n" +
+	"\f_routingmodeB\x11\n" +
+	"\x0f_securitypolicy\"\xc7\x04\n" +
 	"\x1bDomainNameAccessAssociation\x12A\n" +
-	"\x17accessassociationsource\x18\xa4\xa2Ü\x01 \x01(\tH\x00R\x17accessassociationsource\x88\x01\x01\x12l\n" +
-	"\x1baccessassociationsourcetype\x18\xbc\xba\x8eT \x01(\x0e2'.apigateway.AccessAssociationSourceTypeR\x1baccessassociationsourcetype\x12O\n" +
-	"\x1edomainnameaccessassociationarn\x18\xc7\xfc\xff\x85\x01 \x01(\tH\x01R\x1edomainnameaccessassociationarn\x88\x01\x01\x12,\n" +
-	"\rdomainnamearn\x18\x96߭t \x01(\tH\x02R\rdomainnamearn\x88\x01\x01\x12I\n" +
+	"\x17accessassociationsource\x18\xa4\xa2Ü\x01 \x01(\tH\x00R\x17accessassociationsource\x88\x01\x01\x12q\n" +
+	"\x1baccessassociationsourcetype\x18\xbc\xba\x8eT \x01(\x0e2'.apigateway.AccessAssociationSourceTypeH\x01R\x1baccessassociationsourcetype\x88\x01\x01\x12O\n" +
+	"\x1edomainnameaccessassociationarn\x18\xc7\xfc\xff\x85\x01 \x01(\tH\x02R\x1edomainnameaccessassociationarn\x88\x01\x01\x12,\n" +
+	"\rdomainnamearn\x18\x96߭t \x01(\tH\x03R\rdomainnamearn\x88\x01\x01\x12I\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v21.apigateway.DomainNameAccessAssociation.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x1a\n" +
-	"\x18_accessassociationsourceB!\n" +
+	"\x18_accessassociationsourceB\x1e\n" +
+	"\x1c_accessassociationsourcetypeB!\n" +
 	"\x1f_domainnameaccessassociationarnB\x10\n" +
 	"\x0e_domainnamearn\"\x93\x01\n" +
 	"\x1cDomainNameAccessAssociations\x12A\n" +
@@ -15216,11 +15231,12 @@ const file_apigateway_proto_rawDesc = "" +
 	"\vDomainNames\x120\n" +
 	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x16.apigateway.DomainNameR\x05items\x12#\n" +
 	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
-	"\t_position\"\xbb\x01\n" +
-	"\x15EndpointConfiguration\x12C\n" +
-	"\ripaddresstype\x18\x85\xc5\xe7\xbb\x01 \x01(\x0e2\x19.apigateway.IpAddressTypeR\ripaddresstype\x122\n" +
+	"\t_position\"\xd2\x01\n" +
+	"\x15EndpointConfiguration\x12H\n" +
+	"\ripaddresstype\x18\x85\xc5\xe7\xbb\x01 \x01(\x0e2\x19.apigateway.IpAddressTypeH\x00R\ripaddresstype\x88\x01\x01\x122\n" +
 	"\x05types\x18\x9b\x89\x83\xff\x01 \x03(\x0e2\x18.apigateway.EndpointTypeR\x05types\x12)\n" +
-	"\x0evpcendpointids\x18\xbe\xfa\xb4@ \x03(\tR\x0evpcendpointids\"\xc7\x01\n" +
+	"\x0evpcendpointids\x18\xbe\xfa\xb4@ \x03(\tR\x0evpcendpointidsB\x10\n" +
+	"\x0e_ipaddresstype\"\xc7\x01\n" +
 	"\x0eExportResponse\x12!\n" +
 	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x04body\x88\x01\x01\x127\n" +
 	"\x12contentdisposition\x18\xe2\x8f\xf1\xb2\x01 \x01(\tH\x01R\x12contentdisposition\x88\x01\x01\x12)\n" +
@@ -15233,14 +15249,14 @@ const file_apigateway_proto_rawDesc = "" +
 	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"[\n" +
 	"\x16FlushStageCacheRequest\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1f\n" +
-	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"\xb2\x04\n" +
+	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"\xc8\x04\n" +
 	"\x0fGatewayResponse\x120\n" +
 	"\x0fdefaultresponse\x18\xe2\xf7\xc3N \x01(\bH\x00R\x0fdefaultresponse\x88\x01\x01\x12f\n" +
 	"\x12responseparameters\x18\xdf\xeb\xd2\x1e \x03(\v23.apigateway.GatewayResponse.ResponseparametersEntryR\x12responseparameters\x12c\n" +
-	"\x11responsetemplates\x18\xbaߙ3 \x03(\v22.apigateway.GatewayResponse.ResponsetemplatesEntryR\x11responsetemplates\x12G\n" +
-	"\fresponsetype\x18\xbf\xb0\x9b\xb4\x01 \x01(\x0e2\x1f.apigateway.GatewayResponseTypeR\fresponsetype\x12'\n" +
+	"\x11responsetemplates\x18\xbaߙ3 \x03(\v22.apigateway.GatewayResponse.ResponsetemplatesEntryR\x11responsetemplates\x12L\n" +
+	"\fresponsetype\x18\xbf\xb0\x9b\xb4\x01 \x01(\x0e2\x1f.apigateway.GatewayResponseTypeH\x01R\fresponsetype\x88\x01\x01\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x01R\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x02R\n" +
 	"statuscode\x88\x01\x01\x1aE\n" +
 	"\x17ResponseparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -15248,7 +15264,8 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x16ResponsetemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
-	"\x10_defaultresponseB\r\n" +
+	"\x10_defaultresponseB\x0f\n" +
+	"\r_responsetypeB\r\n" +
 	"\v_statuscode\"{\n" +
 	"\x10GatewayResponses\x125\n" +
 	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1b.apigateway.GatewayResponseR\x05items\x12#\n" +
@@ -15325,20 +15342,22 @@ const file_apigateway_proto_rawDesc = "" +
 	"\t_position\"u\n" +
 	"\x1bGetDocumentationPartRequest\x124\n" +
 	"\x13documentationpartid\x18\xc6\xe5ш\x01 \x01(\tR\x13documentationpartid\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xfb\x02\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xa1\x03\n" +
 	"\x1cGetDocumentationPartsRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12J\n" +
-	"\x0elocationstatus\x18\x89\xec\xe3\xfd\x01 \x01(\x0e2\x1e.apigateway.LocationStatusTypeR\x0elocationstatus\x12$\n" +
-	"\tnamequery\x18\xab\xf8\xa9\x18 \x01(\tH\x01R\tnamequery\x88\x01\x01\x12\x1a\n" +
-	"\x04path\x18\xb7\x9a\x9d$ \x01(\tH\x02R\x04path\x88\x01\x01\x12#\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x03R\bposition\x88\x01\x01\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x129\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2!.apigateway.DocumentationPartTypeR\x04typeB\b\n" +
-	"\x06_limitB\f\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12O\n" +
+	"\x0elocationstatus\x18\x89\xec\xe3\xfd\x01 \x01(\x0e2\x1e.apigateway.LocationStatusTypeH\x01R\x0elocationstatus\x88\x01\x01\x12$\n" +
+	"\tnamequery\x18\xab\xf8\xa9\x18 \x01(\tH\x02R\tnamequery\x88\x01\x01\x12\x1a\n" +
+	"\x04path\x18\xb7\x9a\x9d$ \x01(\tH\x03R\x04path\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x04R\bposition\x88\x01\x01\x12 \n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12>\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2!.apigateway.DocumentationPartTypeH\x05R\x04type\x88\x01\x01B\b\n" +
+	"\x06_limitB\x11\n" +
+	"\x0f_locationstatusB\f\n" +
 	"\n" +
 	"_namequeryB\a\n" +
 	"\x05_pathB\v\n" +
-	"\t_position\"y\n" +
+	"\t_positionB\a\n" +
+	"\x05_type\"y\n" +
 	"\x1eGetDocumentationVersionRequest\x125\n" +
 	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tR\x14documentationversion\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x9e\x01\n" +
@@ -15347,25 +15366,27 @@ const file_apigateway_proto_rawDesc = "" +
 	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\b\n" +
 	"\x06_limitB\v\n" +
-	"\t_position\"\xc7\x01\n" +
+	"\t_position\"\xde\x01\n" +
 	"&GetDomainNameAccessAssociationsRequest\x12\x1d\n" +
 	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12B\n" +
-	"\rresourceowner\x18\x85\xe7\xca{ \x01(\x0e2\x19.apigateway.ResourceOwnerR\rresourceownerB\b\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12G\n" +
+	"\rresourceowner\x18\x85\xe7\xca{ \x01(\x0e2\x19.apigateway.ResourceOwnerH\x02R\rresourceowner\x88\x01\x01B\b\n" +
 	"\x06_limitB\v\n" +
-	"\t_position\"x\n" +
+	"\t_positionB\x10\n" +
+	"\x0e_resourceowner\"x\n" +
 	"\x14GetDomainNameRequest\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
 	"domainname\x12+\n" +
 	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\x00R\fdomainnameid\x88\x01\x01B\x0f\n" +
-	"\r_domainnameid\"\xb6\x01\n" +
+	"\r_domainnameid\"\xcd\x01\n" +
 	"\x15GetDomainNamesRequest\x12\x1d\n" +
 	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12B\n" +
-	"\rresourceowner\x18\x85\xe7\xca{ \x01(\x0e2\x19.apigateway.ResourceOwnerR\rresourceownerB\b\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12G\n" +
+	"\rresourceowner\x18\x85\xe7\xca{ \x01(\x0e2\x19.apigateway.ResourceOwnerH\x02R\rresourceowner\x88\x01\x01B\b\n" +
 	"\x06_limitB\v\n" +
-	"\t_position\"\xb6\x02\n" +
+	"\t_positionB\x10\n" +
+	"\x0e_resourceowner\"\xb6\x02\n" +
 	"\x10GetExportRequest\x12 \n" +
 	"\aaccepts\x18\xaf\xcf\xcb[ \x01(\tH\x00R\aaccepts\x88\x01\x01\x12!\n" +
 	"\n" +
@@ -15544,13 +15565,14 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12/\n" +
 	"\x0efailonwarnings\x18\xb6\xbc\x8f\xcf\x01 \x01(\bH\x00R\x0efailonwarnings\x88\x01\x01\x125\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x19.apigateway.ApiKeysFormatR\x06formatB\x11\n" +
-	"\x0f_failonwarnings\"\xd1\x01\n" +
+	"\x0f_failonwarnings\"\xdf\x01\n" +
 	"\x1fImportDocumentationPartsRequest\x12\x1c\n" +
 	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12/\n" +
-	"\x0efailonwarnings\x18\xb6\xbc\x8f\xcf\x01 \x01(\bH\x00R\x0efailonwarnings\x88\x01\x01\x12*\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x13.apigateway.PutModeR\x04mode\x12 \n" +
+	"\x0efailonwarnings\x18\xb6\xbc\x8f\xcf\x01 \x01(\bH\x00R\x0efailonwarnings\x88\x01\x01\x12/\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x13.apigateway.PutModeH\x01R\x04mode\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\x11\n" +
-	"\x0f_failonwarnings\"\x8c\x02\n" +
+	"\x0f_failonwarningsB\a\n" +
+	"\x05_mode\"\x8c\x02\n" +
 	"\x14ImportRestApiRequest\x12\x1c\n" +
 	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12/\n" +
 	"\x0efailonwarnings\x18\xb6\xbc\x8f\xcf\x01 \x01(\bH\x00R\x0efailonwarnings\x88\x01\x01\x12S\n" +
@@ -15560,27 +15582,28 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
-	"\x0f_failonwarnings\"\xbf\v\n" +
+	"\x0f_failonwarnings\"\x9c\f\n" +
 	"\vIntegration\x122\n" +
 	"\x12cachekeyparameters\x18\xa1\xec\xc8\xe5\x01 \x03(\tR\x12cachekeyparameters\x12.\n" +
 	"\x0ecachenamespace\x18\xa1\xa1\xca( \x01(\tH\x00R\x0ecachenamespace\x88\x01\x01\x12+\n" +
-	"\fconnectionid\x18\xbd\xc3\xcb\xd6\x01 \x01(\tH\x01R\fconnectionid\x88\x01\x01\x12F\n" +
-	"\x0econnectiontype\x18\U000a1ae0\x01 \x01(\x0e2\x1a.apigateway.ConnectionTypeR\x0econnectiontype\x12Q\n" +
-	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12(\n" +
-	"\vcredentials\x18ҷ\xf6G \x01(\tH\x02R\vcredentials\x88\x01\x01\x12&\n" +
+	"\fconnectionid\x18\xbd\xc3\xcb\xd6\x01 \x01(\tH\x01R\fconnectionid\x88\x01\x01\x12K\n" +
+	"\x0econnectiontype\x18\U000a1ae0\x01 \x01(\x0e2\x1a.apigateway.ConnectionTypeH\x02R\x0econnectiontype\x88\x01\x01\x12V\n" +
+	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyH\x03R\x0fcontenthandling\x88\x01\x01\x12(\n" +
+	"\vcredentials\x18ҷ\xf6G \x01(\tH\x04R\vcredentials\x88\x01\x01\x12&\n" +
 	"\n" +
-	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tH\x03R\n" +
+	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tH\x05R\n" +
 	"httpmethod\x88\x01\x01\x12i\n" +
 	"\x14integrationresponses\x18\xf0\xff\xaa\xb8\x01 \x03(\v21.apigateway.Integration.IntegrationresponsesEntryR\x14integrationresponses\x124\n" +
-	"\x11integrationtarget\x18\xf1\x88\xb5\b \x01(\tH\x04R\x11integrationtarget\x88\x01\x01\x129\n" +
-	"\x13passthroughbehavior\x18\xecę\x94\x01 \x01(\tH\x05R\x13passthroughbehavior\x88\x01\x01\x12`\n" +
+	"\x11integrationtarget\x18\xf1\x88\xb5\b \x01(\tH\x06R\x11integrationtarget\x88\x01\x01\x129\n" +
+	"\x13passthroughbehavior\x18\xecę\x94\x01 \x01(\tH\aR\x13passthroughbehavior\x88\x01\x01\x12`\n" +
 	"\x11requestparameters\x18\xa3\xf3\xcf\xf9\x01 \x03(\v2..apigateway.Integration.RequestparametersEntryR\x11requestparameters\x12]\n" +
-	"\x10requesttemplates\x18\xe6\xfb\x83\x9f\x01 \x03(\v2-.apigateway.Integration.RequesttemplatesEntryR\x10requesttemplates\x12X\n" +
-	"\x14responsetransfermode\x18\xc3\xd8\xe9\xda\x01 \x01(\x0e2 .apigateway.ResponseTransferModeR\x14responsetransfermode\x121\n" +
-	"\x0ftimeoutinmillis\x18\x86\xa3\xad\xb4\x01 \x01(\x05H\x06R\x0ftimeoutinmillis\x88\x01\x01\x126\n" +
-	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x15.apigateway.TlsConfigR\ttlsconfig\x123\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1b.apigateway.IntegrationTypeR\x04type\x12\x19\n" +
-	"\x03uri\x18\xfe\xa7\xbd\xbc\x01 \x01(\tH\aR\x03uri\x88\x01\x01\x1ah\n" +
+	"\x10requesttemplates\x18\xe6\xfb\x83\x9f\x01 \x03(\v2-.apigateway.Integration.RequesttemplatesEntryR\x10requesttemplates\x12]\n" +
+	"\x14responsetransfermode\x18\xc3\xd8\xe9\xda\x01 \x01(\x0e2 .apigateway.ResponseTransferModeH\bR\x14responsetransfermode\x88\x01\x01\x121\n" +
+	"\x0ftimeoutinmillis\x18\x86\xa3\xad\xb4\x01 \x01(\x05H\tR\x0ftimeoutinmillis\x88\x01\x01\x126\n" +
+	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x15.apigateway.TlsConfigR\ttlsconfig\x128\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1b.apigateway.IntegrationTypeH\n" +
+	"R\x04type\x88\x01\x01\x12\x19\n" +
+	"\x03uri\x18\xfe\xa7\xbd\xbc\x01 \x01(\tH\vR\x03uri\x88\x01\x01\x1ah\n" +
 	"\x19IntegrationresponsesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x125\n" +
 	"\x05value\x18\x02 \x01(\v2\x1f.apigateway.IntegrationResponseR\x05value:\x028\x01\x1aD\n" +
@@ -15591,27 +15614,32 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
 	"\x0f_cachenamespaceB\x0f\n" +
-	"\r_connectionidB\x0e\n" +
+	"\r_connectionidB\x11\n" +
+	"\x0f_connectiontypeB\x12\n" +
+	"\x10_contenthandlingB\x0e\n" +
 	"\f_credentialsB\r\n" +
 	"\v_httpmethodB\x14\n" +
 	"\x12_integrationtargetB\x16\n" +
-	"\x14_passthroughbehaviorB\x12\n" +
-	"\x10_timeoutinmillisB\x06\n" +
-	"\x04_uri\"\xcc\x04\n" +
-	"\x13IntegrationResponse\x12Q\n" +
-	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12j\n" +
+	"\x14_passthroughbehaviorB\x17\n" +
+	"\x15_responsetransfermodeB\x12\n" +
+	"\x10_timeoutinmillisB\a\n" +
+	"\x05_typeB\x06\n" +
+	"\x04_uri\"\xe5\x04\n" +
+	"\x13IntegrationResponse\x12V\n" +
+	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyH\x00R\x0fcontenthandling\x88\x01\x01\x12j\n" +
 	"\x12responseparameters\x18\xdf\xeb\xd2\x1e \x03(\v27.apigateway.IntegrationResponse.ResponseparametersEntryR\x12responseparameters\x12g\n" +
 	"\x11responsetemplates\x18\xbaߙ3 \x03(\v26.apigateway.IntegrationResponse.ResponsetemplatesEntryR\x11responsetemplates\x123\n" +
-	"\x10selectionpattern\x18\xba\x9c\xb5\xe0\x01 \x01(\tH\x00R\x10selectionpattern\x88\x01\x01\x12'\n" +
+	"\x10selectionpattern\x18\xba\x9c\xb5\xe0\x01 \x01(\tH\x01R\x10selectionpattern\x88\x01\x01\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x01R\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x02R\n" +
 	"statuscode\x88\x01\x01\x1aE\n" +
 	"\x17ResponseparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aD\n" +
 	"\x16ResponsetemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
+	"\x10_contenthandlingB\x13\n" +
 	"\x11_selectionpatternB\r\n" +
 	"\v_statuscode\"\x93\x01\n" +
 	"\x16LimitExceededException\x12 \n" +
@@ -15661,7 +15689,7 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x17ResponseparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01B\r\n" +
-	"\v_statuscode\"\xf6\x06\n" +
+	"\v_statuscode\"\xa6\a\n" +
 	"\rMethodSetting\x127\n" +
 	"\x12cachedataencrypted\x18\xf4\xbe\xb2\xe5\x01 \x01(\bH\x00R\x12cachedataencrypted\x88\x01\x01\x124\n" +
 	"\x11cachettlinseconds\x18\xb6В& \x01(\x05H\x01R\x11cachettlinseconds\x88\x01\x01\x12/\n" +
@@ -15671,8 +15699,8 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0emetricsenabled\x18\x84\x8b\xf7C \x01(\bH\x05R\x0emetricsenabled\x88\x01\x01\x12Y\n" +
 	"#requireauthorizationforcachecontrol\x18\xe0ٷ\xfc\x01 \x01(\bH\x06R#requireauthorizationforcachecontrol\x88\x01\x01\x12;\n" +
 	"\x14throttlingburstlimit\x18\xb8\x95\x8f\xc0\x01 \x01(\x05H\aR\x14throttlingburstlimit\x88\x01\x01\x129\n" +
-	"\x13throttlingratelimit\x18\xc8\uf7f1\x01 \x01(\x01H\bR\x13throttlingratelimit\x88\x01\x01\x12\x8e\x01\n" +
-	"&unauthorizedcachecontrolheaderstrategy\x18\x9d\xfd\xa9\xe3\x01 \x01(\x0e22.apigateway.UnauthorizedCacheControlHeaderStrategyR&unauthorizedcachecontrolheaderstrategyB\x15\n" +
+	"\x13throttlingratelimit\x18\xc8\uf7f1\x01 \x01(\x01H\bR\x13throttlingratelimit\x88\x01\x01\x12\x93\x01\n" +
+	"&unauthorizedcachecontrolheaderstrategy\x18\x9d\xfd\xa9\xe3\x01 \x01(\x0e22.apigateway.UnauthorizedCacheControlHeaderStrategyH\tR&unauthorizedcachecontrolheaderstrategy\x88\x01\x01B\x15\n" +
 	"\x13_cachedataencryptedB\x14\n" +
 	"\x12_cachettlinsecondsB\x11\n" +
 	"\x0f_cachingenabledB\x13\n" +
@@ -15681,7 +15709,8 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0f_metricsenabledB&\n" +
 	"$_requireauthorizationforcachecontrolB\x17\n" +
 	"\x15_throttlingburstlimitB\x16\n" +
-	"\x14_throttlingratelimit\"\xa1\x01\n" +
+	"\x14_throttlingratelimitB)\n" +
+	"'_unauthorizedcachecontrolheaderstrategy\"\xa1\x01\n" +
 	"\x0eMethodSnapshot\x12/\n" +
 	"\x0eapikeyrequired\x18\x98\xa3\xcc\xcf\x01 \x01(\bH\x00R\x0eapikeyrequired\x88\x01\x01\x125\n" +
 	"\x11authorizationtype\x18\xdf뀹\x01 \x01(\tH\x01R\x11authorizationtype\x88\x01\x01B\x11\n" +
@@ -15716,13 +15745,14 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x11NotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xa7\x01\n" +
+	"\b_message\"\xb3\x01\n" +
 	"\x0ePatchOperation\x12\x1b\n" +
-	"\x04from\x18\xf6\x80\xb6\xae\x01 \x01(\tH\x00R\x04from\x88\x01\x01\x12\"\n" +
-	"\x02op\x18\xab\xd9\xd0\xf9\x01 \x01(\x0e2\x0e.apigateway.OpR\x02op\x12\x1a\n" +
-	"\x04path\x18\xb7\x9a\x9d$ \x01(\tH\x01R\x04path\x88\x01\x01\x12\x1c\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tH\x02R\x05value\x88\x01\x01B\a\n" +
-	"\x05_fromB\a\n" +
+	"\x04from\x18\xf6\x80\xb6\xae\x01 \x01(\tH\x00R\x04from\x88\x01\x01\x12'\n" +
+	"\x02op\x18\xab\xd9\xd0\xf9\x01 \x01(\x0e2\x0e.apigateway.OpH\x01R\x02op\x88\x01\x01\x12\x1a\n" +
+	"\x04path\x18\xb7\x9a\x9d$ \x01(\tH\x02R\x04path\x88\x01\x01\x12\x1c\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tH\x03R\x05value\x88\x01\x01B\a\n" +
+	"\x05_fromB\x05\n" +
+	"\x03_opB\a\n" +
 	"\x05_pathB\b\n" +
 	"\x06_value\"\xac\x04\n" +
 	"\x19PutGatewayResponseRequest\x12p\n" +
@@ -15739,31 +15769,32 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x16ResponsetemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
-	"\v_statuscode\"\x93\v\n" +
+	"\v_statuscode\"\xe2\v\n" +
 	"\x15PutIntegrationRequest\x122\n" +
 	"\x12cachekeyparameters\x18\xa1\xec\xc8\xe5\x01 \x03(\tR\x12cachekeyparameters\x12.\n" +
 	"\x0ecachenamespace\x18\xa1\xa1\xca( \x01(\tH\x00R\x0ecachenamespace\x88\x01\x01\x12+\n" +
-	"\fconnectionid\x18\xbd\xc3\xcb\xd6\x01 \x01(\tH\x01R\fconnectionid\x88\x01\x01\x12F\n" +
-	"\x0econnectiontype\x18\U000a1ae0\x01 \x01(\x0e2\x1a.apigateway.ConnectionTypeR\x0econnectiontype\x12Q\n" +
-	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12(\n" +
-	"\vcredentials\x18ҷ\xf6G \x01(\tH\x02R\vcredentials\x88\x01\x01\x12!\n" +
+	"\fconnectionid\x18\xbd\xc3\xcb\xd6\x01 \x01(\tH\x01R\fconnectionid\x88\x01\x01\x12K\n" +
+	"\x0econnectiontype\x18\U000a1ae0\x01 \x01(\x0e2\x1a.apigateway.ConnectionTypeH\x02R\x0econnectiontype\x88\x01\x01\x12V\n" +
+	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyH\x03R\x0fcontenthandling\x88\x01\x01\x12(\n" +
+	"\vcredentials\x18ҷ\xf6G \x01(\tH\x04R\vcredentials\x88\x01\x01\x12!\n" +
 	"\n" +
 	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tR\n" +
 	"httpmethod\x12=\n" +
-	"\x15integrationhttpmethod\x18\x99Ӷ\xa9\x01 \x01(\tH\x03R\x15integrationhttpmethod\x88\x01\x01\x124\n" +
-	"\x11integrationtarget\x18\xf1\x88\xb5\b \x01(\tH\x04R\x11integrationtarget\x88\x01\x01\x129\n" +
-	"\x13passthroughbehavior\x18\xecę\x94\x01 \x01(\tH\x05R\x13passthroughbehavior\x88\x01\x01\x12j\n" +
+	"\x15integrationhttpmethod\x18\x99Ӷ\xa9\x01 \x01(\tH\x05R\x15integrationhttpmethod\x88\x01\x01\x124\n" +
+	"\x11integrationtarget\x18\xf1\x88\xb5\b \x01(\tH\x06R\x11integrationtarget\x88\x01\x01\x129\n" +
+	"\x13passthroughbehavior\x18\xecę\x94\x01 \x01(\tH\aR\x13passthroughbehavior\x88\x01\x01\x12j\n" +
 	"\x11requestparameters\x18\xa3\xf3\xcf\xf9\x01 \x03(\v28.apigateway.PutIntegrationRequest.RequestparametersEntryR\x11requestparameters\x12g\n" +
 	"\x10requesttemplates\x18\xe6\xfb\x83\x9f\x01 \x03(\v27.apigateway.PutIntegrationRequest.RequesttemplatesEntryR\x10requesttemplates\x12\"\n" +
 	"\n" +
 	"resourceid\x18\xb1\xbd\x89\x98\x01 \x01(\tR\n" +
-	"resourceid\x12X\n" +
-	"\x14responsetransfermode\x18\xc3\xd8\xe9\xda\x01 \x01(\x0e2 .apigateway.ResponseTransferModeR\x14responsetransfermode\x12 \n" +
+	"resourceid\x12]\n" +
+	"\x14responsetransfermode\x18\xc3\xd8\xe9\xda\x01 \x01(\x0e2 .apigateway.ResponseTransferModeH\bR\x14responsetransfermode\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x121\n" +
-	"\x0ftimeoutinmillis\x18\x86\xa3\xad\xb4\x01 \x01(\x05H\x06R\x0ftimeoutinmillis\x88\x01\x01\x126\n" +
+	"\x0ftimeoutinmillis\x18\x86\xa3\xad\xb4\x01 \x01(\x05H\tR\x0ftimeoutinmillis\x88\x01\x01\x126\n" +
 	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x15.apigateway.TlsConfigR\ttlsconfig\x123\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1b.apigateway.IntegrationTypeR\x04type\x12\x19\n" +
-	"\x03uri\x18\xfe\xa7\xbd\xbc\x01 \x01(\tH\aR\x03uri\x88\x01\x01\x1aD\n" +
+	"\x03uri\x18\xfe\xa7\xbd\xbc\x01 \x01(\tH\n" +
+	"R\x03uri\x88\x01\x01\x1aD\n" +
 	"\x16RequestparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aC\n" +
@@ -15771,15 +15802,18 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
 	"\x0f_cachenamespaceB\x0f\n" +
-	"\r_connectionidB\x0e\n" +
+	"\r_connectionidB\x11\n" +
+	"\x0f_connectiontypeB\x12\n" +
+	"\x10_contenthandlingB\x0e\n" +
 	"\f_credentialsB\x18\n" +
 	"\x16_integrationhttpmethodB\x14\n" +
 	"\x12_integrationtargetB\x16\n" +
-	"\x14_passthroughbehaviorB\x12\n" +
+	"\x14_passthroughbehaviorB\x17\n" +
+	"\x15_responsetransfermodeB\x12\n" +
 	"\x10_timeoutinmillisB\x06\n" +
-	"\x04_uri\"\xbf\x05\n" +
-	"\x1dPutIntegrationResponseRequest\x12Q\n" +
-	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12!\n" +
+	"\x04_uri\"\xd8\x05\n" +
+	"\x1dPutIntegrationResponseRequest\x12V\n" +
+	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyH\x00R\x0fcontenthandling\x88\x01\x01\x12!\n" +
 	"\n" +
 	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tR\n" +
 	"httpmethod\x12\"\n" +
@@ -15789,7 +15823,7 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x12responseparameters\x18\xdf\xeb\xd2\x1e \x03(\v2A.apigateway.PutIntegrationResponseRequest.ResponseparametersEntryR\x12responseparameters\x12q\n" +
 	"\x11responsetemplates\x18\xbaߙ3 \x03(\v2@.apigateway.PutIntegrationResponseRequest.ResponsetemplatesEntryR\x11responsetemplates\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x123\n" +
-	"\x10selectionpattern\x18\xba\x9c\xb5\xe0\x01 \x01(\tH\x00R\x10selectionpattern\x88\x01\x01\x12\"\n" +
+	"\x10selectionpattern\x18\xba\x9c\xb5\xe0\x01 \x01(\tH\x01R\x10selectionpattern\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
 	"statuscode\x1aE\n" +
@@ -15798,7 +15832,8 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aD\n" +
 	"\x16ResponsetemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
+	"\x10_contenthandlingB\x13\n" +
 	"\x11_selectionpattern\"\xbe\x06\n" +
 	"\x10PutMethodRequest\x12/\n" +
 	"\x0eapikeyrequired\x18\x98\xa3\xcc\xcf\x01 \x01(\bH\x00R\x0eapikeyrequired\x88\x01\x01\x124\n" +
@@ -15844,11 +15879,11 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aE\n" +
 	"\x17ResponseparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\"\xd4\x02\n" +
+	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\"\xe2\x02\n" +
 	"\x11PutRestApiRequest\x12\x1c\n" +
 	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12/\n" +
-	"\x0efailonwarnings\x18\xb6\xbc\x8f\xcf\x01 \x01(\bH\x00R\x0efailonwarnings\x88\x01\x01\x12*\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x13.apigateway.PutModeR\x04mode\x12P\n" +
+	"\x0efailonwarnings\x18\xb6\xbc\x8f\xcf\x01 \x01(\bH\x00R\x0efailonwarnings\x88\x01\x01\x12/\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x13.apigateway.PutModeH\x01R\x04mode\x88\x01\x01\x12P\n" +
 	"\n" +
 	"parameters\x18\xdaݔE \x03(\v2-.apigateway.PutRestApiRequest.ParametersEntryR\n" +
 	"parameters\x12 \n" +
@@ -15856,13 +15891,15 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
-	"\x0f_failonwarnings\"\x9d\x01\n" +
+	"\x0f_failonwarningsB\a\n" +
+	"\x05_mode\"\xad\x01\n" +
 	"\rQuotaSettings\x12\x1d\n" +
 	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
-	"\x06offset\x18˧\xa3\xa6\x01 \x01(\x05H\x01R\x06offset\x88\x01\x01\x127\n" +
-	"\x06period\x18\x85\x8e\xa5\xce\x01 \x01(\x0e2\x1b.apigateway.QuotaPeriodTypeR\x06periodB\b\n" +
+	"\x06offset\x18˧\xa3\xa6\x01 \x01(\x05H\x01R\x06offset\x88\x01\x01\x12<\n" +
+	"\x06period\x18\x85\x8e\xa5\xce\x01 \x01(\x0e2\x1b.apigateway.QuotaPeriodTypeH\x02R\x06period\x88\x01\x01B\b\n" +
 	"\x06_limitB\t\n" +
-	"\a_offset\"\x9f\x01\n" +
+	"\a_offsetB\t\n" +
+	"\a_period\"\x9f\x01\n" +
 	"(RejectDomainNameAccessAssociationRequest\x12J\n" +
 	"\x1edomainnameaccessassociationarn\x18\xc7\xfc\xff\x85\x01 \x01(\tR\x1edomainnameaccessassociationarn\x12'\n" +
 	"\rdomainnamearn\x18\x96߭t \x01(\tR\rdomainnamearn\"\x8f\x02\n" +
@@ -15895,38 +15932,44 @@ const file_apigateway_proto_rawDesc = "" +
 	"\tResources\x12.\n" +
 	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x14.apigateway.ResourceR\x05items\x12#\n" +
 	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
-	"\t_position\"\x9e\t\n" +
-	"\aRestApi\x12C\n" +
-	"\fapikeysource\x18\x94\x9c\xe03 \x01(\x0e2\x1c.apigateway.ApiKeySourceTypeR\fapikeysource\x126\n" +
-	"\tapistatus\x18\xd2\xd9\xd1_ \x01(\x0e2\x15.apigateway.ApiStatusR\tapistatus\x123\n" +
-	"\x10apistatusmessage\x18ɓ\xe6\xa8\x01 \x01(\tH\x00R\x10apistatusmessage\x88\x01\x01\x12.\n" +
+	"\t_position\"\xfb\t\n" +
+	"\aRestApi\x12H\n" +
+	"\fapikeysource\x18\x94\x9c\xe03 \x01(\x0e2\x1c.apigateway.ApiKeySourceTypeH\x00R\fapikeysource\x88\x01\x01\x12;\n" +
+	"\tapistatus\x18\xd2\xd9\xd1_ \x01(\x0e2\x15.apigateway.ApiStatusH\x01R\tapistatus\x88\x01\x01\x123\n" +
+	"\x10apistatusmessage\x18ɓ\xe6\xa8\x01 \x01(\tH\x02R\x10apistatusmessage\x88\x01\x01\x12.\n" +
 	"\x10binarymediatypes\x18\x92\xd6\xe5\xc1\x01 \x03(\tR\x10binarymediatypes\x12(\n" +
-	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x01R\vcreateddate\x88\x01\x01\x12)\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x12D\n" +
-	"\x19disableexecuteapiendpoint\x18\x98\xe5\xd1F \x01(\bH\x03R\x19disableexecuteapiendpoint\x88\x01\x01\x12R\n" +
-	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeR\x12endpointaccessmode\x12[\n" +
+	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x03R\vcreateddate\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x04R\vdescription\x88\x01\x01\x12D\n" +
+	"\x19disableexecuteapiendpoint\x18\x98\xe5\xd1F \x01(\bH\x05R\x19disableexecuteapiendpoint\x88\x01\x01\x12W\n" +
+	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeH\x06R\x12endpointaccessmode\x88\x01\x01\x12[\n" +
 	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x12\x17\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x04R\x02id\x88\x01\x01\x12>\n" +
-	"\x16minimumcompressionsize\x18\xbf\x83\xc6y \x01(\x05H\x05R\x16minimumcompressionsize\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x06R\x04name\x88\x01\x01\x12\x1e\n" +
-	"\x06policy\x18\x80\xf5\x83v \x01(\tH\aR\x06policy\x88\x01\x01\x12/\n" +
-	"\x0erootresourceid\x18\x91\xa3ޫ\x01 \x01(\tH\bR\x0erootresourceid\x88\x01\x01\x12F\n" +
-	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyR\x0esecuritypolicy\x125\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\aR\x02id\x88\x01\x01\x12>\n" +
+	"\x16minimumcompressionsize\x18\xbf\x83\xc6y \x01(\x05H\bR\x16minimumcompressionsize\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\tR\x04name\x88\x01\x01\x12\x1e\n" +
+	"\x06policy\x18\x80\xf5\x83v \x01(\tH\n" +
+	"R\x06policy\x88\x01\x01\x12/\n" +
+	"\x0erootresourceid\x18\x91\xa3ޫ\x01 \x01(\tH\vR\x0erootresourceid\x88\x01\x01\x12K\n" +
+	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyH\fR\x0esecuritypolicy\x88\x01\x01\x125\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1d.apigateway.RestApi.TagsEntryR\x04tags\x12 \n" +
-	"\aversion\x18\x98\xdd\xc63 \x01(\tH\tR\aversion\x88\x01\x01\x12\x1d\n" +
+	"\aversion\x18\x98\xdd\xc63 \x01(\tH\rR\aversion\x88\x01\x01\x12\x1d\n" +
 	"\bwarnings\x18\x95\x97\xc1X \x03(\tR\bwarnings\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_apikeysourceB\f\n" +
+	"\n" +
+	"_apistatusB\x13\n" +
 	"\x11_apistatusmessageB\x0e\n" +
 	"\f_createddateB\x0e\n" +
 	"\f_descriptionB\x1c\n" +
-	"\x1a_disableexecuteapiendpointB\x05\n" +
+	"\x1a_disableexecuteapiendpointB\x15\n" +
+	"\x13_endpointaccessmodeB\x05\n" +
 	"\x03_idB\x19\n" +
 	"\x17_minimumcompressionsizeB\a\n" +
 	"\x05_nameB\t\n" +
 	"\a_policyB\x11\n" +
-	"\x0f_rootresourceidB\n" +
+	"\x0f_rootresourceidB\x11\n" +
+	"\x0f_securitypolicyB\n" +
 	"\n" +
 	"\b_version\"k\n" +
 	"\bRestApis\x12-\n" +
@@ -15966,26 +16009,26 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x11retryafterseconds\x18\x83\xdf\xf5\xcf\x01 \x01(\tH\x01R\x11retryafterseconds\x88\x01\x01B\n" +
 	"\n" +
 	"\b_messageB\x14\n" +
-	"\x12_retryafterseconds\"\xff\n" +
-	"\n" +
+	"\x12_retryafterseconds\"\xb5\v\n" +
 	"\x05Stage\x12N\n" +
 	"\x11accesslogsettings\x18\xe7\xf3\xab$ \x01(\v2\x1d.apigateway.AccessLogSettingsR\x11accesslogsettings\x128\n" +
-	"\x13cacheclusterenabled\x18\xf7\xa5\xc0\x1e \x01(\bH\x00R\x13cacheclusterenabled\x88\x01\x01\x12K\n" +
-	"\x10cacheclustersize\x18\xa5\xdf\xdbn \x01(\x0e2\x1c.apigateway.CacheClusterSizeR\x10cacheclustersize\x12R\n" +
-	"\x12cacheclusterstatus\x18ػܷ\x01 \x01(\x0e2\x1e.apigateway.CacheClusterStatusR\x12cacheclusterstatus\x12F\n" +
+	"\x13cacheclusterenabled\x18\xf7\xa5\xc0\x1e \x01(\bH\x00R\x13cacheclusterenabled\x88\x01\x01\x12P\n" +
+	"\x10cacheclustersize\x18\xa5\xdf\xdbn \x01(\x0e2\x1c.apigateway.CacheClusterSizeH\x01R\x10cacheclustersize\x88\x01\x01\x12W\n" +
+	"\x12cacheclusterstatus\x18ػܷ\x01 \x01(\x0e2\x1e.apigateway.CacheClusterStatusH\x02R\x12cacheclusterstatus\x88\x01\x01\x12F\n" +
 	"\x0ecanarysettings\x18Ş\x94\x88\x01 \x01(\v2\x1a.apigateway.CanarySettingsR\x0ecanarysettings\x129\n" +
-	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tH\x01R\x13clientcertificateid\x88\x01\x01\x12(\n" +
-	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x02R\vcreateddate\x88\x01\x01\x12+\n" +
-	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tH\x03R\fdeploymentid\x88\x01\x01\x12)\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x04R\vdescription\x88\x01\x01\x12:\n" +
-	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tH\x05R\x14documentationversion\x88\x01\x01\x121\n" +
-	"\x0flastupdateddate\x18\xf1\xb5\xeb\xd5\x01 \x01(\tH\x06R\x0flastupdateddate\x88\x01\x01\x12P\n" +
+	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tH\x03R\x13clientcertificateid\x88\x01\x01\x12(\n" +
+	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x04R\vcreateddate\x88\x01\x01\x12+\n" +
+	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tH\x05R\fdeploymentid\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x06R\vdescription\x88\x01\x01\x12:\n" +
+	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tH\aR\x14documentationversion\x88\x01\x01\x121\n" +
+	"\x0flastupdateddate\x18\xf1\xb5\xeb\xd5\x01 \x01(\tH\bR\x0flastupdateddate\x88\x01\x01\x12P\n" +
 	"\x0emethodsettings\x18\xfeܾ\x0e \x03(\v2%.apigateway.Stage.MethodsettingsEntryR\x0emethodsettings\x12$\n" +
-	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tH\aR\tstagename\x88\x01\x01\x123\n" +
+	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tH\tR\tstagename\x88\x01\x01\x123\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1b.apigateway.Stage.TagsEntryR\x04tags\x12/\n" +
-	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\bR\x0etracingenabled\x88\x01\x01\x12A\n" +
+	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\n" +
+	"R\x0etracingenabled\x88\x01\x01\x12A\n" +
 	"\tvariables\x18\xc3ŭM \x03(\v2 .apigateway.Stage.VariablesEntryR\tvariables\x12$\n" +
-	"\twebaclarn\x18\x83\xb0\x9at \x01(\tH\tR\twebaclarn\x88\x01\x01\x1a\\\n" +
+	"\twebaclarn\x18\x83\xb0\x9at \x01(\tH\vR\twebaclarn\x88\x01\x01\x1a\\\n" +
 	"\x13MethodsettingsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
 	"\x05value\x18\x02 \x01(\v2\x19.apigateway.MethodSettingR\x05value:\x028\x01\x1a7\n" +
@@ -15995,7 +16038,9 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0eVariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x16\n" +
-	"\x14_cacheclusterenabledB\x16\n" +
+	"\x14_cacheclusterenabledB\x13\n" +
+	"\x11_cacheclustersizeB\x15\n" +
+	"\x13_cacheclusterstatusB\x16\n" +
 	"\x14_clientcertificateidB\x0e\n" +
 	"\f_createddateB\x0f\n" +
 	"\r_deploymentidB\x0e\n" +
@@ -16306,13 +16351,13 @@ const file_apigateway_proto_rawDesc = "" +
 	"UsagePlans\x12/\n" +
 	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x15.apigateway.UsagePlanR\x05items\x12#\n" +
 	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
-	"\t_position\"\x94\x03\n" +
+	"\t_position\"\xa4\x03\n" +
 	"\aVpcLink\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x17\n" +
 	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x02R\x04name\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.apigateway.VpcLinkStatusR\x06status\x12-\n" +
-	"\rstatusmessage\x18\xaf\xf0\x9e\xe2\x01 \x01(\tH\x03R\rstatusmessage\x88\x01\x01\x125\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x02R\x04name\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.apigateway.VpcLinkStatusH\x03R\x06status\x88\x01\x01\x12-\n" +
+	"\rstatusmessage\x18\xaf\xf0\x9e\xe2\x01 \x01(\tH\x04R\rstatusmessage\x88\x01\x01\x125\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1d.apigateway.VpcLink.TagsEntryR\x04tags\x12!\n" +
 	"\n" +
 	"targetarns\x18Ս\x8b\x16 \x03(\tR\n" +
@@ -16322,7 +16367,8 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
 	"\f_descriptionB\x05\n" +
 	"\x03_idB\a\n" +
-	"\x05_nameB\x10\n" +
+	"\x05_nameB\t\n" +
+	"\a_statusB\x10\n" +
 	"\x0e_statusmessage\"k\n" +
 	"\bVpcLinks\x12-\n" +
 	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x13.apigateway.VpcLinkR\x05items\x12#\n" +
@@ -17403,6 +17449,7 @@ func file_apigateway_proto_init() {
 	file_apigateway_proto_msgTypes[63].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[64].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[65].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[66].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[67].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[70].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[71].OneofWrappers = []any{}

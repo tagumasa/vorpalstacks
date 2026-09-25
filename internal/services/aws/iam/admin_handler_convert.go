@@ -1,6 +1,7 @@
 package iam
 
 import (
+	"vorpalstacks/internal/common/pbutil"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 
@@ -32,7 +33,7 @@ func toPbUser(user *iamstore.User) *pb.User {
 	if user.PermissionsBoundary != nil {
 		pbUser.Permissionsboundary = &pb.AttachedPermissionsBoundary{
 			Permissionsboundaryarn:  proto.String(user.PermissionsBoundary.PermissionsBoundaryArn),
-			Permissionsboundarytype: pb.PermissionsBoundaryAttachmentType_PERMISSIONS_BOUNDARY_ATTACHMENT_TYPE_POLICY,
+			Permissionsboundarytype: pbutil.Enum(pb.PermissionsBoundaryAttachmentType_PERMISSIONS_BOUNDARY_ATTACHMENT_TYPE_POLICY),
 		}
 	}
 
@@ -62,7 +63,7 @@ func toPbRole(role *iamstore.Role) *pb.Role {
 	if role.PermissionsBoundary != nil {
 		pbRole.Permissionsboundary = &pb.AttachedPermissionsBoundary{
 			Permissionsboundaryarn:  proto.String(role.PermissionsBoundary.PermissionsBoundaryArn),
-			Permissionsboundarytype: pb.PermissionsBoundaryAttachmentType_PERMISSIONS_BOUNDARY_ATTACHMENT_TYPE_POLICY,
+			Permissionsboundarytype: pbutil.Enum(pb.PermissionsBoundaryAttachmentType_PERMISSIONS_BOUNDARY_ATTACHMENT_TYPE_POLICY),
 		}
 	}
 

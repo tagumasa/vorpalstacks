@@ -305,11 +305,11 @@ message AlarmHistoryItem {
 
   optional string alarmname = 54095842;
 
-  AlarmType alarmtype = 301805339;
+  optional AlarmType alarmtype = 301805339;
 
   optional string historydata = 30118600;
 
-  HistoryItemType historyitemtype = 442439537;
+  optional HistoryItemType historyitemtype = 442439537;
 
   optional string historysummary = 53483226;
 
@@ -343,7 +343,7 @@ message AlarmMuteRuleSummary {
 
   optional string mutetype = 111213245;
 
-  AlarmMuteRuleStatus status = 6222352;
+  optional AlarmMuteRuleStatus status = 6222352;
 
 }
 
@@ -397,7 +397,7 @@ message AnomalyDetector {
 
   optional string stat = 325549752;
 
-  AnomalyDetectorStateValue statevalue = 334526008;
+  optional AnomalyDetectorStateValue statevalue = 334526008;
 
 }
 
@@ -479,7 +479,7 @@ message CompositeAlarm {
 
   optional bool actionsenabled = 126027878;
 
-  ActionsSuppressedBy actionssuppressedby = 377750064;
+  optional ActionsSuppressedBy actionssuppressedby = 377750064;
 
   optional string actionssuppressedreason = 20815779;
 
@@ -513,7 +513,7 @@ message CompositeAlarm {
 
   optional string stateupdatedtimestamp = 375406848;
 
-  StateValue statevalue = 334526008;
+  optional StateValue statevalue = 334526008;
 
 }
 
@@ -607,7 +607,7 @@ message Datapoint {
 
   optional string timestamp = 162390468;
 
-  StandardUnit unit = 148989480;
+  optional StandardUnit unit = 148989480;
 
 }
 
@@ -729,13 +729,13 @@ message DescribeAlarmHistoryInput {
 
   optional string enddate = 77486543;
 
-  HistoryItemType historyitemtype = 442439537;
+  optional HistoryItemType historyitemtype = 442439537;
 
   optional int32 maxrecords = 220314370;
 
   optional string nexttoken = 216957566;
 
-  ScanBy scanby = 344142854;
+  optional ScanBy scanby = 344142854;
 
   optional string startdate = 445135996;
 
@@ -765,9 +765,9 @@ message DescribeAlarmsForMetricInput {
 
   optional int32 period = 119833637;
 
-  Statistic statistic = 67293470;
+  optional Statistic statistic = 67293470;
 
-  StandardUnit unit = 148989480;
+  optional StandardUnit unit = 148989480;
 
 }
 
@@ -799,7 +799,7 @@ message DescribeAlarmsInput {
 
   optional string parentsofalarmname = 512433260;
 
-  StateValue statevalue = 334526008;
+  optional StateValue statevalue = 334526008;
 
 }
 
@@ -1041,7 +1041,7 @@ message GetAlarmMuteRuleOutput {
 
   optional string startdate = 445135996;
 
-  AlarmMuteRuleStatus status = 6222352;
+  optional AlarmMuteRuleStatus status = 6222352;
 
 }
 
@@ -1137,7 +1137,7 @@ message GetMetricDataInput {
 
   optional string nexttoken = 216957566;
 
-  ScanBy scanby = 344142854;
+  optional ScanBy scanby = 344142854;
 
   string starttime = 370760303;
 
@@ -1175,7 +1175,7 @@ message GetMetricStatisticsInput {
 
   repeated Statistic statistics = 510636075;
 
-  StandardUnit unit = 148989480;
+  optional StandardUnit unit = 148989480;
 
 }
 
@@ -1217,7 +1217,7 @@ message GetMetricStreamOutput {
 
   optional string name = 266367751;
 
-  MetricStreamOutputFormat outputformat = 519139704;
+  optional MetricStreamOutputFormat outputformat = 519139704;
 
   optional string rolearn = 322567169;
 
@@ -1557,7 +1557,7 @@ message ListMetricsInput {
 
   optional string owningaccount = 339968073;
 
-  RecentlyActive recentlyactive = 179617336;
+  optional RecentlyActive recentlyactive = 179617336;
 
 }
 
@@ -1611,9 +1611,9 @@ message LogAlarm {
 
   optional string alarmname = 54095842;
 
-  ComparisonOperator comparisonoperator = 7059861;
+  optional ComparisonOperator comparisonoperator = 7059861;
 
-  EvaluationState evaluationstate = 338863857;
+  optional EvaluationState evaluationstate = 338863857;
 
   repeated string insufficientdataactions = 498450778;
 
@@ -1633,7 +1633,7 @@ message LogAlarm {
 
   optional string stateupdatedtimestamp = 375406848;
 
-  StateValue statevalue = 334526008;
+  optional StateValue statevalue = 334526008;
 
   optional double threshold = 394884505;
 
@@ -1727,7 +1727,7 @@ message MetricAlarm {
 
   optional string alarmname = 54095842;
 
-  ComparisonOperator comparisonoperator = 7059861;
+  optional ComparisonOperator comparisonoperator = 7059861;
 
   optional int32 datapointstoalarm = 146378889;
 
@@ -1741,7 +1741,7 @@ message MetricAlarm {
 
   optional int32 evaluationperiods = 214794856;
 
-  EvaluationState evaluationstate = 338863857;
+  optional EvaluationState evaluationstate = 338863857;
 
   EvaluationWindow evaluationwindow = 269053504;
 
@@ -1767,9 +1767,9 @@ message MetricAlarm {
 
   optional string stateupdatedtimestamp = 375406848;
 
-  StateValue statevalue = 334526008;
+  optional StateValue statevalue = 334526008;
 
-  Statistic statistic = 67293470;
+  optional Statistic statistic = 67293470;
 
   optional double threshold = 394884505;
 
@@ -1777,7 +1777,7 @@ message MetricAlarm {
 
   optional string treatmissingdata = 226418150;
 
-  StandardUnit unit = 148989480;
+  optional StandardUnit unit = 148989480;
 
   WarmUpConfiguration warmupconfiguration = 439442074;
 
@@ -1827,7 +1827,7 @@ message MetricDataResult {
 
   repeated MessageData messages = 409018326;
 
-  StatusCode statuscode = 303830783;
+  optional StatusCode statuscode = 303830783;
 
   repeated string timestamps = 213534737;
 
@@ -1853,7 +1853,7 @@ message MetricDatum {
 
   optional string timestamp = 162390468;
 
-  StandardUnit unit = 148989480;
+  optional StandardUnit unit = 148989480;
 
   optional double value = 289929579;
 
@@ -1883,7 +1883,7 @@ message MetricStat {
 
   string stat = 325549752;
 
-  StandardUnit unit = 148989480;
+  optional StandardUnit unit = 148989480;
 
 }
 
@@ -1903,7 +1903,7 @@ message MetricStreamEntry {
 
   optional string name = 266367751;
 
-  MetricStreamOutputFormat outputformat = 519139704;
+  optional MetricStreamOutputFormat outputformat = 519139704;
 
   optional string state = 502047895;
 
@@ -2189,7 +2189,7 @@ message PutMetricAlarmInput {
 
   string alarmname = 54095842;
 
-  ComparisonOperator comparisonoperator = 7059861;
+  optional ComparisonOperator comparisonoperator = 7059861;
 
   optional int32 datapointstoalarm = 146378889;
 
@@ -2219,7 +2219,7 @@ message PutMetricAlarmInput {
 
   optional int32 period = 119833637;
 
-  Statistic statistic = 67293470;
+  optional Statistic statistic = 67293470;
 
   repeated Tag tags = 381526209;
 
@@ -2229,7 +2229,7 @@ message PutMetricAlarmInput {
 
   optional string treatmissingdata = 226418150;
 
-  StandardUnit unit = 148989480;
+  optional StandardUnit unit = 148989480;
 
   WarmUpConfiguration warmupconfiguration = 439442074;
 

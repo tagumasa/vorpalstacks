@@ -234,7 +234,7 @@ message DescribeAccountSettingsResponse {
 
   QueryComputeResponse querycompute = 358277613;
 
-  QueryPricingModel querypricingmodel = 453472445;
+  optional QueryPricingModel querypricingmodel = 453472445;
 
 }
 
@@ -380,7 +380,7 @@ message InvalidEndpointException {
 
 message LastUpdate {
 
-  LastUpdateStatus status = 6222352;
+  optional LastUpdateStatus status = 6222352;
 
   optional string statusmessage = 72590095;
 
@@ -578,7 +578,7 @@ message ProvisionedCapacityResponse {
 
 message QueryComputeRequest {
 
-  ComputeMode computemode = 205227458;
+  optional ComputeMode computemode = 205227458;
 
   ProvisionedCapacityRequest provisionedcapacity = 181400702;
 
@@ -590,7 +590,7 @@ message QueryComputeRequest {
 
 message QueryComputeResponse {
 
-  ComputeMode computemode = 205227458;
+  optional ComputeMode computemode = 205227458;
 
   ProvisionedCapacityResponse provisionedcapacity = 181400702;
 
@@ -784,7 +784,7 @@ message S3Configuration {
 
   string bucketname = 208117045;
 
-  S3EncryptionOption encryptionoption = 160833062;
+  optional S3EncryptionOption encryptionoption = 160833062;
 
   optional string objectkeyprefix = 132617574;
 
@@ -878,7 +878,7 @@ message ScheduledQuery {
 
   ErrorReportConfiguration errorreportconfiguration = 222039776;
 
-  ScheduledQueryRunStatus lastrunstatus = 441976361;
+  optional ScheduledQueryRunStatus lastrunstatus = 441976361;
 
   string name = 266367751;
 
@@ -998,7 +998,7 @@ message ScheduledQueryRunSummary {
 
   ScheduledQueryInsightsResponse queryinsightsresponse = 354278130;
 
-  ScheduledQueryRunStatus runstatus = 293822805;
+  optional ScheduledQueryRunStatus runstatus = 293822805;
 
   optional string triggertime = 268796699;
 
@@ -1166,7 +1166,7 @@ message Type {
 
   repeated ColumnInfo rowcolumninfo = 37626042;
 
-  ScalarType scalartype = 316685622;
+  optional ScalarType scalartype = 316685622;
 
   ColumnInfo timeseriesmeasurevaluecolumninfo = 324829411;
 
@@ -1196,7 +1196,7 @@ message UpdateAccountSettingsRequest {
 
   QueryComputeRequest querycompute = 358277613;
 
-  QueryPricingModel querypricingmodel = 453472445;
+  optional QueryPricingModel querypricingmodel = 453472445;
 
 }
 
@@ -1208,7 +1208,7 @@ message UpdateAccountSettingsResponse {
 
   QueryComputeResponse querycompute = 358277613;
 
-  QueryPricingModel querypricingmodel = 453472445;
+  optional QueryPricingModel querypricingmodel = 453472445;
 
 }
 

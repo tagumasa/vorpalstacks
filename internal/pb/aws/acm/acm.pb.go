@@ -1850,23 +1850,23 @@ func (x *AccessDeniedException) GetMessage() string {
 }
 
 type AcmCertificateMetadata struct {
-	state                    protoimpl.MessageState   `protogen:"open.v1"`
-	Acmeaccountid            *string                  `protobuf:"bytes,482433560,opt,name=acmeaccountid,proto3,oneof" json:"acmeaccountid,omitempty"`
-	Acmeendpointarn          *string                  `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
-	Certificatekeypairorigin CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin" json:"certificatekeypairorigin,omitempty"`
-	Createdat                *string                  `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
-	Exportoption             CertificateExport        `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
-	Exported                 *bool                    `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
-	Importedat               *string                  `protobuf:"bytes,348649225,opt,name=importedat,proto3,oneof" json:"importedat,omitempty"`
-	Inuse                    *bool                    `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
-	Issuedat                 *string                  `protobuf:"bytes,17449786,opt,name=issuedat,proto3,oneof" json:"issuedat,omitempty"`
-	Managedby                CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
-	Renewaleligibility       RenewalEligibility       `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility" json:"renewaleligibility,omitempty"`
-	Renewalstatus            RenewalStatus            `protobuf:"varint,277232086,opt,name=renewalstatus,proto3,enum=acm.RenewalStatus" json:"renewalstatus,omitempty"`
-	Revokedat                *string                  `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
-	Status                   CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
-	Type                     CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
-	Validationmethod         ValidationMethod         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
+	state                    protoimpl.MessageState    `protogen:"open.v1"`
+	Acmeaccountid            *string                   `protobuf:"bytes,482433560,opt,name=acmeaccountid,proto3,oneof" json:"acmeaccountid,omitempty"`
+	Acmeendpointarn          *string                   `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Certificatekeypairorigin *CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin,oneof" json:"certificatekeypairorigin,omitempty"`
+	Createdat                *string                   `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Exportoption             *CertificateExport        `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport,oneof" json:"exportoption,omitempty"`
+	Exported                 *bool                     `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
+	Importedat               *string                   `protobuf:"bytes,348649225,opt,name=importedat,proto3,oneof" json:"importedat,omitempty"`
+	Inuse                    *bool                     `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
+	Issuedat                 *string                   `protobuf:"bytes,17449786,opt,name=issuedat,proto3,oneof" json:"issuedat,omitempty"`
+	Managedby                *CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy,oneof" json:"managedby,omitempty"`
+	Renewaleligibility       *RenewalEligibility       `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility,oneof" json:"renewaleligibility,omitempty"`
+	Renewalstatus            *RenewalStatus            `protobuf:"varint,277232086,opt,name=renewalstatus,proto3,enum=acm.RenewalStatus,oneof" json:"renewalstatus,omitempty"`
+	Revokedat                *string                   `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
+	Status                   *CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus,oneof" json:"status,omitempty"`
+	Type                     *CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType,oneof" json:"type,omitempty"`
+	Validationmethod         *ValidationMethod         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod,oneof" json:"validationmethod,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -1916,8 +1916,8 @@ func (x *AcmCertificateMetadata) GetAcmeendpointarn() string {
 }
 
 func (x *AcmCertificateMetadata) GetCertificatekeypairorigin() CertificateKeyPairOrigin {
-	if x != nil {
-		return x.Certificatekeypairorigin
+	if x != nil && x.Certificatekeypairorigin != nil {
+		return *x.Certificatekeypairorigin
 	}
 	return CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED
 }
@@ -1930,8 +1930,8 @@ func (x *AcmCertificateMetadata) GetCreatedat() string {
 }
 
 func (x *AcmCertificateMetadata) GetExportoption() CertificateExport {
-	if x != nil {
-		return x.Exportoption
+	if x != nil && x.Exportoption != nil {
+		return *x.Exportoption
 	}
 	return CertificateExport_CERTIFICATE_EXPORT_DISABLED
 }
@@ -1965,22 +1965,22 @@ func (x *AcmCertificateMetadata) GetIssuedat() string {
 }
 
 func (x *AcmCertificateMetadata) GetManagedby() CertificateManagedBy {
-	if x != nil {
-		return x.Managedby
+	if x != nil && x.Managedby != nil {
+		return *x.Managedby
 	}
 	return CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT
 }
 
 func (x *AcmCertificateMetadata) GetRenewaleligibility() RenewalEligibility {
-	if x != nil {
-		return x.Renewaleligibility
+	if x != nil && x.Renewaleligibility != nil {
+		return *x.Renewaleligibility
 	}
 	return RenewalEligibility_RENEWAL_ELIGIBILITY_ELIGIBLE
 }
 
 func (x *AcmCertificateMetadata) GetRenewalstatus() RenewalStatus {
-	if x != nil {
-		return x.Renewalstatus
+	if x != nil && x.Renewalstatus != nil {
+		return *x.Renewalstatus
 	}
 	return RenewalStatus_RENEWAL_STATUS_PENDING_AUTO_RENEWAL
 }
@@ -1993,39 +1993,39 @@ func (x *AcmCertificateMetadata) GetRevokedat() string {
 }
 
 func (x *AcmCertificateMetadata) GetStatus() CertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CertificateStatus_CERTIFICATE_STATUS_REVOKED
 }
 
 func (x *AcmCertificateMetadata) GetType() CertificateType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return CertificateType_CERTIFICATE_TYPE_IMPORTED
 }
 
 func (x *AcmCertificateMetadata) GetValidationmethod() ValidationMethod {
-	if x != nil {
-		return x.Validationmethod
+	if x != nil && x.Validationmethod != nil {
+		return *x.Validationmethod
 	}
 	return ValidationMethod_VALIDATION_METHOD_HTTP
 }
 
 type AcmCertificateMetadataFilter struct {
-	state                    protoimpl.MessageState   `protogen:"open.v1"`
-	Acmeaccountid            *string                  `protobuf:"bytes,482433560,opt,name=acmeaccountid,proto3,oneof" json:"acmeaccountid,omitempty"`
-	Acmeendpointarn          *string                  `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
-	Certificatekeypairorigin CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin" json:"certificatekeypairorigin,omitempty"`
-	Exportoption             CertificateExport        `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
-	Exported                 *bool                    `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
-	Inuse                    *bool                    `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
-	Managedby                CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
-	Renewalstatus            RenewalStatus            `protobuf:"varint,277232086,opt,name=renewalstatus,proto3,enum=acm.RenewalStatus" json:"renewalstatus,omitempty"`
-	Status                   CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
-	Type                     CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
-	Validationmethod         ValidationMethod         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
+	state                    protoimpl.MessageState    `protogen:"open.v1"`
+	Acmeaccountid            *string                   `protobuf:"bytes,482433560,opt,name=acmeaccountid,proto3,oneof" json:"acmeaccountid,omitempty"`
+	Acmeendpointarn          *string                   `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Certificatekeypairorigin *CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin,oneof" json:"certificatekeypairorigin,omitempty"`
+	Exportoption             *CertificateExport        `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport,oneof" json:"exportoption,omitempty"`
+	Exported                 *bool                     `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
+	Inuse                    *bool                     `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
+	Managedby                *CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy,oneof" json:"managedby,omitempty"`
+	Renewalstatus            *RenewalStatus            `protobuf:"varint,277232086,opt,name=renewalstatus,proto3,enum=acm.RenewalStatus,oneof" json:"renewalstatus,omitempty"`
+	Status                   *CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus,oneof" json:"status,omitempty"`
+	Type                     *CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType,oneof" json:"type,omitempty"`
+	Validationmethod         *ValidationMethod         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod,oneof" json:"validationmethod,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -2075,15 +2075,15 @@ func (x *AcmCertificateMetadataFilter) GetAcmeendpointarn() string {
 }
 
 func (x *AcmCertificateMetadataFilter) GetCertificatekeypairorigin() CertificateKeyPairOrigin {
-	if x != nil {
-		return x.Certificatekeypairorigin
+	if x != nil && x.Certificatekeypairorigin != nil {
+		return *x.Certificatekeypairorigin
 	}
 	return CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED
 }
 
 func (x *AcmCertificateMetadataFilter) GetExportoption() CertificateExport {
-	if x != nil {
-		return x.Exportoption
+	if x != nil && x.Exportoption != nil {
+		return *x.Exportoption
 	}
 	return CertificateExport_CERTIFICATE_EXPORT_DISABLED
 }
@@ -2103,36 +2103,36 @@ func (x *AcmCertificateMetadataFilter) GetInuse() bool {
 }
 
 func (x *AcmCertificateMetadataFilter) GetManagedby() CertificateManagedBy {
-	if x != nil {
-		return x.Managedby
+	if x != nil && x.Managedby != nil {
+		return *x.Managedby
 	}
 	return CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT
 }
 
 func (x *AcmCertificateMetadataFilter) GetRenewalstatus() RenewalStatus {
-	if x != nil {
-		return x.Renewalstatus
+	if x != nil && x.Renewalstatus != nil {
+		return *x.Renewalstatus
 	}
 	return RenewalStatus_RENEWAL_STATUS_PENDING_AUTO_RENEWAL
 }
 
 func (x *AcmCertificateMetadataFilter) GetStatus() CertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CertificateStatus_CERTIFICATE_STATUS_REVOKED
 }
 
 func (x *AcmCertificateMetadataFilter) GetType() CertificateType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return CertificateType_CERTIFICATE_TYPE_IMPORTED
 }
 
 func (x *AcmCertificateMetadataFilter) GetValidationmethod() ValidationMethod {
-	if x != nil {
-		return x.Validationmethod
+	if x != nil && x.Validationmethod != nil {
+		return *x.Validationmethod
 	}
 	return ValidationMethod_VALIDATION_METHOD_HTTP
 }
@@ -2144,7 +2144,7 @@ type AcmeAccount struct {
 	Contacts                      []string               `protobuf:"bytes,145625361,rep,name=contacts,proto3" json:"contacts,omitempty"`
 	Createdat                     *string                `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
 	Publickeythumbprint           *string                `protobuf:"bytes,265215433,opt,name=publickeythumbprint,proto3,oneof" json:"publickeythumbprint,omitempty"`
-	Status                        AcmeAccountStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeAccountStatus" json:"status,omitempty"`
+	Status                        *AcmeAccountStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeAccountStatus,oneof" json:"status,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -2215,8 +2215,8 @@ func (x *AcmeAccount) GetPublickeythumbprint() string {
 }
 
 func (x *AcmeAccount) GetStatus() AcmeAccountStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AcmeAccountStatus_ACME_ACCOUNT_STATUS_DEACTIVATED
 }
@@ -2228,7 +2228,7 @@ type AcmeAccountSummary struct {
 	Contacts                      []string               `protobuf:"bytes,145625361,rep,name=contacts,proto3" json:"contacts,omitempty"`
 	Createdat                     *string                `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
 	Publickeythumbprint           *string                `protobuf:"bytes,265215433,opt,name=publickeythumbprint,proto3,oneof" json:"publickeythumbprint,omitempty"`
-	Status                        AcmeAccountStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeAccountStatus" json:"status,omitempty"`
+	Status                        *AcmeAccountStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeAccountStatus,oneof" json:"status,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -2299,23 +2299,23 @@ func (x *AcmeAccountSummary) GetPublickeythumbprint() string {
 }
 
 func (x *AcmeAccountSummary) GetStatus() AcmeAccountStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AcmeAccountStatus_ACME_ACCOUNT_STATUS_DEACTIVATED
 }
 
 type AcmeDomainValidation struct {
-	state                   protoimpl.MessageState     `protogen:"open.v1"`
-	Acmedomainvalidationarn *string                    `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3,oneof" json:"acmedomainvalidationarn,omitempty"`
-	Acmeendpointarn         *string                    `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
-	Createdat               *string                    `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
-	Domainname              *string                    `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
-	Failuredetails          *FailureDetails            `protobuf:"bytes,409582698,opt,name=failuredetails,proto3" json:"failuredetails,omitempty"`
-	Prevalidationdetails    *PrevalidationDetails      `protobuf:"bytes,84866774,opt,name=prevalidationdetails,proto3" json:"prevalidationdetails,omitempty"`
-	Prevalidationtype       PrevalidationType          `protobuf:"varint,170164414,opt,name=prevalidationtype,proto3,enum=acm.PrevalidationType" json:"prevalidationtype,omitempty"`
-	Status                  AcmeDomainValidationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeDomainValidationStatus" json:"status,omitempty"`
-	Updatedat               *string                    `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	state                   protoimpl.MessageState      `protogen:"open.v1"`
+	Acmedomainvalidationarn *string                     `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3,oneof" json:"acmedomainvalidationarn,omitempty"`
+	Acmeendpointarn         *string                     `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Createdat               *string                     `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Domainname              *string                     `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
+	Failuredetails          *FailureDetails             `protobuf:"bytes,409582698,opt,name=failuredetails,proto3" json:"failuredetails,omitempty"`
+	Prevalidationdetails    *PrevalidationDetails       `protobuf:"bytes,84866774,opt,name=prevalidationdetails,proto3" json:"prevalidationdetails,omitempty"`
+	Prevalidationtype       *PrevalidationType          `protobuf:"varint,170164414,opt,name=prevalidationtype,proto3,enum=acm.PrevalidationType,oneof" json:"prevalidationtype,omitempty"`
+	Status                  *AcmeDomainValidationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeDomainValidationStatus,oneof" json:"status,omitempty"`
+	Updatedat               *string                     `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2393,15 +2393,15 @@ func (x *AcmeDomainValidation) GetPrevalidationdetails() *PrevalidationDetails {
 }
 
 func (x *AcmeDomainValidation) GetPrevalidationtype() PrevalidationType {
-	if x != nil {
-		return x.Prevalidationtype
+	if x != nil && x.Prevalidationtype != nil {
+		return *x.Prevalidationtype
 	}
 	return PrevalidationType_PREVALIDATION_TYPE_DNS_PREVALIDATION
 }
 
 func (x *AcmeDomainValidation) GetStatus() AcmeDomainValidationStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AcmeDomainValidationStatus_ACME_DOMAIN_VALIDATION_STATUS_VALIDATING
 }
@@ -2414,16 +2414,16 @@ func (x *AcmeDomainValidation) GetUpdatedat() string {
 }
 
 type AcmeDomainValidationSummary struct {
-	state                   protoimpl.MessageState     `protogen:"open.v1"`
-	Acmedomainvalidationarn *string                    `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3,oneof" json:"acmedomainvalidationarn,omitempty"`
-	Acmeendpointarn         *string                    `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
-	Createdat               *string                    `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
-	Domainname              *string                    `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
-	Failuredetails          *FailureDetails            `protobuf:"bytes,409582698,opt,name=failuredetails,proto3" json:"failuredetails,omitempty"`
-	Prevalidationdetails    *PrevalidationDetails      `protobuf:"bytes,84866774,opt,name=prevalidationdetails,proto3" json:"prevalidationdetails,omitempty"`
-	Prevalidationtype       PrevalidationType          `protobuf:"varint,170164414,opt,name=prevalidationtype,proto3,enum=acm.PrevalidationType" json:"prevalidationtype,omitempty"`
-	Status                  AcmeDomainValidationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeDomainValidationStatus" json:"status,omitempty"`
-	Updatedat               *string                    `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	state                   protoimpl.MessageState      `protogen:"open.v1"`
+	Acmedomainvalidationarn *string                     `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3,oneof" json:"acmedomainvalidationarn,omitempty"`
+	Acmeendpointarn         *string                     `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Createdat               *string                     `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Domainname              *string                     `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
+	Failuredetails          *FailureDetails             `protobuf:"bytes,409582698,opt,name=failuredetails,proto3" json:"failuredetails,omitempty"`
+	Prevalidationdetails    *PrevalidationDetails       `protobuf:"bytes,84866774,opt,name=prevalidationdetails,proto3" json:"prevalidationdetails,omitempty"`
+	Prevalidationtype       *PrevalidationType          `protobuf:"varint,170164414,opt,name=prevalidationtype,proto3,enum=acm.PrevalidationType,oneof" json:"prevalidationtype,omitempty"`
+	Status                  *AcmeDomainValidationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeDomainValidationStatus,oneof" json:"status,omitempty"`
+	Updatedat               *string                     `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2501,15 +2501,15 @@ func (x *AcmeDomainValidationSummary) GetPrevalidationdetails() *PrevalidationDe
 }
 
 func (x *AcmeDomainValidationSummary) GetPrevalidationtype() PrevalidationType {
-	if x != nil {
-		return x.Prevalidationtype
+	if x != nil && x.Prevalidationtype != nil {
+		return *x.Prevalidationtype
 	}
 	return PrevalidationType_PREVALIDATION_TYPE_DNS_PREVALIDATION
 }
 
 func (x *AcmeDomainValidationSummary) GetStatus() AcmeDomainValidationStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AcmeDomainValidationStatus_ACME_DOMAIN_VALIDATION_STATUS_VALIDATING
 }
@@ -2522,17 +2522,17 @@ func (x *AcmeDomainValidationSummary) GetUpdatedat() string {
 }
 
 type AcmeEndpoint struct {
-	state                 protoimpl.MessageState    `protogen:"open.v1"`
-	Acmeendpointarn       *string                   `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
-	Authorizationbehavior AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior" json:"authorizationbehavior,omitempty"`
-	Certificateauthority  *CertificateAuthority     `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
-	Certificatetags       []*Tag                    `protobuf:"bytes,340578970,rep,name=certificatetags,proto3" json:"certificatetags,omitempty"`
-	Contact               AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact" json:"contact,omitempty"`
-	Createdat             *string                   `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
-	Endpointurl           *string                   `protobuf:"bytes,31787414,opt,name=endpointurl,proto3,oneof" json:"endpointurl,omitempty"`
-	Failurereason         *string                   `protobuf:"bytes,232322142,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
-	Status                AcmeEndpointStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeEndpointStatus" json:"status,omitempty"`
-	Updatedat             *string                   `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	state                 protoimpl.MessageState     `protogen:"open.v1"`
+	Acmeendpointarn       *string                    `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Authorizationbehavior *AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior,oneof" json:"authorizationbehavior,omitempty"`
+	Certificateauthority  *CertificateAuthority      `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
+	Certificatetags       []*Tag                     `protobuf:"bytes,340578970,rep,name=certificatetags,proto3" json:"certificatetags,omitempty"`
+	Contact               *AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact,oneof" json:"contact,omitempty"`
+	Createdat             *string                    `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Endpointurl           *string                    `protobuf:"bytes,31787414,opt,name=endpointurl,proto3,oneof" json:"endpointurl,omitempty"`
+	Failurereason         *string                    `protobuf:"bytes,232322142,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
+	Status                *AcmeEndpointStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeEndpointStatus,oneof" json:"status,omitempty"`
+	Updatedat             *string                    `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2575,8 +2575,8 @@ func (x *AcmeEndpoint) GetAcmeendpointarn() string {
 }
 
 func (x *AcmeEndpoint) GetAuthorizationbehavior() AcmeAuthorizationBehavior {
-	if x != nil {
-		return x.Authorizationbehavior
+	if x != nil && x.Authorizationbehavior != nil {
+		return *x.Authorizationbehavior
 	}
 	return AcmeAuthorizationBehavior_ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED
 }
@@ -2596,8 +2596,8 @@ func (x *AcmeEndpoint) GetCertificatetags() []*Tag {
 }
 
 func (x *AcmeEndpoint) GetContact() AcmeContact {
-	if x != nil {
-		return x.Contact
+	if x != nil && x.Contact != nil {
+		return *x.Contact
 	}
 	return AcmeContact_ACME_CONTACT_REQUIRED
 }
@@ -2624,8 +2624,8 @@ func (x *AcmeEndpoint) GetFailurereason() string {
 }
 
 func (x *AcmeEndpoint) GetStatus() AcmeEndpointStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AcmeEndpointStatus_ACME_ENDPOINT_STATUS_ACTIVE
 }
@@ -2638,17 +2638,17 @@ func (x *AcmeEndpoint) GetUpdatedat() string {
 }
 
 type AcmeEndpointSummary struct {
-	state                 protoimpl.MessageState    `protogen:"open.v1"`
-	Acmeendpointarn       *string                   `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
-	Authorizationbehavior AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior" json:"authorizationbehavior,omitempty"`
-	Certificateauthority  *CertificateAuthority     `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
-	Certificatetags       []*Tag                    `protobuf:"bytes,340578970,rep,name=certificatetags,proto3" json:"certificatetags,omitempty"`
-	Contact               AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact" json:"contact,omitempty"`
-	Createdat             *string                   `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
-	Endpointurl           *string                   `protobuf:"bytes,31787414,opt,name=endpointurl,proto3,oneof" json:"endpointurl,omitempty"`
-	Failurereason         *string                   `protobuf:"bytes,232322142,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
-	Status                AcmeEndpointStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeEndpointStatus" json:"status,omitempty"`
-	Updatedat             *string                   `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	state                 protoimpl.MessageState     `protogen:"open.v1"`
+	Acmeendpointarn       *string                    `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Authorizationbehavior *AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior,oneof" json:"authorizationbehavior,omitempty"`
+	Certificateauthority  *CertificateAuthority      `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
+	Certificatetags       []*Tag                     `protobuf:"bytes,340578970,rep,name=certificatetags,proto3" json:"certificatetags,omitempty"`
+	Contact               *AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact,oneof" json:"contact,omitempty"`
+	Createdat             *string                    `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Endpointurl           *string                    `protobuf:"bytes,31787414,opt,name=endpointurl,proto3,oneof" json:"endpointurl,omitempty"`
+	Failurereason         *string                    `protobuf:"bytes,232322142,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
+	Status                *AcmeEndpointStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeEndpointStatus,oneof" json:"status,omitempty"`
+	Updatedat             *string                    `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2691,8 +2691,8 @@ func (x *AcmeEndpointSummary) GetAcmeendpointarn() string {
 }
 
 func (x *AcmeEndpointSummary) GetAuthorizationbehavior() AcmeAuthorizationBehavior {
-	if x != nil {
-		return x.Authorizationbehavior
+	if x != nil && x.Authorizationbehavior != nil {
+		return *x.Authorizationbehavior
 	}
 	return AcmeAuthorizationBehavior_ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED
 }
@@ -2712,8 +2712,8 @@ func (x *AcmeEndpointSummary) GetCertificatetags() []*Tag {
 }
 
 func (x *AcmeEndpointSummary) GetContact() AcmeContact {
-	if x != nil {
-		return x.Contact
+	if x != nil && x.Contact != nil {
+		return *x.Contact
 	}
 	return AcmeContact_ACME_CONTACT_REQUIRED
 }
@@ -2740,8 +2740,8 @@ func (x *AcmeEndpointSummary) GetFailurereason() string {
 }
 
 func (x *AcmeEndpointSummary) GetStatus() AcmeEndpointStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return AcmeEndpointStatus_ACME_ENDPOINT_STATUS_ACTIVE
 }
@@ -3050,38 +3050,38 @@ func (x *CertificateAuthority) GetPubliccertificateauthority() *PublicCertificat
 }
 
 type CertificateDetail struct {
-	state                    protoimpl.MessageState   `protogen:"open.v1"`
-	Acmeaccountid            *string                  `protobuf:"bytes,482433560,opt,name=acmeaccountid,proto3,oneof" json:"acmeaccountid,omitempty"`
-	Acmeendpointarn          *string                  `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
-	Certificatearn           *string                  `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
-	Certificateauthorityarn  *string                  `protobuf:"bytes,266069181,opt,name=certificateauthorityarn,proto3,oneof" json:"certificateauthorityarn,omitempty"`
-	Certificatekeypairorigin CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin" json:"certificatekeypairorigin,omitempty"`
-	Createdat                *string                  `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
-	Domainname               *string                  `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
-	Domainvalidationoptions  []*DomainValidation      `protobuf:"bytes,335573705,rep,name=domainvalidationoptions,proto3" json:"domainvalidationoptions,omitempty"`
-	Extendedkeyusages        []*ExtendedKeyUsage      `protobuf:"bytes,531267688,rep,name=extendedkeyusages,proto3" json:"extendedkeyusages,omitempty"`
-	Failurereason            FailureReason            `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=acm.FailureReason" json:"failurereason,omitempty"`
-	Importedat               *string                  `protobuf:"bytes,348649225,opt,name=importedat,proto3,oneof" json:"importedat,omitempty"`
-	Inuseby                  []string                 `protobuf:"bytes,330307273,rep,name=inuseby,proto3" json:"inuseby,omitempty"`
-	Issuedat                 *string                  `protobuf:"bytes,17449786,opt,name=issuedat,proto3,oneof" json:"issuedat,omitempty"`
-	Issuer                   *string                  `protobuf:"bytes,528708823,opt,name=issuer,proto3,oneof" json:"issuer,omitempty"`
-	Keyalgorithm             KeyAlgorithm             `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
-	Keyusages                []*KeyUsage              `protobuf:"bytes,345433681,rep,name=keyusages,proto3" json:"keyusages,omitempty"`
-	Managedby                CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
-	Notafter                 *string                  `protobuf:"bytes,287678033,opt,name=notafter,proto3,oneof" json:"notafter,omitempty"`
-	Notbefore                *string                  `protobuf:"bytes,459074038,opt,name=notbefore,proto3,oneof" json:"notbefore,omitempty"`
-	Options                  *CertificateOptions      `protobuf:"bytes,356388166,opt,name=options,proto3" json:"options,omitempty"`
-	Renewaleligibility       RenewalEligibility       `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility" json:"renewaleligibility,omitempty"`
-	Renewalsummary           *RenewalSummary          `protobuf:"bytes,125255166,opt,name=renewalsummary,proto3" json:"renewalsummary,omitempty"`
-	Revocationreason         RevocationReason         `protobuf:"varint,331836358,opt,name=revocationreason,proto3,enum=acm.RevocationReason" json:"revocationreason,omitempty"`
-	Revokedat                *string                  `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
-	Serial                   *string                  `protobuf:"bytes,143954586,opt,name=serial,proto3,oneof" json:"serial,omitempty"`
-	Signaturealgorithm       *string                  `protobuf:"bytes,476410739,opt,name=signaturealgorithm,proto3,oneof" json:"signaturealgorithm,omitempty"`
-	Status                   CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
-	Subject                  *string                  `protobuf:"bytes,7939312,opt,name=subject,proto3,oneof" json:"subject,omitempty"`
-	Subjectalternativenames  []string                 `protobuf:"bytes,109998119,rep,name=subjectalternativenames,proto3" json:"subjectalternativenames,omitempty"`
-	Type                     CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
-	Updatesummary            *UpdateSummary           `protobuf:"bytes,512986845,opt,name=updatesummary,proto3" json:"updatesummary,omitempty"`
+	state                    protoimpl.MessageState    `protogen:"open.v1"`
+	Acmeaccountid            *string                   `protobuf:"bytes,482433560,opt,name=acmeaccountid,proto3,oneof" json:"acmeaccountid,omitempty"`
+	Acmeendpointarn          *string                   `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Certificatearn           *string                   `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificateauthorityarn  *string                   `protobuf:"bytes,266069181,opt,name=certificateauthorityarn,proto3,oneof" json:"certificateauthorityarn,omitempty"`
+	Certificatekeypairorigin *CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin,oneof" json:"certificatekeypairorigin,omitempty"`
+	Createdat                *string                   `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Domainname               *string                   `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
+	Domainvalidationoptions  []*DomainValidation       `protobuf:"bytes,335573705,rep,name=domainvalidationoptions,proto3" json:"domainvalidationoptions,omitempty"`
+	Extendedkeyusages        []*ExtendedKeyUsage       `protobuf:"bytes,531267688,rep,name=extendedkeyusages,proto3" json:"extendedkeyusages,omitempty"`
+	Failurereason            *FailureReason            `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=acm.FailureReason,oneof" json:"failurereason,omitempty"`
+	Importedat               *string                   `protobuf:"bytes,348649225,opt,name=importedat,proto3,oneof" json:"importedat,omitempty"`
+	Inuseby                  []string                  `protobuf:"bytes,330307273,rep,name=inuseby,proto3" json:"inuseby,omitempty"`
+	Issuedat                 *string                   `protobuf:"bytes,17449786,opt,name=issuedat,proto3,oneof" json:"issuedat,omitempty"`
+	Issuer                   *string                   `protobuf:"bytes,528708823,opt,name=issuer,proto3,oneof" json:"issuer,omitempty"`
+	Keyalgorithm             *KeyAlgorithm             `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm,oneof" json:"keyalgorithm,omitempty"`
+	Keyusages                []*KeyUsage               `protobuf:"bytes,345433681,rep,name=keyusages,proto3" json:"keyusages,omitempty"`
+	Managedby                *CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy,oneof" json:"managedby,omitempty"`
+	Notafter                 *string                   `protobuf:"bytes,287678033,opt,name=notafter,proto3,oneof" json:"notafter,omitempty"`
+	Notbefore                *string                   `protobuf:"bytes,459074038,opt,name=notbefore,proto3,oneof" json:"notbefore,omitempty"`
+	Options                  *CertificateOptions       `protobuf:"bytes,356388166,opt,name=options,proto3" json:"options,omitempty"`
+	Renewaleligibility       *RenewalEligibility       `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility,oneof" json:"renewaleligibility,omitempty"`
+	Renewalsummary           *RenewalSummary           `protobuf:"bytes,125255166,opt,name=renewalsummary,proto3" json:"renewalsummary,omitempty"`
+	Revocationreason         *RevocationReason         `protobuf:"varint,331836358,opt,name=revocationreason,proto3,enum=acm.RevocationReason,oneof" json:"revocationreason,omitempty"`
+	Revokedat                *string                   `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
+	Serial                   *string                   `protobuf:"bytes,143954586,opt,name=serial,proto3,oneof" json:"serial,omitempty"`
+	Signaturealgorithm       *string                   `protobuf:"bytes,476410739,opt,name=signaturealgorithm,proto3,oneof" json:"signaturealgorithm,omitempty"`
+	Status                   *CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus,oneof" json:"status,omitempty"`
+	Subject                  *string                   `protobuf:"bytes,7939312,opt,name=subject,proto3,oneof" json:"subject,omitempty"`
+	Subjectalternativenames  []string                  `protobuf:"bytes,109998119,rep,name=subjectalternativenames,proto3" json:"subjectalternativenames,omitempty"`
+	Type                     *CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType,oneof" json:"type,omitempty"`
+	Updatesummary            *UpdateSummary            `protobuf:"bytes,512986845,opt,name=updatesummary,proto3" json:"updatesummary,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -3145,8 +3145,8 @@ func (x *CertificateDetail) GetCertificateauthorityarn() string {
 }
 
 func (x *CertificateDetail) GetCertificatekeypairorigin() CertificateKeyPairOrigin {
-	if x != nil {
-		return x.Certificatekeypairorigin
+	if x != nil && x.Certificatekeypairorigin != nil {
+		return *x.Certificatekeypairorigin
 	}
 	return CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED
 }
@@ -3180,8 +3180,8 @@ func (x *CertificateDetail) GetExtendedkeyusages() []*ExtendedKeyUsage {
 }
 
 func (x *CertificateDetail) GetFailurereason() FailureReason {
-	if x != nil {
-		return x.Failurereason
+	if x != nil && x.Failurereason != nil {
+		return *x.Failurereason
 	}
 	return FailureReason_FAILURE_REASON_PCA_INVALID_ARGS
 }
@@ -3215,8 +3215,8 @@ func (x *CertificateDetail) GetIssuer() string {
 }
 
 func (x *CertificateDetail) GetKeyalgorithm() KeyAlgorithm {
-	if x != nil {
-		return x.Keyalgorithm
+	if x != nil && x.Keyalgorithm != nil {
+		return *x.Keyalgorithm
 	}
 	return KeyAlgorithm_KEY_ALGORITHM_EC_PRIME256V1
 }
@@ -3229,8 +3229,8 @@ func (x *CertificateDetail) GetKeyusages() []*KeyUsage {
 }
 
 func (x *CertificateDetail) GetManagedby() CertificateManagedBy {
-	if x != nil {
-		return x.Managedby
+	if x != nil && x.Managedby != nil {
+		return *x.Managedby
 	}
 	return CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT
 }
@@ -3257,8 +3257,8 @@ func (x *CertificateDetail) GetOptions() *CertificateOptions {
 }
 
 func (x *CertificateDetail) GetRenewaleligibility() RenewalEligibility {
-	if x != nil {
-		return x.Renewaleligibility
+	if x != nil && x.Renewaleligibility != nil {
+		return *x.Renewaleligibility
 	}
 	return RenewalEligibility_RENEWAL_ELIGIBILITY_ELIGIBLE
 }
@@ -3271,8 +3271,8 @@ func (x *CertificateDetail) GetRenewalsummary() *RenewalSummary {
 }
 
 func (x *CertificateDetail) GetRevocationreason() RevocationReason {
-	if x != nil {
-		return x.Revocationreason
+	if x != nil && x.Revocationreason != nil {
+		return *x.Revocationreason
 	}
 	return RevocationReason_REVOCATION_REASON_AFFILIATION_CHANGED
 }
@@ -3299,8 +3299,8 @@ func (x *CertificateDetail) GetSignaturealgorithm() string {
 }
 
 func (x *CertificateDetail) GetStatus() CertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CertificateStatus_CERTIFICATE_STATUS_REVOKED
 }
@@ -3320,8 +3320,8 @@ func (x *CertificateDetail) GetSubjectalternativenames() []string {
 }
 
 func (x *CertificateDetail) GetType() CertificateType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return CertificateType_CERTIFICATE_TYPE_IMPORTED
 }
@@ -3506,10 +3506,10 @@ func (x *CertificateMetadata) GetAcmcertificatemetadata() *AcmCertificateMetadat
 }
 
 type CertificateOptions struct {
-	state                                    protoimpl.MessageState                   `protogen:"open.v1"`
-	Certificatetransparencyloggingpreference CertificateTransparencyLoggingPreference `protobuf:"varint,414636075,opt,name=certificatetransparencyloggingpreference,proto3,enum=acm.CertificateTransparencyLoggingPreference" json:"certificatetransparencyloggingpreference,omitempty"`
-	Export                                   CertificateExport                        `protobuf:"varint,140724692,opt,name=export,proto3,enum=acm.CertificateExport" json:"export,omitempty"`
-	Validationmethod                         ValidationMethod                         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
+	state                                    protoimpl.MessageState                    `protogen:"open.v1"`
+	Certificatetransparencyloggingpreference *CertificateTransparencyLoggingPreference `protobuf:"varint,414636075,opt,name=certificatetransparencyloggingpreference,proto3,enum=acm.CertificateTransparencyLoggingPreference,oneof" json:"certificatetransparencyloggingpreference,omitempty"`
+	Export                                   *CertificateExport                        `protobuf:"varint,140724692,opt,name=export,proto3,enum=acm.CertificateExport,oneof" json:"export,omitempty"`
+	Validationmethod                         *ValidationMethod                         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod,oneof" json:"validationmethod,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
 	sizeCache                                protoimpl.SizeCache
 }
@@ -3545,22 +3545,22 @@ func (*CertificateOptions) Descriptor() ([]byte, []int) {
 }
 
 func (x *CertificateOptions) GetCertificatetransparencyloggingpreference() CertificateTransparencyLoggingPreference {
-	if x != nil {
-		return x.Certificatetransparencyloggingpreference
+	if x != nil && x.Certificatetransparencyloggingpreference != nil {
+		return *x.Certificatetransparencyloggingpreference
 	}
 	return CertificateTransparencyLoggingPreference_CERTIFICATE_TRANSPARENCY_LOGGING_PREFERENCE_DISABLED
 }
 
 func (x *CertificateOptions) GetExport() CertificateExport {
-	if x != nil {
-		return x.Export
+	if x != nil && x.Export != nil {
+		return *x.Export
 	}
 	return CertificateExport_CERTIFICATE_EXPORT_DISABLED
 }
 
 func (x *CertificateOptions) GetValidationmethod() ValidationMethod {
-	if x != nil {
-		return x.Validationmethod
+	if x != nil && x.Validationmethod != nil {
+		return *x.Validationmethod
 	}
 	return ValidationMethod_VALIDATION_METHOD_HTTP
 }
@@ -3626,28 +3626,28 @@ func (x *CertificateSearchResult) GetX509Attributes() *X509Attributes {
 }
 
 type CertificateSummary struct {
-	state                                protoimpl.MessageState   `protogen:"open.v1"`
-	Certificatearn                       *string                  `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
-	Certificatekeypairorigin             CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin" json:"certificatekeypairorigin,omitempty"`
-	Createdat                            *string                  `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
-	Domainname                           *string                  `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
-	Exportoption                         CertificateExport        `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
-	Exported                             *bool                    `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
-	Extendedkeyusages                    []ExtendedKeyUsageName   `protobuf:"varint,531267688,rep,packed,name=extendedkeyusages,proto3,enum=acm.ExtendedKeyUsageName" json:"extendedkeyusages,omitempty"`
-	Hasadditionalsubjectalternativenames *bool                    `protobuf:"varint,389669028,opt,name=hasadditionalsubjectalternativenames,proto3,oneof" json:"hasadditionalsubjectalternativenames,omitempty"`
-	Importedat                           *string                  `protobuf:"bytes,348649225,opt,name=importedat,proto3,oneof" json:"importedat,omitempty"`
-	Inuse                                *bool                    `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
-	Issuedat                             *string                  `protobuf:"bytes,17449786,opt,name=issuedat,proto3,oneof" json:"issuedat,omitempty"`
-	Keyalgorithm                         KeyAlgorithm             `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
-	Keyusages                            []KeyUsageName           `protobuf:"varint,345433681,rep,packed,name=keyusages,proto3,enum=acm.KeyUsageName" json:"keyusages,omitempty"`
-	Managedby                            CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
-	Notafter                             *string                  `protobuf:"bytes,287678033,opt,name=notafter,proto3,oneof" json:"notafter,omitempty"`
-	Notbefore                            *string                  `protobuf:"bytes,459074038,opt,name=notbefore,proto3,oneof" json:"notbefore,omitempty"`
-	Renewaleligibility                   RenewalEligibility       `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility" json:"renewaleligibility,omitempty"`
-	Revokedat                            *string                  `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
-	Status                               CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
-	Subjectalternativenamesummaries      []string                 `protobuf:"bytes,248841448,rep,name=subjectalternativenamesummaries,proto3" json:"subjectalternativenamesummaries,omitempty"`
-	Type                                 CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
+	state                                protoimpl.MessageState    `protogen:"open.v1"`
+	Certificatearn                       *string                   `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificatekeypairorigin             *CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin,oneof" json:"certificatekeypairorigin,omitempty"`
+	Createdat                            *string                   `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Domainname                           *string                   `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
+	Exportoption                         *CertificateExport        `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport,oneof" json:"exportoption,omitempty"`
+	Exported                             *bool                     `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
+	Extendedkeyusages                    []ExtendedKeyUsageName    `protobuf:"varint,531267688,rep,packed,name=extendedkeyusages,proto3,enum=acm.ExtendedKeyUsageName" json:"extendedkeyusages,omitempty"`
+	Hasadditionalsubjectalternativenames *bool                     `protobuf:"varint,389669028,opt,name=hasadditionalsubjectalternativenames,proto3,oneof" json:"hasadditionalsubjectalternativenames,omitempty"`
+	Importedat                           *string                   `protobuf:"bytes,348649225,opt,name=importedat,proto3,oneof" json:"importedat,omitempty"`
+	Inuse                                *bool                     `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
+	Issuedat                             *string                   `protobuf:"bytes,17449786,opt,name=issuedat,proto3,oneof" json:"issuedat,omitempty"`
+	Keyalgorithm                         *KeyAlgorithm             `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm,oneof" json:"keyalgorithm,omitempty"`
+	Keyusages                            []KeyUsageName            `protobuf:"varint,345433681,rep,packed,name=keyusages,proto3,enum=acm.KeyUsageName" json:"keyusages,omitempty"`
+	Managedby                            *CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy,oneof" json:"managedby,omitempty"`
+	Notafter                             *string                   `protobuf:"bytes,287678033,opt,name=notafter,proto3,oneof" json:"notafter,omitempty"`
+	Notbefore                            *string                   `protobuf:"bytes,459074038,opt,name=notbefore,proto3,oneof" json:"notbefore,omitempty"`
+	Renewaleligibility                   *RenewalEligibility       `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility,oneof" json:"renewaleligibility,omitempty"`
+	Revokedat                            *string                   `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
+	Status                               *CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus,oneof" json:"status,omitempty"`
+	Subjectalternativenamesummaries      []string                  `protobuf:"bytes,248841448,rep,name=subjectalternativenamesummaries,proto3" json:"subjectalternativenamesummaries,omitempty"`
+	Type                                 *CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType,oneof" json:"type,omitempty"`
 	unknownFields                        protoimpl.UnknownFields
 	sizeCache                            protoimpl.SizeCache
 }
@@ -3690,8 +3690,8 @@ func (x *CertificateSummary) GetCertificatearn() string {
 }
 
 func (x *CertificateSummary) GetCertificatekeypairorigin() CertificateKeyPairOrigin {
-	if x != nil {
-		return x.Certificatekeypairorigin
+	if x != nil && x.Certificatekeypairorigin != nil {
+		return *x.Certificatekeypairorigin
 	}
 	return CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED
 }
@@ -3711,8 +3711,8 @@ func (x *CertificateSummary) GetDomainname() string {
 }
 
 func (x *CertificateSummary) GetExportoption() CertificateExport {
-	if x != nil {
-		return x.Exportoption
+	if x != nil && x.Exportoption != nil {
+		return *x.Exportoption
 	}
 	return CertificateExport_CERTIFICATE_EXPORT_DISABLED
 }
@@ -3760,8 +3760,8 @@ func (x *CertificateSummary) GetIssuedat() string {
 }
 
 func (x *CertificateSummary) GetKeyalgorithm() KeyAlgorithm {
-	if x != nil {
-		return x.Keyalgorithm
+	if x != nil && x.Keyalgorithm != nil {
+		return *x.Keyalgorithm
 	}
 	return KeyAlgorithm_KEY_ALGORITHM_EC_PRIME256V1
 }
@@ -3774,8 +3774,8 @@ func (x *CertificateSummary) GetKeyusages() []KeyUsageName {
 }
 
 func (x *CertificateSummary) GetManagedby() CertificateManagedBy {
-	if x != nil {
-		return x.Managedby
+	if x != nil && x.Managedby != nil {
+		return *x.Managedby
 	}
 	return CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT
 }
@@ -3795,8 +3795,8 @@ func (x *CertificateSummary) GetNotbefore() string {
 }
 
 func (x *CertificateSummary) GetRenewaleligibility() RenewalEligibility {
-	if x != nil {
-		return x.Renewaleligibility
+	if x != nil && x.Renewaleligibility != nil {
+		return *x.Renewaleligibility
 	}
 	return RenewalEligibility_RENEWAL_ELIGIBILITY_ELIGIBLE
 }
@@ -3809,8 +3809,8 @@ func (x *CertificateSummary) GetRevokedat() string {
 }
 
 func (x *CertificateSummary) GetStatus() CertificateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CertificateStatus_CERTIFICATE_STATUS_REVOKED
 }
@@ -3823,8 +3823,8 @@ func (x *CertificateSummary) GetSubjectalternativenamesummaries() []string {
 }
 
 func (x *CertificateSummary) GetType() CertificateType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return CertificateType_CERTIFICATE_TYPE_IMPORTED
 }
@@ -4050,7 +4050,7 @@ type CreateAcmeEndpointRequest struct {
 	Authorizationbehavior AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior" json:"authorizationbehavior,omitempty"`
 	Certificateauthority  *CertificateAuthority     `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
 	Certificatetags       []*Tag                    `protobuf:"bytes,340578970,rep,name=certificatetags,proto3" json:"certificatetags,omitempty"`
-	Contact               AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact" json:"contact,omitempty"`
+	Contact               *AcmeContact              `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact,oneof" json:"contact,omitempty"`
 	Idempotencytoken      *string                   `protobuf:"bytes,56833648,opt,name=idempotencytoken,proto3,oneof" json:"idempotencytoken,omitempty"`
 	Tags                  []*Tag                    `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -4109,8 +4109,8 @@ func (x *CreateAcmeEndpointRequest) GetCertificatetags() []*Tag {
 }
 
 func (x *CreateAcmeEndpointRequest) GetContact() AcmeContact {
-	if x != nil {
-		return x.Contact
+	if x != nil && x.Contact != nil {
+		return *x.Contact
 	}
 	return AcmeContact_ACME_CONTACT_REQUIRED
 }
@@ -5343,9 +5343,9 @@ func (x *DnsValidationChallenge) GetResourcerecord() *ResourceRecord {
 
 type DomainScope struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Exactdomain   DomainScopeOption      `protobuf:"varint,75573201,opt,name=exactdomain,proto3,enum=acm.DomainScopeOption" json:"exactdomain,omitempty"`
-	Subdomains    DomainScopeOption      `protobuf:"varint,260450007,opt,name=subdomains,proto3,enum=acm.DomainScopeOption" json:"subdomains,omitempty"`
-	Wildcards     DomainScopeOption      `protobuf:"varint,452219829,opt,name=wildcards,proto3,enum=acm.DomainScopeOption" json:"wildcards,omitempty"`
+	Exactdomain   *DomainScopeOption     `protobuf:"varint,75573201,opt,name=exactdomain,proto3,enum=acm.DomainScopeOption,oneof" json:"exactdomain,omitempty"`
+	Subdomains    *DomainScopeOption     `protobuf:"varint,260450007,opt,name=subdomains,proto3,enum=acm.DomainScopeOption,oneof" json:"subdomains,omitempty"`
+	Wildcards     *DomainScopeOption     `protobuf:"varint,452219829,opt,name=wildcards,proto3,enum=acm.DomainScopeOption,oneof" json:"wildcards,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5381,22 +5381,22 @@ func (*DomainScope) Descriptor() ([]byte, []int) {
 }
 
 func (x *DomainScope) GetExactdomain() DomainScopeOption {
-	if x != nil {
-		return x.Exactdomain
+	if x != nil && x.Exactdomain != nil {
+		return *x.Exactdomain
 	}
 	return DomainScopeOption_DOMAIN_SCOPE_OPTION_DISABLED
 }
 
 func (x *DomainScope) GetSubdomains() DomainScopeOption {
-	if x != nil {
-		return x.Subdomains
+	if x != nil && x.Subdomains != nil {
+		return *x.Subdomains
 	}
 	return DomainScopeOption_DOMAIN_SCOPE_OPTION_DISABLED
 }
 
 func (x *DomainScope) GetWildcards() DomainScopeOption {
-	if x != nil {
-		return x.Wildcards
+	if x != nil && x.Wildcards != nil {
+		return *x.Wildcards
 	}
 	return DomainScopeOption_DOMAIN_SCOPE_OPTION_DISABLED
 }
@@ -5408,8 +5408,8 @@ type DomainValidation struct {
 	Resourcerecord   *ResourceRecord        `protobuf:"bytes,207153213,opt,name=resourcerecord,proto3" json:"resourcerecord,omitempty"`
 	Validationdomain *string                `protobuf:"bytes,161300799,opt,name=validationdomain,proto3,oneof" json:"validationdomain,omitempty"`
 	Validationemails []string               `protobuf:"bytes,375615664,rep,name=validationemails,proto3" json:"validationemails,omitempty"`
-	Validationmethod ValidationMethod       `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
-	Validationstatus DomainStatus           `protobuf:"varint,426907749,opt,name=validationstatus,proto3,enum=acm.DomainStatus" json:"validationstatus,omitempty"`
+	Validationmethod *ValidationMethod      `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod,oneof" json:"validationmethod,omitempty"`
+	Validationstatus *DomainStatus          `protobuf:"varint,426907749,opt,name=validationstatus,proto3,enum=acm.DomainStatus,oneof" json:"validationstatus,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -5480,23 +5480,23 @@ func (x *DomainValidation) GetValidationemails() []string {
 }
 
 func (x *DomainValidation) GetValidationmethod() ValidationMethod {
-	if x != nil {
-		return x.Validationmethod
+	if x != nil && x.Validationmethod != nil {
+		return *x.Validationmethod
 	}
 	return ValidationMethod_VALIDATION_METHOD_HTTP
 }
 
 func (x *DomainValidation) GetValidationstatus() DomainStatus {
-	if x != nil {
-		return x.Validationstatus
+	if x != nil && x.Validationstatus != nil {
+		return *x.Validationstatus
 	}
 	return DomainStatus_DOMAIN_STATUS_PENDING_VALIDATION
 }
 
 type DomainValidationMethodUpdateSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	From          ValidationMethod       `protobuf:"varint,410269078,opt,name=from,proto3,enum=acm.ValidationMethod" json:"from,omitempty"`
-	To            ValidationMethod       `protobuf:"varint,32872005,opt,name=to,proto3,enum=acm.ValidationMethod" json:"to,omitempty"`
+	From          *ValidationMethod      `protobuf:"varint,410269078,opt,name=from,proto3,enum=acm.ValidationMethod,oneof" json:"from,omitempty"`
+	To            *ValidationMethod      `protobuf:"varint,32872005,opt,name=to,proto3,enum=acm.ValidationMethod,oneof" json:"to,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5532,15 +5532,15 @@ func (*DomainValidationMethodUpdateSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *DomainValidationMethodUpdateSummary) GetFrom() ValidationMethod {
-	if x != nil {
-		return x.From
+	if x != nil && x.From != nil {
+		return *x.From
 	}
 	return ValidationMethod_VALIDATION_METHOD_HTTP
 }
 
 func (x *DomainValidationMethodUpdateSummary) GetTo() ValidationMethod {
-	if x != nil {
-		return x.To
+	if x != nil && x.To != nil {
+		return *x.To
 	}
 	return ValidationMethod_VALIDATION_METHOD_HTTP
 }
@@ -5919,7 +5919,7 @@ func (x *ExportCertificateResponse) GetPrivatekey() string {
 
 type ExtendedKeyUsage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          ExtendedKeyUsageName   `protobuf:"varint,266367751,opt,name=name,proto3,enum=acm.ExtendedKeyUsageName" json:"name,omitempty"`
+	Name          *ExtendedKeyUsageName  `protobuf:"varint,266367751,opt,name=name,proto3,enum=acm.ExtendedKeyUsageName,oneof" json:"name,omitempty"`
 	Oid           *string                `protobuf:"bytes,504527812,opt,name=oid,proto3,oneof" json:"oid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5956,8 +5956,8 @@ func (*ExtendedKeyUsage) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExtendedKeyUsage) GetName() ExtendedKeyUsageName {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ExtendedKeyUsageName_EXTENDED_KEY_USAGE_NAME_ANY
 }
@@ -5970,9 +5970,9 @@ func (x *ExtendedKeyUsage) GetOid() string {
 }
 
 type FailureDetails struct {
-	state         protoimpl.MessageState            `protogen:"open.v1"`
-	Message       *string                           `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
-	Reason        AcmeDomainValidationFailureReason `protobuf:"varint,20005178,opt,name=reason,proto3,enum=acm.AcmeDomainValidationFailureReason" json:"reason,omitempty"`
+	state         protoimpl.MessageState             `protogen:"open.v1"`
+	Message       *string                            `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Reason        *AcmeDomainValidationFailureReason `protobuf:"varint,20005178,opt,name=reason,proto3,enum=acm.AcmeDomainValidationFailureReason,oneof" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6015,19 +6015,19 @@ func (x *FailureDetails) GetMessage() string {
 }
 
 func (x *FailureDetails) GetReason() AcmeDomainValidationFailureReason {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_ACTIVE
 }
 
 type Filters struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Exportoption     CertificateExport      `protobuf:"varint,442051119,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
+	Exportoption     *CertificateExport     `protobuf:"varint,442051119,opt,name=exportoption,proto3,enum=acm.CertificateExport,oneof" json:"exportoption,omitempty"`
 	Extendedkeyusage []ExtendedKeyUsageName `protobuf:"varint,420785679,rep,packed,name=extendedkeyusage,proto3,enum=acm.ExtendedKeyUsageName" json:"extendedkeyusage,omitempty"`
 	Keytypes         []KeyAlgorithm         `protobuf:"varint,27369686,rep,packed,name=keytypes,proto3,enum=acm.KeyAlgorithm" json:"keytypes,omitempty"`
 	Keyusage         []KeyUsageName         `protobuf:"varint,502227108,rep,packed,name=keyusage,proto3,enum=acm.KeyUsageName" json:"keyusage,omitempty"`
-	Managedby        CertificateManagedBy   `protobuf:"varint,401567328,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
+	Managedby        *CertificateManagedBy  `protobuf:"varint,401567328,opt,name=managedby,proto3,enum=acm.CertificateManagedBy,oneof" json:"managedby,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -6063,8 +6063,8 @@ func (*Filters) Descriptor() ([]byte, []int) {
 }
 
 func (x *Filters) GetExportoption() CertificateExport {
-	if x != nil {
-		return x.Exportoption
+	if x != nil && x.Exportoption != nil {
+		return *x.Exportoption
 	}
 	return CertificateExport_CERTIFICATE_EXPORT_DISABLED
 }
@@ -6091,8 +6091,8 @@ func (x *Filters) GetKeyusage() []KeyUsageName {
 }
 
 func (x *Filters) GetManagedby() CertificateManagedBy {
-	if x != nil {
-		return x.Managedby
+	if x != nil && x.Managedby != nil {
+		return *x.Managedby
 	}
 	return CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT
 }
@@ -6907,7 +6907,7 @@ func (x *InvalidTagException) GetMessage() string {
 
 type KeyUsage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          KeyUsageName           `protobuf:"varint,266367751,opt,name=name,proto3,enum=acm.KeyUsageName" json:"name,omitempty"`
+	Name          *KeyUsageName          `protobuf:"varint,266367751,opt,name=name,proto3,enum=acm.KeyUsageName,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6943,8 +6943,8 @@ func (*KeyUsage) Descriptor() ([]byte, []int) {
 }
 
 func (x *KeyUsage) GetName() KeyUsageName {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return KeyUsageName_KEY_USAGE_NAME_ANY
 }
@@ -7552,8 +7552,8 @@ type ListCertificatesRequest struct {
 	Includes                  *Filters                   `protobuf:"bytes,162404509,opt,name=includes,proto3" json:"includes,omitempty"`
 	Maxitems                  *int32                     `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Nexttoken                 *string                    `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Sortby                    SortBy                     `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=acm.SortBy" json:"sortby,omitempty"`
-	Sortorder                 SortOrder                  `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=acm.SortOrder" json:"sortorder,omitempty"`
+	Sortby                    *SortBy                    `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=acm.SortBy,oneof" json:"sortby,omitempty"`
+	Sortorder                 *SortOrder                 `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=acm.SortOrder,oneof" json:"sortorder,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -7624,15 +7624,15 @@ func (x *ListCertificatesRequest) GetNexttoken() string {
 }
 
 func (x *ListCertificatesRequest) GetSortby() SortBy {
-	if x != nil {
-		return x.Sortby
+	if x != nil && x.Sortby != nil {
+		return *x.Sortby
 	}
 	return SortBy_SORT_BY_CREATED_AT
 }
 
 func (x *ListCertificatesRequest) GetSortorder() SortOrder {
-	if x != nil {
-		return x.Sortorder
+	if x != nil && x.Sortorder != nil {
+		return *x.Sortorder
 	}
 	return SortOrder_SORT_ORDER_ASCENDING
 }
@@ -8201,7 +8201,7 @@ type RenewalSummary struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Domainvalidationoptions []*DomainValidation    `protobuf:"bytes,335573705,rep,name=domainvalidationoptions,proto3" json:"domainvalidationoptions,omitempty"`
 	Renewalstatus           RenewalStatus          `protobuf:"varint,277232086,opt,name=renewalstatus,proto3,enum=acm.RenewalStatus" json:"renewalstatus,omitempty"`
-	Renewalstatusreason     FailureReason          `protobuf:"varint,206499082,opt,name=renewalstatusreason,proto3,enum=acm.FailureReason" json:"renewalstatusreason,omitempty"`
+	Renewalstatusreason     *FailureReason         `protobuf:"varint,206499082,opt,name=renewalstatusreason,proto3,enum=acm.FailureReason,oneof" json:"renewalstatusreason,omitempty"`
 	Updatedat               string                 `protobuf:"bytes,213581206,opt,name=updatedat,proto3" json:"updatedat,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -8252,8 +8252,8 @@ func (x *RenewalSummary) GetRenewalstatus() RenewalStatus {
 }
 
 func (x *RenewalSummary) GetRenewalstatusreason() FailureReason {
-	if x != nil {
-		return x.Renewalstatusreason
+	if x != nil && x.Renewalstatusreason != nil {
+		return *x.Renewalstatusreason
 	}
 	return FailureReason_FAILURE_REASON_PCA_INVALID_ARGS
 }
@@ -8271,12 +8271,12 @@ type RequestCertificateRequest struct {
 	Domainname              string                    `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
 	Domainvalidationoptions []*DomainValidationOption `protobuf:"bytes,335573705,rep,name=domainvalidationoptions,proto3" json:"domainvalidationoptions,omitempty"`
 	Idempotencytoken        *string                   `protobuf:"bytes,56833648,opt,name=idempotencytoken,proto3,oneof" json:"idempotencytoken,omitempty"`
-	Keyalgorithm            KeyAlgorithm              `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
-	Managedby               CertificateManagedBy      `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
+	Keyalgorithm            *KeyAlgorithm             `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm,oneof" json:"keyalgorithm,omitempty"`
+	Managedby               *CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy,oneof" json:"managedby,omitempty"`
 	Options                 *CertificateOptions       `protobuf:"bytes,356388166,opt,name=options,proto3" json:"options,omitempty"`
 	Subjectalternativenames []string                  `protobuf:"bytes,109998119,rep,name=subjectalternativenames,proto3" json:"subjectalternativenames,omitempty"`
 	Tags                    []*Tag                    `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Validationmethod        ValidationMethod          `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
+	Validationmethod        *ValidationMethod         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod,oneof" json:"validationmethod,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -8340,15 +8340,15 @@ func (x *RequestCertificateRequest) GetIdempotencytoken() string {
 }
 
 func (x *RequestCertificateRequest) GetKeyalgorithm() KeyAlgorithm {
-	if x != nil {
-		return x.Keyalgorithm
+	if x != nil && x.Keyalgorithm != nil {
+		return *x.Keyalgorithm
 	}
 	return KeyAlgorithm_KEY_ALGORITHM_EC_PRIME256V1
 }
 
 func (x *RequestCertificateRequest) GetManagedby() CertificateManagedBy {
-	if x != nil {
-		return x.Managedby
+	if x != nil && x.Managedby != nil {
+		return *x.Managedby
 	}
 	return CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT
 }
@@ -8375,8 +8375,8 @@ func (x *RequestCertificateRequest) GetTags() []*Tag {
 }
 
 func (x *RequestCertificateRequest) GetValidationmethod() ValidationMethod {
-	if x != nil {
-		return x.Validationmethod
+	if x != nil && x.Validationmethod != nil {
+		return *x.Validationmethod
 	}
 	return ValidationMethod_VALIDATION_METHOD_HTTP
 }
@@ -8870,12 +8870,12 @@ func (x *RevokeCertificateResponse) GetCertificatearn() string {
 }
 
 type SearchCertificatesRequest struct {
-	state           protoimpl.MessageState      `protogen:"open.v1"`
-	Filterstatement *CertificateFilterStatement `protobuf:"bytes,530491181,opt,name=filterstatement,proto3" json:"filterstatement,omitempty"`
-	Maxresults      *int32                      `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken       *string                     `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Sortby          SearchCertificatesSortBy    `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=acm.SearchCertificatesSortBy" json:"sortby,omitempty"`
-	Sortorder       SearchCertificatesSortOrder `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=acm.SearchCertificatesSortOrder" json:"sortorder,omitempty"`
+	state           protoimpl.MessageState       `protogen:"open.v1"`
+	Filterstatement *CertificateFilterStatement  `protobuf:"bytes,530491181,opt,name=filterstatement,proto3" json:"filterstatement,omitempty"`
+	Maxresults      *int32                       `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken       *string                      `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Sortby          *SearchCertificatesSortBy    `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=acm.SearchCertificatesSortBy,oneof" json:"sortby,omitempty"`
+	Sortorder       *SearchCertificatesSortOrder `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=acm.SearchCertificatesSortOrder,oneof" json:"sortorder,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -8932,15 +8932,15 @@ func (x *SearchCertificatesRequest) GetNexttoken() string {
 }
 
 func (x *SearchCertificatesRequest) GetSortby() SearchCertificatesSortBy {
-	if x != nil {
-		return x.Sortby
+	if x != nil && x.Sortby != nil {
+		return *x.Sortby
 	}
 	return SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_ISSUED_AT
 }
 
 func (x *SearchCertificatesRequest) GetSortorder() SearchCertificatesSortOrder {
-	if x != nil {
-		return x.Sortorder
+	if x != nil && x.Sortorder != nil {
+		return *x.Sortorder
 	}
 	return SearchCertificatesSortOrder_SEARCH_CERTIFICATES_SORT_ORDER_ASCENDING
 }
@@ -9582,11 +9582,11 @@ func (x *UpdateAcmeDomainValidationRequest) GetPrevalidationoptions() *Prevalida
 }
 
 type UpdateAcmeEndpointRequest struct {
-	state                 protoimpl.MessageState    `protogen:"open.v1"`
-	Acmeendpointarn       string                    `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
-	Authorizationbehavior AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior" json:"authorizationbehavior,omitempty"`
-	Certificateauthority  *CertificateAuthority     `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
-	Contact               AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact" json:"contact,omitempty"`
+	state                 protoimpl.MessageState     `protogen:"open.v1"`
+	Acmeendpointarn       string                     `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	Authorizationbehavior *AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior,oneof" json:"authorizationbehavior,omitempty"`
+	Certificateauthority  *CertificateAuthority      `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
+	Contact               *AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact,oneof" json:"contact,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -9629,8 +9629,8 @@ func (x *UpdateAcmeEndpointRequest) GetAcmeendpointarn() string {
 }
 
 func (x *UpdateAcmeEndpointRequest) GetAuthorizationbehavior() AcmeAuthorizationBehavior {
-	if x != nil {
-		return x.Authorizationbehavior
+	if x != nil && x.Authorizationbehavior != nil {
+		return *x.Authorizationbehavior
 	}
 	return AcmeAuthorizationBehavior_ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED
 }
@@ -9643,8 +9643,8 @@ func (x *UpdateAcmeEndpointRequest) GetCertificateauthority() *CertificateAuthor
 }
 
 func (x *UpdateAcmeEndpointRequest) GetContact() AcmeContact {
-	if x != nil {
-		return x.Contact
+	if x != nil && x.Contact != nil {
+		return *x.Contact
 	}
 	return AcmeContact_ACME_CONTACT_REQUIRED
 }
@@ -9705,8 +9705,8 @@ type UpdateSummary struct {
 	state                               protoimpl.MessageState               `protogen:"open.v1"`
 	Domainvalidationmethodupdatesummary *DomainValidationMethodUpdateSummary `protobuf:"bytes,520827415,opt,name=domainvalidationmethodupdatesummary,proto3" json:"domainvalidationmethodupdatesummary,omitempty"`
 	Requestedat                         *string                              `protobuf:"bytes,392290807,opt,name=requestedat,proto3,oneof" json:"requestedat,omitempty"`
-	Status                              UpdateStatus                         `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.UpdateStatus" json:"status,omitempty"`
-	Type                                UpdateType                           `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.UpdateType" json:"type,omitempty"`
+	Status                              *UpdateStatus                        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.UpdateStatus,oneof" json:"status,omitempty"`
+	Type                                *UpdateType                          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.UpdateType,oneof" json:"type,omitempty"`
 	Updatedat                           *string                              `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
@@ -9757,15 +9757,15 @@ func (x *UpdateSummary) GetRequestedat() string {
 }
 
 func (x *UpdateSummary) GetStatus() UpdateStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return UpdateStatus_UPDATE_STATUS_SUCCESS
 }
 
 func (x *UpdateSummary) GetType() UpdateType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return UpdateType_UPDATE_TYPE_DOMAIN_VALIDATION_METHOD
 }
@@ -9832,8 +9832,8 @@ func (x *ValidationChallenge) GetEmailvalidationchallenge() *EmailValidationChal
 type ValidationConfiguration struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Validationchallenge *ValidationChallenge   `protobuf:"bytes,468787740,opt,name=validationchallenge,proto3" json:"validationchallenge,omitempty"`
-	Validationmethod    ValidationMethod       `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
-	Validationstatus    DomainStatus           `protobuf:"varint,426907749,opt,name=validationstatus,proto3,enum=acm.DomainStatus" json:"validationstatus,omitempty"`
+	Validationmethod    *ValidationMethod      `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod,oneof" json:"validationmethod,omitempty"`
+	Validationstatus    *DomainStatus          `protobuf:"varint,426907749,opt,name=validationstatus,proto3,enum=acm.DomainStatus,oneof" json:"validationstatus,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -9876,15 +9876,15 @@ func (x *ValidationConfiguration) GetValidationchallenge() *ValidationChallenge 
 }
 
 func (x *ValidationConfiguration) GetValidationmethod() ValidationMethod {
-	if x != nil {
-		return x.Validationmethod
+	if x != nil && x.Validationmethod != nil {
+		return *x.Validationmethod
 	}
 	return ValidationMethod_VALIDATION_METHOD_HTTP
 }
 
 func (x *ValidationConfiguration) GetValidationstatus() DomainStatus {
-	if x != nil {
-		return x.Validationstatus
+	if x != nil && x.Validationstatus != nil {
+		return *x.Validationstatus
 	}
 	return DomainStatus_DOMAIN_STATUS_PENDING_VALIDATION
 }
@@ -9935,9 +9935,9 @@ func (x *ValidationException) GetMessage() string {
 
 type X509AttributeFilter struct {
 	state                  protoimpl.MessageState        `protogen:"open.v1"`
-	Extendedkeyusage       ExtendedKeyUsageName          `protobuf:"varint,135993903,opt,name=extendedkeyusage,proto3,enum=acm.ExtendedKeyUsageName" json:"extendedkeyusage,omitempty"`
-	Keyalgorithm           KeyAlgorithm                  `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
-	Keyusage               KeyUsageName                  `protobuf:"varint,357216772,opt,name=keyusage,proto3,enum=acm.KeyUsageName" json:"keyusage,omitempty"`
+	Extendedkeyusage       *ExtendedKeyUsageName         `protobuf:"varint,135993903,opt,name=extendedkeyusage,proto3,enum=acm.ExtendedKeyUsageName,oneof" json:"extendedkeyusage,omitempty"`
+	Keyalgorithm           *KeyAlgorithm                 `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm,oneof" json:"keyalgorithm,omitempty"`
+	Keyusage               *KeyUsageName                 `protobuf:"varint,357216772,opt,name=keyusage,proto3,enum=acm.KeyUsageName,oneof" json:"keyusage,omitempty"`
 	Notafter               *TimestampRange               `protobuf:"bytes,287678033,opt,name=notafter,proto3" json:"notafter,omitempty"`
 	Notbefore              *TimestampRange               `protobuf:"bytes,459074038,opt,name=notbefore,proto3" json:"notbefore,omitempty"`
 	Serialnumber           *string                       `protobuf:"bytes,418274661,opt,name=serialnumber,proto3,oneof" json:"serialnumber,omitempty"`
@@ -9978,22 +9978,22 @@ func (*X509AttributeFilter) Descriptor() ([]byte, []int) {
 }
 
 func (x *X509AttributeFilter) GetExtendedkeyusage() ExtendedKeyUsageName {
-	if x != nil {
-		return x.Extendedkeyusage
+	if x != nil && x.Extendedkeyusage != nil {
+		return *x.Extendedkeyusage
 	}
 	return ExtendedKeyUsageName_EXTENDED_KEY_USAGE_NAME_ANY
 }
 
 func (x *X509AttributeFilter) GetKeyalgorithm() KeyAlgorithm {
-	if x != nil {
-		return x.Keyalgorithm
+	if x != nil && x.Keyalgorithm != nil {
+		return *x.Keyalgorithm
 	}
 	return KeyAlgorithm_KEY_ALGORITHM_EC_PRIME256V1
 }
 
 func (x *X509AttributeFilter) GetKeyusage() KeyUsageName {
-	if x != nil {
-		return x.Keyusage
+	if x != nil && x.Keyusage != nil {
+		return *x.Keyusage
 	}
 	return KeyUsageName_KEY_USAGE_NAME_ANY
 }
@@ -10037,7 +10037,7 @@ type X509Attributes struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Extendedkeyusages       []ExtendedKeyUsageName `protobuf:"varint,531267688,rep,packed,name=extendedkeyusages,proto3,enum=acm.ExtendedKeyUsageName" json:"extendedkeyusages,omitempty"`
 	Issuer                  *DistinguishedName     `protobuf:"bytes,528708823,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	Keyalgorithm            KeyAlgorithm           `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
+	Keyalgorithm            *KeyAlgorithm          `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm,oneof" json:"keyalgorithm,omitempty"`
 	Keyusages               []KeyUsageName         `protobuf:"varint,345433681,rep,packed,name=keyusages,proto3,enum=acm.KeyUsageName" json:"keyusages,omitempty"`
 	Notafter                *string                `protobuf:"bytes,287678033,opt,name=notafter,proto3,oneof" json:"notafter,omitempty"`
 	Notbefore               *string                `protobuf:"bytes,459074038,opt,name=notbefore,proto3,oneof" json:"notbefore,omitempty"`
@@ -10093,8 +10093,8 @@ func (x *X509Attributes) GetIssuer() *DistinguishedName {
 }
 
 func (x *X509Attributes) GetKeyalgorithm() KeyAlgorithm {
-	if x != nil {
-		return x.Keyalgorithm
+	if x != nil && x.Keyalgorithm != nil {
+		return *x.Keyalgorithm
 	}
 	return KeyAlgorithm_KEY_ALGORITHM_EC_PRIME256V1
 }
@@ -10149,52 +10149,71 @@ const file_acm_proto_rawDesc = "" +
 	"\x15AccessDeniedException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xd7\a\n" +
+	"\b_message\"\x8d\t\n" +
 	"\x16AcmCertificateMetadata\x12-\n" +
 	"\racmeaccountid\x18\x98\xb4\x85\xe6\x01 \x01(\tH\x00R\racmeaccountid\x88\x01\x01\x120\n" +
-	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12]\n" +
-	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginR\x18certificatekeypairorigin\x12$\n" +
-	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x12=\n" +
-	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportR\fexportoption\x12#\n" +
-	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x03R\bexported\x88\x01\x01\x12'\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12b\n" +
+	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginH\x02R\x18certificatekeypairorigin\x88\x01\x01\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x03R\tcreatedat\x88\x01\x01\x12B\n" +
+	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportH\x04R\fexportoption\x88\x01\x01\x12#\n" +
+	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x05R\bexported\x88\x01\x01\x12'\n" +
 	"\n" +
-	"importedat\x18\x89\ue7e6\x01 \x01(\tH\x04R\n" +
+	"importedat\x18\x89\ue7e6\x01 \x01(\tH\x06R\n" +
 	"importedat\x88\x01\x01\x12\x1d\n" +
-	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x05R\x05inuse\x88\x01\x01\x12\"\n" +
-	"\bissuedat\x18\xba\x86\xa9\b \x01(\tH\x06R\bissuedat\x88\x01\x01\x12;\n" +
-	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12J\n" +
-	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityR\x12renewaleligibility\x12<\n" +
-	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusR\rrenewalstatus\x12$\n" +
-	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\aR\trevokedat\x88\x01\x01\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusR\x06status\x12,\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04type\x12D\n" +
-	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethodB\x10\n" +
+	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\aR\x05inuse\x88\x01\x01\x12\"\n" +
+	"\bissuedat\x18\xba\x86\xa9\b \x01(\tH\bR\bissuedat\x88\x01\x01\x12@\n" +
+	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByH\tR\tmanagedby\x88\x01\x01\x12O\n" +
+	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityH\n" +
+	"R\x12renewaleligibility\x88\x01\x01\x12A\n" +
+	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusH\vR\rrenewalstatus\x88\x01\x01\x12$\n" +
+	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\fR\trevokedat\x88\x01\x01\x126\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusH\rR\x06status\x88\x01\x01\x121\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeH\x0eR\x04type\x88\x01\x01\x12I\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodH\x0fR\x10validationmethod\x88\x01\x01B\x10\n" +
 	"\x0e_acmeaccountidB\x12\n" +
-	"\x10_acmeendpointarnB\f\n" +
+	"\x10_acmeendpointarnB\x1b\n" +
+	"\x19_certificatekeypairoriginB\f\n" +
 	"\n" +
-	"_createdatB\v\n" +
+	"_createdatB\x0f\n" +
+	"\r_exportoptionB\v\n" +
 	"\t_exportedB\r\n" +
 	"\v_importedatB\b\n" +
 	"\x06_inuseB\v\n" +
 	"\t_issuedatB\f\n" +
 	"\n" +
-	"_revokedat\"\xc0\x05\n" +
+	"_managedbyB\x15\n" +
+	"\x13_renewaleligibilityB\x10\n" +
+	"\x0e_renewalstatusB\f\n" +
+	"\n" +
+	"_revokedatB\t\n" +
+	"\a_statusB\a\n" +
+	"\x05_typeB\x13\n" +
+	"\x11_validationmethod\"\xda\x06\n" +
 	"\x1cAcmCertificateMetadataFilter\x12-\n" +
 	"\racmeaccountid\x18\x98\xb4\x85\xe6\x01 \x01(\tH\x00R\racmeaccountid\x88\x01\x01\x120\n" +
-	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12]\n" +
-	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginR\x18certificatekeypairorigin\x12=\n" +
-	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportR\fexportoption\x12#\n" +
-	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x02R\bexported\x88\x01\x01\x12\x1d\n" +
-	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x03R\x05inuse\x88\x01\x01\x12;\n" +
-	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12<\n" +
-	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusR\rrenewalstatus\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusR\x06status\x12,\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04type\x12D\n" +
-	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethodB\x10\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12b\n" +
+	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginH\x02R\x18certificatekeypairorigin\x88\x01\x01\x12B\n" +
+	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportH\x03R\fexportoption\x88\x01\x01\x12#\n" +
+	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x04R\bexported\x88\x01\x01\x12\x1d\n" +
+	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x05R\x05inuse\x88\x01\x01\x12@\n" +
+	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByH\x06R\tmanagedby\x88\x01\x01\x12A\n" +
+	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusH\aR\rrenewalstatus\x88\x01\x01\x126\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusH\bR\x06status\x88\x01\x01\x121\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeH\tR\x04type\x88\x01\x01\x12I\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodH\n" +
+	"R\x10validationmethod\x88\x01\x01B\x10\n" +
 	"\x0e_acmeaccountidB\x12\n" +
-	"\x10_acmeendpointarnB\v\n" +
+	"\x10_acmeendpointarnB\x1b\n" +
+	"\x19_certificatekeypairoriginB\x0f\n" +
+	"\r_exportoptionB\v\n" +
 	"\t_exportedB\b\n" +
-	"\x06_inuse\"\x8e\x03\n" +
+	"\x06_inuseB\f\n" +
+	"\n" +
+	"_managedbyB\x10\n" +
+	"\x0e_renewalstatusB\t\n" +
+	"\a_statusB\a\n" +
+	"\x05_typeB\x13\n" +
+	"\x11_validationmethod\"\x9e\x03\n" +
 	"\vAcmeAccount\x12'\n" +
 	"\n" +
 	"accounturl\x18\xb6\x9c\xe7\xc3\x01 \x01(\tH\x00R\n" +
@@ -10202,13 +10221,14 @@ const file_acm_proto_rawDesc = "" +
 	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tH\x01R\x1dacmeexternalaccountbindingarn\x88\x01\x01\x12\x1d\n" +
 	"\bcontacts\x18\x91\xa2\xb8E \x03(\tR\bcontacts\x12$\n" +
 	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x128\n" +
-	"\x13publickeythumbprint\x18ɻ\xbb~ \x01(\tH\x03R\x13publickeythumbprint\x88\x01\x01\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.AcmeAccountStatusR\x06statusB\r\n" +
+	"\x13publickeythumbprint\x18ɻ\xbb~ \x01(\tH\x03R\x13publickeythumbprint\x88\x01\x01\x126\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.AcmeAccountStatusH\x04R\x06status\x88\x01\x01B\r\n" +
 	"\v_accounturlB \n" +
 	"\x1e_acmeexternalaccountbindingarnB\f\n" +
 	"\n" +
 	"_createdatB\x16\n" +
-	"\x14_publickeythumbprint\"\x95\x03\n" +
+	"\x14_publickeythumbprintB\t\n" +
+	"\a_status\"\xa5\x03\n" +
 	"\x12AcmeAccountSummary\x12'\n" +
 	"\n" +
 	"accounturl\x18\xb6\x9c\xe7\xc3\x01 \x01(\tH\x00R\n" +
@@ -10216,13 +10236,14 @@ const file_acm_proto_rawDesc = "" +
 	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tH\x01R\x1dacmeexternalaccountbindingarn\x88\x01\x01\x12\x1d\n" +
 	"\bcontacts\x18\x91\xa2\xb8E \x03(\tR\bcontacts\x12$\n" +
 	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x128\n" +
-	"\x13publickeythumbprint\x18ɻ\xbb~ \x01(\tH\x03R\x13publickeythumbprint\x88\x01\x01\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.AcmeAccountStatusR\x06statusB\r\n" +
+	"\x13publickeythumbprint\x18ɻ\xbb~ \x01(\tH\x03R\x13publickeythumbprint\x88\x01\x01\x126\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.AcmeAccountStatusH\x04R\x06status\x88\x01\x01B\r\n" +
 	"\v_accounturlB \n" +
 	"\x1e_acmeexternalaccountbindingarnB\f\n" +
 	"\n" +
 	"_createdatB\x16\n" +
-	"\x14_publickeythumbprint\"\xf1\x04\n" +
+	"\x14_publickeythumbprintB\t\n" +
+	"\a_status\"\x9c\x05\n" +
 	"\x14AcmeDomainValidation\x12@\n" +
 	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tH\x00R\x17acmedomainvalidationarn\x88\x01\x01\x120\n" +
 	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12$\n" +
@@ -10231,17 +10252,19 @@ const file_acm_proto_rawDesc = "" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x03R\n" +
 	"domainname\x88\x01\x01\x12?\n" +
 	"\x0efailuredetails\x18\xea\xf8\xa6\xc3\x01 \x01(\v2\x13.acm.FailureDetailsR\x0efailuredetails\x12P\n" +
-	"\x14prevalidationdetails\x18\xd6\xed\xbb( \x01(\v2\x19.acm.PrevalidationDetailsR\x14prevalidationdetails\x12G\n" +
-	"\x11prevalidationtype\x18\xbe\x81\x92Q \x01(\x0e2\x16.acm.PrevalidationTypeR\x11prevalidationtype\x12:\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.acm.AcmeDomainValidationStatusR\x06status\x12$\n" +
-	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x04R\tupdatedat\x88\x01\x01B\x1a\n" +
+	"\x14prevalidationdetails\x18\xd6\xed\xbb( \x01(\v2\x19.acm.PrevalidationDetailsR\x14prevalidationdetails\x12L\n" +
+	"\x11prevalidationtype\x18\xbe\x81\x92Q \x01(\x0e2\x16.acm.PrevalidationTypeH\x04R\x11prevalidationtype\x88\x01\x01\x12?\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.acm.AcmeDomainValidationStatusH\x05R\x06status\x88\x01\x01\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x06R\tupdatedat\x88\x01\x01B\x1a\n" +
 	"\x18_acmedomainvalidationarnB\x12\n" +
 	"\x10_acmeendpointarnB\f\n" +
 	"\n" +
 	"_createdatB\r\n" +
-	"\v_domainnameB\f\n" +
+	"\v_domainnameB\x14\n" +
+	"\x12_prevalidationtypeB\t\n" +
+	"\a_statusB\f\n" +
 	"\n" +
-	"_updatedat\"\xf8\x04\n" +
+	"_updatedat\"\xa3\x05\n" +
 	"\x1bAcmeDomainValidationSummary\x12@\n" +
 	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tH\x00R\x17acmedomainvalidationarn\x88\x01\x01\x120\n" +
 	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12$\n" +
@@ -10250,51 +10273,61 @@ const file_acm_proto_rawDesc = "" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x03R\n" +
 	"domainname\x88\x01\x01\x12?\n" +
 	"\x0efailuredetails\x18\xea\xf8\xa6\xc3\x01 \x01(\v2\x13.acm.FailureDetailsR\x0efailuredetails\x12P\n" +
-	"\x14prevalidationdetails\x18\xd6\xed\xbb( \x01(\v2\x19.acm.PrevalidationDetailsR\x14prevalidationdetails\x12G\n" +
-	"\x11prevalidationtype\x18\xbe\x81\x92Q \x01(\x0e2\x16.acm.PrevalidationTypeR\x11prevalidationtype\x12:\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.acm.AcmeDomainValidationStatusR\x06status\x12$\n" +
-	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x04R\tupdatedat\x88\x01\x01B\x1a\n" +
+	"\x14prevalidationdetails\x18\xd6\xed\xbb( \x01(\v2\x19.acm.PrevalidationDetailsR\x14prevalidationdetails\x12L\n" +
+	"\x11prevalidationtype\x18\xbe\x81\x92Q \x01(\x0e2\x16.acm.PrevalidationTypeH\x04R\x11prevalidationtype\x88\x01\x01\x12?\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.acm.AcmeDomainValidationStatusH\x05R\x06status\x88\x01\x01\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x06R\tupdatedat\x88\x01\x01B\x1a\n" +
 	"\x18_acmedomainvalidationarnB\x12\n" +
 	"\x10_acmeendpointarnB\f\n" +
 	"\n" +
 	"_createdatB\r\n" +
-	"\v_domainnameB\f\n" +
+	"\v_domainnameB\x14\n" +
+	"\x12_prevalidationtypeB\t\n" +
+	"\a_statusB\f\n" +
 	"\n" +
-	"_updatedat\"\xfe\x04\n" +
+	"_updatedat\"\xbe\x05\n" +
 	"\fAcmeEndpoint\x120\n" +
-	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01\x12W\n" +
-	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorR\x15authorizationbehavior\x12Q\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01\x12\\\n" +
+	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorH\x01R\x15authorizationbehavior\x88\x01\x01\x12Q\n" +
 	"\x14certificateauthority\x18\xa6\xd7\xfd\x93\x01 \x01(\v2\x19.acm.CertificateAuthorityR\x14certificateauthority\x126\n" +
-	"\x0fcertificatetags\x18\x9a\xa5\xb3\xa2\x01 \x03(\v2\b.acm.TagR\x0fcertificatetags\x12.\n" +
-	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactR\acontact\x12$\n" +
-	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x01R\tcreatedat\x88\x01\x01\x12(\n" +
-	"\vendpointurl\x18\x96\x93\x94\x0f \x01(\tH\x02R\vendpointurl\x88\x01\x01\x12,\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tH\x03R\rfailurereason\x88\x01\x01\x122\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.acm.AcmeEndpointStatusR\x06status\x12$\n" +
-	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x04R\tupdatedat\x88\x01\x01B\x12\n" +
-	"\x10_acmeendpointarnB\f\n" +
+	"\x0fcertificatetags\x18\x9a\xa5\xb3\xa2\x01 \x03(\v2\b.acm.TagR\x0fcertificatetags\x123\n" +
+	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactH\x02R\acontact\x88\x01\x01\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x03R\tcreatedat\x88\x01\x01\x12(\n" +
+	"\vendpointurl\x18\x96\x93\x94\x0f \x01(\tH\x04R\vendpointurl\x88\x01\x01\x12,\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tH\x05R\rfailurereason\x88\x01\x01\x127\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.acm.AcmeEndpointStatusH\x06R\x06status\x88\x01\x01\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\aR\tupdatedat\x88\x01\x01B\x12\n" +
+	"\x10_acmeendpointarnB\x18\n" +
+	"\x16_authorizationbehaviorB\n" +
+	"\n" +
+	"\b_contactB\f\n" +
 	"\n" +
 	"_createdatB\x0e\n" +
 	"\f_endpointurlB\x10\n" +
-	"\x0e_failurereasonB\f\n" +
+	"\x0e_failurereasonB\t\n" +
+	"\a_statusB\f\n" +
 	"\n" +
-	"_updatedat\"\x85\x05\n" +
+	"_updatedat\"\xc5\x05\n" +
 	"\x13AcmeEndpointSummary\x120\n" +
-	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01\x12W\n" +
-	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorR\x15authorizationbehavior\x12Q\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01\x12\\\n" +
+	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorH\x01R\x15authorizationbehavior\x88\x01\x01\x12Q\n" +
 	"\x14certificateauthority\x18\xa6\xd7\xfd\x93\x01 \x01(\v2\x19.acm.CertificateAuthorityR\x14certificateauthority\x126\n" +
-	"\x0fcertificatetags\x18\x9a\xa5\xb3\xa2\x01 \x03(\v2\b.acm.TagR\x0fcertificatetags\x12.\n" +
-	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactR\acontact\x12$\n" +
-	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x01R\tcreatedat\x88\x01\x01\x12(\n" +
-	"\vendpointurl\x18\x96\x93\x94\x0f \x01(\tH\x02R\vendpointurl\x88\x01\x01\x12,\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tH\x03R\rfailurereason\x88\x01\x01\x122\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.acm.AcmeEndpointStatusR\x06status\x12$\n" +
-	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x04R\tupdatedat\x88\x01\x01B\x12\n" +
-	"\x10_acmeendpointarnB\f\n" +
+	"\x0fcertificatetags\x18\x9a\xa5\xb3\xa2\x01 \x03(\v2\b.acm.TagR\x0fcertificatetags\x123\n" +
+	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactH\x02R\acontact\x88\x01\x01\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x03R\tcreatedat\x88\x01\x01\x12(\n" +
+	"\vendpointurl\x18\x96\x93\x94\x0f \x01(\tH\x04R\vendpointurl\x88\x01\x01\x12,\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tH\x05R\rfailurereason\x88\x01\x01\x127\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.acm.AcmeEndpointStatusH\x06R\x06status\x88\x01\x01\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\aR\tupdatedat\x88\x01\x01B\x12\n" +
+	"\x10_acmeendpointarnB\x18\n" +
+	"\x16_authorizationbehaviorB\n" +
+	"\n" +
+	"\b_contactB\f\n" +
 	"\n" +
 	"_createdatB\x0e\n" +
 	"\f_endpointurlB\x10\n" +
-	"\x0e_failurereasonB\f\n" +
+	"\x0e_failurereasonB\t\n" +
+	"\a_statusB\f\n" +
 	"\n" +
 	"_updatedat\"\x89\x04\n" +
 	"\x1aAcmeExternalAccountBinding\x120\n" +
@@ -10349,63 +10382,72 @@ const file_acm_proto_rawDesc = "" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\"{\n" +
 	"\x14CertificateAuthority\x12c\n" +
-	"\x1apubliccertificateauthority\x18\u0558\xc8\xce\x01 \x01(\v2\x1f.acm.PublicCertificateAuthorityR\x1apubliccertificateauthority\"\xe6\x0e\n" +
+	"\x1apubliccertificateauthority\x18\u0558\xc8\xce\x01 \x01(\v2\x1f.acm.PublicCertificateAuthorityR\x1apubliccertificateauthority\"\x9c\x10\n" +
 	"\x11CertificateDetail\x12-\n" +
 	"\racmeaccountid\x18\x98\xb4\x85\xe6\x01 \x01(\tH\x00R\racmeaccountid\x88\x01\x01\x120\n" +
 	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12.\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x02R\x0ecertificatearn\x88\x01\x01\x12@\n" +
-	"\x17certificateauthorityarn\x18\xbd\xc9\xef~ \x01(\tH\x03R\x17certificateauthorityarn\x88\x01\x01\x12]\n" +
-	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginR\x18certificatekeypairorigin\x12$\n" +
-	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x04R\tcreatedat\x88\x01\x01\x12&\n" +
+	"\x17certificateauthorityarn\x18\xbd\xc9\xef~ \x01(\tH\x03R\x17certificateauthorityarn\x88\x01\x01\x12b\n" +
+	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginH\x04R\x18certificatekeypairorigin\x88\x01\x01\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x05R\tcreatedat\x88\x01\x01\x12&\n" +
 	"\n" +
-	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x05R\n" +
+	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x06R\n" +
 	"domainname\x88\x01\x01\x12S\n" +
 	"\x17domainvalidationoptions\x18\xc9偠\x01 \x03(\v2\x15.acm.DomainValidationR\x17domainvalidationoptions\x12G\n" +
-	"\x11extendedkeyusages\x18耪\xfd\x01 \x03(\v2\x15.acm.ExtendedKeyUsageR\x11extendedkeyusages\x12;\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x12.acm.FailureReasonR\rfailurereason\x12'\n" +
+	"\x11extendedkeyusages\x18耪\xfd\x01 \x03(\v2\x15.acm.ExtendedKeyUsageR\x11extendedkeyusages\x12@\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x12.acm.FailureReasonH\aR\rfailurereason\x88\x01\x01\x12'\n" +
 	"\n" +
-	"importedat\x18\x89\ue7e6\x01 \x01(\tH\x06R\n" +
+	"importedat\x18\x89\ue7e6\x01 \x01(\tH\bR\n" +
 	"importedat\x88\x01\x01\x12\x1c\n" +
 	"\ainuseby\x18ɭ\xc0\x9d\x01 \x03(\tR\ainuseby\x12\"\n" +
-	"\bissuedat\x18\xba\x86\xa9\b \x01(\tH\aR\bissuedat\x88\x01\x01\x12\x1f\n" +
-	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\tH\bR\x06issuer\x88\x01\x01\x129\n" +
-	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x12/\n" +
-	"\tkeyusages\x18\xd1\xccۤ\x01 \x03(\v2\r.acm.KeyUsageR\tkeyusages\x12;\n" +
-	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12#\n" +
-	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tH\tR\bnotafter\x88\x01\x01\x12%\n" +
-	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tH\n" +
-	"R\tnotbefore\x88\x01\x01\x125\n" +
-	"\aoptions\x18ƚ\xf8\xa9\x01 \x01(\v2\x17.acm.CertificateOptionsR\aoptions\x12J\n" +
-	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityR\x12renewaleligibility\x12>\n" +
-	"\x0erenewalsummary\x18\xfe\xfb\xdc; \x01(\v2\x13.acm.RenewalSummaryR\x0erenewalsummary\x12E\n" +
-	"\x10revocationreason\x18\xc6ם\x9e\x01 \x01(\x0e2\x15.acm.RevocationReasonR\x10revocationreason\x12$\n" +
-	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\vR\trevokedat\x88\x01\x01\x12\x1e\n" +
-	"\x06serial\x18\x9a\xa5\xd2D \x01(\tH\fR\x06serial\x88\x01\x01\x127\n" +
-	"\x12signaturealgorithm\x18\xf3\xe6\x95\xe3\x01 \x01(\tH\rR\x12signaturealgorithm\x88\x01\x01\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusR\x06status\x12 \n" +
-	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tH\x0eR\asubject\x88\x01\x01\x12;\n" +
-	"\x17subjectalternativenames\x18\xa7\xe0\xb94 \x03(\tR\x17subjectalternativenames\x12,\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04type\x12<\n" +
+	"\bissuedat\x18\xba\x86\xa9\b \x01(\tH\tR\bissuedat\x88\x01\x01\x12\x1f\n" +
+	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\tH\n" +
+	"R\x06issuer\x88\x01\x01\x12>\n" +
+	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmH\vR\fkeyalgorithm\x88\x01\x01\x12/\n" +
+	"\tkeyusages\x18\xd1\xccۤ\x01 \x03(\v2\r.acm.KeyUsageR\tkeyusages\x12@\n" +
+	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByH\fR\tmanagedby\x88\x01\x01\x12#\n" +
+	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tH\rR\bnotafter\x88\x01\x01\x12%\n" +
+	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tH\x0eR\tnotbefore\x88\x01\x01\x125\n" +
+	"\aoptions\x18ƚ\xf8\xa9\x01 \x01(\v2\x17.acm.CertificateOptionsR\aoptions\x12O\n" +
+	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityH\x0fR\x12renewaleligibility\x88\x01\x01\x12>\n" +
+	"\x0erenewalsummary\x18\xfe\xfb\xdc; \x01(\v2\x13.acm.RenewalSummaryR\x0erenewalsummary\x12J\n" +
+	"\x10revocationreason\x18\xc6ם\x9e\x01 \x01(\x0e2\x15.acm.RevocationReasonH\x10R\x10revocationreason\x88\x01\x01\x12$\n" +
+	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\x11R\trevokedat\x88\x01\x01\x12\x1e\n" +
+	"\x06serial\x18\x9a\xa5\xd2D \x01(\tH\x12R\x06serial\x88\x01\x01\x127\n" +
+	"\x12signaturealgorithm\x18\xf3\xe6\x95\xe3\x01 \x01(\tH\x13R\x12signaturealgorithm\x88\x01\x01\x126\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusH\x14R\x06status\x88\x01\x01\x12 \n" +
+	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tH\x15R\asubject\x88\x01\x01\x12;\n" +
+	"\x17subjectalternativenames\x18\xa7\xe0\xb94 \x03(\tR\x17subjectalternativenames\x121\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeH\x16R\x04type\x88\x01\x01\x12<\n" +
 	"\rupdatesummary\x18ݝ\xce\xf4\x01 \x01(\v2\x12.acm.UpdateSummaryR\rupdatesummaryB\x10\n" +
 	"\x0e_acmeaccountidB\x12\n" +
 	"\x10_acmeendpointarnB\x11\n" +
 	"\x0f_certificatearnB\x1a\n" +
-	"\x18_certificateauthorityarnB\f\n" +
+	"\x18_certificateauthorityarnB\x1b\n" +
+	"\x19_certificatekeypairoriginB\f\n" +
 	"\n" +
 	"_createdatB\r\n" +
-	"\v_domainnameB\r\n" +
+	"\v_domainnameB\x10\n" +
+	"\x0e_failurereasonB\r\n" +
 	"\v_importedatB\v\n" +
 	"\t_issuedatB\t\n" +
-	"\a_issuerB\v\n" +
+	"\a_issuerB\x0f\n" +
+	"\r_keyalgorithmB\f\n" +
+	"\n" +
+	"_managedbyB\v\n" +
 	"\t_notafterB\f\n" +
 	"\n" +
-	"_notbeforeB\f\n" +
+	"_notbeforeB\x15\n" +
+	"\x13_renewaleligibilityB\x13\n" +
+	"\x11_revocationreasonB\f\n" +
 	"\n" +
 	"_revokedatB\t\n" +
 	"\a_serialB\x15\n" +
-	"\x13_signaturealgorithmB\n" +
+	"\x13_signaturealgorithmB\t\n" +
+	"\a_statusB\n" +
 	"\n" +
-	"\b_subject\"\x90\x02\n" +
+	"\b_subjectB\a\n" +
+	"\x05_type\"\x90\x02\n" +
 	"\x11CertificateFilter\x12i\n" +
 	"\x1cacmcertificatemetadatafilter\x18\xf5\xf9\xd1\xc4\x01 \x01(\v2!.acm.AcmCertificateMetadataFilterR\x1cacmcertificatemetadatafilter\x12.\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12M\n" +
@@ -10417,58 +10459,68 @@ const file_acm_proto_rawDesc = "" +
 	"\x03not\x18\xab\x8e\xf7a \x01(\v2\x1f.acm.CertificateFilterStatementR\x03not\x123\n" +
 	"\x02or\x18\xa5\xef\x91\xe7\x01 \x03(\v2\x1f.acm.CertificateFilterStatementR\x02or\"m\n" +
 	"\x13CertificateMetadata\x12V\n" +
-	"\x16acmcertificatemetadata\x18\x9b\x89\xffA \x01(\v2\x1b.acm.AcmCertificateMetadataR\x16acmcertificatemetadata\"\x9d\x02\n" +
-	"\x12CertificateOptions\x12\x8d\x01\n" +
-	"(certificatetransparencyloggingpreference\x18\xab\xb0\xdb\xc5\x01 \x01(\x0e2-.acm.CertificateTransparencyLoggingPreferenceR(certificatetransparencyloggingpreference\x121\n" +
-	"\x06export\x18ԓ\x8dC \x01(\x0e2\x16.acm.CertificateExportR\x06export\x12D\n" +
-	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethod\"\xed\x01\n" +
+	"\x16acmcertificatemetadata\x18\x9b\x89\xffA \x01(\v2\x1b.acm.AcmCertificateMetadataR\x16acmcertificatemetadata\"\xf9\x02\n" +
+	"\x12CertificateOptions\x12\x92\x01\n" +
+	"(certificatetransparencyloggingpreference\x18\xab\xb0\xdb\xc5\x01 \x01(\x0e2-.acm.CertificateTransparencyLoggingPreferenceH\x00R(certificatetransparencyloggingpreference\x88\x01\x01\x126\n" +
+	"\x06export\x18ԓ\x8dC \x01(\x0e2\x16.acm.CertificateExportH\x01R\x06export\x88\x01\x01\x12I\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodH\x02R\x10validationmethod\x88\x01\x01B+\n" +
+	")_certificatetransparencyloggingpreferenceB\t\n" +
+	"\a_exportB\x13\n" +
+	"\x11_validationmethod\"\xed\x01\n" +
 	"\x17CertificateSearchResult\x12.\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12N\n" +
 	"\x13certificatemetadata\x18\x96\xee\xa6\xea\x01 \x01(\v2\x18.acm.CertificateMetadataR\x13certificatemetadata\x12?\n" +
 	"\x0ex509attributes\x18\x89\xa9\xb6\x83\x01 \x01(\v2\x13.acm.X509AttributesR\x0ex509attributesB\x11\n" +
-	"\x0f_certificatearn\"\xb9\n" +
-	"\n" +
+	"\x0f_certificatearn\"\xd4\v\n" +
 	"\x12CertificateSummary\x12.\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12]\n" +
-	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginR\x18certificatekeypairorigin\x12$\n" +
-	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x01R\tcreatedat\x88\x01\x01\x12&\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12b\n" +
+	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginH\x01R\x18certificatekeypairorigin\x88\x01\x01\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x12&\n" +
 	"\n" +
-	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x02R\n" +
-	"domainname\x88\x01\x01\x12=\n" +
-	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportR\fexportoption\x12#\n" +
-	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x03R\bexported\x88\x01\x01\x12K\n" +
+	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x03R\n" +
+	"domainname\x88\x01\x01\x12B\n" +
+	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportH\x04R\fexportoption\x88\x01\x01\x12#\n" +
+	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x05R\bexported\x88\x01\x01\x12K\n" +
 	"\x11extendedkeyusages\x18耪\xfd\x01 \x03(\x0e2\x19.acm.ExtendedKeyUsageNameR\x11extendedkeyusages\x12[\n" +
-	"$hasadditionalsubjectalternativenames\x18\xa4\xc1\xe7\xb9\x01 \x01(\bH\x04R$hasadditionalsubjectalternativenames\x88\x01\x01\x12'\n" +
+	"$hasadditionalsubjectalternativenames\x18\xa4\xc1\xe7\xb9\x01 \x01(\bH\x06R$hasadditionalsubjectalternativenames\x88\x01\x01\x12'\n" +
 	"\n" +
-	"importedat\x18\x89\ue7e6\x01 \x01(\tH\x05R\n" +
+	"importedat\x18\x89\ue7e6\x01 \x01(\tH\aR\n" +
 	"importedat\x88\x01\x01\x12\x1d\n" +
-	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x06R\x05inuse\x88\x01\x01\x12\"\n" +
-	"\bissuedat\x18\xba\x86\xa9\b \x01(\tH\aR\bissuedat\x88\x01\x01\x129\n" +
-	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x123\n" +
-	"\tkeyusages\x18\xd1\xccۤ\x01 \x03(\x0e2\x11.acm.KeyUsageNameR\tkeyusages\x12;\n" +
-	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12#\n" +
-	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tH\bR\bnotafter\x88\x01\x01\x12%\n" +
-	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tH\tR\tnotbefore\x88\x01\x01\x12J\n" +
-	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityR\x12renewaleligibility\x12$\n" +
-	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\n" +
-	"R\trevokedat\x88\x01\x01\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusR\x06status\x12K\n" +
-	"\x1fsubjectalternativenamesummaries\x18\xe8\x89\xd4v \x03(\tR\x1fsubjectalternativenamesummaries\x12,\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04typeB\x11\n" +
-	"\x0f_certificatearnB\f\n" +
+	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\bR\x05inuse\x88\x01\x01\x12\"\n" +
+	"\bissuedat\x18\xba\x86\xa9\b \x01(\tH\tR\bissuedat\x88\x01\x01\x12>\n" +
+	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmH\n" +
+	"R\fkeyalgorithm\x88\x01\x01\x123\n" +
+	"\tkeyusages\x18\xd1\xccۤ\x01 \x03(\x0e2\x11.acm.KeyUsageNameR\tkeyusages\x12@\n" +
+	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByH\vR\tmanagedby\x88\x01\x01\x12#\n" +
+	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tH\fR\bnotafter\x88\x01\x01\x12%\n" +
+	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tH\rR\tnotbefore\x88\x01\x01\x12O\n" +
+	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityH\x0eR\x12renewaleligibility\x88\x01\x01\x12$\n" +
+	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\x0fR\trevokedat\x88\x01\x01\x126\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusH\x10R\x06status\x88\x01\x01\x12K\n" +
+	"\x1fsubjectalternativenamesummaries\x18\xe8\x89\xd4v \x03(\tR\x1fsubjectalternativenamesummaries\x121\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeH\x11R\x04type\x88\x01\x01B\x11\n" +
+	"\x0f_certificatearnB\x1b\n" +
+	"\x19_certificatekeypairoriginB\f\n" +
 	"\n" +
 	"_createdatB\r\n" +
-	"\v_domainnameB\v\n" +
+	"\v_domainnameB\x0f\n" +
+	"\r_exportoptionB\v\n" +
 	"\t_exportedB'\n" +
 	"%_hasadditionalsubjectalternativenamesB\r\n" +
 	"\v_importedatB\b\n" +
 	"\x06_inuseB\v\n" +
-	"\t_issuedatB\v\n" +
+	"\t_issuedatB\x0f\n" +
+	"\r_keyalgorithmB\f\n" +
+	"\n" +
+	"_managedbyB\v\n" +
 	"\t_notafterB\f\n" +
 	"\n" +
-	"_notbeforeB\f\n" +
+	"_notbeforeB\x15\n" +
+	"\x13_renewaleligibilityB\f\n" +
 	"\n" +
-	"_revokedat\"x\n" +
+	"_revokedatB\t\n" +
+	"\a_statusB\a\n" +
+	"\x05_type\"x\n" +
 	"\x10CommonNameFilter\x12J\n" +
 	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x17.acm.ComparisonOperatorR\x12comparisonoperator\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"A\n" +
@@ -10486,14 +10538,16 @@ const file_acm_proto_rawDesc = "" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tagsB\x13\n" +
 	"\x11_idempotencytoken\"a\n" +
 	"\"CreateAcmeDomainValidationResponse\x12;\n" +
-	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tR\x17acmedomainvalidationarn\"\x9a\x03\n" +
+	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tR\x17acmedomainvalidationarn\"\xab\x03\n" +
 	"\x19CreateAcmeEndpointRequest\x12W\n" +
 	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorR\x15authorizationbehavior\x12Q\n" +
 	"\x14certificateauthority\x18\xa6\xd7\xfd\x93\x01 \x01(\v2\x19.acm.CertificateAuthorityR\x14certificateauthority\x126\n" +
-	"\x0fcertificatetags\x18\x9a\xa5\xb3\xa2\x01 \x03(\v2\b.acm.TagR\x0fcertificatetags\x12.\n" +
-	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactR\acontact\x122\n" +
-	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tH\x00R\x10idempotencytoken\x88\x01\x01\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tagsB\x13\n" +
+	"\x0fcertificatetags\x18\x9a\xa5\xb3\xa2\x01 \x03(\v2\b.acm.TagR\x0fcertificatetags\x123\n" +
+	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactH\x00R\acontact\x88\x01\x01\x122\n" +
+	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tH\x01R\x10idempotencytoken\x88\x01\x01\x12 \n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tagsB\n" +
+	"\n" +
+	"\b_contactB\x13\n" +
 	"\x11_idempotencytoken\"b\n" +
 	"\x1aCreateAcmeEndpointResponse\x120\n" +
 	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01B\x12\n" +
@@ -10596,13 +10650,17 @@ const file_acm_proto_rawDesc = "" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH\x00R\fhostedzoneid\x88\x01\x01B\x0f\n" +
 	"\r_hostedzoneid\"X\n" +
 	"\x16DnsValidationChallenge\x12>\n" +
-	"\x0eresourcerecord\x18\xbd\xd0\xe3b \x01(\v2\x13.acm.ResourceRecordR\x0eresourcerecord\"\xbf\x01\n" +
-	"\vDomainScope\x12;\n" +
-	"\vexactdomain\x18\xd1τ$ \x01(\x0e2\x16.acm.DomainScopeOptionR\vexactdomain\x129\n" +
+	"\x0eresourcerecord\x18\xbd\xd0\xe3b \x01(\v2\x13.acm.ResourceRecordR\x0eresourcerecord\"\xfb\x01\n" +
+	"\vDomainScope\x12@\n" +
+	"\vexactdomain\x18\xd1τ$ \x01(\x0e2\x16.acm.DomainScopeOptionH\x00R\vexactdomain\x88\x01\x01\x12>\n" +
 	"\n" +
-	"subdomains\x18\xd7͘| \x01(\x0e2\x16.acm.DomainScopeOptionR\n" +
-	"subdomains\x128\n" +
-	"\twildcards\x18\xb5\xa7\xd1\xd7\x01 \x01(\x0e2\x16.acm.DomainScopeOptionR\twildcards\"\xb2\x03\n" +
+	"subdomains\x18\xd7͘| \x01(\x0e2\x16.acm.DomainScopeOptionH\x01R\n" +
+	"subdomains\x88\x01\x01\x12=\n" +
+	"\twildcards\x18\xb5\xa7\xd1\xd7\x01 \x01(\x0e2\x16.acm.DomainScopeOptionH\x02R\twildcards\x88\x01\x01B\x0e\n" +
+	"\f_exactdomainB\r\n" +
+	"\v_subdomainsB\f\n" +
+	"\n" +
+	"_wildcards\"\xe6\x03\n" +
 	"\x10DomainValidation\x12!\n" +
 	"\n" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
@@ -10610,13 +10668,17 @@ const file_acm_proto_rawDesc = "" +
 	"\fhttpredirect\x18\xd2χ\xb3\x01 \x01(\v2\x11.acm.HttpRedirectR\fhttpredirect\x12>\n" +
 	"\x0eresourcerecord\x18\xbd\xd0\xe3b \x01(\v2\x13.acm.ResourceRecordR\x0eresourcerecord\x122\n" +
 	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tH\x00R\x10validationdomain\x88\x01\x01\x12.\n" +
-	"\x10validationemails\x18\xb0፳\x01 \x03(\tR\x10validationemails\x12D\n" +
-	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethod\x12A\n" +
-	"\x10validationstatus\x18\xe5\xb0\xc8\xcb\x01 \x01(\x0e2\x11.acm.DomainStatusR\x10validationstatusB\x13\n" +
-	"\x11_validationdomain\"~\n" +
-	"#DomainValidationMethodUpdateSummary\x12-\n" +
-	"\x04from\x18\x96\xeb\xd0\xc3\x01 \x01(\x0e2\x15.acm.ValidationMethodR\x04from\x12(\n" +
-	"\x02to\x18Ŭ\xd6\x0f \x01(\x0e2\x15.acm.ValidationMethodR\x02to\"j\n" +
+	"\x10validationemails\x18\xb0፳\x01 \x03(\tR\x10validationemails\x12I\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodH\x01R\x10validationmethod\x88\x01\x01\x12F\n" +
+	"\x10validationstatus\x18\xe5\xb0\xc8\xcb\x01 \x01(\x0e2\x11.acm.DomainStatusH\x02R\x10validationstatus\x88\x01\x01B\x13\n" +
+	"\x11_validationdomainB\x13\n" +
+	"\x11_validationmethodB\x13\n" +
+	"\x11_validationstatus\"\x98\x01\n" +
+	"#DomainValidationMethodUpdateSummary\x122\n" +
+	"\x04from\x18\x96\xeb\xd0\xc3\x01 \x01(\x0e2\x15.acm.ValidationMethodH\x00R\x04from\x88\x01\x01\x12-\n" +
+	"\x02to\x18Ŭ\xd6\x0f \x01(\x0e2\x15.acm.ValidationMethodH\x01R\x02to\x88\x01\x01B\a\n" +
+	"\x05_fromB\x05\n" +
+	"\x03_to\"j\n" +
 	"\x16DomainValidationOption\x12!\n" +
 	"\n" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
@@ -10652,22 +10714,27 @@ const file_acm_proto_rawDesc = "" +
 	"privatekey\x88\x01\x01B\x0e\n" +
 	"\f_certificateB\x13\n" +
 	"\x11_certificatechainB\r\n" +
-	"\v_privatekey\"g\n" +
-	"\x10ExtendedKeyUsage\x120\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x19.acm.ExtendedKeyUsageNameR\x04name\x12\x19\n" +
-	"\x03oid\x18\xc4\xf7\xc9\xf0\x01 \x01(\tH\x00R\x03oid\x88\x01\x01B\x06\n" +
-	"\x04_oid\"\x81\x01\n" +
+	"\v_privatekey\"u\n" +
+	"\x10ExtendedKeyUsage\x125\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x19.acm.ExtendedKeyUsageNameH\x00R\x04name\x88\x01\x01\x12\x19\n" +
+	"\x03oid\x18\xc4\xf7\xc9\xf0\x01 \x01(\tH\x01R\x03oid\x88\x01\x01B\a\n" +
+	"\x05_nameB\x06\n" +
+	"\x04_oid\"\x91\x01\n" +
 	"\x0eFailureDetails\x12 \n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x12A\n" +
-	"\x06reason\x18\xba\x82\xc5\t \x01(\x0e2&.acm.AcmeDomainValidationFailureReasonR\x06reasonB\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x12F\n" +
+	"\x06reason\x18\xba\x82\xc5\t \x01(\x0e2&.acm.AcmeDomainValidationFailureReasonH\x01R\x06reason\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xb6\x02\n" +
-	"\aFilters\x12>\n" +
-	"\fexportoption\x18\xaf\xd4\xe4\xd2\x01 \x01(\x0e2\x16.acm.CertificateExportR\fexportoption\x12I\n" +
+	"\b_messageB\t\n" +
+	"\a_reason\"\xdf\x02\n" +
+	"\aFilters\x12C\n" +
+	"\fexportoption\x18\xaf\xd4\xe4\xd2\x01 \x01(\x0e2\x16.acm.CertificateExportH\x00R\fexportoption\x88\x01\x01\x12I\n" +
 	"\x10extendedkeyusage\x18\x8f\xdc\xd2\xc8\x01 \x03(\x0e2\x19.acm.ExtendedKeyUsageNameR\x10extendedkeyusage\x120\n" +
 	"\bkeytypes\x18\xd6\xc1\x86\r \x03(\x0e2\x11.acm.KeyAlgorithmR\bkeytypes\x121\n" +
-	"\bkeyusage\x18\xa4\xc1\xbd\xef\x01 \x03(\x0e2\x11.acm.KeyUsageNameR\bkeyusage\x12;\n" +
-	"\tmanagedby\x18\xe0ܽ\xbf\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\"\xba\x03\n" +
+	"\bkeyusage\x18\xa4\xc1\xbd\xef\x01 \x03(\x0e2\x11.acm.KeyUsageNameR\bkeyusage\x12@\n" +
+	"\tmanagedby\x18\xe0ܽ\xbf\x01 \x01(\x0e2\x19.acm.CertificateManagedByH\x01R\tmanagedby\x88\x01\x01B\x0f\n" +
+	"\r_exportoptionB\f\n" +
+	"\n" +
+	"_managedby\"\xba\x03\n" +
 	"\vGeneralName\x12?\n" +
 	"\rdirectoryname\x18\xac\x83\xacj \x01(\v2\x16.acm.DistinguishedNameR\rdirectoryname\x12 \n" +
 	"\adnsname\x18\xf8\xf2\x9bO \x01(\tH\x00R\adnsname\x88\x01\x01\x12#\n" +
@@ -10748,9 +10815,10 @@ const file_acm_proto_rawDesc = "" +
 	"\x13InvalidTagException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"4\n" +
-	"\bKeyUsage\x12(\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x11.acm.KeyUsageNameR\x04name\"F\n" +
+	"\b_message\"B\n" +
+	"\bKeyUsage\x12-\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x11.acm.KeyUsageNameH\x00R\x04name\x88\x01\x01B\a\n" +
+	"\x05_name\"F\n" +
 	"\x16LimitExceededException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -10821,18 +10889,21 @@ const file_acm_proto_rawDesc = "" +
 	"\x1bdomainvalidationsummarylist\x18\xbf\xb6\x8d2 \x03(\v2\x1c.acm.DomainValidationSummaryR\x1bdomainvalidationsummarylist\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xb4\x03\n" +
+	"_nexttoken\"\xd7\x03\n" +
 	"\x17ListCertificatesRequest\x12_\n" +
 	"\x19certificatekeypairorigins\x18猜\x8d\x01 \x03(\x0e2\x1d.acm.CertificateKeyPairOriginR\x19certificatekeypairorigins\x12K\n" +
 	"\x13certificatestatuses\x18\xf3\x8a\xfd` \x03(\x0e2\x16.acm.CertificateStatusR\x13certificatestatuses\x12+\n" +
 	"\bincludes\x18\x9d\xb1\xb8M \x01(\v2\f.acm.FiltersR\bincludes\x12#\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12&\n" +
-	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\v.acm.SortByR\x06sortby\x120\n" +
-	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x0e.acm.SortOrderR\tsortorderB\v\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12+\n" +
+	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\v.acm.SortByH\x02R\x06sortby\x88\x01\x01\x125\n" +
+	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x0e.acm.SortOrderH\x03R\tsortorder\x88\x01\x01B\v\n" +
 	"\t_maxitemsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xa3\x01\n" +
+	"_nexttokenB\t\n" +
+	"\a_sortbyB\f\n" +
+	"\n" +
+	"_sortorder\"\xa3\x01\n" +
 	"\x18ListCertificatesResponse\x12S\n" +
 	"\x16certificatesummarylist\x18\x91\xa4\xd5\xe8\x01 \x03(\v2\x17.acm.CertificateSummaryR\x16certificatesummarylist\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
@@ -10864,27 +10935,32 @@ const file_acm_proto_rawDesc = "" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\"D\n" +
 	"\x17RenewCertificateRequest\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"\x8d\x02\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"\xaa\x02\n" +
 	"\x0eRenewalSummary\x12S\n" +
 	"\x17domainvalidationoptions\x18\xc9偠\x01 \x03(\v2\x15.acm.DomainValidationR\x17domainvalidationoptions\x12<\n" +
-	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusR\rrenewalstatus\x12G\n" +
-	"\x13renewalstatusreason\x18\x8aڻb \x01(\x0e2\x12.acm.FailureReasonR\x13renewalstatusreason\x12\x1f\n" +
-	"\tupdatedat\x18\x96\xfb\xebe \x01(\tR\tupdatedat\"\x94\x05\n" +
+	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusR\rrenewalstatus\x12L\n" +
+	"\x13renewalstatusreason\x18\x8aڻb \x01(\x0e2\x12.acm.FailureReasonH\x00R\x13renewalstatusreason\x88\x01\x01\x12\x1f\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tR\tupdatedatB\x16\n" +
+	"\x14_renewalstatusreason\"\xd7\x05\n" +
 	"\x19RequestCertificateRequest\x12@\n" +
 	"\x17certificateauthorityarn\x18\xbd\xc9\xef~ \x01(\tH\x00R\x17certificateauthorityarn\x88\x01\x01\x12!\n" +
 	"\n" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
 	"domainname\x12Y\n" +
 	"\x17domainvalidationoptions\x18\xc9偠\x01 \x03(\v2\x1b.acm.DomainValidationOptionR\x17domainvalidationoptions\x122\n" +
-	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tH\x01R\x10idempotencytoken\x88\x01\x01\x129\n" +
-	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x12;\n" +
-	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x125\n" +
+	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tH\x01R\x10idempotencytoken\x88\x01\x01\x12>\n" +
+	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmH\x02R\fkeyalgorithm\x88\x01\x01\x12@\n" +
+	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByH\x03R\tmanagedby\x88\x01\x01\x125\n" +
 	"\aoptions\x18ƚ\xf8\xa9\x01 \x01(\v2\x17.acm.CertificateOptionsR\aoptions\x12;\n" +
 	"\x17subjectalternativenames\x18\xa7\xe0\xb94 \x03(\tR\x17subjectalternativenames\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\x12D\n" +
-	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethodB\x1a\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\x12I\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodH\x04R\x10validationmethod\x88\x01\x01B\x1a\n" +
 	"\x18_certificateauthorityarnB\x13\n" +
-	"\x11_idempotencytoken\"_\n" +
+	"\x11_idempotencytokenB\x0f\n" +
+	"\r_keyalgorithmB\f\n" +
+	"\n" +
+	"_managedbyB\x13\n" +
+	"\x11_validationmethod\"_\n" +
 	"\x1aRequestCertificateResponse\x12.\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01B\x11\n" +
 	"\x0f_certificatearn\"J\n" +
@@ -10920,18 +10996,21 @@ const file_acm_proto_rawDesc = "" +
 	"\x10revocationreason\x18\xc6ם\x9e\x01 \x01(\x0e2\x15.acm.RevocationReasonR\x10revocationreason\"^\n" +
 	"\x19RevokeCertificateResponse\x12.\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01B\x11\n" +
-	"\x0f_certificatearn\"\xd4\x02\n" +
+	"\x0f_certificatearn\"\xf7\x02\n" +
 	"\x19SearchCertificatesRequest\x12M\n" +
 	"\x0ffilterstatement\x18\xad\xce\xfa\xfc\x01 \x01(\v2\x1f.acm.CertificateFilterStatementR\x0ffilterstatement\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x128\n" +
-	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x1d.acm.SearchCertificatesSortByR\x06sortby\x12B\n" +
-	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2 .acm.SearchCertificatesSortOrderR\tsortorderB\r\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12=\n" +
+	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x1d.acm.SearchCertificatesSortByH\x02R\x06sortby\x88\x01\x01\x12G\n" +
+	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2 .acm.SearchCertificatesSortOrderH\x03R\tsortorder\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x8c\x01\n" +
+	"_nexttokenB\t\n" +
+	"\a_sortbyB\f\n" +
+	"\n" +
+	"_sortorder\"\x8c\x01\n" +
 	"\x1aSearchCertificatesResponse\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12:\n" +
 	"\aresults\x18\x96\xcd\xe0\xe7\x01 \x03(\v2\x1c.acm.CertificateSearchResultR\aresultsB\f\n" +
@@ -10982,55 +11061,66 @@ const file_acm_proto_rawDesc = "" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\xb3\x01\n" +
 	"!UpdateAcmeDomainValidationRequest\x12;\n" +
 	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tR\x17acmedomainvalidationarn\x12Q\n" +
-	"\x14prevalidationoptions\x18\xb6\xdbڡ\x01 \x01(\v2\x19.acm.PrevalidationOptionsR\x14prevalidationoptions\"\xa4\x02\n" +
+	"\x14prevalidationoptions\x18\xb6\xdbڡ\x01 \x01(\v2\x19.acm.PrevalidationOptionsR\x14prevalidationoptions\"\xd4\x02\n" +
 	"\x19UpdateAcmeEndpointRequest\x12+\n" +
-	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\x12W\n" +
-	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorR\x15authorizationbehavior\x12Q\n" +
-	"\x14certificateauthority\x18\xa6\xd7\xfd\x93\x01 \x01(\v2\x19.acm.CertificateAuthorityR\x14certificateauthority\x12.\n" +
-	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactR\acontact\"\x83\x01\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\x12\\\n" +
+	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorH\x00R\x15authorizationbehavior\x88\x01\x01\x12Q\n" +
+	"\x14certificateauthority\x18\xa6\xd7\xfd\x93\x01 \x01(\v2\x19.acm.CertificateAuthorityR\x14certificateauthority\x123\n" +
+	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactH\x01R\acontact\x88\x01\x01B\x18\n" +
+	"\x16_authorizationbehaviorB\n" +
+	"\n" +
+	"\b_contact\"\x83\x01\n" +
 	"\x1fUpdateCertificateOptionsRequest\x12)\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x125\n" +
-	"\aoptions\x18ƚ\xf8\xa9\x01 \x01(\v2\x17.acm.CertificateOptionsR\aoptions\"\xd5\x02\n" +
+	"\aoptions\x18ƚ\xf8\xa9\x01 \x01(\v2\x17.acm.CertificateOptionsR\aoptions\"\xf3\x02\n" +
 	"\rUpdateSummary\x12~\n" +
 	"#domainvalidationmethodupdatesummary\x18\x97\xe4\xac\xf8\x01 \x01(\v2(.acm.DomainValidationMethodUpdateSummaryR#domainvalidationmethodupdatesummary\x12)\n" +
-	"\vrequestedat\x18\xf7Ç\xbb\x01 \x01(\tH\x00R\vrequestedat\x88\x01\x01\x12,\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.acm.UpdateStatusR\x06status\x12'\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.acm.UpdateTypeR\x04type\x12$\n" +
-	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x01R\tupdatedat\x88\x01\x01B\x0e\n" +
-	"\f_requestedatB\f\n" +
+	"\vrequestedat\x18\xf7Ç\xbb\x01 \x01(\tH\x00R\vrequestedat\x88\x01\x01\x121\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.acm.UpdateStatusH\x01R\x06status\x88\x01\x01\x12,\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.acm.UpdateTypeH\x02R\x04type\x88\x01\x01\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x03R\tupdatedat\x88\x01\x01B\x0e\n" +
+	"\f_requestedatB\t\n" +
+	"\a_statusB\a\n" +
+	"\x05_typeB\f\n" +
 	"\n" +
 	"_updatedat\"\xcd\x01\n" +
 	"\x13ValidationChallenge\x12W\n" +
 	"\x16dnsvalidationchallenge\x18\xc1\x8e\xef\xff\x01 \x01(\v2\x1b.acm.DnsValidationChallengeR\x16dnsvalidationchallenge\x12]\n" +
-	"\x18emailvalidationchallenge\x18\xa2\xed\x8c\xec\x01 \x01(\v2\x1d.acm.EmailValidationChallengeR\x18emailvalidationchallenge\"\xf2\x01\n" +
+	"\x18emailvalidationchallenge\x18\xa2\xed\x8c\xec\x01 \x01(\v2\x1d.acm.EmailValidationChallengeR\x18emailvalidationchallenge\"\xa6\x02\n" +
 	"\x17ValidationConfiguration\x12N\n" +
-	"\x13validationchallenge\x18\x9c\xc4\xc4\xdf\x01 \x01(\v2\x18.acm.ValidationChallengeR\x13validationchallenge\x12D\n" +
-	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethod\x12A\n" +
-	"\x10validationstatus\x18\xe5\xb0\xc8\xcb\x01 \x01(\x0e2\x11.acm.DomainStatusR\x10validationstatus\"C\n" +
+	"\x13validationchallenge\x18\x9c\xc4\xc4\xdf\x01 \x01(\v2\x18.acm.ValidationChallengeR\x13validationchallenge\x12I\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodH\x00R\x10validationmethod\x88\x01\x01\x12F\n" +
+	"\x10validationstatus\x18\xe5\xb0\xc8\xcb\x01 \x01(\x0e2\x11.acm.DomainStatusH\x01R\x10validationstatus\x88\x01\x01B\x13\n" +
+	"\x11_validationmethodB\x13\n" +
+	"\x11_validationstatus\"C\n" +
 	"\x13ValidationException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x86\x04\n" +
-	"\x13X509AttributeFilter\x12H\n" +
-	"\x10extendedkeyusage\x18\xaf\xb4\xec@ \x01(\x0e2\x19.acm.ExtendedKeyUsageNameR\x10extendedkeyusage\x129\n" +
-	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x121\n" +
-	"\bkeyusage\x18\x84䪪\x01 \x01(\x0e2\x11.acm.KeyUsageNameR\bkeyusage\x123\n" +
+	"\b_message\"\xc8\x04\n" +
+	"\x13X509AttributeFilter\x12M\n" +
+	"\x10extendedkeyusage\x18\xaf\xb4\xec@ \x01(\x0e2\x19.acm.ExtendedKeyUsageNameH\x00R\x10extendedkeyusage\x88\x01\x01\x12>\n" +
+	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmH\x01R\fkeyalgorithm\x88\x01\x01\x126\n" +
+	"\bkeyusage\x18\x84䪪\x01 \x01(\x0e2\x11.acm.KeyUsageNameH\x02R\bkeyusage\x88\x01\x01\x123\n" +
 	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\v2\x13.acm.TimestampRangeR\bnotafter\x125\n" +
 	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\v2\x13.acm.TimestampRangeR\tnotbefore\x12+\n" +
-	"\fserialnumber\x18庹\xc7\x01 \x01(\tH\x00R\fserialnumber\x88\x01\x01\x12/\n" +
+	"\fserialnumber\x18庹\xc7\x01 \x01(\tH\x03R\fserialnumber\x88\x01\x01\x12/\n" +
 	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\v2\x12.acm.SubjectFilterR\asubject\x12\\\n" +
-	"\x16subjectalternativename\x18\xf2\xfe\xbf\x19 \x01(\v2!.acm.SubjectAlternativeNameFilterR\x16subjectalternativenameB\x0f\n" +
-	"\r_serialnumber\"\xaa\x04\n" +
+	"\x16subjectalternativename\x18\xf2\xfe\xbf\x19 \x01(\v2!.acm.SubjectAlternativeNameFilterR\x16subjectalternativenameB\x13\n" +
+	"\x11_extendedkeyusageB\x0f\n" +
+	"\r_keyalgorithmB\v\n" +
+	"\t_keyusageB\x0f\n" +
+	"\r_serialnumber\"\xc0\x04\n" +
 	"\x0eX509Attributes\x12K\n" +
 	"\x11extendedkeyusages\x18耪\xfd\x01 \x03(\x0e2\x19.acm.ExtendedKeyUsageNameR\x11extendedkeyusages\x122\n" +
-	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\v2\x16.acm.DistinguishedNameR\x06issuer\x129\n" +
-	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x123\n" +
+	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\v2\x16.acm.DistinguishedNameR\x06issuer\x12>\n" +
+	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmH\x00R\fkeyalgorithm\x88\x01\x01\x123\n" +
 	"\tkeyusages\x18\xd1\xccۤ\x01 \x03(\x0e2\x11.acm.KeyUsageNameR\tkeyusages\x12#\n" +
-	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tH\x00R\bnotafter\x88\x01\x01\x12%\n" +
-	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tH\x01R\tnotbefore\x88\x01\x01\x12+\n" +
-	"\fserialnumber\x18庹\xc7\x01 \x01(\tH\x02R\fserialnumber\x88\x01\x01\x123\n" +
+	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tH\x01R\bnotafter\x88\x01\x01\x12%\n" +
+	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tH\x02R\tnotbefore\x88\x01\x01\x12+\n" +
+	"\fserialnumber\x18庹\xc7\x01 \x01(\tH\x03R\fserialnumber\x88\x01\x01\x123\n" +
 	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\v2\x16.acm.DistinguishedNameR\asubject\x12M\n" +
-	"\x17subjectalternativenames\x18\xa7\xe0\xb94 \x03(\v2\x10.acm.GeneralNameR\x17subjectalternativenamesB\v\n" +
+	"\x17subjectalternativenames\x18\xa7\xe0\xb94 \x03(\v2\x10.acm.GeneralNameR\x17subjectalternativenamesB\x0f\n" +
+	"\r_keyalgorithmB\v\n" +
 	"\t_notafterB\f\n" +
 	"\n" +
 	"_notbeforeB\x0f\n" +
@@ -11744,6 +11834,7 @@ func file_acm_proto_init() {
 	file_acm_proto_msgTypes[10].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[13].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[14].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[17].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[18].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[19].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[21].OneofWrappers = []any{}
@@ -11755,12 +11846,15 @@ func file_acm_proto_init() {
 	file_acm_proto_msgTypes[43].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[45].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[46].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[48].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[49].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[50].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[53].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[55].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[57].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[58].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[59].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[60].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[61].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[64].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[66].OneofWrappers = []any{}
@@ -11774,6 +11868,7 @@ func file_acm_proto_init() {
 	file_acm_proto_msgTypes[74].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[75].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[76].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[77].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[78].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[79].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[80].OneofWrappers = []any{}
@@ -11788,6 +11883,7 @@ func file_acm_proto_init() {
 	file_acm_proto_msgTypes[89].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[90].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[95].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[102].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[103].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[104].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[105].OneofWrappers = []any{}
@@ -11803,7 +11899,9 @@ func file_acm_proto_init() {
 	file_acm_proto_msgTypes[123].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[124].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[125].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[128].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[130].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[132].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[133].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[134].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[135].OneofWrappers = []any{}

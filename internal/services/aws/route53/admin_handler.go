@@ -95,7 +95,7 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 
 	if req.Msg.Vpc != nil {
 		input.VPCID = req.Msg.Vpc.GetVpcid()
-		input.VPCRegion = protoVPCRegionToAWS(req.Msg.Vpc.Vpcregion)
+		input.VPCRegion = protoVPCRegionToAWS(req.Msg.Vpc.GetVpcregion())
 	}
 
 	result, err := h.service.createHostedZoneCore(stores, input)

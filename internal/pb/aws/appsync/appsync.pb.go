@@ -1765,7 +1765,7 @@ func (x *AccessDeniedException) GetMessage() string {
 
 type AdditionalAuthenticationProvider struct {
 	state                  protoimpl.MessageState  `protogen:"open.v1"`
-	Authenticationtype     AuthenticationType      `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=appsync.AuthenticationType" json:"authenticationtype,omitempty"`
+	Authenticationtype     *AuthenticationType     `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=appsync.AuthenticationType,oneof" json:"authenticationtype,omitempty"`
 	Lambdaauthorizerconfig *LambdaAuthorizerConfig `protobuf:"bytes,101350024,opt,name=lambdaauthorizerconfig,proto3" json:"lambdaauthorizerconfig,omitempty"`
 	Openidconnectconfig    *OpenIDConnectConfig    `protobuf:"bytes,357500045,opt,name=openidconnectconfig,proto3" json:"openidconnectconfig,omitempty"`
 	Userpoolconfig         *CognitoUserPoolConfig  `protobuf:"bytes,448520271,opt,name=userpoolconfig,proto3" json:"userpoolconfig,omitempty"`
@@ -1804,8 +1804,8 @@ func (*AdditionalAuthenticationProvider) Descriptor() ([]byte, []int) {
 }
 
 func (x *AdditionalAuthenticationProvider) GetAuthenticationtype() AuthenticationType {
-	if x != nil {
-		return x.Authenticationtype
+	if x != nil && x.Authenticationtype != nil {
+		return *x.Authenticationtype
 	}
 	return AuthenticationType_AUTHENTICATION_TYPE_AMAZON_COGNITO_USER_POOLS
 }
@@ -1950,7 +1950,7 @@ func (x *Api) GetXrayenabled() bool {
 type ApiAssociation struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Apiid             *string                `protobuf:"bytes,113380971,opt,name=apiid,proto3,oneof" json:"apiid,omitempty"`
-	Associationstatus AssociationStatus      `protobuf:"varint,350428071,opt,name=associationstatus,proto3,enum=appsync.AssociationStatus" json:"associationstatus,omitempty"`
+	Associationstatus *AssociationStatus     `protobuf:"varint,350428071,opt,name=associationstatus,proto3,enum=appsync.AssociationStatus,oneof" json:"associationstatus,omitempty"`
 	Deploymentdetail  *string                `protobuf:"bytes,69787328,opt,name=deploymentdetail,proto3,oneof" json:"deploymentdetail,omitempty"`
 	Domainname        *string                `protobuf:"bytes,390326667,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -1995,8 +1995,8 @@ func (x *ApiAssociation) GetApiid() string {
 }
 
 func (x *ApiAssociation) GetAssociationstatus() AssociationStatus {
-	if x != nil {
-		return x.Associationstatus
+	if x != nil && x.Associationstatus != nil {
+		return *x.Associationstatus
 	}
 	return AssociationStatus_ASSOCIATION_STATUS_PROCESSING
 }
@@ -2016,14 +2016,14 @@ func (x *ApiAssociation) GetDomainname() string {
 }
 
 type ApiCache struct {
-	state                    protoimpl.MessageState   `protogen:"open.v1"`
-	Apicachingbehavior       ApiCachingBehavior       `protobuf:"varint,489318031,opt,name=apicachingbehavior,proto3,enum=appsync.ApiCachingBehavior" json:"apicachingbehavior,omitempty"`
-	Atrestencryptionenabled  *bool                    `protobuf:"varint,454702113,opt,name=atrestencryptionenabled,proto3,oneof" json:"atrestencryptionenabled,omitempty"`
-	Healthmetricsconfig      CacheHealthMetricsConfig `protobuf:"varint,48720399,opt,name=healthmetricsconfig,proto3,enum=appsync.CacheHealthMetricsConfig" json:"healthmetricsconfig,omitempty"`
-	Status                   ApiCacheStatus           `protobuf:"varint,441153520,opt,name=status,proto3,enum=appsync.ApiCacheStatus" json:"status,omitempty"`
-	Transitencryptionenabled *bool                    `protobuf:"varint,166976639,opt,name=transitencryptionenabled,proto3,oneof" json:"transitencryptionenabled,omitempty"`
-	Ttl                      *int64                   `protobuf:"varint,489374300,opt,name=ttl,proto3,oneof" json:"ttl,omitempty"`
-	Type                     ApiCacheType             `protobuf:"varint,287830350,opt,name=type,proto3,enum=appsync.ApiCacheType" json:"type,omitempty"`
+	state                    protoimpl.MessageState    `protogen:"open.v1"`
+	Apicachingbehavior       *ApiCachingBehavior       `protobuf:"varint,489318031,opt,name=apicachingbehavior,proto3,enum=appsync.ApiCachingBehavior,oneof" json:"apicachingbehavior,omitempty"`
+	Atrestencryptionenabled  *bool                     `protobuf:"varint,454702113,opt,name=atrestencryptionenabled,proto3,oneof" json:"atrestencryptionenabled,omitempty"`
+	Healthmetricsconfig      *CacheHealthMetricsConfig `protobuf:"varint,48720399,opt,name=healthmetricsconfig,proto3,enum=appsync.CacheHealthMetricsConfig,oneof" json:"healthmetricsconfig,omitempty"`
+	Status                   *ApiCacheStatus           `protobuf:"varint,441153520,opt,name=status,proto3,enum=appsync.ApiCacheStatus,oneof" json:"status,omitempty"`
+	Transitencryptionenabled *bool                     `protobuf:"varint,166976639,opt,name=transitencryptionenabled,proto3,oneof" json:"transitencryptionenabled,omitempty"`
+	Ttl                      *int64                    `protobuf:"varint,489374300,opt,name=ttl,proto3,oneof" json:"ttl,omitempty"`
+	Type                     *ApiCacheType             `protobuf:"varint,287830350,opt,name=type,proto3,enum=appsync.ApiCacheType,oneof" json:"type,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -2059,8 +2059,8 @@ func (*ApiCache) Descriptor() ([]byte, []int) {
 }
 
 func (x *ApiCache) GetApicachingbehavior() ApiCachingBehavior {
-	if x != nil {
-		return x.Apicachingbehavior
+	if x != nil && x.Apicachingbehavior != nil {
+		return *x.Apicachingbehavior
 	}
 	return ApiCachingBehavior_API_CACHING_BEHAVIOR_PER_RESOLVER_CACHING
 }
@@ -2073,15 +2073,15 @@ func (x *ApiCache) GetAtrestencryptionenabled() bool {
 }
 
 func (x *ApiCache) GetHealthmetricsconfig() CacheHealthMetricsConfig {
-	if x != nil {
-		return x.Healthmetricsconfig
+	if x != nil && x.Healthmetricsconfig != nil {
+		return *x.Healthmetricsconfig
 	}
 	return CacheHealthMetricsConfig_CACHE_HEALTH_METRICS_CONFIG_DISABLED
 }
 
 func (x *ApiCache) GetStatus() ApiCacheStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ApiCacheStatus_API_CACHE_STATUS_AVAILABLE
 }
@@ -2101,8 +2101,8 @@ func (x *ApiCache) GetTtl() int64 {
 }
 
 func (x *ApiCache) GetType() ApiCacheType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ApiCacheType_API_CACHE_TYPE_R4_8XLARGE
 }
@@ -2943,7 +2943,7 @@ type BadRequestException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Detail        *BadRequestDetail      `protobuf:"bytes,3430549,opt,name=detail,proto3" json:"detail,omitempty"`
 	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
-	Reason        BadRequestReason       `protobuf:"varint,413359642,opt,name=reason,proto3,enum=appsync.BadRequestReason" json:"reason,omitempty"`
+	Reason        *BadRequestReason      `protobuf:"varint,413359642,opt,name=reason,proto3,enum=appsync.BadRequestReason,oneof" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2993,8 +2993,8 @@ func (x *BadRequestException) GetMessage() string {
 }
 
 func (x *BadRequestException) GetReason() BadRequestReason {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return BadRequestReason_BAD_REQUEST_REASON_CODE_ERROR
 }
@@ -3496,14 +3496,14 @@ func (x *ConflictException) GetMessage() string {
 }
 
 type CreateApiCacheRequest struct {
-	state                    protoimpl.MessageState   `protogen:"open.v1"`
-	Apicachingbehavior       ApiCachingBehavior       `protobuf:"varint,489318031,opt,name=apicachingbehavior,proto3,enum=appsync.ApiCachingBehavior" json:"apicachingbehavior,omitempty"`
-	Apiid                    string                   `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Atrestencryptionenabled  *bool                    `protobuf:"varint,454702113,opt,name=atrestencryptionenabled,proto3,oneof" json:"atrestencryptionenabled,omitempty"`
-	Healthmetricsconfig      CacheHealthMetricsConfig `protobuf:"varint,48720399,opt,name=healthmetricsconfig,proto3,enum=appsync.CacheHealthMetricsConfig" json:"healthmetricsconfig,omitempty"`
-	Transitencryptionenabled *bool                    `protobuf:"varint,166976639,opt,name=transitencryptionenabled,proto3,oneof" json:"transitencryptionenabled,omitempty"`
-	Ttl                      int64                    `protobuf:"varint,489374300,opt,name=ttl,proto3" json:"ttl,omitempty"`
-	Type                     ApiCacheType             `protobuf:"varint,287830350,opt,name=type,proto3,enum=appsync.ApiCacheType" json:"type,omitempty"`
+	state                    protoimpl.MessageState    `protogen:"open.v1"`
+	Apicachingbehavior       ApiCachingBehavior        `protobuf:"varint,489318031,opt,name=apicachingbehavior,proto3,enum=appsync.ApiCachingBehavior" json:"apicachingbehavior,omitempty"`
+	Apiid                    string                    `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
+	Atrestencryptionenabled  *bool                     `protobuf:"varint,454702113,opt,name=atrestencryptionenabled,proto3,oneof" json:"atrestencryptionenabled,omitempty"`
+	Healthmetricsconfig      *CacheHealthMetricsConfig `protobuf:"varint,48720399,opt,name=healthmetricsconfig,proto3,enum=appsync.CacheHealthMetricsConfig,oneof" json:"healthmetricsconfig,omitempty"`
+	Transitencryptionenabled *bool                     `protobuf:"varint,166976639,opt,name=transitencryptionenabled,proto3,oneof" json:"transitencryptionenabled,omitempty"`
+	Ttl                      int64                     `protobuf:"varint,489374300,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Type                     ApiCacheType              `protobuf:"varint,287830350,opt,name=type,proto3,enum=appsync.ApiCacheType" json:"type,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -3560,8 +3560,8 @@ func (x *CreateApiCacheRequest) GetAtrestencryptionenabled() bool {
 }
 
 func (x *CreateApiCacheRequest) GetHealthmetricsconfig() CacheHealthMetricsConfig {
-	if x != nil {
-		return x.Healthmetricsconfig
+	if x != nil && x.Healthmetricsconfig != nil {
+		return *x.Healthmetricsconfig
 	}
 	return CacheHealthMetricsConfig_CACHE_HEALTH_METRICS_CONFIG_DISABLED
 }
@@ -3992,7 +3992,7 @@ type CreateDataSourceRequest struct {
 	Eventbridgeconfig        *EventBridgeDataSourceConfig        `protobuf:"bytes,139653561,opt,name=eventbridgeconfig,proto3" json:"eventbridgeconfig,omitempty"`
 	Httpconfig               *HttpDataSourceConfig               `protobuf:"bytes,105521544,opt,name=httpconfig,proto3" json:"httpconfig,omitempty"`
 	Lambdaconfig             *LambdaDataSourceConfig             `protobuf:"bytes,505299205,opt,name=lambdaconfig,proto3" json:"lambdaconfig,omitempty"`
-	Metricsconfig            DataSourceLevelMetricsConfig        `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.DataSourceLevelMetricsConfig" json:"metricsconfig,omitempty"`
+	Metricsconfig            *DataSourceLevelMetricsConfig       `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.DataSourceLevelMetricsConfig,oneof" json:"metricsconfig,omitempty"`
 	Name                     string                              `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Opensearchserviceconfig  *OpenSearchServiceDataSourceConfig  `protobuf:"bytes,306254355,opt,name=opensearchserviceconfig,proto3" json:"opensearchserviceconfig,omitempty"`
 	Relationaldatabaseconfig *RelationalDatabaseDataSourceConfig `protobuf:"bytes,33295308,opt,name=relationaldatabaseconfig,proto3" json:"relationaldatabaseconfig,omitempty"`
@@ -4082,8 +4082,8 @@ func (x *CreateDataSourceRequest) GetLambdaconfig() *LambdaDataSourceConfig {
 }
 
 func (x *CreateDataSourceRequest) GetMetricsconfig() DataSourceLevelMetricsConfig {
-	if x != nil {
-		return x.Metricsconfig
+	if x != nil && x.Metricsconfig != nil {
+		return *x.Metricsconfig
 	}
 	return DataSourceLevelMetricsConfig_DATA_SOURCE_LEVEL_METRICS_CONFIG_DISABLED
 }
@@ -4450,10 +4450,10 @@ func (x *CreateFunctionResponse) GetFunctionconfiguration() *FunctionConfigurati
 type CreateGraphqlApiRequest struct {
 	state                             protoimpl.MessageState              `protogen:"open.v1"`
 	Additionalauthenticationproviders []*AdditionalAuthenticationProvider `protobuf:"bytes,159806731,rep,name=additionalauthenticationproviders,proto3" json:"additionalauthenticationproviders,omitempty"`
-	Apitype                           GraphQLApiType                      `protobuf:"varint,74688128,opt,name=apitype,proto3,enum=appsync.GraphQLApiType" json:"apitype,omitempty"`
+	Apitype                           *GraphQLApiType                     `protobuf:"varint,74688128,opt,name=apitype,proto3,enum=appsync.GraphQLApiType,oneof" json:"apitype,omitempty"`
 	Authenticationtype                AuthenticationType                  `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=appsync.AuthenticationType" json:"authenticationtype,omitempty"`
 	Enhancedmetricsconfig             *EnhancedMetricsConfig              `protobuf:"bytes,97907511,opt,name=enhancedmetricsconfig,proto3" json:"enhancedmetricsconfig,omitempty"`
-	Introspectionconfig               GraphQLApiIntrospectionConfig       `protobuf:"varint,295245787,opt,name=introspectionconfig,proto3,enum=appsync.GraphQLApiIntrospectionConfig" json:"introspectionconfig,omitempty"`
+	Introspectionconfig               *GraphQLApiIntrospectionConfig      `protobuf:"varint,295245787,opt,name=introspectionconfig,proto3,enum=appsync.GraphQLApiIntrospectionConfig,oneof" json:"introspectionconfig,omitempty"`
 	Lambdaauthorizerconfig            *LambdaAuthorizerConfig             `protobuf:"bytes,101350024,opt,name=lambdaauthorizerconfig,proto3" json:"lambdaauthorizerconfig,omitempty"`
 	Logconfig                         *LogConfig                          `protobuf:"bytes,24002932,opt,name=logconfig,proto3" json:"logconfig,omitempty"`
 	Mergedapiexecutionrolearn         *string                             `protobuf:"bytes,216513787,opt,name=mergedapiexecutionrolearn,proto3,oneof" json:"mergedapiexecutionrolearn,omitempty"`
@@ -4464,7 +4464,7 @@ type CreateGraphqlApiRequest struct {
 	Resolvercountlimit                *int32                              `protobuf:"varint,83880706,opt,name=resolvercountlimit,proto3,oneof" json:"resolvercountlimit,omitempty"`
 	Tags                              map[string]string                   `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Userpoolconfig                    *UserPoolConfig                     `protobuf:"bytes,448520271,opt,name=userpoolconfig,proto3" json:"userpoolconfig,omitempty"`
-	Visibility                        GraphQLApiVisibility                `protobuf:"varint,523761126,opt,name=visibility,proto3,enum=appsync.GraphQLApiVisibility" json:"visibility,omitempty"`
+	Visibility                        *GraphQLApiVisibility               `protobuf:"varint,523761126,opt,name=visibility,proto3,enum=appsync.GraphQLApiVisibility,oneof" json:"visibility,omitempty"`
 	Xrayenabled                       *bool                               `protobuf:"varint,467402691,opt,name=xrayenabled,proto3,oneof" json:"xrayenabled,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
 	sizeCache                         protoimpl.SizeCache
@@ -4508,8 +4508,8 @@ func (x *CreateGraphqlApiRequest) GetAdditionalauthenticationproviders() []*Addi
 }
 
 func (x *CreateGraphqlApiRequest) GetApitype() GraphQLApiType {
-	if x != nil {
-		return x.Apitype
+	if x != nil && x.Apitype != nil {
+		return *x.Apitype
 	}
 	return GraphQLApiType_GRAPH_Q_L_API_TYPE_GRAPHQL
 }
@@ -4529,8 +4529,8 @@ func (x *CreateGraphqlApiRequest) GetEnhancedmetricsconfig() *EnhancedMetricsCon
 }
 
 func (x *CreateGraphqlApiRequest) GetIntrospectionconfig() GraphQLApiIntrospectionConfig {
-	if x != nil {
-		return x.Introspectionconfig
+	if x != nil && x.Introspectionconfig != nil {
+		return *x.Introspectionconfig
 	}
 	return GraphQLApiIntrospectionConfig_GRAPH_Q_L_API_INTROSPECTION_CONFIG_DISABLED
 }
@@ -4606,8 +4606,8 @@ func (x *CreateGraphqlApiRequest) GetUserpoolconfig() *UserPoolConfig {
 }
 
 func (x *CreateGraphqlApiRequest) GetVisibility() GraphQLApiVisibility {
-	if x != nil {
-		return x.Visibility
+	if x != nil && x.Visibility != nil {
+		return *x.Visibility
 	}
 	return GraphQLApiVisibility_GRAPH_Q_L_API_VISIBILITY_GLOBAL
 }
@@ -4664,21 +4664,21 @@ func (x *CreateGraphqlApiResponse) GetGraphqlapi() *GraphqlApi {
 }
 
 type CreateResolverRequest struct {
-	state                   protoimpl.MessageState     `protogen:"open.v1"`
-	Apiid                   string                     `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Cachingconfig           *CachingConfig             `protobuf:"bytes,49322281,opt,name=cachingconfig,proto3" json:"cachingconfig,omitempty"`
-	Code                    *string                    `protobuf:"bytes,422669557,opt,name=code,proto3,oneof" json:"code,omitempty"`
-	Datasourcename          *string                    `protobuf:"bytes,231923996,opt,name=datasourcename,proto3,oneof" json:"datasourcename,omitempty"`
-	Fieldname               string                     `protobuf:"bytes,487483205,opt,name=fieldname,proto3" json:"fieldname,omitempty"`
-	Kind                    ResolverKind               `protobuf:"varint,420733508,opt,name=kind,proto3,enum=appsync.ResolverKind" json:"kind,omitempty"`
-	Maxbatchsize            *int32                     `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
-	Metricsconfig           ResolverLevelMetricsConfig `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.ResolverLevelMetricsConfig" json:"metricsconfig,omitempty"`
-	Pipelineconfig          *PipelineConfig            `protobuf:"bytes,128197026,opt,name=pipelineconfig,proto3" json:"pipelineconfig,omitempty"`
-	Requestmappingtemplate  *string                    `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3,oneof" json:"requestmappingtemplate,omitempty"`
-	Responsemappingtemplate *string                    `protobuf:"bytes,393186939,opt,name=responsemappingtemplate,proto3,oneof" json:"responsemappingtemplate,omitempty"`
-	Runtime                 *AppSyncRuntime            `protobuf:"bytes,79706412,opt,name=runtime,proto3" json:"runtime,omitempty"`
-	Syncconfig              *SyncConfig                `protobuf:"bytes,478900021,opt,name=syncconfig,proto3" json:"syncconfig,omitempty"`
-	Typename                string                     `protobuf:"bytes,475024751,opt,name=typename,proto3" json:"typename,omitempty"`
+	state                   protoimpl.MessageState      `protogen:"open.v1"`
+	Apiid                   string                      `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
+	Cachingconfig           *CachingConfig              `protobuf:"bytes,49322281,opt,name=cachingconfig,proto3" json:"cachingconfig,omitempty"`
+	Code                    *string                     `protobuf:"bytes,422669557,opt,name=code,proto3,oneof" json:"code,omitempty"`
+	Datasourcename          *string                     `protobuf:"bytes,231923996,opt,name=datasourcename,proto3,oneof" json:"datasourcename,omitempty"`
+	Fieldname               string                      `protobuf:"bytes,487483205,opt,name=fieldname,proto3" json:"fieldname,omitempty"`
+	Kind                    *ResolverKind               `protobuf:"varint,420733508,opt,name=kind,proto3,enum=appsync.ResolverKind,oneof" json:"kind,omitempty"`
+	Maxbatchsize            *int32                      `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
+	Metricsconfig           *ResolverLevelMetricsConfig `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.ResolverLevelMetricsConfig,oneof" json:"metricsconfig,omitempty"`
+	Pipelineconfig          *PipelineConfig             `protobuf:"bytes,128197026,opt,name=pipelineconfig,proto3" json:"pipelineconfig,omitempty"`
+	Requestmappingtemplate  *string                     `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3,oneof" json:"requestmappingtemplate,omitempty"`
+	Responsemappingtemplate *string                     `protobuf:"bytes,393186939,opt,name=responsemappingtemplate,proto3,oneof" json:"responsemappingtemplate,omitempty"`
+	Runtime                 *AppSyncRuntime             `protobuf:"bytes,79706412,opt,name=runtime,proto3" json:"runtime,omitempty"`
+	Syncconfig              *SyncConfig                 `protobuf:"bytes,478900021,opt,name=syncconfig,proto3" json:"syncconfig,omitempty"`
+	Typename                string                      `protobuf:"bytes,475024751,opt,name=typename,proto3" json:"typename,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -4749,8 +4749,8 @@ func (x *CreateResolverRequest) GetFieldname() string {
 }
 
 func (x *CreateResolverRequest) GetKind() ResolverKind {
-	if x != nil {
-		return x.Kind
+	if x != nil && x.Kind != nil {
+		return *x.Kind
 	}
 	return ResolverKind_RESOLVER_KIND_PIPELINE
 }
@@ -4763,8 +4763,8 @@ func (x *CreateResolverRequest) GetMaxbatchsize() int32 {
 }
 
 func (x *CreateResolverRequest) GetMetricsconfig() ResolverLevelMetricsConfig {
-	if x != nil {
-		return x.Metricsconfig
+	if x != nil && x.Metricsconfig != nil {
+		return *x.Metricsconfig
 	}
 	return ResolverLevelMetricsConfig_RESOLVER_LEVEL_METRICS_CONFIG_DISABLED
 }
@@ -4968,12 +4968,12 @@ type DataSource struct {
 	Eventbridgeconfig        *EventBridgeDataSourceConfig        `protobuf:"bytes,139653561,opt,name=eventbridgeconfig,proto3" json:"eventbridgeconfig,omitempty"`
 	Httpconfig               *HttpDataSourceConfig               `protobuf:"bytes,105521544,opt,name=httpconfig,proto3" json:"httpconfig,omitempty"`
 	Lambdaconfig             *LambdaDataSourceConfig             `protobuf:"bytes,505299205,opt,name=lambdaconfig,proto3" json:"lambdaconfig,omitempty"`
-	Metricsconfig            DataSourceLevelMetricsConfig        `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.DataSourceLevelMetricsConfig" json:"metricsconfig,omitempty"`
+	Metricsconfig            *DataSourceLevelMetricsConfig       `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.DataSourceLevelMetricsConfig,oneof" json:"metricsconfig,omitempty"`
 	Name                     *string                             `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Opensearchserviceconfig  *OpenSearchServiceDataSourceConfig  `protobuf:"bytes,306254355,opt,name=opensearchserviceconfig,proto3" json:"opensearchserviceconfig,omitempty"`
 	Relationaldatabaseconfig *RelationalDatabaseDataSourceConfig `protobuf:"bytes,33295308,opt,name=relationaldatabaseconfig,proto3" json:"relationaldatabaseconfig,omitempty"`
 	Servicerolearn           *string                             `protobuf:"bytes,122834020,opt,name=servicerolearn,proto3,oneof" json:"servicerolearn,omitempty"`
-	Type                     DataSourceType                      `protobuf:"varint,287830350,opt,name=type,proto3,enum=appsync.DataSourceType" json:"type,omitempty"`
+	Type                     *DataSourceType                     `protobuf:"varint,287830350,opt,name=type,proto3,enum=appsync.DataSourceType,oneof" json:"type,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -5058,8 +5058,8 @@ func (x *DataSource) GetLambdaconfig() *LambdaDataSourceConfig {
 }
 
 func (x *DataSource) GetMetricsconfig() DataSourceLevelMetricsConfig {
-	if x != nil {
-		return x.Metricsconfig
+	if x != nil && x.Metricsconfig != nil {
+		return *x.Metricsconfig
 	}
 	return DataSourceLevelMetricsConfig_DATA_SOURCE_LEVEL_METRICS_CONFIG_DISABLED
 }
@@ -5093,8 +5093,8 @@ func (x *DataSource) GetServicerolearn() string {
 }
 
 func (x *DataSource) GetType() DataSourceType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return DataSourceType_DATA_SOURCE_TYPE_HTTP
 }
@@ -6456,8 +6456,8 @@ func (x *DisassociateMergedGraphqlApiRequest) GetSourceapiidentifier() string {
 }
 
 type DisassociateMergedGraphqlApiResponse struct {
-	state                      protoimpl.MessageState     `protogen:"open.v1"`
-	Sourceapiassociationstatus SourceApiAssociationStatus `protobuf:"varint,218602082,opt,name=sourceapiassociationstatus,proto3,enum=appsync.SourceApiAssociationStatus" json:"sourceapiassociationstatus,omitempty"`
+	state                      protoimpl.MessageState      `protogen:"open.v1"`
+	Sourceapiassociationstatus *SourceApiAssociationStatus `protobuf:"varint,218602082,opt,name=sourceapiassociationstatus,proto3,enum=appsync.SourceApiAssociationStatus,oneof" json:"sourceapiassociationstatus,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -6493,8 +6493,8 @@ func (*DisassociateMergedGraphqlApiResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DisassociateMergedGraphqlApiResponse) GetSourceapiassociationstatus() SourceApiAssociationStatus {
-	if x != nil {
-		return x.Sourceapiassociationstatus
+	if x != nil && x.Sourceapiassociationstatus != nil {
+		return *x.Sourceapiassociationstatus
 	}
 	return SourceApiAssociationStatus_SOURCE_API_ASSOCIATION_STATUS_MERGE_SUCCESS
 }
@@ -6552,8 +6552,8 @@ func (x *DisassociateSourceGraphqlApiRequest) GetMergedapiidentifier() string {
 }
 
 type DisassociateSourceGraphqlApiResponse struct {
-	state                      protoimpl.MessageState     `protogen:"open.v1"`
-	Sourceapiassociationstatus SourceApiAssociationStatus `protobuf:"varint,218602082,opt,name=sourceapiassociationstatus,proto3,enum=appsync.SourceApiAssociationStatus" json:"sourceapiassociationstatus,omitempty"`
+	state                      protoimpl.MessageState      `protogen:"open.v1"`
+	Sourceapiassociationstatus *SourceApiAssociationStatus `protobuf:"varint,218602082,opt,name=sourceapiassociationstatus,proto3,enum=appsync.SourceApiAssociationStatus,oneof" json:"sourceapiassociationstatus,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -6589,8 +6589,8 @@ func (*DisassociateSourceGraphqlApiResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DisassociateSourceGraphqlApiResponse) GetSourceapiassociationstatus() SourceApiAssociationStatus {
-	if x != nil {
-		return x.Sourceapiassociationstatus
+	if x != nil && x.Sourceapiassociationstatus != nil {
+		return *x.Sourceapiassociationstatus
 	}
 	return SourceApiAssociationStatus_SOURCE_API_ASSOCIATION_STATUS_MERGE_SUCCESS
 }
@@ -8059,7 +8059,7 @@ type GetDataSourceIntrospectionResponse struct {
 	state                     protoimpl.MessageState         `protogen:"open.v1"`
 	Introspectionid           *string                        `protobuf:"bytes,284517058,opt,name=introspectionid,proto3,oneof" json:"introspectionid,omitempty"`
 	Introspectionresult       *DataSourceIntrospectionResult `protobuf:"bytes,230048374,opt,name=introspectionresult,proto3" json:"introspectionresult,omitempty"`
-	Introspectionstatus       DataSourceIntrospectionStatus  `protobuf:"varint,29503511,opt,name=introspectionstatus,proto3,enum=appsync.DataSourceIntrospectionStatus" json:"introspectionstatus,omitempty"`
+	Introspectionstatus       *DataSourceIntrospectionStatus `protobuf:"varint,29503511,opt,name=introspectionstatus,proto3,enum=appsync.DataSourceIntrospectionStatus,oneof" json:"introspectionstatus,omitempty"`
 	Introspectionstatusdetail *string                        `protobuf:"bytes,445981432,opt,name=introspectionstatusdetail,proto3,oneof" json:"introspectionstatusdetail,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -8110,8 +8110,8 @@ func (x *GetDataSourceIntrospectionResponse) GetIntrospectionresult() *DataSourc
 }
 
 func (x *GetDataSourceIntrospectionResponse) GetIntrospectionstatus() DataSourceIntrospectionStatus {
-	if x != nil {
-		return x.Introspectionstatus
+	if x != nil && x.Introspectionstatus != nil {
+		return *x.Introspectionstatus
 	}
 	return DataSourceIntrospectionStatus_DATA_SOURCE_INTROSPECTION_STATUS_PROCESSING
 }
@@ -8834,7 +8834,7 @@ func (x *GetSchemaCreationStatusRequest) GetApiid() string {
 type GetSchemaCreationStatusResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Details       *string                `protobuf:"bytes,426242982,opt,name=details,proto3,oneof" json:"details,omitempty"`
-	Status        SchemaStatus           `protobuf:"varint,441153520,opt,name=status,proto3,enum=appsync.SchemaStatus" json:"status,omitempty"`
+	Status        *SchemaStatus          `protobuf:"varint,441153520,opt,name=status,proto3,enum=appsync.SchemaStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8877,8 +8877,8 @@ func (x *GetSchemaCreationStatusResponse) GetDetails() string {
 }
 
 func (x *GetSchemaCreationStatusResponse) GetStatus() SchemaStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SchemaStatus_SCHEMA_STATUS_ACTIVE
 }
@@ -9131,12 +9131,12 @@ type GraphqlApi struct {
 	state                             protoimpl.MessageState              `protogen:"open.v1"`
 	Additionalauthenticationproviders []*AdditionalAuthenticationProvider `protobuf:"bytes,159806731,rep,name=additionalauthenticationproviders,proto3" json:"additionalauthenticationproviders,omitempty"`
 	Apiid                             *string                             `protobuf:"bytes,113380971,opt,name=apiid,proto3,oneof" json:"apiid,omitempty"`
-	Apitype                           GraphQLApiType                      `protobuf:"varint,74688128,opt,name=apitype,proto3,enum=appsync.GraphQLApiType" json:"apitype,omitempty"`
+	Apitype                           *GraphQLApiType                     `protobuf:"varint,74688128,opt,name=apitype,proto3,enum=appsync.GraphQLApiType,oneof" json:"apitype,omitempty"`
 	Arn                               *string                             `protobuf:"bytes,359604989,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
-	Authenticationtype                AuthenticationType                  `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=appsync.AuthenticationType" json:"authenticationtype,omitempty"`
+	Authenticationtype                *AuthenticationType                 `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=appsync.AuthenticationType,oneof" json:"authenticationtype,omitempty"`
 	Dns                               map[string]string                   `protobuf:"bytes,443214013,rep,name=dns,proto3" json:"dns,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Enhancedmetricsconfig             *EnhancedMetricsConfig              `protobuf:"bytes,97907511,opt,name=enhancedmetricsconfig,proto3" json:"enhancedmetricsconfig,omitempty"`
-	Introspectionconfig               GraphQLApiIntrospectionConfig       `protobuf:"varint,295245787,opt,name=introspectionconfig,proto3,enum=appsync.GraphQLApiIntrospectionConfig" json:"introspectionconfig,omitempty"`
+	Introspectionconfig               *GraphQLApiIntrospectionConfig      `protobuf:"varint,295245787,opt,name=introspectionconfig,proto3,enum=appsync.GraphQLApiIntrospectionConfig,oneof" json:"introspectionconfig,omitempty"`
 	Lambdaauthorizerconfig            *LambdaAuthorizerConfig             `protobuf:"bytes,101350024,opt,name=lambdaauthorizerconfig,proto3" json:"lambdaauthorizerconfig,omitempty"`
 	Logconfig                         *LogConfig                          `protobuf:"bytes,24002932,opt,name=logconfig,proto3" json:"logconfig,omitempty"`
 	Mergedapiexecutionrolearn         *string                             `protobuf:"bytes,216513787,opt,name=mergedapiexecutionrolearn,proto3,oneof" json:"mergedapiexecutionrolearn,omitempty"`
@@ -9149,7 +9149,7 @@ type GraphqlApi struct {
 	Tags                              map[string]string                   `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Uris                              map[string]string                   `protobuf:"bytes,77629579,rep,name=uris,proto3" json:"uris,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Userpoolconfig                    *UserPoolConfig                     `protobuf:"bytes,448520271,opt,name=userpoolconfig,proto3" json:"userpoolconfig,omitempty"`
-	Visibility                        GraphQLApiVisibility                `protobuf:"varint,523761126,opt,name=visibility,proto3,enum=appsync.GraphQLApiVisibility" json:"visibility,omitempty"`
+	Visibility                        *GraphQLApiVisibility               `protobuf:"varint,523761126,opt,name=visibility,proto3,enum=appsync.GraphQLApiVisibility,oneof" json:"visibility,omitempty"`
 	Wafwebaclarn                      *string                             `protobuf:"bytes,457120111,opt,name=wafwebaclarn,proto3,oneof" json:"wafwebaclarn,omitempty"`
 	Xrayenabled                       *bool                               `protobuf:"varint,467402691,opt,name=xrayenabled,proto3,oneof" json:"xrayenabled,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
@@ -9201,8 +9201,8 @@ func (x *GraphqlApi) GetApiid() string {
 }
 
 func (x *GraphqlApi) GetApitype() GraphQLApiType {
-	if x != nil {
-		return x.Apitype
+	if x != nil && x.Apitype != nil {
+		return *x.Apitype
 	}
 	return GraphQLApiType_GRAPH_Q_L_API_TYPE_GRAPHQL
 }
@@ -9215,8 +9215,8 @@ func (x *GraphqlApi) GetArn() string {
 }
 
 func (x *GraphqlApi) GetAuthenticationtype() AuthenticationType {
-	if x != nil {
-		return x.Authenticationtype
+	if x != nil && x.Authenticationtype != nil {
+		return *x.Authenticationtype
 	}
 	return AuthenticationType_AUTHENTICATION_TYPE_AMAZON_COGNITO_USER_POOLS
 }
@@ -9236,8 +9236,8 @@ func (x *GraphqlApi) GetEnhancedmetricsconfig() *EnhancedMetricsConfig {
 }
 
 func (x *GraphqlApi) GetIntrospectionconfig() GraphQLApiIntrospectionConfig {
-	if x != nil {
-		return x.Introspectionconfig
+	if x != nil && x.Introspectionconfig != nil {
+		return *x.Introspectionconfig
 	}
 	return GraphQLApiIntrospectionConfig_GRAPH_Q_L_API_INTROSPECTION_CONFIG_DISABLED
 }
@@ -9327,8 +9327,8 @@ func (x *GraphqlApi) GetUserpoolconfig() *UserPoolConfig {
 }
 
 func (x *GraphqlApi) GetVisibility() GraphQLApiVisibility {
-	if x != nil {
-		return x.Visibility
+	if x != nil && x.Visibility != nil {
+		return *x.Visibility
 	}
 	return GraphQLApiVisibility_GRAPH_Q_L_API_VISIBILITY_GLOBAL
 }
@@ -9661,7 +9661,7 @@ func (x *LambdaAuthorizerConfig) GetIdentityvalidationexpression() string {
 
 type LambdaConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Invoketype    InvokeType             `protobuf:"varint,118470438,opt,name=invoketype,proto3,enum=appsync.InvokeType" json:"invoketype,omitempty"`
+	Invoketype    *InvokeType            `protobuf:"varint,118470438,opt,name=invoketype,proto3,enum=appsync.InvokeType,oneof" json:"invoketype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9697,8 +9697,8 @@ func (*LambdaConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *LambdaConfig) GetInvoketype() InvokeType {
-	if x != nil {
-		return x.Invoketype
+	if x != nil && x.Invoketype != nil {
+		return *x.Invoketype
 	}
 	return InvokeType_INVOKE_TYPE_EVENT
 }
@@ -10493,10 +10493,10 @@ func (x *ListFunctionsResponse) GetNexttoken() string {
 
 type ListGraphqlApisRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Apitype       GraphQLApiType         `protobuf:"varint,74688128,opt,name=apitype,proto3,enum=appsync.GraphQLApiType" json:"apitype,omitempty"`
+	Apitype       *GraphQLApiType        `protobuf:"varint,74688128,opt,name=apitype,proto3,enum=appsync.GraphQLApiType,oneof" json:"apitype,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Owner         Ownership              `protobuf:"varint,359091413,opt,name=owner,proto3,enum=appsync.Ownership" json:"owner,omitempty"`
+	Owner         *Ownership             `protobuf:"varint,359091413,opt,name=owner,proto3,enum=appsync.Ownership,oneof" json:"owner,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10532,8 +10532,8 @@ func (*ListGraphqlApisRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListGraphqlApisRequest) GetApitype() GraphQLApiType {
-	if x != nil {
-		return x.Apitype
+	if x != nil && x.Apitype != nil {
+		return *x.Apitype
 	}
 	return GraphQLApiType_GRAPH_Q_L_API_TYPE_GRAPHQL
 }
@@ -10553,8 +10553,8 @@ func (x *ListGraphqlApisRequest) GetNexttoken() string {
 }
 
 func (x *ListGraphqlApisRequest) GetOwner() Ownership {
-	if x != nil {
-		return x.Owner
+	if x != nil && x.Owner != nil {
+		return *x.Owner
 	}
 	return Ownership_OWNERSHIP_OTHER_ACCOUNTS
 }
@@ -11800,9 +11800,9 @@ func (x *RdsHttpEndpointConfig) GetSchema() string {
 }
 
 type RelationalDatabaseDataSourceConfig struct {
-	state                        protoimpl.MessageState       `protogen:"open.v1"`
-	Rdshttpendpointconfig        *RdsHttpEndpointConfig       `protobuf:"bytes,298754596,opt,name=rdshttpendpointconfig,proto3" json:"rdshttpendpointconfig,omitempty"`
-	Relationaldatabasesourcetype RelationalDatabaseSourceType `protobuf:"varint,308843533,opt,name=relationaldatabasesourcetype,proto3,enum=appsync.RelationalDatabaseSourceType" json:"relationaldatabasesourcetype,omitempty"`
+	state                        protoimpl.MessageState        `protogen:"open.v1"`
+	Rdshttpendpointconfig        *RdsHttpEndpointConfig        `protobuf:"bytes,298754596,opt,name=rdshttpendpointconfig,proto3" json:"rdshttpendpointconfig,omitempty"`
+	Relationaldatabasesourcetype *RelationalDatabaseSourceType `protobuf:"varint,308843533,opt,name=relationaldatabasesourcetype,proto3,enum=appsync.RelationalDatabaseSourceType,oneof" json:"relationaldatabasesourcetype,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -11845,28 +11845,28 @@ func (x *RelationalDatabaseDataSourceConfig) GetRdshttpendpointconfig() *RdsHttp
 }
 
 func (x *RelationalDatabaseDataSourceConfig) GetRelationaldatabasesourcetype() RelationalDatabaseSourceType {
-	if x != nil {
-		return x.Relationaldatabasesourcetype
+	if x != nil && x.Relationaldatabasesourcetype != nil {
+		return *x.Relationaldatabasesourcetype
 	}
 	return RelationalDatabaseSourceType_RELATIONAL_DATABASE_SOURCE_TYPE_RDS_HTTP_ENDPOINT
 }
 
 type Resolver struct {
-	state                   protoimpl.MessageState     `protogen:"open.v1"`
-	Cachingconfig           *CachingConfig             `protobuf:"bytes,49322281,opt,name=cachingconfig,proto3" json:"cachingconfig,omitempty"`
-	Code                    *string                    `protobuf:"bytes,422669557,opt,name=code,proto3,oneof" json:"code,omitempty"`
-	Datasourcename          *string                    `protobuf:"bytes,231923996,opt,name=datasourcename,proto3,oneof" json:"datasourcename,omitempty"`
-	Fieldname               *string                    `protobuf:"bytes,487483205,opt,name=fieldname,proto3,oneof" json:"fieldname,omitempty"`
-	Kind                    ResolverKind               `protobuf:"varint,420733508,opt,name=kind,proto3,enum=appsync.ResolverKind" json:"kind,omitempty"`
-	Maxbatchsize            *int32                     `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
-	Metricsconfig           ResolverLevelMetricsConfig `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.ResolverLevelMetricsConfig" json:"metricsconfig,omitempty"`
-	Pipelineconfig          *PipelineConfig            `protobuf:"bytes,128197026,opt,name=pipelineconfig,proto3" json:"pipelineconfig,omitempty"`
-	Requestmappingtemplate  *string                    `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3,oneof" json:"requestmappingtemplate,omitempty"`
-	Resolverarn             *string                    `protobuf:"bytes,114796439,opt,name=resolverarn,proto3,oneof" json:"resolverarn,omitempty"`
-	Responsemappingtemplate *string                    `protobuf:"bytes,393186939,opt,name=responsemappingtemplate,proto3,oneof" json:"responsemappingtemplate,omitempty"`
-	Runtime                 *AppSyncRuntime            `protobuf:"bytes,79706412,opt,name=runtime,proto3" json:"runtime,omitempty"`
-	Syncconfig              *SyncConfig                `protobuf:"bytes,478900021,opt,name=syncconfig,proto3" json:"syncconfig,omitempty"`
-	Typename                *string                    `protobuf:"bytes,475024751,opt,name=typename,proto3,oneof" json:"typename,omitempty"`
+	state                   protoimpl.MessageState      `protogen:"open.v1"`
+	Cachingconfig           *CachingConfig              `protobuf:"bytes,49322281,opt,name=cachingconfig,proto3" json:"cachingconfig,omitempty"`
+	Code                    *string                     `protobuf:"bytes,422669557,opt,name=code,proto3,oneof" json:"code,omitempty"`
+	Datasourcename          *string                     `protobuf:"bytes,231923996,opt,name=datasourcename,proto3,oneof" json:"datasourcename,omitempty"`
+	Fieldname               *string                     `protobuf:"bytes,487483205,opt,name=fieldname,proto3,oneof" json:"fieldname,omitempty"`
+	Kind                    *ResolverKind               `protobuf:"varint,420733508,opt,name=kind,proto3,enum=appsync.ResolverKind,oneof" json:"kind,omitempty"`
+	Maxbatchsize            *int32                      `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
+	Metricsconfig           *ResolverLevelMetricsConfig `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.ResolverLevelMetricsConfig,oneof" json:"metricsconfig,omitempty"`
+	Pipelineconfig          *PipelineConfig             `protobuf:"bytes,128197026,opt,name=pipelineconfig,proto3" json:"pipelineconfig,omitempty"`
+	Requestmappingtemplate  *string                     `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3,oneof" json:"requestmappingtemplate,omitempty"`
+	Resolverarn             *string                     `protobuf:"bytes,114796439,opt,name=resolverarn,proto3,oneof" json:"resolverarn,omitempty"`
+	Responsemappingtemplate *string                     `protobuf:"bytes,393186939,opt,name=responsemappingtemplate,proto3,oneof" json:"responsemappingtemplate,omitempty"`
+	Runtime                 *AppSyncRuntime             `protobuf:"bytes,79706412,opt,name=runtime,proto3" json:"runtime,omitempty"`
+	Syncconfig              *SyncConfig                 `protobuf:"bytes,478900021,opt,name=syncconfig,proto3" json:"syncconfig,omitempty"`
+	Typename                *string                     `protobuf:"bytes,475024751,opt,name=typename,proto3,oneof" json:"typename,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -11930,8 +11930,8 @@ func (x *Resolver) GetFieldname() string {
 }
 
 func (x *Resolver) GetKind() ResolverKind {
-	if x != nil {
-		return x.Kind
+	if x != nil && x.Kind != nil {
+		return *x.Kind
 	}
 	return ResolverKind_RESOLVER_KIND_PIPELINE
 }
@@ -11944,8 +11944,8 @@ func (x *Resolver) GetMaxbatchsize() int32 {
 }
 
 func (x *Resolver) GetMetricsconfig() ResolverLevelMetricsConfig {
-	if x != nil {
-		return x.Metricsconfig
+	if x != nil && x.Metricsconfig != nil {
+		return *x.Metricsconfig
 	}
 	return ResolverLevelMetricsConfig_RESOLVER_LEVEL_METRICS_CONFIG_DISABLED
 }
@@ -12053,7 +12053,7 @@ type SourceApiAssociation struct {
 	Mergedapiid                      *string                     `protobuf:"bytes,113995743,opt,name=mergedapiid,proto3,oneof" json:"mergedapiid,omitempty"`
 	Sourceapiarn                     *string                     `protobuf:"bytes,379015280,opt,name=sourceapiarn,proto3,oneof" json:"sourceapiarn,omitempty"`
 	Sourceapiassociationconfig       *SourceApiAssociationConfig `protobuf:"bytes,67984118,opt,name=sourceapiassociationconfig,proto3" json:"sourceapiassociationconfig,omitempty"`
-	Sourceapiassociationstatus       SourceApiAssociationStatus  `protobuf:"varint,218602082,opt,name=sourceapiassociationstatus,proto3,enum=appsync.SourceApiAssociationStatus" json:"sourceapiassociationstatus,omitempty"`
+	Sourceapiassociationstatus       *SourceApiAssociationStatus `protobuf:"varint,218602082,opt,name=sourceapiassociationstatus,proto3,enum=appsync.SourceApiAssociationStatus,oneof" json:"sourceapiassociationstatus,omitempty"`
 	Sourceapiassociationstatusdetail *string                     `protobuf:"bytes,285099537,opt,name=sourceapiassociationstatusdetail,proto3,oneof" json:"sourceapiassociationstatusdetail,omitempty"`
 	Sourceapiid                      *string                     `protobuf:"bytes,59486486,opt,name=sourceapiid,proto3,oneof" json:"sourceapiid,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
@@ -12147,8 +12147,8 @@ func (x *SourceApiAssociation) GetSourceapiassociationconfig() *SourceApiAssocia
 }
 
 func (x *SourceApiAssociation) GetSourceapiassociationstatus() SourceApiAssociationStatus {
-	if x != nil {
-		return x.Sourceapiassociationstatus
+	if x != nil && x.Sourceapiassociationstatus != nil {
+		return *x.Sourceapiassociationstatus
 	}
 	return SourceApiAssociationStatus_SOURCE_API_ASSOCIATION_STATUS_MERGE_SUCCESS
 }
@@ -12169,7 +12169,7 @@ func (x *SourceApiAssociation) GetSourceapiid() string {
 
 type SourceApiAssociationConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Mergetype     MergeType              `protobuf:"varint,189766368,opt,name=mergetype,proto3,enum=appsync.MergeType" json:"mergetype,omitempty"`
+	Mergetype     *MergeType             `protobuf:"varint,189766368,opt,name=mergetype,proto3,enum=appsync.MergeType,oneof" json:"mergetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12205,8 +12205,8 @@ func (*SourceApiAssociationConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *SourceApiAssociationConfig) GetMergetype() MergeType {
-	if x != nil {
-		return x.Mergetype
+	if x != nil && x.Mergetype != nil {
+		return *x.Mergetype
 	}
 	return MergeType_MERGE_TYPE_AUTO_MERGE
 }
@@ -12348,10 +12348,10 @@ func (x *StartDataSourceIntrospectionRequest) GetRdsdataapiconfig() *RdsDataApiC
 }
 
 type StartDataSourceIntrospectionResponse struct {
-	state                     protoimpl.MessageState        `protogen:"open.v1"`
-	Introspectionid           *string                       `protobuf:"bytes,284517058,opt,name=introspectionid,proto3,oneof" json:"introspectionid,omitempty"`
-	Introspectionstatus       DataSourceIntrospectionStatus `protobuf:"varint,29503511,opt,name=introspectionstatus,proto3,enum=appsync.DataSourceIntrospectionStatus" json:"introspectionstatus,omitempty"`
-	Introspectionstatusdetail *string                       `protobuf:"bytes,445981432,opt,name=introspectionstatusdetail,proto3,oneof" json:"introspectionstatusdetail,omitempty"`
+	state                     protoimpl.MessageState         `protogen:"open.v1"`
+	Introspectionid           *string                        `protobuf:"bytes,284517058,opt,name=introspectionid,proto3,oneof" json:"introspectionid,omitempty"`
+	Introspectionstatus       *DataSourceIntrospectionStatus `protobuf:"varint,29503511,opt,name=introspectionstatus,proto3,enum=appsync.DataSourceIntrospectionStatus,oneof" json:"introspectionstatus,omitempty"`
+	Introspectionstatusdetail *string                        `protobuf:"bytes,445981432,opt,name=introspectionstatusdetail,proto3,oneof" json:"introspectionstatusdetail,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -12394,8 +12394,8 @@ func (x *StartDataSourceIntrospectionResponse) GetIntrospectionid() string {
 }
 
 func (x *StartDataSourceIntrospectionResponse) GetIntrospectionstatus() DataSourceIntrospectionStatus {
-	if x != nil {
-		return x.Introspectionstatus
+	if x != nil && x.Introspectionstatus != nil {
+		return *x.Introspectionstatus
 	}
 	return DataSourceIntrospectionStatus_DATA_SOURCE_INTROSPECTION_STATUS_PROCESSING
 }
@@ -12461,7 +12461,7 @@ func (x *StartSchemaCreationRequest) GetDefinition() []byte {
 
 type StartSchemaCreationResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        SchemaStatus           `protobuf:"varint,441153520,opt,name=status,proto3,enum=appsync.SchemaStatus" json:"status,omitempty"`
+	Status        *SchemaStatus          `protobuf:"varint,441153520,opt,name=status,proto3,enum=appsync.SchemaStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12497,8 +12497,8 @@ func (*StartSchemaCreationResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartSchemaCreationResponse) GetStatus() SchemaStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SchemaStatus_SCHEMA_STATUS_ACTIVE
 }
@@ -12556,8 +12556,8 @@ func (x *StartSchemaMergeRequest) GetMergedapiidentifier() string {
 }
 
 type StartSchemaMergeResponse struct {
-	state                      protoimpl.MessageState     `protogen:"open.v1"`
-	Sourceapiassociationstatus SourceApiAssociationStatus `protobuf:"varint,218602082,opt,name=sourceapiassociationstatus,proto3,enum=appsync.SourceApiAssociationStatus" json:"sourceapiassociationstatus,omitempty"`
+	state                      protoimpl.MessageState      `protogen:"open.v1"`
+	Sourceapiassociationstatus *SourceApiAssociationStatus `protobuf:"varint,218602082,opt,name=sourceapiassociationstatus,proto3,enum=appsync.SourceApiAssociationStatus,oneof" json:"sourceapiassociationstatus,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -12593,16 +12593,16 @@ func (*StartSchemaMergeResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartSchemaMergeResponse) GetSourceapiassociationstatus() SourceApiAssociationStatus {
-	if x != nil {
-		return x.Sourceapiassociationstatus
+	if x != nil && x.Sourceapiassociationstatus != nil {
+		return *x.Sourceapiassociationstatus
 	}
 	return SourceApiAssociationStatus_SOURCE_API_ASSOCIATION_STATUS_MERGE_SUCCESS
 }
 
 type SyncConfig struct {
 	state                       protoimpl.MessageState       `protogen:"open.v1"`
-	Conflictdetection           ConflictDetectionType        `protobuf:"varint,39445935,opt,name=conflictdetection,proto3,enum=appsync.ConflictDetectionType" json:"conflictdetection,omitempty"`
-	Conflicthandler             ConflictHandlerType          `protobuf:"varint,461006026,opt,name=conflicthandler,proto3,enum=appsync.ConflictHandlerType" json:"conflicthandler,omitempty"`
+	Conflictdetection           *ConflictDetectionType       `protobuf:"varint,39445935,opt,name=conflictdetection,proto3,enum=appsync.ConflictDetectionType,oneof" json:"conflictdetection,omitempty"`
+	Conflicthandler             *ConflictHandlerType         `protobuf:"varint,461006026,opt,name=conflicthandler,proto3,enum=appsync.ConflictHandlerType,oneof" json:"conflicthandler,omitempty"`
 	Lambdaconflicthandlerconfig *LambdaConflictHandlerConfig `protobuf:"bytes,129536083,opt,name=lambdaconflicthandlerconfig,proto3" json:"lambdaconflicthandlerconfig,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -12639,15 +12639,15 @@ func (*SyncConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *SyncConfig) GetConflictdetection() ConflictDetectionType {
-	if x != nil {
-		return x.Conflictdetection
+	if x != nil && x.Conflictdetection != nil {
+		return *x.Conflictdetection
 	}
 	return ConflictDetectionType_CONFLICT_DETECTION_TYPE_NONE
 }
 
 func (x *SyncConfig) GetConflicthandler() ConflictHandlerType {
-	if x != nil {
-		return x.Conflicthandler
+	if x != nil && x.Conflicthandler != nil {
+		return *x.Conflicthandler
 	}
 	return ConflictHandlerType_CONFLICT_HANDLER_TYPE_AUTOMERGE
 }
@@ -12752,7 +12752,7 @@ type Type struct {
 	Arn           *string                `protobuf:"bytes,359604989,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
 	Definition    *string                `protobuf:"bytes,68443297,opt,name=definition,proto3,oneof" json:"definition,omitempty"`
 	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Format        TypeDefinitionFormat   `protobuf:"varint,429753683,opt,name=format,proto3,enum=appsync.TypeDefinitionFormat" json:"format,omitempty"`
+	Format        *TypeDefinitionFormat  `protobuf:"varint,429753683,opt,name=format,proto3,enum=appsync.TypeDefinitionFormat,oneof" json:"format,omitempty"`
 	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12810,8 +12810,8 @@ func (x *Type) GetDescription() string {
 }
 
 func (x *Type) GetFormat() TypeDefinitionFormat {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return TypeDefinitionFormat_TYPE_DEFINITION_FORMAT_JSON
 }
@@ -12956,12 +12956,12 @@ func (*UntagResourceResponse) Descriptor() ([]byte, []int) {
 }
 
 type UpdateApiCacheRequest struct {
-	state               protoimpl.MessageState   `protogen:"open.v1"`
-	Apicachingbehavior  ApiCachingBehavior       `protobuf:"varint,489318031,opt,name=apicachingbehavior,proto3,enum=appsync.ApiCachingBehavior" json:"apicachingbehavior,omitempty"`
-	Apiid               string                   `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Healthmetricsconfig CacheHealthMetricsConfig `protobuf:"varint,48720399,opt,name=healthmetricsconfig,proto3,enum=appsync.CacheHealthMetricsConfig" json:"healthmetricsconfig,omitempty"`
-	Ttl                 int64                    `protobuf:"varint,489374300,opt,name=ttl,proto3" json:"ttl,omitempty"`
-	Type                ApiCacheType             `protobuf:"varint,287830350,opt,name=type,proto3,enum=appsync.ApiCacheType" json:"type,omitempty"`
+	state               protoimpl.MessageState    `protogen:"open.v1"`
+	Apicachingbehavior  ApiCachingBehavior        `protobuf:"varint,489318031,opt,name=apicachingbehavior,proto3,enum=appsync.ApiCachingBehavior" json:"apicachingbehavior,omitempty"`
+	Apiid               string                    `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
+	Healthmetricsconfig *CacheHealthMetricsConfig `protobuf:"varint,48720399,opt,name=healthmetricsconfig,proto3,enum=appsync.CacheHealthMetricsConfig,oneof" json:"healthmetricsconfig,omitempty"`
+	Ttl                 int64                     `protobuf:"varint,489374300,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Type                ApiCacheType              `protobuf:"varint,287830350,opt,name=type,proto3,enum=appsync.ApiCacheType" json:"type,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -13011,8 +13011,8 @@ func (x *UpdateApiCacheRequest) GetApiid() string {
 }
 
 func (x *UpdateApiCacheRequest) GetHealthmetricsconfig() CacheHealthMetricsConfig {
-	if x != nil {
-		return x.Healthmetricsconfig
+	if x != nil && x.Healthmetricsconfig != nil {
+		return *x.Healthmetricsconfig
 	}
 	return CacheHealthMetricsConfig_CACHE_HEALTH_METRICS_CONFIG_DISABLED
 }
@@ -13436,7 +13436,7 @@ type UpdateDataSourceRequest struct {
 	Eventbridgeconfig        *EventBridgeDataSourceConfig        `protobuf:"bytes,139653561,opt,name=eventbridgeconfig,proto3" json:"eventbridgeconfig,omitempty"`
 	Httpconfig               *HttpDataSourceConfig               `protobuf:"bytes,105521544,opt,name=httpconfig,proto3" json:"httpconfig,omitempty"`
 	Lambdaconfig             *LambdaDataSourceConfig             `protobuf:"bytes,505299205,opt,name=lambdaconfig,proto3" json:"lambdaconfig,omitempty"`
-	Metricsconfig            DataSourceLevelMetricsConfig        `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.DataSourceLevelMetricsConfig" json:"metricsconfig,omitempty"`
+	Metricsconfig            *DataSourceLevelMetricsConfig       `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.DataSourceLevelMetricsConfig,oneof" json:"metricsconfig,omitempty"`
 	Name                     string                              `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Opensearchserviceconfig  *OpenSearchServiceDataSourceConfig  `protobuf:"bytes,306254355,opt,name=opensearchserviceconfig,proto3" json:"opensearchserviceconfig,omitempty"`
 	Relationaldatabaseconfig *RelationalDatabaseDataSourceConfig `protobuf:"bytes,33295308,opt,name=relationaldatabaseconfig,proto3" json:"relationaldatabaseconfig,omitempty"`
@@ -13526,8 +13526,8 @@ func (x *UpdateDataSourceRequest) GetLambdaconfig() *LambdaDataSourceConfig {
 }
 
 func (x *UpdateDataSourceRequest) GetMetricsconfig() DataSourceLevelMetricsConfig {
-	if x != nil {
-		return x.Metricsconfig
+	if x != nil && x.Metricsconfig != nil {
+		return *x.Metricsconfig
 	}
 	return DataSourceLevelMetricsConfig_DATA_SOURCE_LEVEL_METRICS_CONFIG_DISABLED
 }
@@ -13889,7 +13889,7 @@ type UpdateGraphqlApiRequest struct {
 	Apiid                             string                              `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
 	Authenticationtype                AuthenticationType                  `protobuf:"varint,42854794,opt,name=authenticationtype,proto3,enum=appsync.AuthenticationType" json:"authenticationtype,omitempty"`
 	Enhancedmetricsconfig             *EnhancedMetricsConfig              `protobuf:"bytes,97907511,opt,name=enhancedmetricsconfig,proto3" json:"enhancedmetricsconfig,omitempty"`
-	Introspectionconfig               GraphQLApiIntrospectionConfig       `protobuf:"varint,295245787,opt,name=introspectionconfig,proto3,enum=appsync.GraphQLApiIntrospectionConfig" json:"introspectionconfig,omitempty"`
+	Introspectionconfig               *GraphQLApiIntrospectionConfig      `protobuf:"varint,295245787,opt,name=introspectionconfig,proto3,enum=appsync.GraphQLApiIntrospectionConfig,oneof" json:"introspectionconfig,omitempty"`
 	Lambdaauthorizerconfig            *LambdaAuthorizerConfig             `protobuf:"bytes,101350024,opt,name=lambdaauthorizerconfig,proto3" json:"lambdaauthorizerconfig,omitempty"`
 	Logconfig                         *LogConfig                          `protobuf:"bytes,24002932,opt,name=logconfig,proto3" json:"logconfig,omitempty"`
 	Mergedapiexecutionrolearn         *string                             `protobuf:"bytes,216513787,opt,name=mergedapiexecutionrolearn,proto3,oneof" json:"mergedapiexecutionrolearn,omitempty"`
@@ -13963,8 +13963,8 @@ func (x *UpdateGraphqlApiRequest) GetEnhancedmetricsconfig() *EnhancedMetricsCon
 }
 
 func (x *UpdateGraphqlApiRequest) GetIntrospectionconfig() GraphQLApiIntrospectionConfig {
-	if x != nil {
-		return x.Introspectionconfig
+	if x != nil && x.Introspectionconfig != nil {
+		return *x.Introspectionconfig
 	}
 	return GraphQLApiIntrospectionConfig_GRAPH_Q_L_API_INTROSPECTION_CONFIG_DISABLED
 }
@@ -14084,21 +14084,21 @@ func (x *UpdateGraphqlApiResponse) GetGraphqlapi() *GraphqlApi {
 }
 
 type UpdateResolverRequest struct {
-	state                   protoimpl.MessageState     `protogen:"open.v1"`
-	Apiid                   string                     `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Cachingconfig           *CachingConfig             `protobuf:"bytes,49322281,opt,name=cachingconfig,proto3" json:"cachingconfig,omitempty"`
-	Code                    *string                    `protobuf:"bytes,422669557,opt,name=code,proto3,oneof" json:"code,omitempty"`
-	Datasourcename          *string                    `protobuf:"bytes,231923996,opt,name=datasourcename,proto3,oneof" json:"datasourcename,omitempty"`
-	Fieldname               string                     `protobuf:"bytes,487483205,opt,name=fieldname,proto3" json:"fieldname,omitempty"`
-	Kind                    ResolverKind               `protobuf:"varint,420733508,opt,name=kind,proto3,enum=appsync.ResolverKind" json:"kind,omitempty"`
-	Maxbatchsize            *int32                     `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
-	Metricsconfig           ResolverLevelMetricsConfig `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.ResolverLevelMetricsConfig" json:"metricsconfig,omitempty"`
-	Pipelineconfig          *PipelineConfig            `protobuf:"bytes,128197026,opt,name=pipelineconfig,proto3" json:"pipelineconfig,omitempty"`
-	Requestmappingtemplate  *string                    `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3,oneof" json:"requestmappingtemplate,omitempty"`
-	Responsemappingtemplate *string                    `protobuf:"bytes,393186939,opt,name=responsemappingtemplate,proto3,oneof" json:"responsemappingtemplate,omitempty"`
-	Runtime                 *AppSyncRuntime            `protobuf:"bytes,79706412,opt,name=runtime,proto3" json:"runtime,omitempty"`
-	Syncconfig              *SyncConfig                `protobuf:"bytes,478900021,opt,name=syncconfig,proto3" json:"syncconfig,omitempty"`
-	Typename                string                     `protobuf:"bytes,475024751,opt,name=typename,proto3" json:"typename,omitempty"`
+	state                   protoimpl.MessageState      `protogen:"open.v1"`
+	Apiid                   string                      `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
+	Cachingconfig           *CachingConfig              `protobuf:"bytes,49322281,opt,name=cachingconfig,proto3" json:"cachingconfig,omitempty"`
+	Code                    *string                     `protobuf:"bytes,422669557,opt,name=code,proto3,oneof" json:"code,omitempty"`
+	Datasourcename          *string                     `protobuf:"bytes,231923996,opt,name=datasourcename,proto3,oneof" json:"datasourcename,omitempty"`
+	Fieldname               string                      `protobuf:"bytes,487483205,opt,name=fieldname,proto3" json:"fieldname,omitempty"`
+	Kind                    *ResolverKind               `protobuf:"varint,420733508,opt,name=kind,proto3,enum=appsync.ResolverKind,oneof" json:"kind,omitempty"`
+	Maxbatchsize            *int32                      `protobuf:"varint,45298679,opt,name=maxbatchsize,proto3,oneof" json:"maxbatchsize,omitempty"`
+	Metricsconfig           *ResolverLevelMetricsConfig `protobuf:"varint,278835313,opt,name=metricsconfig,proto3,enum=appsync.ResolverLevelMetricsConfig,oneof" json:"metricsconfig,omitempty"`
+	Pipelineconfig          *PipelineConfig             `protobuf:"bytes,128197026,opt,name=pipelineconfig,proto3" json:"pipelineconfig,omitempty"`
+	Requestmappingtemplate  *string                     `protobuf:"bytes,451326335,opt,name=requestmappingtemplate,proto3,oneof" json:"requestmappingtemplate,omitempty"`
+	Responsemappingtemplate *string                     `protobuf:"bytes,393186939,opt,name=responsemappingtemplate,proto3,oneof" json:"responsemappingtemplate,omitempty"`
+	Runtime                 *AppSyncRuntime             `protobuf:"bytes,79706412,opt,name=runtime,proto3" json:"runtime,omitempty"`
+	Syncconfig              *SyncConfig                 `protobuf:"bytes,478900021,opt,name=syncconfig,proto3" json:"syncconfig,omitempty"`
+	Typename                string                      `protobuf:"bytes,475024751,opt,name=typename,proto3" json:"typename,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -14169,8 +14169,8 @@ func (x *UpdateResolverRequest) GetFieldname() string {
 }
 
 func (x *UpdateResolverRequest) GetKind() ResolverKind {
-	if x != nil {
-		return x.Kind
+	if x != nil && x.Kind != nil {
+		return *x.Kind
 	}
 	return ResolverKind_RESOLVER_KIND_PIPELINE
 }
@@ -14183,8 +14183,8 @@ func (x *UpdateResolverRequest) GetMaxbatchsize() int32 {
 }
 
 func (x *UpdateResolverRequest) GetMetricsconfig() ResolverLevelMetricsConfig {
-	if x != nil {
-		return x.Metricsconfig
+	if x != nil && x.Metricsconfig != nil {
+		return *x.Metricsconfig
 	}
 	return ResolverLevelMetricsConfig_RESOLVER_LEVEL_METRICS_CONFIG_DISABLED
 }
@@ -14575,12 +14575,13 @@ const file_appsync_proto_rawDesc = "" +
 	"\x15AccessDeniedException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xee\x02\n" +
-	" AdditionalAuthenticationProvider\x12N\n" +
-	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x1b.appsync.AuthenticationTypeR\x12authenticationtype\x12Z\n" +
+	"\b_message\"\x8a\x03\n" +
+	" AdditionalAuthenticationProvider\x12S\n" +
+	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x1b.appsync.AuthenticationTypeH\x00R\x12authenticationtype\x88\x01\x01\x12Z\n" +
 	"\x16lambdaauthorizerconfig\x18\x88\xf5\xa90 \x01(\v2\x1f.appsync.LambdaAuthorizerConfigR\x16lambdaauthorizerconfig\x12R\n" +
 	"\x13openidconnectconfig\x18\x8d\x89\xbc\xaa\x01 \x01(\v2\x1c.appsync.OpenIDConnectConfigR\x13openidconnectconfig\x12J\n" +
-	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x1e.appsync.CognitoUserPoolConfigR\x0euserpoolconfig\"\xec\x04\n" +
+	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x1e.appsync.CognitoUserPoolConfigR\x0euserpoolconfigB\x15\n" +
+	"\x13_authenticationtype\"\xec\x04\n" +
 	"\x03Api\x12\x1e\n" +
 	"\x06apiarn\x18랼\x05 \x01(\tH\x00R\x06apiarn\x88\x01\x01\x12\x1c\n" +
 	"\x05apiid\x18뜈6 \x01(\tH\x01R\x05apiid\x88\x01\x01\x12!\n" +
@@ -14605,28 +14606,33 @@ const file_appsync_proto_rawDesc = "" +
 	"\x05_nameB\x0f\n" +
 	"\r_ownercontactB\x0f\n" +
 	"\r_wafwebaclarnB\x0e\n" +
-	"\f_xrayenabled\"\x87\x02\n" +
+	"\f_xrayenabled\"\xa2\x02\n" +
 	"\x0eApiAssociation\x12\x1c\n" +
-	"\x05apiid\x18뜈6 \x01(\tH\x00R\x05apiid\x88\x01\x01\x12L\n" +
-	"\x11associationstatus\x18\xa7\xb7\x8c\xa7\x01 \x01(\x0e2\x1a.appsync.AssociationStatusR\x11associationstatus\x122\n" +
-	"\x10deploymentdetail\x18\xc0\xbd\xa3! \x01(\tH\x01R\x10deploymentdetail\x88\x01\x01\x12'\n" +
+	"\x05apiid\x18뜈6 \x01(\tH\x00R\x05apiid\x88\x01\x01\x12Q\n" +
+	"\x11associationstatus\x18\xa7\xb7\x8c\xa7\x01 \x01(\x0e2\x1a.appsync.AssociationStatusH\x01R\x11associationstatus\x88\x01\x01\x122\n" +
+	"\x10deploymentdetail\x18\xc0\xbd\xa3! \x01(\tH\x02R\x10deploymentdetail\x88\x01\x01\x12'\n" +
 	"\n" +
-	"domainname\x18\x8bӏ\xba\x01 \x01(\tH\x02R\n" +
+	"domainname\x18\x8bӏ\xba\x01 \x01(\tH\x03R\n" +
 	"domainname\x88\x01\x01B\b\n" +
-	"\x06_apiidB\x13\n" +
+	"\x06_apiidB\x14\n" +
+	"\x12_associationstatusB\x13\n" +
 	"\x11_deploymentdetailB\r\n" +
-	"\v_domainname\"\xfa\x03\n" +
-	"\bApiCache\x12O\n" +
-	"\x12apicachingbehavior\x18\x8fͩ\xe9\x01 \x01(\x0e2\x1b.appsync.ApiCachingBehaviorR\x12apicachingbehavior\x12A\n" +
-	"\x17atrestencryptionenabled\x18\xa1\xe8\xe8\xd8\x01 \x01(\bH\x00R\x17atrestencryptionenabled\x88\x01\x01\x12V\n" +
-	"\x13healthmetricsconfig\x18\x8fԝ\x17 \x01(\x0e2!.appsync.CacheHealthMetricsConfigR\x13healthmetricsconfig\x123\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.appsync.ApiCacheStatusR\x06status\x12B\n" +
-	"\x18transitencryptionenabled\x18\xff\xb8\xcfO \x01(\bH\x01R\x18transitencryptionenabled\x88\x01\x01\x12\x19\n" +
-	"\x03ttl\x18܄\xad\xe9\x01 \x01(\x03H\x02R\x03ttl\x88\x01\x01\x12-\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.appsync.ApiCacheTypeR\x04typeB\x1a\n" +
-	"\x18_atrestencryptionenabledB\x1b\n" +
+	"\v_domainname\"\xd1\x04\n" +
+	"\bApiCache\x12T\n" +
+	"\x12apicachingbehavior\x18\x8fͩ\xe9\x01 \x01(\x0e2\x1b.appsync.ApiCachingBehaviorH\x00R\x12apicachingbehavior\x88\x01\x01\x12A\n" +
+	"\x17atrestencryptionenabled\x18\xa1\xe8\xe8\xd8\x01 \x01(\bH\x01R\x17atrestencryptionenabled\x88\x01\x01\x12[\n" +
+	"\x13healthmetricsconfig\x18\x8fԝ\x17 \x01(\x0e2!.appsync.CacheHealthMetricsConfigH\x02R\x13healthmetricsconfig\x88\x01\x01\x128\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.appsync.ApiCacheStatusH\x03R\x06status\x88\x01\x01\x12B\n" +
+	"\x18transitencryptionenabled\x18\xff\xb8\xcfO \x01(\bH\x04R\x18transitencryptionenabled\x88\x01\x01\x12\x19\n" +
+	"\x03ttl\x18܄\xad\xe9\x01 \x01(\x03H\x05R\x03ttl\x88\x01\x01\x122\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.appsync.ApiCacheTypeH\x06R\x04type\x88\x01\x01B\x15\n" +
+	"\x13_apicachingbehaviorB\x1a\n" +
+	"\x18_atrestencryptionenabledB\x16\n" +
+	"\x14_healthmetricsconfigB\t\n" +
+	"\a_statusB\x1b\n" +
 	"\x19_transitencryptionenabledB\x06\n" +
-	"\x04_ttl\"\xc0\x01\n" +
+	"\x04_ttlB\a\n" +
+	"\x05_type\"\xc0\x01\n" +
 	"\x06ApiKey\x12 \n" +
 	"\adeletes\x18\xbc\xcb\xc5~ \x01(\x03H\x00R\adeletes\x88\x01\x01\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12!\n" +
@@ -14694,13 +14700,14 @@ const file_appsync_proto_rawDesc = "" +
 	"\x10BadRequestDetail\x125\n" +
 	"\n" +
 	"codeerrors\x18\x84\x9a\x82\x15 \x03(\v2\x12.appsync.CodeErrorR\n" +
-	"codeerrors\"\xb0\x01\n" +
+	"codeerrors\"\xc0\x01\n" +
 	"\x13BadRequestException\x124\n" +
 	"\x06detail\x18\x95\xb1\xd1\x01 \x01(\v2\x19.appsync.BadRequestDetailR\x06detail\x12 \n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x125\n" +
-	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x19.appsync.BadRequestReasonR\x06reasonB\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x12:\n" +
+	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x19.appsync.BadRequestReasonH\x01R\x06reason\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"J\n" +
+	"\b_messageB\t\n" +
+	"\a_reason\"J\n" +
 	"\rCachingConfig\x12#\n" +
 	"\vcachingkeys\x18\xa3\xa8\x9c\x12 \x03(\tR\vcachingkeys\x12\x14\n" +
 	"\x03ttl\x18܄\xad\xe9\x01 \x01(\x03R\x03ttl\"\xa0\x05\n" +
@@ -14760,16 +14767,17 @@ const file_appsync_proto_rawDesc = "" +
 	"\x11ConflictException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xde\x03\n" +
+	"\b_message\"\xfb\x03\n" +
 	"\x15CreateApiCacheRequest\x12O\n" +
 	"\x12apicachingbehavior\x18\x8fͩ\xe9\x01 \x01(\x0e2\x1b.appsync.ApiCachingBehaviorR\x12apicachingbehavior\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12A\n" +
-	"\x17atrestencryptionenabled\x18\xa1\xe8\xe8\xd8\x01 \x01(\bH\x00R\x17atrestencryptionenabled\x88\x01\x01\x12V\n" +
-	"\x13healthmetricsconfig\x18\x8fԝ\x17 \x01(\x0e2!.appsync.CacheHealthMetricsConfigR\x13healthmetricsconfig\x12B\n" +
-	"\x18transitencryptionenabled\x18\xff\xb8\xcfO \x01(\bH\x01R\x18transitencryptionenabled\x88\x01\x01\x12\x14\n" +
+	"\x17atrestencryptionenabled\x18\xa1\xe8\xe8\xd8\x01 \x01(\bH\x00R\x17atrestencryptionenabled\x88\x01\x01\x12[\n" +
+	"\x13healthmetricsconfig\x18\x8fԝ\x17 \x01(\x0e2!.appsync.CacheHealthMetricsConfigH\x01R\x13healthmetricsconfig\x88\x01\x01\x12B\n" +
+	"\x18transitencryptionenabled\x18\xff\xb8\xcfO \x01(\bH\x02R\x18transitencryptionenabled\x88\x01\x01\x12\x14\n" +
 	"\x03ttl\x18܄\xad\xe9\x01 \x01(\x03R\x03ttl\x12-\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.appsync.ApiCacheTypeR\x04typeB\x1a\n" +
-	"\x18_atrestencryptionenabledB\x1b\n" +
+	"\x18_atrestencryptionenabledB\x16\n" +
+	"\x14_healthmetricsconfigB\x1b\n" +
 	"\x19_transitencryptionenabled\"K\n" +
 	"\x16CreateApiCacheResponse\x121\n" +
 	"\bapicache\x18\xfc\xba\x98\xa7\x01 \x01(\v2\x11.appsync.ApiCacheR\bapicache\"\x98\x01\n" +
@@ -14806,7 +14814,7 @@ const file_appsync_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
 	"\r_codehandlers\"j\n" +
 	"\x1eCreateChannelNamespaceResponse\x12H\n" +
-	"\x10channelnamespace\x18\x8c\xeb\x81\x04 \x01(\v2\x19.appsync.ChannelNamespaceR\x10channelnamespace\"\xad\a\n" +
+	"\x10channelnamespace\x18\x8c\xeb\x81\x04 \x01(\v2\x19.appsync.ChannelNamespaceR\x10channelnamespace\"\xc4\a\n" +
 	"\x17CreateDataSourceRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12L\n" +
@@ -14816,14 +14824,15 @@ const file_appsync_proto_rawDesc = "" +
 	"\n" +
 	"httpconfig\x18\x88è2 \x01(\v2\x1d.appsync.HttpDataSourceConfigR\n" +
 	"httpconfig\x12G\n" +
-	"\flambdaconfig\x18\x85\x82\xf9\xf0\x01 \x01(\v2\x1f.appsync.LambdaDataSourceConfigR\flambdaconfig\x12O\n" +
-	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2%.appsync.DataSourceLevelMetricsConfigR\rmetricsconfig\x12\x15\n" +
+	"\flambdaconfig\x18\x85\x82\xf9\xf0\x01 \x01(\v2\x1f.appsync.LambdaDataSourceConfigR\flambdaconfig\x12T\n" +
+	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2%.appsync.DataSourceLevelMetricsConfigH\x01R\rmetricsconfig\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12h\n" +
 	"\x17opensearchserviceconfig\x18\x93\xa4\x84\x92\x01 \x01(\v2*.appsync.OpenSearchServiceDataSourceConfigR\x17opensearchserviceconfig\x12j\n" +
 	"\x18relationaldatabaseconfig\x18̗\xf0\x0f \x01(\v2+.appsync.RelationalDatabaseDataSourceConfigR\x18relationaldatabaseconfig\x12.\n" +
-	"\x0eservicerolearn\x18\xe4\x98\xc9: \x01(\tH\x01R\x0eservicerolearn\x88\x01\x01\x12/\n" +
+	"\x0eservicerolearn\x18\xe4\x98\xc9: \x01(\tH\x02R\x0eservicerolearn\x88\x01\x01\x12/\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x17.appsync.DataSourceTypeR\x04typeB\x0e\n" +
-	"\f_descriptionB\x11\n" +
+	"\f_descriptionB\x10\n" +
+	"\x0e_metricsconfigB\x11\n" +
 	"\x0f_servicerolearn\"S\n" +
 	"\x18CreateDataSourceResponse\x127\n" +
 	"\n" +
@@ -14863,60 +14872,65 @@ const file_appsync_proto_rawDesc = "" +
 	"\x17_requestmappingtemplateB\x1a\n" +
 	"\x18_responsemappingtemplate\"q\n" +
 	"\x16CreateFunctionResponse\x12W\n" +
-	"\x15functionconfiguration\x18\x96\xdc\xdbo \x01(\v2\x1e.appsync.FunctionConfigurationR\x15functionconfiguration\"\xc4\n" +
-	"\n" +
+	"\x15functionconfiguration\x18\x96\xdc\xdbo \x01(\v2\x1e.appsync.FunctionConfigurationR\x15functionconfiguration\"\x86\v\n" +
 	"\x17CreateGraphqlApiRequest\x12z\n" +
-	"!additionalauthenticationproviders\x18\x8b\xea\x99L \x03(\v2).appsync.AdditionalAuthenticationProviderR!additionalauthenticationproviders\x124\n" +
-	"\aapitype\x18\x80\xcd\xce# \x01(\x0e2\x17.appsync.GraphQLApiTypeR\aapitype\x12N\n" +
+	"!additionalauthenticationproviders\x18\x8b\xea\x99L \x03(\v2).appsync.AdditionalAuthenticationProviderR!additionalauthenticationproviders\x129\n" +
+	"\aapitype\x18\x80\xcd\xce# \x01(\x0e2\x17.appsync.GraphQLApiTypeH\x00R\aapitype\x88\x01\x01\x12N\n" +
 	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x1b.appsync.AuthenticationTypeR\x12authenticationtype\x12W\n" +
-	"\x15enhancedmetricsconfig\x18\xb7\xe6\xd7. \x01(\v2\x1e.appsync.EnhancedMetricsConfigR\x15enhancedmetricsconfig\x12\\\n" +
-	"\x13introspectionconfig\x18ۯ\xe4\x8c\x01 \x01(\x0e2&.appsync.GraphQLApiIntrospectionConfigR\x13introspectionconfig\x12Z\n" +
+	"\x15enhancedmetricsconfig\x18\xb7\xe6\xd7. \x01(\v2\x1e.appsync.EnhancedMetricsConfigR\x15enhancedmetricsconfig\x12a\n" +
+	"\x13introspectionconfig\x18ۯ\xe4\x8c\x01 \x01(\x0e2&.appsync.GraphQLApiIntrospectionConfigH\x01R\x13introspectionconfig\x88\x01\x01\x12Z\n" +
 	"\x16lambdaauthorizerconfig\x18\x88\xf5\xa90 \x01(\v2\x1f.appsync.LambdaAuthorizerConfigR\x16lambdaauthorizerconfig\x123\n" +
 	"\tlogconfig\x18\xf4\x82\xb9\v \x01(\v2\x12.appsync.LogConfigR\tlogconfig\x12D\n" +
-	"\x19mergedapiexecutionrolearn\x18\xfb\xf9\x9eg \x01(\tH\x00R\x19mergedapiexecutionrolearn\x88\x01\x01\x12\x15\n" +
+	"\x19mergedapiexecutionrolearn\x18\xfb\xf9\x9eg \x01(\tH\x02R\x19mergedapiexecutionrolearn\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12R\n" +
 	"\x13openidconnectconfig\x18\x8d\x89\xbc\xaa\x01 \x01(\v2\x1c.appsync.OpenIDConnectConfigR\x13openidconnectconfig\x12*\n" +
-	"\fownercontact\x18ɏ\x92\b \x01(\tH\x01R\fownercontact\x88\x01\x01\x120\n" +
-	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05H\x02R\x0fquerydepthlimit\x88\x01\x01\x126\n" +
-	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05H\x03R\x12resolvercountlimit\x88\x01\x01\x12B\n" +
+	"\fownercontact\x18ɏ\x92\b \x01(\tH\x03R\fownercontact\x88\x01\x01\x120\n" +
+	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05H\x04R\x0fquerydepthlimit\x88\x01\x01\x126\n" +
+	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05H\x05R\x12resolvercountlimit\x88\x01\x01\x12B\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2*.appsync.CreateGraphqlApiRequest.TagsEntryR\x04tags\x12C\n" +
-	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x17.appsync.UserPoolConfigR\x0euserpoolconfig\x12A\n" +
+	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x17.appsync.UserPoolConfigR\x0euserpoolconfig\x12F\n" +
 	"\n" +
-	"visibility\x18\xe6\xeb\xdf\xf9\x01 \x01(\x0e2\x1d.appsync.GraphQLApiVisibilityR\n" +
-	"visibility\x12)\n" +
-	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\x04R\vxrayenabled\x88\x01\x01\x1a7\n" +
+	"visibility\x18\xe6\xeb\xdf\xf9\x01 \x01(\x0e2\x1d.appsync.GraphQLApiVisibilityH\x06R\n" +
+	"visibility\x88\x01\x01\x12)\n" +
+	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\aR\vxrayenabled\x88\x01\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x1c\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
+	"\n" +
+	"\b_apitypeB\x16\n" +
+	"\x14_introspectionconfigB\x1c\n" +
 	"\x1a_mergedapiexecutionrolearnB\x0f\n" +
 	"\r_ownercontactB\x12\n" +
 	"\x10_querydepthlimitB\x15\n" +
-	"\x13_resolvercountlimitB\x0e\n" +
+	"\x13_resolvercountlimitB\r\n" +
+	"\v_visibilityB\x0e\n" +
 	"\f_xrayenabled\"S\n" +
 	"\x18CreateGraphqlApiResponse\x127\n" +
 	"\n" +
 	"graphqlapi\x18\x8fգ\x94\x01 \x01(\v2\x13.appsync.GraphqlApiR\n" +
-	"graphqlapi\"\xc5\x06\n" +
+	"graphqlapi\"\xea\x06\n" +
 	"\x15CreateResolverRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12?\n" +
 	"\rcachingconfig\x18\xa9\xb2\xc2\x17 \x01(\v2\x16.appsync.CachingConfigR\rcachingconfig\x12\x1b\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tH\x00R\x04code\x88\x01\x01\x12.\n" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tH\x01R\x0edatasourcename\x88\x01\x01\x12 \n" +
-	"\tfieldname\x18\xc5ι\xe8\x01 \x01(\tR\tfieldname\x12-\n" +
-	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindR\x04kind\x12*\n" +
-	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x02R\fmaxbatchsize\x88\x01\x01\x12M\n" +
-	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2#.appsync.ResolverLevelMetricsConfigR\rmetricsconfig\x12B\n" +
+	"\tfieldname\x18\xc5ι\xe8\x01 \x01(\tR\tfieldname\x122\n" +
+	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindH\x02R\x04kind\x88\x01\x01\x12*\n" +
+	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x03R\fmaxbatchsize\x88\x01\x01\x12R\n" +
+	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2#.appsync.ResolverLevelMetricsConfigH\x04R\rmetricsconfig\x88\x01\x01\x12B\n" +
 	"\x0epipelineconfig\x18\xa2Ð= \x01(\v2\x17.appsync.PipelineConfigR\x0epipelineconfig\x12?\n" +
-	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tH\x03R\x16requestmappingtemplate\x88\x01\x01\x12A\n" +
-	"\x17responsemappingtemplate\x18\xfb\x9c\xbe\xbb\x01 \x01(\tH\x04R\x17responsemappingtemplate\x88\x01\x01\x124\n" +
+	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tH\x05R\x16requestmappingtemplate\x88\x01\x01\x12A\n" +
+	"\x17responsemappingtemplate\x18\xfb\x9c\xbe\xbb\x01 \x01(\tH\x06R\x17responsemappingtemplate\x88\x01\x01\x124\n" +
 	"\aruntime\x18\xac\xf2\x80& \x01(\v2\x17.appsync.AppSyncRuntimeR\aruntime\x127\n" +
 	"\n" +
 	"syncconfig\x18\xb5ޭ\xe4\x01 \x01(\v2\x13.appsync.SyncConfigR\n" +
 	"syncconfig\x12\x1e\n" +
 	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypenameB\a\n" +
 	"\x05_codeB\x11\n" +
-	"\x0f_datasourcenameB\x0f\n" +
-	"\r_maxbatchsizeB\x19\n" +
+	"\x0f_datasourcenameB\a\n" +
+	"\x05_kindB\x0f\n" +
+	"\r_maxbatchsizeB\x10\n" +
+	"\x0e_metricsconfigB\x19\n" +
 	"\x17_requestmappingtemplateB\x1a\n" +
 	"\x18_responsemappingtemplate\"K\n" +
 	"\x16CreateResolverResponse\x121\n" +
@@ -14928,7 +14942,7 @@ const file_appsync_proto_rawDesc = "" +
 	"definition\x129\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1d.appsync.TypeDefinitionFormatR\x06format\";\n" +
 	"\x12CreateTypeResponse\x12%\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\v2\r.appsync.TypeR\x04type\"\xd6\a\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\v2\r.appsync.TypeR\x04type\"\xfb\a\n" +
 	"\n" +
 	"DataSource\x12-\n" +
 	"\rdatasourcearn\x18\xc0Ƿ\x8a\x01 \x01(\tH\x00R\rdatasourcearn\x88\x01\x01\x12)\n" +
@@ -14939,17 +14953,19 @@ const file_appsync_proto_rawDesc = "" +
 	"\n" +
 	"httpconfig\x18\x88è2 \x01(\v2\x1d.appsync.HttpDataSourceConfigR\n" +
 	"httpconfig\x12G\n" +
-	"\flambdaconfig\x18\x85\x82\xf9\xf0\x01 \x01(\v2\x1f.appsync.LambdaDataSourceConfigR\flambdaconfig\x12O\n" +
-	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2%.appsync.DataSourceLevelMetricsConfigR\rmetricsconfig\x12\x1a\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x02R\x04name\x88\x01\x01\x12h\n" +
+	"\flambdaconfig\x18\x85\x82\xf9\xf0\x01 \x01(\v2\x1f.appsync.LambdaDataSourceConfigR\flambdaconfig\x12T\n" +
+	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2%.appsync.DataSourceLevelMetricsConfigH\x02R\rmetricsconfig\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x03R\x04name\x88\x01\x01\x12h\n" +
 	"\x17opensearchserviceconfig\x18\x93\xa4\x84\x92\x01 \x01(\v2*.appsync.OpenSearchServiceDataSourceConfigR\x17opensearchserviceconfig\x12j\n" +
 	"\x18relationaldatabaseconfig\x18̗\xf0\x0f \x01(\v2+.appsync.RelationalDatabaseDataSourceConfigR\x18relationaldatabaseconfig\x12.\n" +
-	"\x0eservicerolearn\x18\xe4\x98\xc9: \x01(\tH\x03R\x0eservicerolearn\x88\x01\x01\x12/\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x17.appsync.DataSourceTypeR\x04typeB\x10\n" +
+	"\x0eservicerolearn\x18\xe4\x98\xc9: \x01(\tH\x04R\x0eservicerolearn\x88\x01\x01\x124\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x17.appsync.DataSourceTypeH\x05R\x04type\x88\x01\x01B\x10\n" +
 	"\x0e_datasourcearnB\x0e\n" +
-	"\f_descriptionB\a\n" +
+	"\f_descriptionB\x10\n" +
+	"\x0e_metricsconfigB\a\n" +
 	"\x05_nameB\x11\n" +
-	"\x0f_servicerolearn\"\xc4\x02\n" +
+	"\x0f_servicerolearnB\a\n" +
+	"\x05_type\"\xc4\x02\n" +
 	"\x1cDataSourceIntrospectionModel\x12E\n" +
 	"\x06fields\x18\xfdʁ2 \x03(\v2*.appsync.DataSourceIntrospectionModelFieldR\x06fields\x12G\n" +
 	"\aindexes\x18\xbc\xed\x9e\a \x03(\v2*.appsync.DataSourceIntrospectionModelIndexR\aindexes\x12\x1a\n" +
@@ -15037,14 +15053,16 @@ const file_appsync_proto_rawDesc = "" +
 	"\x17DisassociateApiResponse\"\x85\x01\n" +
 	"#DisassociateMergedGraphqlApiRequest\x12(\n" +
 	"\rassociationid\x18\xb2\x9d\x9f\xca\x01 \x01(\tR\rassociationid\x124\n" +
-	"\x13sourceapiidentifier\x18\xdc\xfe\xee\xac\x01 \x01(\tR\x13sourceapiidentifier\"\x8e\x01\n" +
-	"$DisassociateMergedGraphqlApiResponse\x12f\n" +
-	"\x1asourceapiassociationstatus\x18ⴞh \x01(\x0e2#.appsync.SourceApiAssociationStatusR\x1asourceapiassociationstatus\"\x85\x01\n" +
+	"\x13sourceapiidentifier\x18\xdc\xfe\xee\xac\x01 \x01(\tR\x13sourceapiidentifier\"\xb2\x01\n" +
+	"$DisassociateMergedGraphqlApiResponse\x12k\n" +
+	"\x1asourceapiassociationstatus\x18ⴞh \x01(\x0e2#.appsync.SourceApiAssociationStatusH\x00R\x1asourceapiassociationstatus\x88\x01\x01B\x1d\n" +
+	"\x1b_sourceapiassociationstatus\"\x85\x01\n" +
 	"#DisassociateSourceGraphqlApiRequest\x12(\n" +
 	"\rassociationid\x18\xb2\x9d\x9f\xca\x01 \x01(\tR\rassociationid\x124\n" +
-	"\x13mergedapiidentifier\x18\xe9\xf6\xa4\xd4\x01 \x01(\tR\x13mergedapiidentifier\"\x8e\x01\n" +
-	"$DisassociateSourceGraphqlApiResponse\x12f\n" +
-	"\x1asourceapiassociationstatus\x18ⴞh \x01(\x0e2#.appsync.SourceApiAssociationStatusR\x1asourceapiassociationstatus\"\x88\x04\n" +
+	"\x13mergedapiidentifier\x18\xe9\xf6\xa4\xd4\x01 \x01(\tR\x13mergedapiidentifier\"\xb2\x01\n" +
+	"$DisassociateSourceGraphqlApiResponse\x12k\n" +
+	"\x1asourceapiassociationstatus\x18ⴞh \x01(\x0e2#.appsync.SourceApiAssociationStatusH\x00R\x1asourceapiassociationstatus\x88\x01\x01B\x1d\n" +
+	"\x1b_sourceapiassociationstatus\"\x88\x04\n" +
 	"\x10DomainNameConfig\x124\n" +
 	"\x11appsyncdomainname\x18\xb9\xb5\xdcl \x01(\tH\x00R\x11appsyncdomainname\x88\x01\x01\x12/\n" +
 	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x01R\x0ecertificatearn\x88\x01\x01\x12)\n" +
@@ -15190,13 +15208,14 @@ const file_appsync_proto_rawDesc = "" +
 	"\x11_includemodelssdlB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x8a\x03\n" +
+	"_nexttoken\"\xa7\x03\n" +
 	"\"GetDataSourceIntrospectionResponse\x121\n" +
 	"\x0fintrospectionid\x18\xc2\xc5Շ\x01 \x01(\tH\x00R\x0fintrospectionid\x88\x01\x01\x12[\n" +
-	"\x13introspectionresult\x18\xf6\x84\xd9m \x01(\v2&.appsync.DataSourceIntrospectionResultR\x13introspectionresult\x12[\n" +
-	"\x13introspectionstatus\x18\x97\xe0\x88\x0e \x01(\x0e2&.appsync.DataSourceIntrospectionStatusR\x13introspectionstatus\x12E\n" +
-	"\x19introspectionstatusdetail\x18\xf8\xc5\xd4\xd4\x01 \x01(\tH\x01R\x19introspectionstatusdetail\x88\x01\x01B\x12\n" +
-	"\x10_introspectionidB\x1c\n" +
+	"\x13introspectionresult\x18\xf6\x84\xd9m \x01(\v2&.appsync.DataSourceIntrospectionResultR\x13introspectionresult\x12`\n" +
+	"\x13introspectionstatus\x18\x97\xe0\x88\x0e \x01(\x0e2&.appsync.DataSourceIntrospectionStatusH\x01R\x13introspectionstatus\x88\x01\x01\x12E\n" +
+	"\x19introspectionstatusdetail\x18\xf8\xc5\xd4\xd4\x01 \x01(\tH\x02R\x19introspectionstatusdetail\x88\x01\x01B\x12\n" +
+	"\x10_introspectionidB\x16\n" +
+	"\x14_introspectionstatusB\x1c\n" +
 	"\x1a_introspectionstatusdetail\"F\n" +
 	"\x14GetDataSourceRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\x15\n" +
@@ -15246,12 +15265,13 @@ const file_appsync_proto_rawDesc = "" +
 	"\x13GetResolverResponse\x121\n" +
 	"\bresolver\x18\xc4\xdd\xd4\xcd\x01 \x01(\v2\x11.appsync.ResolverR\bresolver\"9\n" +
 	"\x1eGetSchemaCreationStatusRequest\x12\x17\n" +
-	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\"\x83\x01\n" +
+	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\"\x93\x01\n" +
 	"\x1fGetSchemaCreationStatusResponse\x12!\n" +
-	"\adetails\x18\xa6\xe7\x9f\xcb\x01 \x01(\tH\x00R\adetails\x88\x01\x01\x121\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.appsync.SchemaStatusR\x06statusB\n" +
+	"\adetails\x18\xa6\xe7\x9f\xcb\x01 \x01(\tH\x00R\adetails\x88\x01\x01\x126\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.appsync.SchemaStatusH\x01R\x06status\x88\x01\x01B\n" +
 	"\n" +
-	"\b_details\"\x80\x01\n" +
+	"\b_detailsB\t\n" +
+	"\a_status\"\x80\x01\n" +
 	"\x1eGetSourceApiAssociationRequest\x12(\n" +
 	"\rassociationid\x18\xb2\x9d\x9f\xca\x01 \x01(\tR\rassociationid\x124\n" +
 	"\x13mergedapiidentifier\x18\xe9\xf6\xa4\xd4\x01 \x01(\tR\x13mergedapiidentifier\"x\n" +
@@ -15266,34 +15286,35 @@ const file_appsync_proto_rawDesc = "" +
 	"\x16GraphQLSchemaException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xc5\r\n" +
+	"\b_message\"\xa3\x0e\n" +
 	"\n" +
 	"GraphqlApi\x12z\n" +
 	"!additionalauthenticationproviders\x18\x8b\xea\x99L \x03(\v2).appsync.AdditionalAuthenticationProviderR!additionalauthenticationproviders\x12\x1c\n" +
-	"\x05apiid\x18뜈6 \x01(\tH\x00R\x05apiid\x88\x01\x01\x124\n" +
-	"\aapitype\x18\x80\xcd\xce# \x01(\x0e2\x17.appsync.GraphQLApiTypeR\aapitype\x12\x19\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x01R\x03arn\x88\x01\x01\x12N\n" +
-	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x1b.appsync.AuthenticationTypeR\x12authenticationtype\x122\n" +
+	"\x05apiid\x18뜈6 \x01(\tH\x00R\x05apiid\x88\x01\x01\x129\n" +
+	"\aapitype\x18\x80\xcd\xce# \x01(\x0e2\x17.appsync.GraphQLApiTypeH\x01R\aapitype\x88\x01\x01\x12\x19\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x02R\x03arn\x88\x01\x01\x12S\n" +
+	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x1b.appsync.AuthenticationTypeH\x03R\x12authenticationtype\x88\x01\x01\x122\n" +
 	"\x03dns\x18\xbdѫ\xd3\x01 \x03(\v2\x1c.appsync.GraphqlApi.DnsEntryR\x03dns\x12W\n" +
-	"\x15enhancedmetricsconfig\x18\xb7\xe6\xd7. \x01(\v2\x1e.appsync.EnhancedMetricsConfigR\x15enhancedmetricsconfig\x12\\\n" +
-	"\x13introspectionconfig\x18ۯ\xe4\x8c\x01 \x01(\x0e2&.appsync.GraphQLApiIntrospectionConfigR\x13introspectionconfig\x12Z\n" +
+	"\x15enhancedmetricsconfig\x18\xb7\xe6\xd7. \x01(\v2\x1e.appsync.EnhancedMetricsConfigR\x15enhancedmetricsconfig\x12a\n" +
+	"\x13introspectionconfig\x18ۯ\xe4\x8c\x01 \x01(\x0e2&.appsync.GraphQLApiIntrospectionConfigH\x04R\x13introspectionconfig\x88\x01\x01\x12Z\n" +
 	"\x16lambdaauthorizerconfig\x18\x88\xf5\xa90 \x01(\v2\x1f.appsync.LambdaAuthorizerConfigR\x16lambdaauthorizerconfig\x123\n" +
 	"\tlogconfig\x18\xf4\x82\xb9\v \x01(\v2\x12.appsync.LogConfigR\tlogconfig\x12D\n" +
-	"\x19mergedapiexecutionrolearn\x18\xfb\xf9\x9eg \x01(\tH\x02R\x19mergedapiexecutionrolearn\x88\x01\x01\x12\x1a\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x03R\x04name\x88\x01\x01\x12R\n" +
+	"\x19mergedapiexecutionrolearn\x18\xfb\xf9\x9eg \x01(\tH\x05R\x19mergedapiexecutionrolearn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x06R\x04name\x88\x01\x01\x12R\n" +
 	"\x13openidconnectconfig\x18\x8d\x89\xbc\xaa\x01 \x01(\v2\x1c.appsync.OpenIDConnectConfigR\x13openidconnectconfig\x12\x1d\n" +
-	"\x05owner\x18ՙ\x9d\xab\x01 \x01(\tH\x04R\x05owner\x88\x01\x01\x12*\n" +
-	"\fownercontact\x18ɏ\x92\b \x01(\tH\x05R\fownercontact\x88\x01\x01\x120\n" +
-	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05H\x06R\x0fquerydepthlimit\x88\x01\x01\x126\n" +
-	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05H\aR\x12resolvercountlimit\x88\x01\x01\x125\n" +
+	"\x05owner\x18ՙ\x9d\xab\x01 \x01(\tH\aR\x05owner\x88\x01\x01\x12*\n" +
+	"\fownercontact\x18ɏ\x92\b \x01(\tH\bR\fownercontact\x88\x01\x01\x120\n" +
+	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05H\tR\x0fquerydepthlimit\x88\x01\x01\x126\n" +
+	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05H\n" +
+	"R\x12resolvercountlimit\x88\x01\x01\x125\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1d.appsync.GraphqlApi.TagsEntryR\x04tags\x124\n" +
 	"\x04uris\x18\x8b\x91\x82% \x03(\v2\x1d.appsync.GraphqlApi.UrisEntryR\x04uris\x12C\n" +
-	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x17.appsync.UserPoolConfigR\x0euserpoolconfig\x12A\n" +
+	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x17.appsync.UserPoolConfigR\x0euserpoolconfig\x12F\n" +
 	"\n" +
-	"visibility\x18\xe6\xeb\xdf\xf9\x01 \x01(\x0e2\x1d.appsync.GraphQLApiVisibilityR\n" +
-	"visibility\x12+\n" +
-	"\fwafwebaclarn\x18\xef\xb2\xfc\xd9\x01 \x01(\tH\bR\fwafwebaclarn\x88\x01\x01\x12)\n" +
-	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\tR\vxrayenabled\x88\x01\x01\x1a6\n" +
+	"visibility\x18\xe6\xeb\xdf\xf9\x01 \x01(\x0e2\x1d.appsync.GraphQLApiVisibilityH\vR\n" +
+	"visibility\x88\x01\x01\x12+\n" +
+	"\fwafwebaclarn\x18\xef\xb2\xfc\xd9\x01 \x01(\tH\fR\fwafwebaclarn\x88\x01\x01\x12)\n" +
+	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\rR\vxrayenabled\x88\x01\x01\x1a6\n" +
 	"\bDnsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
@@ -15303,14 +15324,19 @@ const file_appsync_proto_rawDesc = "" +
 	"\tUrisEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\b\n" +
-	"\x06_apiidB\x06\n" +
-	"\x04_arnB\x1c\n" +
+	"\x06_apiidB\n" +
+	"\n" +
+	"\b_apitypeB\x06\n" +
+	"\x04_arnB\x15\n" +
+	"\x13_authenticationtypeB\x16\n" +
+	"\x14_introspectionconfigB\x1c\n" +
 	"\x1a_mergedapiexecutionrolearnB\a\n" +
 	"\x05_nameB\b\n" +
 	"\x06_ownerB\x0f\n" +
 	"\r_ownercontactB\x12\n" +
 	"\x10_querydepthlimitB\x15\n" +
-	"\x13_resolvercountlimitB\x0f\n" +
+	"\x13_resolvercountlimitB\r\n" +
+	"\v_visibilityB\x0f\n" +
 	"\r_wafwebaclarnB\x0e\n" +
 	"\f_xrayenabled\"\x84\x01\n" +
 	"\rHandlerConfig\x127\n" +
@@ -15335,11 +15361,12 @@ const file_appsync_proto_rawDesc = "" +
 	"\rauthorizeruri\x18\x99\xb0\xb4\xfa\x01 \x01(\tR\rauthorizeruri\x12J\n" +
 	"\x1cidentityvalidationexpression\x18\xbf\xef\xabl \x01(\tH\x01R\x1cidentityvalidationexpression\x88\x01\x01B\x1f\n" +
 	"\x1d_authorizerresultttlinsecondsB\x1f\n" +
-	"\x1d_identityvalidationexpression\"F\n" +
-	"\fLambdaConfig\x126\n" +
+	"\x1d_identityvalidationexpression\"Z\n" +
+	"\fLambdaConfig\x12;\n" +
 	"\n" +
-	"invoketype\x18\xa6\xee\xbe8 \x01(\x0e2\x13.appsync.InvokeTypeR\n" +
-	"invoketype\"\x7f\n" +
+	"invoketype\x18\xa6\xee\xbe8 \x01(\x0e2\x13.appsync.InvokeTypeH\x00R\n" +
+	"invoketype\x88\x01\x01B\r\n" +
+	"\v_invoketype\"\x7f\n" +
 	"\x1bLambdaConflictHandlerConfig\x12C\n" +
 	"\x18lambdaconflicthandlerarn\x18\xec\xd2\xf6\xfe\x01 \x01(\tH\x00R\x18lambdaconflicthandlerarn\x88\x01\x01B\x1b\n" +
 	"\x19_lambdaconflicthandlerarn\"I\n" +
@@ -15430,17 +15457,20 @@ const file_appsync_proto_rawDesc = "" +
 	"\tfunctions\x18ς\xa9* \x03(\v2\x1e.appsync.FunctionConfigurationR\tfunctions\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\xe8\x01\n" +
-	"\x16ListGraphqlApisRequest\x124\n" +
-	"\aapitype\x18\x80\xcd\xce# \x01(\x0e2\x17.appsync.GraphQLApiTypeR\aapitype\x12'\n" +
+	"_nexttoken\"\x88\x02\n" +
+	"\x16ListGraphqlApisRequest\x129\n" +
+	"\aapitype\x18\x80\xcd\xce# \x01(\x0e2\x17.appsync.GraphQLApiTypeH\x00R\aapitype\x88\x01\x01\x12'\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12,\n" +
-	"\x05owner\x18ՙ\x9d\xab\x01 \x01(\x0e2\x12.appsync.OwnershipR\x05ownerB\r\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x121\n" +
+	"\x05owner\x18ՙ\x9d\xab\x01 \x01(\x0e2\x12.appsync.OwnershipH\x03R\x05owner\x88\x01\x01B\n" +
+	"\n" +
+	"\b_apitypeB\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x87\x01\n" +
+	"_nexttokenB\b\n" +
+	"\x06_owner\"\x87\x01\n" +
 	"\x17ListGraphqlApisResponse\x128\n" +
 	"\vgraphqlapis\x18\xc8اT \x03(\v2\x13.appsync.GraphqlApiR\vgraphqlapis\x12$\n" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
@@ -15579,32 +15609,35 @@ const file_appsync_proto_rawDesc = "" +
 	"\x12_awssecretstorearnB\x0f\n" +
 	"\r_databasenameB\x16\n" +
 	"\x14_dbclusteridentifierB\t\n" +
-	"\a_schema\"\xed\x01\n" +
+	"\a_schema\"\x93\x02\n" +
 	"\"RelationalDatabaseDataSourceConfig\x12X\n" +
-	"\x15rdshttpendpointconfig\x18\xa4ĺ\x8e\x01 \x01(\v2\x1e.appsync.RdsHttpEndpointConfigR\x15rdshttpendpointconfig\x12m\n" +
-	"\x1crelationaldatabasesourcetype\x18\x8d\xa8\xa2\x93\x01 \x01(\x0e2%.appsync.RelationalDatabaseSourceTypeR\x1crelationaldatabasesourcetype\"\xfe\x06\n" +
+	"\x15rdshttpendpointconfig\x18\xa4ĺ\x8e\x01 \x01(\v2\x1e.appsync.RdsHttpEndpointConfigR\x15rdshttpendpointconfig\x12r\n" +
+	"\x1crelationaldatabasesourcetype\x18\x8d\xa8\xa2\x93\x01 \x01(\x0e2%.appsync.RelationalDatabaseSourceTypeH\x00R\x1crelationaldatabasesourcetype\x88\x01\x01B\x1f\n" +
+	"\x1d_relationaldatabasesourcetype\"\xa3\a\n" +
 	"\bResolver\x12?\n" +
 	"\rcachingconfig\x18\xa9\xb2\xc2\x17 \x01(\v2\x16.appsync.CachingConfigR\rcachingconfig\x12\x1b\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tH\x00R\x04code\x88\x01\x01\x12.\n" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tH\x01R\x0edatasourcename\x88\x01\x01\x12%\n" +
-	"\tfieldname\x18\xc5ι\xe8\x01 \x01(\tH\x02R\tfieldname\x88\x01\x01\x12-\n" +
-	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindR\x04kind\x12*\n" +
-	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x03R\fmaxbatchsize\x88\x01\x01\x12M\n" +
-	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2#.appsync.ResolverLevelMetricsConfigR\rmetricsconfig\x12B\n" +
+	"\tfieldname\x18\xc5ι\xe8\x01 \x01(\tH\x02R\tfieldname\x88\x01\x01\x122\n" +
+	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindH\x03R\x04kind\x88\x01\x01\x12*\n" +
+	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x04R\fmaxbatchsize\x88\x01\x01\x12R\n" +
+	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2#.appsync.ResolverLevelMetricsConfigH\x05R\rmetricsconfig\x88\x01\x01\x12B\n" +
 	"\x0epipelineconfig\x18\xa2Ð= \x01(\v2\x17.appsync.PipelineConfigR\x0epipelineconfig\x12?\n" +
-	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tH\x04R\x16requestmappingtemplate\x88\x01\x01\x12(\n" +
-	"\vresolverarn\x18\x97\xcf\xde6 \x01(\tH\x05R\vresolverarn\x88\x01\x01\x12A\n" +
-	"\x17responsemappingtemplate\x18\xfb\x9c\xbe\xbb\x01 \x01(\tH\x06R\x17responsemappingtemplate\x88\x01\x01\x124\n" +
+	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tH\x06R\x16requestmappingtemplate\x88\x01\x01\x12(\n" +
+	"\vresolverarn\x18\x97\xcf\xde6 \x01(\tH\aR\vresolverarn\x88\x01\x01\x12A\n" +
+	"\x17responsemappingtemplate\x18\xfb\x9c\xbe\xbb\x01 \x01(\tH\bR\x17responsemappingtemplate\x88\x01\x01\x124\n" +
 	"\aruntime\x18\xac\xf2\x80& \x01(\v2\x17.appsync.AppSyncRuntimeR\aruntime\x127\n" +
 	"\n" +
 	"syncconfig\x18\xb5ޭ\xe4\x01 \x01(\v2\x13.appsync.SyncConfigR\n" +
 	"syncconfig\x12#\n" +
-	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tH\aR\btypename\x88\x01\x01B\a\n" +
+	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tH\tR\btypename\x88\x01\x01B\a\n" +
 	"\x05_codeB\x11\n" +
 	"\x0f_datasourcenameB\f\n" +
 	"\n" +
-	"_fieldnameB\x0f\n" +
-	"\r_maxbatchsizeB\x19\n" +
+	"_fieldnameB\a\n" +
+	"\x05_kindB\x0f\n" +
+	"\r_maxbatchsizeB\x10\n" +
+	"\x0e_metricsconfigB\x19\n" +
 	"\x17_requestmappingtemplateB\x0e\n" +
 	"\f_resolverarnB\x1a\n" +
 	"\x18_responsemappingtemplateB\v\n" +
@@ -15612,7 +15645,7 @@ const file_appsync_proto_rawDesc = "" +
 	"\x1dServiceQuotaExceededException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xef\x06\n" +
+	"\b_message\"\x93\a\n" +
 	"\x14SourceApiAssociation\x12/\n" +
 	"\x0eassociationarn\x18\xb4\xfa\xb9\x8e\x01 \x01(\tH\x00R\x0eassociationarn\x88\x01\x01\x12-\n" +
 	"\rassociationid\x18\xb2\x9d\x9f\xca\x01 \x01(\tH\x01R\rassociationid\x88\x01\x01\x12)\n" +
@@ -15621,21 +15654,24 @@ const file_appsync_proto_rawDesc = "" +
 	"\fmergedapiarn\x18\x87\xfb\xb2\xc8\x01 \x01(\tH\x04R\fmergedapiarn\x88\x01\x01\x12(\n" +
 	"\vmergedapiid\x18\xdf߭6 \x01(\tH\x05R\vmergedapiid\x88\x01\x01\x12+\n" +
 	"\fsourceapiarn\x18\xf0\xa0ݴ\x01 \x01(\tH\x06R\fsourceapiarn\x88\x01\x01\x12f\n" +
-	"\x1asourceapiassociationconfig\x18\xf6\xb5\xb5  \x01(\v2#.appsync.SourceApiAssociationConfigR\x1asourceapiassociationconfig\x12f\n" +
-	"\x1asourceapiassociationstatus\x18ⴞh \x01(\x0e2#.appsync.SourceApiAssociationStatusR\x1asourceapiassociationstatus\x12S\n" +
-	" sourceapiassociationstatusdetail\x18\x91\x8c\xf9\x87\x01 \x01(\tH\aR sourceapiassociationstatusdetail\x88\x01\x01\x12(\n" +
-	"\vsourceapiid\x18\x96\xe2\xae\x1c \x01(\tH\bR\vsourceapiid\x88\x01\x01B\x11\n" +
+	"\x1asourceapiassociationconfig\x18\xf6\xb5\xb5  \x01(\v2#.appsync.SourceApiAssociationConfigR\x1asourceapiassociationconfig\x12k\n" +
+	"\x1asourceapiassociationstatus\x18ⴞh \x01(\x0e2#.appsync.SourceApiAssociationStatusH\aR\x1asourceapiassociationstatus\x88\x01\x01\x12S\n" +
+	" sourceapiassociationstatusdetail\x18\x91\x8c\xf9\x87\x01 \x01(\tH\bR sourceapiassociationstatusdetail\x88\x01\x01\x12(\n" +
+	"\vsourceapiid\x18\x96\xe2\xae\x1c \x01(\tH\tR\vsourceapiid\x88\x01\x01B\x11\n" +
 	"\x0f_associationarnB\x10\n" +
 	"\x0e_associationidB\x0e\n" +
 	"\f_descriptionB\x1a\n" +
 	"\x18_lastsuccessfulmergedateB\x0f\n" +
 	"\r_mergedapiarnB\x0e\n" +
 	"\f_mergedapiidB\x0f\n" +
-	"\r_sourceapiarnB#\n" +
+	"\r_sourceapiarnB\x1d\n" +
+	"\x1b_sourceapiassociationstatusB#\n" +
 	"!_sourceapiassociationstatusdetailB\x0e\n" +
-	"\f_sourceapiid\"Q\n" +
-	"\x1aSourceApiAssociationConfig\x123\n" +
-	"\tmergetype\x18ൾZ \x01(\x0e2\x12.appsync.MergeTypeR\tmergetype\"\xcd\x03\n" +
+	"\f_sourceapiid\"d\n" +
+	"\x1aSourceApiAssociationConfig\x128\n" +
+	"\tmergetype\x18ൾZ \x01(\x0e2\x12.appsync.MergeTypeH\x00R\tmergetype\x88\x01\x01B\f\n" +
+	"\n" +
+	"_mergetype\"\xcd\x03\n" +
 	"\x1bSourceApiAssociationSummary\x12/\n" +
 	"\x0eassociationarn\x18\xb4\xfa\xb9\x8e\x01 \x01(\tH\x00R\x0eassociationarn\x88\x01\x01\x12-\n" +
 	"\rassociationid\x18\xb2\x9d\x9f\xca\x01 \x01(\tH\x01R\rassociationid\x88\x01\x01\x12)\n" +
@@ -15652,48 +15688,54 @@ const file_appsync_proto_rawDesc = "" +
 	"\r_sourceapiarnB\x0e\n" +
 	"\f_sourceapiid\"o\n" +
 	"#StartDataSourceIntrospectionRequest\x12H\n" +
-	"\x10rdsdataapiconfig\x18\xc7\xef\xe0\" \x01(\v2\x19.appsync.RdsDataApiConfigR\x10rdsdataapiconfig\"\xaf\x02\n" +
+	"\x10rdsdataapiconfig\x18\xc7\xef\xe0\" \x01(\v2\x19.appsync.RdsDataApiConfigR\x10rdsdataapiconfig\"\xcc\x02\n" +
 	"$StartDataSourceIntrospectionResponse\x121\n" +
-	"\x0fintrospectionid\x18\xc2\xc5Շ\x01 \x01(\tH\x00R\x0fintrospectionid\x88\x01\x01\x12[\n" +
-	"\x13introspectionstatus\x18\x97\xe0\x88\x0e \x01(\x0e2&.appsync.DataSourceIntrospectionStatusR\x13introspectionstatus\x12E\n" +
-	"\x19introspectionstatusdetail\x18\xf8\xc5\xd4\xd4\x01 \x01(\tH\x01R\x19introspectionstatusdetail\x88\x01\x01B\x12\n" +
-	"\x10_introspectionidB\x1c\n" +
+	"\x0fintrospectionid\x18\xc2\xc5Շ\x01 \x01(\tH\x00R\x0fintrospectionid\x88\x01\x01\x12`\n" +
+	"\x13introspectionstatus\x18\x97\xe0\x88\x0e \x01(\x0e2&.appsync.DataSourceIntrospectionStatusH\x01R\x13introspectionstatus\x88\x01\x01\x12E\n" +
+	"\x19introspectionstatusdetail\x18\xf8\xc5\xd4\xd4\x01 \x01(\tH\x02R\x19introspectionstatusdetail\x88\x01\x01B\x12\n" +
+	"\x10_introspectionidB\x16\n" +
+	"\x14_introspectionstatusB\x1c\n" +
 	"\x1a_introspectionstatusdetail\"X\n" +
 	"\x1aStartSchemaCreationRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\fR\n" +
-	"definition\"P\n" +
-	"\x1bStartSchemaCreationResponse\x121\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.appsync.SchemaStatusR\x06status\"y\n" +
+	"definition\"`\n" +
+	"\x1bStartSchemaCreationResponse\x126\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x15.appsync.SchemaStatusH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"y\n" +
 	"\x17StartSchemaMergeRequest\x12(\n" +
 	"\rassociationid\x18\xb2\x9d\x9f\xca\x01 \x01(\tR\rassociationid\x124\n" +
-	"\x13mergedapiidentifier\x18\xe9\xf6\xa4\xd4\x01 \x01(\tR\x13mergedapiidentifier\"\x82\x01\n" +
-	"\x18StartSchemaMergeResponse\x12f\n" +
-	"\x1asourceapiassociationstatus\x18ⴞh \x01(\x0e2#.appsync.SourceApiAssociationStatusR\x1asourceapiassociationstatus\"\x94\x02\n" +
+	"\x13mergedapiidentifier\x18\xe9\xf6\xa4\xd4\x01 \x01(\tR\x13mergedapiidentifier\"\xa6\x01\n" +
+	"\x18StartSchemaMergeResponse\x12k\n" +
+	"\x1asourceapiassociationstatus\x18ⴞh \x01(\x0e2#.appsync.SourceApiAssociationStatusH\x00R\x1asourceapiassociationstatus\x88\x01\x01B\x1d\n" +
+	"\x1b_sourceapiassociationstatus\"\xc8\x02\n" +
 	"\n" +
-	"SyncConfig\x12O\n" +
-	"\x11conflictdetection\x18\xaf\xcb\xe7\x12 \x01(\x0e2\x1e.appsync.ConflictDetectionTypeR\x11conflictdetection\x12J\n" +
-	"\x0fconflicthandler\x18\xca\xc9\xe9\xdb\x01 \x01(\x0e2\x1c.appsync.ConflictHandlerTypeR\x0fconflicthandler\x12i\n" +
-	"\x1blambdaconflicthandlerconfig\x18Ӡ\xe2= \x01(\v2$.appsync.LambdaConflictHandlerConfigR\x1blambdaconflicthandlerconfig\"\xb1\x01\n" +
+	"SyncConfig\x12T\n" +
+	"\x11conflictdetection\x18\xaf\xcb\xe7\x12 \x01(\x0e2\x1e.appsync.ConflictDetectionTypeH\x00R\x11conflictdetection\x88\x01\x01\x12O\n" +
+	"\x0fconflicthandler\x18\xca\xc9\xe9\xdb\x01 \x01(\x0e2\x1c.appsync.ConflictHandlerTypeH\x01R\x0fconflicthandler\x88\x01\x01\x12i\n" +
+	"\x1blambdaconflicthandlerconfig\x18Ӡ\xe2= \x01(\v2$.appsync.LambdaConflictHandlerConfigR\x1blambdaconflicthandlerconfigB\x14\n" +
+	"\x12_conflictdetectionB\x12\n" +
+	"\x10_conflicthandler\"\xb1\x01\n" +
 	"\x12TagResourceRequest\x12#\n" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\x12=\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2%.appsync.TagResourceRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x15\n" +
-	"\x13TagResourceResponse\"\xfb\x01\n" +
+	"\x13TagResourceResponse\"\x8b\x02\n" +
 	"\x04Type\x12\x19\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12&\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tH\x01R\n" +
 	"definition\x88\x01\x01\x12)\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x129\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1d.appsync.TypeDefinitionFormatR\x06format\x12\x1a\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x03R\x04name\x88\x01\x01B\x06\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x12>\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1d.appsync.TypeDefinitionFormatH\x03R\x06format\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x04R\x04name\x88\x01\x01B\x06\n" +
 	"\x04_arnB\r\n" +
 	"\v_definitionB\x0e\n" +
-	"\f_descriptionB\a\n" +
+	"\f_descriptionB\t\n" +
+	"\a_formatB\a\n" +
 	"\x05_name\"E\n" +
 	"\x15UnauthorizedException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -15702,13 +15744,14 @@ const file_appsync_proto_rawDesc = "" +
 	"\x14UntagResourceRequest\x12#\n" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\x12\x1b\n" +
 	"\atagkeys\x18\x9c\x9f\xca% \x03(\tR\atagkeys\"\x17\n" +
-	"\x15UntagResourceResponse\"\x9e\x02\n" +
+	"\x15UntagResourceResponse\"\xbb\x02\n" +
 	"\x15UpdateApiCacheRequest\x12O\n" +
 	"\x12apicachingbehavior\x18\x8fͩ\xe9\x01 \x01(\x0e2\x1b.appsync.ApiCachingBehaviorR\x12apicachingbehavior\x12\x17\n" +
-	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12V\n" +
-	"\x13healthmetricsconfig\x18\x8fԝ\x17 \x01(\x0e2!.appsync.CacheHealthMetricsConfigR\x13healthmetricsconfig\x12\x14\n" +
+	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12[\n" +
+	"\x13healthmetricsconfig\x18\x8fԝ\x17 \x01(\x0e2!.appsync.CacheHealthMetricsConfigH\x00R\x13healthmetricsconfig\x88\x01\x01\x12\x14\n" +
 	"\x03ttl\x18܄\xad\xe9\x01 \x01(\x03R\x03ttl\x12-\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.appsync.ApiCacheTypeR\x04type\"K\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.appsync.ApiCacheTypeR\x04typeB\x16\n" +
+	"\x14_healthmetricsconfig\"K\n" +
 	"\x16UpdateApiCacheResponse\x121\n" +
 	"\bapicache\x18\xfc\xba\x98\xa7\x01 \x01(\v2\x11.appsync.ApiCacheR\bapicache\"\xac\x01\n" +
 	"\x13UpdateApiKeyRequest\x12\x17\n" +
@@ -15738,7 +15781,7 @@ const file_appsync_proto_rawDesc = "" +
 	"\x12subscribeauthmodes\x18ܲ\xd9\x03 \x03(\v2\x11.appsync.AuthModeR\x12subscribeauthmodesB\x0f\n" +
 	"\r_codehandlers\"j\n" +
 	"\x1eUpdateChannelNamespaceResponse\x12H\n" +
-	"\x10channelnamespace\x18\x8c\xeb\x81\x04 \x01(\v2\x19.appsync.ChannelNamespaceR\x10channelnamespace\"\xad\a\n" +
+	"\x10channelnamespace\x18\x8c\xeb\x81\x04 \x01(\v2\x19.appsync.ChannelNamespaceR\x10channelnamespace\"\xc4\a\n" +
 	"\x17UpdateDataSourceRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12)\n" +
 	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12L\n" +
@@ -15748,14 +15791,15 @@ const file_appsync_proto_rawDesc = "" +
 	"\n" +
 	"httpconfig\x18\x88è2 \x01(\v2\x1d.appsync.HttpDataSourceConfigR\n" +
 	"httpconfig\x12G\n" +
-	"\flambdaconfig\x18\x85\x82\xf9\xf0\x01 \x01(\v2\x1f.appsync.LambdaDataSourceConfigR\flambdaconfig\x12O\n" +
-	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2%.appsync.DataSourceLevelMetricsConfigR\rmetricsconfig\x12\x15\n" +
+	"\flambdaconfig\x18\x85\x82\xf9\xf0\x01 \x01(\v2\x1f.appsync.LambdaDataSourceConfigR\flambdaconfig\x12T\n" +
+	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2%.appsync.DataSourceLevelMetricsConfigH\x01R\rmetricsconfig\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12h\n" +
 	"\x17opensearchserviceconfig\x18\x93\xa4\x84\x92\x01 \x01(\v2*.appsync.OpenSearchServiceDataSourceConfigR\x17opensearchserviceconfig\x12j\n" +
 	"\x18relationaldatabaseconfig\x18̗\xf0\x0f \x01(\v2+.appsync.RelationalDatabaseDataSourceConfigR\x18relationaldatabaseconfig\x12.\n" +
-	"\x0eservicerolearn\x18\xe4\x98\xc9: \x01(\tH\x01R\x0eservicerolearn\x88\x01\x01\x12/\n" +
+	"\x0eservicerolearn\x18\xe4\x98\xc9: \x01(\tH\x02R\x0eservicerolearn\x88\x01\x01\x12/\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x17.appsync.DataSourceTypeR\x04typeB\x0e\n" +
-	"\f_descriptionB\x11\n" +
+	"\f_descriptionB\x10\n" +
+	"\x0e_metricsconfigB\x11\n" +
 	"\x0f_servicerolearn\"S\n" +
 	"\x18UpdateDataSourceResponse\x127\n" +
 	"\n" +
@@ -15793,23 +15837,24 @@ const file_appsync_proto_rawDesc = "" +
 	"\x17_requestmappingtemplateB\x1a\n" +
 	"\x18_responsemappingtemplate\"q\n" +
 	"\x16UpdateFunctionResponse\x12W\n" +
-	"\x15functionconfiguration\x18\x96\xdc\xdbo \x01(\v2\x1e.appsync.FunctionConfigurationR\x15functionconfiguration\"\xe7\b\n" +
+	"\x15functionconfiguration\x18\x96\xdc\xdbo \x01(\v2\x1e.appsync.FunctionConfigurationR\x15functionconfiguration\"\x84\t\n" +
 	"\x17UpdateGraphqlApiRequest\x12z\n" +
 	"!additionalauthenticationproviders\x18\x8b\xea\x99L \x03(\v2).appsync.AdditionalAuthenticationProviderR!additionalauthenticationproviders\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12N\n" +
 	"\x12authenticationtype\x18\x8aӷ\x14 \x01(\x0e2\x1b.appsync.AuthenticationTypeR\x12authenticationtype\x12W\n" +
-	"\x15enhancedmetricsconfig\x18\xb7\xe6\xd7. \x01(\v2\x1e.appsync.EnhancedMetricsConfigR\x15enhancedmetricsconfig\x12\\\n" +
-	"\x13introspectionconfig\x18ۯ\xe4\x8c\x01 \x01(\x0e2&.appsync.GraphQLApiIntrospectionConfigR\x13introspectionconfig\x12Z\n" +
+	"\x15enhancedmetricsconfig\x18\xb7\xe6\xd7. \x01(\v2\x1e.appsync.EnhancedMetricsConfigR\x15enhancedmetricsconfig\x12a\n" +
+	"\x13introspectionconfig\x18ۯ\xe4\x8c\x01 \x01(\x0e2&.appsync.GraphQLApiIntrospectionConfigH\x00R\x13introspectionconfig\x88\x01\x01\x12Z\n" +
 	"\x16lambdaauthorizerconfig\x18\x88\xf5\xa90 \x01(\v2\x1f.appsync.LambdaAuthorizerConfigR\x16lambdaauthorizerconfig\x123\n" +
 	"\tlogconfig\x18\xf4\x82\xb9\v \x01(\v2\x12.appsync.LogConfigR\tlogconfig\x12D\n" +
-	"\x19mergedapiexecutionrolearn\x18\xfb\xf9\x9eg \x01(\tH\x00R\x19mergedapiexecutionrolearn\x88\x01\x01\x12\x15\n" +
+	"\x19mergedapiexecutionrolearn\x18\xfb\xf9\x9eg \x01(\tH\x01R\x19mergedapiexecutionrolearn\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12R\n" +
 	"\x13openidconnectconfig\x18\x8d\x89\xbc\xaa\x01 \x01(\v2\x1c.appsync.OpenIDConnectConfigR\x13openidconnectconfig\x12*\n" +
-	"\fownercontact\x18ɏ\x92\b \x01(\tH\x01R\fownercontact\x88\x01\x01\x120\n" +
-	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05H\x02R\x0fquerydepthlimit\x88\x01\x01\x126\n" +
-	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05H\x03R\x12resolvercountlimit\x88\x01\x01\x12C\n" +
+	"\fownercontact\x18ɏ\x92\b \x01(\tH\x02R\fownercontact\x88\x01\x01\x120\n" +
+	"\x0fquerydepthlimit\x18Э\xbf! \x01(\x05H\x03R\x0fquerydepthlimit\x88\x01\x01\x126\n" +
+	"\x12resolvercountlimit\x18\x82\xd6\xff' \x01(\x05H\x04R\x12resolvercountlimit\x88\x01\x01\x12C\n" +
 	"\x0euserpoolconfig\x18\xcf\xc0\xef\xd5\x01 \x01(\v2\x17.appsync.UserPoolConfigR\x0euserpoolconfig\x12)\n" +
-	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\x04R\vxrayenabled\x88\x01\x01B\x1c\n" +
+	"\vxrayenabled\x18\xc3\xff\xef\xde\x01 \x01(\bH\x05R\vxrayenabled\x88\x01\x01B\x16\n" +
+	"\x14_introspectionconfigB\x1c\n" +
 	"\x1a_mergedapiexecutionrolearnB\x0f\n" +
 	"\r_ownercontactB\x12\n" +
 	"\x10_querydepthlimitB\x15\n" +
@@ -15818,27 +15863,29 @@ const file_appsync_proto_rawDesc = "" +
 	"\x18UpdateGraphqlApiResponse\x127\n" +
 	"\n" +
 	"graphqlapi\x18\x8fգ\x94\x01 \x01(\v2\x13.appsync.GraphqlApiR\n" +
-	"graphqlapi\"\xc5\x06\n" +
+	"graphqlapi\"\xea\x06\n" +
 	"\x15UpdateResolverRequest\x12\x17\n" +
 	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12?\n" +
 	"\rcachingconfig\x18\xa9\xb2\xc2\x17 \x01(\v2\x16.appsync.CachingConfigR\rcachingconfig\x12\x1b\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tH\x00R\x04code\x88\x01\x01\x12.\n" +
 	"\x0edatasourcename\x18\x9c\xc2\xcbn \x01(\tH\x01R\x0edatasourcename\x88\x01\x01\x12 \n" +
-	"\tfieldname\x18\xc5ι\xe8\x01 \x01(\tR\tfieldname\x12-\n" +
-	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindR\x04kind\x12*\n" +
-	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x02R\fmaxbatchsize\x88\x01\x01\x12M\n" +
-	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2#.appsync.ResolverLevelMetricsConfigR\rmetricsconfig\x12B\n" +
+	"\tfieldname\x18\xc5ι\xe8\x01 \x01(\tR\tfieldname\x122\n" +
+	"\x04kind\x18\xc4\xc4\xcf\xc8\x01 \x01(\x0e2\x15.appsync.ResolverKindH\x02R\x04kind\x88\x01\x01\x12*\n" +
+	"\fmaxbatchsize\x18\xf7\xe7\xcc\x15 \x01(\x05H\x03R\fmaxbatchsize\x88\x01\x01\x12R\n" +
+	"\rmetricsconfig\x18\xf1\xe0\xfa\x84\x01 \x01(\x0e2#.appsync.ResolverLevelMetricsConfigH\x04R\rmetricsconfig\x88\x01\x01\x12B\n" +
 	"\x0epipelineconfig\x18\xa2Ð= \x01(\v2\x17.appsync.PipelineConfigR\x0epipelineconfig\x12?\n" +
-	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tH\x03R\x16requestmappingtemplate\x88\x01\x01\x12A\n" +
-	"\x17responsemappingtemplate\x18\xfb\x9c\xbe\xbb\x01 \x01(\tH\x04R\x17responsemappingtemplate\x88\x01\x01\x124\n" +
+	"\x16requestmappingtemplate\x18\xff\xe2\x9a\xd7\x01 \x01(\tH\x05R\x16requestmappingtemplate\x88\x01\x01\x12A\n" +
+	"\x17responsemappingtemplate\x18\xfb\x9c\xbe\xbb\x01 \x01(\tH\x06R\x17responsemappingtemplate\x88\x01\x01\x124\n" +
 	"\aruntime\x18\xac\xf2\x80& \x01(\v2\x17.appsync.AppSyncRuntimeR\aruntime\x127\n" +
 	"\n" +
 	"syncconfig\x18\xb5ޭ\xe4\x01 \x01(\v2\x13.appsync.SyncConfigR\n" +
 	"syncconfig\x12\x1e\n" +
 	"\btypename\x18\xef\x9a\xc1\xe2\x01 \x01(\tR\btypenameB\a\n" +
 	"\x05_codeB\x11\n" +
-	"\x0f_datasourcenameB\x0f\n" +
-	"\r_maxbatchsizeB\x19\n" +
+	"\x0f_datasourcenameB\a\n" +
+	"\x05_kindB\x0f\n" +
+	"\r_maxbatchsizeB\x10\n" +
+	"\x0e_metricsconfigB\x19\n" +
 	"\x17_requestmappingtemplateB\x1a\n" +
 	"\x18_responsemappingtemplate\"K\n" +
 	"\x16UpdateResolverResponse\x121\n" +
@@ -16781,6 +16828,7 @@ func file_appsync_proto_init() {
 		return
 	}
 	file_appsync_proto_msgTypes[0].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[1].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[2].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[3].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[4].OneofWrappers = []any{}
@@ -16815,6 +16863,8 @@ func file_appsync_proto_init() {
 	file_appsync_proto_msgTypes[54].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[55].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[76].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[80].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[82].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[83].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[84].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[87].OneofWrappers = []any{}
@@ -16833,6 +16883,7 @@ func file_appsync_proto_init() {
 	file_appsync_proto_msgTypes[133].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[135].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[136].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[137].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[138].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[140].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[141].OneofWrappers = []any{}
@@ -16863,13 +16914,19 @@ func file_appsync_proto_init() {
 	file_appsync_proto_msgTypes[168].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[169].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[175].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[176].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[177].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[178].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[179].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[180].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[181].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[183].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[185].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[187].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[188].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[191].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[192].OneofWrappers = []any{}
+	file_appsync_proto_msgTypes[195].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[197].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[199].OneofWrappers = []any{}
 	file_appsync_proto_msgTypes[201].OneofWrappers = []any{}

@@ -25,7 +25,8 @@ func TestExtractPrimaryKeyCondition_BinaryKey(t *testing.T) {
 	// are built with. Any other rendering (raw number text, base64 of the
 	// binary) matches no stored key of that type.
 	t.Run("binary key uses the store key encoding", func(t *testing.T) {
-		hashKey, _, _ := extractPrimaryKeyCondition(table, "id = :v", nil, values)
+		hashKey, _, _, condErr := extractPrimaryKeyCondition(table, "id = :v", nil, values)
+		assert.NoError(t, condErr)
 		expected := dbstore.EncodeKeyValue(&dbstore.AttributeValue{B: rawBytes})
 		assert.NotEmpty(t, expected)
 		assert.Equal(t, expected, hashKey,
@@ -36,7 +37,8 @@ func TestExtractPrimaryKeyCondition_BinaryKey(t *testing.T) {
 		strValues := map[string]*dbstore.AttributeValue{
 			":v": {S: ptrStr("my-key")},
 		}
-		hashKey, _, _ := extractPrimaryKeyCondition(table, "id = :v", nil, strValues)
+		hashKey, _, _, condErr := extractPrimaryKeyCondition(table, "id = :v", nil, strValues)
+		assert.NoError(t, condErr)
 		assert.Equal(t, dbstore.EncodeKeyValue(&dbstore.AttributeValue{S: ptrStr("my-key")}), hashKey)
 	})
 
@@ -44,7 +46,8 @@ func TestExtractPrimaryKeyCondition_BinaryKey(t *testing.T) {
 		numValues := map[string]*dbstore.AttributeValue{
 			":v": {N: ptrStr("42")},
 		}
-		hashKey, _, _ := extractPrimaryKeyCondition(table, "id = :v", nil, numValues)
+		hashKey, _, _, condErr := extractPrimaryKeyCondition(table, "id = :v", nil, numValues)
+		assert.NoError(t, condErr)
 		expected := dbstore.EncodeKeyValue(&dbstore.AttributeValue{N: ptrStr("42")})
 		assert.NotEqual(t, "42", expected,
 			"a raw number string cannot match the encoded storage prefix")
@@ -67,7 +70,8 @@ func TestExtractPrimaryKeyCondition_WithSortKey(t *testing.T) {
 	}
 
 	t.Run("hash + sort key condition", func(t *testing.T) {
-		hashKey, _, sortCond := extractPrimaryKeyCondition(table, "pk = :pk AND sk = :sk", nil, values)
+		hashKey, _, sortCond, condErr := extractPrimaryKeyCondition(table, "pk = :pk AND sk = :sk", nil, values)
+		assert.NoError(t, condErr)
 		assert.Equal(t, dbstore.EncodeKeyValue(values[":pk"]), hashKey)
 		assert.NotNil(t, sortCond)
 		assert.Equal(t, "=", sortCond.op)

@@ -3,6 +3,7 @@ package cognitoidentityprovider
 import (
 	"google.golang.org/protobuf/proto"
 
+	"vorpalstacks/internal/common/pbutil"
 	pb "vorpalstacks/internal/pb/aws/cognitoidentityprovider"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	"vorpalstacks/internal/utils/timeutils"
@@ -96,9 +97,9 @@ func userPoolToProto(pool *cognitostore.UserPool) *pb.UserPoolType {
 		Id:                 proto.String(pool.ID),
 		Name:               proto.String(pool.Name),
 		Arn:                proto.String(pool.Arn),
-		Status:             statusToProto(pool.Status),
-		Mfaconfiguration:   mfaConfigurationToProto(pool.MfaConfiguration),
-		Deletionprotection: deletionProtectionToProto(pool.DeletionProtection),
+		Status:             pbutil.Enum(statusToProto(pool.Status)),
+		Mfaconfiguration:   pbutil.Enum(mfaConfigurationToProto(pool.MfaConfiguration)),
+		Deletionprotection: pbutil.Enum(deletionProtectionToProto(pool.DeletionProtection)),
 	}
 
 	if !pool.CreationDate.IsZero() {
@@ -206,7 +207,7 @@ func identityProviderToProto(ip *cognitostore.IdentityProvider) *pb.IdentityProv
 
 	result := &pb.IdentityProviderType{
 		Providername:     proto.String(ip.ProviderName),
-		Providertype:     identityProviderTypeToProto(ip.ProviderType),
+		Providertype:     pbutil.Enum(identityProviderTypeToProto(ip.ProviderType)),
 		Providerdetails:  ip.ProviderDetails,
 		Attributemapping: ip.AttributeMapping,
 		Idpidentifiers:   ip.IdpIdentifiers,
@@ -228,7 +229,7 @@ func providerDescriptionToProto(ip *cognitostore.IdentityProvider) *pb.ProviderD
 	}
 	result := &pb.ProviderDescription{
 		Providername: proto.String(ip.ProviderName),
-		Providertype: identityProviderTypeToProto(ip.ProviderType),
+		Providertype: pbutil.Enum(identityProviderTypeToProto(ip.ProviderType)),
 	}
 	if !ip.CreationDate.IsZero() {
 		result.Creationdate = proto.String(ip.CreationDate.Format(timeutils.ISO8601UTCFormat))
@@ -272,7 +273,7 @@ func userToProto(user *cognitostore.User) *pb.UserType {
 
 	u := &pb.UserType{
 		Username:   proto.String(user.Username),
-		Userstatus: userStatusToProto(user.UserStatus),
+		Userstatus: pbutil.Enum(userStatusToProto(user.UserStatus)),
 		Enabled:    proto.Bool(user.Enabled),
 	}
 	if !user.CreatedDate.IsZero() {
@@ -305,7 +306,7 @@ func mfaOptionsToProto(user *cognitostore.User) []*pb.MFAOptionType {
 	opts := make([]*pb.MFAOptionType, 0, len(user.MFAOptions))
 	for _, opt := range user.MFAOptions {
 		entry := &pb.MFAOptionType{
-			Deliverymedium: deliveryMediumToProto(opt.DeliveryMedium),
+			Deliverymedium: pbutil.Enum(deliveryMediumToProto(opt.DeliveryMedium)),
 		}
 		if opt.AttributeName != "" {
 			entry.Attributename = proto.String(opt.AttributeName)
@@ -409,7 +410,7 @@ func userPoolClientToProto(client *cognitostore.UserPoolClient) *pb.UserPoolClie
 		Userpoolid:                 proto.String(client.UserPoolID),
 		Clientsecret:               proto.String(client.ClientSecret),
 		Defaultredirecturi:         proto.String(client.DefaultRedirectURI),
-		Preventuserexistenceerrors: preventUserExistenceErrorsToProto(client.PreventUserExistenceErrors),
+		Preventuserexistenceerrors: pbutil.Enum(preventUserExistenceErrorsToProto(client.PreventUserExistenceErrors)),
 	}
 
 	if !client.CreationDate.IsZero() {

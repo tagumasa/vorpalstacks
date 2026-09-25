@@ -728,7 +728,7 @@ message ResourceNotFoundException {
 
 message RoleMapping {
 
-  AmbiguousRoleResolutionType ambiguousroleresolution = 410304778;
+  optional AmbiguousRoleResolutionType ambiguousroleresolution = 410304778;
 
   RulesConfigurationType rulesconfiguration = 123571251;
 
@@ -860,7 +860,7 @@ message UnlinkIdentityInput {
 
 message UnprocessedIdentityId {
 
-  ErrorCode errorcode = 34663193;
+  optional ErrorCode errorcode = 34663193;
 
   optional string identityid = 234187223;
 

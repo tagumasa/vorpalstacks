@@ -658,7 +658,7 @@ type BatchLoadTask struct {
 	Resumableuntil  *string                `protobuf:"bytes,340504066,opt,name=resumableuntil,proto3,oneof" json:"resumableuntil,omitempty"`
 	Tablename       *string                `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
 	Taskid          *string                `protobuf:"bytes,18532514,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
-	Taskstatus      BatchLoadStatus        `protobuf:"varint,448718071,opt,name=taskstatus,proto3,enum=timestreamwrite.BatchLoadStatus" json:"taskstatus,omitempty"`
+	Taskstatus      *BatchLoadStatus       `protobuf:"varint,448718071,opt,name=taskstatus,proto3,enum=timestreamwrite.BatchLoadStatus,oneof" json:"taskstatus,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -736,8 +736,8 @@ func (x *BatchLoadTask) GetTaskid() string {
 }
 
 func (x *BatchLoadTask) GetTaskstatus() BatchLoadStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return BatchLoadStatus_BATCH_LOAD_STATUS_PENDING_RESUME
 }
@@ -756,7 +756,7 @@ type BatchLoadTaskDescription struct {
 	Targetdatabasename      *string                  `protobuf:"bytes,454828599,opt,name=targetdatabasename,proto3,oneof" json:"targetdatabasename,omitempty"`
 	Targettablename         *string                  `protobuf:"bytes,298767720,opt,name=targettablename,proto3,oneof" json:"targettablename,omitempty"`
 	Taskid                  *string                  `protobuf:"bytes,18532514,opt,name=taskid,proto3,oneof" json:"taskid,omitempty"`
-	Taskstatus              BatchLoadStatus          `protobuf:"varint,448718071,opt,name=taskstatus,proto3,enum=timestreamwrite.BatchLoadStatus" json:"taskstatus,omitempty"`
+	Taskstatus              *BatchLoadStatus         `protobuf:"varint,448718071,opt,name=taskstatus,proto3,enum=timestreamwrite.BatchLoadStatus,oneof" json:"taskstatus,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -876,8 +876,8 @@ func (x *BatchLoadTaskDescription) GetTaskid() string {
 }
 
 func (x *BatchLoadTaskDescription) GetTaskstatus() BatchLoadStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return BatchLoadStatus_BATCH_LOAD_STATUS_PENDING_RESUME
 }
@@ -1377,7 +1377,7 @@ type DataModel struct {
 	Mixedmeasuremappings []*MixedMeasureMapping `protobuf:"bytes,521774144,rep,name=mixedmeasuremappings,proto3" json:"mixedmeasuremappings,omitempty"`
 	Multimeasuremappings *MultiMeasureMappings  `protobuf:"bytes,501736394,opt,name=multimeasuremappings,proto3" json:"multimeasuremappings,omitempty"`
 	Timecolumn           *string                `protobuf:"bytes,519449367,opt,name=timecolumn,proto3,oneof" json:"timecolumn,omitempty"`
-	Timeunit             TimeUnit               `protobuf:"varint,181686379,opt,name=timeunit,proto3,enum=timestreamwrite.TimeUnit" json:"timeunit,omitempty"`
+	Timeunit             *TimeUnit              `protobuf:"varint,181686379,opt,name=timeunit,proto3,enum=timestreamwrite.TimeUnit,oneof" json:"timeunit,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -1448,8 +1448,8 @@ func (x *DataModel) GetTimecolumn() string {
 }
 
 func (x *DataModel) GetTimeunit() TimeUnit {
-	if x != nil {
-		return x.Timeunit
+	if x != nil && x.Timeunit != nil {
+		return *x.Timeunit
 	}
 	return TimeUnit_TIME_UNIT_MILLISECONDS
 }
@@ -2204,7 +2204,7 @@ func (x *DescribeTableResponse) GetTable() *Table {
 
 type Dimension struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Dimensionvaluetype DimensionValueType     `protobuf:"varint,267417961,opt,name=dimensionvaluetype,proto3,enum=timestreamwrite.DimensionValueType" json:"dimensionvaluetype,omitempty"`
+	Dimensionvaluetype *DimensionValueType    `protobuf:"varint,267417961,opt,name=dimensionvaluetype,proto3,enum=timestreamwrite.DimensionValueType,oneof" json:"dimensionvaluetype,omitempty"`
 	Name               string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Value              string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -2242,8 +2242,8 @@ func (*Dimension) Descriptor() ([]byte, []int) {
 }
 
 func (x *Dimension) GetDimensionvaluetype() DimensionValueType {
-	if x != nil {
-		return x.Dimensionvaluetype
+	if x != nil && x.Dimensionvaluetype != nil {
+		return *x.Dimensionvaluetype
 	}
 	return DimensionValueType_DIMENSION_VALUE_TYPE_VARCHAR
 }
@@ -2458,7 +2458,7 @@ type ListBatchLoadTasksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
 	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Taskstatus    BatchLoadStatus        `protobuf:"varint,448718071,opt,name=taskstatus,proto3,enum=timestreamwrite.BatchLoadStatus" json:"taskstatus,omitempty"`
+	Taskstatus    *BatchLoadStatus       `protobuf:"varint,448718071,opt,name=taskstatus,proto3,enum=timestreamwrite.BatchLoadStatus,oneof" json:"taskstatus,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2508,8 +2508,8 @@ func (x *ListBatchLoadTasksRequest) GetNexttoken() string {
 }
 
 func (x *ListBatchLoadTasksRequest) GetTaskstatus() BatchLoadStatus {
-	if x != nil {
-		return x.Taskstatus
+	if x != nil && x.Taskstatus != nil {
+		return *x.Taskstatus
 	}
 	return BatchLoadStatus_BATCH_LOAD_STATUS_PENDING_RESUME
 }
@@ -3103,10 +3103,10 @@ func (x *MixedMeasureMapping) GetTargetmeasurename() string {
 }
 
 type MultiMeasureAttributeMapping struct {
-	state                           protoimpl.MessageState `protogen:"open.v1"`
-	Measurevaluetype                ScalarMeasureValueType `protobuf:"varint,466683165,opt,name=measurevaluetype,proto3,enum=timestreamwrite.ScalarMeasureValueType" json:"measurevaluetype,omitempty"`
-	Sourcecolumn                    string                 `protobuf:"bytes,219947651,opt,name=sourcecolumn,proto3" json:"sourcecolumn,omitempty"`
-	Targetmultimeasureattributename *string                `protobuf:"bytes,415623663,opt,name=targetmultimeasureattributename,proto3,oneof" json:"targetmultimeasureattributename,omitempty"`
+	state                           protoimpl.MessageState  `protogen:"open.v1"`
+	Measurevaluetype                *ScalarMeasureValueType `protobuf:"varint,466683165,opt,name=measurevaluetype,proto3,enum=timestreamwrite.ScalarMeasureValueType,oneof" json:"measurevaluetype,omitempty"`
+	Sourcecolumn                    string                  `protobuf:"bytes,219947651,opt,name=sourcecolumn,proto3" json:"sourcecolumn,omitempty"`
+	Targetmultimeasureattributename *string                 `protobuf:"bytes,415623663,opt,name=targetmultimeasureattributename,proto3,oneof" json:"targetmultimeasureattributename,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -3142,8 +3142,8 @@ func (*MultiMeasureAttributeMapping) Descriptor() ([]byte, []int) {
 }
 
 func (x *MultiMeasureAttributeMapping) GetMeasurevaluetype() ScalarMeasureValueType {
-	if x != nil {
-		return x.Measurevaluetype
+	if x != nil && x.Measurevaluetype != nil {
+		return *x.Measurevaluetype
 	}
 	return ScalarMeasureValueType_SCALAR_MEASURE_VALUE_TYPE_BIGINT
 }
@@ -3215,10 +3215,10 @@ func (x *MultiMeasureMappings) GetTargetmultimeasurename() string {
 }
 
 type PartitionKey struct {
-	state               protoimpl.MessageState       `protogen:"open.v1"`
-	Enforcementinrecord PartitionKeyEnforcementLevel `protobuf:"varint,121680624,opt,name=enforcementinrecord,proto3,enum=timestreamwrite.PartitionKeyEnforcementLevel" json:"enforcementinrecord,omitempty"`
-	Name                *string                      `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Type                PartitionKeyType             `protobuf:"varint,290836590,opt,name=type,proto3,enum=timestreamwrite.PartitionKeyType" json:"type,omitempty"`
+	state               protoimpl.MessageState        `protogen:"open.v1"`
+	Enforcementinrecord *PartitionKeyEnforcementLevel `protobuf:"varint,121680624,opt,name=enforcementinrecord,proto3,enum=timestreamwrite.PartitionKeyEnforcementLevel,oneof" json:"enforcementinrecord,omitempty"`
+	Name                *string                       `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Type                PartitionKeyType              `protobuf:"varint,290836590,opt,name=type,proto3,enum=timestreamwrite.PartitionKeyType" json:"type,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -3254,8 +3254,8 @@ func (*PartitionKey) Descriptor() ([]byte, []int) {
 }
 
 func (x *PartitionKey) GetEnforcementinrecord() PartitionKeyEnforcementLevel {
-	if x != nil {
-		return x.Enforcementinrecord
+	if x != nil && x.Enforcementinrecord != nil {
+		return *x.Enforcementinrecord
 	}
 	return PartitionKeyEnforcementLevel_PARTITION_KEY_ENFORCEMENT_LEVEL_OPTIONAL
 }
@@ -3279,10 +3279,10 @@ type Record struct {
 	Dimensions       []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Measurename      *string                `protobuf:"bytes,426079069,opt,name=measurename,proto3,oneof" json:"measurename,omitempty"`
 	Measurevalue     *string                `protobuf:"bytes,407670165,opt,name=measurevalue,proto3,oneof" json:"measurevalue,omitempty"`
-	Measurevaluetype MeasureValueType       `protobuf:"varint,466683165,opt,name=measurevaluetype,proto3,enum=timestreamwrite.MeasureValueType" json:"measurevaluetype,omitempty"`
+	Measurevaluetype *MeasureValueType      `protobuf:"varint,466683165,opt,name=measurevaluetype,proto3,enum=timestreamwrite.MeasureValueType,oneof" json:"measurevaluetype,omitempty"`
 	Measurevalues    []*MeasureValue        `protobuf:"bytes,126050982,rep,name=measurevalues,proto3" json:"measurevalues,omitempty"`
 	Time             *string                `protobuf:"bytes,535094277,opt,name=time,proto3,oneof" json:"time,omitempty"`
-	Timeunit         TimeUnit               `protobuf:"varint,181686379,opt,name=timeunit,proto3,enum=timestreamwrite.TimeUnit" json:"timeunit,omitempty"`
+	Timeunit         *TimeUnit              `protobuf:"varint,181686379,opt,name=timeunit,proto3,enum=timestreamwrite.TimeUnit,oneof" json:"timeunit,omitempty"`
 	Version          *int64                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -3340,8 +3340,8 @@ func (x *Record) GetMeasurevalue() string {
 }
 
 func (x *Record) GetMeasurevaluetype() MeasureValueType {
-	if x != nil {
-		return x.Measurevaluetype
+	if x != nil && x.Measurevaluetype != nil {
+		return *x.Measurevaluetype
 	}
 	return MeasureValueType_MEASURE_VALUE_TYPE_BIGINT
 }
@@ -3361,8 +3361,8 @@ func (x *Record) GetTime() string {
 }
 
 func (x *Record) GetTimeunit() TimeUnit {
-	if x != nil {
-		return x.Timeunit
+	if x != nil && x.Timeunit != nil {
+		return *x.Timeunit
 	}
 	return TimeUnit_TIME_UNIT_MILLISECONDS
 }
@@ -3593,7 +3593,7 @@ func (x *ReportConfiguration) GetReports3Configuration() *ReportS3Configuration 
 type ReportS3Configuration struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Bucketname       string                 `protobuf:"bytes,208117045,opt,name=bucketname,proto3" json:"bucketname,omitempty"`
-	Encryptionoption S3EncryptionOption     `protobuf:"varint,160833062,opt,name=encryptionoption,proto3,enum=timestreamwrite.S3EncryptionOption" json:"encryptionoption,omitempty"`
+	Encryptionoption *S3EncryptionOption    `protobuf:"varint,160833062,opt,name=encryptionoption,proto3,enum=timestreamwrite.S3EncryptionOption,oneof" json:"encryptionoption,omitempty"`
 	Kmskeyid         *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Objectkeyprefix  *string                `protobuf:"bytes,132617574,opt,name=objectkeyprefix,proto3,oneof" json:"objectkeyprefix,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -3638,8 +3638,8 @@ func (x *ReportS3Configuration) GetBucketname() string {
 }
 
 func (x *ReportS3Configuration) GetEncryptionoption() S3EncryptionOption {
-	if x != nil {
-		return x.Encryptionoption
+	if x != nil && x.Encryptionoption != nil {
+		return *x.Encryptionoption
 	}
 	return S3EncryptionOption_S3_ENCRYPTION_OPTION_SSE_S3
 }
@@ -3837,7 +3837,7 @@ func (x *RetentionProperties) GetMemorystoreretentionperiodinhours() int64 {
 type S3Configuration struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Bucketname       *string                `protobuf:"bytes,208117045,opt,name=bucketname,proto3,oneof" json:"bucketname,omitempty"`
-	Encryptionoption S3EncryptionOption     `protobuf:"varint,160833062,opt,name=encryptionoption,proto3,enum=timestreamwrite.S3EncryptionOption" json:"encryptionoption,omitempty"`
+	Encryptionoption *S3EncryptionOption    `protobuf:"varint,160833062,opt,name=encryptionoption,proto3,enum=timestreamwrite.S3EncryptionOption,oneof" json:"encryptionoption,omitempty"`
 	Kmskeyid         *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Objectkeyprefix  *string                `protobuf:"bytes,132617574,opt,name=objectkeyprefix,proto3,oneof" json:"objectkeyprefix,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -3882,8 +3882,8 @@ func (x *S3Configuration) GetBucketname() string {
 }
 
 func (x *S3Configuration) GetEncryptionoption() S3EncryptionOption {
-	if x != nil {
-		return x.Encryptionoption
+	if x != nil && x.Encryptionoption != nil {
+		return *x.Encryptionoption
 	}
 	return S3EncryptionOption_S3_ENCRYPTION_OPTION_SSE_S3
 }
@@ -4000,7 +4000,7 @@ type Table struct {
 	Retentionproperties          *RetentionProperties          `protobuf:"bytes,242841241,opt,name=retentionproperties,proto3" json:"retentionproperties,omitempty"`
 	Schema                       *Schema                       `protobuf:"bytes,412122455,opt,name=schema,proto3" json:"schema,omitempty"`
 	Tablename                    *string                       `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
-	Tablestatus                  TableStatus                   `protobuf:"varint,207908810,opt,name=tablestatus,proto3,enum=timestreamwrite.TableStatus" json:"tablestatus,omitempty"`
+	Tablestatus                  *TableStatus                  `protobuf:"varint,207908810,opt,name=tablestatus,proto3,enum=timestreamwrite.TableStatus,oneof" json:"tablestatus,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -4092,8 +4092,8 @@ func (x *Table) GetTablename() string {
 }
 
 func (x *Table) GetTablestatus() TableStatus {
-	if x != nil {
-		return x.Tablestatus
+	if x != nil && x.Tablestatus != nil {
+		return *x.Tablestatus
 	}
 	return TableStatus_TABLE_STATUS_RESTORING
 }
@@ -4761,24 +4761,25 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x0e_parsefailuresB\x1a\n" +
 	"\x18_recordingestionfailuresB\x12\n" +
 	"\x10_recordsingestedB\x13\n" +
-	"\x11_recordsprocessed\"\xb9\x03\n" +
+	"\x11_recordsprocessed\"\xcd\x03\n" +
 	"\rBatchLoadTask\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x00R\fcreationtime\x88\x01\x01\x12*\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x01R\fdatabasename\x88\x01\x01\x120\n" +
 	"\x0flastupdatedtime\x18\x96\x85\xb6T \x01(\tH\x02R\x0flastupdatedtime\x88\x01\x01\x12/\n" +
 	"\x0eresumableuntil\x18\x82ܮ\xa2\x01 \x01(\tH\x03R\x0eresumableuntil\x88\x01\x01\x12%\n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x04R\ttablename\x88\x01\x01\x12\x1e\n" +
-	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tH\x05R\x06taskid\x88\x01\x01\x12D\n" +
+	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tH\x05R\x06taskid\x88\x01\x01\x12I\n" +
 	"\n" +
-	"taskstatus\x18\xf7\xc9\xfb\xd5\x01 \x01(\x0e2 .timestreamwrite.BatchLoadStatusR\n" +
-	"taskstatusB\x0f\n" +
+	"taskstatus\x18\xf7\xc9\xfb\xd5\x01 \x01(\x0e2 .timestreamwrite.BatchLoadStatusH\x06R\n" +
+	"taskstatus\x88\x01\x01B\x0f\n" +
 	"\r_creationtimeB\x0f\n" +
 	"\r_databasenameB\x12\n" +
 	"\x10_lastupdatedtimeB\x11\n" +
 	"\x0f_resumableuntilB\f\n" +
 	"\n" +
 	"_tablenameB\t\n" +
-	"\a_taskid\"\xe5\a\n" +
+	"\a_taskidB\r\n" +
+	"\v_taskstatus\"\xf9\a\n" +
 	"\x18BatchLoadTaskDescription\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x00R\fcreationtime\x88\x01\x01\x12b\n" +
 	"\x16datamodelconfiguration\x18\x89\xba\x82] \x01(\v2'.timestreamwrite.DataModelConfigurationR\x16datamodelconfiguration\x12e\n" +
@@ -4791,10 +4792,10 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x0eresumableuntil\x18\x82ܮ\xa2\x01 \x01(\tH\x04R\x0eresumableuntil\x88\x01\x01\x127\n" +
 	"\x12targetdatabasename\x18\xb7\xc4\xf0\xd8\x01 \x01(\tH\x05R\x12targetdatabasename\x88\x01\x01\x121\n" +
 	"\x0ftargettablename\x18誻\x8e\x01 \x01(\tH\x06R\x0ftargettablename\x88\x01\x01\x12\x1e\n" +
-	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tH\aR\x06taskid\x88\x01\x01\x12D\n" +
+	"\x06taskid\x18\xa2\x91\xeb\b \x01(\tH\aR\x06taskid\x88\x01\x01\x12I\n" +
 	"\n" +
-	"taskstatus\x18\xf7\xc9\xfb\xd5\x01 \x01(\x0e2 .timestreamwrite.BatchLoadStatusR\n" +
-	"taskstatusB\x0f\n" +
+	"taskstatus\x18\xf7\xc9\xfb\xd5\x01 \x01(\x0e2 .timestreamwrite.BatchLoadStatusH\bR\n" +
+	"taskstatus\x88\x01\x01B\x0f\n" +
 	"\r_creationtimeB\x0f\n" +
 	"\r_errormessageB\x12\n" +
 	"\x10_lastupdatedtimeB\x10\n" +
@@ -4802,7 +4803,8 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x0f_resumableuntilB\x15\n" +
 	"\x13_targetdatabasenameB\x12\n" +
 	"\x10_targettablenameB\t\n" +
-	"\a_taskid\"0\n" +
+	"\a_taskidB\r\n" +
+	"\v_taskstatus\"0\n" +
 	"\x11ConflictException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xa0\x04\n" +
 	"\x1aCreateBatchLoadTaskRequest\x12(\n" +
@@ -4847,7 +4849,7 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"_nullvalueB\f\n" +
 	"\n" +
 	"_quotecharB\x11\n" +
-	"\x0f_trimwhitespace\"\xda\x03\n" +
+	"\x0f_trimwhitespace\"\xec\x03\n" +
 	"\tDataModel\x12R\n" +
 	"\x11dimensionmappings\x18\xdd\xfa\x82k \x03(\v2!.timestreamwrite.DimensionMappingR\x11dimensionmappings\x124\n" +
 	"\x11measurenamecolumn\x18\xcf˼5 \x01(\tH\x00R\x11measurenamecolumn\x88\x01\x01\x12\\\n" +
@@ -4855,10 +4857,11 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x14multimeasuremappings\x18\xcaǟ\xef\x01 \x01(\v2%.timestreamwrite.MultiMeasureMappingsR\x14multimeasuremappings\x12'\n" +
 	"\n" +
 	"timecolumn\x18\x97\xd6\xd8\xf7\x01 \x01(\tH\x01R\n" +
-	"timecolumn\x88\x01\x01\x128\n" +
-	"\btimeunit\x18\xeb\xa0\xd1V \x01(\x0e2\x19.timestreamwrite.TimeUnitR\btimeunitB\x14\n" +
+	"timecolumn\x88\x01\x01\x12=\n" +
+	"\btimeunit\x18\xeb\xa0\xd1V \x01(\x0e2\x19.timestreamwrite.TimeUnitH\x02R\btimeunit\x88\x01\x01B\x14\n" +
 	"\x12_measurenamecolumnB\r\n" +
-	"\v_timecolumn\"\xc0\x01\n" +
+	"\v_timecolumnB\v\n" +
+	"\t_timeunit\"\xc0\x01\n" +
 	"\x16DataModelConfiguration\x12<\n" +
 	"\tdatamodel\x18\xfb\xf9\xc1\xcc\x01 \x01(\v2\x1a.timestreamwrite.DataModelR\tdatamodel\x12h\n" +
 	"\x18datamodels3configuration\x18\xab\xc4\xecS \x01(\v2).timestreamwrite.DataModelS3ConfigurationR\x18datamodels3configuration\"\x86\x01\n" +
@@ -4917,11 +4920,12 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"I\n" +
 	"\x15DescribeTableResponse\x120\n" +
-	"\x05table\x18\x80׳\xb8\x01 \x01(\v2\x16.timestreamwrite.TableR\x05table\"\x94\x01\n" +
-	"\tDimension\x12V\n" +
-	"\x12dimensionvaluetype\x18\xe9\xf2\xc1\x7f \x01(\x0e2#.timestreamwrite.DimensionValueTypeR\x12dimensionvaluetype\x12\x15\n" +
+	"\x05table\x18\x80׳\xb8\x01 \x01(\v2\x16.timestreamwrite.TableR\x05table\"\xb0\x01\n" +
+	"\tDimension\x12[\n" +
+	"\x12dimensionvaluetype\x18\xe9\xf2\xc1\x7f \x01(\x0e2#.timestreamwrite.DimensionValueTypeH\x00R\x12dimensionvaluetype\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\x9c\x01\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05valueB\x15\n" +
+	"\x13_dimensionvaluetype\"\x9c\x01\n" +
 	"\x10DimensionMapping\x125\n" +
 	"\x11destinationcolumn\x18\xae\xd6Ρ\x01 \x01(\tH\x00R\x11destinationcolumn\x88\x01\x01\x12*\n" +
 	"\fsourcecolumn\x18\x83\xc5\xf0h \x01(\tH\x01R\fsourcecolumn\x88\x01\x01B\x14\n" +
@@ -4935,18 +4939,19 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x18InvalidEndpointException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xcd\x01\n" +
+	"\b_message\"\xe1\x01\n" +
 	"\x19ListBatchLoadTasksRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
 	"maxresults\x88\x01\x01\x12$\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12D\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12I\n" +
 	"\n" +
-	"taskstatus\x18\xf7\xc9\xfb\xd5\x01 \x01(\x0e2 .timestreamwrite.BatchLoadStatusR\n" +
-	"taskstatusB\r\n" +
+	"taskstatus\x18\xf7\xc9\xfb\xd5\x01 \x01(\x0e2 .timestreamwrite.BatchLoadStatusH\x02R\n" +
+	"taskstatus\x88\x01\x01B\r\n" +
 	"\v_maxresultsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x9c\x01\n" +
+	"_nexttokenB\r\n" +
+	"\v_taskstatus\"\x9c\x01\n" +
 	"\x1aListBatchLoadTasksResponse\x12J\n" +
 	"\x0ebatchloadtasks\x18\xbc\x97\xc1\x8b\x01 \x03(\v2\x1e.timestreamwrite.BatchLoadTaskR\x0ebatchloadtasks\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
@@ -5002,35 +5007,39 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x11targetmeasurename\x18\xdc\xc1\xf0\xdf\x01 \x01(\tH\x02R\x11targetmeasurename\x88\x01\x01B\x0e\n" +
 	"\f_measurenameB\x0f\n" +
 	"\r_sourcecolumnB\x14\n" +
-	"\x12_targetmeasurename\"\x95\x02\n" +
-	"\x1cMultiMeasureAttributeMapping\x12W\n" +
-	"\x10measurevaluetype\x18\x9d\x8a\xc4\xde\x01 \x01(\x0e2'.timestreamwrite.ScalarMeasureValueTypeR\x10measurevaluetype\x12%\n" +
+	"\x12_targetmeasurename\"\xaf\x02\n" +
+	"\x1cMultiMeasureAttributeMapping\x12\\\n" +
+	"\x10measurevaluetype\x18\x9d\x8a\xc4\xde\x01 \x01(\x0e2'.timestreamwrite.ScalarMeasureValueTypeH\x00R\x10measurevaluetype\x88\x01\x01\x12%\n" +
 	"\fsourcecolumn\x18\x83\xc5\xf0h \x01(\tR\fsourcecolumn\x12Q\n" +
-	"\x1ftargetmultimeasureattributename\x18\xefӗ\xc6\x01 \x01(\tH\x00R\x1ftargetmultimeasureattributename\x88\x01\x01B\"\n" +
+	"\x1ftargetmultimeasureattributename\x18\xefӗ\xc6\x01 \x01(\tH\x01R\x1ftargetmultimeasureattributename\x88\x01\x01B\x13\n" +
+	"\x11_measurevaluetypeB\"\n" +
 	" _targetmultimeasureattributename\"\xea\x01\n" +
 	"\x14MultiMeasureMappings\x12w\n" +
 	"\x1dmultimeasureattributemappings\x18ލ\xae\x94\x01 \x03(\v2-.timestreamwrite.MultiMeasureAttributeMappingR\x1dmultimeasureattributemappings\x12>\n" +
 	"\x16targetmultimeasurename\x18\x95ˉ\r \x01(\tH\x00R\x16targetmultimeasurename\x88\x01\x01B\x19\n" +
-	"\x17_targetmultimeasurename\"\xd2\x01\n" +
-	"\fPartitionKey\x12b\n" +
-	"\x13enforcementinrecord\x18\xf0\xe5\x82: \x01(\x0e2-.timestreamwrite.PartitionKeyEnforcementLevelR\x13enforcementinrecord\x12\x1a\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x129\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2!.timestreamwrite.PartitionKeyTypeR\x04typeB\a\n" +
-	"\x05_name\"\xeb\x03\n" +
+	"\x17_targetmultimeasurename\"\xef\x01\n" +
+	"\fPartitionKey\x12g\n" +
+	"\x13enforcementinrecord\x18\xf0\xe5\x82: \x01(\x0e2-.timestreamwrite.PartitionKeyEnforcementLevelH\x00R\x13enforcementinrecord\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x129\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2!.timestreamwrite.PartitionKeyTypeR\x04typeB\x16\n" +
+	"\x14_enforcementinrecordB\a\n" +
+	"\x05_name\"\x97\x04\n" +
 	"\x06Record\x12>\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x1a.timestreamwrite.DimensionR\n" +
 	"dimensions\x12)\n" +
 	"\vmeasurename\x18\xdd\xe6\x95\xcb\x01 \x01(\tH\x00R\vmeasurename\x88\x01\x01\x12+\n" +
-	"\fmeasurevalue\x18\x95\x9b\xb2\xc2\x01 \x01(\tH\x01R\fmeasurevalue\x88\x01\x01\x12Q\n" +
-	"\x10measurevaluetype\x18\x9d\x8a\xc4\xde\x01 \x01(\x0e2!.timestreamwrite.MeasureValueTypeR\x10measurevaluetype\x12F\n" +
+	"\fmeasurevalue\x18\x95\x9b\xb2\xc2\x01 \x01(\tH\x01R\fmeasurevalue\x88\x01\x01\x12V\n" +
+	"\x10measurevaluetype\x18\x9d\x8a\xc4\xde\x01 \x01(\x0e2!.timestreamwrite.MeasureValueTypeH\x02R\x10measurevaluetype\x88\x01\x01\x12F\n" +
 	"\rmeasurevalues\x18\xa6ō< \x03(\v2\x1d.timestreamwrite.MeasureValueR\rmeasurevalues\x12\x1b\n" +
-	"\x04time\x18\x85ȓ\xff\x01 \x01(\tH\x02R\x04time\x88\x01\x01\x128\n" +
-	"\btimeunit\x18\xeb\xa0\xd1V \x01(\x0e2\x19.timestreamwrite.TimeUnitR\btimeunit\x12!\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x03R\aversion\x88\x01\x01B\x0e\n" +
+	"\x04time\x18\x85ȓ\xff\x01 \x01(\tH\x03R\x04time\x88\x01\x01\x12=\n" +
+	"\btimeunit\x18\xeb\xa0\xd1V \x01(\x0e2\x19.timestreamwrite.TimeUnitH\x04R\btimeunit\x88\x01\x01\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x05R\aversion\x88\x01\x01B\x0e\n" +
 	"\f_measurenameB\x0f\n" +
-	"\r_measurevalueB\a\n" +
-	"\x05_timeB\n" +
+	"\r_measurevalueB\x13\n" +
+	"\x11_measurevaluetypeB\a\n" +
+	"\x05_timeB\v\n" +
+	"\t_timeunitB\n" +
 	"\n" +
 	"\b_version\"\xb4\x01\n" +
 	"\x0fRecordsIngested\x12,\n" +
@@ -5053,14 +5062,15 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\n" +
 	"\b_message\"w\n" +
 	"\x13ReportConfiguration\x12`\n" +
-	"\x15reports3configuration\x18\xde\xee\xfd\xdc\x01 \x01(\v2&.timestreamwrite.ReportS3ConfigurationR\x15reports3configuration\"\x85\x02\n" +
+	"\x15reports3configuration\x18\xde\xee\xfd\xdc\x01 \x01(\v2&.timestreamwrite.ReportS3ConfigurationR\x15reports3configuration\"\x9f\x02\n" +
 	"\x15ReportS3Configuration\x12!\n" +
 	"\n" +
 	"bucketname\x18\xb5\xba\x9ec \x01(\tR\n" +
-	"bucketname\x12R\n" +
-	"\x10encryptionoption\x18\xa6\xbc\xd8L \x01(\x0e2#.timestreamwrite.S3EncryptionOptionR\x10encryptionoption\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x00R\bkmskeyid\x88\x01\x01\x120\n" +
-	"\x0fobjectkeyprefix\x18檞? \x01(\tH\x01R\x0fobjectkeyprefix\x88\x01\x01B\v\n" +
+	"bucketname\x12W\n" +
+	"\x10encryptionoption\x18\xa6\xbc\xd8L \x01(\x0e2#.timestreamwrite.S3EncryptionOptionH\x00R\x10encryptionoption\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x01R\bkmskeyid\x88\x01\x01\x120\n" +
+	"\x0fobjectkeyprefix\x18檞? \x01(\tH\x02R\x0fobjectkeyprefix\x88\x01\x01B\x13\n" +
+	"\x11_encryptionoptionB\v\n" +
 	"\t_kmskeyidB\x12\n" +
 	"\x10_objectkeyprefix\"I\n" +
 	"\x19ResourceNotFoundException\x12 \n" +
@@ -5072,15 +5082,16 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x1bResumeBatchLoadTaskResponse\"\xb9\x01\n" +
 	"\x13RetentionProperties\x12Q\n" +
 	"\"magneticstoreretentionperiodindays\x18\xc0\xe2\x83\x1f \x01(\x03R\"magneticstoreretentionperiodindays\x12O\n" +
-	"!memorystoreretentionperiodinhours\x18\xf1\x84\xa4A \x01(\x03R!memorystoreretentionperiodinhours\"\x93\x02\n" +
+	"!memorystoreretentionperiodinhours\x18\xf1\x84\xa4A \x01(\x03R!memorystoreretentionperiodinhours\"\xad\x02\n" +
 	"\x0fS3Configuration\x12&\n" +
 	"\n" +
 	"bucketname\x18\xb5\xba\x9ec \x01(\tH\x00R\n" +
-	"bucketname\x88\x01\x01\x12R\n" +
-	"\x10encryptionoption\x18\xa6\xbc\xd8L \x01(\x0e2#.timestreamwrite.S3EncryptionOptionR\x10encryptionoption\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x01R\bkmskeyid\x88\x01\x01\x120\n" +
-	"\x0fobjectkeyprefix\x18檞? \x01(\tH\x02R\x0fobjectkeyprefix\x88\x01\x01B\r\n" +
-	"\v_bucketnameB\v\n" +
+	"bucketname\x88\x01\x01\x12W\n" +
+	"\x10encryptionoption\x18\xa6\xbc\xd8L \x01(\x0e2#.timestreamwrite.S3EncryptionOptionH\x01R\x10encryptionoption\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x02R\bkmskeyid\x88\x01\x01\x120\n" +
+	"\x0fobjectkeyprefix\x18檞? \x01(\tH\x03R\x0fobjectkeyprefix\x88\x01\x01B\r\n" +
+	"\v_bucketnameB\x13\n" +
+	"\x11_encryptionoptionB\v\n" +
 	"\t_kmskeyidB\x12\n" +
 	"\x10_objectkeyprefix\"a\n" +
 	"\x06Schema\x12W\n" +
@@ -5088,7 +5099,7 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x1dServiceQuotaExceededException\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xe8\x04\n" +
+	"\b_message\"\xfd\x04\n" +
 	"\x05Table\x12\x19\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12*\n" +
 	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x12*\n" +
@@ -5097,14 +5108,15 @@ const file_timestreamwrite_proto_rawDesc = "" +
 	"\x1cmagneticstorewriteproperties\x18ӝ\xd4< \x01(\v2-.timestreamwrite.MagneticStoreWritePropertiesR\x1cmagneticstorewriteproperties\x12Y\n" +
 	"\x13retentionproperties\x18\x99\xed\xe5s \x01(\v2$.timestreamwrite.RetentionPropertiesR\x13retentionproperties\x123\n" +
 	"\x06schema\x18\xd7\xfa\xc1\xc4\x01 \x01(\v2\x17.timestreamwrite.SchemaR\x06schema\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x04R\ttablename\x88\x01\x01\x12A\n" +
-	"\vtablestatus\x18\xcaߑc \x01(\x0e2\x1c.timestreamwrite.TableStatusR\vtablestatusB\x06\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x04R\ttablename\x88\x01\x01\x12F\n" +
+	"\vtablestatus\x18\xcaߑc \x01(\x0e2\x1c.timestreamwrite.TableStatusH\x05R\vtablestatus\x88\x01\x01B\x06\n" +
 	"\x04_arnB\x0f\n" +
 	"\r_creationtimeB\x0f\n" +
 	"\r_databasenameB\x12\n" +
 	"\x10_lastupdatedtimeB\f\n" +
 	"\n" +
-	"_tablename\"4\n" +
+	"_tablenameB\x0e\n" +
+	"\f_tablestatus\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"h\n" +
@@ -5433,6 +5445,7 @@ func file_timestreamwrite_proto_init() {
 	file_timestreamwrite_proto_msgTypes[14].OneofWrappers = []any{}
 	file_timestreamwrite_proto_msgTypes[16].OneofWrappers = []any{}
 	file_timestreamwrite_proto_msgTypes[17].OneofWrappers = []any{}
+	file_timestreamwrite_proto_msgTypes[28].OneofWrappers = []any{}
 	file_timestreamwrite_proto_msgTypes[29].OneofWrappers = []any{}
 	file_timestreamwrite_proto_msgTypes[32].OneofWrappers = []any{}
 	file_timestreamwrite_proto_msgTypes[33].OneofWrappers = []any{}

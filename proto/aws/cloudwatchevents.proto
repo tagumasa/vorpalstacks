@@ -286,13 +286,13 @@ message ApiDestination {
 
   optional string apidestinationarn = 90996885;
 
-  ApiDestinationState apidestinationstate = 13153343;
+  optional ApiDestinationState apidestinationstate = 13153343;
 
   optional string connectionarn = 187631553;
 
   optional string creationtime = 103458790;
 
-  ApiDestinationHttpMethod httpmethod = 398394961;
+  optional ApiDestinationHttpMethod httpmethod = 398394961;
 
   optional string invocationendpoint = 411800759;
 
@@ -352,7 +352,7 @@ message Archive {
 
   optional int64 sizebytes = 486677664;
 
-  ArchiveState state = 502047895;
+  optional ArchiveState state = 502047895;
 
   optional string statereason = 376138483;
 
@@ -392,7 +392,7 @@ enum AssignPublicIp {
 
 message AwsVpcConfiguration {
 
-  AssignPublicIp assignpublicip = 461653589;
+  optional AssignPublicIp assignpublicip = 461653589;
 
   repeated string securitygroups = 515282516;
 
@@ -450,7 +450,7 @@ message CancelReplayResponse {
 
   optional string replayarn = 361946526;
 
-  ReplayState state = 502047895;
+  optional ReplayState state = 502047895;
 
   optional string statereason = 376138483;
 
@@ -500,11 +500,11 @@ message Condition {
 
 message Connection {
 
-  ConnectionAuthorizationType authorizationtype = 481976511;
+  optional ConnectionAuthorizationType authorizationtype = 481976511;
 
   optional string connectionarn = 187631553;
 
-  ConnectionState connectionstate = 404323675;
+  optional ConnectionState connectionstate = 404323675;
 
   optional string creationtime = 103458790;
 
@@ -640,7 +640,7 @@ message ConnectionOAuthResponseParameters {
 
   ConnectionOAuthClientResponseParameters clientparameters = 246864127;
 
-  ConnectionOAuthHttpMethod httpmethod = 398394961;
+  optional ConnectionOAuthHttpMethod httpmethod = 398394961;
 
   ConnectionHttpParameters oauthhttpparameters = 10294537;
 
@@ -704,7 +704,7 @@ message CreateApiDestinationResponse {
 
   optional string apidestinationarn = 90996885;
 
-  ApiDestinationState apidestinationstate = 13153343;
+  optional ApiDestinationState apidestinationstate = 13153343;
 
   optional string creationtime = 103458790;
 
@@ -736,7 +736,7 @@ message CreateArchiveResponse {
 
   optional string creationtime = 103458790;
 
-  ArchiveState state = 502047895;
+  optional ArchiveState state = 502047895;
 
   optional string statereason = 376138483;
 
@@ -830,7 +830,7 @@ message CreateConnectionResponse {
 
   optional string connectionarn = 187631553;
 
-  ConnectionState connectionstate = 404323675;
+  optional ConnectionState connectionstate = 404323675;
 
   optional string creationtime = 103458790;
 
@@ -908,7 +908,7 @@ message DeauthorizeConnectionResponse {
 
   optional string connectionarn = 187631553;
 
-  ConnectionState connectionstate = 404323675;
+  optional ConnectionState connectionstate = 404323675;
 
   optional string creationtime = 103458790;
 
@@ -960,7 +960,7 @@ message DeleteConnectionResponse {
 
   optional string connectionarn = 187631553;
 
-  ConnectionState connectionstate = 404323675;
+  optional ConnectionState connectionstate = 404323675;
 
   optional string creationtime = 103458790;
 
@@ -1014,7 +1014,7 @@ message DescribeApiDestinationResponse {
 
   optional string apidestinationarn = 90996885;
 
-  ApiDestinationState apidestinationstate = 13153343;
+  optional ApiDestinationState apidestinationstate = 13153343;
 
   optional string connectionarn = 187631553;
 
@@ -1022,7 +1022,7 @@ message DescribeApiDestinationResponse {
 
   optional string description = 115243530;
 
-  ApiDestinationHttpMethod httpmethod = 398394961;
+  optional ApiDestinationHttpMethod httpmethod = 398394961;
 
   optional string invocationendpoint = 411800759;
 
@@ -1064,7 +1064,7 @@ message DescribeArchiveResponse {
 
   optional int64 sizebytes = 486677664;
 
-  ArchiveState state = 502047895;
+  optional ArchiveState state = 502047895;
 
   optional string statereason = 376138483;
 
@@ -1084,11 +1084,11 @@ message DescribeConnectionResponse {
 
   ConnectionAuthResponseParameters authparameters = 258276552;
 
-  ConnectionAuthorizationType authorizationtype = 481976511;
+  optional ConnectionAuthorizationType authorizationtype = 481976511;
 
   optional string connectionarn = 187631553;
 
-  ConnectionState connectionstate = 404323675;
+  optional ConnectionState connectionstate = 404323675;
 
   optional string creationtime = 103458790;
 
@@ -1148,7 +1148,7 @@ message DescribeEventSourceResponse {
 
   optional string name = 266367751;
 
-  EventSourceState state = 502047895;
+  optional EventSourceState state = 502047895;
 
 }
 
@@ -1202,7 +1202,7 @@ message DescribeReplayResponse {
 
   optional string replaystarttime = 503580492;
 
-  ReplayState state = 502047895;
+  optional ReplayState state = 502047895;
 
   optional string statereason = 376138483;
 
@@ -1240,7 +1240,7 @@ message DescribeRuleResponse {
 
   optional string scheduleexpression = 446089471;
 
-  RuleState state = 502047895;
+  optional RuleState state = 502047895;
 
 }
 
@@ -1268,7 +1268,7 @@ message EcsParameters {
 
   optional string group = 91525165;
 
-  LaunchType launchtype = 184333335;
+  optional LaunchType launchtype = 184333335;
 
   NetworkConfiguration networkconfiguration = 240088634;
 
@@ -1278,7 +1278,7 @@ message EcsParameters {
 
   optional string platformversion = 139924287;
 
-  PropagateTags propagatetags = 405557622;
+  optional PropagateTags propagatetags = 405557622;
 
   optional string referenceid = 291739032;
 
@@ -1330,7 +1330,7 @@ message EventSource {
 
   optional string name = 266367751;
 
-  EventSourceState state = 502047895;
+  optional EventSourceState state = 502047895;
 
 }
 
@@ -1480,7 +1480,7 @@ message ListArchivesRequest {
 
   optional string nexttoken = 216957566;
 
-  ArchiveState state = 502047895;
+  optional ArchiveState state = 502047895;
 
 }
 
@@ -1498,7 +1498,7 @@ message ListArchivesResponse {
 
 message ListConnectionsRequest {
 
-  ConnectionState connectionstate = 404323675;
+  optional ConnectionState connectionstate = 404323675;
 
   optional int32 limit = 412502741;
 
@@ -1618,7 +1618,7 @@ message ListReplaysRequest {
 
   optional string nexttoken = 216957566;
 
-  ReplayState state = 502047895;
+  optional ReplayState state = 502047895;
 
 }
 
@@ -1774,7 +1774,7 @@ message PartnerEventSourceAccount {
 
   optional string expirationtime = 93473378;
 
-  EventSourceState state = 502047895;
+  optional EventSourceState state = 502047895;
 
 }
 
@@ -1786,7 +1786,7 @@ message PlacementConstraint {
 
   optional string expression = 253079532;
 
-  PlacementConstraintType type = 287830350;
+  optional PlacementConstraintType type = 287830350;
 
 }
 
@@ -1808,7 +1808,7 @@ message PlacementStrategy {
 
   optional string field = 125985384;
 
-  PlacementStrategyType type = 287830350;
+  optional PlacementStrategyType type = 287830350;
 
 }
 
@@ -1980,7 +1980,7 @@ message PutRuleRequest {
 
   optional string scheduleexpression = 446089471;
 
-  RuleState state = 502047895;
+  optional RuleState state = 502047895;
 
   repeated Tag tags = 381526209;
 
@@ -2120,7 +2120,7 @@ message Replay {
 
   optional string replaystarttime = 503580492;
 
-  ReplayState state = 502047895;
+  optional ReplayState state = 502047895;
 
   optional string statereason = 376138483;
 
@@ -2210,7 +2210,7 @@ message Rule {
 
   optional string scheduleexpression = 446089471;
 
-  RuleState state = 502047895;
+  optional RuleState state = 502047895;
 
 }
 
@@ -2304,7 +2304,7 @@ message StartReplayResponse {
 
   optional string replaystarttime = 503580492;
 
-  ReplayState state = 502047895;
+  optional ReplayState state = 502047895;
 
   optional string statereason = 376138483;
 
@@ -2420,7 +2420,7 @@ message UpdateApiDestinationRequest {
 
   optional string description = 115243530;
 
-  ApiDestinationHttpMethod httpmethod = 398394961;
+  optional ApiDestinationHttpMethod httpmethod = 398394961;
 
   optional string invocationendpoint = 411800759;
 
@@ -2436,7 +2436,7 @@ message UpdateApiDestinationResponse {
 
   optional string apidestinationarn = 90996885;
 
-  ApiDestinationState apidestinationstate = 13153343;
+  optional ApiDestinationState apidestinationstate = 13153343;
 
   optional string creationtime = 103458790;
 
@@ -2466,7 +2466,7 @@ message UpdateArchiveResponse {
 
   optional string creationtime = 103458790;
 
-  ArchiveState state = 502047895;
+  optional ArchiveState state = 502047895;
 
   optional string statereason = 376138483;
 
@@ -2534,7 +2534,7 @@ message UpdateConnectionOAuthRequestParameters {
 
   UpdateConnectionOAuthClientRequestParameters clientparameters = 246864127;
 
-  ConnectionOAuthHttpMethod httpmethod = 398394961;
+  optional ConnectionOAuthHttpMethod httpmethod = 398394961;
 
   ConnectionHttpParameters oauthhttpparameters = 10294537;
 
@@ -2546,7 +2546,7 @@ message UpdateConnectionRequest {
 
   UpdateConnectionAuthRequestParameters authparameters = 258276552;
 
-  ConnectionAuthorizationType authorizationtype = 481976511;
+  optional ConnectionAuthorizationType authorizationtype = 481976511;
 
   optional string description = 115243530;
 
@@ -2560,7 +2560,7 @@ message UpdateConnectionResponse {
 
   optional string connectionarn = 187631553;
 
-  ConnectionState connectionstate = 404323675;
+  optional ConnectionState connectionstate = 404323675;
 
   optional string creationtime = 103458790;
 

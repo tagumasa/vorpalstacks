@@ -77,7 +77,7 @@ func (h *AdminHandler) CreateStateMachine(ctx context.Context, req *connect.Requ
 		Name:       req.Msg.Name,
 		Definition: req.Msg.Definition,
 		RoleArn:    req.Msg.Rolearn,
-		Type:       smTypeFromProto(req.Msg.Type),
+		Type:       smTypeFromProto(req.Msg.GetType()),
 		Tags:       tags,
 	})
 	if err != nil {

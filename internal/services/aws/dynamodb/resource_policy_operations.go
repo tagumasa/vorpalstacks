@@ -4,19 +4,23 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/common/response"
 )
 
 // DeleteResourcePolicy deletes a resource policy from a DynamoDB table.
+// The output carries the fresh revision the delete minted — the revision
+// token a later put must expect once the policy is gone.
 func (s *DynamoDBService) DeleteResourcePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	if err := s.deleteResourcePolicyCore(ctx, reqCtx, DeleteResourcePolicyInput{
+	result, err := s.deleteResourcePolicyCore(ctx, reqCtx, DeleteResourcePolicyInput{
 		ResourceArn:        request.GetStringParam(req.Parameters, "ResourceArn"),
 		ExpectedRevisionId: request.GetStringParam(req.Parameters, "ExpectedRevisionId"),
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	return response.EmptyResponse(), nil
+	return map[string]interface{}{
+		"RevisionId": result.RevisionId,
+	}, nil
 }
 
 // GetResourcePolicy returns the resource policy for a DynamoDB table.

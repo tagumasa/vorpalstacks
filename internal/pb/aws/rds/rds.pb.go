@@ -5198,14 +5198,14 @@ type CreateDBClusterMessage struct {
 	Backupretentionperiod              *int32                            `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Cacertificateidentifier            *string                           `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3,oneof" json:"cacertificateidentifier,omitempty"`
 	Charactersetname                   *string                           `protobuf:"bytes,488468644,opt,name=charactersetname,proto3,oneof" json:"charactersetname,omitempty"`
-	Clusterscalabilitytype             ClusterScalabilityType            `protobuf:"varint,266209549,opt,name=clusterscalabilitytype,proto3,enum=rds.ClusterScalabilityType" json:"clusterscalabilitytype,omitempty"`
+	Clusterscalabilitytype             *ClusterScalabilityType           `protobuf:"varint,266209549,opt,name=clusterscalabilitytype,proto3,enum=rds.ClusterScalabilityType,oneof" json:"clusterscalabilitytype,omitempty"`
 	Copytagstosnapshot                 *bool                             `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Dbclusteridentifier                string                            `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Dbclusterinstanceclass             *string                           `protobuf:"bytes,187882689,opt,name=dbclusterinstanceclass,proto3,oneof" json:"dbclusterinstanceclass,omitempty"`
 	Dbclusterparametergroupname        *string                           `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3,oneof" json:"dbclusterparametergroupname,omitempty"`
 	Dbsubnetgroupname                  *string                           `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
 	Dbsystemid                         *string                           `protobuf:"bytes,213073032,opt,name=dbsystemid,proto3,oneof" json:"dbsystemid,omitempty"`
-	Databaseinsightsmode               DatabaseInsightsMode              `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
+	Databaseinsightsmode               *DatabaseInsightsMode             `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode,oneof" json:"databaseinsightsmode,omitempty"`
 	Databasename                       *string                           `protobuf:"bytes,89545052,opt,name=databasename,proto3,oneof" json:"databasename,omitempty"`
 	Deletionprotection                 *bool                             `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Domain                             *string                           `protobuf:"bytes,505186578,opt,name=domain,proto3,oneof" json:"domain,omitempty"`
@@ -5225,7 +5225,7 @@ type CreateDBClusterMessage struct {
 	Iops                               *int32                            `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Kmskeyid                           *string                           `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Managemasteruserpassword           *bool                             `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
-	Masteruserauthenticationtype       MasterUserAuthenticationType      `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType" json:"masteruserauthenticationtype,omitempty"`
+	Masteruserauthenticationtype       *MasterUserAuthenticationType     `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType,oneof" json:"masteruserauthenticationtype,omitempty"`
 	Masteruserpassword                 *string                           `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
 	Masterusersecretkmskeyid           *string                           `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3,oneof" json:"masterusersecretkmskeyid,omitempty"`
 	Masterusername                     *string                           `protobuf:"bytes,110287892,opt,name=masterusername,proto3,oneof" json:"masterusername,omitempty"`
@@ -5341,8 +5341,8 @@ func (x *CreateDBClusterMessage) GetCharactersetname() string {
 }
 
 func (x *CreateDBClusterMessage) GetClusterscalabilitytype() ClusterScalabilityType {
-	if x != nil {
-		return x.Clusterscalabilitytype
+	if x != nil && x.Clusterscalabilitytype != nil {
+		return *x.Clusterscalabilitytype
 	}
 	return ClusterScalabilityType_CLUSTER_SCALABILITY_TYPE_STANDARD
 }
@@ -5390,8 +5390,8 @@ func (x *CreateDBClusterMessage) GetDbsystemid() string {
 }
 
 func (x *CreateDBClusterMessage) GetDatabaseinsightsmode() DatabaseInsightsMode {
-	if x != nil {
-		return x.Databaseinsightsmode
+	if x != nil && x.Databaseinsightsmode != nil {
+		return *x.Databaseinsightsmode
 	}
 	return DatabaseInsightsMode_DATABASE_INSIGHTS_MODE_STANDARD
 }
@@ -5530,8 +5530,8 @@ func (x *CreateDBClusterMessage) GetManagemasteruserpassword() bool {
 }
 
 func (x *CreateDBClusterMessage) GetMasteruserauthenticationtype() MasterUserAuthenticationType {
-	if x != nil {
-		return x.Masteruserauthenticationtype
+	if x != nil && x.Masteruserauthenticationtype != nil {
+		return *x.Masteruserauthenticationtype
 	}
 	return MasterUserAuthenticationType_MASTER_USER_AUTHENTICATION_TYPE_PASSWORD
 }
@@ -5965,74 +5965,74 @@ func (x *CreateDBClusterSnapshotResult) GetDbclustersnapshot() *DBClusterSnapsho
 }
 
 type CreateDBInstanceMessage struct {
-	state                              protoimpl.MessageState       `protogen:"open.v1"`
-	Additionalstoragevolumes           []*AdditionalStorageVolume   `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
-	Allocatedstorage                   *int32                       `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
-	Autominorversionupgrade            *bool                        `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
-	Availabilityzone                   *string                      `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3,oneof" json:"availabilityzone,omitempty"`
-	Backupretentionperiod              *int32                       `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
-	Backuptarget                       *string                      `protobuf:"bytes,426947907,opt,name=backuptarget,proto3,oneof" json:"backuptarget,omitempty"`
-	Cacertificateidentifier            *string                      `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3,oneof" json:"cacertificateidentifier,omitempty"`
-	Charactersetname                   *string                      `protobuf:"bytes,488468644,opt,name=charactersetname,proto3,oneof" json:"charactersetname,omitempty"`
-	Copytagstosnapshot                 *bool                        `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
-	Customiaminstanceprofile           *string                      `protobuf:"bytes,466590166,opt,name=customiaminstanceprofile,proto3,oneof" json:"customiaminstanceprofile,omitempty"`
-	Dbclusteridentifier                *string                      `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
-	Dbinstanceclass                    string                       `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
-	Dbinstanceidentifier               string                       `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
-	Dbname                             *string                      `protobuf:"bytes,135387881,opt,name=dbname,proto3,oneof" json:"dbname,omitempty"`
-	Dbparametergroupname               *string                      `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
-	Dbsecuritygroups                   []string                     `protobuf:"bytes,420763246,rep,name=dbsecuritygroups,proto3" json:"dbsecuritygroups,omitempty"`
-	Dbsubnetgroupname                  *string                      `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
-	Dbsystemid                         *string                      `protobuf:"bytes,213073032,opt,name=dbsystemid,proto3,oneof" json:"dbsystemid,omitempty"`
-	Databaseinsightsmode               DatabaseInsightsMode         `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
-	Dedicatedlogvolume                 *bool                        `protobuf:"varint,386476811,opt,name=dedicatedlogvolume,proto3,oneof" json:"dedicatedlogvolume,omitempty"`
-	Deletionprotection                 *bool                        `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
-	Domain                             *string                      `protobuf:"bytes,505186578,opt,name=domain,proto3,oneof" json:"domain,omitempty"`
-	Domainauthsecretarn                *string                      `protobuf:"bytes,22808303,opt,name=domainauthsecretarn,proto3,oneof" json:"domainauthsecretarn,omitempty"`
-	Domaindnsips                       []string                     `protobuf:"bytes,26209911,rep,name=domaindnsips,proto3" json:"domaindnsips,omitempty"`
-	Domainfqdn                         *string                      `protobuf:"bytes,309760675,opt,name=domainfqdn,proto3,oneof" json:"domainfqdn,omitempty"`
-	Domainiamrolename                  *string                      `protobuf:"bytes,113148154,opt,name=domainiamrolename,proto3,oneof" json:"domainiamrolename,omitempty"`
-	Domainou                           *string                      `protobuf:"bytes,249985822,opt,name=domainou,proto3,oneof" json:"domainou,omitempty"`
-	Enablecloudwatchlogsexports        []string                     `protobuf:"bytes,388544133,rep,name=enablecloudwatchlogsexports,proto3" json:"enablecloudwatchlogsexports,omitempty"`
-	Enablecustomerownedip              *bool                        `protobuf:"varint,491377047,opt,name=enablecustomerownedip,proto3,oneof" json:"enablecustomerownedip,omitempty"`
-	Enableiamdatabaseauthentication    *bool                        `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
-	Enableperformanceinsights          *bool                        `protobuf:"varint,485203758,opt,name=enableperformanceinsights,proto3,oneof" json:"enableperformanceinsights,omitempty"`
-	Engine                             string                       `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Enginelifecyclesupport             *string                      `protobuf:"bytes,29464465,opt,name=enginelifecyclesupport,proto3,oneof" json:"enginelifecyclesupport,omitempty"`
-	Engineversion                      *string                      `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
-	Iops                               *int32                       `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
-	Kmskeyid                           *string                      `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
-	Licensemodel                       *string                      `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
-	Managemasteruserpassword           *bool                        `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
-	Masteruserauthenticationtype       MasterUserAuthenticationType `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType" json:"masteruserauthenticationtype,omitempty"`
-	Masteruserpassword                 *string                      `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
-	Masterusersecretkmskeyid           *string                      `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3,oneof" json:"masterusersecretkmskeyid,omitempty"`
-	Masterusername                     *string                      `protobuf:"bytes,110287892,opt,name=masterusername,proto3,oneof" json:"masterusername,omitempty"`
-	Maxallocatedstorage                *int32                       `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
-	Monitoringinterval                 *int32                       `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
-	Monitoringrolearn                  *string                      `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3,oneof" json:"monitoringrolearn,omitempty"`
-	Multiaz                            *bool                        `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
-	Multitenant                        *bool                        `protobuf:"varint,311489371,opt,name=multitenant,proto3,oneof" json:"multitenant,omitempty"`
-	Ncharcharactersetname              *string                      `protobuf:"bytes,107704944,opt,name=ncharcharactersetname,proto3,oneof" json:"ncharcharactersetname,omitempty"`
-	Networktype                        *string                      `protobuf:"bytes,349272270,opt,name=networktype,proto3,oneof" json:"networktype,omitempty"`
-	Optiongroupname                    *string                      `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3,oneof" json:"optiongroupname,omitempty"`
-	Performanceinsightskmskeyid        *string                      `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3,oneof" json:"performanceinsightskmskeyid,omitempty"`
-	Performanceinsightsretentionperiod *int32                       `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
-	Port                               *int32                       `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Preferredbackupwindow              *string                      `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3,oneof" json:"preferredbackupwindow,omitempty"`
-	Preferredmaintenancewindow         *string                      `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3,oneof" json:"preferredmaintenancewindow,omitempty"`
-	Processorfeatures                  []*ProcessorFeature          `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
-	Promotiontier                      *int32                       `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
-	Publiclyaccessible                 *bool                        `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
-	Storageencrypted                   *bool                        `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storagethroughput                  *int32                       `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
-	Storagetype                        *string                      `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
-	Tagspecifications                  []*TagSpecification          `protobuf:"bytes,70375790,rep,name=tagspecifications,proto3" json:"tagspecifications,omitempty"`
-	Tags                               []*Tag                       `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Tdecredentialarn                   *string                      `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3,oneof" json:"tdecredentialarn,omitempty"`
-	Tdecredentialpassword              *string                      `protobuf:"bytes,67652301,opt,name=tdecredentialpassword,proto3,oneof" json:"tdecredentialpassword,omitempty"`
-	Timezone                           *string                      `protobuf:"bytes,246302531,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
-	Vpcsecuritygroupids                []string                     `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
+	state                              protoimpl.MessageState        `protogen:"open.v1"`
+	Additionalstoragevolumes           []*AdditionalStorageVolume    `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
+	Allocatedstorage                   *int32                        `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
+	Autominorversionupgrade            *bool                         `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
+	Availabilityzone                   *string                       `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3,oneof" json:"availabilityzone,omitempty"`
+	Backupretentionperiod              *int32                        `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
+	Backuptarget                       *string                       `protobuf:"bytes,426947907,opt,name=backuptarget,proto3,oneof" json:"backuptarget,omitempty"`
+	Cacertificateidentifier            *string                       `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3,oneof" json:"cacertificateidentifier,omitempty"`
+	Charactersetname                   *string                       `protobuf:"bytes,488468644,opt,name=charactersetname,proto3,oneof" json:"charactersetname,omitempty"`
+	Copytagstosnapshot                 *bool                         `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
+	Customiaminstanceprofile           *string                       `protobuf:"bytes,466590166,opt,name=customiaminstanceprofile,proto3,oneof" json:"customiaminstanceprofile,omitempty"`
+	Dbclusteridentifier                *string                       `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Dbinstanceclass                    string                        `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
+	Dbinstanceidentifier               string                        `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
+	Dbname                             *string                       `protobuf:"bytes,135387881,opt,name=dbname,proto3,oneof" json:"dbname,omitempty"`
+	Dbparametergroupname               *string                       `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
+	Dbsecuritygroups                   []string                      `protobuf:"bytes,420763246,rep,name=dbsecuritygroups,proto3" json:"dbsecuritygroups,omitempty"`
+	Dbsubnetgroupname                  *string                       `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
+	Dbsystemid                         *string                       `protobuf:"bytes,213073032,opt,name=dbsystemid,proto3,oneof" json:"dbsystemid,omitempty"`
+	Databaseinsightsmode               *DatabaseInsightsMode         `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode,oneof" json:"databaseinsightsmode,omitempty"`
+	Dedicatedlogvolume                 *bool                         `protobuf:"varint,386476811,opt,name=dedicatedlogvolume,proto3,oneof" json:"dedicatedlogvolume,omitempty"`
+	Deletionprotection                 *bool                         `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
+	Domain                             *string                       `protobuf:"bytes,505186578,opt,name=domain,proto3,oneof" json:"domain,omitempty"`
+	Domainauthsecretarn                *string                       `protobuf:"bytes,22808303,opt,name=domainauthsecretarn,proto3,oneof" json:"domainauthsecretarn,omitempty"`
+	Domaindnsips                       []string                      `protobuf:"bytes,26209911,rep,name=domaindnsips,proto3" json:"domaindnsips,omitempty"`
+	Domainfqdn                         *string                       `protobuf:"bytes,309760675,opt,name=domainfqdn,proto3,oneof" json:"domainfqdn,omitempty"`
+	Domainiamrolename                  *string                       `protobuf:"bytes,113148154,opt,name=domainiamrolename,proto3,oneof" json:"domainiamrolename,omitempty"`
+	Domainou                           *string                       `protobuf:"bytes,249985822,opt,name=domainou,proto3,oneof" json:"domainou,omitempty"`
+	Enablecloudwatchlogsexports        []string                      `protobuf:"bytes,388544133,rep,name=enablecloudwatchlogsexports,proto3" json:"enablecloudwatchlogsexports,omitempty"`
+	Enablecustomerownedip              *bool                         `protobuf:"varint,491377047,opt,name=enablecustomerownedip,proto3,oneof" json:"enablecustomerownedip,omitempty"`
+	Enableiamdatabaseauthentication    *bool                         `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
+	Enableperformanceinsights          *bool                         `protobuf:"varint,485203758,opt,name=enableperformanceinsights,proto3,oneof" json:"enableperformanceinsights,omitempty"`
+	Engine                             string                        `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
+	Enginelifecyclesupport             *string                       `protobuf:"bytes,29464465,opt,name=enginelifecyclesupport,proto3,oneof" json:"enginelifecyclesupport,omitempty"`
+	Engineversion                      *string                       `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
+	Iops                               *int32                        `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
+	Kmskeyid                           *string                       `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Licensemodel                       *string                       `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
+	Managemasteruserpassword           *bool                         `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
+	Masteruserauthenticationtype       *MasterUserAuthenticationType `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType,oneof" json:"masteruserauthenticationtype,omitempty"`
+	Masteruserpassword                 *string                       `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
+	Masterusersecretkmskeyid           *string                       `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3,oneof" json:"masterusersecretkmskeyid,omitempty"`
+	Masterusername                     *string                       `protobuf:"bytes,110287892,opt,name=masterusername,proto3,oneof" json:"masterusername,omitempty"`
+	Maxallocatedstorage                *int32                        `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
+	Monitoringinterval                 *int32                        `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
+	Monitoringrolearn                  *string                       `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3,oneof" json:"monitoringrolearn,omitempty"`
+	Multiaz                            *bool                         `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
+	Multitenant                        *bool                         `protobuf:"varint,311489371,opt,name=multitenant,proto3,oneof" json:"multitenant,omitempty"`
+	Ncharcharactersetname              *string                       `protobuf:"bytes,107704944,opt,name=ncharcharactersetname,proto3,oneof" json:"ncharcharactersetname,omitempty"`
+	Networktype                        *string                       `protobuf:"bytes,349272270,opt,name=networktype,proto3,oneof" json:"networktype,omitempty"`
+	Optiongroupname                    *string                       `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3,oneof" json:"optiongroupname,omitempty"`
+	Performanceinsightskmskeyid        *string                       `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3,oneof" json:"performanceinsightskmskeyid,omitempty"`
+	Performanceinsightsretentionperiod *int32                        `protobuf:"varint,50117548,opt,name=performanceinsightsretentionperiod,proto3,oneof" json:"performanceinsightsretentionperiod,omitempty"`
+	Port                               *int32                        `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
+	Preferredbackupwindow              *string                       `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3,oneof" json:"preferredbackupwindow,omitempty"`
+	Preferredmaintenancewindow         *string                       `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3,oneof" json:"preferredmaintenancewindow,omitempty"`
+	Processorfeatures                  []*ProcessorFeature           `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
+	Promotiontier                      *int32                        `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
+	Publiclyaccessible                 *bool                         `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
+	Storageencrypted                   *bool                         `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
+	Storagethroughput                  *int32                        `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
+	Storagetype                        *string                       `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
+	Tagspecifications                  []*TagSpecification           `protobuf:"bytes,70375790,rep,name=tagspecifications,proto3" json:"tagspecifications,omitempty"`
+	Tags                               []*Tag                        `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	Tdecredentialarn                   *string                       `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3,oneof" json:"tdecredentialarn,omitempty"`
+	Tdecredentialpassword              *string                       `protobuf:"bytes,67652301,opt,name=tdecredentialpassword,proto3,oneof" json:"tdecredentialpassword,omitempty"`
+	Timezone                           *string                       `protobuf:"bytes,246302531,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
+	Vpcsecuritygroupids                []string                      `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
 	sizeCache                          protoimpl.SizeCache
 }
@@ -6194,8 +6194,8 @@ func (x *CreateDBInstanceMessage) GetDbsystemid() string {
 }
 
 func (x *CreateDBInstanceMessage) GetDatabaseinsightsmode() DatabaseInsightsMode {
-	if x != nil {
-		return x.Databaseinsightsmode
+	if x != nil && x.Databaseinsightsmode != nil {
+		return *x.Databaseinsightsmode
 	}
 	return DatabaseInsightsMode_DATABASE_INSIGHTS_MODE_STANDARD
 }
@@ -6334,8 +6334,8 @@ func (x *CreateDBInstanceMessage) GetManagemasteruserpassword() bool {
 }
 
 func (x *CreateDBInstanceMessage) GetMasteruserauthenticationtype() MasterUserAuthenticationType {
-	if x != nil {
-		return x.Masteruserauthenticationtype
+	if x != nil && x.Masteruserauthenticationtype != nil {
+		return *x.Masteruserauthenticationtype
 	}
 	return MasterUserAuthenticationType_MASTER_USER_AUTHENTICATION_TYPE_PASSWORD
 }
@@ -6550,7 +6550,7 @@ type CreateDBInstanceReadReplicaMessage struct {
 	Dbinstanceidentifier               string                     `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
 	Dbparametergroupname               *string                    `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
 	Dbsubnetgroupname                  *string                    `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
-	Databaseinsightsmode               DatabaseInsightsMode       `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
+	Databaseinsightsmode               *DatabaseInsightsMode      `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode,oneof" json:"databaseinsightsmode,omitempty"`
 	Dedicatedlogvolume                 *bool                      `protobuf:"varint,386476811,opt,name=dedicatedlogvolume,proto3,oneof" json:"dedicatedlogvolume,omitempty"`
 	Deletionprotection                 *bool                      `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Domain                             *string                    `protobuf:"bytes,505186578,opt,name=domain,proto3,oneof" json:"domain,omitempty"`
@@ -6577,7 +6577,7 @@ type CreateDBInstanceReadReplicaMessage struct {
 	Presignedurl                       *string                    `protobuf:"bytes,334334652,opt,name=presignedurl,proto3,oneof" json:"presignedurl,omitempty"`
 	Processorfeatures                  []*ProcessorFeature        `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
 	Publiclyaccessible                 *bool                      `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
-	Replicamode                        ReplicaMode                `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode" json:"replicamode,omitempty"`
+	Replicamode                        *ReplicaMode               `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode,oneof" json:"replicamode,omitempty"`
 	Sourcedbclusteridentifier          *string                    `protobuf:"bytes,319462008,opt,name=sourcedbclusteridentifier,proto3,oneof" json:"sourcedbclusteridentifier,omitempty"`
 	Sourcedbinstanceidentifier         *string                    `protobuf:"bytes,330655991,opt,name=sourcedbinstanceidentifier,proto3,oneof" json:"sourcedbinstanceidentifier,omitempty"`
 	Storagethroughput                  *int32                     `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
@@ -6706,8 +6706,8 @@ func (x *CreateDBInstanceReadReplicaMessage) GetDbsubnetgroupname() string {
 }
 
 func (x *CreateDBInstanceReadReplicaMessage) GetDatabaseinsightsmode() DatabaseInsightsMode {
-	if x != nil {
-		return x.Databaseinsightsmode
+	if x != nil && x.Databaseinsightsmode != nil {
+		return *x.Databaseinsightsmode
 	}
 	return DatabaseInsightsMode_DATABASE_INSIGHTS_MODE_STANDARD
 }
@@ -6895,8 +6895,8 @@ func (x *CreateDBInstanceReadReplicaMessage) GetPubliclyaccessible() bool {
 }
 
 func (x *CreateDBInstanceReadReplicaMessage) GetReplicamode() ReplicaMode {
-	if x != nil {
-		return x.Replicamode
+	if x != nil && x.Replicamode != nil {
+		return *x.Replicamode
 	}
 	return ReplicaMode_REPLICA_MODE_MOUNTED
 }
@@ -7165,14 +7165,14 @@ func (x *CreateDBParameterGroupResult) GetDbparametergroup() *DBParameterGroup {
 }
 
 type CreateDBProxyEndpointRequest struct {
-	state               protoimpl.MessageState    `protogen:"open.v1"`
-	Dbproxyendpointname string                    `protobuf:"bytes,150012592,opt,name=dbproxyendpointname,proto3" json:"dbproxyendpointname,omitempty"`
-	Dbproxyname         string                    `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
-	Endpointnetworktype EndpointNetworkType       `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType" json:"endpointnetworktype,omitempty"`
-	Tags                []*Tag                    `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Targetrole          DBProxyEndpointTargetRole `protobuf:"varint,534667769,opt,name=targetrole,proto3,enum=rds.DBProxyEndpointTargetRole" json:"targetrole,omitempty"`
-	Vpcsecuritygroupids []string                  `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
-	Vpcsubnetids        []string                  `protobuf:"bytes,496523074,rep,name=vpcsubnetids,proto3" json:"vpcsubnetids,omitempty"`
+	state               protoimpl.MessageState     `protogen:"open.v1"`
+	Dbproxyendpointname string                     `protobuf:"bytes,150012592,opt,name=dbproxyendpointname,proto3" json:"dbproxyendpointname,omitempty"`
+	Dbproxyname         string                     `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
+	Endpointnetworktype *EndpointNetworkType       `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType,oneof" json:"endpointnetworktype,omitempty"`
+	Tags                []*Tag                     `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	Targetrole          *DBProxyEndpointTargetRole `protobuf:"varint,534667769,opt,name=targetrole,proto3,enum=rds.DBProxyEndpointTargetRole,oneof" json:"targetrole,omitempty"`
+	Vpcsecuritygroupids []string                   `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
+	Vpcsubnetids        []string                   `protobuf:"bytes,496523074,rep,name=vpcsubnetids,proto3" json:"vpcsubnetids,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -7222,8 +7222,8 @@ func (x *CreateDBProxyEndpointRequest) GetDbproxyname() string {
 }
 
 func (x *CreateDBProxyEndpointRequest) GetEndpointnetworktype() EndpointNetworkType {
-	if x != nil {
-		return x.Endpointnetworktype
+	if x != nil && x.Endpointnetworktype != nil {
+		return *x.Endpointnetworktype
 	}
 	return EndpointNetworkType_ENDPOINT_NETWORK_TYPE_DUAL
 }
@@ -7236,8 +7236,8 @@ func (x *CreateDBProxyEndpointRequest) GetTags() []*Tag {
 }
 
 func (x *CreateDBProxyEndpointRequest) GetTargetrole() DBProxyEndpointTargetRole {
-	if x != nil {
-		return x.Targetrole
+	if x != nil && x.Targetrole != nil {
+		return *x.Targetrole
 	}
 	return DBProxyEndpointTargetRole_D_B_PROXY_ENDPOINT_TARGET_ROLE_READ_ONLY
 }
@@ -7301,20 +7301,20 @@ func (x *CreateDBProxyEndpointResponse) GetDbproxyendpoint() *DBProxyEndpoint {
 }
 
 type CreateDBProxyRequest struct {
-	state                       protoimpl.MessageState      `protogen:"open.v1"`
-	Auth                        []*UserAuthConfig           `protobuf:"bytes,359396464,rep,name=auth,proto3" json:"auth,omitempty"`
-	Dbproxyname                 string                      `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
-	Debuglogging                *bool                       `protobuf:"varint,105593218,opt,name=debuglogging,proto3,oneof" json:"debuglogging,omitempty"`
-	Defaultauthscheme           DefaultAuthScheme           `protobuf:"varint,436791396,opt,name=defaultauthscheme,proto3,enum=rds.DefaultAuthScheme" json:"defaultauthscheme,omitempty"`
-	Endpointnetworktype         EndpointNetworkType         `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType" json:"endpointnetworktype,omitempty"`
-	Enginefamily                EngineFamily                `protobuf:"varint,298996604,opt,name=enginefamily,proto3,enum=rds.EngineFamily" json:"enginefamily,omitempty"`
-	Idleclienttimeout           *int32                      `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3,oneof" json:"idleclienttimeout,omitempty"`
-	Requiretls                  *bool                       `protobuf:"varint,503360838,opt,name=requiretls,proto3,oneof" json:"requiretls,omitempty"`
-	Rolearn                     string                      `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
-	Tags                        []*Tag                      `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Targetconnectionnetworktype TargetConnectionNetworkType `protobuf:"varint,474595735,opt,name=targetconnectionnetworktype,proto3,enum=rds.TargetConnectionNetworkType" json:"targetconnectionnetworktype,omitempty"`
-	Vpcsecuritygroupids         []string                    `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
-	Vpcsubnetids                []string                    `protobuf:"bytes,496523074,rep,name=vpcsubnetids,proto3" json:"vpcsubnetids,omitempty"`
+	state                       protoimpl.MessageState       `protogen:"open.v1"`
+	Auth                        []*UserAuthConfig            `protobuf:"bytes,359396464,rep,name=auth,proto3" json:"auth,omitempty"`
+	Dbproxyname                 string                       `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
+	Debuglogging                *bool                        `protobuf:"varint,105593218,opt,name=debuglogging,proto3,oneof" json:"debuglogging,omitempty"`
+	Defaultauthscheme           *DefaultAuthScheme           `protobuf:"varint,436791396,opt,name=defaultauthscheme,proto3,enum=rds.DefaultAuthScheme,oneof" json:"defaultauthscheme,omitempty"`
+	Endpointnetworktype         *EndpointNetworkType         `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType,oneof" json:"endpointnetworktype,omitempty"`
+	Enginefamily                EngineFamily                 `protobuf:"varint,298996604,opt,name=enginefamily,proto3,enum=rds.EngineFamily" json:"enginefamily,omitempty"`
+	Idleclienttimeout           *int32                       `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3,oneof" json:"idleclienttimeout,omitempty"`
+	Requiretls                  *bool                        `protobuf:"varint,503360838,opt,name=requiretls,proto3,oneof" json:"requiretls,omitempty"`
+	Rolearn                     string                       `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
+	Tags                        []*Tag                       `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	Targetconnectionnetworktype *TargetConnectionNetworkType `protobuf:"varint,474595735,opt,name=targetconnectionnetworktype,proto3,enum=rds.TargetConnectionNetworkType,oneof" json:"targetconnectionnetworktype,omitempty"`
+	Vpcsecuritygroupids         []string                     `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
+	Vpcsubnetids                []string                     `protobuf:"bytes,496523074,rep,name=vpcsubnetids,proto3" json:"vpcsubnetids,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -7371,15 +7371,15 @@ func (x *CreateDBProxyRequest) GetDebuglogging() bool {
 }
 
 func (x *CreateDBProxyRequest) GetDefaultauthscheme() DefaultAuthScheme {
-	if x != nil {
-		return x.Defaultauthscheme
+	if x != nil && x.Defaultauthscheme != nil {
+		return *x.Defaultauthscheme
 	}
 	return DefaultAuthScheme_DEFAULT_AUTH_SCHEME_NONE
 }
 
 func (x *CreateDBProxyRequest) GetEndpointnetworktype() EndpointNetworkType {
-	if x != nil {
-		return x.Endpointnetworktype
+	if x != nil && x.Endpointnetworktype != nil {
+		return *x.Endpointnetworktype
 	}
 	return EndpointNetworkType_ENDPOINT_NETWORK_TYPE_DUAL
 }
@@ -7420,8 +7420,8 @@ func (x *CreateDBProxyRequest) GetTags() []*Tag {
 }
 
 func (x *CreateDBProxyRequest) GetTargetconnectionnetworktype() TargetConnectionNetworkType {
-	if x != nil {
-		return x.Targetconnectionnetworktype
+	if x != nil && x.Targetconnectionnetworktype != nil {
+		return *x.Targetconnectionnetworktype
 	}
 	return TargetConnectionNetworkType_TARGET_CONNECTION_NETWORK_TYPE_IPV6
 }
@@ -8788,8 +8788,8 @@ type DBCluster struct {
 	state                                  protoimpl.MessageState                `protogen:"open.v1"`
 	Activitystreamkinesisstreamname        *string                               `protobuf:"bytes,172036658,opt,name=activitystreamkinesisstreamname,proto3,oneof" json:"activitystreamkinesisstreamname,omitempty"`
 	Activitystreamkmskeyid                 *string                               `protobuf:"bytes,394779710,opt,name=activitystreamkmskeyid,proto3,oneof" json:"activitystreamkmskeyid,omitempty"`
-	Activitystreammode                     ActivityStreamMode                    `protobuf:"varint,19126712,opt,name=activitystreammode,proto3,enum=rds.ActivityStreamMode" json:"activitystreammode,omitempty"`
-	Activitystreamstatus                   ActivityStreamStatus                  `protobuf:"varint,476622623,opt,name=activitystreamstatus,proto3,enum=rds.ActivityStreamStatus" json:"activitystreamstatus,omitempty"`
+	Activitystreammode                     *ActivityStreamMode                   `protobuf:"varint,19126712,opt,name=activitystreammode,proto3,enum=rds.ActivityStreamMode,oneof" json:"activitystreammode,omitempty"`
+	Activitystreamstatus                   *ActivityStreamStatus                 `protobuf:"varint,476622623,opt,name=activitystreamstatus,proto3,enum=rds.ActivityStreamStatus,oneof" json:"activitystreamstatus,omitempty"`
 	Allocatedstorage                       *int32                                `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Associatedroles                        []*DBClusterRole                      `protobuf:"bytes,428985325,rep,name=associatedroles,proto3" json:"associatedroles,omitempty"`
 	Autominorversionupgrade                *bool                                 `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
@@ -8804,7 +8804,7 @@ type DBCluster struct {
 	Charactersetname                       *string                               `protobuf:"bytes,488468644,opt,name=charactersetname,proto3,oneof" json:"charactersetname,omitempty"`
 	Clonegroupid                           *string                               `protobuf:"bytes,66234961,opt,name=clonegroupid,proto3,oneof" json:"clonegroupid,omitempty"`
 	Clustercreatetime                      *string                               `protobuf:"bytes,119020389,opt,name=clustercreatetime,proto3,oneof" json:"clustercreatetime,omitempty"`
-	Clusterscalabilitytype                 ClusterScalabilityType                `protobuf:"varint,266209549,opt,name=clusterscalabilitytype,proto3,enum=rds.ClusterScalabilityType" json:"clusterscalabilitytype,omitempty"`
+	Clusterscalabilitytype                 *ClusterScalabilityType               `protobuf:"varint,266209549,opt,name=clusterscalabilitytype,proto3,enum=rds.ClusterScalabilityType,oneof" json:"clusterscalabilitytype,omitempty"`
 	Copytagstosnapshot                     *bool                                 `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Crossaccountclone                      *bool                                 `protobuf:"varint,163557100,opt,name=crossaccountclone,proto3,oneof" json:"crossaccountclone,omitempty"`
 	Customendpoints                        []string                              `protobuf:"bytes,168629153,rep,name=customendpoints,proto3" json:"customendpoints,omitempty"`
@@ -8816,7 +8816,7 @@ type DBCluster struct {
 	Dbclusterparametergroup                *string                               `protobuf:"bytes,260166678,opt,name=dbclusterparametergroup,proto3,oneof" json:"dbclusterparametergroup,omitempty"`
 	Dbsubnetgroup                          *string                               `protobuf:"bytes,390486926,opt,name=dbsubnetgroup,proto3,oneof" json:"dbsubnetgroup,omitempty"`
 	Dbsystemid                             *string                               `protobuf:"bytes,213073032,opt,name=dbsystemid,proto3,oneof" json:"dbsystemid,omitempty"`
-	Databaseinsightsmode                   DatabaseInsightsMode                  `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
+	Databaseinsightsmode                   *DatabaseInsightsMode                 `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode,oneof" json:"databaseinsightsmode,omitempty"`
 	Databasename                           *string                               `protobuf:"bytes,89545052,opt,name=databasename,proto3,oneof" json:"databasename,omitempty"`
 	Dbclusterresourceid                    *string                               `protobuf:"bytes,203287771,opt,name=dbclusterresourceid,proto3,oneof" json:"dbclusterresourceid,omitempty"`
 	Deletionprotection                     *bool                                 `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
@@ -8831,7 +8831,7 @@ type DBCluster struct {
 	Engineversion                          *string                               `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Globalclusteridentifier                *string                               `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3,oneof" json:"globalclusteridentifier,omitempty"`
 	Globalwriteforwardingrequested         *bool                                 `protobuf:"varint,401516695,opt,name=globalwriteforwardingrequested,proto3,oneof" json:"globalwriteforwardingrequested,omitempty"`
-	Globalwriteforwardingstatus            WriteForwardingStatus                 `protobuf:"varint,147047845,opt,name=globalwriteforwardingstatus,proto3,enum=rds.WriteForwardingStatus" json:"globalwriteforwardingstatus,omitempty"`
+	Globalwriteforwardingstatus            *WriteForwardingStatus                `protobuf:"varint,147047845,opt,name=globalwriteforwardingstatus,proto3,enum=rds.WriteForwardingStatus,oneof" json:"globalwriteforwardingstatus,omitempty"`
 	Hostedzoneid                           *string                               `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3,oneof" json:"hostedzoneid,omitempty"`
 	Httpendpointenabled                    *bool                                 `protobuf:"varint,136929710,opt,name=httpendpointenabled,proto3,oneof" json:"httpendpointenabled,omitempty"`
 	Iamdatabaseauthenticationenabled       *bool                                 `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
@@ -8841,7 +8841,7 @@ type DBCluster struct {
 	Kmskeyid                               *string                               `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Latestrestorabletime                   *string                               `protobuf:"bytes,238336097,opt,name=latestrestorabletime,proto3,oneof" json:"latestrestorabletime,omitempty"`
 	Limitlessdatabase                      *LimitlessDatabase                    `protobuf:"bytes,444817377,opt,name=limitlessdatabase,proto3" json:"limitlessdatabase,omitempty"`
-	Localwriteforwardingstatus             LocalWriteForwardingStatus            `protobuf:"varint,242353919,opt,name=localwriteforwardingstatus,proto3,enum=rds.LocalWriteForwardingStatus" json:"localwriteforwardingstatus,omitempty"`
+	Localwriteforwardingstatus             *LocalWriteForwardingStatus           `protobuf:"varint,242353919,opt,name=localwriteforwardingstatus,proto3,enum=rds.LocalWriteForwardingStatus,oneof" json:"localwriteforwardingstatus,omitempty"`
 	Masterusersecret                       *MasterUserSecret                     `protobuf:"bytes,260483101,opt,name=masterusersecret,proto3" json:"masterusersecret,omitempty"`
 	Masterusername                         *string                               `protobuf:"bytes,110287892,opt,name=masterusername,proto3,oneof" json:"masterusername,omitempty"`
 	Monitoringinterval                     *int32                                `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
@@ -8867,11 +8867,11 @@ type DBCluster struct {
 	Status                                 *string                               `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	Statusinfos                            []*DBClusterStatusInfo                `protobuf:"bytes,421770169,rep,name=statusinfos,proto3" json:"statusinfos,omitempty"`
 	Storageencrypted                       *bool                                 `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storageencryptiontype                  StorageEncryptionType                 `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
+	Storageencryptiontype                  *StorageEncryptionType                `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType,oneof" json:"storageencryptiontype,omitempty"`
 	Storagethroughput                      *int32                                `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                            *string                               `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Taglist                                []*Tag                                `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
-	Upgraderolloutorder                    UpgradeRolloutOrder                   `protobuf:"varint,522027557,opt,name=upgraderolloutorder,proto3,enum=rds.UpgradeRolloutOrder" json:"upgraderolloutorder,omitempty"`
+	Upgraderolloutorder                    *UpgradeRolloutOrder                  `protobuf:"varint,522027557,opt,name=upgraderolloutorder,proto3,enum=rds.UpgradeRolloutOrder,oneof" json:"upgraderolloutorder,omitempty"`
 	Vpcnetworkingenabled                   *bool                                 `protobuf:"varint,317396848,opt,name=vpcnetworkingenabled,proto3,oneof" json:"vpcnetworkingenabled,omitempty"`
 	Vpcsecuritygroups                      []*VpcSecurityGroupMembership         `protobuf:"bytes,463975815,rep,name=vpcsecuritygroups,proto3" json:"vpcsecuritygroups,omitempty"`
 	unknownFields                          protoimpl.UnknownFields
@@ -8923,15 +8923,15 @@ func (x *DBCluster) GetActivitystreamkmskeyid() string {
 }
 
 func (x *DBCluster) GetActivitystreammode() ActivityStreamMode {
-	if x != nil {
-		return x.Activitystreammode
+	if x != nil && x.Activitystreammode != nil {
+		return *x.Activitystreammode
 	}
 	return ActivityStreamMode_ACTIVITY_STREAM_MODE_SYNC
 }
 
 func (x *DBCluster) GetActivitystreamstatus() ActivityStreamStatus {
-	if x != nil {
-		return x.Activitystreamstatus
+	if x != nil && x.Activitystreamstatus != nil {
+		return *x.Activitystreamstatus
 	}
 	return ActivityStreamStatus_ACTIVITY_STREAM_STATUS_STARTING
 }
@@ -9035,8 +9035,8 @@ func (x *DBCluster) GetClustercreatetime() string {
 }
 
 func (x *DBCluster) GetClusterscalabilitytype() ClusterScalabilityType {
-	if x != nil {
-		return x.Clusterscalabilitytype
+	if x != nil && x.Clusterscalabilitytype != nil {
+		return *x.Clusterscalabilitytype
 	}
 	return ClusterScalabilityType_CLUSTER_SCALABILITY_TYPE_STANDARD
 }
@@ -9119,8 +9119,8 @@ func (x *DBCluster) GetDbsystemid() string {
 }
 
 func (x *DBCluster) GetDatabaseinsightsmode() DatabaseInsightsMode {
-	if x != nil {
-		return x.Databaseinsightsmode
+	if x != nil && x.Databaseinsightsmode != nil {
+		return *x.Databaseinsightsmode
 	}
 	return DatabaseInsightsMode_DATABASE_INSIGHTS_MODE_STANDARD
 }
@@ -9224,8 +9224,8 @@ func (x *DBCluster) GetGlobalwriteforwardingrequested() bool {
 }
 
 func (x *DBCluster) GetGlobalwriteforwardingstatus() WriteForwardingStatus {
-	if x != nil {
-		return x.Globalwriteforwardingstatus
+	if x != nil && x.Globalwriteforwardingstatus != nil {
+		return *x.Globalwriteforwardingstatus
 	}
 	return WriteForwardingStatus_WRITE_FORWARDING_STATUS_DISABLED
 }
@@ -9294,8 +9294,8 @@ func (x *DBCluster) GetLimitlessdatabase() *LimitlessDatabase {
 }
 
 func (x *DBCluster) GetLocalwriteforwardingstatus() LocalWriteForwardingStatus {
-	if x != nil {
-		return x.Localwriteforwardingstatus
+	if x != nil && x.Localwriteforwardingstatus != nil {
+		return *x.Localwriteforwardingstatus
 	}
 	return LocalWriteForwardingStatus_LOCAL_WRITE_FORWARDING_STATUS_DISABLED
 }
@@ -9476,8 +9476,8 @@ func (x *DBCluster) GetStorageencrypted() bool {
 }
 
 func (x *DBCluster) GetStorageencryptiontype() StorageEncryptionType {
-	if x != nil {
-		return x.Storageencryptiontype
+	if x != nil && x.Storageencryptiontype != nil {
+		return *x.Storageencryptiontype
 	}
 	return StorageEncryptionType_STORAGE_ENCRYPTION_TYPE_CMK
 }
@@ -9504,8 +9504,8 @@ func (x *DBCluster) GetTaglist() []*Tag {
 }
 
 func (x *DBCluster) GetUpgraderolloutorder() UpgradeRolloutOrder {
-	if x != nil {
-		return x.Upgraderolloutorder
+	if x != nil && x.Upgraderolloutorder != nil {
+		return *x.Upgraderolloutorder
 	}
 	return UpgradeRolloutOrder_UPGRADE_ROLLOUT_ORDER_LAST
 }
@@ -9645,7 +9645,7 @@ type DBClusterAutomatedBackup struct {
 	Restorewindow                    *RestoreWindow         `protobuf:"bytes,45362386,opt,name=restorewindow,proto3" json:"restorewindow,omitempty"`
 	Status                           *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	Storageencrypted                 *bool                  `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storageencryptiontype            StorageEncryptionType  `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
+	Storageencryptiontype            *StorageEncryptionType `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType,oneof" json:"storageencryptiontype,omitempty"`
 	Storagethroughput                *int32                 `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                      *string                `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Taglist                          []*Tag                 `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
@@ -9846,8 +9846,8 @@ func (x *DBClusterAutomatedBackup) GetStorageencrypted() bool {
 }
 
 func (x *DBClusterAutomatedBackup) GetStorageencryptiontype() StorageEncryptionType {
-	if x != nil {
-		return x.Storageencryptiontype
+	if x != nil && x.Storageencryptiontype != nil {
+		return *x.Storageencryptiontype
 	}
 	return StorageEncryptionType_STORAGE_ENCRYPTION_TYPE_CMK
 }
@@ -11314,7 +11314,7 @@ type DBClusterSnapshot struct {
 	Sourcedbclustersnapshotarn       *string                `protobuf:"bytes,75298872,opt,name=sourcedbclustersnapshotarn,proto3,oneof" json:"sourcedbclustersnapshotarn,omitempty"`
 	Status                           *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	Storageencrypted                 *bool                  `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storageencryptiontype            StorageEncryptionType  `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
+	Storageencryptiontype            *StorageEncryptionType `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType,oneof" json:"storageencryptiontype,omitempty"`
 	Storagethroughput                *int32                 `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                      *string                `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Taglist                          []*Tag                 `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
@@ -11522,8 +11522,8 @@ func (x *DBClusterSnapshot) GetStorageencrypted() bool {
 }
 
 func (x *DBClusterSnapshot) GetStorageencryptiontype() StorageEncryptionType {
-	if x != nil {
-		return x.Storageencryptiontype
+	if x != nil && x.Storageencryptiontype != nil {
+		return *x.Storageencryptiontype
 	}
 	return StorageEncryptionType_STORAGE_ENCRYPTION_TYPE_CMK
 }
@@ -12257,15 +12257,15 @@ type DBInstance struct {
 	Activitystreamenginenativeauditfieldsincluded *bool                                    `protobuf:"varint,167255294,opt,name=activitystreamenginenativeauditfieldsincluded,proto3,oneof" json:"activitystreamenginenativeauditfieldsincluded,omitempty"`
 	Activitystreamkinesisstreamname               *string                                  `protobuf:"bytes,172036658,opt,name=activitystreamkinesisstreamname,proto3,oneof" json:"activitystreamkinesisstreamname,omitempty"`
 	Activitystreamkmskeyid                        *string                                  `protobuf:"bytes,394779710,opt,name=activitystreamkmskeyid,proto3,oneof" json:"activitystreamkmskeyid,omitempty"`
-	Activitystreammode                            ActivityStreamMode                       `protobuf:"varint,19126712,opt,name=activitystreammode,proto3,enum=rds.ActivityStreamMode" json:"activitystreammode,omitempty"`
-	Activitystreampolicystatus                    ActivityStreamPolicyStatus               `protobuf:"varint,131587121,opt,name=activitystreampolicystatus,proto3,enum=rds.ActivityStreamPolicyStatus" json:"activitystreampolicystatus,omitempty"`
-	Activitystreamstatus                          ActivityStreamStatus                     `protobuf:"varint,476622623,opt,name=activitystreamstatus,proto3,enum=rds.ActivityStreamStatus" json:"activitystreamstatus,omitempty"`
+	Activitystreammode                            *ActivityStreamMode                      `protobuf:"varint,19126712,opt,name=activitystreammode,proto3,enum=rds.ActivityStreamMode,oneof" json:"activitystreammode,omitempty"`
+	Activitystreampolicystatus                    *ActivityStreamPolicyStatus              `protobuf:"varint,131587121,opt,name=activitystreampolicystatus,proto3,enum=rds.ActivityStreamPolicyStatus,oneof" json:"activitystreampolicystatus,omitempty"`
+	Activitystreamstatus                          *ActivityStreamStatus                    `protobuf:"varint,476622623,opt,name=activitystreamstatus,proto3,enum=rds.ActivityStreamStatus,oneof" json:"activitystreamstatus,omitempty"`
 	Additionalstoragevolumes                      []*AdditionalStorageVolumeOutput         `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
 	Allocatedstorage                              *int32                                   `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Associatedroles                               []*DBInstanceRole                        `protobuf:"bytes,428985325,rep,name=associatedroles,proto3" json:"associatedroles,omitempty"`
 	Autominorversionupgrade                       *bool                                    `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Automaticrestarttime                          *string                                  `protobuf:"bytes,497974735,opt,name=automaticrestarttime,proto3,oneof" json:"automaticrestarttime,omitempty"`
-	Automationmode                                AutomationMode                           `protobuf:"varint,234653746,opt,name=automationmode,proto3,enum=rds.AutomationMode" json:"automationmode,omitempty"`
+	Automationmode                                *AutomationMode                          `protobuf:"varint,234653746,opt,name=automationmode,proto3,enum=rds.AutomationMode,oneof" json:"automationmode,omitempty"`
 	Availabilityzone                              *string                                  `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3,oneof" json:"availabilityzone,omitempty"`
 	Awsbackuprecoverypointarn                     *string                                  `protobuf:"bytes,496169795,opt,name=awsbackuprecoverypointarn,proto3,oneof" json:"awsbackuprecoverypointarn,omitempty"`
 	Backupretentionperiod                         *int32                                   `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
@@ -12287,7 +12287,7 @@ type DBInstance struct {
 	Dbsecuritygroups                              []*DBSecurityGroupMembership             `protobuf:"bytes,420763246,rep,name=dbsecuritygroups,proto3" json:"dbsecuritygroups,omitempty"`
 	Dbsubnetgroup                                 *DBSubnetGroup                           `protobuf:"bytes,390486926,opt,name=dbsubnetgroup,proto3" json:"dbsubnetgroup,omitempty"`
 	Dbsystemid                                    *string                                  `protobuf:"bytes,213073032,opt,name=dbsystemid,proto3,oneof" json:"dbsystemid,omitempty"`
-	Databaseinsightsmode                          DatabaseInsightsMode                     `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
+	Databaseinsightsmode                          *DatabaseInsightsMode                    `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode,oneof" json:"databaseinsightsmode,omitempty"`
 	Dbinstanceport                                *int32                                   `protobuf:"varint,122890396,opt,name=dbinstanceport,proto3,oneof" json:"dbinstanceport,omitempty"`
 	Dbiresourceid                                 *string                                  `protobuf:"bytes,483153532,opt,name=dbiresourceid,proto3,oneof" json:"dbiresourceid,omitempty"`
 	Dedicatedlogvolume                            *bool                                    `protobuf:"varint,386476811,opt,name=dedicatedlogvolume,proto3,oneof" json:"dedicatedlogvolume,omitempty"`
@@ -12331,12 +12331,12 @@ type DBInstance struct {
 	Readreplicadbinstanceidentifiers              []string                                 `protobuf:"bytes,261713211,rep,name=readreplicadbinstanceidentifiers,proto3" json:"readreplicadbinstanceidentifiers,omitempty"`
 	Readreplicasourcedbclusteridentifier          *string                                  `protobuf:"bytes,381359650,opt,name=readreplicasourcedbclusteridentifier,proto3,oneof" json:"readreplicasourcedbclusteridentifier,omitempty"`
 	Readreplicasourcedbinstanceidentifier         *string                                  `protobuf:"bytes,306391633,opt,name=readreplicasourcedbinstanceidentifier,proto3,oneof" json:"readreplicasourcedbinstanceidentifier,omitempty"`
-	Replicamode                                   ReplicaMode                              `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode" json:"replicamode,omitempty"`
+	Replicamode                                   *ReplicaMode                             `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode,oneof" json:"replicamode,omitempty"`
 	Resumefullautomationmodetime                  *string                                  `protobuf:"bytes,491133479,opt,name=resumefullautomationmodetime,proto3,oneof" json:"resumefullautomationmodetime,omitempty"`
 	Secondaryavailabilityzone                     *string                                  `protobuf:"bytes,228625469,opt,name=secondaryavailabilityzone,proto3,oneof" json:"secondaryavailabilityzone,omitempty"`
 	Statusinfos                                   []*DBInstanceStatusInfo                  `protobuf:"bytes,421770169,rep,name=statusinfos,proto3" json:"statusinfos,omitempty"`
 	Storageencrypted                              *bool                                    `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storageencryptiontype                         StorageEncryptionType                    `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
+	Storageencryptiontype                         *StorageEncryptionType                   `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType,oneof" json:"storageencryptiontype,omitempty"`
 	Storageoperationpercentprogress               *int32                                   `protobuf:"varint,174239916,opt,name=storageoperationpercentprogress,proto3,oneof" json:"storageoperationpercentprogress,omitempty"`
 	Storageoperationstatus                        *string                                  `protobuf:"bytes,130220862,opt,name=storageoperationstatus,proto3,oneof" json:"storageoperationstatus,omitempty"`
 	Storagethroughput                             *int32                                   `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
@@ -12345,7 +12345,7 @@ type DBInstance struct {
 	Taglist                                       []*Tag                                   `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	Tdecredentialarn                              *string                                  `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3,oneof" json:"tdecredentialarn,omitempty"`
 	Timezone                                      *string                                  `protobuf:"bytes,246302531,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
-	Upgraderolloutorder                           UpgradeRolloutOrder                      `protobuf:"varint,522027557,opt,name=upgraderolloutorder,proto3,enum=rds.UpgradeRolloutOrder" json:"upgraderolloutorder,omitempty"`
+	Upgraderolloutorder                           *UpgradeRolloutOrder                     `protobuf:"varint,522027557,opt,name=upgraderolloutorder,proto3,enum=rds.UpgradeRolloutOrder,oneof" json:"upgraderolloutorder,omitempty"`
 	Vpcsecuritygroups                             []*VpcSecurityGroupMembership            `protobuf:"bytes,463975815,rep,name=vpcsecuritygroups,proto3" json:"vpcsecuritygroups,omitempty"`
 	unknownFields                                 protoimpl.UnknownFields
 	sizeCache                                     protoimpl.SizeCache
@@ -12403,22 +12403,22 @@ func (x *DBInstance) GetActivitystreamkmskeyid() string {
 }
 
 func (x *DBInstance) GetActivitystreammode() ActivityStreamMode {
-	if x != nil {
-		return x.Activitystreammode
+	if x != nil && x.Activitystreammode != nil {
+		return *x.Activitystreammode
 	}
 	return ActivityStreamMode_ACTIVITY_STREAM_MODE_SYNC
 }
 
 func (x *DBInstance) GetActivitystreampolicystatus() ActivityStreamPolicyStatus {
-	if x != nil {
-		return x.Activitystreampolicystatus
+	if x != nil && x.Activitystreampolicystatus != nil {
+		return *x.Activitystreampolicystatus
 	}
 	return ActivityStreamPolicyStatus_ACTIVITY_STREAM_POLICY_STATUS_LOCKING_POLICY
 }
 
 func (x *DBInstance) GetActivitystreamstatus() ActivityStreamStatus {
-	if x != nil {
-		return x.Activitystreamstatus
+	if x != nil && x.Activitystreamstatus != nil {
+		return *x.Activitystreamstatus
 	}
 	return ActivityStreamStatus_ACTIVITY_STREAM_STATUS_STARTING
 }
@@ -12459,8 +12459,8 @@ func (x *DBInstance) GetAutomaticrestarttime() string {
 }
 
 func (x *DBInstance) GetAutomationmode() AutomationMode {
-	if x != nil {
-		return x.Automationmode
+	if x != nil && x.Automationmode != nil {
+		return *x.Automationmode
 	}
 	return AutomationMode_AUTOMATION_MODE_ALL_PAUSED
 }
@@ -12613,8 +12613,8 @@ func (x *DBInstance) GetDbsystemid() string {
 }
 
 func (x *DBInstance) GetDatabaseinsightsmode() DatabaseInsightsMode {
-	if x != nil {
-		return x.Databaseinsightsmode
+	if x != nil && x.Databaseinsightsmode != nil {
+		return *x.Databaseinsightsmode
 	}
 	return DatabaseInsightsMode_DATABASE_INSIGHTS_MODE_STANDARD
 }
@@ -12921,8 +12921,8 @@ func (x *DBInstance) GetReadreplicasourcedbinstanceidentifier() string {
 }
 
 func (x *DBInstance) GetReplicamode() ReplicaMode {
-	if x != nil {
-		return x.Replicamode
+	if x != nil && x.Replicamode != nil {
+		return *x.Replicamode
 	}
 	return ReplicaMode_REPLICA_MODE_MOUNTED
 }
@@ -12956,8 +12956,8 @@ func (x *DBInstance) GetStorageencrypted() bool {
 }
 
 func (x *DBInstance) GetStorageencryptiontype() StorageEncryptionType {
-	if x != nil {
-		return x.Storageencryptiontype
+	if x != nil && x.Storageencryptiontype != nil {
+		return *x.Storageencryptiontype
 	}
 	return StorageEncryptionType_STORAGE_ENCRYPTION_TYPE_CMK
 }
@@ -13019,8 +13019,8 @@ func (x *DBInstance) GetTimezone() string {
 }
 
 func (x *DBInstance) GetUpgraderolloutorder() UpgradeRolloutOrder {
-	if x != nil {
-		return x.Upgraderolloutorder
+	if x != nil && x.Upgraderolloutorder != nil {
+		return *x.Upgraderolloutorder
 	}
 	return UpgradeRolloutOrder_UPGRADE_ROLLOUT_ORDER_LAST
 }
@@ -13106,7 +13106,7 @@ type DBInstanceAutomatedBackup struct {
 	Region                                 *string                                  `protobuf:"bytes,154040478,opt,name=region,proto3,oneof" json:"region,omitempty"`
 	Restorewindow                          *RestoreWindow                           `protobuf:"bytes,45362386,opt,name=restorewindow,proto3" json:"restorewindow,omitempty"`
 	Status                                 *string                                  `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
-	Storageencryptiontype                  StorageEncryptionType                    `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
+	Storageencryptiontype                  *StorageEncryptionType                   `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType,oneof" json:"storageencryptiontype,omitempty"`
 	Storagethroughput                      *int32                                   `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                            *string                                  `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Taglist                                []*Tag                                   `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
@@ -13344,8 +13344,8 @@ func (x *DBInstanceAutomatedBackup) GetStatus() string {
 }
 
 func (x *DBInstanceAutomatedBackup) GetStorageencryptiontype() StorageEncryptionType {
-	if x != nil {
-		return x.Storageencryptiontype
+	if x != nil && x.Storageencryptiontype != nil {
+		return *x.Storageencryptiontype
 	}
 	return StorageEncryptionType_STORAGE_ENCRYPTION_TYPE_CMK
 }
@@ -14481,25 +14481,25 @@ func (x *DBParameterGroupsMessage) GetMarker() string {
 }
 
 type DBProxy struct {
-	state                       protoimpl.MessageState      `protogen:"open.v1"`
-	Auth                        []*UserAuthConfigInfo       `protobuf:"bytes,359396464,rep,name=auth,proto3" json:"auth,omitempty"`
-	Createddate                 *string                     `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
-	Dbproxyarn                  *string                     `protobuf:"bytes,347165077,opt,name=dbproxyarn,proto3,oneof" json:"dbproxyarn,omitempty"`
-	Dbproxyname                 *string                     `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3,oneof" json:"dbproxyname,omitempty"`
-	Debuglogging                *bool                       `protobuf:"varint,105593218,opt,name=debuglogging,proto3,oneof" json:"debuglogging,omitempty"`
-	Defaultauthscheme           *string                     `protobuf:"bytes,436791396,opt,name=defaultauthscheme,proto3,oneof" json:"defaultauthscheme,omitempty"`
-	Endpoint                    *string                     `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
-	Endpointnetworktype         EndpointNetworkType         `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType" json:"endpointnetworktype,omitempty"`
-	Enginefamily                *string                     `protobuf:"bytes,298996604,opt,name=enginefamily,proto3,oneof" json:"enginefamily,omitempty"`
-	Idleclienttimeout           *int32                      `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3,oneof" json:"idleclienttimeout,omitempty"`
-	Requiretls                  *bool                       `protobuf:"varint,503360838,opt,name=requiretls,proto3,oneof" json:"requiretls,omitempty"`
-	Rolearn                     *string                     `protobuf:"bytes,322567169,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
-	Status                      DBProxyStatus               `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.DBProxyStatus" json:"status,omitempty"`
-	Targetconnectionnetworktype TargetConnectionNetworkType `protobuf:"varint,474595735,opt,name=targetconnectionnetworktype,proto3,enum=rds.TargetConnectionNetworkType" json:"targetconnectionnetworktype,omitempty"`
-	Updateddate                 *string                     `protobuf:"bytes,98230565,opt,name=updateddate,proto3,oneof" json:"updateddate,omitempty"`
-	Vpcid                       *string                     `protobuf:"bytes,412355958,opt,name=vpcid,proto3,oneof" json:"vpcid,omitempty"`
-	Vpcsecuritygroupids         []string                    `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
-	Vpcsubnetids                []string                    `protobuf:"bytes,496523074,rep,name=vpcsubnetids,proto3" json:"vpcsubnetids,omitempty"`
+	state                       protoimpl.MessageState       `protogen:"open.v1"`
+	Auth                        []*UserAuthConfigInfo        `protobuf:"bytes,359396464,rep,name=auth,proto3" json:"auth,omitempty"`
+	Createddate                 *string                      `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Dbproxyarn                  *string                      `protobuf:"bytes,347165077,opt,name=dbproxyarn,proto3,oneof" json:"dbproxyarn,omitempty"`
+	Dbproxyname                 *string                      `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3,oneof" json:"dbproxyname,omitempty"`
+	Debuglogging                *bool                        `protobuf:"varint,105593218,opt,name=debuglogging,proto3,oneof" json:"debuglogging,omitempty"`
+	Defaultauthscheme           *string                      `protobuf:"bytes,436791396,opt,name=defaultauthscheme,proto3,oneof" json:"defaultauthscheme,omitempty"`
+	Endpoint                    *string                      `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	Endpointnetworktype         *EndpointNetworkType         `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType,oneof" json:"endpointnetworktype,omitempty"`
+	Enginefamily                *string                      `protobuf:"bytes,298996604,opt,name=enginefamily,proto3,oneof" json:"enginefamily,omitempty"`
+	Idleclienttimeout           *int32                       `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3,oneof" json:"idleclienttimeout,omitempty"`
+	Requiretls                  *bool                        `protobuf:"varint,503360838,opt,name=requiretls,proto3,oneof" json:"requiretls,omitempty"`
+	Rolearn                     *string                      `protobuf:"bytes,322567169,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
+	Status                      *DBProxyStatus               `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.DBProxyStatus,oneof" json:"status,omitempty"`
+	Targetconnectionnetworktype *TargetConnectionNetworkType `protobuf:"varint,474595735,opt,name=targetconnectionnetworktype,proto3,enum=rds.TargetConnectionNetworkType,oneof" json:"targetconnectionnetworktype,omitempty"`
+	Updateddate                 *string                      `protobuf:"bytes,98230565,opt,name=updateddate,proto3,oneof" json:"updateddate,omitempty"`
+	Vpcid                       *string                      `protobuf:"bytes,412355958,opt,name=vpcid,proto3,oneof" json:"vpcid,omitempty"`
+	Vpcsecuritygroupids         []string                     `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
+	Vpcsubnetids                []string                     `protobuf:"bytes,496523074,rep,name=vpcsubnetids,proto3" json:"vpcsubnetids,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -14584,8 +14584,8 @@ func (x *DBProxy) GetEndpoint() string {
 }
 
 func (x *DBProxy) GetEndpointnetworktype() EndpointNetworkType {
-	if x != nil {
-		return x.Endpointnetworktype
+	if x != nil && x.Endpointnetworktype != nil {
+		return *x.Endpointnetworktype
 	}
 	return EndpointNetworkType_ENDPOINT_NETWORK_TYPE_DUAL
 }
@@ -14619,15 +14619,15 @@ func (x *DBProxy) GetRolearn() string {
 }
 
 func (x *DBProxy) GetStatus() DBProxyStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DBProxyStatus_D_B_PROXY_STATUS_SUSPENDING
 }
 
 func (x *DBProxy) GetTargetconnectionnetworktype() TargetConnectionNetworkType {
-	if x != nil {
-		return x.Targetconnectionnetworktype
+	if x != nil && x.Targetconnectionnetworktype != nil {
+		return *x.Targetconnectionnetworktype
 	}
 	return TargetConnectionNetworkType_TARGET_CONNECTION_NETWORK_TYPE_IPV6
 }
@@ -14705,19 +14705,19 @@ func (x *DBProxyAlreadyExistsFault) GetMessage() string {
 }
 
 type DBProxyEndpoint struct {
-	state               protoimpl.MessageState    `protogen:"open.v1"`
-	Createddate         *string                   `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
-	Dbproxyendpointarn  *string                   `protobuf:"bytes,239606092,opt,name=dbproxyendpointarn,proto3,oneof" json:"dbproxyendpointarn,omitempty"`
-	Dbproxyendpointname *string                   `protobuf:"bytes,150012592,opt,name=dbproxyendpointname,proto3,oneof" json:"dbproxyendpointname,omitempty"`
-	Dbproxyname         *string                   `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3,oneof" json:"dbproxyname,omitempty"`
-	Endpoint            *string                   `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
-	Endpointnetworktype EndpointNetworkType       `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType" json:"endpointnetworktype,omitempty"`
-	Isdefault           *bool                     `protobuf:"varint,101743631,opt,name=isdefault,proto3,oneof" json:"isdefault,omitempty"`
-	Status              DBProxyEndpointStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.DBProxyEndpointStatus" json:"status,omitempty"`
-	Targetrole          DBProxyEndpointTargetRole `protobuf:"varint,534667769,opt,name=targetrole,proto3,enum=rds.DBProxyEndpointTargetRole" json:"targetrole,omitempty"`
-	Vpcid               *string                   `protobuf:"bytes,412355958,opt,name=vpcid,proto3,oneof" json:"vpcid,omitempty"`
-	Vpcsecuritygroupids []string                  `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
-	Vpcsubnetids        []string                  `protobuf:"bytes,496523074,rep,name=vpcsubnetids,proto3" json:"vpcsubnetids,omitempty"`
+	state               protoimpl.MessageState     `protogen:"open.v1"`
+	Createddate         *string                    `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Dbproxyendpointarn  *string                    `protobuf:"bytes,239606092,opt,name=dbproxyendpointarn,proto3,oneof" json:"dbproxyendpointarn,omitempty"`
+	Dbproxyendpointname *string                    `protobuf:"bytes,150012592,opt,name=dbproxyendpointname,proto3,oneof" json:"dbproxyendpointname,omitempty"`
+	Dbproxyname         *string                    `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3,oneof" json:"dbproxyname,omitempty"`
+	Endpoint            *string                    `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	Endpointnetworktype *EndpointNetworkType       `protobuf:"varint,300530723,opt,name=endpointnetworktype,proto3,enum=rds.EndpointNetworkType,oneof" json:"endpointnetworktype,omitempty"`
+	Isdefault           *bool                      `protobuf:"varint,101743631,opt,name=isdefault,proto3,oneof" json:"isdefault,omitempty"`
+	Status              *DBProxyEndpointStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.DBProxyEndpointStatus,oneof" json:"status,omitempty"`
+	Targetrole          *DBProxyEndpointTargetRole `protobuf:"varint,534667769,opt,name=targetrole,proto3,enum=rds.DBProxyEndpointTargetRole,oneof" json:"targetrole,omitempty"`
+	Vpcid               *string                    `protobuf:"bytes,412355958,opt,name=vpcid,proto3,oneof" json:"vpcid,omitempty"`
+	Vpcsecuritygroupids []string                   `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
+	Vpcsubnetids        []string                   `protobuf:"bytes,496523074,rep,name=vpcsubnetids,proto3" json:"vpcsubnetids,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -14788,8 +14788,8 @@ func (x *DBProxyEndpoint) GetEndpoint() string {
 }
 
 func (x *DBProxyEndpoint) GetEndpointnetworktype() EndpointNetworkType {
-	if x != nil {
-		return x.Endpointnetworktype
+	if x != nil && x.Endpointnetworktype != nil {
+		return *x.Endpointnetworktype
 	}
 	return EndpointNetworkType_ENDPOINT_NETWORK_TYPE_DUAL
 }
@@ -14802,15 +14802,15 @@ func (x *DBProxyEndpoint) GetIsdefault() bool {
 }
 
 func (x *DBProxyEndpoint) GetStatus() DBProxyEndpointStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return DBProxyEndpointStatus_D_B_PROXY_ENDPOINT_STATUS_INCOMPATIBLE_NETWORK
 }
 
 func (x *DBProxyEndpoint) GetTargetrole() DBProxyEndpointTargetRole {
-	if x != nil {
-		return x.Targetrole
+	if x != nil && x.Targetrole != nil {
+		return *x.Targetrole
 	}
 	return DBProxyEndpointTargetRole_D_B_PROXY_ENDPOINT_TARGET_ROLE_READ_ONLY
 }
@@ -15061,11 +15061,11 @@ type DBProxyTarget struct {
 	Endpoint         *string                `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
 	Port             *int32                 `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Rdsresourceid    *string                `protobuf:"bytes,200404394,opt,name=rdsresourceid,proto3,oneof" json:"rdsresourceid,omitempty"`
-	Role             TargetRole             `protobuf:"varint,271285818,opt,name=role,proto3,enum=rds.TargetRole" json:"role,omitempty"`
+	Role             *TargetRole            `protobuf:"varint,271285818,opt,name=role,proto3,enum=rds.TargetRole,oneof" json:"role,omitempty"`
 	Targetarn        *string                `protobuf:"bytes,217664144,opt,name=targetarn,proto3,oneof" json:"targetarn,omitempty"`
 	Targethealth     *TargetHealth          `protobuf:"bytes,419437151,opt,name=targethealth,proto3" json:"targethealth,omitempty"`
 	Trackedclusterid *string                `protobuf:"bytes,311875409,opt,name=trackedclusterid,proto3,oneof" json:"trackedclusterid,omitempty"`
-	Type             TargetType             `protobuf:"varint,290836590,opt,name=type,proto3,enum=rds.TargetType" json:"type,omitempty"`
+	Type             *TargetType            `protobuf:"varint,290836590,opt,name=type,proto3,enum=rds.TargetType,oneof" json:"type,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -15122,8 +15122,8 @@ func (x *DBProxyTarget) GetRdsresourceid() string {
 }
 
 func (x *DBProxyTarget) GetRole() TargetRole {
-	if x != nil {
-		return x.Role
+	if x != nil && x.Role != nil {
+		return *x.Role
 	}
 	return TargetRole_TARGET_ROLE_UNKNOWN
 }
@@ -15150,8 +15150,8 @@ func (x *DBProxyTarget) GetTrackedclusterid() string {
 }
 
 func (x *DBProxyTarget) GetType() TargetType {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return TargetType_TARGET_TYPE_RDS_SERVERLESS_ENDPOINT
 }
@@ -16301,7 +16301,7 @@ type DBSnapshot struct {
 	Sourcedbsnapshotidentifier       *string                    `protobuf:"bytes,363859646,opt,name=sourcedbsnapshotidentifier,proto3,oneof" json:"sourcedbsnapshotidentifier,omitempty"`
 	Sourceregion                     *string                    `protobuf:"bytes,213476941,opt,name=sourceregion,proto3,oneof" json:"sourceregion,omitempty"`
 	Status                           *string                    `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
-	Storageencryptiontype            StorageEncryptionType      `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
+	Storageencryptiontype            *StorageEncryptionType     `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType,oneof" json:"storageencryptiontype,omitempty"`
 	Storagethroughput                *int32                     `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
 	Storagetype                      *string                    `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Taglist                          []*Tag                     `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
@@ -16588,8 +16588,8 @@ func (x *DBSnapshot) GetStatus() string {
 }
 
 func (x *DBSnapshot) GetStorageencryptiontype() StorageEncryptionType {
-	if x != nil {
-		return x.Storageencryptiontype
+	if x != nil && x.Storageencryptiontype != nil {
+		return *x.Storageencryptiontype
 	}
 	return StorageEncryptionType_STORAGE_ENCRYPTION_TYPE_CMK
 }
@@ -22309,7 +22309,7 @@ type DescribeEventsMessage struct {
 	Marker           *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords       *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Sourceidentifier *string                `protobuf:"bytes,190015756,opt,name=sourceidentifier,proto3,oneof" json:"sourceidentifier,omitempty"`
-	Sourcetype       SourceType             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.SourceType" json:"sourcetype,omitempty"`
+	Sourcetype       *SourceType            `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.SourceType,oneof" json:"sourcetype,omitempty"`
 	Starttime        *string                `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -22395,8 +22395,8 @@ func (x *DescribeEventsMessage) GetSourceidentifier() string {
 }
 
 func (x *DescribeEventsMessage) GetSourcetype() SourceType {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return SourceType_SOURCE_TYPE_BLUE_GREEN_DEPLOYMENT
 }
@@ -22415,7 +22415,7 @@ type DescribeExportTasksMessage struct {
 	Marker               *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Sourcearn            *string                `protobuf:"bytes,439903072,opt,name=sourcearn,proto3,oneof" json:"sourcearn,omitempty"`
-	Sourcetype           ExportSourceType       `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.ExportSourceType" json:"sourcetype,omitempty"`
+	Sourcetype           *ExportSourceType      `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.ExportSourceType,oneof" json:"sourcetype,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -22486,8 +22486,8 @@ func (x *DescribeExportTasksMessage) GetSourcearn() string {
 }
 
 func (x *DescribeExportTasksMessage) GetSourcetype() ExportSourceType {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return ExportSourceType_EXPORT_SOURCE_TYPE_CLUSTER
 }
@@ -24371,7 +24371,7 @@ type Event struct {
 	Message          *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Sourcearn        *string                `protobuf:"bytes,439903072,opt,name=sourcearn,proto3,oneof" json:"sourcearn,omitempty"`
 	Sourceidentifier *string                `protobuf:"bytes,190015756,opt,name=sourceidentifier,proto3,oneof" json:"sourceidentifier,omitempty"`
-	Sourcetype       SourceType             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.SourceType" json:"sourcetype,omitempty"`
+	Sourcetype       *SourceType            `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.SourceType,oneof" json:"sourcetype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -24442,8 +24442,8 @@ func (x *Event) GetSourceidentifier() string {
 }
 
 func (x *Event) GetSourcetype() SourceType {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return SourceType_SOURCE_TYPE_BLUE_GREEN_DEPLOYMENT
 }
@@ -24820,7 +24820,7 @@ type ExportTask struct {
 	S3Prefix               *string                `protobuf:"bytes,21529336,opt,name=s3prefix,proto3,oneof" json:"s3prefix,omitempty"`
 	Snapshottime           *string                `protobuf:"bytes,25121101,opt,name=snapshottime,proto3,oneof" json:"snapshottime,omitempty"`
 	Sourcearn              *string                `protobuf:"bytes,439903072,opt,name=sourcearn,proto3,oneof" json:"sourcearn,omitempty"`
-	Sourcetype             ExportSourceType       `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.ExportSourceType" json:"sourcetype,omitempty"`
+	Sourcetype             *ExportSourceType      `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=rds.ExportSourceType,oneof" json:"sourcetype,omitempty"`
 	Status                 *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	Taskendtime            *string                `protobuf:"bytes,145989753,opt,name=taskendtime,proto3,oneof" json:"taskendtime,omitempty"`
 	Taskstarttime          *string                `protobuf:"bytes,200950330,opt,name=taskstarttime,proto3,oneof" json:"taskstarttime,omitempty"`
@@ -24931,8 +24931,8 @@ func (x *ExportTask) GetSourcearn() string {
 }
 
 func (x *ExportTask) GetSourcetype() ExportSourceType {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return ExportSourceType_EXPORT_SOURCE_TYPE_CLUSTER
 }
@@ -25324,7 +25324,7 @@ type FailoverState struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Fromdbclusterarn  *string                `protobuf:"bytes,119220095,opt,name=fromdbclusterarn,proto3,oneof" json:"fromdbclusterarn,omitempty"`
 	Isdatalossallowed *bool                  `protobuf:"varint,28895927,opt,name=isdatalossallowed,proto3,oneof" json:"isdatalossallowed,omitempty"`
-	Status            FailoverStatus         `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.FailoverStatus" json:"status,omitempty"`
+	Status            *FailoverStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.FailoverStatus,oneof" json:"status,omitempty"`
 	Todbclusterarn    *string                `protobuf:"bytes,469618472,opt,name=todbclusterarn,proto3,oneof" json:"todbclusterarn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -25375,8 +25375,8 @@ func (x *FailoverState) GetIsdatalossallowed() bool {
 }
 
 func (x *FailoverState) GetStatus() FailoverStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return FailoverStatus_FAILOVER_STATUS_PENDING
 }
@@ -25455,7 +25455,7 @@ type GlobalCluster struct {
 	Globalclusterresourceid *string                `protobuf:"bytes,398885538,opt,name=globalclusterresourceid,proto3,oneof" json:"globalclusterresourceid,omitempty"`
 	Status                  *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	Storageencrypted        *bool                  `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storageencryptiontype   StorageEncryptionType  `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType" json:"storageencryptiontype,omitempty"`
+	Storageencryptiontype   *StorageEncryptionType `protobuf:"varint,6656660,opt,name=storageencryptiontype,proto3,enum=rds.StorageEncryptionType,oneof" json:"storageencryptiontype,omitempty"`
 	Taglist                 []*Tag                 `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -25583,8 +25583,8 @@ func (x *GlobalCluster) GetStorageencrypted() bool {
 }
 
 func (x *GlobalCluster) GetStorageencryptiontype() StorageEncryptionType {
-	if x != nil {
-		return x.Storageencryptiontype
+	if x != nil && x.Storageencryptiontype != nil {
+		return *x.Storageencryptiontype
 	}
 	return StorageEncryptionType_STORAGE_ENCRYPTION_TYPE_CMK
 }
@@ -25641,12 +25641,12 @@ func (x *GlobalClusterAlreadyExistsFault) GetMessage() string {
 }
 
 type GlobalClusterMember struct {
-	state                       protoimpl.MessageState                   `protogen:"open.v1"`
-	Dbclusterarn                *string                                  `protobuf:"bytes,173586159,opt,name=dbclusterarn,proto3,oneof" json:"dbclusterarn,omitempty"`
-	Globalwriteforwardingstatus WriteForwardingStatus                    `protobuf:"varint,147047845,opt,name=globalwriteforwardingstatus,proto3,enum=rds.WriteForwardingStatus" json:"globalwriteforwardingstatus,omitempty"`
-	Iswriter                    *bool                                    `protobuf:"varint,23347771,opt,name=iswriter,proto3,oneof" json:"iswriter,omitempty"`
-	Readers                     []string                                 `protobuf:"bytes,168786784,rep,name=readers,proto3" json:"readers,omitempty"`
-	Synchronizationstatus       GlobalClusterMemberSynchronizationStatus `protobuf:"varint,150130254,opt,name=synchronizationstatus,proto3,enum=rds.GlobalClusterMemberSynchronizationStatus" json:"synchronizationstatus,omitempty"`
+	state                       protoimpl.MessageState                    `protogen:"open.v1"`
+	Dbclusterarn                *string                                   `protobuf:"bytes,173586159,opt,name=dbclusterarn,proto3,oneof" json:"dbclusterarn,omitempty"`
+	Globalwriteforwardingstatus *WriteForwardingStatus                    `protobuf:"varint,147047845,opt,name=globalwriteforwardingstatus,proto3,enum=rds.WriteForwardingStatus,oneof" json:"globalwriteforwardingstatus,omitempty"`
+	Iswriter                    *bool                                     `protobuf:"varint,23347771,opt,name=iswriter,proto3,oneof" json:"iswriter,omitempty"`
+	Readers                     []string                                  `protobuf:"bytes,168786784,rep,name=readers,proto3" json:"readers,omitempty"`
+	Synchronizationstatus       *GlobalClusterMemberSynchronizationStatus `protobuf:"varint,150130254,opt,name=synchronizationstatus,proto3,enum=rds.GlobalClusterMemberSynchronizationStatus,oneof" json:"synchronizationstatus,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -25689,8 +25689,8 @@ func (x *GlobalClusterMember) GetDbclusterarn() string {
 }
 
 func (x *GlobalClusterMember) GetGlobalwriteforwardingstatus() WriteForwardingStatus {
-	if x != nil {
-		return x.Globalwriteforwardingstatus
+	if x != nil && x.Globalwriteforwardingstatus != nil {
+		return *x.Globalwriteforwardingstatus
 	}
 	return WriteForwardingStatus_WRITE_FORWARDING_STATUS_DISABLED
 }
@@ -25710,8 +25710,8 @@ func (x *GlobalClusterMember) GetReaders() []string {
 }
 
 func (x *GlobalClusterMember) GetSynchronizationstatus() GlobalClusterMemberSynchronizationStatus {
-	if x != nil {
-		return x.Synchronizationstatus
+	if x != nil && x.Synchronizationstatus != nil {
+		return *x.Synchronizationstatus
 	}
 	return GlobalClusterMemberSynchronizationStatus_GLOBAL_CLUSTER_MEMBER_SYNCHRONIZATION_STATUS_PENDING_RESYNC
 }
@@ -26227,7 +26227,7 @@ type Integration struct {
 	Integrationname             *string                `protobuf:"bytes,399304719,opt,name=integrationname,proto3,oneof" json:"integrationname,omitempty"`
 	Kmskeyid                    *string                `protobuf:"bytes,13237581,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Sourcearn                   *string                `protobuf:"bytes,439903072,opt,name=sourcearn,proto3,oneof" json:"sourcearn,omitempty"`
-	Status                      IntegrationStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.IntegrationStatus" json:"status,omitempty"`
+	Status                      *IntegrationStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.IntegrationStatus,oneof" json:"status,omitempty"`
 	Tags                        []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Targetarn                   *string                `protobuf:"bytes,217664144,opt,name=targetarn,proto3,oneof" json:"targetarn,omitempty"`
 	unknownFields               protoimpl.UnknownFields
@@ -26328,8 +26328,8 @@ func (x *Integration) GetSourcearn() string {
 }
 
 func (x *Integration) GetStatus() IntegrationStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return IntegrationStatus_INTEGRATION_STATUS_SYNCING
 }
@@ -27985,9 +27985,9 @@ func (x *KMSKeyNotAccessibleFault) GetMessage() string {
 }
 
 type LimitlessDatabase struct {
-	state          protoimpl.MessageState  `protogen:"open.v1"`
-	Minrequiredacu *float64                `protobuf:"fixed64,325776882,opt,name=minrequiredacu,proto3,oneof" json:"minrequiredacu,omitempty"`
-	Status         LimitlessDatabaseStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.LimitlessDatabaseStatus" json:"status,omitempty"`
+	state          protoimpl.MessageState   `protogen:"open.v1"`
+	Minrequiredacu *float64                 `protobuf:"fixed64,325776882,opt,name=minrequiredacu,proto3,oneof" json:"minrequiredacu,omitempty"`
+	Status         *LimitlessDatabaseStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.LimitlessDatabaseStatus,oneof" json:"status,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -28030,8 +28030,8 @@ func (x *LimitlessDatabase) GetMinrequiredacu() float64 {
 }
 
 func (x *LimitlessDatabase) GetStatus() LimitlessDatabaseStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return LimitlessDatabaseStatus_LIMITLESS_DATABASE_STATUS_DISABLED
 }
@@ -28410,7 +28410,7 @@ func (x *MinimumEngineVersionPerAllowedValue) GetMinimumengineversion() string {
 
 type ModifyActivityStreamRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Auditpolicystate AuditPolicyState       `protobuf:"varint,229378680,opt,name=auditpolicystate,proto3,enum=rds.AuditPolicyState" json:"auditpolicystate,omitempty"`
+	Auditpolicystate *AuditPolicyState      `protobuf:"varint,229378680,opt,name=auditpolicystate,proto3,enum=rds.AuditPolicyState,oneof" json:"auditpolicystate,omitempty"`
 	Resourcearn      *string                `protobuf:"bytes,364280877,opt,name=resourcearn,proto3,oneof" json:"resourcearn,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -28447,8 +28447,8 @@ func (*ModifyActivityStreamRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ModifyActivityStreamRequest) GetAuditpolicystate() AuditPolicyState {
-	if x != nil {
-		return x.Auditpolicystate
+	if x != nil && x.Auditpolicystate != nil {
+		return *x.Auditpolicystate
 	}
 	return AuditPolicyState_AUDIT_POLICY_STATE_LOCKED_POLICY
 }
@@ -28461,13 +28461,13 @@ func (x *ModifyActivityStreamRequest) GetResourcearn() string {
 }
 
 type ModifyActivityStreamResponse struct {
-	state                           protoimpl.MessageState     `protogen:"open.v1"`
-	Enginenativeauditfieldsincluded *bool                      `protobuf:"varint,276327711,opt,name=enginenativeauditfieldsincluded,proto3,oneof" json:"enginenativeauditfieldsincluded,omitempty"`
-	Kinesisstreamname               *string                    `protobuf:"bytes,433177563,opt,name=kinesisstreamname,proto3,oneof" json:"kinesisstreamname,omitempty"`
-	Kmskeyid                        *string                    `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
-	Mode                            ActivityStreamMode         `protobuf:"varint,323909427,opt,name=mode,proto3,enum=rds.ActivityStreamMode" json:"mode,omitempty"`
-	Policystatus                    ActivityStreamPolicyStatus `protobuf:"varint,256036138,opt,name=policystatus,proto3,enum=rds.ActivityStreamPolicyStatus" json:"policystatus,omitempty"`
-	Status                          ActivityStreamStatus       `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.ActivityStreamStatus" json:"status,omitempty"`
+	state                           protoimpl.MessageState      `protogen:"open.v1"`
+	Enginenativeauditfieldsincluded *bool                       `protobuf:"varint,276327711,opt,name=enginenativeauditfieldsincluded,proto3,oneof" json:"enginenativeauditfieldsincluded,omitempty"`
+	Kinesisstreamname               *string                     `protobuf:"bytes,433177563,opt,name=kinesisstreamname,proto3,oneof" json:"kinesisstreamname,omitempty"`
+	Kmskeyid                        *string                     `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Mode                            *ActivityStreamMode         `protobuf:"varint,323909427,opt,name=mode,proto3,enum=rds.ActivityStreamMode,oneof" json:"mode,omitempty"`
+	Policystatus                    *ActivityStreamPolicyStatus `protobuf:"varint,256036138,opt,name=policystatus,proto3,enum=rds.ActivityStreamPolicyStatus,oneof" json:"policystatus,omitempty"`
+	Status                          *ActivityStreamStatus       `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.ActivityStreamStatus,oneof" json:"status,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -28524,22 +28524,22 @@ func (x *ModifyActivityStreamResponse) GetKmskeyid() string {
 }
 
 func (x *ModifyActivityStreamResponse) GetMode() ActivityStreamMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return ActivityStreamMode_ACTIVITY_STREAM_MODE_SYNC
 }
 
 func (x *ModifyActivityStreamResponse) GetPolicystatus() ActivityStreamPolicyStatus {
-	if x != nil {
-		return x.Policystatus
+	if x != nil && x.Policystatus != nil {
+		return *x.Policystatus
 	}
 	return ActivityStreamPolicyStatus_ACTIVITY_STREAM_POLICY_STATUS_LOCKING_POLICY
 }
 
 func (x *ModifyActivityStreamResponse) GetStatus() ActivityStreamStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ActivityStreamStatus_ACTIVITY_STREAM_STATUS_STARTING
 }
@@ -28801,11 +28801,11 @@ func (x *ModifyCurrentDBClusterCapacityMessage) GetTimeoutaction() string {
 }
 
 type ModifyCustomDBEngineVersionMessage struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Description   *string                   `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Engine        string                    `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion string                    `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Status        CustomEngineVersionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.CustomEngineVersionStatus" json:"status,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Description   *string                    `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Engine        string                     `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
+	Engineversion string                     `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Status        *CustomEngineVersionStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.CustomEngineVersionStatus,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -28862,8 +28862,8 @@ func (x *ModifyCustomDBEngineVersionMessage) GetEngineversion() string {
 }
 
 func (x *ModifyCustomDBEngineVersionMessage) GetStatus() CustomEngineVersionStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return CustomEngineVersionStatus_CUSTOM_ENGINE_VERSION_STATUS_INACTIVE
 }
@@ -28953,7 +28953,7 @@ type ModifyDBClusterMessage struct {
 	Dbclusterinstanceclass             *string                            `protobuf:"bytes,187882689,opt,name=dbclusterinstanceclass,proto3,oneof" json:"dbclusterinstanceclass,omitempty"`
 	Dbclusterparametergroupname        *string                            `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3,oneof" json:"dbclusterparametergroupname,omitempty"`
 	Dbinstanceparametergroupname       *string                            `protobuf:"bytes,505550326,opt,name=dbinstanceparametergroupname,proto3,oneof" json:"dbinstanceparametergroupname,omitempty"`
-	Databaseinsightsmode               DatabaseInsightsMode               `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
+	Databaseinsightsmode               *DatabaseInsightsMode              `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode,oneof" json:"databaseinsightsmode,omitempty"`
 	Deletionprotection                 *bool                              `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Domain                             *string                            `protobuf:"bytes,505186578,opt,name=domain,proto3,oneof" json:"domain,omitempty"`
 	Domainiamrolename                  *string                            `protobuf:"bytes,113148154,opt,name=domainiamrolename,proto3,oneof" json:"domainiamrolename,omitempty"`
@@ -28968,7 +28968,7 @@ type ModifyDBClusterMessage struct {
 	Engineversion                      *string                            `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Iops                               *int32                             `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Managemasteruserpassword           *bool                              `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
-	Masteruserauthenticationtype       MasterUserAuthenticationType       `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType" json:"masteruserauthenticationtype,omitempty"`
+	Masteruserauthenticationtype       *MasterUserAuthenticationType      `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType,oneof" json:"masteruserauthenticationtype,omitempty"`
 	Masteruserpassword                 *string                            `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
 	Masterusersecretkmskeyid           *string                            `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3,oneof" json:"masterusersecretkmskeyid,omitempty"`
 	Monitoringinterval                 *int32                             `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
@@ -29126,8 +29126,8 @@ func (x *ModifyDBClusterMessage) GetDbinstanceparametergroupname() string {
 }
 
 func (x *ModifyDBClusterMessage) GetDatabaseinsightsmode() DatabaseInsightsMode {
-	if x != nil {
-		return x.Databaseinsightsmode
+	if x != nil && x.Databaseinsightsmode != nil {
+		return *x.Databaseinsightsmode
 	}
 	return DatabaseInsightsMode_DATABASE_INSIGHTS_MODE_STANDARD
 }
@@ -29231,8 +29231,8 @@ func (x *ModifyDBClusterMessage) GetManagemasteruserpassword() bool {
 }
 
 func (x *ModifyDBClusterMessage) GetMasteruserauthenticationtype() MasterUserAuthenticationType {
-	if x != nil {
-		return x.Masteruserauthenticationtype
+	if x != nil && x.Masteruserauthenticationtype != nil {
+		return *x.Masteruserauthenticationtype
 	}
 	return MasterUserAuthenticationType_MASTER_USER_AUTHENTICATION_TYPE_PASSWORD
 }
@@ -29571,7 +29571,7 @@ type ModifyDBInstanceMessage struct {
 	Allowmajorversionupgrade           *bool                              `protobuf:"varint,40687812,opt,name=allowmajorversionupgrade,proto3,oneof" json:"allowmajorversionupgrade,omitempty"`
 	Applyimmediately                   *bool                              `protobuf:"varint,145941916,opt,name=applyimmediately,proto3,oneof" json:"applyimmediately,omitempty"`
 	Autominorversionupgrade            *bool                              `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
-	Automationmode                     AutomationMode                     `protobuf:"varint,234653746,opt,name=automationmode,proto3,enum=rds.AutomationMode" json:"automationmode,omitempty"`
+	Automationmode                     *AutomationMode                    `protobuf:"varint,234653746,opt,name=automationmode,proto3,enum=rds.AutomationMode,oneof" json:"automationmode,omitempty"`
 	Awsbackuprecoverypointarn          *string                            `protobuf:"bytes,496169795,opt,name=awsbackuprecoverypointarn,proto3,oneof" json:"awsbackuprecoverypointarn,omitempty"`
 	Backupretentionperiod              *int32                             `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Cacertificateidentifier            *string                            `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3,oneof" json:"cacertificateidentifier,omitempty"`
@@ -29584,7 +29584,7 @@ type ModifyDBInstanceMessage struct {
 	Dbportnumber                       *int32                             `protobuf:"varint,107009294,opt,name=dbportnumber,proto3,oneof" json:"dbportnumber,omitempty"`
 	Dbsecuritygroups                   []string                           `protobuf:"bytes,420763246,rep,name=dbsecuritygroups,proto3" json:"dbsecuritygroups,omitempty"`
 	Dbsubnetgroupname                  *string                            `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
-	Databaseinsightsmode               DatabaseInsightsMode               `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
+	Databaseinsightsmode               *DatabaseInsightsMode              `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode,oneof" json:"databaseinsightsmode,omitempty"`
 	Dedicatedlogvolume                 *bool                              `protobuf:"varint,386476811,opt,name=dedicatedlogvolume,proto3,oneof" json:"dedicatedlogvolume,omitempty"`
 	Deletionprotection                 *bool                              `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Disabledomain                      *bool                              `protobuf:"varint,69430808,opt,name=disabledomain,proto3,oneof" json:"disabledomain,omitempty"`
@@ -29603,7 +29603,7 @@ type ModifyDBInstanceMessage struct {
 	Iops                               *int32                             `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
 	Licensemodel                       *string                            `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
 	Managemasteruserpassword           *bool                              `protobuf:"varint,71308055,opt,name=managemasteruserpassword,proto3,oneof" json:"managemasteruserpassword,omitempty"`
-	Masteruserauthenticationtype       MasterUserAuthenticationType       `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType" json:"masteruserauthenticationtype,omitempty"`
+	Masteruserauthenticationtype       *MasterUserAuthenticationType      `protobuf:"varint,87836781,opt,name=masteruserauthenticationtype,proto3,enum=rds.MasterUserAuthenticationType,oneof" json:"masteruserauthenticationtype,omitempty"`
 	Masteruserpassword                 *string                            `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
 	Masterusersecretkmskeyid           *string                            `protobuf:"bytes,430618134,opt,name=masterusersecretkmskeyid,proto3,oneof" json:"masterusersecretkmskeyid,omitempty"`
 	Maxallocatedstorage                *int32                             `protobuf:"varint,7107036,opt,name=maxallocatedstorage,proto3,oneof" json:"maxallocatedstorage,omitempty"`
@@ -29621,7 +29621,7 @@ type ModifyDBInstanceMessage struct {
 	Processorfeatures                  []*ProcessorFeature                `protobuf:"bytes,256227257,rep,name=processorfeatures,proto3" json:"processorfeatures,omitempty"`
 	Promotiontier                      *int32                             `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
 	Publiclyaccessible                 *bool                              `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
-	Replicamode                        ReplicaMode                        `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode" json:"replicamode,omitempty"`
+	Replicamode                        *ReplicaMode                       `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode,oneof" json:"replicamode,omitempty"`
 	Resumefullautomationmodeminutes    *int32                             `protobuf:"varint,286496333,opt,name=resumefullautomationmodeminutes,proto3,oneof" json:"resumefullautomationmodeminutes,omitempty"`
 	Rotatemasteruserpassword           *bool                              `protobuf:"varint,30523131,opt,name=rotatemasteruserpassword,proto3,oneof" json:"rotatemasteruserpassword,omitempty"`
 	Storagethroughput                  *int32                             `protobuf:"varint,465264045,opt,name=storagethroughput,proto3,oneof" json:"storagethroughput,omitempty"`
@@ -29701,8 +29701,8 @@ func (x *ModifyDBInstanceMessage) GetAutominorversionupgrade() bool {
 }
 
 func (x *ModifyDBInstanceMessage) GetAutomationmode() AutomationMode {
-	if x != nil {
-		return x.Automationmode
+	if x != nil && x.Automationmode != nil {
+		return *x.Automationmode
 	}
 	return AutomationMode_AUTOMATION_MODE_ALL_PAUSED
 }
@@ -29792,8 +29792,8 @@ func (x *ModifyDBInstanceMessage) GetDbsubnetgroupname() string {
 }
 
 func (x *ModifyDBInstanceMessage) GetDatabaseinsightsmode() DatabaseInsightsMode {
-	if x != nil {
-		return x.Databaseinsightsmode
+	if x != nil && x.Databaseinsightsmode != nil {
+		return *x.Databaseinsightsmode
 	}
 	return DatabaseInsightsMode_DATABASE_INSIGHTS_MODE_STANDARD
 }
@@ -29925,8 +29925,8 @@ func (x *ModifyDBInstanceMessage) GetManagemasteruserpassword() bool {
 }
 
 func (x *ModifyDBInstanceMessage) GetMasteruserauthenticationtype() MasterUserAuthenticationType {
-	if x != nil {
-		return x.Masteruserauthenticationtype
+	if x != nil && x.Masteruserauthenticationtype != nil {
+		return *x.Masteruserauthenticationtype
 	}
 	return MasterUserAuthenticationType_MASTER_USER_AUTHENTICATION_TYPE_PASSWORD
 }
@@ -30051,8 +30051,8 @@ func (x *ModifyDBInstanceMessage) GetPubliclyaccessible() bool {
 }
 
 func (x *ModifyDBInstanceMessage) GetReplicamode() ReplicaMode {
-	if x != nil {
-		return x.Replicamode
+	if x != nil && x.Replicamode != nil {
+		return *x.Replicamode
 	}
 	return ReplicaMode_REPLICA_MODE_MOUNTED
 }
@@ -30325,7 +30325,7 @@ type ModifyDBProxyRequest struct {
 	Auth              []*UserAuthConfig      `protobuf:"bytes,359396464,rep,name=auth,proto3" json:"auth,omitempty"`
 	Dbproxyname       string                 `protobuf:"bytes,232356319,opt,name=dbproxyname,proto3" json:"dbproxyname,omitempty"`
 	Debuglogging      *bool                  `protobuf:"varint,105593218,opt,name=debuglogging,proto3,oneof" json:"debuglogging,omitempty"`
-	Defaultauthscheme DefaultAuthScheme      `protobuf:"varint,436791396,opt,name=defaultauthscheme,proto3,enum=rds.DefaultAuthScheme" json:"defaultauthscheme,omitempty"`
+	Defaultauthscheme *DefaultAuthScheme     `protobuf:"varint,436791396,opt,name=defaultauthscheme,proto3,enum=rds.DefaultAuthScheme,oneof" json:"defaultauthscheme,omitempty"`
 	Idleclienttimeout *int32                 `protobuf:"varint,96765376,opt,name=idleclienttimeout,proto3,oneof" json:"idleclienttimeout,omitempty"`
 	Newdbproxyname    *string                `protobuf:"bytes,134374587,opt,name=newdbproxyname,proto3,oneof" json:"newdbproxyname,omitempty"`
 	Requiretls        *bool                  `protobuf:"varint,503360838,opt,name=requiretls,proto3,oneof" json:"requiretls,omitempty"`
@@ -30387,8 +30387,8 @@ func (x *ModifyDBProxyRequest) GetDebuglogging() bool {
 }
 
 func (x *ModifyDBProxyRequest) GetDefaultauthscheme() DefaultAuthScheme {
-	if x != nil {
-		return x.Defaultauthscheme
+	if x != nil && x.Defaultauthscheme != nil {
+		return *x.Defaultauthscheme
 	}
 	return DefaultAuthScheme_DEFAULT_AUTH_SCHEME_NONE
 }
@@ -33123,7 +33123,7 @@ func (x *Outpost) GetArn() string {
 type Parameter struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Allowedvalues        *string                `protobuf:"bytes,294513354,opt,name=allowedvalues,proto3,oneof" json:"allowedvalues,omitempty"`
-	Applymethod          ApplyMethod            `protobuf:"varint,521377563,opt,name=applymethod,proto3,enum=rds.ApplyMethod" json:"applymethod,omitempty"`
+	Applymethod          *ApplyMethod           `protobuf:"varint,521377563,opt,name=applymethod,proto3,enum=rds.ApplyMethod,oneof" json:"applymethod,omitempty"`
 	Applytype            *string                `protobuf:"bytes,65384676,opt,name=applytype,proto3,oneof" json:"applytype,omitempty"`
 	Datatype             *string                `protobuf:"bytes,67988590,opt,name=datatype,proto3,oneof" json:"datatype,omitempty"`
 	Description          *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
@@ -33175,8 +33175,8 @@ func (x *Parameter) GetAllowedvalues() string {
 }
 
 func (x *Parameter) GetApplymethod() ApplyMethod {
-	if x != nil {
-		return x.Applymethod
+	if x != nil && x.Applymethod != nil {
+		return *x.Applymethod
 	}
 	return ApplyMethod_APPLY_METHOD_PENDING_REBOOT
 }
@@ -33436,7 +33436,7 @@ type PendingModifiedValues struct {
 	state                            protoimpl.MessageState        `protogen:"open.v1"`
 	Additionalstoragevolumes         []*AdditionalStorageVolume    `protobuf:"bytes,307082949,rep,name=additionalstoragevolumes,proto3" json:"additionalstoragevolumes,omitempty"`
 	Allocatedstorage                 *int32                        `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
-	Automationmode                   AutomationMode                `protobuf:"varint,234653746,opt,name=automationmode,proto3,enum=rds.AutomationMode" json:"automationmode,omitempty"`
+	Automationmode                   *AutomationMode               `protobuf:"varint,234653746,opt,name=automationmode,proto3,enum=rds.AutomationMode,oneof" json:"automationmode,omitempty"`
 	Backupretentionperiod            *int32                        `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
 	Cacertificateidentifier          *string                       `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3,oneof" json:"cacertificateidentifier,omitempty"`
 	Dbinstanceclass                  *string                       `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3,oneof" json:"dbinstanceclass,omitempty"`
@@ -33506,8 +33506,8 @@ func (x *PendingModifiedValues) GetAllocatedstorage() int32 {
 }
 
 func (x *PendingModifiedValues) GetAutomationmode() AutomationMode {
-	if x != nil {
-		return x.Automationmode
+	if x != nil && x.Automationmode != nil {
+		return *x.Automationmode
 	}
 	return AutomationMode_AUTOMATION_MODE_ALL_PAUSED
 }
@@ -34347,7 +34347,7 @@ func (x *Range) GetTo() int32 {
 type RdsCustomClusterConfiguration struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	Interconnectsubnetid            *string                `protobuf:"bytes,491243054,opt,name=interconnectsubnetid,proto3,oneof" json:"interconnectsubnetid,omitempty"`
-	Replicamode                     ReplicaMode            `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode" json:"replicamode,omitempty"`
+	Replicamode                     *ReplicaMode           `protobuf:"varint,134604609,opt,name=replicamode,proto3,enum=rds.ReplicaMode,oneof" json:"replicamode,omitempty"`
 	Transitgatewaymulticastdomainid *string                `protobuf:"bytes,268441742,opt,name=transitgatewaymulticastdomainid,proto3,oneof" json:"transitgatewaymulticastdomainid,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
@@ -34391,8 +34391,8 @@ func (x *RdsCustomClusterConfiguration) GetInterconnectsubnetid() string {
 }
 
 func (x *RdsCustomClusterConfiguration) GetReplicamode() ReplicaMode {
-	if x != nil {
-		return x.Replicamode
+	if x != nil && x.Replicamode != nil {
+		return *x.Replicamode
 	}
 	return ReplicaMode_REPLICA_MODE_MOUNTED
 }
@@ -37879,7 +37879,7 @@ type RestoreDBInstanceFromS3Message struct {
 	Dbparametergroupname               *string                    `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
 	Dbsecuritygroups                   []string                   `protobuf:"bytes,420763246,rep,name=dbsecuritygroups,proto3" json:"dbsecuritygroups,omitempty"`
 	Dbsubnetgroupname                  *string                    `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
-	Databaseinsightsmode               DatabaseInsightsMode       `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode" json:"databaseinsightsmode,omitempty"`
+	Databaseinsightsmode               *DatabaseInsightsMode      `protobuf:"varint,132399243,opt,name=databaseinsightsmode,proto3,enum=rds.DatabaseInsightsMode,oneof" json:"databaseinsightsmode,omitempty"`
 	Dedicatedlogvolume                 *bool                      `protobuf:"varint,386476811,opt,name=dedicatedlogvolume,proto3,oneof" json:"dedicatedlogvolume,omitempty"`
 	Deletionprotection                 *bool                      `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Enablecloudwatchlogsexports        []string                   `protobuf:"bytes,388544133,rep,name=enablecloudwatchlogsexports,proto3" json:"enablecloudwatchlogsexports,omitempty"`
@@ -38046,8 +38046,8 @@ func (x *RestoreDBInstanceFromS3Message) GetDbsubnetgroupname() string {
 }
 
 func (x *RestoreDBInstanceFromS3Message) GetDatabaseinsightsmode() DatabaseInsightsMode {
-	if x != nil {
-		return x.Databaseinsightsmode
+	if x != nil && x.Databaseinsightsmode != nil {
+		return *x.Databaseinsightsmode
 	}
 	return DatabaseInsightsMode_DATABASE_INSIGHTS_MODE_STANDARD
 }
@@ -40118,8 +40118,8 @@ type StartActivityStreamResponse struct {
 	Enginenativeauditfieldsincluded *bool                  `protobuf:"varint,276327711,opt,name=enginenativeauditfieldsincluded,proto3,oneof" json:"enginenativeauditfieldsincluded,omitempty"`
 	Kinesisstreamname               *string                `protobuf:"bytes,433177563,opt,name=kinesisstreamname,proto3,oneof" json:"kinesisstreamname,omitempty"`
 	Kmskeyid                        *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
-	Mode                            ActivityStreamMode     `protobuf:"varint,323909427,opt,name=mode,proto3,enum=rds.ActivityStreamMode" json:"mode,omitempty"`
-	Status                          ActivityStreamStatus   `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.ActivityStreamStatus" json:"status,omitempty"`
+	Mode                            *ActivityStreamMode    `protobuf:"varint,323909427,opt,name=mode,proto3,enum=rds.ActivityStreamMode,oneof" json:"mode,omitempty"`
+	Status                          *ActivityStreamStatus  `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.ActivityStreamStatus,oneof" json:"status,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -40183,15 +40183,15 @@ func (x *StartActivityStreamResponse) GetKmskeyid() string {
 }
 
 func (x *StartActivityStreamResponse) GetMode() ActivityStreamMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return ActivityStreamMode_ACTIVITY_STREAM_MODE_SYNC
 }
 
 func (x *StartActivityStreamResponse) GetStatus() ActivityStreamStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ActivityStreamStatus_ACTIVITY_STREAM_STATUS_STARTING
 }
@@ -40640,7 +40640,7 @@ type StopActivityStreamResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Kinesisstreamname *string                `protobuf:"bytes,433177563,opt,name=kinesisstreamname,proto3,oneof" json:"kinesisstreamname,omitempty"`
 	Kmskeyid          *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
-	Status            ActivityStreamStatus   `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.ActivityStreamStatus" json:"status,omitempty"`
+	Status            *ActivityStreamStatus  `protobuf:"varint,6222352,opt,name=status,proto3,enum=rds.ActivityStreamStatus,oneof" json:"status,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -40690,8 +40690,8 @@ func (x *StopActivityStreamResponse) GetKmskeyid() string {
 }
 
 func (x *StopActivityStreamResponse) GetStatus() ActivityStreamStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ActivityStreamStatus_ACTIVITY_STREAM_STATUS_STARTING
 }
@@ -41895,8 +41895,8 @@ func (x *TagSpecification) GetTags() []*Tag {
 type TargetHealth struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Reason        TargetHealthReason     `protobuf:"varint,20005178,opt,name=reason,proto3,enum=rds.TargetHealthReason" json:"reason,omitempty"`
-	State         TargetState            `protobuf:"varint,502047895,opt,name=state,proto3,enum=rds.TargetState" json:"state,omitempty"`
+	Reason        *TargetHealthReason    `protobuf:"varint,20005178,opt,name=reason,proto3,enum=rds.TargetHealthReason,oneof" json:"reason,omitempty"`
+	State         *TargetState           `protobuf:"varint,502047895,opt,name=state,proto3,enum=rds.TargetState,oneof" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -41939,15 +41939,15 @@ func (x *TargetHealth) GetDescription() string {
 }
 
 func (x *TargetHealth) GetReason() TargetHealthReason {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return TargetHealthReason_TARGET_HEALTH_REASON_CONNECTION_FAILED
 }
 
 func (x *TargetHealth) GetState() TargetState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return TargetState_TARGET_STATE_REGISTERING
 }
@@ -42557,13 +42557,13 @@ func (x *UpgradeTarget) GetSupportsparallelquery() bool {
 }
 
 type UserAuthConfig struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Authscheme             AuthScheme             `protobuf:"varint,319736733,opt,name=authscheme,proto3,enum=rds.AuthScheme" json:"authscheme,omitempty"`
-	Clientpasswordauthtype ClientPasswordAuthType `protobuf:"varint,527126870,opt,name=clientpasswordauthtype,proto3,enum=rds.ClientPasswordAuthType" json:"clientpasswordauthtype,omitempty"`
-	Description            *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Iamauth                IAMAuthMode            `protobuf:"varint,478679741,opt,name=iamauth,proto3,enum=rds.IAMAuthMode" json:"iamauth,omitempty"`
-	Secretarn              *string                `protobuf:"bytes,241012025,opt,name=secretarn,proto3,oneof" json:"secretarn,omitempty"`
-	Username               *string                `protobuf:"bytes,473243898,opt,name=username,proto3,oneof" json:"username,omitempty"`
+	state                  protoimpl.MessageState  `protogen:"open.v1"`
+	Authscheme             *AuthScheme             `protobuf:"varint,319736733,opt,name=authscheme,proto3,enum=rds.AuthScheme,oneof" json:"authscheme,omitempty"`
+	Clientpasswordauthtype *ClientPasswordAuthType `protobuf:"varint,527126870,opt,name=clientpasswordauthtype,proto3,enum=rds.ClientPasswordAuthType,oneof" json:"clientpasswordauthtype,omitempty"`
+	Description            *string                 `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Iamauth                *IAMAuthMode            `protobuf:"varint,478679741,opt,name=iamauth,proto3,enum=rds.IAMAuthMode,oneof" json:"iamauth,omitempty"`
+	Secretarn              *string                 `protobuf:"bytes,241012025,opt,name=secretarn,proto3,oneof" json:"secretarn,omitempty"`
+	Username               *string                 `protobuf:"bytes,473243898,opt,name=username,proto3,oneof" json:"username,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -42599,15 +42599,15 @@ func (*UserAuthConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *UserAuthConfig) GetAuthscheme() AuthScheme {
-	if x != nil {
-		return x.Authscheme
+	if x != nil && x.Authscheme != nil {
+		return *x.Authscheme
 	}
 	return AuthScheme_AUTH_SCHEME_SECRETS
 }
 
 func (x *UserAuthConfig) GetClientpasswordauthtype() ClientPasswordAuthType {
-	if x != nil {
-		return x.Clientpasswordauthtype
+	if x != nil && x.Clientpasswordauthtype != nil {
+		return *x.Clientpasswordauthtype
 	}
 	return ClientPasswordAuthType_CLIENT_PASSWORD_AUTH_TYPE_MYSQL_NATIVE_PASSWORD
 }
@@ -42620,8 +42620,8 @@ func (x *UserAuthConfig) GetDescription() string {
 }
 
 func (x *UserAuthConfig) GetIamauth() IAMAuthMode {
-	if x != nil {
-		return x.Iamauth
+	if x != nil && x.Iamauth != nil {
+		return *x.Iamauth
 	}
 	return IAMAuthMode_I_A_M_AUTH_MODE_DISABLED
 }
@@ -42641,13 +42641,13 @@ func (x *UserAuthConfig) GetUsername() string {
 }
 
 type UserAuthConfigInfo struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Authscheme             AuthScheme             `protobuf:"varint,319736733,opt,name=authscheme,proto3,enum=rds.AuthScheme" json:"authscheme,omitempty"`
-	Clientpasswordauthtype ClientPasswordAuthType `protobuf:"varint,527126870,opt,name=clientpasswordauthtype,proto3,enum=rds.ClientPasswordAuthType" json:"clientpasswordauthtype,omitempty"`
-	Description            *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Iamauth                IAMAuthMode            `protobuf:"varint,478679741,opt,name=iamauth,proto3,enum=rds.IAMAuthMode" json:"iamauth,omitempty"`
-	Secretarn              *string                `protobuf:"bytes,241012025,opt,name=secretarn,proto3,oneof" json:"secretarn,omitempty"`
-	Username               *string                `protobuf:"bytes,473243898,opt,name=username,proto3,oneof" json:"username,omitempty"`
+	state                  protoimpl.MessageState  `protogen:"open.v1"`
+	Authscheme             *AuthScheme             `protobuf:"varint,319736733,opt,name=authscheme,proto3,enum=rds.AuthScheme,oneof" json:"authscheme,omitempty"`
+	Clientpasswordauthtype *ClientPasswordAuthType `protobuf:"varint,527126870,opt,name=clientpasswordauthtype,proto3,enum=rds.ClientPasswordAuthType,oneof" json:"clientpasswordauthtype,omitempty"`
+	Description            *string                 `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Iamauth                *IAMAuthMode            `protobuf:"varint,478679741,opt,name=iamauth,proto3,enum=rds.IAMAuthMode,oneof" json:"iamauth,omitempty"`
+	Secretarn              *string                 `protobuf:"bytes,241012025,opt,name=secretarn,proto3,oneof" json:"secretarn,omitempty"`
+	Username               *string                 `protobuf:"bytes,473243898,opt,name=username,proto3,oneof" json:"username,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -42683,15 +42683,15 @@ func (*UserAuthConfigInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *UserAuthConfigInfo) GetAuthscheme() AuthScheme {
-	if x != nil {
-		return x.Authscheme
+	if x != nil && x.Authscheme != nil {
+		return *x.Authscheme
 	}
 	return AuthScheme_AUTH_SCHEME_SECRETS
 }
 
 func (x *UserAuthConfigInfo) GetClientpasswordauthtype() ClientPasswordAuthType {
-	if x != nil {
-		return x.Clientpasswordauthtype
+	if x != nil && x.Clientpasswordauthtype != nil {
+		return *x.Clientpasswordauthtype
 	}
 	return ClientPasswordAuthType_CLIENT_PASSWORD_AUTH_TYPE_MYSQL_NATIVE_PASSWORD
 }
@@ -42704,8 +42704,8 @@ func (x *UserAuthConfigInfo) GetDescription() string {
 }
 
 func (x *UserAuthConfigInfo) GetIamauth() IAMAuthMode {
-	if x != nil {
-		return x.Iamauth
+	if x != nil && x.Iamauth != nil {
+		return *x.Iamauth
 	}
 	return IAMAuthMode_I_A_M_AUTH_MODE_DISABLED
 }
@@ -43475,7 +43475,7 @@ const file_rds_proto_rawDesc = "" +
 	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tR\fendpointtype\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
 	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"\xa6%\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"\x8a&\n" +
 	"\x16CreateDBClusterMessage\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12J\n" +
 	"\x0fassociatedroles\x18\xed\x97\xc7\xcc\x01 \x03(\v2\x1c.rds.DBClusterAssociatedRoleR\x0fassociatedroles\x12@\n" +
@@ -43484,75 +43484,77 @@ const file_rds_proto_rawDesc = "" +
 	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03H\x02R\x0fbacktrackwindow\x88\x01\x01\x12=\n" +
 	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x03R\x15backupretentionperiod\x88\x01\x01\x12A\n" +
 	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\x04R\x17cacertificateidentifier\x88\x01\x01\x123\n" +
-	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\x05R\x10charactersetname\x88\x01\x01\x12V\n" +
-	"\x16clusterscalabilitytype\x18\x8d\x92\xf8~ \x01(\x0e2\x1b.rds.ClusterScalabilityTypeR\x16clusterscalabilitytype\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x06R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\x05R\x10charactersetname\x88\x01\x01\x12[\n" +
+	"\x16clusterscalabilitytype\x18\x8d\x92\xf8~ \x01(\x0e2\x1b.rds.ClusterScalabilityTypeH\x06R\x16clusterscalabilitytype\x88\x01\x01\x127\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\aR\x12copytagstosnapshot\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12>\n" +
-	"\x16dbclusterinstanceclass\x18\xc1\xb9\xcbY \x01(\tH\aR\x16dbclusterinstanceclass\x88\x01\x01\x12I\n" +
-	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\bR\x1bdbclusterparametergroupname\x88\x01\x01\x124\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\tR\x11dbsubnetgroupname\x88\x01\x01\x12&\n" +
+	"\x16dbclusterinstanceclass\x18\xc1\xb9\xcbY \x01(\tH\bR\x16dbclusterinstanceclass\x88\x01\x01\x12I\n" +
+	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\tR\x1bdbclusterparametergroupname\x88\x01\x01\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\n" +
+	"R\x11dbsubnetgroupname\x88\x01\x01\x12&\n" +
 	"\n" +
-	"dbsystemid\x18\x88\xf9\xcce \x01(\tH\n" +
-	"R\n" +
-	"dbsystemid\x88\x01\x01\x12P\n" +
-	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x12*\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tH\vR\fdatabasename\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\fR\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\rR\x06domain\x88\x01\x01\x124\n" +
-	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x0eR\x11domainiamrolename\x88\x01\x01\x12D\n" +
+	"dbsystemid\x18\x88\xf9\xcce \x01(\tH\vR\n" +
+	"dbsystemid\x88\x01\x01\x12U\n" +
+	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeH\fR\x14databaseinsightsmode\x88\x01\x01\x12*\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tH\rR\fdatabasename\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x0eR\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\x0fR\x06domain\x88\x01\x01\x124\n" +
+	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x10R\x11domainiamrolename\x88\x01\x01\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12H\n" +
-	"\x1benableglobalwriteforwarding\x18\x94\x88\xff9 \x01(\bH\x0fR\x1benableglobalwriteforwarding\x88\x01\x01\x127\n" +
-	"\x12enablehttpendpoint\x18\x8c\xb3\xcd\xc6\x01 \x01(\bH\x10R\x12enablehttpendpoint\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x11R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12A\n" +
-	"\x17enablelimitlessdatabase\x18\ue767\xa2\x01 \x01(\bH\x12R\x17enablelimitlessdatabase\x88\x01\x01\x12G\n" +
-	"\x1aenablelocalwriteforwarding\x18\xf0\xb3\x95\xd5\x01 \x01(\bH\x13R\x1aenablelocalwriteforwarding\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x14R\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
+	"\x1benableglobalwriteforwarding\x18\x94\x88\xff9 \x01(\bH\x11R\x1benableglobalwriteforwarding\x88\x01\x01\x127\n" +
+	"\x12enablehttpendpoint\x18\x8c\xb3\xcd\xc6\x01 \x01(\bH\x12R\x12enablehttpendpoint\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x13R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12A\n" +
+	"\x17enablelimitlessdatabase\x18\ue767\xa2\x01 \x01(\bH\x14R\x17enablelimitlessdatabase\x88\x01\x01\x12G\n" +
+	"\x1aenablelocalwriteforwarding\x18\xf0\xb3\x95\xd5\x01 \x01(\bH\x15R\x1aenablelocalwriteforwarding\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x16R\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12>\n" +
-	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x15R\x16enginelifecyclesupport\x88\x01\x01\x12'\n" +
+	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x17R\x16enginelifecyclesupport\x88\x01\x01\x12'\n" +
 	"\n" +
-	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tH\x16R\n" +
+	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tH\x18R\n" +
 	"enginemode\x88\x01\x01\x12,\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x17R\rengineversion\x88\x01\x01\x12@\n" +
-	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tH\x18R\x17globalclusteridentifier\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\x19R\x04iops\x88\x01\x01\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x1aR\bkmskeyid\x88\x01\x01\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x1bR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
-	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeR\x1cmasteruserauthenticationtype\x127\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x1cR\x12masteruserpassword\x88\x01\x01\x12C\n" +
-	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH\x1dR\x18masterusersecretkmskeyid\x88\x01\x01\x12.\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH\x1eR\x0emasterusername\x88\x01\x01\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x1fR\x12monitoringinterval\x88\x01\x01\x124\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH R\x11monitoringrolearn\x88\x01\x01\x12)\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH!R\vnetworktype\x88\x01\x01\x121\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\"R\x0foptiongroupname\x88\x01\x01\x12I\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH#R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H$R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H%R\x04port\x88\x01\x01\x12+\n" +
-	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tH&R\fpresignedurl\x88\x01\x01\x12<\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH'R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH(R\x1apreferredmaintenancewindow\x88\x01\x01\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH)R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x19R\rengineversion\x88\x01\x01\x12@\n" +
+	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tH\x1aR\x17globalclusteridentifier\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x1bR\x04iops\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x1cR\bkmskeyid\x88\x01\x01\x12B\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x1dR\x18managemasteruserpassword\x88\x01\x01\x12m\n" +
+	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeH\x1eR\x1cmasteruserauthenticationtype\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x1fR\x12masteruserpassword\x88\x01\x01\x12C\n" +
+	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH R\x18masterusersecretkmskeyid\x88\x01\x01\x12.\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH!R\x0emasterusername\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\"R\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH#R\x11monitoringrolearn\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH$R\vnetworktype\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH%R\x0foptiongroupname\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH&R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H'R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H(R\x04port\x88\x01\x01\x12+\n" +
+	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tH)R\fpresignedurl\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH*R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH+R\x1apreferredmaintenancewindow\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH,R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
 	"\x1drdscustomclusterconfiguration\x18\xbc\xf6\xf3Q \x01(\v2\".rds.RdsCustomClusterConfigurationR\x1drdscustomclusterconfiguration\x12I\n" +
-	"\x1breplicationsourceidentifier\x18\x88\x8a\xbb\xce\x01 \x01(\tH*R\x1breplicationsourceidentifier\x88\x01\x01\x12P\n" +
+	"\x1breplicationsourceidentifier\x18\x88\x8a\xbb\xce\x01 \x01(\tH-R\x1breplicationsourceidentifier\x88\x01\x01\x12P\n" +
 	"\x14scalingconfiguration\x18\xe1\xc5\xc9\x19 \x01(\v2\x19.rds.ScalingConfigurationR\x14scalingconfiguration\x12u\n" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2%.rds.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH+R\x10storageencrypted\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH,R\vstoragetype\x88\x01\x01\x12F\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH.R\x10storageencrypted\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH/R\vstoragetype\x88\x01\x01\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\x12B\n" +
-	"\x18withexpressconfiguration\x18\xd4\xeb\x94+ \x01(\bH-R\x18withexpressconfiguration\x88\x01\x01B\x13\n" +
+	"\x18withexpressconfiguration\x18\xd4\xeb\x94+ \x01(\bH0R\x18withexpressconfiguration\x88\x01\x01B\x13\n" +
 	"\x11_allocatedstorageB\x1a\n" +
 	"\x18_autominorversionupgradeB\x12\n" +
 	"\x10_backtrackwindowB\x18\n" +
 	"\x16_backupretentionperiodB\x1a\n" +
 	"\x18_cacertificateidentifierB\x13\n" +
-	"\x11_charactersetnameB\x15\n" +
+	"\x11_charactersetnameB\x19\n" +
+	"\x17_clusterscalabilitytypeB\x15\n" +
 	"\x13_copytagstosnapshotB\x19\n" +
 	"\x17_dbclusterinstanceclassB\x1e\n" +
 	"\x1c_dbclusterparametergroupnameB\x14\n" +
 	"\x12_dbsubnetgroupnameB\r\n" +
-	"\v_dbsystemidB\x0f\n" +
+	"\v_dbsystemidB\x17\n" +
+	"\x15_databaseinsightsmodeB\x0f\n" +
 	"\r_databasenameB\x15\n" +
 	"\x13_deletionprotectionB\t\n" +
 	"\a_domainB\x14\n" +
@@ -43569,7 +43571,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x18_globalclusteridentifierB\a\n" +
 	"\x05_iopsB\v\n" +
 	"\t_kmskeyidB\x1b\n" +
-	"\x19_managemasteruserpasswordB\x15\n" +
+	"\x19_managemasteruserpasswordB\x1f\n" +
+	"\x1d_masteruserauthenticationtypeB\x15\n" +
 	"\x13_masteruserpasswordB\x1b\n" +
 	"\x19_masterusersecretkmskeyidB\x11\n" +
 	"\x0f_masterusernameB\x15\n" +
@@ -43602,7 +43605,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"h\n" +
 	"\x1dCreateDBClusterSnapshotResult\x12G\n" +
-	"\x11dbclustersnapshot\x18\x8c\xf2\xcc] \x01(\v2\x16.rds.DBClusterSnapshotR\x11dbclustersnapshot\"\xb0&\n" +
+	"\x11dbclustersnapshot\x18\x8c\xf2\xcc] \x01(\v2\x16.rds.DBClusterSnapshotR\x11dbclustersnapshot\"\xf4&\n" +
 	"\x17CreateDBInstanceMessage\x12\\\n" +
 	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
@@ -43624,58 +43627,58 @@ const file_rds_proto_rawDesc = "" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\fR\x11dbsubnetgroupname\x88\x01\x01\x12&\n" +
 	"\n" +
 	"dbsystemid\x18\x88\xf9\xcce \x01(\tH\rR\n" +
-	"dbsystemid\x88\x01\x01\x12P\n" +
-	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x0eR\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x0fR\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\x10R\x06domain\x88\x01\x01\x128\n" +
+	"dbsystemid\x88\x01\x01\x12U\n" +
+	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeH\x0eR\x14databaseinsightsmode\x88\x01\x01\x127\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x0fR\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x10R\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\x11R\x06domain\x88\x01\x01\x128\n" +
 	"\x13domainauthsecretarn\x18\xef\x8d\xf0\n" +
-	" \x01(\tH\x11R\x13domainauthsecretarn\x88\x01\x01\x12%\n" +
+	" \x01(\tH\x12R\x13domainauthsecretarn\x88\x01\x01\x12%\n" +
 	"\fdomaindnsips\x18\xf7ܿ\f \x03(\tR\fdomaindnsips\x12'\n" +
 	"\n" +
-	"domainfqdn\x18\xa3\xa5ړ\x01 \x01(\tH\x12R\n" +
+	"domainfqdn\x18\xa3\xa5ړ\x01 \x01(\tH\x13R\n" +
 	"domainfqdn\x88\x01\x01\x124\n" +
-	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x13R\x11domainiamrolename\x88\x01\x01\x12\"\n" +
-	"\bdomainou\x18\x9e\xf6\x99w \x01(\tH\x14R\bdomainou\x88\x01\x01\x12D\n" +
+	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x14R\x11domainiamrolename\x88\x01\x01\x12\"\n" +
+	"\bdomainou\x18\x9e\xf6\x99w \x01(\tH\x15R\bdomainou\x88\x01\x01\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12=\n" +
-	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x15R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x16R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x17R\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
+	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x16R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x17R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x18R\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12>\n" +
-	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x18R\x16enginelifecyclesupport\x88\x01\x01\x12,\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x19R\rengineversion\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\x1aR\x04iops\x88\x01\x01\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x1bR\bkmskeyid\x88\x01\x01\x12*\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x1cR\flicensemodel\x88\x01\x01\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x1dR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
-	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeR\x1cmasteruserauthenticationtype\x127\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x1eR\x12masteruserpassword\x88\x01\x01\x12C\n" +
-	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH\x1fR\x18masterusersecretkmskeyid\x88\x01\x01\x12.\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH R\x0emasterusername\x88\x01\x01\x128\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H!R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\"R\x12monitoringinterval\x88\x01\x01\x124\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH#R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH$R\amultiaz\x88\x01\x01\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH%R\vmultitenant\x88\x01\x01\x12<\n" +
-	"\x15ncharcharactersetname\x18\xf0\xe4\xad3 \x01(\tH&R\x15ncharcharactersetname\x88\x01\x01\x12)\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH'R\vnetworktype\x88\x01\x01\x121\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH(R\x0foptiongroupname\x88\x01\x01\x12I\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH)R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H*R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H+R\x04port\x88\x01\x01\x12<\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH,R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH-R\x1apreferredmaintenancewindow\x88\x01\x01\x12F\n" +
+	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x19R\x16enginelifecyclesupport\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x1aR\rengineversion\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x1bR\x04iops\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x1cR\bkmskeyid\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x1dR\flicensemodel\x88\x01\x01\x12B\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x1eR\x18managemasteruserpassword\x88\x01\x01\x12m\n" +
+	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeH\x1fR\x1cmasteruserauthenticationtype\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH R\x12masteruserpassword\x88\x01\x01\x12C\n" +
+	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH!R\x18masterusersecretkmskeyid\x88\x01\x01\x12.\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH\"R\x0emasterusername\x88\x01\x01\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H#R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H$R\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH%R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH&R\amultiaz\x88\x01\x01\x12)\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH'R\vmultitenant\x88\x01\x01\x12<\n" +
+	"\x15ncharcharactersetname\x18\xf0\xe4\xad3 \x01(\tH(R\x15ncharcharactersetname\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH)R\vnetworktype\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH*R\x0foptiongroupname\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH+R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H,R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H-R\x04port\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH.R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH/R\x1apreferredmaintenancewindow\x88\x01\x01\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12,\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H.R\rpromotiontier\x88\x01\x01\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH/R\x12publiclyaccessible\x88\x01\x01\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH0R\x10storageencrypted\x88\x01\x01\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H1R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH2R\vstoragetype\x88\x01\x01\x12F\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H0R\rpromotiontier\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH1R\x12publiclyaccessible\x88\x01\x01\x123\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH2R\x10storageencrypted\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H3R\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH4R\vstoragetype\x88\x01\x01\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x122\n" +
-	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH3R\x10tdecredentialarn\x88\x01\x01\x12<\n" +
-	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tH4R\x15tdecredentialpassword\x88\x01\x01\x12\"\n" +
-	"\btimezone\x18Î\xb9u \x01(\tH5R\btimezone\x88\x01\x01\x123\n" +
+	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH5R\x10tdecredentialarn\x88\x01\x01\x12<\n" +
+	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tH6R\x15tdecredentialpassword\x88\x01\x01\x12\"\n" +
+	"\btimezone\x18Î\xb9u \x01(\tH7R\btimezone\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
 	"\x11_allocatedstorageB\x1a\n" +
 	"\x18_autominorversionupgradeB\x13\n" +
@@ -43690,7 +43693,8 @@ const file_rds_proto_rawDesc = "" +
 	"\a_dbnameB\x17\n" +
 	"\x15_dbparametergroupnameB\x14\n" +
 	"\x12_dbsubnetgroupnameB\r\n" +
-	"\v_dbsystemidB\x15\n" +
+	"\v_dbsystemidB\x17\n" +
+	"\x15_databaseinsightsmodeB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\t\n" +
 	"\a_domainB\x16\n" +
@@ -43706,7 +43710,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x05_iopsB\v\n" +
 	"\t_kmskeyidB\x0f\n" +
 	"\r_licensemodelB\x1b\n" +
-	"\x19_managemasteruserpasswordB\x15\n" +
+	"\x19_managemasteruserpasswordB\x1f\n" +
+	"\x1d_masteruserauthenticationtypeB\x15\n" +
 	"\x13_masteruserpasswordB\x1b\n" +
 	"\x19_masterusersecretkmskeyidB\x11\n" +
 	"\x0f_masterusernameB\x16\n" +
@@ -43731,7 +43736,7 @@ const file_rds_proto_rawDesc = "" +
 	"\f_storagetypeB\x13\n" +
 	"\x11_tdecredentialarnB\x18\n" +
 	"\x16_tdecredentialpasswordB\v\n" +
-	"\t_timezone\"\xed\x1c\n" +
+	"\t_timezone\"\xa0\x1d\n" +
 	"\"CreateDBInstanceReadReplicaMessage\x12\\\n" +
 	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
@@ -43744,47 +43749,47 @@ const file_rds_proto_rawDesc = "" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\aR\x0fdbinstanceclass\x88\x01\x01\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12:\n" +
 	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\bR\x14dbparametergroupname\x88\x01\x01\x124\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\tR\x11dbsubnetgroupname\x88\x01\x01\x12P\n" +
-	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\n" +
-	"R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\vR\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\fR\x06domain\x88\x01\x01\x128\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\tR\x11dbsubnetgroupname\x88\x01\x01\x12U\n" +
+	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeH\n" +
+	"R\x14databaseinsightsmode\x88\x01\x01\x127\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\vR\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\fR\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\rR\x06domain\x88\x01\x01\x128\n" +
 	"\x13domainauthsecretarn\x18\xef\x8d\xf0\n" +
-	" \x01(\tH\rR\x13domainauthsecretarn\x88\x01\x01\x12%\n" +
+	" \x01(\tH\x0eR\x13domainauthsecretarn\x88\x01\x01\x12%\n" +
 	"\fdomaindnsips\x18\xf7ܿ\f \x03(\tR\fdomaindnsips\x12'\n" +
 	"\n" +
-	"domainfqdn\x18\xa3\xa5ړ\x01 \x01(\tH\x0eR\n" +
+	"domainfqdn\x18\xa3\xa5ړ\x01 \x01(\tH\x0fR\n" +
 	"domainfqdn\x88\x01\x01\x124\n" +
-	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x0fR\x11domainiamrolename\x88\x01\x01\x12\"\n" +
-	"\bdomainou\x18\x9e\xf6\x99w \x01(\tH\x10R\bdomainou\x88\x01\x01\x12D\n" +
+	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x10R\x11domainiamrolename\x88\x01\x01\x12\"\n" +
+	"\bdomainou\x18\x9e\xf6\x99w \x01(\tH\x11R\bdomainou\x88\x01\x01\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12=\n" +
-	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x11R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x12R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x13R\x19enableperformanceinsights\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\x14R\x04iops\x88\x01\x01\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x15R\bkmskeyid\x88\x01\x01\x128\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\x16R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x17R\x12monitoringinterval\x88\x01\x01\x124\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH\x18R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x19R\amultiaz\x88\x01\x01\x12)\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\x1aR\vnetworktype\x88\x01\x01\x121\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\x1bR\x0foptiongroupname\x88\x01\x01\x12I\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH\x1cR\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x1dR\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x1eR\x04port\x88\x01\x01\x12+\n" +
-	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tH\x1fR\fpresignedurl\x88\x01\x01\x12F\n" +
+	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x12R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x13R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x14R\x19enableperformanceinsights\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x15R\x04iops\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x16R\bkmskeyid\x88\x01\x01\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\x17R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x18R\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH\x19R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x1aR\amultiaz\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\x1bR\vnetworktype\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\x1cR\x0foptiongroupname\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH\x1dR\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x1eR\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x1fR\x04port\x88\x01\x01\x12+\n" +
+	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tH R\fpresignedurl\x88\x01\x01\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH R\x12publiclyaccessible\x88\x01\x01\x125\n" +
-	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeR\vreplicamode\x12E\n" +
-	"\x19sourcedbclusteridentifier\x18\xf8\xb4\xaa\x98\x01 \x01(\tH!R\x19sourcedbclusteridentifier\x88\x01\x01\x12G\n" +
-	"\x1asourcedbinstanceidentifier\x18\xf7\xd1՝\x01 \x01(\tH\"R\x1asourcedbinstanceidentifier\x88\x01\x01\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H#R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH$R\vstoragetype\x88\x01\x01\x12F\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH!R\x12publiclyaccessible\x88\x01\x01\x12:\n" +
+	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeH\"R\vreplicamode\x88\x01\x01\x12E\n" +
+	"\x19sourcedbclusteridentifier\x18\xf8\xb4\xaa\x98\x01 \x01(\tH#R\x19sourcedbclusteridentifier\x88\x01\x01\x12G\n" +
+	"\x1asourcedbinstanceidentifier\x18\xf7\xd1՝\x01 \x01(\tH$R\x1asourcedbinstanceidentifier\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H%R\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH&R\vstoragetype\x88\x01\x01\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12;\n" +
-	"\x14upgradestorageconfig\x18\xfb\xb3\xbb\x96\x01 \x01(\bH%R\x14upgradestorageconfig\x88\x01\x01\x12I\n" +
-	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH&R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
+	"\x14upgradestorageconfig\x18\xfb\xb3\xbb\x96\x01 \x01(\bH'R\x14upgradestorageconfig\x88\x01\x01\x12I\n" +
+	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH(R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
 	"\x11_allocatedstorageB\x1a\n" +
 	"\x18_autominorversionupgradeB\x13\n" +
@@ -43795,7 +43800,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x19_customiaminstanceprofileB\x12\n" +
 	"\x10_dbinstanceclassB\x17\n" +
 	"\x15_dbparametergroupnameB\x14\n" +
-	"\x12_dbsubnetgroupnameB\x15\n" +
+	"\x12_dbsubnetgroupnameB\x17\n" +
+	"\x15_databaseinsightsmodeB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\t\n" +
 	"\a_domainB\x16\n" +
@@ -43819,7 +43825,8 @@ const file_rds_proto_rawDesc = "" +
 	"#_performanceinsightsretentionperiodB\a\n" +
 	"\x05_portB\x0f\n" +
 	"\r_presignedurlB\x15\n" +
-	"\x13_publiclyaccessibleB\x1c\n" +
+	"\x13_publiclyaccessibleB\x0e\n" +
+	"\f_replicamodeB\x1c\n" +
 	"\x1a_sourcedbclusteridentifierB\x1d\n" +
 	"\x1b_sourcedbinstanceidentifierB\x14\n" +
 	"\x12_storagethroughputB\x0e\n" +
@@ -43840,38 +43847,43 @@ const file_rds_proto_rawDesc = "" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\"d\n" +
 	"\x1cCreateDBParameterGroupResult\x12D\n" +
-	"\x10dbparametergroup\x18\xfe\x81\xdd7 \x01(\v2\x15.rds.DBParameterGroupR\x10dbparametergroup\"\x8b\x03\n" +
+	"\x10dbparametergroup\x18\xfe\x81\xdd7 \x01(\v2\x15.rds.DBParameterGroupR\x10dbparametergroup\"\xbc\x03\n" +
 	"\x1cCreateDBProxyEndpointRequest\x123\n" +
 	"\x13dbproxyendpointname\x18\xb0\x85\xc4G \x01(\tR\x13dbproxyendpointname\x12#\n" +
-	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12N\n" +
-	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeR\x13endpointnetworktype\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12B\n" +
+	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12S\n" +
+	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeH\x00R\x13endpointnetworktype\x88\x01\x01\x12 \n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12G\n" +
 	"\n" +
-	"targetrole\x18\xf9\xc3\xf9\xfe\x01 \x01(\x0e2\x1e.rds.DBProxyEndpointTargetRoleR\n" +
-	"targetrole\x123\n" +
+	"targetrole\x18\xf9\xc3\xf9\xfe\x01 \x01(\x0e2\x1e.rds.DBProxyEndpointTargetRoleH\x01R\n" +
+	"targetrole\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\x12&\n" +
-	"\fvpcsubnetids\x18®\xe1\xec\x01 \x03(\tR\fvpcsubnetids\"b\n" +
+	"\fvpcsubnetids\x18®\xe1\xec\x01 \x03(\tR\fvpcsubnetidsB\x16\n" +
+	"\x14_endpointnetworktypeB\r\n" +
+	"\v_targetrole\"b\n" +
 	"\x1dCreateDBProxyEndpointResponse\x12A\n" +
-	"\x0fdbproxyendpoint\x18\x95φF \x01(\v2\x14.rds.DBProxyEndpointR\x0fdbproxyendpoint\"\x83\x06\n" +
+	"\x0fdbproxyendpoint\x18\x95φF \x01(\v2\x14.rds.DBProxyEndpointR\x0fdbproxyendpoint\"\xe0\x06\n" +
 	"\x14CreateDBProxyRequest\x12+\n" +
 	"\x04auth\x18\xf0诫\x01 \x03(\v2\x13.rds.UserAuthConfigR\x04auth\x12#\n" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12*\n" +
-	"\fdebuglogging\x18\x82\xf3\xac2 \x01(\bH\x00R\fdebuglogging\x88\x01\x01\x12H\n" +
-	"\x11defaultauthscheme\x18\xe4У\xd0\x01 \x01(\x0e2\x16.rds.DefaultAuthSchemeR\x11defaultauthscheme\x12N\n" +
-	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeR\x13endpointnetworktype\x129\n" +
+	"\fdebuglogging\x18\x82\xf3\xac2 \x01(\bH\x00R\fdebuglogging\x88\x01\x01\x12M\n" +
+	"\x11defaultauthscheme\x18\xe4У\xd0\x01 \x01(\x0e2\x16.rds.DefaultAuthSchemeH\x01R\x11defaultauthscheme\x88\x01\x01\x12S\n" +
+	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeH\x02R\x13endpointnetworktype\x88\x01\x01\x129\n" +
 	"\fenginefamily\x18\xfc\xa6Ɏ\x01 \x01(\x0e2\x11.rds.EngineFamilyR\fenginefamily\x124\n" +
-	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05H\x01R\x11idleclienttimeout\x88\x01\x01\x12'\n" +
+	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05H\x03R\x11idleclienttimeout\x88\x01\x01\x12'\n" +
 	"\n" +
-	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x02R\n" +
+	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x04R\n" +
 	"requiretls\x88\x01\x01\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12f\n" +
-	"\x1btargetconnectionnetworktype\x18\x97\x83\xa7\xe2\x01 \x01(\x0e2 .rds.TargetConnectionNetworkTypeR\x1btargetconnectionnetworktype\x123\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12k\n" +
+	"\x1btargetconnectionnetworktype\x18\x97\x83\xa7\xe2\x01 \x01(\x0e2 .rds.TargetConnectionNetworkTypeH\x05R\x1btargetconnectionnetworktype\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\x12&\n" +
 	"\fvpcsubnetids\x18®\xe1\xec\x01 \x03(\tR\fvpcsubnetidsB\x0f\n" +
 	"\r_debugloggingB\x14\n" +
+	"\x12_defaultauthschemeB\x16\n" +
+	"\x14_endpointnetworktypeB\x14\n" +
 	"\x12_idleclienttimeoutB\r\n" +
-	"\v_requiretls\"C\n" +
+	"\v_requiretlsB\x1e\n" +
+	"\x1c_targetconnectionnetworktype\"C\n" +
 	"\x15CreateDBProxyResponse\x12*\n" +
 	"\adbproxy\x18\xfe냲\x01 \x01(\v2\f.rds.DBProxyR\adbproxy\"\xb9\x01\n" +
 	"\x1cCreateDBSecurityGroupMessage\x12B\n" +
@@ -44005,103 +44017,105 @@ const file_rds_proto_rawDesc = "" +
 	"'CustomDBEngineVersionQuotaExceededFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x827\n" +
+	"\b_message\"\xff8\n" +
 	"\tDBCluster\x12P\n" +
 	"\x1factivitystreamkinesisstreamname\x18\xb2\xa4\x84R \x01(\tH\x00R\x1factivitystreamkinesisstreamname\x88\x01\x01\x12?\n" +
-	"\x16activitystreamkmskeyid\x18\xbe\xb8\x9f\xbc\x01 \x01(\tH\x01R\x16activitystreamkmskeyid\x88\x01\x01\x12J\n" +
-	"\x12activitystreammode\x18\xb8\xb3\x8f\t \x01(\x0e2\x17.rds.ActivityStreamModeR\x12activitystreammode\x12Q\n" +
-	"\x14activitystreamstatus\x18\x9fޢ\xe3\x01 \x01(\x0e2\x19.rds.ActivityStreamStatusR\x14activitystreamstatus\x123\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x02R\x10allocatedstorage\x88\x01\x01\x12@\n" +
+	"\x16activitystreamkmskeyid\x18\xbe\xb8\x9f\xbc\x01 \x01(\tH\x01R\x16activitystreamkmskeyid\x88\x01\x01\x12O\n" +
+	"\x12activitystreammode\x18\xb8\xb3\x8f\t \x01(\x0e2\x17.rds.ActivityStreamModeH\x02R\x12activitystreammode\x88\x01\x01\x12V\n" +
+	"\x14activitystreamstatus\x18\x9fޢ\xe3\x01 \x01(\x0e2\x19.rds.ActivityStreamStatusH\x03R\x14activitystreamstatus\x88\x01\x01\x123\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x04R\x10allocatedstorage\x88\x01\x01\x12@\n" +
 	"\x0fassociatedroles\x18\xed\x97\xc7\xcc\x01 \x03(\v2\x12.rds.DBClusterRoleR\x0fassociatedroles\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x03R\x17autominorversionupgrade\x88\x01\x01\x12;\n" +
-	"\x14automaticrestarttime\x18\xcf\xfb\xb9\xed\x01 \x01(\tH\x04R\x14automaticrestarttime\x88\x01\x01\x12/\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x05R\x17autominorversionupgrade\x88\x01\x01\x12;\n" +
+	"\x14automaticrestarttime\x18\xcf\xfb\xb9\xed\x01 \x01(\tH\x06R\x14automaticrestarttime\x88\x01\x01\x12/\n" +
 	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12E\n" +
-	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tH\x05R\x19awsbackuprecoverypointarn\x88\x01\x01\x12N\n" +
-	"\x1ebacktrackconsumedchangerecords\x18\xb0\xb7\xa0+ \x01(\x03H\x06R\x1ebacktrackconsumedchangerecords\x88\x01\x01\x120\n" +
-	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03H\aR\x0fbacktrackwindow\x88\x01\x01\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\bR\x15backupretentionperiod\x88\x01\x01\x12\"\n" +
-	"\bcapacity\x18\xaa\xa1\x923 \x01(\x05H\tR\bcapacity\x88\x01\x01\x12K\n" +
+	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tH\aR\x19awsbackuprecoverypointarn\x88\x01\x01\x12N\n" +
+	"\x1ebacktrackconsumedchangerecords\x18\xb0\xb7\xa0+ \x01(\x03H\bR\x1ebacktrackconsumedchangerecords\x88\x01\x01\x120\n" +
+	"\x0fbacktrackwindow\x18\x92\x80\xd2~ \x01(\x03H\tR\x0fbacktrackwindow\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\n" +
+	"R\x15backupretentionperiod\x88\x01\x01\x12\"\n" +
+	"\bcapacity\x18\xaa\xa1\x923 \x01(\x05H\vR\bcapacity\x88\x01\x01\x12K\n" +
 	"\x12certificatedetails\x18\xa7\xf0\xcf\xd6\x01 \x01(\v2\x17.rds.CertificateDetailsR\x12certificatedetails\x123\n" +
-	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\n" +
-	"R\x10charactersetname\x88\x01\x01\x12*\n" +
-	"\fclonegroupid\x18\xd1\xd4\xca\x1f \x01(\tH\vR\fclonegroupid\x88\x01\x01\x124\n" +
-	"\x11clustercreatetime\x18\xe5\xb6\xe08 \x01(\tH\fR\x11clustercreatetime\x88\x01\x01\x12V\n" +
-	"\x16clusterscalabilitytype\x18\x8d\x92\xf8~ \x01(\x0e2\x1b.rds.ClusterScalabilityTypeR\x16clusterscalabilitytype\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\rR\x12copytagstosnapshot\x88\x01\x01\x124\n" +
-	"\x11crossaccountclone\x18\xec\xdd\xfeM \x01(\bH\x0eR\x11crossaccountclone\x88\x01\x01\x12+\n" +
+	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\fR\x10charactersetname\x88\x01\x01\x12*\n" +
+	"\fclonegroupid\x18\xd1\xd4\xca\x1f \x01(\tH\rR\fclonegroupid\x88\x01\x01\x124\n" +
+	"\x11clustercreatetime\x18\xe5\xb6\xe08 \x01(\tH\x0eR\x11clustercreatetime\x88\x01\x01\x12[\n" +
+	"\x16clusterscalabilitytype\x18\x8d\x92\xf8~ \x01(\x0e2\x1b.rds.ClusterScalabilityTypeH\x0fR\x16clusterscalabilitytype\x88\x01\x01\x127\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x10R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x11crossaccountclone\x18\xec\xdd\xfeM \x01(\bH\x11R\x11crossaccountclone\x88\x01\x01\x12+\n" +
 	"\x0fcustomendpoints\x18\xa1\xa7\xb4P \x03(\tR\x0fcustomendpoints\x12*\n" +
-	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tH\x0fR\fdbclusterarn\x88\x01\x01\x129\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x10R\x13dbclusteridentifier\x88\x01\x01\x12>\n" +
-	"\x16dbclusterinstanceclass\x18\xc1\xb9\xcbY \x01(\tH\x11R\x16dbclusterinstanceclass\x88\x01\x01\x12C\n" +
+	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tH\x12R\fdbclusterarn\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x13R\x13dbclusteridentifier\x88\x01\x01\x12>\n" +
+	"\x16dbclusterinstanceclass\x18\xc1\xb9\xcbY \x01(\tH\x14R\x16dbclusterinstanceclass\x88\x01\x01\x12C\n" +
 	"\x10dbclustermembers\x18\xbf\xb0\xc6t \x03(\v2\x14.rds.DBClusterMemberR\x10dbclustermembers\x12l\n" +
 	"\x1fdbclusteroptiongroupmemberships\x18\xbb\xd8\xdfu \x03(\v2\x1f.rds.DBClusterOptionGroupStatusR\x1fdbclusteroptiongroupmemberships\x12@\n" +
-	"\x17dbclusterparametergroup\x18\x96\xa8\x87| \x01(\tH\x12R\x17dbclusterparametergroup\x88\x01\x01\x12-\n" +
-	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\tH\x13R\rdbsubnetgroup\x88\x01\x01\x12&\n" +
+	"\x17dbclusterparametergroup\x18\x96\xa8\x87| \x01(\tH\x15R\x17dbclusterparametergroup\x88\x01\x01\x12-\n" +
+	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\tH\x16R\rdbsubnetgroup\x88\x01\x01\x12&\n" +
 	"\n" +
-	"dbsystemid\x18\x88\xf9\xcce \x01(\tH\x14R\n" +
-	"dbsystemid\x88\x01\x01\x12P\n" +
-	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x12*\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x15R\fdatabasename\x88\x01\x01\x128\n" +
-	"\x13dbclusterresourceid\x18\xdb\xd9\xf7` \x01(\tH\x16R\x13dbclusterresourceid\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x17R\x12deletionprotection\x88\x01\x01\x12G\n" +
+	"dbsystemid\x18\x88\xf9\xcce \x01(\tH\x17R\n" +
+	"dbsystemid\x88\x01\x01\x12U\n" +
+	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeH\x18R\x14databaseinsightsmode\x88\x01\x01\x12*\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x19R\fdatabasename\x88\x01\x01\x128\n" +
+	"\x13dbclusterresourceid\x18\xdb\xd9\xf7` \x01(\tH\x1aR\x13dbclusterresourceid\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x1bR\x12deletionprotection\x88\x01\x01\x12G\n" +
 	"\x11domainmemberships\x18\x93\xf2\xb3\xa2\x01 \x03(\v2\x15.rds.DomainMembershipR\x11domainmemberships\x12=\n" +
-	"\x15earliestbacktracktime\x18\x88܊\xa7\x01 \x01(\tH\x18R\x15earliestbacktracktime\x88\x01\x01\x12>\n" +
-	"\x16earliestrestorabletime\x18\x93\x80\x8eH \x01(\tH\x19R\x16earliestrestorabletime\x88\x01\x01\x12F\n" +
+	"\x15earliestbacktracktime\x18\x88܊\xa7\x01 \x01(\tH\x1cR\x15earliestbacktracktime\x88\x01\x01\x12>\n" +
+	"\x16earliestrestorabletime\x18\x93\x80\x8eH \x01(\tH\x1dR\x16earliestrestorabletime\x88\x01\x01\x12F\n" +
 	"\x1cenabledcloudwatchlogsexports\x18\x95\x9a\xfa\x94\x01 \x03(\tR\x1cenabledcloudwatchlogsexports\x12\"\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x1aR\bendpoint\x88\x01\x01\x12\x1f\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x1bR\x06engine\x88\x01\x01\x12>\n" +
-	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x1cR\x16enginelifecyclesupport\x88\x01\x01\x12'\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x1eR\bendpoint\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x1fR\x06engine\x88\x01\x01\x12>\n" +
+	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH R\x16enginelifecyclesupport\x88\x01\x01\x12'\n" +
 	"\n" +
-	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tH\x1dR\n" +
+	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tH!R\n" +
 	"enginemode\x88\x01\x01\x12,\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x1eR\rengineversion\x88\x01\x01\x12@\n" +
-	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tH\x1fR\x17globalclusteridentifier\x88\x01\x01\x12O\n" +
-	"\x1eglobalwriteforwardingrequested\x18\x97Ѻ\xbf\x01 \x01(\bH R\x1eglobalwriteforwardingrequested\x88\x01\x01\x12_\n" +
-	"\x1bglobalwriteforwardingstatus\x18\xa5\x8b\x8fF \x01(\x0e2\x1a.rds.WriteForwardingStatusR\x1bglobalwriteforwardingstatus\x12+\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH!R\fhostedzoneid\x88\x01\x01\x128\n" +
-	"\x13httpendpointenabled\x18\xaeåA \x01(\bH\"R\x13httpendpointenabled\x88\x01\x01\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH#R iamdatabaseauthenticationenabled\x88\x01\x01\x12^\n" +
-	"&iooptimizednextallowedmodificationtime\x18\xa9\xc0\xc5b \x01(\tH$R&iooptimizednextallowedmodificationtime\x88\x01\x01\x12K\n" +
-	"\x1cinternetaccessgatewayenabled\x18ڥ\xfe\xd7\x01 \x01(\bH%R\x1cinternetaccessgatewayenabled\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H&R\x04iops\x88\x01\x01\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH'R\bkmskeyid\x88\x01\x01\x12:\n" +
-	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tH(R\x14latestrestorabletime\x88\x01\x01\x12H\n" +
-	"\x11limitlessdatabase\x18῍\xd4\x01 \x01(\v2\x16.rds.LimitlessDatabaseR\x11limitlessdatabase\x12b\n" +
-	"\x1alocalwriteforwardingstatus\x18\xff\x8d\xc8s \x01(\x0e2\x1f.rds.LocalWriteForwardingStatusR\x1alocalwriteforwardingstatus\x12D\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\"R\rengineversion\x88\x01\x01\x12@\n" +
+	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tH#R\x17globalclusteridentifier\x88\x01\x01\x12O\n" +
+	"\x1eglobalwriteforwardingrequested\x18\x97Ѻ\xbf\x01 \x01(\bH$R\x1eglobalwriteforwardingrequested\x88\x01\x01\x12d\n" +
+	"\x1bglobalwriteforwardingstatus\x18\xa5\x8b\x8fF \x01(\x0e2\x1a.rds.WriteForwardingStatusH%R\x1bglobalwriteforwardingstatus\x88\x01\x01\x12+\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH&R\fhostedzoneid\x88\x01\x01\x128\n" +
+	"\x13httpendpointenabled\x18\xaeåA \x01(\bH'R\x13httpendpointenabled\x88\x01\x01\x12R\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH(R iamdatabaseauthenticationenabled\x88\x01\x01\x12^\n" +
+	"&iooptimizednextallowedmodificationtime\x18\xa9\xc0\xc5b \x01(\tH)R&iooptimizednextallowedmodificationtime\x88\x01\x01\x12K\n" +
+	"\x1cinternetaccessgatewayenabled\x18ڥ\xfe\xd7\x01 \x01(\bH*R\x1cinternetaccessgatewayenabled\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H+R\x04iops\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH,R\bkmskeyid\x88\x01\x01\x12:\n" +
+	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tH-R\x14latestrestorabletime\x88\x01\x01\x12H\n" +
+	"\x11limitlessdatabase\x18῍\xd4\x01 \x01(\v2\x16.rds.LimitlessDatabaseR\x11limitlessdatabase\x12g\n" +
+	"\x1alocalwriteforwardingstatus\x18\xff\x8d\xc8s \x01(\x0e2\x1f.rds.LocalWriteForwardingStatusH.R\x1alocalwriteforwardingstatus\x88\x01\x01\x12D\n" +
 	"\x10masterusersecret\x18\x9dК| \x01(\v2\x15.rds.MasterUserSecretR\x10masterusersecret\x12.\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH)R\x0emasterusername\x88\x01\x01\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H*R\x12monitoringinterval\x88\x01\x01\x124\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH+R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH,R\amultiaz\x88\x01\x01\x12)\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH-R\vnetworktype\x88\x01\x01\x12Z\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH/R\x0emasterusername\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H0R\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH1R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH2R\amultiaz\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH3R\vnetworktype\x88\x01\x01\x12Z\n" +
 	"\x15pendingmodifiedvalues\x18\u0097\x90\x05 \x01(\v2!.rds.ClusterPendingModifiedValuesR\x15pendingmodifiedvalues\x120\n" +
-	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\tH.R\x0fpercentprogress\x88\x01\x01\x12G\n" +
-	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH/R\x1aperformanceinsightsenabled\x88\x01\x01\x12I\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH0R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H1R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H2R\x04port\x88\x01\x01\x12<\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH3R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH4R\x1apreferredmaintenancewindow\x88\x01\x01\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH5R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
+	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\tH4R\x0fpercentprogress\x88\x01\x01\x12G\n" +
+	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH5R\x1aperformanceinsightsenabled\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH6R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H7R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H8R\x04port\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH9R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH:R\x1apreferredmaintenancewindow\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH;R\x12publiclyaccessible\x88\x01\x01\x12k\n" +
 	"\x1drdscustomclusterconfiguration\x18\xbc\xf6\xf3Q \x01(\v2\".rds.RdsCustomClusterConfigurationR\x1drdscustomclusterconfiguration\x12:\n" +
 	"\x16readreplicaidentifiers\x18\xee\xec\xfd\xf9\x01 \x03(\tR\x16readreplicaidentifiers\x12/\n" +
-	"\x0ereaderendpoint\x18\xbc\xfb\xc3\xe5\x01 \x01(\tH6R\x0ereaderendpoint\x88\x01\x01\x12I\n" +
-	"\x1breplicationsourceidentifier\x18\x88\x8a\xbb\xce\x01 \x01(\tH7R\x1breplicationsourceidentifier\x88\x01\x01\x12]\n" +
+	"\x0ereaderendpoint\x18\xbc\xfb\xc3\xe5\x01 \x01(\tH<R\x0ereaderendpoint\x88\x01\x01\x12I\n" +
+	"\x1breplicationsourceidentifier\x18\x88\x8a\xbb\xce\x01 \x01(\tH=R\x1breplicationsourceidentifier\x88\x01\x01\x12]\n" +
 	"\x18scalingconfigurationinfo\x18\xddҨ\x96\x01 \x01(\v2\x1d.rds.ScalingConfigurationInfoR\x18scalingconfigurationinfo\x12I\n" +
-	"\x1bserverlessv2platformversion\x18\xddﬦ\x01 \x01(\tH8R\x1bserverlessv2platformversion\x88\x01\x01\x12y\n" +
+	"\x1bserverlessv2platformversion\x18\xddﬦ\x01 \x01(\tH>R\x1bserverlessv2platformversion\x88\x01\x01\x12y\n" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2).rds.ServerlessV2ScalingConfigurationInfoR serverlessv2scalingconfiguration\x12\x1e\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH9R\x06status\x88\x01\x01\x12>\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH?R\x06status\x88\x01\x01\x12>\n" +
 	"\vstatusinfos\x18\xb9\xe7\x8e\xc9\x01 \x03(\v2\x18.rds.DBClusterStatusInfoR\vstatusinfos\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH:R\x10storageencrypted\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H;R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH<R\vstoragetype\x88\x01\x01\x12&\n" +
-	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12N\n" +
-	"\x13upgraderolloutorder\x18\xa5\x84\xf6\xf8\x01 \x01(\x0e2\x18.rds.UpgradeRolloutOrderR\x13upgraderolloutorder\x12;\n" +
-	"\x14vpcnetworkingenabled\x18𮬗\x01 \x01(\bH=R\x14vpcnetworkingenabled\x88\x01\x01\x12Q\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH@R\x10storageencrypted\x88\x01\x01\x12X\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeHAR\x15storageencryptiontype\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05HBR\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tHCR\vstoragetype\x88\x01\x01\x12&\n" +
+	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12S\n" +
+	"\x13upgraderolloutorder\x18\xa5\x84\xf6\xf8\x01 \x01(\x0e2\x18.rds.UpgradeRolloutOrderHDR\x13upgraderolloutorder\x88\x01\x01\x12;\n" +
+	"\x14vpcnetworkingenabled\x18𮬗\x01 \x01(\bHER\x14vpcnetworkingenabled\x88\x01\x01\x12Q\n" +
 	"\x11vpcsecuritygroups\x18\x87\xeb\x9e\xdd\x01 \x03(\v2\x1f.rds.VpcSecurityGroupMembershipR\x11vpcsecuritygroupsB\"\n" +
 	" _activitystreamkinesisstreamnameB\x19\n" +
-	"\x17_activitystreamkmskeyidB\x13\n" +
+	"\x17_activitystreamkmskeyidB\x15\n" +
+	"\x13_activitystreammodeB\x17\n" +
+	"\x15_activitystreamstatusB\x13\n" +
 	"\x11_allocatedstorageB\x1a\n" +
 	"\x18_autominorversionupgradeB\x17\n" +
 	"\x15_automaticrestarttimeB\x1c\n" +
@@ -44112,7 +44126,8 @@ const file_rds_proto_rawDesc = "" +
 	"\t_capacityB\x13\n" +
 	"\x11_charactersetnameB\x0f\n" +
 	"\r_clonegroupidB\x14\n" +
-	"\x12_clustercreatetimeB\x15\n" +
+	"\x12_clustercreatetimeB\x19\n" +
+	"\x17_clusterscalabilitytypeB\x15\n" +
 	"\x13_copytagstosnapshotB\x14\n" +
 	"\x12_crossaccountcloneB\x0f\n" +
 	"\r_dbclusterarnB\x16\n" +
@@ -44120,7 +44135,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x17_dbclusterinstanceclassB\x1a\n" +
 	"\x18_dbclusterparametergroupB\x10\n" +
 	"\x0e_dbsubnetgroupB\r\n" +
-	"\v_dbsystemidB\x0f\n" +
+	"\v_dbsystemidB\x17\n" +
+	"\x15_databaseinsightsmodeB\x0f\n" +
 	"\r_databasenameB\x16\n" +
 	"\x14_dbclusterresourceidB\x15\n" +
 	"\x13_deletionprotectionB\x18\n" +
@@ -44132,7 +44148,8 @@ const file_rds_proto_rawDesc = "" +
 	"\v_enginemodeB\x10\n" +
 	"\x0e_engineversionB\x1a\n" +
 	"\x18_globalclusteridentifierB!\n" +
-	"\x1f_globalwriteforwardingrequestedB\x0f\n" +
+	"\x1f_globalwriteforwardingrequestedB\x1e\n" +
+	"\x1c_globalwriteforwardingstatusB\x0f\n" +
 	"\r_hostedzoneidB\x16\n" +
 	"\x14_httpendpointenabledB#\n" +
 	"!_iamdatabaseauthenticationenabledB)\n" +
@@ -44140,7 +44157,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x1d_internetaccessgatewayenabledB\a\n" +
 	"\x05_iopsB\v\n" +
 	"\t_kmskeyidB\x17\n" +
-	"\x15_latestrestorabletimeB\x11\n" +
+	"\x15_latestrestorabletimeB\x1d\n" +
+	"\x1b_localwriteforwardingstatusB\x11\n" +
 	"\x0f_masterusernameB\x15\n" +
 	"\x13_monitoringintervalB\x14\n" +
 	"\x12_monitoringrolearnB\n" +
@@ -44159,9 +44177,11 @@ const file_rds_proto_rawDesc = "" +
 	"\x1c_replicationsourceidentifierB\x1e\n" +
 	"\x1c_serverlessv2platformversionB\t\n" +
 	"\a_statusB\x13\n" +
-	"\x11_storageencryptedB\x14\n" +
+	"\x11_storageencryptedB\x18\n" +
+	"\x16_storageencryptiontypeB\x14\n" +
 	"\x12_storagethroughputB\x0e\n" +
-	"\f_storagetypeB\x17\n" +
+	"\f_storagetypeB\x16\n" +
+	"\x14_upgraderolloutorderB\x17\n" +
 	"\x15_vpcnetworkingenabled\"K\n" +
 	"\x1bDBClusterAlreadyExistsFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -44170,7 +44190,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x17DBClusterAssociatedRole\x12(\n" +
 	"\vfeaturename\x18\xff\x97\x90h \x01(\tH\x00R\vfeaturename\x88\x01\x01\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearnB\x0e\n" +
-	"\f_featurename\"\xe8\x0e\n" +
+	"\f_featurename\"\x87\x0f\n" +
 	"\x18DBClusterAutomatedBackup\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12/\n" +
 	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12E\n" +
@@ -44197,12 +44217,12 @@ const file_rds_proto_rawDesc = "" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tH\x12R\x06region\x88\x01\x01\x12;\n" +
 	"\rrestorewindow\x18\xd2\xd9\xd0\x15 \x01(\v2\x12.rds.RestoreWindowR\rrestorewindow\x12\x1e\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x13R\x06status\x88\x01\x01\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x14R\x10storageencrypted\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x15R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x16R\vstoragetype\x88\x01\x01\x12&\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x14R\x10storageencrypted\x88\x01\x01\x12X\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeH\x15R\x15storageencryptiontype\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x16R\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x17R\vstoragetype\x88\x01\x01\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12\x1d\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x17R\x05vpcid\x88\x01\x01B\x13\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x18R\x05vpcid\x88\x01\x01B\x13\n" +
 	"\x11_allocatedstorageB\x1c\n" +
 	"\x1a_awsbackuprecoverypointarnB\x18\n" +
 	"\x16_backupretentionperiodB\x14\n" +
@@ -44223,7 +44243,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x16_preferredbackupwindowB\t\n" +
 	"\a_regionB\t\n" +
 	"\a_statusB\x13\n" +
-	"\x11_storageencryptedB\x14\n" +
+	"\x11_storageencryptedB\x18\n" +
+	"\x16_storageencryptiontypeB\x14\n" +
 	"\x12_storagethroughputB\x0e\n" +
 	"\f_storagetypeB\b\n" +
 	"\x06_vpcid\"\xac\x01\n" +
@@ -44379,7 +44400,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x1fDBClusterRoleQuotaExceededFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xf6\x0f\n" +
+	"\b_message\"\x95\x10\n" +
 	"\x11DBClusterSnapshot\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12/\n" +
 	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12=\n" +
@@ -44409,12 +44430,12 @@ const file_rds_proto_rawDesc = "" +
 	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tH\x13R\fsnapshottype\x88\x01\x01\x12F\n" +
 	"\x1asourcedbclustersnapshotarn\x18\xb8\xf0\xf3# \x01(\tH\x14R\x1asourcedbclustersnapshotarn\x88\x01\x01\x12\x1e\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x15R\x06status\x88\x01\x01\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x16R\x10storageencrypted\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x17R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x18R\vstoragetype\x88\x01\x01\x12&\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x16R\x10storageencrypted\x88\x01\x01\x12X\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeH\x17R\x15storageencryptiontype\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x18R\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x19R\vstoragetype\x88\x01\x01\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x12\x1d\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x19R\x05vpcid\x88\x01\x01B\x13\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x1aR\x05vpcid\x88\x01\x01B\x13\n" +
 	"\x11_allocatedstorageB\x18\n" +
 	"\x16_backupretentionperiodB\x14\n" +
 	"\x12_clustercreatetimeB\x16\n" +
@@ -44437,7 +44458,8 @@ const file_rds_proto_rawDesc = "" +
 	"\r_snapshottypeB\x1d\n" +
 	"\x1b_sourcedbclustersnapshotarnB\t\n" +
 	"\a_statusB\x13\n" +
-	"\x11_storageencryptedB\x14\n" +
+	"\x11_storageencryptedB\x18\n" +
+	"\x16_storageencryptiontypeB\x14\n" +
 	"\x12_storagethroughputB\x0e\n" +
 	"\f_storagetypeB\b\n" +
 	"\x06_vpcid\"S\n" +
@@ -44541,111 +44563,115 @@ const file_rds_proto_rawDesc = "" +
 	"\x16DBEngineVersionMessage\x12D\n" +
 	"\x10dbengineversions\x18\xf5ۿ\xd4\x01 \x03(\v2\x14.rds.DBEngineVersionR\x10dbengineversions\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
-	"\a_marker\"\x93;\n" +
+	"\a_marker\"\xf8<\n" +
 	"\n" +
 	"DBInstance\x12l\n" +
 	"-activitystreamenginenativeauditfieldsincluded\x18\xfe\xb9\xe0O \x01(\bH\x00R-activitystreamenginenativeauditfieldsincluded\x88\x01\x01\x12P\n" +
 	"\x1factivitystreamkinesisstreamname\x18\xb2\xa4\x84R \x01(\tH\x01R\x1factivitystreamkinesisstreamname\x88\x01\x01\x12?\n" +
-	"\x16activitystreamkmskeyid\x18\xbe\xb8\x9f\xbc\x01 \x01(\tH\x02R\x16activitystreamkmskeyid\x88\x01\x01\x12J\n" +
-	"\x12activitystreammode\x18\xb8\xb3\x8f\t \x01(\x0e2\x17.rds.ActivityStreamModeR\x12activitystreammode\x12b\n" +
-	"\x1aactivitystreampolicystatus\x18\xb1\xb8\xdf> \x01(\x0e2\x1f.rds.ActivityStreamPolicyStatusR\x1aactivitystreampolicystatus\x12Q\n" +
-	"\x14activitystreamstatus\x18\x9fޢ\xe3\x01 \x01(\x0e2\x19.rds.ActivityStreamStatusR\x14activitystreamstatus\x12b\n" +
+	"\x16activitystreamkmskeyid\x18\xbe\xb8\x9f\xbc\x01 \x01(\tH\x02R\x16activitystreamkmskeyid\x88\x01\x01\x12O\n" +
+	"\x12activitystreammode\x18\xb8\xb3\x8f\t \x01(\x0e2\x17.rds.ActivityStreamModeH\x03R\x12activitystreammode\x88\x01\x01\x12g\n" +
+	"\x1aactivitystreampolicystatus\x18\xb1\xb8\xdf> \x01(\x0e2\x1f.rds.ActivityStreamPolicyStatusH\x04R\x1aactivitystreampolicystatus\x88\x01\x01\x12V\n" +
+	"\x14activitystreamstatus\x18\x9fޢ\xe3\x01 \x01(\x0e2\x19.rds.ActivityStreamStatusH\x05R\x14activitystreamstatus\x88\x01\x01\x12b\n" +
 	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\".rds.AdditionalStorageVolumeOutputR\x18additionalstoragevolumes\x123\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x03R\x10allocatedstorage\x88\x01\x01\x12A\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x06R\x10allocatedstorage\x88\x01\x01\x12A\n" +
 	"\x0fassociatedroles\x18\xed\x97\xc7\xcc\x01 \x03(\v2\x13.rds.DBInstanceRoleR\x0fassociatedroles\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x04R\x17autominorversionupgrade\x88\x01\x01\x12;\n" +
-	"\x14automaticrestarttime\x18\xcf\xfb\xb9\xed\x01 \x01(\tH\x05R\x14automaticrestarttime\x88\x01\x01\x12>\n" +
-	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeR\x0eautomationmode\x123\n" +
-	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tH\x06R\x10availabilityzone\x88\x01\x01\x12E\n" +
-	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tH\aR\x19awsbackuprecoverypointarn\x88\x01\x01\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\bR\x15backupretentionperiod\x88\x01\x01\x12+\n" +
-	"\fbackuptarget\x18\xc3\xea\xca\xcb\x01 \x01(\tH\tR\fbackuptarget\x88\x01\x01\x12A\n" +
-	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\n" +
-	"R\x17cacertificateidentifier\x88\x01\x01\x12K\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\aR\x17autominorversionupgrade\x88\x01\x01\x12;\n" +
+	"\x14automaticrestarttime\x18\xcf\xfb\xb9\xed\x01 \x01(\tH\bR\x14automaticrestarttime\x88\x01\x01\x12C\n" +
+	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeH\tR\x0eautomationmode\x88\x01\x01\x123\n" +
+	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tH\n" +
+	"R\x10availabilityzone\x88\x01\x01\x12E\n" +
+	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tH\vR\x19awsbackuprecoverypointarn\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\fR\x15backupretentionperiod\x88\x01\x01\x12+\n" +
+	"\fbackuptarget\x18\xc3\xea\xca\xcb\x01 \x01(\tH\rR\fbackuptarget\x88\x01\x01\x12A\n" +
+	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\x0eR\x17cacertificateidentifier\x88\x01\x01\x12K\n" +
 	"\x12certificatedetails\x18\xa7\xf0\xcf\xd6\x01 \x01(\v2\x17.rds.CertificateDetailsR\x12certificatedetails\x123\n" +
-	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\vR\x10charactersetname\x88\x01\x01\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\fR\x12copytagstosnapshot\x88\x01\x01\x12C\n" +
-	"\x18customiaminstanceprofile\x18ֳ\xbe\xde\x01 \x01(\tH\rR\x18customiaminstanceprofile\x88\x01\x01\x12?\n" +
-	"\x16customerownedipenabled\x18\xb9\xbc\xa8\xc4\x01 \x01(\bH\x0eR\x16customerownedipenabled\x88\x01\x01\x129\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x0fR\x13dbclusteridentifier\x88\x01\x01\x12-\n" +
-	"\rdbinstancearn\x18ȧ\x99\xf8\x01 \x01(\tH\x10R\rdbinstancearn\x88\x01\x01\x12\x85\x01\n" +
+	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\x0fR\x10charactersetname\x88\x01\x01\x127\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x10R\x12copytagstosnapshot\x88\x01\x01\x12C\n" +
+	"\x18customiaminstanceprofile\x18ֳ\xbe\xde\x01 \x01(\tH\x11R\x18customiaminstanceprofile\x88\x01\x01\x12?\n" +
+	"\x16customerownedipenabled\x18\xb9\xbc\xa8\xc4\x01 \x01(\bH\x12R\x16customerownedipenabled\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x13R\x13dbclusteridentifier\x88\x01\x01\x12-\n" +
+	"\rdbinstancearn\x18ȧ\x99\xf8\x01 \x01(\tH\x14R\rdbinstancearn\x88\x01\x01\x12\x85\x01\n" +
 	"&dbinstanceautomatedbackupsreplications\x18\xa7ǃ\x18 \x03(\v2*.rds.DBInstanceAutomatedBackupsReplicationR&dbinstanceautomatedbackupsreplications\x121\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\x11R\x0fdbinstanceclass\x88\x01\x01\x12;\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tH\x12R\x14dbinstanceidentifier\x88\x01\x01\x122\n" +
-	"\x10dbinstancestatus\x18㐧\x04 \x01(\tH\x13R\x10dbinstancestatus\x88\x01\x01\x12\x1e\n" +
-	"\x06dbname\x18\xe9\xb5\xc7@ \x01(\tH\x14R\x06dbname\x88\x01\x01\x12L\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\x15R\x0fdbinstanceclass\x88\x01\x01\x12;\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tH\x16R\x14dbinstanceidentifier\x88\x01\x01\x122\n" +
+	"\x10dbinstancestatus\x18㐧\x04 \x01(\tH\x17R\x10dbinstancestatus\x88\x01\x01\x12\x1e\n" +
+	"\x06dbname\x18\xe9\xb5\xc7@ \x01(\tH\x18R\x06dbname\x88\x01\x01\x12L\n" +
 	"\x11dbparametergroups\x18\x8b\xbf\xea) \x03(\v2\x1b.rds.DBParameterGroupStatusR\x11dbparametergroups\x12N\n" +
 	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\v2\x1e.rds.DBSecurityGroupMembershipR\x10dbsecuritygroups\x12<\n" +
 	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\v2\x12.rds.DBSubnetGroupR\rdbsubnetgroup\x12&\n" +
 	"\n" +
-	"dbsystemid\x18\x88\xf9\xcce \x01(\tH\x15R\n" +
-	"dbsystemid\x88\x01\x01\x12P\n" +
-	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x12.\n" +
-	"\x0edbinstanceport\x18\x9c\xd1\xcc: \x01(\x05H\x16R\x0edbinstanceport\x88\x01\x01\x12-\n" +
-	"\rdbiresourceid\x18\xfc\xac\xb1\xe6\x01 \x01(\tH\x17R\rdbiresourceid\x88\x01\x01\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x18R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x19R\x12deletionprotection\x88\x01\x01\x12G\n" +
+	"dbsystemid\x18\x88\xf9\xcce \x01(\tH\x19R\n" +
+	"dbsystemid\x88\x01\x01\x12U\n" +
+	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeH\x1aR\x14databaseinsightsmode\x88\x01\x01\x12.\n" +
+	"\x0edbinstanceport\x18\x9c\xd1\xcc: \x01(\x05H\x1bR\x0edbinstanceport\x88\x01\x01\x12-\n" +
+	"\rdbiresourceid\x18\xfc\xac\xb1\xe6\x01 \x01(\tH\x1cR\rdbiresourceid\x88\x01\x01\x127\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x1dR\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x1eR\x12deletionprotection\x88\x01\x01\x12G\n" +
 	"\x11domainmemberships\x18\x93\xf2\xb3\xa2\x01 \x03(\v2\x15.rds.DomainMembershipR\x11domainmemberships\x12F\n" +
 	"\x1cenabledcloudwatchlogsexports\x18\x95\x9a\xfa\x94\x01 \x03(\tR\x1cenabledcloudwatchlogsexports\x12,\n" +
 	"\bendpoint\x18\x9d\xad\x9f? \x01(\v2\r.rds.EndpointR\bendpoint\x12\x1f\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x1aR\x06engine\x88\x01\x01\x12>\n" +
-	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x1bR\x16enginelifecyclesupport\x88\x01\x01\x12,\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x1cR\rengineversion\x88\x01\x01\x12L\n" +
-	"\x1denhancedmonitoringresourcearn\x18ّ\xa8o \x01(\tH\x1dR\x1denhancedmonitoringresourcearn\x88\x01\x01\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x1eR iamdatabaseauthenticationenabled\x88\x01\x01\x127\n" +
-	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tH\x1fR\x12instancecreatetime\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H R\x04iops\x88\x01\x01\x12Q\n" +
-	"\x1fisstorageconfigupgradeavailable\x18\xe0\x8b\xae\xbf\x01 \x01(\bH!R\x1fisstorageconfigupgradeavailable\x88\x01\x01\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\"R\bkmskeyid\x88\x01\x01\x12:\n" +
-	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tH#R\x14latestrestorabletime\x88\x01\x01\x12*\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH$R\flicensemodel\x88\x01\x01\x12<\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x1fR\x06engine\x88\x01\x01\x12>\n" +
+	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH R\x16enginelifecyclesupport\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH!R\rengineversion\x88\x01\x01\x12L\n" +
+	"\x1denhancedmonitoringresourcearn\x18ّ\xa8o \x01(\tH\"R\x1denhancedmonitoringresourcearn\x88\x01\x01\x12R\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH#R iamdatabaseauthenticationenabled\x88\x01\x01\x127\n" +
+	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tH$R\x12instancecreatetime\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H%R\x04iops\x88\x01\x01\x12Q\n" +
+	"\x1fisstorageconfigupgradeavailable\x18\xe0\x8b\xae\xbf\x01 \x01(\bH&R\x1fisstorageconfigupgradeavailable\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH'R\bkmskeyid\x88\x01\x01\x12:\n" +
+	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tH(R\x14latestrestorabletime\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH)R\flicensemodel\x88\x01\x01\x12<\n" +
 	"\x10listenerendpoint\x18\xa9\xe3\xef\x18 \x01(\v2\r.rds.EndpointR\x10listenerendpoint\x12D\n" +
 	"\x10masterusersecret\x18\x9dК| \x01(\v2\x15.rds.MasterUserSecretR\x10masterusersecret\x12.\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH%R\x0emasterusername\x88\x01\x01\x128\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H&R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H'R\x12monitoringinterval\x88\x01\x01\x124\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH(R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH)R\amultiaz\x88\x01\x01\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH*R\vmultitenant\x88\x01\x01\x12<\n" +
-	"\x15ncharcharactersetname\x18\xf0\xe4\xad3 \x01(\tH+R\x15ncharcharactersetname\x88\x01\x01\x12)\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH,R\vnetworktype\x88\x01\x01\x12V\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH*R\x0emasterusername\x88\x01\x01\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H+R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H,R\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH-R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH.R\amultiaz\x88\x01\x01\x12)\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH/R\vmultitenant\x88\x01\x01\x12<\n" +
+	"\x15ncharcharactersetname\x18\xf0\xe4\xad3 \x01(\tH0R\x15ncharcharactersetname\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH1R\vnetworktype\x88\x01\x01\x12V\n" +
 	"\x16optiongroupmemberships\x18\xa5\ue44d\x01 \x03(\v2\x1a.rds.OptionGroupMembershipR\x16optiongroupmemberships\x12S\n" +
 	"\x15pendingmodifiedvalues\x18\u0097\x90\x05 \x01(\v2\x1a.rds.PendingModifiedValuesR\x15pendingmodifiedvalues\x120\n" +
-	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\tH-R\x0fpercentprogress\x88\x01\x01\x12G\n" +
-	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH.R\x1aperformanceinsightsenabled\x88\x01\x01\x12I\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH/R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H0R\"performanceinsightsretentionperiod\x88\x01\x01\x12<\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH1R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH2R\x1apreferredmaintenancewindow\x88\x01\x01\x12F\n" +
+	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\tH2R\x0fpercentprogress\x88\x01\x01\x12G\n" +
+	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH3R\x1aperformanceinsightsenabled\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH4R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H5R\"performanceinsightsretentionperiod\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH6R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH7R\x1apreferredmaintenancewindow\x88\x01\x01\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12,\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H3R\rpromotiontier\x88\x01\x01\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH4R\x12publiclyaccessible\x88\x01\x01\x12K\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H8R\rpromotiontier\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH9R\x12publiclyaccessible\x88\x01\x01\x12K\n" +
 	"\x1freadreplicadbclusteridentifiers\x18\xbc\x83\xb5S \x03(\tR\x1freadreplicadbclusteridentifiers\x12M\n" +
 	" readreplicadbinstanceidentifiers\x18\xbb\xda\xe5| \x03(\tR readreplicadbinstanceidentifiers\x12[\n" +
-	"$readreplicasourcedbclusteridentifier\x18\xa2\xac\xec\xb5\x01 \x01(\tH5R$readreplicasourcedbclusteridentifier\x88\x01\x01\x12]\n" +
-	"%readreplicasourcedbinstanceidentifier\x18\xd1Ԍ\x92\x01 \x01(\tH6R%readreplicasourcedbinstanceidentifier\x88\x01\x01\x125\n" +
-	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeR\vreplicamode\x12K\n" +
-	"\x1cresumefullautomationmodetime\x18\xa7\xb4\x98\xea\x01 \x01(\tH7R\x1cresumefullautomationmodetime\x88\x01\x01\x12D\n" +
-	"\x19secondaryavailabilityzone\x18\xbd\x98\x82m \x01(\tH8R\x19secondaryavailabilityzone\x88\x01\x01\x12?\n" +
+	"$readreplicasourcedbclusteridentifier\x18\xa2\xac\xec\xb5\x01 \x01(\tH:R$readreplicasourcedbclusteridentifier\x88\x01\x01\x12]\n" +
+	"%readreplicasourcedbinstanceidentifier\x18\xd1Ԍ\x92\x01 \x01(\tH;R%readreplicasourcedbinstanceidentifier\x88\x01\x01\x12:\n" +
+	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeH<R\vreplicamode\x88\x01\x01\x12K\n" +
+	"\x1cresumefullautomationmodetime\x18\xa7\xb4\x98\xea\x01 \x01(\tH=R\x1cresumefullautomationmodetime\x88\x01\x01\x12D\n" +
+	"\x19secondaryavailabilityzone\x18\xbd\x98\x82m \x01(\tH>R\x19secondaryavailabilityzone\x88\x01\x01\x12?\n" +
 	"\vstatusinfos\x18\xb9\xe7\x8e\xc9\x01 \x03(\v2\x19.rds.DBInstanceStatusInfoR\vstatusinfos\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH9R\x10storageencrypted\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x12P\n" +
-	"\x1fstorageoperationpercentprogress\x18\xac\xe1\x8aS \x01(\x05H:R\x1fstorageoperationpercentprogress\x88\x01\x01\x12>\n" +
-	"\x16storageoperationstatus\x18\xbe\x86\x8c> \x01(\tH;R\x16storageoperationstatus\x88\x01\x01\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H<R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH=R\vstoragetype\x88\x01\x01\x128\n" +
-	"\x13storagevolumestatus\x18\x9b\xff\x9eH \x01(\tH>R\x13storagevolumestatus\x88\x01\x01\x12&\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH?R\x10storageencrypted\x88\x01\x01\x12X\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeH@R\x15storageencryptiontype\x88\x01\x01\x12P\n" +
+	"\x1fstorageoperationpercentprogress\x18\xac\xe1\x8aS \x01(\x05HAR\x1fstorageoperationpercentprogress\x88\x01\x01\x12>\n" +
+	"\x16storageoperationstatus\x18\xbe\x86\x8c> \x01(\tHBR\x16storageoperationstatus\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05HCR\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tHDR\vstoragetype\x88\x01\x01\x128\n" +
+	"\x13storagevolumestatus\x18\x9b\xff\x9eH \x01(\tHER\x13storagevolumestatus\x88\x01\x01\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x122\n" +
-	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH?R\x10tdecredentialarn\x88\x01\x01\x12\"\n" +
-	"\btimezone\x18Î\xb9u \x01(\tH@R\btimezone\x88\x01\x01\x12N\n" +
-	"\x13upgraderolloutorder\x18\xa5\x84\xf6\xf8\x01 \x01(\x0e2\x18.rds.UpgradeRolloutOrderR\x13upgraderolloutorder\x12Q\n" +
+	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tHFR\x10tdecredentialarn\x88\x01\x01\x12\"\n" +
+	"\btimezone\x18Î\xb9u \x01(\tHGR\btimezone\x88\x01\x01\x12S\n" +
+	"\x13upgraderolloutorder\x18\xa5\x84\xf6\xf8\x01 \x01(\x0e2\x18.rds.UpgradeRolloutOrderHHR\x13upgraderolloutorder\x88\x01\x01\x12Q\n" +
 	"\x11vpcsecuritygroups\x18\x87\xeb\x9e\xdd\x01 \x03(\v2\x1f.rds.VpcSecurityGroupMembershipR\x11vpcsecuritygroupsB0\n" +
 	"._activitystreamenginenativeauditfieldsincludedB\"\n" +
 	" _activitystreamkinesisstreamnameB\x19\n" +
-	"\x17_activitystreamkmskeyidB\x13\n" +
+	"\x17_activitystreamkmskeyidB\x15\n" +
+	"\x13_activitystreammodeB\x1d\n" +
+	"\x1b_activitystreampolicystatusB\x17\n" +
+	"\x15_activitystreamstatusB\x13\n" +
 	"\x11_allocatedstorageB\x1a\n" +
 	"\x18_autominorversionupgradeB\x17\n" +
-	"\x15_automaticrestarttimeB\x13\n" +
+	"\x15_automaticrestarttimeB\x11\n" +
+	"\x0f_automationmodeB\x13\n" +
 	"\x11_availabilityzoneB\x1c\n" +
 	"\x1a_awsbackuprecoverypointarnB\x18\n" +
 	"\x16_backupretentionperiodB\x0f\n" +
@@ -44661,7 +44687,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x15_dbinstanceidentifierB\x13\n" +
 	"\x11_dbinstancestatusB\t\n" +
 	"\a_dbnameB\r\n" +
-	"\v_dbsystemidB\x11\n" +
+	"\v_dbsystemidB\x17\n" +
+	"\x15_databaseinsightsmodeB\x11\n" +
 	"\x0f_dbinstanceportB\x10\n" +
 	"\x0e_dbiresourceidB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
@@ -44695,21 +44722,24 @@ const file_rds_proto_rawDesc = "" +
 	"\x0e_promotiontierB\x15\n" +
 	"\x13_publiclyaccessibleB'\n" +
 	"%_readreplicasourcedbclusteridentifierB(\n" +
-	"&_readreplicasourcedbinstanceidentifierB\x1f\n" +
+	"&_readreplicasourcedbinstanceidentifierB\x0e\n" +
+	"\f_replicamodeB\x1f\n" +
 	"\x1d_resumefullautomationmodetimeB\x1c\n" +
 	"\x1a_secondaryavailabilityzoneB\x13\n" +
-	"\x11_storageencryptedB\"\n" +
+	"\x11_storageencryptedB\x18\n" +
+	"\x16_storageencryptiontypeB\"\n" +
 	" _storageoperationpercentprogressB\x19\n" +
 	"\x17_storageoperationstatusB\x14\n" +
 	"\x12_storagethroughputB\x0e\n" +
 	"\f_storagetypeB\x16\n" +
 	"\x14_storagevolumestatusB\x13\n" +
 	"\x11_tdecredentialarnB\v\n" +
-	"\t_timezone\"L\n" +
+	"\t_timezoneB\x16\n" +
+	"\x14_upgraderolloutorder\"L\n" +
 	"\x1cDBInstanceAlreadyExistsFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xa2\x13\n" +
+	"\b_message\"\xc1\x13\n" +
 	"\x19DBInstanceAutomatedBackup\x12\\\n" +
 	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x123\n" +
@@ -44739,14 +44769,14 @@ const file_rds_proto_rawDesc = "" +
 	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH\x16R\x15preferredbackupwindow\x88\x01\x01\x12\x1e\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\tH\x17R\x06region\x88\x01\x01\x12;\n" +
 	"\rrestorewindow\x18\xd2\xd9\xd0\x15 \x01(\v2\x12.rds.RestoreWindowR\rrestorewindow\x12\x1e\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x18R\x06status\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x19R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x1aR\vstoragetype\x88\x01\x01\x12&\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x18R\x06status\x88\x01\x01\x12X\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeH\x19R\x15storageencryptiontype\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x1aR\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x1bR\vstoragetype\x88\x01\x01\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x122\n" +
-	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH\x1bR\x10tdecredentialarn\x88\x01\x01\x12\"\n" +
-	"\btimezone\x18Î\xb9u \x01(\tH\x1cR\btimezone\x88\x01\x01\x12\x1d\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x1dR\x05vpcid\x88\x01\x01B\x13\n" +
+	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH\x1cR\x10tdecredentialarn\x88\x01\x01\x12\"\n" +
+	"\btimezone\x18Î\xb9u \x01(\tH\x1dR\btimezone\x88\x01\x01\x12\x1d\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x1eR\x05vpcid\x88\x01\x01B\x13\n" +
 	"\x11_allocatedstorageB\x13\n" +
 	"\x11_availabilityzoneB\x1c\n" +
 	"\x1a_awsbackuprecoverypointarnB\x18\n" +
@@ -44772,7 +44802,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x05_portB\x18\n" +
 	"\x16_preferredbackupwindowB\t\n" +
 	"\a_regionB\t\n" +
-	"\a_statusB\x14\n" +
+	"\a_statusB\x18\n" +
+	"\x16_storageencryptiontypeB\x14\n" +
 	"\x12_storagethroughputB\x0e\n" +
 	"\f_storagetypeB\x13\n" +
 	"\x11_tdecredentialarnB\v\n" +
@@ -44885,7 +44916,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x18DBParameterGroupsMessage\x12F\n" +
 	"\x11dbparametergroups\x18\x8b\xbf\xea) \x03(\v2\x15.rds.DBParameterGroupR\x11dbparametergroups\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
-	"\a_marker\"\xba\b\n" +
+	"\a_marker\"\x8c\t\n" +
 	"\aDBProxy\x12/\n" +
 	"\x04auth\x18\xf0诫\x01 \x03(\v2\x17.rds.UserAuthConfigInfoR\x04auth\x12)\n" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x00R\vcreateddate\x88\x01\x01\x12'\n" +
@@ -44895,19 +44926,19 @@ const file_rds_proto_rawDesc = "" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tH\x02R\vdbproxyname\x88\x01\x01\x12*\n" +
 	"\fdebuglogging\x18\x82\xf3\xac2 \x01(\bH\x03R\fdebuglogging\x88\x01\x01\x125\n" +
 	"\x11defaultauthscheme\x18\xe4У\xd0\x01 \x01(\tH\x04R\x11defaultauthscheme\x88\x01\x01\x12\"\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x05R\bendpoint\x88\x01\x01\x12N\n" +
-	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeR\x13endpointnetworktype\x12+\n" +
-	"\fenginefamily\x18\xfc\xa6Ɏ\x01 \x01(\tH\x06R\fenginefamily\x88\x01\x01\x124\n" +
-	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05H\aR\x11idleclienttimeout\x88\x01\x01\x12'\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x05R\bendpoint\x88\x01\x01\x12S\n" +
+	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeH\x06R\x13endpointnetworktype\x88\x01\x01\x12+\n" +
+	"\fenginefamily\x18\xfc\xa6Ɏ\x01 \x01(\tH\aR\fenginefamily\x88\x01\x01\x124\n" +
+	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05H\bR\x11idleclienttimeout\x88\x01\x01\x12'\n" +
 	"\n" +
-	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\bR\n" +
+	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\tR\n" +
 	"requiretls\x88\x01\x01\x12!\n" +
-	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\tR\arolearn\x88\x01\x01\x12-\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.rds.DBProxyStatusR\x06status\x12f\n" +
-	"\x1btargetconnectionnetworktype\x18\x97\x83\xa7\xe2\x01 \x01(\x0e2 .rds.TargetConnectionNetworkTypeR\x1btargetconnectionnetworktype\x12(\n" +
-	"\vupdateddate\x18\xa5\xc2\xeb. \x01(\tH\n" +
-	"R\vupdateddate\x88\x01\x01\x12\x1d\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\vR\x05vpcid\x88\x01\x01\x123\n" +
+	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\n" +
+	"R\arolearn\x88\x01\x01\x122\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x12.rds.DBProxyStatusH\vR\x06status\x88\x01\x01\x12k\n" +
+	"\x1btargetconnectionnetworktype\x18\x97\x83\xa7\xe2\x01 \x01(\x0e2 .rds.TargetConnectionNetworkTypeH\fR\x1btargetconnectionnetworktype\x88\x01\x01\x12(\n" +
+	"\vupdateddate\x18\xa5\xc2\xeb. \x01(\tH\rR\vupdateddate\x88\x01\x01\x12\x1d\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x0eR\x05vpcid\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\x12&\n" +
 	"\fvpcsubnetids\x18®\xe1\xec\x01 \x03(\tR\fvpcsubnetidsB\x0e\n" +
 	"\f_createddateB\r\n" +
@@ -44915,40 +44946,46 @@ const file_rds_proto_rawDesc = "" +
 	"\f_dbproxynameB\x0f\n" +
 	"\r_debugloggingB\x14\n" +
 	"\x12_defaultauthschemeB\v\n" +
-	"\t_endpointB\x0f\n" +
+	"\t_endpointB\x16\n" +
+	"\x14_endpointnetworktypeB\x0f\n" +
 	"\r_enginefamilyB\x14\n" +
 	"\x12_idleclienttimeoutB\r\n" +
 	"\v_requiretlsB\n" +
 	"\n" +
-	"\b_rolearnB\x0e\n" +
+	"\b_rolearnB\t\n" +
+	"\a_statusB\x1e\n" +
+	"\x1c_targetconnectionnetworktypeB\x0e\n" +
 	"\f_updateddateB\b\n" +
 	"\x06_vpcid\"I\n" +
 	"\x19DBProxyAlreadyExistsFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xdd\x05\n" +
+	"\b_message\"\x9e\x06\n" +
 	"\x0fDBProxyEndpoint\x12)\n" +
 	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x00R\vcreateddate\x88\x01\x01\x126\n" +
 	"\x12dbproxyendpointarn\x18̲\xa0r \x01(\tH\x01R\x12dbproxyendpointarn\x88\x01\x01\x128\n" +
 	"\x13dbproxyendpointname\x18\xb0\x85\xc4G \x01(\tH\x02R\x13dbproxyendpointname\x88\x01\x01\x12(\n" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tH\x03R\vdbproxyname\x88\x01\x01\x12\"\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x04R\bendpoint\x88\x01\x01\x12N\n" +
-	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeR\x13endpointnetworktype\x12$\n" +
-	"\tisdefault\x18\x8f\xf8\xc10 \x01(\bH\x05R\tisdefault\x88\x01\x01\x125\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.rds.DBProxyEndpointStatusR\x06status\x12B\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x04R\bendpoint\x88\x01\x01\x12S\n" +
+	"\x13endpointnetworktype\x18\xa3\xf8\xa6\x8f\x01 \x01(\x0e2\x18.rds.EndpointNetworkTypeH\x05R\x13endpointnetworktype\x88\x01\x01\x12$\n" +
+	"\tisdefault\x18\x8f\xf8\xc10 \x01(\bH\x06R\tisdefault\x88\x01\x01\x12:\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.rds.DBProxyEndpointStatusH\aR\x06status\x88\x01\x01\x12G\n" +
 	"\n" +
-	"targetrole\x18\xf9\xc3\xf9\xfe\x01 \x01(\x0e2\x1e.rds.DBProxyEndpointTargetRoleR\n" +
-	"targetrole\x12\x1d\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x06R\x05vpcid\x88\x01\x01\x123\n" +
+	"targetrole\x18\xf9\xc3\xf9\xfe\x01 \x01(\x0e2\x1e.rds.DBProxyEndpointTargetRoleH\bR\n" +
+	"targetrole\x88\x01\x01\x12\x1d\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\tR\x05vpcid\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupids\x12&\n" +
 	"\fvpcsubnetids\x18®\xe1\xec\x01 \x03(\tR\fvpcsubnetidsB\x0e\n" +
 	"\f_createddateB\x15\n" +
 	"\x13_dbproxyendpointarnB\x16\n" +
 	"\x14_dbproxyendpointnameB\x0e\n" +
 	"\f_dbproxynameB\v\n" +
-	"\t_endpointB\f\n" +
+	"\t_endpointB\x16\n" +
+	"\x14_endpointnetworktypeB\f\n" +
 	"\n" +
-	"_isdefaultB\b\n" +
+	"_isdefaultB\t\n" +
+	"\a_statusB\r\n" +
+	"\v_targetroleB\b\n" +
 	"\x06_vpcid\"Q\n" +
 	"!DBProxyEndpointAlreadyExistsFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
@@ -44969,22 +45006,24 @@ const file_rds_proto_rawDesc = "" +
 	"\x19DBProxyQuotaExceededFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xb0\x03\n" +
+	"\b_message\"\xcc\x03\n" +
 	"\rDBProxyTarget\x12\"\n" +
 	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x00R\bendpoint\x88\x01\x01\x12\x1a\n" +
 	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x01R\x04port\x88\x01\x01\x12,\n" +
-	"\rrdsresourceid\x18\xaa\xdb\xc7_ \x01(\tH\x02R\rrdsresourceid\x88\x01\x01\x12'\n" +
-	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\x0e2\x0f.rds.TargetRoleR\x04role\x12$\n" +
-	"\ttargetarn\x18\x90\x95\xe5g \x01(\tH\x03R\ttargetarn\x88\x01\x01\x129\n" +
+	"\rrdsresourceid\x18\xaa\xdb\xc7_ \x01(\tH\x02R\rrdsresourceid\x88\x01\x01\x12,\n" +
+	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\x0e2\x0f.rds.TargetRoleH\x03R\x04role\x88\x01\x01\x12$\n" +
+	"\ttargetarn\x18\x90\x95\xe5g \x01(\tH\x04R\ttargetarn\x88\x01\x01\x129\n" +
 	"\ftargethealth\x18ߴ\x80\xc8\x01 \x01(\v2\x11.rds.TargetHealthR\ftargethealth\x123\n" +
-	"\x10trackedclusterid\x18Ѯ۔\x01 \x01(\tH\x04R\x10trackedclusterid\x88\x01\x01\x12'\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.rds.TargetTypeR\x04typeB\v\n" +
+	"\x10trackedclusterid\x18Ѯ۔\x01 \x01(\tH\x05R\x10trackedclusterid\x88\x01\x01\x12,\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.rds.TargetTypeH\x06R\x04type\x88\x01\x01B\v\n" +
 	"\t_endpointB\a\n" +
 	"\x05_portB\x10\n" +
-	"\x0e_rdsresourceidB\f\n" +
+	"\x0e_rdsresourceidB\a\n" +
+	"\x05_roleB\f\n" +
 	"\n" +
 	"_targetarnB\x13\n" +
-	"\x11_trackedclusterid\"S\n" +
+	"\x11_trackedclusteridB\a\n" +
+	"\x05_type\"S\n" +
 	"#DBProxyTargetAlreadyRegisteredFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -45128,7 +45167,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x19DBShardGroupNotFoundFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x99\x17\n" +
+	"\b_message\"\xb8\x17\n" +
 	"\n" +
 	"DBSnapshot\x12\\\n" +
 	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
@@ -45168,14 +45207,14 @@ const file_rds_proto_rawDesc = "" +
 	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tH\x1dR\fsnapshottype\x88\x01\x01\x12G\n" +
 	"\x1asourcedbsnapshotidentifier\x18\xbe\x9d\xc0\xad\x01 \x01(\tH\x1eR\x1asourcedbsnapshotidentifier\x88\x01\x01\x12*\n" +
 	"\fsourceregion\x18\xcd\xcc\xe5e \x01(\tH\x1fR\fsourceregion\x88\x01\x01\x12\x1e\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH R\x06status\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H!R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\"R\vstoragetype\x88\x01\x01\x12&\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH R\x06status\x88\x01\x01\x12X\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeH!R\x15storageencryptiontype\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\"R\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH#R\vstoragetype\x88\x01\x01\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglist\x122\n" +
-	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH#R\x10tdecredentialarn\x88\x01\x01\x12\"\n" +
-	"\btimezone\x18Î\xb9u \x01(\tH$R\btimezone\x88\x01\x01\x12\x1d\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH%R\x05vpcid\x88\x01\x01B\x13\n" +
+	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH$R\x10tdecredentialarn\x88\x01\x01\x12\"\n" +
+	"\btimezone\x18Î\xb9u \x01(\tH%R\btimezone\x88\x01\x01\x12\x1d\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH&R\x05vpcid\x88\x01\x01B\x13\n" +
 	"\x11_allocatedstorageB\x13\n" +
 	"\x11_availabilityzoneB\x18\n" +
 	"\x16_backupretentionperiodB\x17\n" +
@@ -45209,7 +45248,8 @@ const file_rds_proto_rawDesc = "" +
 	"\r_snapshottypeB\x1d\n" +
 	"\x1b_sourcedbsnapshotidentifierB\x0f\n" +
 	"\r_sourceregionB\t\n" +
-	"\a_statusB\x14\n" +
+	"\a_statusB\x18\n" +
+	"\x16_storageencryptiontypeB\x14\n" +
 	"\x12_storagethroughputB\x0e\n" +
 	"\f_storagetypeB\x13\n" +
 	"\x11_tdecredentialarnB\v\n" +
@@ -45829,7 +45869,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tH\x02R\x10subscriptionname\x88\x01\x01B\t\n" +
 	"\a_markerB\r\n" +
 	"\v_maxrecordsB\x13\n" +
-	"\x11_subscriptionname\"\xe2\x03\n" +
+	"\x11_subscriptionname\"\xf6\x03\n" +
 	"\x15DescribeEventsMessage\x12#\n" +
 	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x00R\bduration\x88\x01\x01\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x01R\aendtime\x88\x01\x01\x12+\n" +
@@ -45839,19 +45879,20 @@ const file_rds_proto_rawDesc = "" +
 	"\n" +
 	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x03R\n" +
 	"maxrecords\x88\x01\x01\x122\n" +
-	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x04R\x10sourceidentifier\x88\x01\x01\x122\n" +
+	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x04R\x10sourceidentifier\x88\x01\x01\x127\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.rds.SourceTypeR\n" +
-	"sourcetype\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01B\v\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.rds.SourceTypeH\x05R\n" +
+	"sourcetype\x88\x01\x01\x12%\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x06R\tstarttime\x88\x01\x01B\v\n" +
 	"\t_durationB\n" +
 	"\n" +
 	"\b_endtimeB\t\n" +
 	"\a_markerB\r\n" +
 	"\v_maxrecordsB\x13\n" +
-	"\x11_sourceidentifierB\f\n" +
+	"\x11_sourceidentifierB\r\n" +
+	"\v_sourcetypeB\f\n" +
 	"\n" +
-	"_starttime\"\xec\x02\n" +
+	"_starttime\"\x80\x03\n" +
 	"\x1aDescribeExportTasksMessage\x12:\n" +
 	"\x14exporttaskidentifier\x18Ҥ\xd79 \x01(\tH\x00R\x14exporttaskidentifier\x88\x01\x01\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12\x1e\n" +
@@ -45859,15 +45900,16 @@ const file_rds_proto_rawDesc = "" +
 	"\n" +
 	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
 	"maxrecords\x88\x01\x01\x12%\n" +
-	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\x03R\tsourcearn\x88\x01\x01\x128\n" +
+	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\x03R\tsourcearn\x88\x01\x01\x12=\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x15.rds.ExportSourceTypeR\n" +
-	"sourcetypeB\x17\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x15.rds.ExportSourceTypeH\x04R\n" +
+	"sourcetype\x88\x01\x01B\x17\n" +
 	"\x15_exporttaskidentifierB\t\n" +
 	"\a_markerB\r\n" +
 	"\v_maxrecordsB\f\n" +
 	"\n" +
-	"_sourcearn\"\x89\x02\n" +
+	"_sourcearnB\r\n" +
+	"\v_sourcetype\"\x89\x02\n" +
 	"\x1dDescribeGlobalClustersMessage\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12@\n" +
 	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tH\x00R\x17globalclusteridentifier\x88\x01\x01\x12\x1e\n" +
@@ -46127,22 +46169,23 @@ const file_rds_proto_rawDesc = "" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x0e.rds.ParameterR\n" +
 	"parametersB\x19\n" +
 	"\x17_dbparametergroupfamilyB\t\n" +
-	"\a_marker\"\xba\x02\n" +
+	"\a_marker\"\xce\x02\n" +
 	"\x05Event\x12\x1b\n" +
 	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tH\x00R\x04date\x88\x01\x01\x12+\n" +
 	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12 \n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x01R\amessage\x88\x01\x01\x12%\n" +
 	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\x02R\tsourcearn\x88\x01\x01\x122\n" +
-	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x03R\x10sourceidentifier\x88\x01\x01\x122\n" +
+	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x03R\x10sourceidentifier\x88\x01\x01\x127\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.rds.SourceTypeR\n" +
-	"sourcetypeB\a\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x0f.rds.SourceTypeH\x04R\n" +
+	"sourcetype\x88\x01\x01B\a\n" +
 	"\x05_dateB\n" +
 	"\n" +
 	"\b_messageB\f\n" +
 	"\n" +
 	"_sourcearnB\x13\n" +
-	"\x11_sourceidentifier\"x\n" +
+	"\x11_sourceidentifierB\r\n" +
+	"\v_sourcetype\"x\n" +
 	"\x12EventCategoriesMap\x12+\n" +
 	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12&\n" +
 	"\n" +
@@ -46185,7 +46228,7 @@ const file_rds_proto_rawDesc = "" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\n" +
 	".rds.EventR\x06events\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
-	"\a_marker\"\xc2\a\n" +
+	"\a_marker\"\xd6\a\n" +
 	"\n" +
 	"ExportTask\x12!\n" +
 	"\n" +
@@ -46202,16 +46245,16 @@ const file_rds_proto_rawDesc = "" +
 	"\bs3prefix\x18\xf8\x85\xa2\n" +
 	" \x01(\tH\x06R\bs3prefix\x88\x01\x01\x12*\n" +
 	"\fsnapshottime\x18͢\xfd\v \x01(\tH\aR\fsnapshottime\x88\x01\x01\x12%\n" +
-	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\bR\tsourcearn\x88\x01\x01\x128\n" +
+	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\bR\tsourcearn\x88\x01\x01\x12=\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x15.rds.ExportSourceTypeR\n" +
-	"sourcetype\x12\x1e\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\tR\x06status\x88\x01\x01\x12(\n" +
-	"\vtaskendtime\x18\xf9\xc0\xceE \x01(\tH\n" +
-	"R\vtaskendtime\x88\x01\x01\x12,\n" +
-	"\rtaskstarttime\x18\xba\x84\xe9_ \x01(\tH\vR\rtaskstarttime\x88\x01\x01\x12>\n" +
-	"\x16totalextracteddataingb\x18\xc2́\" \x01(\x05H\fR\x16totalextracteddataingb\x88\x01\x01\x12/\n" +
-	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tH\rR\x0ewarningmessage\x88\x01\x01B\x17\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x15.rds.ExportSourceTypeH\tR\n" +
+	"sourcetype\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\n" +
+	"R\x06status\x88\x01\x01\x12(\n" +
+	"\vtaskendtime\x18\xf9\xc0\xceE \x01(\tH\vR\vtaskendtime\x88\x01\x01\x12,\n" +
+	"\rtaskstarttime\x18\xba\x84\xe9_ \x01(\tH\fR\rtaskstarttime\x88\x01\x01\x12>\n" +
+	"\x16totalextracteddataingb\x18\xc2́\" \x01(\x05H\rR\x16totalextracteddataingb\x88\x01\x01\x12/\n" +
+	"\x0ewarningmessage\x18\x8fݗ\xed\x01 \x01(\tH\x0eR\x0ewarningmessage\x88\x01\x01B\x17\n" +
 	"\x15_exporttaskidentifierB\x0f\n" +
 	"\r_failurecauseB\r\n" +
 	"\v_iamrolearnB\v\n" +
@@ -46221,7 +46264,8 @@ const file_rds_proto_rawDesc = "" +
 	"\t_s3prefixB\x0f\n" +
 	"\r_snapshottimeB\f\n" +
 	"\n" +
-	"_sourcearnB\t\n" +
+	"_sourcearnB\r\n" +
+	"\v_sourcetypeB\t\n" +
 	"\a_statusB\x0e\n" +
 	"\f_taskendtimeB\x10\n" +
 	"\x0e_taskstarttimeB\x19\n" +
@@ -46255,18 +46299,19 @@ const file_rds_proto_rawDesc = "" +
 	"\x0e_allowdatalossB\r\n" +
 	"\v_switchover\"[\n" +
 	"\x1bFailoverGlobalClusterResult\x12<\n" +
-	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x12.rds.GlobalClusterR\rglobalcluster\"\x98\x02\n" +
+	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x12.rds.GlobalClusterR\rglobalcluster\"\xa8\x02\n" +
 	"\rFailoverState\x122\n" +
 	"\x10fromdbclusterarn\x18\xff\xce\xec8 \x01(\tH\x00R\x10fromdbclusterarn\x88\x01\x01\x124\n" +
-	"\x11isdatalossallowed\x18\xb7\xd5\xe3\r \x01(\bH\x01R\x11isdatalossallowed\x88\x01\x01\x12.\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.rds.FailoverStatusR\x06status\x12/\n" +
-	"\x0etodbclusterarn\x18\xa8\x9e\xf7\xdf\x01 \x01(\tH\x02R\x0etodbclusterarn\x88\x01\x01B\x13\n" +
+	"\x11isdatalossallowed\x18\xb7\xd5\xe3\r \x01(\bH\x01R\x11isdatalossallowed\x88\x01\x01\x123\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.rds.FailoverStatusH\x02R\x06status\x88\x01\x01\x12/\n" +
+	"\x0etodbclusterarn\x18\xa8\x9e\xf7\xdf\x01 \x01(\tH\x03R\x0etodbclusterarn\x88\x01\x01B\x13\n" +
 	"\x11_fromdbclusterarnB\x14\n" +
-	"\x12_isdatalossallowedB\x11\n" +
+	"\x12_isdatalossallowedB\t\n" +
+	"\a_statusB\x11\n" +
 	"\x0f_todbclusterarn\":\n" +
 	"\x06Filter\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\x9d\b\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xbc\b\n" +
 	"\rGlobalCluster\x12*\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x00R\fdatabasename\x88\x01\x01\x127\n" +
 	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x01R\x12deletionprotection\x88\x01\x01\x12\"\n" +
@@ -46281,8 +46326,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x17globalclusterresourceid\x18\xa2\x85\x9a\xbe\x01 \x01(\tH\bR\x17globalclusterresourceid\x88\x01\x01\x12\x1e\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\tR\x06status\x88\x01\x01\x123\n" +
 	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\n" +
-	"R\x10storageencrypted\x88\x01\x01\x12S\n" +
-	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeR\x15storageencryptiontype\x12&\n" +
+	"R\x10storageencrypted\x88\x01\x01\x12X\n" +
+	"\x15storageencryptiontype\x18\x94\xa5\x96\x03 \x01(\x0e2\x1a.rds.StorageEncryptionTypeH\vR\x15storageencryptiontype\x88\x01\x01\x12&\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.rds.TagR\ataglistB\x0f\n" +
 	"\r_databasenameB\x15\n" +
 	"\x13_deletionprotectionB\v\n" +
@@ -46294,19 +46339,22 @@ const file_rds_proto_rawDesc = "" +
 	"\x18_globalclusteridentifierB\x1a\n" +
 	"\x18_globalclusterresourceidB\t\n" +
 	"\a_statusB\x13\n" +
-	"\x11_storageencrypted\"O\n" +
+	"\x11_storageencryptedB\x18\n" +
+	"\x16_storageencryptiontype\"O\n" +
 	"\x1fGlobalClusterAlreadyExistsFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xe9\x02\n" +
+	"\b_message\"\xad\x03\n" +
 	"\x13GlobalClusterMember\x12*\n" +
-	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tH\x00R\fdbclusterarn\x88\x01\x01\x12_\n" +
-	"\x1bglobalwriteforwardingstatus\x18\xa5\x8b\x8fF \x01(\x0e2\x1a.rds.WriteForwardingStatusR\x1bglobalwriteforwardingstatus\x12\"\n" +
-	"\biswriter\x18\xbb\x84\x91\v \x01(\bH\x01R\biswriter\x88\x01\x01\x12\x1b\n" +
-	"\areaders\x18\xe0\xf6\xbdP \x03(\tR\areaders\x12f\n" +
-	"\x15synchronizationstatus\x18Μ\xcbG \x01(\x0e2-.rds.GlobalClusterMemberSynchronizationStatusR\x15synchronizationstatusB\x0f\n" +
-	"\r_dbclusterarnB\v\n" +
-	"\t_iswriter\"J\n" +
+	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tH\x00R\fdbclusterarn\x88\x01\x01\x12d\n" +
+	"\x1bglobalwriteforwardingstatus\x18\xa5\x8b\x8fF \x01(\x0e2\x1a.rds.WriteForwardingStatusH\x01R\x1bglobalwriteforwardingstatus\x88\x01\x01\x12\"\n" +
+	"\biswriter\x18\xbb\x84\x91\v \x01(\bH\x02R\biswriter\x88\x01\x01\x12\x1b\n" +
+	"\areaders\x18\xe0\xf6\xbdP \x03(\tR\areaders\x12k\n" +
+	"\x15synchronizationstatus\x18Μ\xcbG \x01(\x0e2-.rds.GlobalClusterMemberSynchronizationStatusH\x03R\x15synchronizationstatus\x88\x01\x01B\x0f\n" +
+	"\r_dbclusterarnB\x1e\n" +
+	"\x1c_globalwriteforwardingstatusB\v\n" +
+	"\t_iswriterB\x18\n" +
+	"\x16_synchronizationstatus\"J\n" +
 	"\x1aGlobalClusterNotFoundFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -46351,7 +46399,7 @@ const file_rds_proto_rawDesc = "" +
 	"'InsufficientStorageClusterCapacityFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xab\x06\n" +
+	"\b_message\"\xbb\x06\n" +
 	"\vIntegration\x12v\n" +
 	"\x1badditionalencryptioncontext\x18\x95\xa4\x96~ \x03(\v21.rds.Integration.AdditionalencryptioncontextEntryR\x1badditionalencryptioncontext\x12'\n" +
 	"\n" +
@@ -46365,10 +46413,10 @@ const file_rds_proto_rawDesc = "" +
 	"\x0eintegrationarn\x18\xc5\xff\x91\xde\x01 \x01(\tH\x03R\x0eintegrationarn\x88\x01\x01\x121\n" +
 	"\x0fintegrationname\x18\x8fг\xbe\x01 \x01(\tH\x04R\x0fintegrationname\x88\x01\x01\x12\"\n" +
 	"\bkmskeyid\x18\xcd\xfa\xa7\x06 \x01(\tH\x05R\bkmskeyid\x88\x01\x01\x12%\n" +
-	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\x06R\tsourcearn\x88\x01\x01\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.rds.IntegrationStatusR\x06status\x12 \n" +
+	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\x06R\tsourcearn\x88\x01\x01\x126\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.rds.IntegrationStatusH\aR\x06status\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12$\n" +
-	"\ttargetarn\x18\x90\x95\xe5g \x01(\tH\aR\ttargetarn\x88\x01\x01\x1aN\n" +
+	"\ttargetarn\x18\x90\x95\xe5g \x01(\tH\bR\ttargetarn\x88\x01\x01\x1aN\n" +
 	" AdditionalencryptioncontextEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
@@ -46379,7 +46427,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x10_integrationnameB\v\n" +
 	"\t_kmskeyidB\f\n" +
 	"\n" +
-	"_sourcearnB\f\n" +
+	"_sourcearnB\t\n" +
+	"\a_statusB\f\n" +
 	"\n" +
 	"_targetarn\"M\n" +
 	"\x1dIntegrationAlreadyExistsFault\x12 \n" +
@@ -46527,11 +46576,12 @@ const file_rds_proto_rawDesc = "" +
 	"\x18KMSKeyNotAccessibleFault\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x90\x01\n" +
+	"\b_message\"\xa0\x01\n" +
 	"\x11LimitlessDatabase\x12/\n" +
-	"\x0eminrequiredacu\x18\xf2뫛\x01 \x01(\x01H\x00R\x0eminrequiredacu\x88\x01\x01\x127\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.rds.LimitlessDatabaseStatusR\x06statusB\x11\n" +
-	"\x0f_minrequiredacu\"n\n" +
+	"\x0eminrequiredacu\x18\xf2뫛\x01 \x01(\x01H\x00R\x0eminrequiredacu\x88\x01\x01\x12<\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.rds.LimitlessDatabaseStatusH\x01R\x06status\x88\x01\x01B\x11\n" +
+	"\x0f_minrequiredacuB\t\n" +
+	"\a_status\"n\n" +
 	"\x1aListTagsForResourceMessage\x12(\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\v.rds.FilterR\afilters\x12&\n" +
 	"\fresourcename\x18\u05eeՀ\x01 \x01(\tR\fresourcename\"\xb5\x01\n" +
@@ -46566,21 +46616,25 @@ const file_rds_proto_rawDesc = "" +
 	"\fallowedvalue\x18\xc1\x97\x9a\x16 \x01(\tH\x00R\fallowedvalue\x88\x01\x01\x12;\n" +
 	"\x14minimumengineversion\x18\x94\xef\xba\xd5\x01 \x01(\tH\x01R\x14minimumengineversion\x88\x01\x01B\x0f\n" +
 	"\r_allowedvalueB\x17\n" +
-	"\x15_minimumengineversion\"\x9e\x01\n" +
-	"\x1bModifyActivityStreamRequest\x12D\n" +
-	"\x10auditpolicystate\x18\xf8\x94\xb0m \x01(\x0e2\x15.rds.AuditPolicyStateR\x10auditpolicystate\x12)\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tH\x00R\vresourcearn\x88\x01\x01B\x0e\n" +
-	"\f_resourcearn\"\xc2\x03\n" +
+	"\x15_minimumengineversion\"\xb8\x01\n" +
+	"\x1bModifyActivityStreamRequest\x12I\n" +
+	"\x10auditpolicystate\x18\xf8\x94\xb0m \x01(\x0e2\x15.rds.AuditPolicyStateH\x00R\x10auditpolicystate\x88\x01\x01\x12)\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tH\x01R\vresourcearn\x88\x01\x01B\x13\n" +
+	"\x11_auditpolicystateB\x0e\n" +
+	"\f_resourcearn\"\xf6\x03\n" +
 	"\x1cModifyActivityStreamResponse\x12Q\n" +
 	"\x1fenginenativeauditfieldsincluded\x18\x9f\xda\xe1\x83\x01 \x01(\bH\x00R\x1fenginenativeauditfieldsincluded\x88\x01\x01\x125\n" +
 	"\x11kinesisstreamname\x18ۇ\xc7\xce\x01 \x01(\tH\x01R\x11kinesisstreamname\x88\x01\x01\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x02R\bkmskeyid\x88\x01\x01\x12/\n" +
-	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x17.rds.ActivityStreamModeR\x04mode\x12F\n" +
-	"\fpolicystatus\x18\xaa\x9a\x8bz \x01(\x0e2\x1f.rds.ActivityStreamPolicyStatusR\fpolicystatus\x124\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.rds.ActivityStreamStatusR\x06statusB\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x02R\bkmskeyid\x88\x01\x01\x124\n" +
+	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x17.rds.ActivityStreamModeH\x03R\x04mode\x88\x01\x01\x12K\n" +
+	"\fpolicystatus\x18\xaa\x9a\x8bz \x01(\x0e2\x1f.rds.ActivityStreamPolicyStatusH\x04R\fpolicystatus\x88\x01\x01\x129\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.rds.ActivityStreamStatusH\x05R\x06status\x88\x01\x01B\"\n" +
 	" _enginenativeauditfieldsincludedB\x14\n" +
 	"\x12_kinesisstreamnameB\v\n" +
-	"\t_kmskeyid\"\xc8\x03\n" +
+	"\t_kmskeyidB\a\n" +
+	"\x05_modeB\x0f\n" +
+	"\r_policystatusB\t\n" +
+	"\a_status\"\xc8\x03\n" +
 	"\x1dModifyAdditionalStorageVolume\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12\x1b\n" +
 	"\x04iops\x18\xa1\xf2\xd4\xee\x01 \x01(\x05H\x01R\x04iops\x88\x01\x01\x128\n" +
@@ -46611,19 +46665,20 @@ const file_rds_proto_rawDesc = "" +
 	"\rtimeoutaction\x18ӎ\x91\xd4\x01 \x01(\tH\x02R\rtimeoutaction\x88\x01\x01B\v\n" +
 	"\t_capacityB\x17\n" +
 	"\x15_secondsbeforetimeoutB\x10\n" +
-	"\x0e_timeoutaction\"\xde\x01\n" +
+	"\x0e_timeoutaction\"\xee\x01\n" +
 	"\"ModifyCustomDBEngineVersionMessage\x12(\n" +
 	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x129\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1e.rds.CustomEngineVersionStatusR\x06statusB\x0e\n" +
-	"\f_description\"\xfb\x01\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12>\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1e.rds.CustomEngineVersionStatusH\x01R\x06status\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\t\n" +
+	"\a_status\"\xfb\x01\n" +
 	"\x1eModifyDBClusterEndpointMessage\x12D\n" +
 	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x12+\n" +
 	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tH\x00R\fendpointtype\x88\x01\x01\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
 	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembersB\x0f\n" +
-	"\r_endpointtype\"\xa5 \n" +
+	"\r_endpointtype\"\xe9 \n" +
 	"\x16ModifyDBClusterMessage\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12=\n" +
 	"\x15allowenginemodechange\x18\xe0\xbe\xe9\xe7\x01 \x01(\bH\x01R\x15allowenginemodechange\x88\x01\x01\x12B\n" +
@@ -46640,41 +46695,41 @@ const file_rds_proto_rawDesc = "" +
 	"\x16dbclusterinstanceclass\x18\xc1\xb9\xcbY \x01(\tH\n" +
 	"R\x16dbclusterinstanceclass\x88\x01\x01\x12I\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\vR\x1bdbclusterparametergroupname\x88\x01\x01\x12K\n" +
-	"\x1cdbinstanceparametergroupname\x18\xf6\xab\x88\xf1\x01 \x01(\tH\fR\x1cdbinstanceparametergroupname\x88\x01\x01\x12P\n" +
-	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\rR\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\x0eR\x06domain\x88\x01\x01\x124\n" +
-	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x0fR\x11domainiamrolename\x88\x01\x01\x12H\n" +
-	"\x1benableglobalwriteforwarding\x18\x94\x88\xff9 \x01(\bH\x10R\x1benableglobalwriteforwarding\x88\x01\x01\x127\n" +
-	"\x12enablehttpendpoint\x18\x8c\xb3\xcd\xc6\x01 \x01(\bH\x11R\x12enablehttpendpoint\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x12R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12A\n" +
-	"\x17enablelimitlessdatabase\x18\ue767\xa2\x01 \x01(\bH\x13R\x17enablelimitlessdatabase\x88\x01\x01\x12G\n" +
-	"\x1aenablelocalwriteforwarding\x18\xf0\xb3\x95\xd5\x01 \x01(\bH\x14R\x1aenablelocalwriteforwarding\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x15R\x19enableperformanceinsights\x88\x01\x01\x12>\n" +
-	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x16R\x16enginelifecyclesupport\x88\x01\x01\x12'\n" +
+	"\x1cdbinstanceparametergroupname\x18\xf6\xab\x88\xf1\x01 \x01(\tH\fR\x1cdbinstanceparametergroupname\x88\x01\x01\x12U\n" +
+	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeH\rR\x14databaseinsightsmode\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x0eR\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\x0fR\x06domain\x88\x01\x01\x124\n" +
+	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x10R\x11domainiamrolename\x88\x01\x01\x12H\n" +
+	"\x1benableglobalwriteforwarding\x18\x94\x88\xff9 \x01(\bH\x11R\x1benableglobalwriteforwarding\x88\x01\x01\x127\n" +
+	"\x12enablehttpendpoint\x18\x8c\xb3\xcd\xc6\x01 \x01(\bH\x12R\x12enablehttpendpoint\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x13R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12A\n" +
+	"\x17enablelimitlessdatabase\x18\ue767\xa2\x01 \x01(\bH\x14R\x17enablelimitlessdatabase\x88\x01\x01\x12G\n" +
+	"\x1aenablelocalwriteforwarding\x18\xf0\xb3\x95\xd5\x01 \x01(\bH\x15R\x1aenablelocalwriteforwarding\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x16R\x19enableperformanceinsights\x88\x01\x01\x12>\n" +
+	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x17R\x16enginelifecyclesupport\x88\x01\x01\x12'\n" +
 	"\n" +
-	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tH\x17R\n" +
+	"enginemode\x18\xa5\x91\u008b\x01 \x01(\tH\x18R\n" +
 	"enginemode\x88\x01\x01\x12,\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x18R\rengineversion\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\x19R\x04iops\x88\x01\x01\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x1aR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
-	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeR\x1cmasteruserauthenticationtype\x127\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x1bR\x12masteruserpassword\x88\x01\x01\x12C\n" +
-	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH\x1cR\x18masterusersecretkmskeyid\x88\x01\x01\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x1dR\x12monitoringinterval\x88\x01\x01\x124\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH\x1eR\x11monitoringrolearn\x88\x01\x01\x12)\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\x1fR\vnetworktype\x88\x01\x01\x12>\n" +
-	"\x16newdbclusteridentifier\x18\xcdȒ) \x01(\tH R\x16newdbclusteridentifier\x88\x01\x01\x121\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH!R\x0foptiongroupname\x88\x01\x01\x12I\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH\"R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H#R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H$R\x04port\x88\x01\x01\x12<\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH%R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH&R\x1apreferredmaintenancewindow\x88\x01\x01\x12B\n" +
-	"\x18rotatemasteruserpassword\x18\xfb\xfd\xc6\x0e \x01(\bH'R\x18rotatemasteruserpassword\x88\x01\x01\x12P\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x19R\rengineversion\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x1aR\x04iops\x88\x01\x01\x12B\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x1bR\x18managemasteruserpassword\x88\x01\x01\x12m\n" +
+	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeH\x1cR\x1cmasteruserauthenticationtype\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x1dR\x12masteruserpassword\x88\x01\x01\x12C\n" +
+	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH\x1eR\x18masterusersecretkmskeyid\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x1fR\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH R\x11monitoringrolearn\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH!R\vnetworktype\x88\x01\x01\x12>\n" +
+	"\x16newdbclusteridentifier\x18\xcdȒ) \x01(\tH\"R\x16newdbclusteridentifier\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH#R\x0foptiongroupname\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH$R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H%R\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H&R\x04port\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH'R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH(R\x1apreferredmaintenancewindow\x88\x01\x01\x12B\n" +
+	"\x18rotatemasteruserpassword\x18\xfb\xfd\xc6\x0e \x01(\bH)R\x18rotatemasteruserpassword\x88\x01\x01\x12P\n" +
 	"\x14scalingconfiguration\x18\xe1\xc5\xc9\x19 \x01(\v2\x19.rds.ScalingConfigurationR\x14scalingconfiguration\x12u\n" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2%.rds.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH(R\vstoragetype\x88\x01\x01\x123\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH*R\vstoragetype\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
 	"\x11_allocatedstorageB\x18\n" +
 	"\x16_allowenginemodechangeB\x1b\n" +
@@ -46688,7 +46743,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x13_copytagstosnapshotB\x19\n" +
 	"\x17_dbclusterinstanceclassB\x1e\n" +
 	"\x1c_dbclusterparametergroupnameB\x1f\n" +
-	"\x1d_dbinstanceparametergroupnameB\x15\n" +
+	"\x1d_dbinstanceparametergroupnameB\x17\n" +
+	"\x15_databaseinsightsmodeB\x15\n" +
 	"\x13_deletionprotectionB\t\n" +
 	"\a_domainB\x14\n" +
 	"\x12_domainiamrolenameB\x1e\n" +
@@ -46702,7 +46758,8 @@ const file_rds_proto_rawDesc = "" +
 	"\v_enginemodeB\x10\n" +
 	"\x0e_engineversionB\a\n" +
 	"\x05_iopsB\x1b\n" +
-	"\x19_managemasteruserpasswordB\x15\n" +
+	"\x19_managemasteruserpasswordB\x1f\n" +
+	"\x1d_masteruserauthenticationtypeB\x15\n" +
 	"\x13_masteruserpasswordB\x1b\n" +
 	"\x19_masterusersecretkmskeyidB\x15\n" +
 	"\x13_monitoringintervalB\x14\n" +
@@ -46730,81 +46787,82 @@ const file_rds_proto_rawDesc = "" +
 	"\vvaluestoadd\x18\x86\xb1\xa9F \x03(\tR\vvaluestoadd\x12*\n" +
 	"\x0evaluestoremove\x18\x93\x9e\xff\xd2\x01 \x03(\tR\x0evaluestoremove\"\xa1\x01\n" +
 	"&ModifyDBClusterSnapshotAttributeResult\x12w\n" +
-	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2&.rds.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\xa8(\n" +
+	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2&.rds.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\x99)\n" +
 	"\x17ModifyDBInstanceMessage\x12b\n" +
 	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\".rds.ModifyAdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12B\n" +
 	"\x18allowmajorversionupgrade\x18ı\xb3\x13 \x01(\bH\x01R\x18allowmajorversionupgrade\x88\x01\x01\x122\n" +
 	"\x10applyimmediately\x18\x9c\xcb\xcbE \x01(\bH\x02R\x10applyimmediately\x88\x01\x01\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x03R\x17autominorversionupgrade\x88\x01\x01\x12>\n" +
-	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeR\x0eautomationmode\x12E\n" +
-	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tH\x04R\x19awsbackuprecoverypointarn\x88\x01\x01\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x05R\x15backupretentionperiod\x88\x01\x01\x12A\n" +
-	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\x06R\x17cacertificateidentifier\x88\x01\x01\x12F\n" +
-	"\x1acertificaterotationrestart\x18\xaa\xf6\xc6` \x01(\bH\aR\x1acertificaterotationrestart\x88\x01\x01\x12x\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x03R\x17autominorversionupgrade\x88\x01\x01\x12C\n" +
+	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeH\x04R\x0eautomationmode\x88\x01\x01\x12E\n" +
+	"\x19awsbackuprecoverypointarn\x18\xc3\xe6\xcb\xec\x01 \x01(\tH\x05R\x19awsbackuprecoverypointarn\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x06R\x15backupretentionperiod\x88\x01\x01\x12A\n" +
+	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\aR\x17cacertificateidentifier\x88\x01\x01\x12F\n" +
+	"\x1acertificaterotationrestart\x18\xaa\xf6\xc6` \x01(\bH\bR\x1acertificaterotationrestart\x88\x01\x01\x12x\n" +
 	"!cloudwatchlogsexportconfiguration\x18\x8f\xaaҔ\x01 \x01(\v2&.rds.CloudwatchLogsExportConfigurationR!cloudwatchlogsexportconfiguration\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\bR\x12copytagstosnapshot\x88\x01\x01\x121\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\tR\x0fdbinstanceclass\x88\x01\x01\x126\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\tR\x12copytagstosnapshot\x88\x01\x01\x121\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\n" +
+	"R\x0fdbinstanceclass\x88\x01\x01\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12:\n" +
-	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\n" +
-	"R\x14dbparametergroupname\x88\x01\x01\x12*\n" +
-	"\fdbportnumber\x18\x8e\xaa\x833 \x01(\x05H\vR\fdbportnumber\x88\x01\x01\x12.\n" +
+	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\vR\x14dbparametergroupname\x88\x01\x01\x12*\n" +
+	"\fdbportnumber\x18\x8e\xaa\x833 \x01(\x05H\fR\fdbportnumber\x88\x01\x01\x12.\n" +
 	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\tR\x10dbsecuritygroups\x124\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\fR\x11dbsubnetgroupname\x88\x01\x01\x12P\n" +
-	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\rR\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x0eR\x12deletionprotection\x88\x01\x01\x12,\n" +
-	"\rdisabledomain\x18\x98܍! \x01(\bH\x0fR\rdisabledomain\x88\x01\x01\x12\x1f\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\x10R\x06domain\x88\x01\x01\x128\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\rR\x11dbsubnetgroupname\x88\x01\x01\x12U\n" +
+	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeH\x0eR\x14databaseinsightsmode\x88\x01\x01\x127\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x0fR\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x10R\x12deletionprotection\x88\x01\x01\x12,\n" +
+	"\rdisabledomain\x18\x98܍! \x01(\bH\x11R\rdisabledomain\x88\x01\x01\x12\x1f\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\x12R\x06domain\x88\x01\x01\x128\n" +
 	"\x13domainauthsecretarn\x18\xef\x8d\xf0\n" +
-	" \x01(\tH\x11R\x13domainauthsecretarn\x88\x01\x01\x12%\n" +
+	" \x01(\tH\x13R\x13domainauthsecretarn\x88\x01\x01\x12%\n" +
 	"\fdomaindnsips\x18\xf7ܿ\f \x03(\tR\fdomaindnsips\x12'\n" +
 	"\n" +
-	"domainfqdn\x18\xa3\xa5ړ\x01 \x01(\tH\x12R\n" +
+	"domainfqdn\x18\xa3\xa5ړ\x01 \x01(\tH\x14R\n" +
 	"domainfqdn\x88\x01\x01\x124\n" +
-	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x13R\x11domainiamrolename\x88\x01\x01\x12\"\n" +
-	"\bdomainou\x18\x9e\xf6\x99w \x01(\tH\x14R\bdomainou\x88\x01\x01\x12=\n" +
-	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x15R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x16R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x17R\x19enableperformanceinsights\x88\x01\x01\x12\x1f\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x18R\x06engine\x88\x01\x01\x12>\n" +
-	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x19R\x16enginelifecyclesupport\x88\x01\x01\x12,\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x1aR\rengineversion\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\x1bR\x04iops\x88\x01\x01\x12*\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x1cR\flicensemodel\x88\x01\x01\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x1dR\x18managemasteruserpassword\x88\x01\x01\x12h\n" +
-	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeR\x1cmasteruserauthenticationtype\x127\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x1eR\x12masteruserpassword\x88\x01\x01\x12C\n" +
-	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH\x1fR\x18masterusersecretkmskeyid\x88\x01\x01\x128\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H!R\x12monitoringinterval\x88\x01\x01\x124\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH\"R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH#R\amultiaz\x88\x01\x01\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH$R\vmultitenant\x88\x01\x01\x12)\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH%R\vnetworktype\x88\x01\x01\x12A\n" +
-	"\x17newdbinstanceidentifier\x18\xb8\xf9\x98\x9e\x01 \x01(\tH&R\x17newdbinstanceidentifier\x88\x01\x01\x121\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH'R\x0foptiongroupname\x88\x01\x01\x12I\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH(R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H)R\"performanceinsightsretentionperiod\x88\x01\x01\x12<\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH*R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH+R\x1apreferredmaintenancewindow\x88\x01\x01\x12F\n" +
+	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\x15R\x11domainiamrolename\x88\x01\x01\x12\"\n" +
+	"\bdomainou\x18\x9e\xf6\x99w \x01(\tH\x16R\bdomainou\x88\x01\x01\x12=\n" +
+	"\x15enablecustomerownedip\x18\x97\xa3\xa7\xea\x01 \x01(\bH\x17R\x15enablecustomerownedip\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x18R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x19R\x19enableperformanceinsights\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x1aR\x06engine\x88\x01\x01\x12>\n" +
+	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x1bR\x16enginelifecyclesupport\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x1cR\rengineversion\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x1dR\x04iops\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x1eR\flicensemodel\x88\x01\x01\x12B\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x1fR\x18managemasteruserpassword\x88\x01\x01\x12m\n" +
+	"\x1cmasteruserauthenticationtype\x18\xed\x90\xf1) \x01(\x0e2!.rds.MasterUserAuthenticationTypeH R\x1cmasteruserauthenticationtype\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH!R\x12masteruserpassword\x88\x01\x01\x12C\n" +
+	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH\"R\x18masterusersecretkmskeyid\x88\x01\x01\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H#R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H$R\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH%R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH&R\amultiaz\x88\x01\x01\x12)\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH'R\vmultitenant\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH(R\vnetworktype\x88\x01\x01\x12A\n" +
+	"\x17newdbinstanceidentifier\x18\xb8\xf9\x98\x9e\x01 \x01(\tH)R\x17newdbinstanceidentifier\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH*R\x0foptiongroupname\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH+R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H,R\"performanceinsightsretentionperiod\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH-R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH.R\x1apreferredmaintenancewindow\x88\x01\x01\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12,\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H,R\rpromotiontier\x88\x01\x01\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH-R\x12publiclyaccessible\x88\x01\x01\x125\n" +
-	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeR\vreplicamode\x12Q\n" +
-	"\x1fresumefullautomationmodeminutes\x18ͬΈ\x01 \x01(\x05H.R\x1fresumefullautomationmodeminutes\x88\x01\x01\x12B\n" +
-	"\x18rotatemasteruserpassword\x18\xfb\xfd\xc6\x0e \x01(\bH/R\x18rotatemasteruserpassword\x88\x01\x01\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H0R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH1R\vstoragetype\x88\x01\x01\x12F\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H/R\rpromotiontier\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH0R\x12publiclyaccessible\x88\x01\x01\x12:\n" +
+	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeH1R\vreplicamode\x88\x01\x01\x12Q\n" +
+	"\x1fresumefullautomationmodeminutes\x18ͬΈ\x01 \x01(\x05H2R\x1fresumefullautomationmodeminutes\x88\x01\x01\x12B\n" +
+	"\x18rotatemasteruserpassword\x18\xfb\xfd\xc6\x0e \x01(\bH3R\x18rotatemasteruserpassword\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H4R\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH5R\vstoragetype\x88\x01\x01\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x122\n" +
-	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH2R\x10tdecredentialarn\x88\x01\x01\x12<\n" +
-	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tH3R\x15tdecredentialpassword\x88\x01\x01\x12I\n" +
-	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH4R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
+	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH6R\x10tdecredentialarn\x88\x01\x01\x12<\n" +
+	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tH7R\x15tdecredentialpassword\x88\x01\x01\x12I\n" +
+	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH8R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
 	"\x11_allocatedstorageB\x1b\n" +
 	"\x19_allowmajorversionupgradeB\x13\n" +
 	"\x11_applyimmediatelyB\x1a\n" +
-	"\x18_autominorversionupgradeB\x1c\n" +
+	"\x18_autominorversionupgradeB\x11\n" +
+	"\x0f_automationmodeB\x1c\n" +
 	"\x1a_awsbackuprecoverypointarnB\x18\n" +
 	"\x16_backupretentionperiodB\x1a\n" +
 	"\x18_cacertificateidentifierB\x1d\n" +
@@ -46813,7 +46871,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x10_dbinstanceclassB\x17\n" +
 	"\x15_dbparametergroupnameB\x0f\n" +
 	"\r_dbportnumberB\x14\n" +
-	"\x12_dbsubnetgroupnameB\x15\n" +
+	"\x12_dbsubnetgroupnameB\x17\n" +
+	"\x15_databaseinsightsmodeB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\x10\n" +
 	"\x0e_disabledomainB\t\n" +
@@ -46830,7 +46889,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x0e_engineversionB\a\n" +
 	"\x05_iopsB\x0f\n" +
 	"\r_licensemodelB\x1b\n" +
-	"\x19_managemasteruserpasswordB\x15\n" +
+	"\x19_managemasteruserpasswordB\x1f\n" +
+	"\x1d_masteruserauthenticationtypeB\x15\n" +
 	"\x13_masteruserpasswordB\x1b\n" +
 	"\x19_masterusersecretkmskeyidB\x16\n" +
 	"\x14_maxallocatedstorageB\x15\n" +
@@ -46847,7 +46907,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x16_preferredbackupwindowB\x1d\n" +
 	"\x1b_preferredmaintenancewindowB\x10\n" +
 	"\x0e_promotiontierB\x15\n" +
-	"\x13_publiclyaccessibleB\"\n" +
+	"\x13_publiclyaccessibleB\x0e\n" +
+	"\f_replicamodeB\"\n" +
 	" _resumefullautomationmodeminutesB\x1b\n" +
 	"\x19_rotatemasteruserpasswordB\x14\n" +
 	"\x12_storagethroughputB\x0e\n" +
@@ -46870,20 +46931,21 @@ const file_rds_proto_rawDesc = "" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x19\n" +
 	"\x17_newdbproxyendpointname\"b\n" +
 	"\x1dModifyDBProxyEndpointResponse\x12A\n" +
-	"\x0fdbproxyendpoint\x18\x95φF \x01(\v2\x14.rds.DBProxyEndpointR\x0fdbproxyendpoint\"\x91\x04\n" +
+	"\x0fdbproxyendpoint\x18\x95φF \x01(\v2\x14.rds.DBProxyEndpointR\x0fdbproxyendpoint\"\xac\x04\n" +
 	"\x14ModifyDBProxyRequest\x12+\n" +
 	"\x04auth\x18\xf0诫\x01 \x03(\v2\x13.rds.UserAuthConfigR\x04auth\x12#\n" +
 	"\vdbproxyname\x18\xdf\xf3\xe5n \x01(\tR\vdbproxyname\x12*\n" +
-	"\fdebuglogging\x18\x82\xf3\xac2 \x01(\bH\x00R\fdebuglogging\x88\x01\x01\x12H\n" +
-	"\x11defaultauthscheme\x18\xe4У\xd0\x01 \x01(\x0e2\x16.rds.DefaultAuthSchemeR\x11defaultauthscheme\x124\n" +
-	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05H\x01R\x11idleclienttimeout\x88\x01\x01\x12.\n" +
-	"\x0enewdbproxyname\x18\xbbɉ@ \x01(\tH\x02R\x0enewdbproxyname\x88\x01\x01\x12'\n" +
+	"\fdebuglogging\x18\x82\xf3\xac2 \x01(\bH\x00R\fdebuglogging\x88\x01\x01\x12M\n" +
+	"\x11defaultauthscheme\x18\xe4У\xd0\x01 \x01(\x0e2\x16.rds.DefaultAuthSchemeH\x01R\x11defaultauthscheme\x88\x01\x01\x124\n" +
+	"\x11idleclienttimeout\x18\xc0\x8b\x92. \x01(\x05H\x02R\x11idleclienttimeout\x88\x01\x01\x12.\n" +
+	"\x0enewdbproxyname\x18\xbbɉ@ \x01(\tH\x03R\x0enewdbproxyname\x88\x01\x01\x12'\n" +
 	"\n" +
-	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x03R\n" +
+	"requiretls\x18\xc6ڂ\xf0\x01 \x01(\bH\x04R\n" +
 	"requiretls\x88\x01\x01\x12!\n" +
-	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\x04R\arolearn\x88\x01\x01\x12*\n" +
+	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\x05R\arolearn\x88\x01\x01\x12*\n" +
 	"\x0esecuritygroups\x18Ԭ\xda\xf5\x01 \x03(\tR\x0esecuritygroupsB\x0f\n" +
 	"\r_debugloggingB\x14\n" +
+	"\x12_defaultauthschemeB\x14\n" +
 	"\x12_idleclienttimeoutB\x11\n" +
 	"\x0f_newdbproxynameB\r\n" +
 	"\v_requiretlsB\n" +
@@ -47248,20 +47310,21 @@ const file_rds_proto_rawDesc = "" +
 	"\a_marker\",\n" +
 	"\aOutpost\x12\x19\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01B\x06\n" +
-	"\x04_arn\"\x9e\x05\n" +
+	"\x04_arn\"\xb3\x05\n" +
 	"\tParameter\x12-\n" +
-	"\rallowedvalues\x18\xcaշ\x8c\x01 \x01(\tH\x00R\rallowedvalues\x88\x01\x01\x126\n" +
-	"\vapplymethod\x18\x9b\xae\xce\xf8\x01 \x01(\x0e2\x10.rds.ApplyMethodR\vapplymethod\x12$\n" +
-	"\tapplytype\x18\xe4\xe1\x96\x1f \x01(\tH\x01R\tapplytype\x88\x01\x01\x12\"\n" +
-	"\bdatatype\x18\xeeص  \x01(\tH\x02R\bdatatype\x88\x01\x01\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12+\n" +
-	"\fismodifiable\x18\xe0\xf5\xc1\xb4\x01 \x01(\bH\x04R\fismodifiable\x88\x01\x01\x12;\n" +
-	"\x14minimumengineversion\x18\x94\xef\xba\xd5\x01 \x01(\tH\x05R\x14minimumengineversion\x88\x01\x01\x12-\n" +
-	"\rparametername\x18\x94\x8e\xf4\x97\x01 \x01(\tH\x06R\rparametername\x88\x01\x01\x12/\n" +
-	"\x0eparametervalue\x18\xc2\xf4\xe1\xe0\x01 \x01(\tH\aR\x0eparametervalue\x88\x01\x01\x12\x1e\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\bR\x06source\x88\x01\x01\x125\n" +
+	"\rallowedvalues\x18\xcaշ\x8c\x01 \x01(\tH\x00R\rallowedvalues\x88\x01\x01\x12;\n" +
+	"\vapplymethod\x18\x9b\xae\xce\xf8\x01 \x01(\x0e2\x10.rds.ApplyMethodH\x01R\vapplymethod\x88\x01\x01\x12$\n" +
+	"\tapplytype\x18\xe4\xe1\x96\x1f \x01(\tH\x02R\tapplytype\x88\x01\x01\x12\"\n" +
+	"\bdatatype\x18\xeeص  \x01(\tH\x03R\bdatatype\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x04R\vdescription\x88\x01\x01\x12+\n" +
+	"\fismodifiable\x18\xe0\xf5\xc1\xb4\x01 \x01(\bH\x05R\fismodifiable\x88\x01\x01\x12;\n" +
+	"\x14minimumengineversion\x18\x94\xef\xba\xd5\x01 \x01(\tH\x06R\x14minimumengineversion\x88\x01\x01\x12-\n" +
+	"\rparametername\x18\x94\x8e\xf4\x97\x01 \x01(\tH\aR\rparametername\x88\x01\x01\x12/\n" +
+	"\x0eparametervalue\x18\xc2\xf4\xe1\xe0\x01 \x01(\tH\bR\x0eparametervalue\x88\x01\x01\x12\x1e\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\tR\x06source\x88\x01\x01\x125\n" +
 	"\x14supportedenginemodes\x18\x9a\xb0\x96o \x03(\tR\x14supportedenginemodesB\x10\n" +
-	"\x0e_allowedvaluesB\f\n" +
+	"\x0e_allowedvaluesB\x0e\n" +
+	"\f_applymethodB\f\n" +
 	"\n" +
 	"_applytypeB\v\n" +
 	"\t_datatypeB\x0e\n" +
@@ -47290,33 +47353,34 @@ const file_rds_proto_rawDesc = "" +
 	" PendingMaintenanceActionsMessage\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12h\n" +
 	"\x19pendingmaintenanceactions\x18׳\x8a\x8f\x01 \x03(\v2&.rds.ResourcePendingMaintenanceActionsR\x19pendingmaintenanceactionsB\t\n" +
-	"\a_marker\"\xbc\r\n" +
+	"\a_marker\"\xd4\r\n" +
 	"\x15PendingModifiedValues\x12\\\n" +
 	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
-	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12>\n" +
-	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeR\x0eautomationmode\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12A\n" +
-	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\x02R\x17cacertificateidentifier\x88\x01\x01\x121\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\x03R\x0fdbinstanceclass\x88\x01\x01\x12;\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tH\x04R\x14dbinstanceidentifier\x88\x01\x01\x124\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\x05R\x11dbsubnetgroupname\x88\x01\x01\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\x06R\x12dedicatedlogvolume\x88\x01\x01\x12\x1f\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\aR\x06engine\x88\x01\x01\x12,\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\bR\rengineversion\x88\x01\x01\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\tR iamdatabaseauthenticationenabled\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\n" +
-	"R\x04iops\x88\x01\x01\x12*\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\vR\flicensemodel\x88\x01\x01\x127\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\fR\x12masteruserpassword\x88\x01\x01\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\rR\amultiaz\x88\x01\x01\x12)\n" +
-	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x0eR\vmultitenant\x88\x01\x01\x12h\n" +
+	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12C\n" +
+	"\x0eautomationmode\x18\xb2\x90\xf2o \x01(\x0e2\x13.rds.AutomationModeH\x01R\x0eautomationmode\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x02R\x15backupretentionperiod\x88\x01\x01\x12A\n" +
+	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\x03R\x17cacertificateidentifier\x88\x01\x01\x121\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\x04R\x0fdbinstanceclass\x88\x01\x01\x12;\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tH\x05R\x14dbinstanceidentifier\x88\x01\x01\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\x06R\x11dbsubnetgroupname\x88\x01\x01\x127\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\aR\x12dedicatedlogvolume\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\bR\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\tR\rengineversion\x88\x01\x01\x12R\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\n" +
+	"R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\vR\x04iops\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\fR\flicensemodel\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\rR\x12masteruserpassword\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x0eR\amultiaz\x88\x01\x01\x12)\n" +
+	"\vmultitenant\x18\xdb\xe6Ô\x01 \x01(\bH\x0fR\vmultitenant\x88\x01\x01\x12h\n" +
 	"\x1cpendingcloudwatchlogsexports\x18\xa7\xa8\xe1Y \x01(\v2!.rds.PendingCloudwatchLogsExportsR\x1cpendingcloudwatchlogsexports\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x0fR\x04port\x88\x01\x01\x12F\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x10R\x04port\x88\x01\x01\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x12K\n" +
-	"\x1cresumefullautomationmodetime\x18\xa7\xb4\x98\xea\x01 \x01(\tH\x10R\x1cresumefullautomationmodetime\x88\x01\x01\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x11R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x12R\vstoragetype\x88\x01\x01B\x13\n" +
-	"\x11_allocatedstorageB\x18\n" +
+	"\x1cresumefullautomationmodetime\x18\xa7\xb4\x98\xea\x01 \x01(\tH\x11R\x1cresumefullautomationmodetime\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H\x12R\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x13R\vstoragetype\x88\x01\x01B\x13\n" +
+	"\x11_allocatedstorageB\x11\n" +
+	"\x0f_automationmodeB\x18\n" +
 	"\x16_backupretentionperiodB\x1a\n" +
 	"\x18_cacertificateidentifierB\x12\n" +
 	"\x10_dbinstanceclassB\x17\n" +
@@ -47401,12 +47465,13 @@ const file_rds_proto_rawDesc = "" +
 	"\x02to\x18Ŭ\xd6\x0f \x01(\x05H\x02R\x02to\x88\x01\x01B\a\n" +
 	"\x05_fromB\a\n" +
 	"\x05_stepB\x05\n" +
-	"\x03_to\"\xa3\x02\n" +
+	"\x03_to\"\xb8\x02\n" +
 	"\x1dRdsCustomClusterConfiguration\x12;\n" +
-	"\x14interconnectsubnetid\x18\xae\x8c\x9f\xea\x01 \x01(\tH\x00R\x14interconnectsubnetid\x88\x01\x01\x125\n" +
-	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeR\vreplicamode\x12Q\n" +
-	"\x1ftransitgatewaymulticastdomainid\x18\x8e\xb1\x80\x80\x01 \x01(\tH\x01R\x1ftransitgatewaymulticastdomainid\x88\x01\x01B\x17\n" +
-	"\x15_interconnectsubnetidB\"\n" +
+	"\x14interconnectsubnetid\x18\xae\x8c\x9f\xea\x01 \x01(\tH\x00R\x14interconnectsubnetid\x88\x01\x01\x12:\n" +
+	"\vreplicamode\x18\xc1Η@ \x01(\x0e2\x10.rds.ReplicaModeH\x01R\vreplicamode\x88\x01\x01\x12Q\n" +
+	"\x1ftransitgatewaymulticastdomainid\x18\x8e\xb1\x80\x80\x01 \x01(\tH\x02R\x1ftransitgatewaymulticastdomainid\x88\x01\x01B\x17\n" +
+	"\x15_interconnectsubnetidB\x0e\n" +
+	"\f_replicamodeB\"\n" +
 	" _transitgatewaymulticastdomainid\"N\n" +
 	"\x16RebootDBClusterMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\"I\n" +
@@ -47919,7 +47984,7 @@ const file_rds_proto_rawDesc = "" +
 	"%RestoreDBInstanceFromDBSnapshotResult\x123\n" +
 	"\n" +
 	"dbinstance\x18Ჩ\xfb\x01 \x01(\v2\x0f.rds.DBInstanceR\n" +
-	"dbinstance\"\xd5\x1e\n" +
+	"dbinstance\"\xf3\x1e\n" +
 	"\x1eRestoreDBInstanceFromS3Message\x12\\\n" +
 	"\x18additionalstoragevolumes\x18\xc5\xed\xb6\x92\x01 \x03(\v2\x1c.rds.AdditionalStorageVolumeR\x18additionalstoragevolumes\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
@@ -47933,49 +47998,49 @@ const file_rds_proto_rawDesc = "" +
 	"\x06dbname\x18\xe9\xb5\xc7@ \x01(\tH\x06R\x06dbname\x88\x01\x01\x12:\n" +
 	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\aR\x14dbparametergroupname\x88\x01\x01\x12.\n" +
 	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\tR\x10dbsecuritygroups\x124\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\bR\x11dbsubnetgroupname\x88\x01\x01\x12P\n" +
-	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeR\x14databaseinsightsmode\x127\n" +
-	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\tR\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\n" +
-	"R\x12deletionprotection\x88\x01\x01\x12D\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\bR\x11dbsubnetgroupname\x88\x01\x01\x12U\n" +
+	"\x14databaseinsightsmode\x18\x8b\x81\x91? \x01(\x0e2\x19.rds.DatabaseInsightsModeH\tR\x14databaseinsightsmode\x88\x01\x01\x127\n" +
+	"\x12dedicatedlogvolume\x18\x8b֤\xb8\x01 \x01(\bH\n" +
+	"R\x12dedicatedlogvolume\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\vR\x12deletionprotection\x88\x01\x01\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\vR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\fR\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\fR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\rR\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
 	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12>\n" +
-	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\rR\x16enginelifecyclesupport\x88\x01\x01\x12,\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x0eR\rengineversion\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\x0fR\x04iops\x88\x01\x01\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x10R\bkmskeyid\x88\x01\x01\x12*\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x11R\flicensemodel\x88\x01\x01\x12B\n" +
-	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x12R\x18managemasteruserpassword\x88\x01\x01\x127\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x13R\x12masteruserpassword\x88\x01\x01\x12C\n" +
-	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH\x14R\x18masterusersecretkmskeyid\x88\x01\x01\x12.\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH\x15R\x0emasterusername\x88\x01\x01\x128\n" +
-	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\x16R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x17R\x12monitoringinterval\x88\x01\x01\x124\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH\x18R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x19R\amultiaz\x88\x01\x01\x12)\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\x1aR\vnetworktype\x88\x01\x01\x121\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\x1bR\x0foptiongroupname\x88\x01\x01\x12I\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH\x1cR\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
-	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x1dR\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x1eR\x04port\x88\x01\x01\x12<\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH\x1fR\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH R\x1apreferredmaintenancewindow\x88\x01\x01\x12F\n" +
+	"\x16enginelifecyclesupport\x18\x91\xaf\x86\x0e \x01(\tH\x0eR\x16enginelifecyclesupport\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x0fR\rengineversion\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x10R\x04iops\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x11R\bkmskeyid\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x12R\flicensemodel\x88\x01\x01\x12B\n" +
+	"\x18managemasteruserpassword\x18\x97\xa6\x80\" \x01(\bH\x13R\x18managemasteruserpassword\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x14R\x12masteruserpassword\x88\x01\x01\x12C\n" +
+	"\x18masterusersecretkmskeyid\x18\x96\xec\xaa\xcd\x01 \x01(\tH\x15R\x18masterusersecretkmskeyid\x88\x01\x01\x12.\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH\x16R\x0emasterusername\x88\x01\x01\x128\n" +
+	"\x13maxallocatedstorage\x18\xdc\xe3\xb1\x03 \x01(\x05H\x17R\x13maxallocatedstorage\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x18R\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH\x19R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x1aR\amultiaz\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\x1bR\vnetworktype\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\x1cR\x0foptiongroupname\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH\x1dR\x1bperformanceinsightskmskeyid\x88\x01\x01\x12V\n" +
+	"\"performanceinsightsretentionperiod\x18\xac\xf7\xf2\x17 \x01(\x05H\x1eR\"performanceinsightsretentionperiod\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x1fR\x04port\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH!R\x1apreferredmaintenancewindow\x88\x01\x01\x12F\n" +
 	"\x11processorfeatures\x18\xb9\xef\x96z \x03(\v2\x15.rds.ProcessorFeatureR\x11processorfeatures\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH!R\x12publiclyaccessible\x88\x01\x01\x12&\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\"R\x12publiclyaccessible\x88\x01\x01\x12&\n" +
 	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x122\n" +
 	"\x12s3ingestionrolearn\x18ۗ\xea\xeb\x01 \x01(\tR\x12s3ingestionrolearn\x12\"\n" +
 	"\bs3prefix\x18\xf8\x85\xa2\n" +
-	" \x01(\tH\"R\bs3prefix\x88\x01\x01\x12%\n" +
+	" \x01(\tH#R\bs3prefix\x88\x01\x01\x12%\n" +
 	"\fsourceengine\x18\xfb\xec\xdcN \x01(\tR\fsourceengine\x123\n" +
 	"\x13sourceengineversion\x18\x87\xfc\xe4x \x01(\tR\x13sourceengineversion\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH#R\x10storageencrypted\x88\x01\x01\x125\n" +
-	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H$R\x11storagethroughput\x88\x01\x01\x12(\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH%R\vstoragetype\x88\x01\x01\x12F\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH$R\x10storageencrypted\x88\x01\x01\x125\n" +
+	"\x11storagethroughput\x18\xad\xbb\xed\xdd\x01 \x01(\x05H%R\x11storagethroughput\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH&R\vstoragetype\x88\x01\x01\x12F\n" +
 	"\x11tagspecifications\x18\xee\xb2\xc7! \x03(\v2\x15.rds.TagSpecificationR\x11tagspecifications\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tags\x12I\n" +
-	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH&R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
+	"\x1busedefaultprocessorfeatures\x18\xc5̙\xad\x01 \x01(\bH'R\x1busedefaultprocessorfeatures\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
 	"\x11_allocatedstorageB\x1a\n" +
 	"\x18_autominorversionupgradeB\x13\n" +
@@ -47985,7 +48050,8 @@ const file_rds_proto_rawDesc = "" +
 	"\x13_copytagstosnapshotB\t\n" +
 	"\a_dbnameB\x17\n" +
 	"\x15_dbparametergroupnameB\x14\n" +
-	"\x12_dbsubnetgroupnameB\x15\n" +
+	"\x12_dbsubnetgroupnameB\x17\n" +
+	"\x15_databaseinsightsmodeB\x15\n" +
 	"\x13_dedicatedlogvolumeB\x15\n" +
 	"\x13_deletionprotectionB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1c\n" +
@@ -48267,18 +48333,20 @@ const file_rds_proto_rawDesc = "" +
 	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x17.rds.ActivityStreamModeR\x04mode\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearnB\x13\n" +
 	"\x11_applyimmediatelyB\"\n" +
-	" _enginenativeauditfieldsincluded\"\xc2\x03\n" +
+	" _enginenativeauditfieldsincluded\"\xe0\x03\n" +
 	"\x1bStartActivityStreamResponse\x122\n" +
 	"\x10applyimmediately\x18\x9c\xcb\xcbE \x01(\bH\x00R\x10applyimmediately\x88\x01\x01\x12Q\n" +
 	"\x1fenginenativeauditfieldsincluded\x18\x9f\xda\xe1\x83\x01 \x01(\bH\x01R\x1fenginenativeauditfieldsincluded\x88\x01\x01\x125\n" +
 	"\x11kinesisstreamname\x18ۇ\xc7\xce\x01 \x01(\tH\x02R\x11kinesisstreamname\x88\x01\x01\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x03R\bkmskeyid\x88\x01\x01\x12/\n" +
-	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x17.rds.ActivityStreamModeR\x04mode\x124\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.rds.ActivityStreamStatusR\x06statusB\x13\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x03R\bkmskeyid\x88\x01\x01\x124\n" +
+	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x17.rds.ActivityStreamModeH\x04R\x04mode\x88\x01\x01\x129\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.rds.ActivityStreamStatusH\x05R\x06status\x88\x01\x01B\x13\n" +
 	"\x11_applyimmediatelyB\"\n" +
 	" _enginenativeauditfieldsincludedB\x14\n" +
 	"\x12_kinesisstreamnameB\v\n" +
-	"\t_kmskeyid\"M\n" +
+	"\t_kmskeyidB\a\n" +
+	"\x05_modeB\t\n" +
+	"\a_status\"M\n" +
 	"\x15StartDBClusterMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\"H\n" +
 	"\x14StartDBClusterResult\x120\n" +
@@ -48317,13 +48385,14 @@ const file_rds_proto_rawDesc = "" +
 	"\x19StopActivityStreamRequest\x122\n" +
 	"\x10applyimmediately\x18\x9c\xcb\xcbE \x01(\bH\x00R\x10applyimmediately\x88\x01\x01\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearnB\x13\n" +
-	"\x11_applyimmediately\"\xd0\x01\n" +
+	"\x11_applyimmediately\"\xe0\x01\n" +
 	"\x1aStopActivityStreamResponse\x125\n" +
 	"\x11kinesisstreamname\x18ۇ\xc7\xce\x01 \x01(\tH\x00R\x11kinesisstreamname\x88\x01\x01\x12\"\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x01R\bkmskeyid\x88\x01\x01\x124\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.rds.ActivityStreamStatusR\x06statusB\x14\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x01R\bkmskeyid\x88\x01\x01\x129\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.rds.ActivityStreamStatusH\x02R\x06status\x88\x01\x01B\x14\n" +
 	"\x12_kinesisstreamnameB\v\n" +
-	"\t_kmskeyid\"L\n" +
+	"\t_kmskeyidB\t\n" +
+	"\a_status\"L\n" +
 	"\x14StopDBClusterMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\"G\n" +
 	"\x13StopDBClusterResult\x120\n" +
@@ -48413,12 +48482,14 @@ const file_rds_proto_rawDesc = "" +
 	"\x10TagSpecification\x12+\n" +
 	"\fresourcetype\x18\u07be؏\x01 \x01(\tH\x00R\fresourcetype\x88\x01\x01\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.rds.TagR\x04tagsB\x0f\n" +
-	"\r_resourcetype\"\xa8\x01\n" +
+	"\r_resourcetype\"\xc7\x01\n" +
 	"\fTargetHealth\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x122\n" +
-	"\x06reason\x18\xba\x82\xc5\t \x01(\x0e2\x17.rds.TargetHealthReasonR\x06reason\x12*\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x10.rds.TargetStateR\x05stateB\x0e\n" +
-	"\f_description\"\xa4\b\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x127\n" +
+	"\x06reason\x18\xba\x82\xc5\t \x01(\x0e2\x17.rds.TargetHealthReasonH\x01R\x06reason\x88\x01\x01\x12/\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2\x10.rds.TargetStateH\x02R\x05state\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\t\n" +
+	"\a_reasonB\b\n" +
+	"\x06_state\"\xa4\b\n" +
 	"\x0eTenantDatabase\x123\n" +
 	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\x00R\x10charactersetname\x88\x01\x01\x12;\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tH\x01R\x14dbinstanceidentifier\x88\x01\x01\x12-\n" +
@@ -48498,30 +48569,38 @@ const file_rds_proto_rawDesc = "" +
 	"\x15_supportsintegrationsB\x1c\n" +
 	"\x1a_supportslimitlessdatabaseB\x1f\n" +
 	"\x1d_supportslocalwriteforwardingB\x18\n" +
-	"\x16_supportsparallelquery\"\xee\x02\n" +
-	"\x0eUserAuthConfig\x123\n" +
+	"\x16_supportsparallelquery\"\xb3\x03\n" +
+	"\x0eUserAuthConfig\x128\n" +
 	"\n" +
-	"authscheme\x18\x9d\x97\xbb\x98\x01 \x01(\x0e2\x0f.rds.AuthSchemeR\n" +
-	"authscheme\x12W\n" +
-	"\x16clientpasswordauthtype\x18֢\xad\xfb\x01 \x01(\x0e2\x1b.rds.ClientPasswordAuthTypeR\x16clientpasswordauthtype\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12.\n" +
-	"\aiamauth\x18\xbd\xa5\xa0\xe4\x01 \x01(\x0e2\x10.rds.IAMAuthModeR\aiamauth\x12$\n" +
-	"\tsecretarn\x18\xb9\x9a\xf6r \x01(\tH\x01R\tsecretarn\x88\x01\x01\x12#\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tH\x02R\busername\x88\x01\x01B\x0e\n" +
-	"\f_descriptionB\f\n" +
+	"authscheme\x18\x9d\x97\xbb\x98\x01 \x01(\x0e2\x0f.rds.AuthSchemeH\x00R\n" +
+	"authscheme\x88\x01\x01\x12\\\n" +
+	"\x16clientpasswordauthtype\x18֢\xad\xfb\x01 \x01(\x0e2\x1b.rds.ClientPasswordAuthTypeH\x01R\x16clientpasswordauthtype\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x02R\vdescription\x88\x01\x01\x123\n" +
+	"\aiamauth\x18\xbd\xa5\xa0\xe4\x01 \x01(\x0e2\x10.rds.IAMAuthModeH\x03R\aiamauth\x88\x01\x01\x12$\n" +
+	"\tsecretarn\x18\xb9\x9a\xf6r \x01(\tH\x04R\tsecretarn\x88\x01\x01\x12#\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tH\x05R\busername\x88\x01\x01B\r\n" +
+	"\v_authschemeB\x19\n" +
+	"\x17_clientpasswordauthtypeB\x0e\n" +
+	"\f_descriptionB\n" +
+	"\n" +
+	"\b_iamauthB\f\n" +
 	"\n" +
 	"_secretarnB\v\n" +
-	"\t_username\"\xf2\x02\n" +
-	"\x12UserAuthConfigInfo\x123\n" +
+	"\t_username\"\xb7\x03\n" +
+	"\x12UserAuthConfigInfo\x128\n" +
 	"\n" +
-	"authscheme\x18\x9d\x97\xbb\x98\x01 \x01(\x0e2\x0f.rds.AuthSchemeR\n" +
-	"authscheme\x12W\n" +
-	"\x16clientpasswordauthtype\x18֢\xad\xfb\x01 \x01(\x0e2\x1b.rds.ClientPasswordAuthTypeR\x16clientpasswordauthtype\x12(\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12.\n" +
-	"\aiamauth\x18\xbd\xa5\xa0\xe4\x01 \x01(\x0e2\x10.rds.IAMAuthModeR\aiamauth\x12$\n" +
-	"\tsecretarn\x18\xb9\x9a\xf6r \x01(\tH\x01R\tsecretarn\x88\x01\x01\x12#\n" +
-	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tH\x02R\busername\x88\x01\x01B\x0e\n" +
-	"\f_descriptionB\f\n" +
+	"authscheme\x18\x9d\x97\xbb\x98\x01 \x01(\x0e2\x0f.rds.AuthSchemeH\x00R\n" +
+	"authscheme\x88\x01\x01\x12\\\n" +
+	"\x16clientpasswordauthtype\x18֢\xad\xfb\x01 \x01(\x0e2\x1b.rds.ClientPasswordAuthTypeH\x01R\x16clientpasswordauthtype\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x02R\vdescription\x88\x01\x01\x123\n" +
+	"\aiamauth\x18\xbd\xa5\xa0\xe4\x01 \x01(\x0e2\x10.rds.IAMAuthModeH\x03R\aiamauth\x88\x01\x01\x12$\n" +
+	"\tsecretarn\x18\xb9\x9a\xf6r \x01(\tH\x04R\tsecretarn\x88\x01\x01\x12#\n" +
+	"\busername\x18\xfa\xc1\xd4\xe1\x01 \x01(\tH\x05R\busername\x88\x01\x01B\r\n" +
+	"\v_authschemeB\x19\n" +
+	"\x17_clientpasswordauthtypeB\x0e\n" +
+	"\f_descriptionB\n" +
+	"\n" +
+	"\b_iamauthB\f\n" +
 	"\n" +
 	"_secretarnB\v\n" +
 	"\t_username\"\xcf\x01\n" +
@@ -50362,6 +50441,7 @@ func file_rds_proto_init() {
 	file_rds_proto_msgTypes[51].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[57].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[58].OneofWrappers = []any{}
+	file_rds_proto_msgTypes[63].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[65].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[69].OneofWrappers = []any{}
 	file_rds_proto_msgTypes[74].OneofWrappers = []any{}

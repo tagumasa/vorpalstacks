@@ -3,12 +3,19 @@ package dynamodb
 
 import (
 	"errors"
+	"fmt"
+
+	"vorpalstacks/internal/store/aws/common"
 )
 
 var (
 	// ErrTableNotFound is returned when the specified DynamoDB table
-	// does not exist.
-	ErrTableNotFound = errors.New("table not found")
+	// does not exist. It wraps the common store not-found class so the
+	// table's two read paths — the direct store read and the
+	// transactional read — answer absence with one error that both
+	// sentinel families recognise: errors.Is(err, ErrTableNotFound) and
+	// the common IsNotFound.
+	ErrTableNotFound = fmt.Errorf("table not found: %w", common.ErrNotFound)
 
 	// ErrTableAlreadyExists is returned when attempting to create a table
 	// that already exists.
@@ -16,6 +23,12 @@ var (
 
 	// ErrTableNotActive is returned when the table is not in the ACTIVE state.
 	ErrTableNotActive = errors.New("table not active")
+
+	// errTableGenerationGone marks a metric flush whose carrying write
+	// belonged to a superseded generation of the table name: a same-name
+	// successor created between the write's commit and the flush must not
+	// inherit the old generation's counters.
+	errTableGenerationGone = errors.New("table generation replaced")
 
 	// ErrItemNotFound is returned when the specified item does not exist
 	// in the table.
@@ -29,14 +42,6 @@ var (
 	// partition key or sort key).
 	ErrInvalidKey = errors.New("invalid key")
 
-	// ErrInvalidAttributeType is returned when the attribute type is not valid
-	// (e.g., S, N, B for string, number, binary).
-	ErrInvalidAttributeType = errors.New("invalid attribute type")
-
-	// ErrMissingKeyAttribute is returned when a required key attribute
-	// is missing from the item.
-	ErrMissingKeyAttribute = errors.New("missing key attribute")
-
 	// ErrIndexNotFound is returned when the specified index does not exist.
 	ErrIndexNotFound = errors.New("index not found")
 
@@ -44,14 +49,14 @@ var (
 	// that already exists.
 	ErrIndexAlreadyExists = errors.New("index already exists")
 
-	// ErrTTLNotFound is returned when the TTL attribute is not configured
-	// for the table.
-	ErrTTLNotFound = errors.New("ttl not found")
-
 	// ErrBackupNotFound is returned when the specified backup does not exist.
 	ErrBackupNotFound = errors.New("backup not found")
-	// ErrBackupAlreadyExists is returned when a backup with the same name already exists.
-	ErrBackupAlreadyExists = errors.New("backup already exists")
+
+	// ErrPolicyRevisionMismatch is returned by the revision-checked
+	// resource policy writes when the record's current revision no longer
+	// equals the expected revision — the optimistic-lock loss the
+	// ExpectedRevisionId parameter exists to detect.
+	ErrPolicyRevisionMismatch = errors.New("resource policy revision mismatch")
 )
 
 // IsTableNotFound checks if the error indicates that a DynamoDB table
@@ -70,10 +75,4 @@ func IsTableAlreadyExists(err error) bool {
 // was not found.
 func IsItemNotFound(err error) bool {
 	return errors.Is(err, ErrItemNotFound)
-}
-
-// IsItemAlreadyExists checks if the error indicates that a DynamoDB item
-// already exists.
-func IsItemAlreadyExists(err error) bool {
-	return errors.Is(err, ErrItemAlreadyExists)
 }

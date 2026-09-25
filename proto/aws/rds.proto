@@ -1709,7 +1709,7 @@ message CreateDBClusterMessage {
 
   optional string charactersetname = 488468644;
 
-  ClusterScalabilityType clusterscalabilitytype = 266209549;
+  optional ClusterScalabilityType clusterscalabilitytype = 266209549;
 
   optional bool copytagstosnapshot = 457270425;
 
@@ -1723,7 +1723,7 @@ message CreateDBClusterMessage {
 
   optional string dbsystemid = 213073032;
 
-  DatabaseInsightsMode databaseinsightsmode = 132399243;
+  optional DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional string databasename = 89545052;
 
@@ -1763,7 +1763,7 @@ message CreateDBClusterMessage {
 
   optional bool managemasteruserpassword = 71308055;
 
-  MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
+  optional MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
 
   optional string masteruserpassword = 326176122;
 
@@ -1911,7 +1911,7 @@ message CreateDBInstanceMessage {
 
   optional string dbsystemid = 213073032;
 
-  DatabaseInsightsMode databaseinsightsmode = 132399243;
+  optional DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional bool dedicatedlogvolume = 386476811;
 
@@ -1951,7 +1951,7 @@ message CreateDBInstanceMessage {
 
   optional bool managemasteruserpassword = 71308055;
 
-  MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
+  optional MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
 
   optional string masteruserpassword = 326176122;
 
@@ -2039,7 +2039,7 @@ message CreateDBInstanceReadReplicaMessage {
 
   optional string dbsubnetgroupname = 84186031;
 
-  DatabaseInsightsMode databaseinsightsmode = 132399243;
+  optional DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional bool dedicatedlogvolume = 386476811;
 
@@ -2093,7 +2093,7 @@ message CreateDBInstanceReadReplicaMessage {
 
   optional bool publiclyaccessible = 256833310;
 
-  ReplicaMode replicamode = 134604609;
+  optional ReplicaMode replicamode = 134604609;
 
   optional string sourcedbclusteridentifier = 319462008;
 
@@ -2163,11 +2163,11 @@ message CreateDBProxyEndpointRequest {
 
   string dbproxyname = 232356319;
 
-  EndpointNetworkType endpointnetworktype = 300530723;
+  optional EndpointNetworkType endpointnetworktype = 300530723;
 
   repeated Tag tags = 381526209;
 
-  DBProxyEndpointTargetRole targetrole = 534667769;
+  optional DBProxyEndpointTargetRole targetrole = 534667769;
 
   repeated string vpcsecuritygroupids = 151967510;
 
@@ -2193,9 +2193,9 @@ message CreateDBProxyRequest {
 
   optional bool debuglogging = 105593218;
 
-  DefaultAuthScheme defaultauthscheme = 436791396;
+  optional DefaultAuthScheme defaultauthscheme = 436791396;
 
-  EndpointNetworkType endpointnetworktype = 300530723;
+  optional EndpointNetworkType endpointnetworktype = 300530723;
 
   EngineFamily enginefamily = 298996604;
 
@@ -2207,7 +2207,7 @@ message CreateDBProxyRequest {
 
   repeated Tag tags = 381526209;
 
-  TargetConnectionNetworkType targetconnectionnetworktype = 474595735;
+  optional TargetConnectionNetworkType targetconnectionnetworktype = 474595735;
 
   repeated string vpcsecuritygroupids = 151967510;
 
@@ -2527,9 +2527,9 @@ message DBCluster {
 
   optional string activitystreamkmskeyid = 394779710;
 
-  ActivityStreamMode activitystreammode = 19126712;
+  optional ActivityStreamMode activitystreammode = 19126712;
 
-  ActivityStreamStatus activitystreamstatus = 476622623;
+  optional ActivityStreamStatus activitystreamstatus = 476622623;
 
   optional int32 allocatedstorage = 463241784;
 
@@ -2559,7 +2559,7 @@ message DBCluster {
 
   optional string clustercreatetime = 119020389;
 
-  ClusterScalabilityType clusterscalabilitytype = 266209549;
+  optional ClusterScalabilityType clusterscalabilitytype = 266209549;
 
   optional bool copytagstosnapshot = 457270425;
 
@@ -2583,7 +2583,7 @@ message DBCluster {
 
   optional string dbsystemid = 213073032;
 
-  DatabaseInsightsMode databaseinsightsmode = 132399243;
+  optional DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional string databasename = 89545052;
 
@@ -2613,7 +2613,7 @@ message DBCluster {
 
   optional bool globalwriteforwardingrequested = 401516695;
 
-  WriteForwardingStatus globalwriteforwardingstatus = 147047845;
+  optional WriteForwardingStatus globalwriteforwardingstatus = 147047845;
 
   optional string hostedzoneid = 346531710;
 
@@ -2633,7 +2633,7 @@ message DBCluster {
 
   LimitlessDatabase limitlessdatabase = 444817377;
 
-  LocalWriteForwardingStatus localwriteforwardingstatus = 242353919;
+  optional LocalWriteForwardingStatus localwriteforwardingstatus = 242353919;
 
   MasterUserSecret masterusersecret = 260483101;
 
@@ -2685,7 +2685,7 @@ message DBCluster {
 
   optional bool storageencrypted = 378808047;
 
-  StorageEncryptionType storageencryptiontype = 6656660;
+  optional StorageEncryptionType storageencryptiontype = 6656660;
 
   optional int32 storagethroughput = 465264045;
 
@@ -2693,7 +2693,7 @@ message DBCluster {
 
   repeated Tag taglist = 429416860;
 
-  UpgradeRolloutOrder upgraderolloutorder = 522027557;
+  optional UpgradeRolloutOrder upgraderolloutorder = 522027557;
 
   optional bool vpcnetworkingenabled = 317396848;
 
@@ -2775,7 +2775,7 @@ message DBClusterAutomatedBackup {
 
   optional bool storageencrypted = 378808047;
 
-  StorageEncryptionType storageencryptiontype = 6656660;
+  optional StorageEncryptionType storageencryptiontype = 6656660;
 
   optional int32 storagethroughput = 465264045;
 
@@ -3161,7 +3161,7 @@ message DBClusterSnapshot {
 
   optional bool storageencrypted = 378808047;
 
-  StorageEncryptionType storageencryptiontype = 6656660;
+  optional StorageEncryptionType storageencryptiontype = 6656660;
 
   optional int32 storagethroughput = 465264045;
 
@@ -3351,11 +3351,11 @@ message DBInstance {
 
   optional string activitystreamkmskeyid = 394779710;
 
-  ActivityStreamMode activitystreammode = 19126712;
+  optional ActivityStreamMode activitystreammode = 19126712;
 
-  ActivityStreamPolicyStatus activitystreampolicystatus = 131587121;
+  optional ActivityStreamPolicyStatus activitystreampolicystatus = 131587121;
 
-  ActivityStreamStatus activitystreamstatus = 476622623;
+  optional ActivityStreamStatus activitystreamstatus = 476622623;
 
   repeated AdditionalStorageVolumeOutput additionalstoragevolumes = 307082949;
 
@@ -3367,7 +3367,7 @@ message DBInstance {
 
   optional string automaticrestarttime = 497974735;
 
-  AutomationMode automationmode = 234653746;
+  optional AutomationMode automationmode = 234653746;
 
   optional string availabilityzone = 391476601;
 
@@ -3411,7 +3411,7 @@ message DBInstance {
 
   optional string dbsystemid = 213073032;
 
-  DatabaseInsightsMode databaseinsightsmode = 132399243;
+  optional DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional int32 dbinstanceport = 122890396;
 
@@ -3499,7 +3499,7 @@ message DBInstance {
 
   optional string readreplicasourcedbinstanceidentifier = 306391633;
 
-  ReplicaMode replicamode = 134604609;
+  optional ReplicaMode replicamode = 134604609;
 
   optional string resumefullautomationmodetime = 491133479;
 
@@ -3509,7 +3509,7 @@ message DBInstance {
 
   optional bool storageencrypted = 378808047;
 
-  StorageEncryptionType storageencryptiontype = 6656660;
+  optional StorageEncryptionType storageencryptiontype = 6656660;
 
   optional int32 storageoperationpercentprogress = 174239916;
 
@@ -3527,7 +3527,7 @@ message DBInstance {
 
   optional string timezone = 246302531;
 
-  UpgradeRolloutOrder upgraderolloutorder = 522027557;
+  optional UpgradeRolloutOrder upgraderolloutorder = 522027557;
 
   repeated VpcSecurityGroupMembership vpcsecuritygroups = 463975815;
 
@@ -3605,7 +3605,7 @@ message DBInstanceAutomatedBackup {
 
   optional string status = 6222352;
 
-  StorageEncryptionType storageencryptiontype = 6656660;
+  optional StorageEncryptionType storageencryptiontype = 6656660;
 
   optional int32 storagethroughput = 465264045;
 
@@ -3891,7 +3891,7 @@ message DBProxy {
 
   optional string endpoint = 132634269;
 
-  EndpointNetworkType endpointnetworktype = 300530723;
+  optional EndpointNetworkType endpointnetworktype = 300530723;
 
   optional string enginefamily = 298996604;
 
@@ -3901,9 +3901,9 @@ message DBProxy {
 
   optional string rolearn = 322567169;
 
-  DBProxyStatus status = 6222352;
+  optional DBProxyStatus status = 6222352;
 
-  TargetConnectionNetworkType targetconnectionnetworktype = 474595735;
+  optional TargetConnectionNetworkType targetconnectionnetworktype = 474595735;
 
   optional string updateddate = 98230565;
 
@@ -3941,13 +3941,13 @@ message DBProxyEndpoint {
 
   optional string endpoint = 132634269;
 
-  EndpointNetworkType endpointnetworktype = 300530723;
+  optional EndpointNetworkType endpointnetworktype = 300530723;
 
   optional bool isdefault = 101743631;
 
-  DBProxyEndpointStatus status = 6222352;
+  optional DBProxyEndpointStatus status = 6222352;
 
-  DBProxyEndpointTargetRole targetrole = 534667769;
+  optional DBProxyEndpointTargetRole targetrole = 534667769;
 
   optional string vpcid = 412355958;
 
@@ -4071,7 +4071,7 @@ message DBProxyTarget {
 
   optional string rdsresourceid = 200404394;
 
-  TargetRole role = 271285818;
+  optional TargetRole role = 271285818;
 
   optional string targetarn = 217664144;
 
@@ -4079,7 +4079,7 @@ message DBProxyTarget {
 
   optional string trackedclusterid = 311875409;
 
-  TargetType type = 290836590;
+  optional TargetType type = 290836590;
 
 }
 
@@ -4415,7 +4415,7 @@ message DBSnapshot {
 
   optional string status = 6222352;
 
-  StorageEncryptionType storageencryptiontype = 6656660;
+  optional StorageEncryptionType storageencryptiontype = 6656660;
 
   optional int32 storagethroughput = 465264045;
 
@@ -5691,7 +5691,7 @@ message DescribeEventsMessage {
 
   optional string sourceidentifier = 190015756;
 
-  SourceType sourcetype = 195731217;
+  optional SourceType sourcetype = 195731217;
 
   optional string starttime = 370760303;
 
@@ -5711,7 +5711,7 @@ message DescribeExportTasksMessage {
 
   optional string sourcearn = 439903072;
 
-  ExportSourceType sourcetype = 195731217;
+  optional ExportSourceType sourcetype = 195731217;
 
 }
 
@@ -6177,7 +6177,7 @@ message Event {
 
   optional string sourceidentifier = 190015756;
 
-  SourceType sourcetype = 195731217;
+  optional SourceType sourcetype = 195731217;
 
 }
 
@@ -6301,7 +6301,7 @@ message ExportTask {
 
   optional string sourcearn = 439903072;
 
-  ExportSourceType sourcetype = 195731217;
+  optional ExportSourceType sourcetype = 195731217;
 
   optional string status = 6222352;
 
@@ -6397,7 +6397,7 @@ message FailoverState {
 
   optional bool isdatalossallowed = 28895927;
 
-  FailoverStatus status = 6222352;
+  optional FailoverStatus status = 6222352;
 
   optional string todbclusterarn = 469618472;
 
@@ -6459,7 +6459,7 @@ message GlobalCluster {
 
   optional bool storageencrypted = 378808047;
 
-  StorageEncryptionType storageencryptiontype = 6656660;
+  optional StorageEncryptionType storageencryptiontype = 6656660;
 
   repeated Tag taglist = 429416860;
 
@@ -6483,13 +6483,13 @@ message GlobalClusterMember {
 
   optional string dbclusterarn = 173586159;
 
-  WriteForwardingStatus globalwriteforwardingstatus = 147047845;
+  optional WriteForwardingStatus globalwriteforwardingstatus = 147047845;
 
   optional bool iswriter = 23347771;
 
   repeated string readers = 168786784;
 
-  GlobalClusterMemberSynchronizationStatus synchronizationstatus = 150130254;
+  optional GlobalClusterMemberSynchronizationStatus synchronizationstatus = 150130254;
 
 }
 
@@ -6651,7 +6651,7 @@ message Integration {
 
   optional string sourcearn = 439903072;
 
-  IntegrationStatus status = 6222352;
+  optional IntegrationStatus status = 6222352;
 
   repeated Tag tags = 381526209;
 
@@ -7069,7 +7069,7 @@ message LimitlessDatabase {
 
   optional double minrequiredacu = 325776882;
 
-  LimitlessDatabaseStatus status = 6222352;
+  optional LimitlessDatabaseStatus status = 6222352;
 
 }
 
@@ -7211,7 +7211,7 @@ message MinimumEngineVersionPerAllowedValue {
 
 message ModifyActivityStreamRequest {
 
-  AuditPolicyState auditpolicystate = 229378680;
+  optional AuditPolicyState auditpolicystate = 229378680;
 
   optional string resourcearn = 364280877;
 
@@ -7227,11 +7227,11 @@ message ModifyActivityStreamResponse {
 
   optional string kmskeyid = 46523533;
 
-  ActivityStreamMode mode = 323909427;
+  optional ActivityStreamMode mode = 323909427;
 
-  ActivityStreamPolicyStatus policystatus = 256036138;
+  optional ActivityStreamPolicyStatus policystatus = 256036138;
 
-  ActivityStreamStatus status = 6222352;
+  optional ActivityStreamStatus status = 6222352;
 
 }
 
@@ -7299,7 +7299,7 @@ message ModifyCustomDBEngineVersionMessage {
 
   string engineversion = 44953462;
 
-  CustomEngineVersionStatus status = 6222352;
+  optional CustomEngineVersionStatus status = 6222352;
 
 }
 
@@ -7353,7 +7353,7 @@ message ModifyDBClusterMessage {
 
   optional string dbinstanceparametergroupname = 505550326;
 
-  DatabaseInsightsMode databaseinsightsmode = 132399243;
+  optional DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional bool deletionprotection = 504781905;
 
@@ -7383,7 +7383,7 @@ message ModifyDBClusterMessage {
 
   optional bool managemasteruserpassword = 71308055;
 
-  MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
+  optional MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
 
   optional string masteruserpassword = 326176122;
 
@@ -7481,7 +7481,7 @@ message ModifyDBInstanceMessage {
 
   optional bool autominorversionupgrade = 32758492;
 
-  AutomationMode automationmode = 234653746;
+  optional AutomationMode automationmode = 234653746;
 
   optional string awsbackuprecoverypointarn = 496169795;
 
@@ -7507,7 +7507,7 @@ message ModifyDBInstanceMessage {
 
   optional string dbsubnetgroupname = 84186031;
 
-  DatabaseInsightsMode databaseinsightsmode = 132399243;
+  optional DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional bool dedicatedlogvolume = 386476811;
 
@@ -7545,7 +7545,7 @@ message ModifyDBInstanceMessage {
 
   optional bool managemasteruserpassword = 71308055;
 
-  MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
+  optional MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
 
   optional string masteruserpassword = 326176122;
 
@@ -7581,7 +7581,7 @@ message ModifyDBInstanceMessage {
 
   optional bool publiclyaccessible = 256833310;
 
-  ReplicaMode replicamode = 134604609;
+  optional ReplicaMode replicamode = 134604609;
 
   optional int32 resumefullautomationmodeminutes = 286496333;
 
@@ -7653,7 +7653,7 @@ message ModifyDBProxyRequest {
 
   optional bool debuglogging = 105593218;
 
-  DefaultAuthScheme defaultauthscheme = 436791396;
+  optional DefaultAuthScheme defaultauthscheme = 436791396;
 
   optional int32 idleclienttimeout = 96765376;
 
@@ -8279,7 +8279,7 @@ message Parameter {
 
   optional string allowedvalues = 294513354;
 
-  ApplyMethod applymethod = 521377563;
+  optional ApplyMethod applymethod = 521377563;
 
   optional string applytype = 65384676;
 
@@ -8355,7 +8355,7 @@ message PendingModifiedValues {
 
   optional int32 allocatedstorage = 463241784;
 
-  AutomationMode automationmode = 234653746;
+  optional AutomationMode automationmode = 234653746;
 
   optional int32 backupretentionperiod = 411111671;
 
@@ -8561,7 +8561,7 @@ message RdsCustomClusterConfiguration {
 
   optional string interconnectsubnetid = 491243054;
 
-  ReplicaMode replicamode = 134604609;
+  optional ReplicaMode replicamode = 134604609;
 
   optional string transitgatewaymulticastdomainid = 268441742;
 
@@ -9401,7 +9401,7 @@ message RestoreDBInstanceFromS3Message {
 
   optional string dbsubnetgroupname = 84186031;
 
-  DatabaseInsightsMode databaseinsightsmode = 132399243;
+  optional DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional bool dedicatedlogvolume = 386476811;
 
@@ -9937,9 +9937,9 @@ message StartActivityStreamResponse {
 
   optional string kmskeyid = 46523533;
 
-  ActivityStreamMode mode = 323909427;
+  optional ActivityStreamMode mode = 323909427;
 
-  ActivityStreamStatus status = 6222352;
+  optional ActivityStreamStatus status = 6222352;
 
 }
 
@@ -10037,7 +10037,7 @@ message StopActivityStreamResponse {
 
   optional string kmskeyid = 46523533;
 
-  ActivityStreamStatus status = 6222352;
+  optional ActivityStreamStatus status = 6222352;
 
 }
 
@@ -10321,9 +10321,9 @@ message TargetHealth {
 
   optional string description = 115243530;
 
-  TargetHealthReason reason = 20005178;
+  optional TargetHealthReason reason = 20005178;
 
-  TargetState state = 502047895;
+  optional TargetState state = 502047895;
 
 }
 
@@ -10541,13 +10541,13 @@ message UpgradeTarget {
 
 message UserAuthConfig {
 
-  AuthScheme authscheme = 319736733;
+  optional AuthScheme authscheme = 319736733;
 
-  ClientPasswordAuthType clientpasswordauthtype = 527126870;
+  optional ClientPasswordAuthType clientpasswordauthtype = 527126870;
 
   optional string description = 115243530;
 
-  IAMAuthMode iamauth = 478679741;
+  optional IAMAuthMode iamauth = 478679741;
 
   optional string secretarn = 241012025;
 
@@ -10561,13 +10561,13 @@ message UserAuthConfig {
 
 message UserAuthConfigInfo {
 
-  AuthScheme authscheme = 319736733;
+  optional AuthScheme authscheme = 319736733;
 
-  ClientPasswordAuthType clientpasswordauthtype = 527126870;
+  optional ClientPasswordAuthType clientpasswordauthtype = 527126870;
 
   optional string description = 115243530;
 
-  IAMAuthMode iamauth = 478679741;
+  optional IAMAuthMode iamauth = 478679741;
 
   optional string secretarn = 241012025;
 

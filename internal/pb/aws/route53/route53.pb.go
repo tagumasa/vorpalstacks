@@ -7755,25 +7755,25 @@ func (x *HealthCheckAlreadyExists) GetMessage() string {
 }
 
 type HealthCheckConfig struct {
-	state                        protoimpl.MessageState       `protogen:"open.v1"`
-	Alarmidentifier              *AlarmIdentifier             `protobuf:"bytes,536124346,opt,name=alarmidentifier,proto3" json:"alarmidentifier,omitempty"`
-	Childhealthchecks            []string                     `protobuf:"bytes,485535935,rep,name=childhealthchecks,proto3" json:"childhealthchecks,omitempty"`
-	Disabled                     *bool                        `protobuf:"varint,533633318,opt,name=disabled,proto3,oneof" json:"disabled,omitempty"`
-	Enablesni                    *bool                        `protobuf:"varint,70122887,opt,name=enablesni,proto3,oneof" json:"enablesni,omitempty"`
-	Failurethreshold             *int32                       `protobuf:"varint,176846565,opt,name=failurethreshold,proto3,oneof" json:"failurethreshold,omitempty"`
-	Fullyqualifieddomainname     *string                      `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3,oneof" json:"fullyqualifieddomainname,omitempty"`
-	Healththreshold              *int32                       `protobuf:"varint,215873163,opt,name=healththreshold,proto3,oneof" json:"healththreshold,omitempty"`
-	Ipaddress                    *string                      `protobuf:"bytes,169333741,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
-	Insufficientdatahealthstatus InsufficientDataHealthStatus `protobuf:"varint,493115723,opt,name=insufficientdatahealthstatus,proto3,enum=route53.InsufficientDataHealthStatus" json:"insufficientdatahealthstatus,omitempty"`
-	Inverted                     *bool                        `protobuf:"varint,55175513,opt,name=inverted,proto3,oneof" json:"inverted,omitempty"`
-	Measurelatency               *bool                        `protobuf:"varint,87136848,opt,name=measurelatency,proto3,oneof" json:"measurelatency,omitempty"`
-	Port                         *int32                       `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Regions                      []HealthCheckRegion          `protobuf:"varint,36200107,rep,packed,name=regions,proto3,enum=route53.HealthCheckRegion" json:"regions,omitempty"`
-	Requestinterval              *int32                       `protobuf:"varint,350673112,opt,name=requestinterval,proto3,oneof" json:"requestinterval,omitempty"`
-	Resourcepath                 *string                      `protobuf:"bytes,117584551,opt,name=resourcepath,proto3,oneof" json:"resourcepath,omitempty"`
-	Routingcontrolarn            *string                      `protobuf:"bytes,206883790,opt,name=routingcontrolarn,proto3,oneof" json:"routingcontrolarn,omitempty"`
-	Searchstring                 *string                      `protobuf:"bytes,318687365,opt,name=searchstring,proto3,oneof" json:"searchstring,omitempty"`
-	Type                         HealthCheckType              `protobuf:"varint,290836590,opt,name=type,proto3,enum=route53.HealthCheckType" json:"type,omitempty"`
+	state                        protoimpl.MessageState        `protogen:"open.v1"`
+	Alarmidentifier              *AlarmIdentifier              `protobuf:"bytes,536124346,opt,name=alarmidentifier,proto3" json:"alarmidentifier,omitempty"`
+	Childhealthchecks            []string                      `protobuf:"bytes,485535935,rep,name=childhealthchecks,proto3" json:"childhealthchecks,omitempty"`
+	Disabled                     *bool                         `protobuf:"varint,533633318,opt,name=disabled,proto3,oneof" json:"disabled,omitempty"`
+	Enablesni                    *bool                         `protobuf:"varint,70122887,opt,name=enablesni,proto3,oneof" json:"enablesni,omitempty"`
+	Failurethreshold             *int32                        `protobuf:"varint,176846565,opt,name=failurethreshold,proto3,oneof" json:"failurethreshold,omitempty"`
+	Fullyqualifieddomainname     *string                       `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3,oneof" json:"fullyqualifieddomainname,omitempty"`
+	Healththreshold              *int32                        `protobuf:"varint,215873163,opt,name=healththreshold,proto3,oneof" json:"healththreshold,omitempty"`
+	Ipaddress                    *string                       `protobuf:"bytes,169333741,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
+	Insufficientdatahealthstatus *InsufficientDataHealthStatus `protobuf:"varint,493115723,opt,name=insufficientdatahealthstatus,proto3,enum=route53.InsufficientDataHealthStatus,oneof" json:"insufficientdatahealthstatus,omitempty"`
+	Inverted                     *bool                         `protobuf:"varint,55175513,opt,name=inverted,proto3,oneof" json:"inverted,omitempty"`
+	Measurelatency               *bool                         `protobuf:"varint,87136848,opt,name=measurelatency,proto3,oneof" json:"measurelatency,omitempty"`
+	Port                         *int32                        `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
+	Regions                      []HealthCheckRegion           `protobuf:"varint,36200107,rep,packed,name=regions,proto3,enum=route53.HealthCheckRegion" json:"regions,omitempty"`
+	Requestinterval              *int32                        `protobuf:"varint,350673112,opt,name=requestinterval,proto3,oneof" json:"requestinterval,omitempty"`
+	Resourcepath                 *string                       `protobuf:"bytes,117584551,opt,name=resourcepath,proto3,oneof" json:"resourcepath,omitempty"`
+	Routingcontrolarn            *string                       `protobuf:"bytes,206883790,opt,name=routingcontrolarn,proto3,oneof" json:"routingcontrolarn,omitempty"`
+	Searchstring                 *string                       `protobuf:"bytes,318687365,opt,name=searchstring,proto3,oneof" json:"searchstring,omitempty"`
+	Type                         HealthCheckType               `protobuf:"varint,290836590,opt,name=type,proto3,enum=route53.HealthCheckType" json:"type,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -7865,8 +7865,8 @@ func (x *HealthCheckConfig) GetIpaddress() string {
 }
 
 func (x *HealthCheckConfig) GetInsufficientdatahealthstatus() InsufficientDataHealthStatus {
-	if x != nil {
-		return x.Insufficientdatahealthstatus
+	if x != nil && x.Insufficientdatahealthstatus != nil {
+		return *x.Insufficientdatahealthstatus
 	}
 	return InsufficientDataHealthStatus_INSUFFICIENT_DATA_HEALTH_STATUS_HEALTHY
 }
@@ -7981,7 +7981,7 @@ func (x *HealthCheckInUse) GetMessage() string {
 type HealthCheckObservation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ipaddress     *string                `protobuf:"bytes,169333741,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
-	Region        HealthCheckRegion      `protobuf:"varint,154040478,opt,name=region,proto3,enum=route53.HealthCheckRegion" json:"region,omitempty"`
+	Region        *HealthCheckRegion     `protobuf:"varint,154040478,opt,name=region,proto3,enum=route53.HealthCheckRegion,oneof" json:"region,omitempty"`
 	Statusreport  *StatusReport          `protobuf:"bytes,27958834,opt,name=statusreport,proto3" json:"statusreport,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8025,8 +8025,8 @@ func (x *HealthCheckObservation) GetIpaddress() string {
 }
 
 func (x *HealthCheckObservation) GetRegion() HealthCheckRegion {
-	if x != nil {
-		return x.Region
+	if x != nil && x.Region != nil {
+		return *x.Region
 	}
 	return HealthCheckRegion_HEALTH_CHECK_REGION_AP_NORTHEAST_1
 }
@@ -8323,9 +8323,9 @@ func (x *HostedZoneFailureReasons) GetAcceleratedrecovery() string {
 }
 
 type HostedZoneFeatures struct {
-	state                     protoimpl.MessageState    `protogen:"open.v1"`
-	Acceleratedrecoverystatus AcceleratedRecoveryStatus `protobuf:"varint,507534246,opt,name=acceleratedrecoverystatus,proto3,enum=route53.AcceleratedRecoveryStatus" json:"acceleratedrecoverystatus,omitempty"`
-	Failurereasons            *HostedZoneFailureReasons `protobuf:"bytes,445146219,opt,name=failurereasons,proto3" json:"failurereasons,omitempty"`
+	state                     protoimpl.MessageState     `protogen:"open.v1"`
+	Acceleratedrecoverystatus *AcceleratedRecoveryStatus `protobuf:"varint,507534246,opt,name=acceleratedrecoverystatus,proto3,enum=route53.AcceleratedRecoveryStatus,oneof" json:"acceleratedrecoverystatus,omitempty"`
+	Failurereasons            *HostedZoneFailureReasons  `protobuf:"bytes,445146219,opt,name=failurereasons,proto3" json:"failurereasons,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -8361,8 +8361,8 @@ func (*HostedZoneFeatures) Descriptor() ([]byte, []int) {
 }
 
 func (x *HostedZoneFeatures) GetAcceleratedrecoverystatus() AcceleratedRecoveryStatus {
-	if x != nil {
-		return x.Acceleratedrecoverystatus
+	if x != nil && x.Acceleratedrecoverystatus != nil {
+		return *x.Acceleratedrecoverystatus
 	}
 	return AcceleratedRecoveryStatus_ACCELERATED_RECOVERY_STATUS_DISABLED
 }
@@ -10673,7 +10673,7 @@ func (x *ListHostedZonesByVPCResponse) GetNexttoken() string {
 type ListHostedZonesRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Delegationsetid *string                `protobuf:"bytes,307328801,opt,name=delegationsetid,proto3,oneof" json:"delegationsetid,omitempty"`
-	Hostedzonetype  HostedZoneType         `protobuf:"varint,409319401,opt,name=hostedzonetype,proto3,enum=route53.HostedZoneType" json:"hostedzonetype,omitempty"`
+	Hostedzonetype  *HostedZoneType        `protobuf:"varint,409319401,opt,name=hostedzonetype,proto3,enum=route53.HostedZoneType,oneof" json:"hostedzonetype,omitempty"`
 	Marker          *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxitems        *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -10718,8 +10718,8 @@ func (x *ListHostedZonesRequest) GetDelegationsetid() string {
 }
 
 func (x *ListHostedZonesRequest) GetHostedzonetype() HostedZoneType {
-	if x != nil {
-		return x.Hostedzonetype
+	if x != nil && x.Hostedzonetype != nil {
+		return *x.Hostedzonetype
 	}
 	return HostedZoneType_HOSTED_ZONE_TYPE_PRIVATE_HOSTED_ZONE
 }
@@ -10932,7 +10932,7 @@ type ListResourceRecordSetsRequest struct {
 	Maxitems              *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Startrecordidentifier *string                `protobuf:"bytes,518502950,opt,name=startrecordidentifier,proto3,oneof" json:"startrecordidentifier,omitempty"`
 	Startrecordname       *string                `protobuf:"bytes,145299062,opt,name=startrecordname,proto3,oneof" json:"startrecordname,omitempty"`
-	Startrecordtype       RRType                 `protobuf:"varint,408714791,opt,name=startrecordtype,proto3,enum=route53.RRType" json:"startrecordtype,omitempty"`
+	Startrecordtype       *RRType                `protobuf:"varint,408714791,opt,name=startrecordtype,proto3,enum=route53.RRType,oneof" json:"startrecordtype,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -10996,8 +10996,8 @@ func (x *ListResourceRecordSetsRequest) GetStartrecordname() string {
 }
 
 func (x *ListResourceRecordSetsRequest) GetStartrecordtype() RRType {
-	if x != nil {
-		return x.Startrecordtype
+	if x != nil && x.Startrecordtype != nil {
+		return *x.Startrecordtype
 	}
 	return RRType_R_R_TYPE_PTR
 }
@@ -11008,7 +11008,7 @@ type ListResourceRecordSetsResponse struct {
 	Maxitems             string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
 	Nextrecordidentifier *string                `protobuf:"bytes,424069527,opt,name=nextrecordidentifier,proto3,oneof" json:"nextrecordidentifier,omitempty"`
 	Nextrecordname       *string                `protobuf:"bytes,131258783,opt,name=nextrecordname,proto3,oneof" json:"nextrecordname,omitempty"`
-	Nextrecordtype       RRType                 `protobuf:"varint,97817846,opt,name=nextrecordtype,proto3,enum=route53.RRType" json:"nextrecordtype,omitempty"`
+	Nextrecordtype       *RRType                `protobuf:"varint,97817846,opt,name=nextrecordtype,proto3,enum=route53.RRType,oneof" json:"nextrecordtype,omitempty"`
 	Resourcerecordsets   []*ResourceRecordSet   `protobuf:"bytes,77807302,rep,name=resourcerecordsets,proto3" json:"resourcerecordsets,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -11073,8 +11073,8 @@ func (x *ListResourceRecordSetsResponse) GetNextrecordname() string {
 }
 
 func (x *ListResourceRecordSetsResponse) GetNextrecordtype() RRType {
-	if x != nil {
-		return x.Nextrecordtype
+	if x != nil && x.Nextrecordtype != nil {
+		return *x.Nextrecordtype
 	}
 	return RRType_R_R_TYPE_PTR
 }
@@ -11531,7 +11531,7 @@ type ListTrafficPolicyInstancesByHostedZoneRequest struct {
 	Hostedzoneid                    string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
 	Maxitems                        *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Trafficpolicyinstancenamemarker *string                `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
-	Trafficpolicyinstancetypemarker RRType                 `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
+	Trafficpolicyinstancetypemarker *RRType                `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType,oneof" json:"trafficpolicyinstancetypemarker,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -11588,8 +11588,8 @@ func (x *ListTrafficPolicyInstancesByHostedZoneRequest) GetTrafficpolicyinstance
 }
 
 func (x *ListTrafficPolicyInstancesByHostedZoneRequest) GetTrafficpolicyinstancetypemarker() RRType {
-	if x != nil {
-		return x.Trafficpolicyinstancetypemarker
+	if x != nil && x.Trafficpolicyinstancetypemarker != nil {
+		return *x.Trafficpolicyinstancetypemarker
 	}
 	return RRType_R_R_TYPE_PTR
 }
@@ -11599,7 +11599,7 @@ type ListTrafficPolicyInstancesByHostedZoneResponse struct {
 	Istruncated                     *bool                    `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxitems                        string                   `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
 	Trafficpolicyinstancenamemarker *string                  `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
-	Trafficpolicyinstancetypemarker RRType                   `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
+	Trafficpolicyinstancetypemarker *RRType                  `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType,oneof" json:"trafficpolicyinstancetypemarker,omitempty"`
 	Trafficpolicyinstances          []*TrafficPolicyInstance `protobuf:"bytes,199455009,rep,name=trafficpolicyinstances,proto3" json:"trafficpolicyinstances,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
@@ -11657,8 +11657,8 @@ func (x *ListTrafficPolicyInstancesByHostedZoneResponse) GetTrafficpolicyinstanc
 }
 
 func (x *ListTrafficPolicyInstancesByHostedZoneResponse) GetTrafficpolicyinstancetypemarker() RRType {
-	if x != nil {
-		return x.Trafficpolicyinstancetypemarker
+	if x != nil && x.Trafficpolicyinstancetypemarker != nil {
+		return *x.Trafficpolicyinstancetypemarker
 	}
 	return RRType_R_R_TYPE_PTR
 }
@@ -11676,7 +11676,7 @@ type ListTrafficPolicyInstancesByPolicyRequest struct {
 	Maxitems                        *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Trafficpolicyid                 string                 `protobuf:"bytes,40235222,opt,name=trafficpolicyid,proto3" json:"trafficpolicyid,omitempty"`
 	Trafficpolicyinstancenamemarker *string                `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
-	Trafficpolicyinstancetypemarker RRType                 `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
+	Trafficpolicyinstancetypemarker *RRType                `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType,oneof" json:"trafficpolicyinstancetypemarker,omitempty"`
 	Trafficpolicyversion            int32                  `protobuf:"varint,479078485,opt,name=trafficpolicyversion,proto3" json:"trafficpolicyversion,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
@@ -11741,8 +11741,8 @@ func (x *ListTrafficPolicyInstancesByPolicyRequest) GetTrafficpolicyinstancename
 }
 
 func (x *ListTrafficPolicyInstancesByPolicyRequest) GetTrafficpolicyinstancetypemarker() RRType {
-	if x != nil {
-		return x.Trafficpolicyinstancetypemarker
+	if x != nil && x.Trafficpolicyinstancetypemarker != nil {
+		return *x.Trafficpolicyinstancetypemarker
 	}
 	return RRType_R_R_TYPE_PTR
 }
@@ -11760,7 +11760,7 @@ type ListTrafficPolicyInstancesByPolicyResponse struct {
 	Istruncated                     *bool                    `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxitems                        string                   `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
 	Trafficpolicyinstancenamemarker *string                  `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
-	Trafficpolicyinstancetypemarker RRType                   `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
+	Trafficpolicyinstancetypemarker *RRType                  `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType,oneof" json:"trafficpolicyinstancetypemarker,omitempty"`
 	Trafficpolicyinstances          []*TrafficPolicyInstance `protobuf:"bytes,199455009,rep,name=trafficpolicyinstances,proto3" json:"trafficpolicyinstances,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
@@ -11825,8 +11825,8 @@ func (x *ListTrafficPolicyInstancesByPolicyResponse) GetTrafficpolicyinstancenam
 }
 
 func (x *ListTrafficPolicyInstancesByPolicyResponse) GetTrafficpolicyinstancetypemarker() RRType {
-	if x != nil {
-		return x.Trafficpolicyinstancetypemarker
+	if x != nil && x.Trafficpolicyinstancetypemarker != nil {
+		return *x.Trafficpolicyinstancetypemarker
 	}
 	return RRType_R_R_TYPE_PTR
 }
@@ -11843,7 +11843,7 @@ type ListTrafficPolicyInstancesRequest struct {
 	Hostedzoneidmarker              *string                `protobuf:"bytes,475055952,opt,name=hostedzoneidmarker,proto3,oneof" json:"hostedzoneidmarker,omitempty"`
 	Maxitems                        *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Trafficpolicyinstancenamemarker *string                `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
-	Trafficpolicyinstancetypemarker RRType                 `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
+	Trafficpolicyinstancetypemarker *RRType                `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType,oneof" json:"trafficpolicyinstancetypemarker,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -11900,8 +11900,8 @@ func (x *ListTrafficPolicyInstancesRequest) GetTrafficpolicyinstancenamemarker()
 }
 
 func (x *ListTrafficPolicyInstancesRequest) GetTrafficpolicyinstancetypemarker() RRType {
-	if x != nil {
-		return x.Trafficpolicyinstancetypemarker
+	if x != nil && x.Trafficpolicyinstancetypemarker != nil {
+		return *x.Trafficpolicyinstancetypemarker
 	}
 	return RRType_R_R_TYPE_PTR
 }
@@ -11912,7 +11912,7 @@ type ListTrafficPolicyInstancesResponse struct {
 	Istruncated                     *bool                    `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxitems                        string                   `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
 	Trafficpolicyinstancenamemarker *string                  `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
-	Trafficpolicyinstancetypemarker RRType                   `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
+	Trafficpolicyinstancetypemarker *RRType                  `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType,oneof" json:"trafficpolicyinstancetypemarker,omitempty"`
 	Trafficpolicyinstances          []*TrafficPolicyInstance `protobuf:"bytes,199455009,rep,name=trafficpolicyinstances,proto3" json:"trafficpolicyinstances,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
@@ -11977,8 +11977,8 @@ func (x *ListTrafficPolicyInstancesResponse) GetTrafficpolicyinstancenamemarker(
 }
 
 func (x *ListTrafficPolicyInstancesResponse) GetTrafficpolicyinstancetypemarker() RRType {
-	if x != nil {
-		return x.Trafficpolicyinstancetypemarker
+	if x != nil && x.Trafficpolicyinstancetypemarker != nil {
+		return *x.Trafficpolicyinstancetypemarker
 	}
 	return RRType_R_R_TYPE_PTR
 }
@@ -13091,22 +13091,22 @@ func (x *ResourceRecord) GetValue() string {
 }
 
 type ResourceRecordSet struct {
-	state                   protoimpl.MessageState    `protogen:"open.v1"`
-	Aliastarget             *AliasTarget              `protobuf:"bytes,317299867,opt,name=aliastarget,proto3" json:"aliastarget,omitempty"`
-	Cidrroutingconfig       *CidrRoutingConfig        `protobuf:"bytes,357245246,opt,name=cidrroutingconfig,proto3" json:"cidrroutingconfig,omitempty"`
-	Failover                ResourceRecordSetFailover `protobuf:"varint,26793064,opt,name=failover,proto3,enum=route53.ResourceRecordSetFailover" json:"failover,omitempty"`
-	Geolocation             *GeoLocation              `protobuf:"bytes,267973346,opt,name=geolocation,proto3" json:"geolocation,omitempty"`
-	Geoproximitylocation    *GeoProximityLocation     `protobuf:"bytes,94319785,opt,name=geoproximitylocation,proto3" json:"geoproximitylocation,omitempty"`
-	Healthcheckid           *string                   `protobuf:"bytes,312971637,opt,name=healthcheckid,proto3,oneof" json:"healthcheckid,omitempty"`
-	Multivalueanswer        *bool                     `protobuf:"varint,424105486,opt,name=multivalueanswer,proto3,oneof" json:"multivalueanswer,omitempty"`
-	Name                    string                    `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Region                  ResourceRecordSetRegion   `protobuf:"varint,154040478,opt,name=region,proto3,enum=route53.ResourceRecordSetRegion" json:"region,omitempty"`
-	Resourcerecords         []*ResourceRecord         `protobuf:"bytes,519418974,rep,name=resourcerecords,proto3" json:"resourcerecords,omitempty"`
-	Setidentifier           *string                   `protobuf:"bytes,201408985,opt,name=setidentifier,proto3,oneof" json:"setidentifier,omitempty"`
-	Ttl                     *int64                    `protobuf:"varint,526904700,opt,name=ttl,proto3,oneof" json:"ttl,omitempty"`
-	Trafficpolicyinstanceid *string                   `protobuf:"bytes,251421439,opt,name=trafficpolicyinstanceid,proto3,oneof" json:"trafficpolicyinstanceid,omitempty"`
-	Type                    RRType                    `protobuf:"varint,290836590,opt,name=type,proto3,enum=route53.RRType" json:"type,omitempty"`
-	Weight                  *int64                    `protobuf:"varint,422581466,opt,name=weight,proto3,oneof" json:"weight,omitempty"`
+	state                   protoimpl.MessageState     `protogen:"open.v1"`
+	Aliastarget             *AliasTarget               `protobuf:"bytes,317299867,opt,name=aliastarget,proto3" json:"aliastarget,omitempty"`
+	Cidrroutingconfig       *CidrRoutingConfig         `protobuf:"bytes,357245246,opt,name=cidrroutingconfig,proto3" json:"cidrroutingconfig,omitempty"`
+	Failover                *ResourceRecordSetFailover `protobuf:"varint,26793064,opt,name=failover,proto3,enum=route53.ResourceRecordSetFailover,oneof" json:"failover,omitempty"`
+	Geolocation             *GeoLocation               `protobuf:"bytes,267973346,opt,name=geolocation,proto3" json:"geolocation,omitempty"`
+	Geoproximitylocation    *GeoProximityLocation      `protobuf:"bytes,94319785,opt,name=geoproximitylocation,proto3" json:"geoproximitylocation,omitempty"`
+	Healthcheckid           *string                    `protobuf:"bytes,312971637,opt,name=healthcheckid,proto3,oneof" json:"healthcheckid,omitempty"`
+	Multivalueanswer        *bool                      `protobuf:"varint,424105486,opt,name=multivalueanswer,proto3,oneof" json:"multivalueanswer,omitempty"`
+	Name                    string                     `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Region                  *ResourceRecordSetRegion   `protobuf:"varint,154040478,opt,name=region,proto3,enum=route53.ResourceRecordSetRegion,oneof" json:"region,omitempty"`
+	Resourcerecords         []*ResourceRecord          `protobuf:"bytes,519418974,rep,name=resourcerecords,proto3" json:"resourcerecords,omitempty"`
+	Setidentifier           *string                    `protobuf:"bytes,201408985,opt,name=setidentifier,proto3,oneof" json:"setidentifier,omitempty"`
+	Ttl                     *int64                     `protobuf:"varint,526904700,opt,name=ttl,proto3,oneof" json:"ttl,omitempty"`
+	Trafficpolicyinstanceid *string                    `protobuf:"bytes,251421439,opt,name=trafficpolicyinstanceid,proto3,oneof" json:"trafficpolicyinstanceid,omitempty"`
+	Type                    RRType                     `protobuf:"varint,290836590,opt,name=type,proto3,enum=route53.RRType" json:"type,omitempty"`
+	Weight                  *int64                     `protobuf:"varint,422581466,opt,name=weight,proto3,oneof" json:"weight,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -13156,8 +13156,8 @@ func (x *ResourceRecordSet) GetCidrroutingconfig() *CidrRoutingConfig {
 }
 
 func (x *ResourceRecordSet) GetFailover() ResourceRecordSetFailover {
-	if x != nil {
-		return x.Failover
+	if x != nil && x.Failover != nil {
+		return *x.Failover
 	}
 	return ResourceRecordSetFailover_RESOURCE_RECORD_SET_FAILOVER_SECONDARY
 }
@@ -13198,8 +13198,8 @@ func (x *ResourceRecordSet) GetName() string {
 }
 
 func (x *ResourceRecordSet) GetRegion() ResourceRecordSetRegion {
-	if x != nil {
-		return x.Region
+	if x != nil && x.Region != nil {
+		return *x.Region
 	}
 	return ResourceRecordSetRegion_RESOURCE_RECORD_SET_REGION_AP_SOUTHEAST_3
 }
@@ -13249,7 +13249,7 @@ func (x *ResourceRecordSet) GetWeight() int64 {
 type ResourceTagSet struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Resourceid    *string                `protobuf:"bytes,526146833,opt,name=resourceid,proto3,oneof" json:"resourceid,omitempty"`
-	Resourcetype  TagResourceType        `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=route53.TagResourceType" json:"resourcetype,omitempty"`
+	Resourcetype  *TagResourceType       `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=route53.TagResourceType,oneof" json:"resourcetype,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -13293,8 +13293,8 @@ func (x *ResourceTagSet) GetResourceid() string {
 }
 
 func (x *ResourceTagSet) GetResourcetype() TagResourceType {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return TagResourceType_TAG_RESOURCE_TYPE_HEALTHCHECK
 }
@@ -14383,24 +14383,24 @@ func (x *TrafficPolicySummary) GetType() RRType {
 }
 
 type UpdateHealthCheckRequest struct {
-	state                        protoimpl.MessageState       `protogen:"open.v1"`
-	Alarmidentifier              *AlarmIdentifier             `protobuf:"bytes,536124346,opt,name=alarmidentifier,proto3" json:"alarmidentifier,omitempty"`
-	Childhealthchecks            []string                     `protobuf:"bytes,485535935,rep,name=childhealthchecks,proto3" json:"childhealthchecks,omitempty"`
-	Disabled                     *bool                        `protobuf:"varint,533633318,opt,name=disabled,proto3,oneof" json:"disabled,omitempty"`
-	Enablesni                    *bool                        `protobuf:"varint,70122887,opt,name=enablesni,proto3,oneof" json:"enablesni,omitempty"`
-	Failurethreshold             *int32                       `protobuf:"varint,176846565,opt,name=failurethreshold,proto3,oneof" json:"failurethreshold,omitempty"`
-	Fullyqualifieddomainname     *string                      `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3,oneof" json:"fullyqualifieddomainname,omitempty"`
-	Healthcheckid                string                       `protobuf:"bytes,312971637,opt,name=healthcheckid,proto3" json:"healthcheckid,omitempty"`
-	Healthcheckversion           *int64                       `protobuf:"varint,89568396,opt,name=healthcheckversion,proto3,oneof" json:"healthcheckversion,omitempty"`
-	Healththreshold              *int32                       `protobuf:"varint,215873163,opt,name=healththreshold,proto3,oneof" json:"healththreshold,omitempty"`
-	Ipaddress                    *string                      `protobuf:"bytes,169333741,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
-	Insufficientdatahealthstatus InsufficientDataHealthStatus `protobuf:"varint,493115723,opt,name=insufficientdatahealthstatus,proto3,enum=route53.InsufficientDataHealthStatus" json:"insufficientdatahealthstatus,omitempty"`
-	Inverted                     *bool                        `protobuf:"varint,55175513,opt,name=inverted,proto3,oneof" json:"inverted,omitempty"`
-	Port                         *int32                       `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Regions                      []HealthCheckRegion          `protobuf:"varint,36200107,rep,packed,name=regions,proto3,enum=route53.HealthCheckRegion" json:"regions,omitempty"`
-	Resetelements                []ResettableElementName      `protobuf:"varint,16543458,rep,packed,name=resetelements,proto3,enum=route53.ResettableElementName" json:"resetelements,omitempty"`
-	Resourcepath                 *string                      `protobuf:"bytes,117584551,opt,name=resourcepath,proto3,oneof" json:"resourcepath,omitempty"`
-	Searchstring                 *string                      `protobuf:"bytes,318687365,opt,name=searchstring,proto3,oneof" json:"searchstring,omitempty"`
+	state                        protoimpl.MessageState        `protogen:"open.v1"`
+	Alarmidentifier              *AlarmIdentifier              `protobuf:"bytes,536124346,opt,name=alarmidentifier,proto3" json:"alarmidentifier,omitempty"`
+	Childhealthchecks            []string                      `protobuf:"bytes,485535935,rep,name=childhealthchecks,proto3" json:"childhealthchecks,omitempty"`
+	Disabled                     *bool                         `protobuf:"varint,533633318,opt,name=disabled,proto3,oneof" json:"disabled,omitempty"`
+	Enablesni                    *bool                         `protobuf:"varint,70122887,opt,name=enablesni,proto3,oneof" json:"enablesni,omitempty"`
+	Failurethreshold             *int32                        `protobuf:"varint,176846565,opt,name=failurethreshold,proto3,oneof" json:"failurethreshold,omitempty"`
+	Fullyqualifieddomainname     *string                       `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3,oneof" json:"fullyqualifieddomainname,omitempty"`
+	Healthcheckid                string                        `protobuf:"bytes,312971637,opt,name=healthcheckid,proto3" json:"healthcheckid,omitempty"`
+	Healthcheckversion           *int64                        `protobuf:"varint,89568396,opt,name=healthcheckversion,proto3,oneof" json:"healthcheckversion,omitempty"`
+	Healththreshold              *int32                        `protobuf:"varint,215873163,opt,name=healththreshold,proto3,oneof" json:"healththreshold,omitempty"`
+	Ipaddress                    *string                       `protobuf:"bytes,169333741,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
+	Insufficientdatahealthstatus *InsufficientDataHealthStatus `protobuf:"varint,493115723,opt,name=insufficientdatahealthstatus,proto3,enum=route53.InsufficientDataHealthStatus,oneof" json:"insufficientdatahealthstatus,omitempty"`
+	Inverted                     *bool                         `protobuf:"varint,55175513,opt,name=inverted,proto3,oneof" json:"inverted,omitempty"`
+	Port                         *int32                        `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
+	Regions                      []HealthCheckRegion           `protobuf:"varint,36200107,rep,packed,name=regions,proto3,enum=route53.HealthCheckRegion" json:"regions,omitempty"`
+	Resetelements                []ResettableElementName       `protobuf:"varint,16543458,rep,packed,name=resetelements,proto3,enum=route53.ResettableElementName" json:"resetelements,omitempty"`
+	Resourcepath                 *string                       `protobuf:"bytes,117584551,opt,name=resourcepath,proto3,oneof" json:"resourcepath,omitempty"`
+	Searchstring                 *string                       `protobuf:"bytes,318687365,opt,name=searchstring,proto3,oneof" json:"searchstring,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -14506,8 +14506,8 @@ func (x *UpdateHealthCheckRequest) GetIpaddress() string {
 }
 
 func (x *UpdateHealthCheckRequest) GetInsufficientdatahealthstatus() InsufficientDataHealthStatus {
-	if x != nil {
-		return x.Insufficientdatahealthstatus
+	if x != nil && x.Insufficientdatahealthstatus != nil {
+		return *x.Insufficientdatahealthstatus
 	}
 	return InsufficientDataHealthStatus_INSUFFICIENT_DATA_HEALTH_STATUS_HEALTHY
 }
@@ -15001,7 +15001,7 @@ func (x *UpdateTrafficPolicyInstanceResponse) GetTrafficpolicyinstance() *Traffi
 type VPC struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vpcid         *string                `protobuf:"bytes,325135798,opt,name=vpcid,proto3,oneof" json:"vpcid,omitempty"`
-	Vpcregion     VPCRegion              `protobuf:"varint,474180765,opt,name=vpcregion,proto3,enum=route53.VPCRegion" json:"vpcregion,omitempty"`
+	Vpcregion     *VPCRegion             `protobuf:"varint,474180765,opt,name=vpcregion,proto3,enum=route53.VPCRegion,oneof" json:"vpcregion,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15044,8 +15044,8 @@ func (x *VPC) GetVpcid() string {
 }
 
 func (x *VPC) GetVpcregion() VPCRegion {
-	if x != nil {
-		return x.Vpcregion
+	if x != nil && x.Vpcregion != nil {
+		return *x.Vpcregion
 	}
 	return VPCRegion_V_P_C_REGION_AP_SOUTHEAST_3
 }
@@ -15604,7 +15604,7 @@ const file_route53_proto_rawDesc = "" +
 	"\x18HealthCheckAlreadyExists\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x99\t\n" +
+	"\b_message\"\xbf\t\n" +
 	"\x11HealthCheckConfig\x12F\n" +
 	"\x0falarmidentifier\x18\xba\xb7\xd2\xff\x01 \x01(\v2\x18.route53.AlarmIdentifierR\x0falarmidentifier\x120\n" +
 	"\x11childhealthchecks\x18\xbf\xe1\xc2\xe7\x01 \x03(\tR\x11childhealthchecks\x12#\n" +
@@ -15613,17 +15613,17 @@ const file_route53_proto_rawDesc = "" +
 	"\x10failurethreshold\x18\xe5\xed\xa9T \x01(\x05H\x02R\x10failurethreshold\x88\x01\x01\x12C\n" +
 	"\x18fullyqualifieddomainname\x18\xa5\xe1\x82\xdb\x01 \x01(\tH\x03R\x18fullyqualifieddomainname\x88\x01\x01\x120\n" +
 	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05H\x04R\x0fhealththreshold\x88\x01\x01\x12$\n" +
-	"\tipaddress\x18\xed\xa7\xdfP \x01(\tH\x05R\tipaddress\x88\x01\x01\x12m\n" +
-	"\x1cinsufficientdatahealthstatus\x18˲\x91\xeb\x01 \x01(\x0e2%.route53.InsufficientDataHealthStatusR\x1cinsufficientdatahealthstatus\x12\"\n" +
-	"\binverted\x18\xd9ҧ\x1a \x01(\bH\x06R\binverted\x88\x01\x01\x12.\n" +
-	"\x0emeasurelatency\x18д\xc6) \x01(\bH\aR\x0emeasurelatency\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\bR\x04port\x88\x01\x01\x127\n" +
+	"\tipaddress\x18\xed\xa7\xdfP \x01(\tH\x05R\tipaddress\x88\x01\x01\x12r\n" +
+	"\x1cinsufficientdatahealthstatus\x18˲\x91\xeb\x01 \x01(\x0e2%.route53.InsufficientDataHealthStatusH\x06R\x1cinsufficientdatahealthstatus\x88\x01\x01\x12\"\n" +
+	"\binverted\x18\xd9ҧ\x1a \x01(\bH\aR\binverted\x88\x01\x01\x12.\n" +
+	"\x0emeasurelatency\x18д\xc6) \x01(\bH\bR\x0emeasurelatency\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\tR\x04port\x88\x01\x01\x127\n" +
 	"\aregions\x18\xab\xbd\xa1\x11 \x03(\x0e2\x1a.route53.HealthCheckRegionR\aregions\x121\n" +
-	"\x0frequestinterval\x18ر\x9b\xa7\x01 \x01(\x05H\tR\x0frequestinterval\x88\x01\x01\x12*\n" +
-	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tH\n" +
-	"R\fresourcepath\x88\x01\x01\x124\n" +
-	"\x11routingcontrolarn\x18Η\xd3b \x01(\tH\vR\x11routingcontrolarn\x88\x01\x01\x12+\n" +
-	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tH\fR\fsearchstring\x88\x01\x01\x120\n" +
+	"\x0frequestinterval\x18ر\x9b\xa7\x01 \x01(\x05H\n" +
+	"R\x0frequestinterval\x88\x01\x01\x12*\n" +
+	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tH\vR\fresourcepath\x88\x01\x01\x124\n" +
+	"\x11routingcontrolarn\x18Η\xd3b \x01(\tH\fR\x11routingcontrolarn\x88\x01\x01\x12+\n" +
+	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tH\rR\fsearchstring\x88\x01\x01\x120\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x18.route53.HealthCheckTypeR\x04typeB\v\n" +
 	"\t_disabledB\f\n" +
 	"\n" +
@@ -15632,7 +15632,8 @@ const file_route53_proto_rawDesc = "" +
 	"\x19_fullyqualifieddomainnameB\x12\n" +
 	"\x10_healththresholdB\f\n" +
 	"\n" +
-	"_ipaddressB\v\n" +
+	"_ipaddressB\x1f\n" +
+	"\x1d_insufficientdatahealthstatusB\v\n" +
 	"\t_invertedB\x11\n" +
 	"\x0f_measurelatencyB\a\n" +
 	"\x05_portB\x12\n" +
@@ -15643,13 +15644,14 @@ const file_route53_proto_rawDesc = "" +
 	"\x10HealthCheckInUse\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xc1\x01\n" +
+	"\b_message\"\xd1\x01\n" +
 	"\x16HealthCheckObservation\x12$\n" +
-	"\tipaddress\x18\xed\xa7\xdfP \x01(\tH\x00R\tipaddress\x88\x01\x01\x125\n" +
-	"\x06region\x18\x9e\xf1\xb9I \x01(\x0e2\x1a.route53.HealthCheckRegionR\x06region\x12<\n" +
+	"\tipaddress\x18\xed\xa7\xdfP \x01(\tH\x00R\tipaddress\x88\x01\x01\x12:\n" +
+	"\x06region\x18\x9e\xf1\xb9I \x01(\x0e2\x1a.route53.HealthCheckRegionH\x01R\x06region\x88\x01\x01\x12<\n" +
 	"\fstatusreport\x18\xb2\xbc\xaa\r \x01(\v2\x15.route53.StatusReportR\fstatusreportB\f\n" +
 	"\n" +
-	"_ipaddress\"J\n" +
+	"_ipaddressB\t\n" +
+	"\a_region\"J\n" +
 	"\x1aHealthCheckVersionMismatch\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -15677,10 +15679,11 @@ const file_route53_proto_rawDesc = "" +
 	"\f_privatezone\"m\n" +
 	"\x18HostedZoneFailureReasons\x129\n" +
 	"\x13acceleratedrecovery\x18\xb4\xea\xe5\xa9\x01 \x01(\tH\x00R\x13acceleratedrecovery\x88\x01\x01B\x16\n" +
-	"\x14_acceleratedrecovery\"\xc9\x01\n" +
-	"\x12HostedZoneFeatures\x12d\n" +
-	"\x19acceleratedrecoverystatus\x18\xa6\xb7\x81\xf2\x01 \x01(\x0e2\".route53.AcceleratedRecoveryStatusR\x19acceleratedrecoverystatus\x12M\n" +
-	"\x0efailurereasons\x18\xebȡ\xd4\x01 \x01(\v2!.route53.HostedZoneFailureReasonsR\x0efailurereasons\"a\n" +
+	"\x14_acceleratedrecovery\"\xec\x01\n" +
+	"\x12HostedZoneFeatures\x12i\n" +
+	"\x19acceleratedrecoverystatus\x18\xa6\xb7\x81\xf2\x01 \x01(\x0e2\".route53.AcceleratedRecoveryStatusH\x00R\x19acceleratedrecoverystatus\x88\x01\x01\x12M\n" +
+	"\x0efailurereasons\x18\xebȡ\xd4\x01 \x01(\v2!.route53.HostedZoneFailureReasonsR\x0efailurereasonsB\x1c\n" +
+	"\x1a_acceleratedrecoverystatus\"a\n" +
 	"\x0fHostedZoneLimit\x124\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1c.route53.HostedZoneLimitTypeR\x04type\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x03R\x05value\"B\n" +
@@ -15941,13 +15944,14 @@ const file_route53_proto_rawDesc = "" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\x81\x02\n" +
+	"_nexttoken\"\x99\x02\n" +
 	"\x16ListHostedZonesRequest\x121\n" +
-	"\x0fdelegationsetid\x18\xa1\xeeŒ\x01 \x01(\tH\x00R\x0fdelegationsetid\x88\x01\x01\x12C\n" +
-	"\x0ehostedzonetype\x18\xe9\xef\x96\xc3\x01 \x01(\x0e2\x17.route53.HostedZoneTypeR\x0ehostedzonetype\x12\x1e\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x02R\bmaxitems\x88\x01\x01B\x12\n" +
-	"\x10_delegationsetidB\t\n" +
+	"\x0fdelegationsetid\x18\xa1\xeeŒ\x01 \x01(\tH\x00R\x0fdelegationsetid\x88\x01\x01\x12H\n" +
+	"\x0ehostedzonetype\x18\xe9\xef\x96\xc3\x01 \x01(\x0e2\x17.route53.HostedZoneTypeH\x01R\x0ehostedzonetype\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x02R\x06marker\x88\x01\x01\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x03R\bmaxitems\x88\x01\x01B\x12\n" +
+	"\x10_delegationsetidB\x11\n" +
+	"\x0f_hostedzonetypeB\t\n" +
 	"\a_markerB\v\n" +
 	"\t_maxitems\"\x80\x02\n" +
 	"\x17ListHostedZonesResponse\x128\n" +
@@ -15974,26 +15978,28 @@ const file_route53_proto_rawDesc = "" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12P\n" +
 	"\x13queryloggingconfigs\x18\xec\x87\xe8) \x03(\v2\x1b.route53.QueryLoggingConfigR\x13queryloggingconfigsB\f\n" +
 	"\n" +
-	"_nexttoken\"\xd7\x02\n" +
+	"_nexttoken\"\xf0\x02\n" +
 	"\x1dListResourceRecordSetsRequest\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12#\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x00R\bmaxitems\x88\x01\x01\x12=\n" +
 	"\x15startrecordidentifier\x18\xa6\xf4\x9e\xf7\x01 \x01(\tH\x01R\x15startrecordidentifier\x88\x01\x01\x120\n" +
-	"\x0fstartrecordname\x18\xf6\xac\xa4E \x01(\tH\x02R\x0fstartrecordname\x88\x01\x01\x12=\n" +
-	"\x0fstartrecordtype\x18\xa7\xfc\xf1\xc2\x01 \x01(\x0e2\x0f.route53.RRTypeR\x0fstartrecordtypeB\v\n" +
+	"\x0fstartrecordname\x18\xf6\xac\xa4E \x01(\tH\x02R\x0fstartrecordname\x88\x01\x01\x12B\n" +
+	"\x0fstartrecordtype\x18\xa7\xfc\xf1\xc2\x01 \x01(\x0e2\x0f.route53.RRTypeH\x03R\x0fstartrecordtype\x88\x01\x01B\v\n" +
 	"\t_maxitemsB\x18\n" +
 	"\x16_startrecordidentifierB\x12\n" +
-	"\x10_startrecordname\"\x9e\x03\n" +
+	"\x10_startrecordnameB\x12\n" +
+	"\x10_startrecordtype\"\xb6\x03\n" +
 	"\x1eListResourceRecordSetsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12;\n" +
 	"\x14nextrecordidentifier\x18\x97\x93\x9b\xca\x01 \x01(\tH\x01R\x14nextrecordidentifier\x88\x01\x01\x12.\n" +
-	"\x0enextrecordname\x18\x9f\xb3\xcb> \x01(\tH\x02R\x0enextrecordname\x88\x01\x01\x12:\n" +
-	"\x0enextrecordtype\x18\xf6\xa9\xd2. \x01(\x0e2\x0f.route53.RRTypeR\x0enextrecordtype\x12M\n" +
+	"\x0enextrecordname\x18\x9f\xb3\xcb> \x01(\tH\x02R\x0enextrecordname\x88\x01\x01\x12?\n" +
+	"\x0enextrecordtype\x18\xf6\xa9\xd2. \x01(\x0e2\x0f.route53.RRTypeH\x03R\x0enextrecordtype\x88\x01\x01\x12M\n" +
 	"\x12resourcerecordsets\x18\xc6\xfd\x8c% \x03(\v2\x1a.route53.ResourceRecordSetR\x12resourcerecordsetsB\x0e\n" +
 	"\f_istruncatedB\x17\n" +
 	"\x15_nextrecordidentifierB\x11\n" +
-	"\x0f_nextrecordname\"\x80\x01\n" +
+	"\x0f_nextrecordnameB\x11\n" +
+	"\x0f_nextrecordtype\"\x80\x01\n" +
 	"!ListReusableDelegationSetsRequest\x12\x1e\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x01R\bmaxitems\x88\x01\x01B\t\n" +
@@ -16031,60 +16037,66 @@ const file_route53_proto_rawDesc = "" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x128\n" +
 	"\x15trafficpolicyidmarker\x18\x88\xf2\xc6\xcb\x01 \x01(\tR\x15trafficpolicyidmarker\x12X\n" +
 	"\x16trafficpolicysummaries\x18\xb5\xfb\xd6b \x03(\v2\x1d.route53.TrafficPolicySummaryR\x16trafficpolicysummariesB\x0e\n" +
-	"\f_istruncated\"\xdd\x02\n" +
+	"\f_istruncated\"\x86\x03\n" +
 	"-ListTrafficPolicyInstancesByHostedZoneRequest\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12#\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x00R\bmaxitems\x88\x01\x01\x12P\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x01R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
-	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarkerB\v\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x01R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12a\n" +
+	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeH\x02R\x1ftrafficpolicyinstancetypemarker\x88\x01\x01B\v\n" +
 	"\t_maxitemsB\"\n" +
-	" _trafficpolicyinstancenamemarker\"\xb9\x03\n" +
+	" _trafficpolicyinstancenamemarkerB\"\n" +
+	" _trafficpolicyinstancetypemarker\"\xe2\x03\n" +
 	".ListTrafficPolicyInstancesByHostedZoneResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12P\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x01R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
-	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\x12Y\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x01R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12a\n" +
+	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeH\x02R\x1ftrafficpolicyinstancetypemarker\x88\x01\x01\x12Y\n" +
 	"\x16trafficpolicyinstances\x18\xa1\xe2\x8d_ \x03(\v2\x1e.route53.TrafficPolicyInstanceR\x16trafficpolicyinstancesB\x0e\n" +
 	"\f_istruncatedB\"\n" +
-	" _trafficpolicyinstancenamemarker\"\xe6\x03\n" +
+	" _trafficpolicyinstancenamemarkerB\"\n" +
+	" _trafficpolicyinstancetypemarker\"\x8f\x04\n" +
 	")ListTrafficPolicyInstancesByPolicyRequest\x127\n" +
 	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tH\x00R\x12hostedzoneidmarker\x88\x01\x01\x12#\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x01R\bmaxitems\x88\x01\x01\x12+\n" +
 	"\x0ftrafficpolicyid\x18\xd6\xe1\x97\x13 \x01(\tR\x0ftrafficpolicyid\x12P\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
-	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\x126\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12a\n" +
+	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeH\x03R\x1ftrafficpolicyinstancetypemarker\x88\x01\x01\x126\n" +
 	"\x14trafficpolicyversion\x18\xd5и\xe4\x01 \x01(\x05R\x14trafficpolicyversionB\x15\n" +
 	"\x13_hostedzoneidmarkerB\v\n" +
 	"\t_maxitemsB\"\n" +
-	" _trafficpolicyinstancenamemarker\"\x85\x04\n" +
+	" _trafficpolicyinstancenamemarkerB\"\n" +
+	" _trafficpolicyinstancetypemarker\"\xae\x04\n" +
 	"*ListTrafficPolicyInstancesByPolicyResponse\x127\n" +
 	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tH\x00R\x12hostedzoneidmarker\x88\x01\x01\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12\x1e\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12P\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
-	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\x12Y\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12a\n" +
+	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeH\x03R\x1ftrafficpolicyinstancetypemarker\x88\x01\x01\x12Y\n" +
 	"\x16trafficpolicyinstances\x18\xa1\xe2\x8d_ \x03(\v2\x1e.route53.TrafficPolicyInstanceR\x16trafficpolicyinstancesB\x15\n" +
 	"\x13_hostedzoneidmarkerB\x0e\n" +
 	"\f_istruncatedB\"\n" +
-	" _trafficpolicyinstancenamemarker\"\xf9\x02\n" +
+	" _trafficpolicyinstancenamemarkerB\"\n" +
+	" _trafficpolicyinstancetypemarker\"\xa2\x03\n" +
 	"!ListTrafficPolicyInstancesRequest\x127\n" +
 	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tH\x00R\x12hostedzoneidmarker\x88\x01\x01\x12#\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x01R\bmaxitems\x88\x01\x01\x12P\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
-	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarkerB\x15\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12a\n" +
+	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeH\x03R\x1ftrafficpolicyinstancetypemarker\x88\x01\x01B\x15\n" +
 	"\x13_hostedzoneidmarkerB\v\n" +
 	"\t_maxitemsB\"\n" +
-	" _trafficpolicyinstancenamemarker\"\xfd\x03\n" +
+	" _trafficpolicyinstancenamemarkerB\"\n" +
+	" _trafficpolicyinstancetypemarker\"\xa6\x04\n" +
 	"\"ListTrafficPolicyInstancesResponse\x127\n" +
 	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tH\x00R\x12hostedzoneidmarker\x88\x01\x01\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12\x1e\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12P\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
-	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\x12Y\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12a\n" +
+	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeH\x03R\x1ftrafficpolicyinstancetypemarker\x88\x01\x01\x12Y\n" +
 	"\x16trafficpolicyinstances\x18\xa1\xe2\x8d_ \x03(\v2\x1e.route53.TrafficPolicyInstanceR\x16trafficpolicyinstancesB\x15\n" +
 	"\x13_hostedzoneidmarkerB\x0e\n" +
 	"\f_istruncatedB\"\n" +
-	" _trafficpolicyinstancenamemarker\"\xcf\x01\n" +
+	" _trafficpolicyinstancenamemarkerB\"\n" +
+	" _trafficpolicyinstancetypemarker\"\xcf\x01\n" +
 	" ListTrafficPolicyVersionsRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12#\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x00R\bmaxitems\x88\x01\x01\x12F\n" +
@@ -16184,36 +16196,39 @@ const file_route53_proto_rawDesc = "" +
 	"\n" +
 	"\b_message\"*\n" +
 	"\x0eResourceRecord\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xad\a\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xcf\a\n" +
 	"\x11ResourceRecordSet\x12:\n" +
 	"\valiastarget\x18\x9b\xb9\xa6\x97\x01 \x01(\v2\x14.route53.AliasTargetR\valiastarget\x12L\n" +
-	"\x11cidrroutingconfig\x18\xbe¬\xaa\x01 \x01(\v2\x1a.route53.CidrRoutingConfigR\x11cidrroutingconfig\x12A\n" +
-	"\bfailover\x18\xe8\xa8\xe3\f \x01(\x0e2\".route53.ResourceRecordSetFailoverR\bfailover\x129\n" +
+	"\x11cidrroutingconfig\x18\xbe¬\xaa\x01 \x01(\v2\x1a.route53.CidrRoutingConfigR\x11cidrroutingconfig\x12F\n" +
+	"\bfailover\x18\xe8\xa8\xe3\f \x01(\x0e2\".route53.ResourceRecordSetFailoverH\x00R\bfailover\x88\x01\x01\x129\n" +
 	"\vgeolocation\x18\xe2\xe5\xe3\x7f \x01(\v2\x14.route53.GeoLocationR\vgeolocation\x12T\n" +
 	"\x14geoproximitylocation\x18\xa9\xe9\xfc, \x01(\v2\x1d.route53.GeoProximityLocationR\x14geoproximitylocation\x12-\n" +
-	"\rhealthcheckid\x18\xf5\xa2\x9e\x95\x01 \x01(\tH\x00R\rhealthcheckid\x88\x01\x01\x123\n" +
-	"\x10multivalueanswer\x18\x8e\xac\x9d\xca\x01 \x01(\bH\x01R\x10multivalueanswer\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12;\n" +
-	"\x06region\x18\x9e\xf1\xb9I \x01(\x0e2 .route53.ResourceRecordSetRegionR\x06region\x12E\n" +
+	"\rhealthcheckid\x18\xf5\xa2\x9e\x95\x01 \x01(\tH\x01R\rhealthcheckid\x88\x01\x01\x123\n" +
+	"\x10multivalueanswer\x18\x8e\xac\x9d\xca\x01 \x01(\bH\x02R\x10multivalueanswer\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12@\n" +
+	"\x06region\x18\x9e\xf1\xb9I \x01(\x0e2 .route53.ResourceRecordSetRegionH\x03R\x06region\x88\x01\x01\x12E\n" +
 	"\x0fresourcerecords\x18\xde\xe8\xd6\xf7\x01 \x03(\v2\x17.route53.ResourceRecordR\x0fresourcerecords\x12,\n" +
-	"\rsetidentifier\x18ك\x85` \x01(\tH\x02R\rsetidentifier\x88\x01\x01\x12\x19\n" +
-	"\x03ttl\x18\xfcڟ\xfb\x01 \x01(\x03H\x03R\x03ttl\x88\x01\x01\x12@\n" +
-	"\x17trafficpolicyinstanceid\x18\xff\xc5\xf1w \x01(\tH\x04R\x17trafficpolicyinstanceid\x88\x01\x01\x12'\n" +
+	"\rsetidentifier\x18ك\x85` \x01(\tH\x04R\rsetidentifier\x88\x01\x01\x12\x19\n" +
+	"\x03ttl\x18\xfcڟ\xfb\x01 \x01(\x03H\x05R\x03ttl\x88\x01\x01\x12@\n" +
+	"\x17trafficpolicyinstanceid\x18\xff\xc5\xf1w \x01(\tH\x06R\x17trafficpolicyinstanceid\x88\x01\x01\x12'\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\x12\x1f\n" +
-	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03H\x05R\x06weight\x88\x01\x01B\x10\n" +
+	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03H\aR\x06weight\x88\x01\x01B\v\n" +
+	"\t_failoverB\x10\n" +
 	"\x0e_healthcheckidB\x13\n" +
-	"\x11_multivalueanswerB\x10\n" +
+	"\x11_multivalueanswerB\t\n" +
+	"\a_regionB\x10\n" +
 	"\x0e_setidentifierB\x06\n" +
 	"\x04_ttlB\x1a\n" +
 	"\x18_trafficpolicyinstanceidB\t\n" +
-	"\a_weight\"\xb0\x01\n" +
+	"\a_weight\"\xc6\x01\n" +
 	"\x0eResourceTagSet\x12'\n" +
 	"\n" +
 	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tH\x00R\n" +
-	"resourceid\x88\x01\x01\x12@\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x18.route53.TagResourceTypeR\fresourcetype\x12$\n" +
+	"resourceid\x88\x01\x01\x12E\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x18.route53.TagResourceTypeH\x01R\fresourcetype\x88\x01\x01\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.route53.TagR\x04tagsB\r\n" +
-	"\v_resourceid\"w\n" +
+	"\v_resourceidB\x0f\n" +
+	"\r_resourcetype\"w\n" +
 	"\x1aReusableDelegationSetLimit\x12?\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2'.route53.ReusableDelegationSetLimitTypeR\x04type\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x03R\x05value\"s\n" +
@@ -16326,7 +16341,7 @@ const file_route53_proto_rawDesc = "" +
 	"\rlatestversion\x18\xcb\xd6\xcb\xca\x01 \x01(\x05R\rlatestversion\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x121\n" +
 	"\x12trafficpolicycount\x18象K \x01(\x05R\x12trafficpolicycount\x12'\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\"\xda\b\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\"\x80\t\n" +
 	"\x18UpdateHealthCheckRequest\x12F\n" +
 	"\x0falarmidentifier\x18\xba\xb7\xd2\xff\x01 \x01(\v2\x18.route53.AlarmIdentifierR\x0falarmidentifier\x120\n" +
 	"\x11childhealthchecks\x18\xbf\xe1\xc2\xe7\x01 \x03(\tR\x11childhealthchecks\x12#\n" +
@@ -16337,15 +16352,15 @@ const file_route53_proto_rawDesc = "" +
 	"\rhealthcheckid\x18\xf5\xa2\x9e\x95\x01 \x01(\tR\rhealthcheckid\x126\n" +
 	"\x12healthcheckversion\x18\x8c\xe9\xda* \x01(\x03H\x04R\x12healthcheckversion\x88\x01\x01\x120\n" +
 	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05H\x05R\x0fhealththreshold\x88\x01\x01\x12$\n" +
-	"\tipaddress\x18\xed\xa7\xdfP \x01(\tH\x06R\tipaddress\x88\x01\x01\x12m\n" +
-	"\x1cinsufficientdatahealthstatus\x18˲\x91\xeb\x01 \x01(\x0e2%.route53.InsufficientDataHealthStatusR\x1cinsufficientdatahealthstatus\x12\"\n" +
-	"\binverted\x18\xd9ҧ\x1a \x01(\bH\aR\binverted\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\bR\x04port\x88\x01\x01\x127\n" +
+	"\tipaddress\x18\xed\xa7\xdfP \x01(\tH\x06R\tipaddress\x88\x01\x01\x12r\n" +
+	"\x1cinsufficientdatahealthstatus\x18˲\x91\xeb\x01 \x01(\x0e2%.route53.InsufficientDataHealthStatusH\aR\x1cinsufficientdatahealthstatus\x88\x01\x01\x12\"\n" +
+	"\binverted\x18\xd9ҧ\x1a \x01(\bH\bR\binverted\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\tR\x04port\x88\x01\x01\x127\n" +
 	"\aregions\x18\xab\xbd\xa1\x11 \x03(\x0e2\x1a.route53.HealthCheckRegionR\aregions\x12G\n" +
 	"\rresetelements\x18\xe2\xdd\xf1\a \x03(\x0e2\x1e.route53.ResettableElementNameR\rresetelements\x12*\n" +
-	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tH\tR\fresourcepath\x88\x01\x01\x12+\n" +
-	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tH\n" +
-	"R\fsearchstring\x88\x01\x01B\v\n" +
+	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tH\n" +
+	"R\fresourcepath\x88\x01\x01\x12+\n" +
+	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tH\vR\fsearchstring\x88\x01\x01B\v\n" +
 	"\t_disabledB\f\n" +
 	"\n" +
 	"_enablesniB\x13\n" +
@@ -16354,7 +16369,8 @@ const file_route53_proto_rawDesc = "" +
 	"\x13_healthcheckversionB\x12\n" +
 	"\x10_healththresholdB\f\n" +
 	"\n" +
-	"_ipaddressB\v\n" +
+	"_ipaddressB\x1f\n" +
+	"\x1d_insufficientdatahealthstatusB\v\n" +
 	"\t_invertedB\a\n" +
 	"\x05_portB\x0f\n" +
 	"\r_resourcepathB\x0f\n" +
@@ -16387,11 +16403,13 @@ const file_route53_proto_rawDesc = "" +
 	"\x0ftrafficpolicyid\x18\xd6\xe1\x97\x13 \x01(\tR\x0ftrafficpolicyid\x126\n" +
 	"\x14trafficpolicyversion\x18\xd5и\xe4\x01 \x01(\x05R\x14trafficpolicyversion\"~\n" +
 	"#UpdateTrafficPolicyInstanceResponse\x12W\n" +
-	"\x15trafficpolicyinstance\x18\x94\xfc\x87b \x01(\v2\x1e.route53.TrafficPolicyInstanceR\x15trafficpolicyinstance\"d\n" +
+	"\x15trafficpolicyinstance\x18\x94\xfc\x87b \x01(\v2\x1e.route53.TrafficPolicyInstanceR\x15trafficpolicyinstance\"w\n" +
 	"\x03VPC\x12\x1d\n" +
-	"\x05vpcid\x18\xb6ۄ\x9b\x01 \x01(\tH\x00R\x05vpcid\x88\x01\x01\x124\n" +
-	"\tvpcregion\x18\x9dٍ\xe2\x01 \x01(\x0e2\x12.route53.VPCRegionR\tvpcregionB\b\n" +
-	"\x06_vpcid\"S\n" +
+	"\x05vpcid\x18\xb6ۄ\x9b\x01 \x01(\tH\x00R\x05vpcid\x88\x01\x01\x129\n" +
+	"\tvpcregion\x18\x9dٍ\xe2\x01 \x01(\x0e2\x12.route53.VPCRegionH\x01R\tvpcregion\x88\x01\x01B\b\n" +
+	"\x06_vpcidB\f\n" +
+	"\n" +
+	"_vpcregion\"S\n" +
 	"#VPCAssociationAuthorizationNotFound\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -17331,6 +17349,7 @@ func file_route53_proto_init() {
 	file_route53_proto_msgTypes[131].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[132].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[133].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[134].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[136].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[137].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[138].OneofWrappers = []any{}

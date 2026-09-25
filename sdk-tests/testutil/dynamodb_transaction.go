@@ -455,10 +455,17 @@ func (r *TestRunner) dynamoDBTransactionEdgeCaseTests(ctx context.Context, clien
 			},
 		})
 		if err == nil {
-			return fmt.Errorf("expected TransactionConflictException for mixed read/write")
+			return fmt.Errorf("expected ValidationException for mixed read/write")
 		}
-		if !strings.Contains(err.Error(), "TransactionConflictException") {
-			return fmt.Errorf("expected TransactionConflictException, got: %T: %v", err, err)
+		// The mix is a request-shape violation of the model's rule ("The
+		// entire transaction must consist of either read statements or
+		// write statements, you cannot mix both in one transaction"), not
+		// a conflict with another transaction on an item.
+		if !strings.Contains(err.Error(), "ValidationException") {
+			return fmt.Errorf("expected ValidationException, got: %T: %v", err, err)
+		}
+		if !strings.Contains(err.Error(), "cannot mix both in one transaction") {
+			return fmt.Errorf("expected the model's rule sentence, got: %T: %v", err, err)
 		}
 		return nil
 	}))

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
@@ -64,10 +65,10 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 		summary := &pb.CertificateSummary{
 			Certificatearn:                       proto.String(s.CertificateArn),
 			Domainname:                           proto.String(s.DomainName),
-			Status:                               certificateStatusToProto(s.Status),
-			Type:                                 certificateTypeToProto(s.Type),
-			Renewaleligibility:                   renewalEligibilityToProto(s.RenewalEligibility),
-			Keyalgorithm:                         keyAlgorithmToProto(s.KeyAlgorithm),
+			Status:                               pbutil.Enum(certificateStatusToProto(s.Status)),
+			Type:                                 pbutil.Enum(certificateTypeToProto(s.Type)),
+			Renewaleligibility:                   pbutil.Enum(renewalEligibilityToProto(s.RenewalEligibility)),
+			Keyalgorithm:                         pbutil.Enum(keyAlgorithmToProto(s.KeyAlgorithm)),
 			Inuse:                                proto.Bool(s.InUse),
 			Exported:                             proto.Bool(s.Exported),
 			Hasadditionalsubjectalternativenames: proto.Bool(s.HasAdditionalSubjectAlternativeNames),
@@ -120,17 +121,17 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 	}
 
 	// KeyAlgorithm (proto enum → Smithy string).
-	if req.Msg.Keyalgorithm != 0 {
-		input.KeyAlgorithm = keyAlgorithmFromProto(req.Msg.Keyalgorithm)
+	if req.Msg.GetKeyalgorithm() != 0 {
+		input.KeyAlgorithm = keyAlgorithmFromProto(req.Msg.GetKeyalgorithm())
 	}
 
 	// ValidationMethod (proto enum → Smithy string).
-	if req.Msg.Validationmethod == pb.ValidationMethod_VALIDATION_METHOD_EMAIL {
+	if req.Msg.GetValidationmethod() == pb.ValidationMethod_VALIDATION_METHOD_EMAIL {
 		input.ValidationMethod = "EMAIL"
 	}
 
 	// ManagedBy (proto enum → Smithy string).
-	if req.Msg.Managedby == pb.CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT {
+	if req.Msg.GetManagedby() == pb.CertificateManagedBy_CERTIFICATE_MANAGED_BY_CLOUDFRONT {
 		input.ManagedBy = "CLOUDFRONT"
 	}
 
@@ -157,11 +158,11 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 	// Options (proto → CertificateOptionsInput).
 	if req.Msg.Options != nil {
 		ctlp := "DISABLED"
-		if req.Msg.Options.Certificatetransparencyloggingpreference == pb.CertificateTransparencyLoggingPreference_CERTIFICATE_TRANSPARENCY_LOGGING_PREFERENCE_ENABLED {
+		if req.Msg.Options.GetCertificatetransparencyloggingpreference() == pb.CertificateTransparencyLoggingPreference_CERTIFICATE_TRANSPARENCY_LOGGING_PREFERENCE_ENABLED {
 			ctlp = "ENABLED"
 		}
 		exportOpt := "DISABLED"
-		if req.Msg.Options.Export == pb.CertificateExport_CERTIFICATE_EXPORT_ENABLED {
+		if req.Msg.Options.GetExport() == pb.CertificateExport_CERTIFICATE_EXPORT_ENABLED {
 			exportOpt = "ENABLED"
 		}
 		input.Options = &CertificateOptionsInput{

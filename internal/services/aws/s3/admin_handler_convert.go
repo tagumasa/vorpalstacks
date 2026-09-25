@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"google.golang.org/protobuf/proto"
 
@@ -185,7 +186,7 @@ func pbToDeleteObjectsInput(msg *pb.DeleteObjectsRequest) AdminDeleteObjectsInpu
 
 func pbToCopyObjectInput(msg *pb.CopyObjectRequest) AdminCopyObjectInput {
 	storageClass := ""
-	if msg.Storageclass != 0 {
+	if msg.GetStorageclass() != 0 {
 		storageClass = strings.TrimPrefix(msg.Storageclass.String(), "STORAGE_CLASS_")
 	}
 	return AdminCopyObjectInput{
@@ -259,7 +260,7 @@ func listObjectsResultToPb(result *AdminListObjectsResult, in AdminListObjectsIn
 			Lastmodified: proto.String(obj.LastModified.Format(timeutils.ISO8601UTCFormat)),
 			Etag:         proto.String(formatETag(obj.ETag)),
 			Size:         proto.Int64(obj.Size),
-			Storageclass: objectStorageClassToPb(obj.StorageClass),
+			Storageclass: pbutil.Enum(objectStorageClassToPb(obj.StorageClass)),
 		})
 	}
 
@@ -299,14 +300,14 @@ func headObjectResultToPb(result *AdminHeadObjectResult) *pb.HeadObjectOutput {
 		Cachecontrol:       proto.String(mf.cacheControl),
 		Etag:               proto.String(mf.etag),
 		Lastmodified:       proto.String(mf.lastModified),
-		Storageclass:       storageClassToPb(mf.storageClass),
+		Storageclass:       pbutil.Enum(storageClassToPb(mf.storageClass)),
 		Versionid:          proto.String(mf.versionID),
 		Acceptranges:       proto.String("bytes"),
 	}
 	if mf.metadata != nil {
 		out.Metadata = mf.metadata
 	}
-	out.Serversideencryption = mf.sseType
+	out.Serversideencryption = pbutil.Enum(mf.sseType)
 	out.Ssekmskeyid = proto.String(mf.kmsKeyID)
 	return out
 }
@@ -331,7 +332,7 @@ func getObjectResultToPb(result *AdminGetObjectResult) *pb.GetObjectOutput {
 	if mf.metadata != nil {
 		out.Metadata = mf.metadata
 	}
-	out.Serversideencryption = mf.sseType
+	out.Serversideencryption = pbutil.Enum(mf.sseType)
 	out.Ssekmskeyid = proto.String(mf.kmsKeyID)
 	return out
 }

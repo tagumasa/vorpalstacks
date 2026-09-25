@@ -156,6 +156,21 @@ func TestPartiQLOrderByUsesTypedOrdering(t *testing.T) {
 	assert.Equal(t, "1", *mixedSorted[1].Attributes["a"].N)
 }
 
+// TestPartiQLSelectNamesKeepRawSegmentNames pins the SELECT plane's name
+// rendering: an identifier the printer would escape — a keyword or a
+// non-ASCII name — keeps its raw name, so the order key finds the attribute
+// it names and a projection names the same path every clause face
+// addresses, not a printer-escaped variant of it.
+func TestPartiQLSelectNamesKeepRawSegmentNames(t *testing.T) {
+	_, _, orderBy, _ := parseSelectStatementWithOrderBy(`SELECT * FROM t ORDER BY "add" ASC`)
+	require.NotNil(t, orderBy)
+	assert.Equal(t, "add", orderBy.column)
+
+	_, _, _, selectCols := parseSelectStatementWithOrderBy(`SELECT "m"."add" FROM t`)
+	require.Len(t, selectCols, 1)
+	assert.Equal(t, "m.add", selectCols[0])
+}
+
 // TestFilterExpressionOrderingIsTypeStrict pins the unified filter-engine
 // ordering: cross-type scan/query filter comparisons never match, instead
 // of comparing flattened strings.
@@ -166,6 +181,4 @@ func TestFilterExpressionOrderingIsTypeStrict(t *testing.T) {
 	assert.False(t, compareAttributeValues(str, "<=", num))
 	assert.False(t, compareAttributeValues(str, "<", num))
 	assert.False(t, compareAttributeValues(num, ">=", str))
-	assert.True(t, compareBetween(num, &dbstore.AttributeValue{N: ptrStr("0")}, &dbstore.AttributeValue{N: ptrStr("2")}))
-	assert.False(t, compareBetween(num, &dbstore.AttributeValue{S: ptrStr("0")}, &dbstore.AttributeValue{N: ptrStr("2")}))
 }

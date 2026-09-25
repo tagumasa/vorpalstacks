@@ -629,9 +629,9 @@ message AccountPolicy {
 
   optional string policyname = 115126621;
 
-  PolicyType policytype = 319277736;
+  optional PolicyType policytype = 319277736;
 
-  Scope scope = 506131436;
+  optional Scope scope = 506131436;
 
   optional string selectioncriteria = 145052429;
 
@@ -741,7 +741,7 @@ message AnomalyDetector {
 
   optional string anomalydetectorarn = 446490540;
 
-  AnomalyDetectorStatus anomalydetectorstatus = 458778431;
+  optional AnomalyDetectorStatus anomalydetectorstatus = 458778431;
 
   optional int64 anomalyvisibilitytime = 287987260;
 
@@ -749,7 +749,7 @@ message AnomalyDetector {
 
   optional string detectorname = 114651981;
 
-  EvaluationFrequency evaluationfrequency = 533700360;
+  optional EvaluationFrequency evaluationfrequency = 533700360;
 
   optional string filterpattern = 144868248;
 
@@ -853,7 +853,7 @@ message CancelImportTaskResponse {
 
   ImportStatistics importstatistics = 60366280;
 
-  ImportStatus importstatus = 31427999;
+  optional ImportStatus importstatus = 31427999;
 
   optional int64 lastupdatedtime = 388324342;
 
@@ -877,7 +877,7 @@ message ConfigurationTemplate {
 
   ConfigurationTemplateDeliveryConfigValues defaultdeliveryconfigvalues = 235569423;
 
-  DeliveryDestinationType deliverydestinationtype = 33253176;
+  optional DeliveryDestinationType deliverydestinationtype = 33253176;
 
   repeated DeliverySourceConfigurationSchema deliverysourceconfiguration = 391472875;
 
@@ -1025,7 +1025,7 @@ message CreateLogAnomalyDetectorRequest {
 
   optional string detectorname = 114651981;
 
-  EvaluationFrequency evaluationfrequency = 533700360;
+  optional EvaluationFrequency evaluationfrequency = 533700360;
 
   optional string filterpattern = 144868248;
 
@@ -1053,7 +1053,7 @@ message CreateLogGroupRequest {
 
   optional string kmskeyid = 510698477;
 
-  LogGroupClass loggroupclass = 518605953;
+  optional LogGroupClass loggroupclass = 518605953;
 
   string loggroupname = 95756236;
 
@@ -1127,7 +1127,7 @@ message CreateScheduledQueryRequest {
 
   optional int64 starttimeoffset = 308525274;
 
-  ScheduledQueryState state = 405877495;
+  optional ScheduledQueryState state = 405877495;
 
   map<string, string> tags = 337046433;
 
@@ -1141,7 +1141,7 @@ message CreateScheduledQueryResponse {
 
   optional string scheduledqueryarn = 240292916;
 
-  ScheduledQueryState state = 405877495;
+  optional ScheduledQueryState state = 405877495;
 
 }
 
@@ -1447,7 +1447,7 @@ message Delivery {
 
   optional string deliverydestinationarn = 156800339;
 
-  DeliveryDestinationType deliverydestinationtype = 33253176;
+  optional DeliveryDestinationType deliverydestinationtype = 33253176;
 
   optional string deliverysourcename = 277065836;
 
@@ -1473,11 +1473,11 @@ message DeliveryDestination {
 
   DeliveryDestinationConfiguration deliverydestinationconfiguration = 256504432;
 
-  DeliveryDestinationType deliverydestinationtype = 33253176;
+  optional DeliveryDestinationType deliverydestinationtype = 33253176;
 
   optional string name = 221887975;
 
-  OutputFormat outputformat = 217347480;
+  optional OutputFormat outputformat = 217347480;
 
   map<string, string> tags = 337046433;
 
@@ -1525,9 +1525,9 @@ message DeliverySource {
 
   optional string service = 383770213;
 
-  DeliverySourceStatus status = 441153520;
+  optional DeliverySourceStatus status = 441153520;
 
-  DeliverySourceStatusReason statusreason = 352592412;
+  optional DeliverySourceStatusReason statusreason = 352592412;
 
   map<string, string> tags = 337046433;
 
@@ -1729,7 +1729,7 @@ message DescribeExportTasksRequest {
 
   optional string nexttoken = 115833246;
 
-  ExportTaskStatusCode statuscode = 299352223;
+  optional ExportTaskStatusCode statuscode = 299352223;
 
   optional string taskid = 216769858;
 
@@ -1803,7 +1803,7 @@ message DescribeImportTasksRequest {
 
   optional string importsourcearn = 161570329;
 
-  ImportStatus importstatus = 31427999;
+  optional ImportStatus importstatus = 31427999;
 
   optional int32 limit = 316332341;
 
@@ -1851,7 +1851,7 @@ message DescribeLogGroupsRequest {
 
   optional int32 limit = 316332341;
 
-  LogGroupClass loggroupclass = 518605953;
+  optional LogGroupClass loggroupclass = 518605953;
 
   repeated string loggroupidentifiers = 409873785;
 
@@ -1889,7 +1889,7 @@ message DescribeLogStreamsRequest {
 
   optional string nexttoken = 115833246;
 
-  OrderBy orderby = 63062531;
+  optional OrderBy orderby = 63062531;
 
 }
 
@@ -1963,9 +1963,9 @@ message DescribeQueriesRequest {
 
   optional string nexttoken = 115833246;
 
-  QueryLanguage querylanguage = 343791606;
+  optional QueryLanguage querylanguage = 343791606;
 
-  QueryStatus status = 441153520;
+  optional QueryStatus status = 441153520;
 
 }
 
@@ -1989,7 +1989,7 @@ message DescribeQueryDefinitionsRequest {
 
   optional string querydefinitionnameprefix = 28618146;
 
-  QueryLanguage querylanguage = 343791606;
+  optional QueryLanguage querylanguage = 343791606;
 
 }
 
@@ -2011,7 +2011,7 @@ message DescribeResourcePoliciesRequest {
 
   optional string nexttoken = 115833246;
 
-  PolicyScope policyscope = 288841470;
+  optional PolicyScope policyscope = 288841470;
 
   optional string resourcearn = 67806797;
 
@@ -2245,7 +2245,7 @@ message ExportTaskExecutionInfo {
 
 message ExportTaskStatus {
 
-  ExportTaskStatusCode code = 422669557;
+  optional ExportTaskStatusCode code = 422669557;
 
   optional string message = 82970853;
 
@@ -2279,7 +2279,7 @@ message FieldIndex {
 
   optional int64 firsteventtime = 236445651;
 
-  IndexCategory indexcategory = 262849168;
+  optional IndexCategory indexcategory = 262849168;
 
   optional int64 lasteventtime = 54472587;
 
@@ -2287,7 +2287,7 @@ message FieldIndex {
 
   optional string loggroupidentifier = 468281308;
 
-  IndexType type = 287830350;
+  optional IndexType type = 287830350;
 
 }
 
@@ -2471,9 +2471,9 @@ message GetIntegrationResponse {
 
   optional string integrationname = 183183535;
 
-  IntegrationStatus integrationstatus = 12110360;
+  optional IntegrationStatus integrationstatus = 12110360;
 
-  IntegrationType integrationtype = 307087270;
+  optional IntegrationType integrationtype = 307087270;
 
 }
 
@@ -2489,7 +2489,7 @@ message GetLogAnomalyDetectorRequest {
 
 message GetLogAnomalyDetectorResponse {
 
-  AnomalyDetectorStatus anomalydetectorstatus = 458778431;
+  optional AnomalyDetectorStatus anomalydetectorstatus = 458778431;
 
   optional int64 anomalyvisibilitytime = 287987260;
 
@@ -2497,7 +2497,7 @@ message GetLogAnomalyDetectorResponse {
 
   optional string detectorname = 114651981;
 
-  EvaluationFrequency evaluationfrequency = 533700360;
+  optional EvaluationFrequency evaluationfrequency = 533700360;
 
   optional string filterpattern = 144868248;
 
@@ -2683,13 +2683,13 @@ message GetQueryResultsResponse {
 
   optional string nexttoken = 115833246;
 
-  QueryLanguage querylanguage = 343791606;
+  optional QueryLanguage querylanguage = 343791606;
 
   repeated ResultField results = 206523126;
 
   QueryStatistics statistics = 222129163;
 
-  QueryStatus status = 441153520;
+  optional QueryStatus status = 441153520;
 
 }
 
@@ -2747,7 +2747,7 @@ message GetScheduledQueryResponse {
 
   optional string executionrolearn = 230613553;
 
-  ExecutionStatus lastexecutionstatus = 7800596;
+  optional ExecutionStatus lastexecutionstatus = 7800596;
 
   optional int64 lasttriggeredtime = 397057656;
 
@@ -2757,7 +2757,7 @@ message GetScheduledQueryResponse {
 
   optional string name = 221887975;
 
-  QueryLanguage querylanguage = 343791606;
+  optional QueryLanguage querylanguage = 343791606;
 
   optional string querystring = 520568967;
 
@@ -2767,13 +2767,13 @@ message GetScheduledQueryResponse {
 
   optional int64 schedulestarttime = 464194170;
 
-  ScheduleType scheduletype = 75972645;
+  optional ScheduleType scheduletype = 75972645;
 
   optional string scheduledqueryarn = 240292916;
 
   optional int64 starttimeoffset = 308525274;
 
-  ScheduledQueryState state = 405877495;
+  optional ScheduledQueryState state = 405877495;
 
   optional string timezone = 190615331;
 
@@ -2791,7 +2791,7 @@ message GetStorageTierPolicyResponse {
 
   optional int64 lastupdatedtime = 388324342;
 
-  StorageTier storagetier = 47374847;
+  optional StorageTier storagetier = 47374847;
 
 }
 
@@ -2861,7 +2861,7 @@ message Import {
 
   ImportStatistics importstatistics = 60366280;
 
-  ImportStatus importstatus = 31427999;
+  optional ImportStatus importstatus = 31427999;
 
   optional int64 lastupdatedtime = 388324342;
 
@@ -2945,7 +2945,7 @@ message IndexPolicy {
 
   optional string policyname = 115126621;
 
-  IndexSource source = 466561497;
+  optional IndexSource source = 466561497;
 
 }
 
@@ -3019,9 +3019,9 @@ message IntegrationSummary {
 
   optional string integrationname = 183183535;
 
-  IntegrationStatus integrationstatus = 12110360;
+  optional IntegrationStatus integrationstatus = 12110360;
 
-  IntegrationType integrationtype = 307087270;
+  optional IntegrationType integrationtype = 307087270;
 
 }
 
@@ -3119,7 +3119,7 @@ message ListAggregateLogGroupSummariesRequest {
 
   optional int32 limit = 316332341;
 
-  LogGroupClass loggroupclass = 518605953;
+  optional LogGroupClass loggroupclass = 518605953;
 
   optional string loggroupnamepattern = 253299540;
 
@@ -3147,7 +3147,7 @@ message ListAnomaliesRequest {
 
   optional string nexttoken = 115833246;
 
-  SuppressionState suppressionstate = 124822782;
+  optional SuppressionState suppressionstate = 124822782;
 
 }
 
@@ -3167,9 +3167,9 @@ message ListIntegrationsRequest {
 
   optional string integrationnameprefix = 275225987;
 
-  IntegrationStatus integrationstatus = 12110360;
+  optional IntegrationStatus integrationstatus = 12110360;
 
-  IntegrationType integrationtype = 307087270;
+  optional IntegrationType integrationtype = 307087270;
 
 }
 
@@ -3239,7 +3239,7 @@ message ListLogGroupsRequest {
 
   optional int32 limit = 316332341;
 
-  LogGroupClass loggroupclass = 518605953;
+  optional LogGroupClass loggroupclass = 518605953;
 
   optional string loggroupnamepattern = 253299540;
 
@@ -3267,9 +3267,9 @@ message ListScheduledQueriesRequest {
 
   optional string nexttoken = 115833246;
 
-  ScheduleType scheduletype = 75972645;
+  optional ScheduleType scheduletype = 75972645;
 
-  ScheduledQueryState state = 405877495;
+  optional ScheduledQueryState state = 405877495;
 
 }
 
@@ -3369,7 +3369,7 @@ message ListToMap {
 
   optional bool flatten = 100024266;
 
-  FlattenedElement flattenedelement = 9195721;
+  optional FlattenedElement flattenedelement = 9195721;
 
   string key = 135645293;
 
@@ -3491,7 +3491,7 @@ message LogGroup {
 
   optional int64 creationtime = 53551750;
 
-  DataProtectionStatus dataprotectionstatus = 24294469;
+  optional DataProtectionStatus dataprotectionstatus = 24294469;
 
   optional bool deletionprotectionenabled = 475522738;
 
@@ -3501,7 +3501,7 @@ message LogGroup {
 
   optional string loggrouparn = 6742512;
 
-  LogGroupClass loggroupclass = 518605953;
+  optional LogGroupClass loggroupclass = 518605953;
 
   optional string loggroupname = 95756236;
 
@@ -3545,7 +3545,7 @@ message LogGroupSummary {
 
   optional string loggrouparn = 6742512;
 
-  LogGroupClass loggroupclass = 518605953;
+  optional LogGroupClass loggroupclass = 518605953;
 
   optional string loggroupname = 95756236;
 
@@ -3693,7 +3693,7 @@ message MetricTransformation {
 
   string metricvalue = 51084559;
 
-  StandardUnit unit = 146086408;
+  optional StandardUnit unit = 146086408;
 
 }
 
@@ -3869,7 +3869,7 @@ message OpenSearchResourceConfig {
 
 message OpenSearchResourceStatus {
 
-  OpenSearchResourceStatusType status = 441153520;
+  optional OpenSearchResourceStatusType status = 441153520;
 
   optional string statusmessage = 474462255;
 
@@ -4167,7 +4167,7 @@ message PutAccountPolicyRequest {
 
   PolicyType policytype = 319277736;
 
-  Scope scope = 506131436;
+  optional Scope scope = 506131436;
 
   optional string selectioncriteria = 145052429;
 
@@ -4237,11 +4237,11 @@ message PutDeliveryDestinationRequest {
 
   DeliveryDestinationConfiguration deliverydestinationconfiguration = 256504432;
 
-  DeliveryDestinationType deliverydestinationtype = 33253176;
+  optional DeliveryDestinationType deliverydestinationtype = 33253176;
 
   string name = 221887975;
 
-  OutputFormat outputformat = 217347480;
+  optional OutputFormat outputformat = 217347480;
 
   map<string, string> tags = 337046433;
 
@@ -4349,7 +4349,7 @@ message PutIntegrationResponse {
 
   optional string integrationname = 183183535;
 
-  IntegrationStatus integrationstatus = 12110360;
+  optional IntegrationStatus integrationstatus = 12110360;
 
 }
 
@@ -4425,7 +4425,7 @@ message PutQueryDefinitionRequest {
 
   optional string querydefinitionid = 178455620;
 
-  QueryLanguage querylanguage = 343791606;
+  optional QueryLanguage querylanguage = 343791606;
 
   string querystring = 520568967;
 
@@ -4487,7 +4487,7 @@ message PutStorageTierPolicyResponse {
 
   optional int64 lastupdatedtime = 388324342;
 
-  StorageTier storagetier = 47374847;
+  optional StorageTier storagetier = 47374847;
 
 }
 
@@ -4499,7 +4499,7 @@ message PutSubscriptionFilterRequest {
 
   string destinationarn = 427601315;
 
-  Distribution distribution = 345526572;
+  optional Distribution distribution = 345526572;
 
   repeated string emitsystemfields = 392618203;
 
@@ -4575,7 +4575,7 @@ message QueryDefinition {
 
   optional string querydefinitionid = 178455620;
 
-  QueryLanguage querylanguage = 343791606;
+  optional QueryLanguage querylanguage = 343791606;
 
   optional string querystring = 520568967;
 
@@ -4597,11 +4597,11 @@ message QueryInfo {
 
   optional string queryid = 336975759;
 
-  QueryLanguage querylanguage = 343791606;
+  optional QueryLanguage querylanguage = 343791606;
 
   optional string querystring = 520568967;
 
-  QueryStatus status = 441153520;
+  optional QueryStatus status = 441153520;
 
   optional string useridentity = 427070345;
 
@@ -4777,7 +4777,7 @@ message ResourcePolicy {
 
   optional string policyname = 115126621;
 
-  PolicyScope policyscope = 288841470;
+  optional PolicyScope policyscope = 288841470;
 
   optional string resourcearn = 67806797;
 
@@ -4839,7 +4839,7 @@ message S3TableIntegrationSource {
 
   optional string parentsourceidentifier = 514932276;
 
-  S3TableIntegrationSourceStatus status = 441153520;
+  optional S3TableIntegrationSourceStatus status = 441153520;
 
   optional string statusreason = 352592412;
 
@@ -4889,13 +4889,13 @@ message ScheduledQueryDestination {
 
   optional string destinationidentifier = 399670053;
 
-  ScheduledQueryDestinationType destinationtype = 488995304;
+  optional ScheduledQueryDestinationType destinationtype = 488995304;
 
   optional string errormessage = 136873289;
 
   optional string processedidentifier = 194381665;
 
-  ActionStatus status = 441153520;
+  optional ActionStatus status = 441153520;
 
 }
 
@@ -4929,7 +4929,7 @@ message ScheduledQuerySummary {
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
-  ExecutionStatus lastexecutionstatus = 7800596;
+  optional ExecutionStatus lastexecutionstatus = 7800596;
 
   optional int64 lasttriggeredtime = 397057656;
 
@@ -4939,11 +4939,11 @@ message ScheduledQuerySummary {
 
   optional string scheduleexpression = 287794975;
 
-  ScheduleType scheduletype = 75972645;
+  optional ScheduleType scheduletype = 75972645;
 
   optional string scheduledqueryarn = 240292916;
 
-  ScheduledQueryState state = 405877495;
+  optional ScheduledQueryState state = 405877495;
 
   optional string timezone = 190615331;
 
@@ -5143,7 +5143,7 @@ message StartQueryRequest {
 
   repeated string loggroupnames = 337702569;
 
-  QueryLanguage querylanguage = 343791606;
+  optional QueryLanguage querylanguage = 343791606;
 
   string querystring = 520568967;
 
@@ -5209,7 +5209,7 @@ message SubscriptionFilter {
 
   optional string destinationarn = 427601315;
 
-  Distribution distribution = 345526572;
+  optional Distribution distribution = 345526572;
 
   repeated string emitsystemfields = 392618203;
 
@@ -5255,7 +5255,7 @@ message SubstituteStringEntry {
 
 message SuppressionPeriod {
 
-  SuppressionUnit suppressionunit = 423868455;
+  optional SuppressionUnit suppressionunit = 423868455;
 
   optional int32 value = 39769035;
 
@@ -5303,7 +5303,7 @@ message SyslogConfiguration {
 
   optional string loggrouparn = 6742512;
 
-  SyslogSourceType sourcetype = 25547057;
+  optional SyslogSourceType sourcetype = 25547057;
 
   optional string vpcendpointid = 376719261;
 
@@ -5431,7 +5431,7 @@ message TriggerHistoryRecord {
 
   optional string errormessage = 136873289;
 
-  ExecutionStatus executionstatus = 6216448;
+  optional ExecutionStatus executionstatus = 6216448;
 
   optional string queryid = 336975759;
 
@@ -5529,7 +5529,7 @@ message UpdateAnomalyRequest {
 
   SuppressionPeriod suppressionperiod = 217163962;
 
-  SuppressionType suppressiontype = 322214769;
+  optional SuppressionType suppressiontype = 322214769;
 
 }
 
@@ -5563,7 +5563,7 @@ message UpdateLogAnomalyDetectorRequest {
 
   optional bool enabled = 49525663;
 
-  EvaluationFrequency evaluationfrequency = 533700360;
+  optional EvaluationFrequency evaluationfrequency = 533700360;
 
   optional string filterpattern = 144868248;
 
@@ -5623,7 +5623,7 @@ message UpdateScheduledQueryRequest {
 
   optional int64 starttimeoffset = 308525274;
 
-  ScheduledQueryState state = 405877495;
+  optional ScheduledQueryState state = 405877495;
 
   optional string timezone = 190615331;
 
@@ -5643,7 +5643,7 @@ message UpdateScheduledQueryResponse {
 
   optional string executionrolearn = 230613553;
 
-  ExecutionStatus lastexecutionstatus = 7800596;
+  optional ExecutionStatus lastexecutionstatus = 7800596;
 
   optional int64 lasttriggeredtime = 397057656;
 
@@ -5653,7 +5653,7 @@ message UpdateScheduledQueryResponse {
 
   optional string name = 221887975;
 
-  QueryLanguage querylanguage = 343791606;
+  optional QueryLanguage querylanguage = 343791606;
 
   optional string querystring = 520568967;
 
@@ -5663,13 +5663,13 @@ message UpdateScheduledQueryResponse {
 
   optional int64 schedulestarttime = 464194170;
 
-  ScheduleType scheduletype = 75972645;
+  optional ScheduleType scheduletype = 75972645;
 
   optional string scheduledqueryarn = 240292916;
 
   optional int64 starttimeoffset = 308525274;
 
-  ScheduledQueryState state = 405877495;
+  optional ScheduledQueryState state = 405877495;
 
   optional string timezone = 190615331;
 

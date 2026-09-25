@@ -453,6 +453,34 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 		if !ok || second.Value != "b" {
 			return fmt.Errorf("expected second element 'b', got %v", items.Value[1])
 		}
+
+		// A SET naming a list element that does not exist appends the value
+		// at the end of the list, whatever out-of-range index it carries.
+		oobResp, err := client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+			TableName: aws.String(listTable),
+			Key: map[string]types.AttributeValue{
+				"id": &types.AttributeValueMemberS{Value: "la1"},
+			},
+			UpdateExpression: aws.String("SET items[9] = :far"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":far": &types.AttributeValueMemberS{Value: "far"},
+			},
+			ReturnValues: types.ReturnValueAllNew,
+		})
+		if err != nil {
+			return fmt.Errorf("out-of-range list SET failed: %v", err)
+		}
+		oobItems, ok := oobResp.Attributes["items"].(*types.AttributeValueMemberL)
+		if !ok {
+			return fmt.Errorf("expected list for items after out-of-range SET, got %T", oobResp.Attributes["items"])
+		}
+		if len(oobItems.Value) != 3 {
+			return fmt.Errorf("expected 3 items after out-of-range SET, got %d", len(oobItems.Value))
+		}
+		appended, ok := oobItems.Value[2].(*types.AttributeValueMemberS)
+		if !ok || appended.Value != "far" {
+			return fmt.Errorf("expected the out-of-range SET to append at the end, got %v", oobItems.Value)
+		}
 		return nil
 	}))
 
@@ -491,6 +519,51 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 		}
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return err
+		}
+		return nil
+	}))
+
+	// A list_append operand naming an attribute the item does not hold is
+	// an evaluation error on either side: both operands must be lists, and
+	// a missing path operand is never silently the other operand's value.
+	results = append(results, r.RunTest("dynamodb", "UpdateItem_ListAppend_MissingOperand", func() error {
+		missTable := fmt.Sprintf("ListAppendMiss-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, missTable)
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(missTable),
+			Item: map[string]types.AttributeValue{
+				"id": &types.AttributeValueMemberS{Value: "miss1"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("put: %v", err)
+		}
+
+		for _, expr := range []string{
+			"SET items = list_append(noSuchAttr, :new)",
+			"SET items = list_append(id, :new)",
+		} {
+			_, err = client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+				TableName: aws.String(missTable),
+				Key: map[string]types.AttributeValue{
+					"id": &types.AttributeValueMemberS{Value: "miss1"},
+				},
+				UpdateExpression: aws.String(expr),
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":new": &types.AttributeValueMemberL{Value: []types.AttributeValue{&types.AttributeValueMemberS{Value: "b"}}},
+				},
+			})
+			if err == nil {
+				return fmt.Errorf("expected error for %q, got nil", expr)
+			}
+			if err := AssertErrorContains(err, "ValidationException"); err != nil {
+				return err
+			}
 		}
 		return nil
 	}))

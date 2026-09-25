@@ -1105,7 +1105,7 @@ type CancelExportTaskOutput struct {
 	Format           ExportFormat           `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.ExportFormat" json:"format,omitempty"`
 	Graphid          string                 `protobuf:"bytes,154780971,opt,name=graphid,proto3" json:"graphid,omitempty"`
 	Kmskeyidentifier string                 `protobuf:"bytes,271380819,opt,name=kmskeyidentifier,proto3" json:"kmskeyidentifier,omitempty"`
-	Parquettype      ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype      *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn          string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Status           ExportTaskStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.ExportTaskStatus" json:"status,omitempty"`
 	Statusreason     *string                `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
@@ -1173,8 +1173,8 @@ func (x *CancelExportTaskOutput) GetKmskeyidentifier() string {
 }
 
 func (x *CancelExportTaskOutput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -1253,9 +1253,9 @@ func (x *CancelImportTaskInput) GetTaskidentifier() string {
 
 type CancelImportTaskOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Format        Format                 `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format" json:"format,omitempty"`
+	Format        *Format                `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format,oneof" json:"format,omitempty"`
 	Graphid       *string                `protobuf:"bytes,154780971,opt,name=graphid,proto3,oneof" json:"graphid,omitempty"`
-	Parquettype   ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype   *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn       string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Source        string                 `protobuf:"bytes,466561497,opt,name=source,proto3" json:"source,omitempty"`
 	Status        ImportTaskStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.ImportTaskStatus" json:"status,omitempty"`
@@ -1295,8 +1295,8 @@ func (*CancelImportTaskOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelImportTaskOutput) GetFormat() Format {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return Format_FORMAT_NTRIPLES
 }
@@ -1309,8 +1309,8 @@ func (x *CancelImportTaskOutput) GetGraphid() string {
 }
 
 func (x *CancelImportTaskOutput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -1396,9 +1396,9 @@ func (x *CancelQueryInput) GetQueryid() string {
 }
 
 type ConflictException struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Message       string                  `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Reason        ConflictExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=neptunegraph.ConflictExceptionReason" json:"reason,omitempty"`
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Message       string                   `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Reason        *ConflictExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=neptunegraph.ConflictExceptionReason,oneof" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1441,8 +1441,8 @@ func (x *ConflictException) GetMessage() string {
 }
 
 func (x *ConflictException) GetReason() ConflictExceptionReason {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return ConflictExceptionReason_CONFLICT_EXCEPTION_REASON_CONCURRENT_MODIFICATION
 }
@@ -1561,7 +1561,7 @@ type CreateGraphOutput struct {
 	Publicconnectivity        *string                    `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount              *int32                     `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
 	Sourcesnapshotid          *string                    `protobuf:"bytes,450029490,opt,name=sourcesnapshotid,proto3,oneof" json:"sourcesnapshotid,omitempty"`
-	Status                    GraphStatus                `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus" json:"status,omitempty"`
+	Status                    *GraphStatus               `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus,oneof" json:"status,omitempty"`
 	Statusreason              *string                    `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vectorsearchconfiguration *VectorSearchConfiguration `protobuf:"bytes,194373657,opt,name=vectorsearchconfiguration,proto3" json:"vectorsearchconfiguration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -1683,8 +1683,8 @@ func (x *CreateGraphOutput) GetSourcesnapshotid() string {
 }
 
 func (x *CreateGraphOutput) GetStatus() GraphStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return GraphStatus_GRAPH_STATUS_STOPPING
 }
@@ -1771,7 +1771,7 @@ type CreateGraphSnapshotOutput struct {
 	Name               string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Snapshotcreatetime *string                `protobuf:"bytes,472700549,opt,name=snapshotcreatetime,proto3,oneof" json:"snapshotcreatetime,omitempty"`
 	Sourcegraphid      *string                `protobuf:"bytes,384181138,opt,name=sourcegraphid,proto3,oneof" json:"sourcegraphid,omitempty"`
-	Status             SnapshotStatus         `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.SnapshotStatus" json:"status,omitempty"`
+	Status             *SnapshotStatus        `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.SnapshotStatus,oneof" json:"status,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1849,24 +1849,24 @@ func (x *CreateGraphSnapshotOutput) GetSourcegraphid() string {
 }
 
 func (x *CreateGraphSnapshotOutput) GetStatus() SnapshotStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SnapshotStatus_SNAPSHOT_STATUS_AVAILABLE
 }
 
 type CreateGraphUsingImportTaskInput struct {
 	state                     protoimpl.MessageState     `protogen:"open.v1"`
-	Blanknodehandling         BlankNodeHandling          `protobuf:"varint,96253201,opt,name=blanknodehandling,proto3,enum=neptunegraph.BlankNodeHandling" json:"blanknodehandling,omitempty"`
+	Blanknodehandling         *BlankNodeHandling         `protobuf:"varint,96253201,opt,name=blanknodehandling,proto3,enum=neptunegraph.BlankNodeHandling,oneof" json:"blanknodehandling,omitempty"`
 	Deletionprotection        *string                    `protobuf:"bytes,408487537,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Failonerror               *string                    `protobuf:"bytes,437165343,opt,name=failonerror,proto3,oneof" json:"failonerror,omitempty"`
-	Format                    Format                     `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format" json:"format,omitempty"`
+	Format                    *Format                    `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format,oneof" json:"format,omitempty"`
 	Graphname                 string                     `protobuf:"bytes,300324709,opt,name=graphname,proto3" json:"graphname,omitempty"`
 	Importoptions             *ImportOptions             `protobuf:"bytes,42536491,opt,name=importoptions,proto3" json:"importoptions,omitempty"`
 	Kmskeyidentifier          *string                    `protobuf:"bytes,271380819,opt,name=kmskeyidentifier,proto3,oneof" json:"kmskeyidentifier,omitempty"`
 	Maxprovisionedmemory      *int32                     `protobuf:"varint,212406631,opt,name=maxprovisionedmemory,proto3,oneof" json:"maxprovisionedmemory,omitempty"`
 	Minprovisionedmemory      *int32                     `protobuf:"varint,410054529,opt,name=minprovisionedmemory,proto3,oneof" json:"minprovisionedmemory,omitempty"`
-	Parquettype               ParquetType                `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype               *ParquetType               `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Publicconnectivity        *string                    `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount              *int32                     `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
 	Rolearn                   string                     `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
@@ -1908,8 +1908,8 @@ func (*CreateGraphUsingImportTaskInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateGraphUsingImportTaskInput) GetBlanknodehandling() BlankNodeHandling {
-	if x != nil {
-		return x.Blanknodehandling
+	if x != nil && x.Blanknodehandling != nil {
+		return *x.Blanknodehandling
 	}
 	return BlankNodeHandling_BLANK_NODE_HANDLING_CONVERT_TO_IRI
 }
@@ -1929,8 +1929,8 @@ func (x *CreateGraphUsingImportTaskInput) GetFailonerror() string {
 }
 
 func (x *CreateGraphUsingImportTaskInput) GetFormat() Format {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return Format_FORMAT_NTRIPLES
 }
@@ -1971,8 +1971,8 @@ func (x *CreateGraphUsingImportTaskInput) GetMinprovisionedmemory() int32 {
 }
 
 func (x *CreateGraphUsingImportTaskInput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -2021,10 +2021,10 @@ func (x *CreateGraphUsingImportTaskInput) GetVectorsearchconfiguration() *Vector
 
 type CreateGraphUsingImportTaskOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Format        Format                 `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format" json:"format,omitempty"`
+	Format        *Format                `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format,oneof" json:"format,omitempty"`
 	Graphid       *string                `protobuf:"bytes,154780971,opt,name=graphid,proto3,oneof" json:"graphid,omitempty"`
 	Importoptions *ImportOptions         `protobuf:"bytes,42536491,opt,name=importoptions,proto3" json:"importoptions,omitempty"`
-	Parquettype   ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype   *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn       string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Source        string                 `protobuf:"bytes,466561497,opt,name=source,proto3" json:"source,omitempty"`
 	Status        ImportTaskStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.ImportTaskStatus" json:"status,omitempty"`
@@ -2064,8 +2064,8 @@ func (*CreateGraphUsingImportTaskOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateGraphUsingImportTaskOutput) GetFormat() Format {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return Format_FORMAT_NTRIPLES
 }
@@ -2085,8 +2085,8 @@ func (x *CreateGraphUsingImportTaskOutput) GetImportoptions() *ImportOptions {
 }
 
 func (x *CreateGraphUsingImportTaskOutput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -2321,7 +2321,7 @@ type DeleteGraphOutput struct {
 	Publicconnectivity        *string                    `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount              *int32                     `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
 	Sourcesnapshotid          *string                    `protobuf:"bytes,450029490,opt,name=sourcesnapshotid,proto3,oneof" json:"sourcesnapshotid,omitempty"`
-	Status                    GraphStatus                `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus" json:"status,omitempty"`
+	Status                    *GraphStatus               `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus,oneof" json:"status,omitempty"`
 	Statusreason              *string                    `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vectorsearchconfiguration *VectorSearchConfiguration `protobuf:"bytes,194373657,opt,name=vectorsearchconfiguration,proto3" json:"vectorsearchconfiguration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -2443,8 +2443,8 @@ func (x *DeleteGraphOutput) GetSourcesnapshotid() string {
 }
 
 func (x *DeleteGraphOutput) GetStatus() GraphStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return GraphStatus_GRAPH_STATUS_STOPPING
 }
@@ -2515,7 +2515,7 @@ type DeleteGraphSnapshotOutput struct {
 	Name               string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Snapshotcreatetime *string                `protobuf:"bytes,472700549,opt,name=snapshotcreatetime,proto3,oneof" json:"snapshotcreatetime,omitempty"`
 	Sourcegraphid      *string                `protobuf:"bytes,384181138,opt,name=sourcegraphid,proto3,oneof" json:"sourcegraphid,omitempty"`
-	Status             SnapshotStatus         `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.SnapshotStatus" json:"status,omitempty"`
+	Status             *SnapshotStatus        `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.SnapshotStatus,oneof" json:"status,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2593,8 +2593,8 @@ func (x *DeleteGraphSnapshotOutput) GetSourcegraphid() string {
 }
 
 func (x *DeleteGraphSnapshotOutput) GetStatus() SnapshotStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SnapshotStatus_SNAPSHOT_STATUS_AVAILABLE
 }
@@ -2773,11 +2773,11 @@ func (x *EdgeStructure) GetEdgeproperties() []string {
 
 type ExecuteQueryInput struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Explainmode              ExplainMode            `protobuf:"varint,259893600,opt,name=explainmode,proto3,enum=neptunegraph.ExplainMode" json:"explainmode,omitempty"`
+	Explainmode              *ExplainMode           `protobuf:"varint,259893600,opt,name=explainmode,proto3,enum=neptunegraph.ExplainMode,oneof" json:"explainmode,omitempty"`
 	Graphidentifier          string                 `protobuf:"bytes,49625581,opt,name=graphidentifier,proto3" json:"graphidentifier,omitempty"`
 	Language                 QueryLanguage          `protobuf:"varint,435107964,opt,name=language,proto3,enum=neptunegraph.QueryLanguage" json:"language,omitempty"`
 	Parameters               map[string]string      `protobuf:"bytes,145043162,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Plancache                PlanCacheType          `protobuf:"varint,4222769,opt,name=plancache,proto3,enum=neptunegraph.PlanCacheType" json:"plancache,omitempty"`
+	Plancache                *PlanCacheType         `protobuf:"varint,4222769,opt,name=plancache,proto3,enum=neptunegraph.PlanCacheType,oneof" json:"plancache,omitempty"`
 	Querystring              string                 `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
 	Querytimeoutmilliseconds *string                `protobuf:"bytes,331069401,opt,name=querytimeoutmilliseconds,proto3,oneof" json:"querytimeoutmilliseconds,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -2815,8 +2815,8 @@ func (*ExecuteQueryInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecuteQueryInput) GetExplainmode() ExplainMode {
-	if x != nil {
-		return x.Explainmode
+	if x != nil && x.Explainmode != nil {
+		return *x.Explainmode
 	}
 	return ExplainMode_EXPLAIN_MODE_STATIC
 }
@@ -2843,8 +2843,8 @@ func (x *ExecuteQueryInput) GetParameters() map[string]string {
 }
 
 func (x *ExecuteQueryInput) GetPlancache() PlanCacheType {
-	if x != nil {
-		return x.Plancache
+	if x != nil && x.Plancache != nil {
+		return *x.Plancache
 	}
 	return PlanCacheType_PLAN_CACHE_TYPE_AUTO
 }
@@ -3004,10 +3004,10 @@ func (x *ExportFilterElement) GetProperties() map[string]*ExportFilterPropertyAt
 }
 
 type ExportFilterPropertyAttributes struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	Multivaluehandling MultiValueHandlingType `protobuf:"varint,492198599,opt,name=multivaluehandling,proto3,enum=neptunegraph.MultiValueHandlingType" json:"multivaluehandling,omitempty"`
-	Outputtype         *string                `protobuf:"bytes,354916141,opt,name=outputtype,proto3,oneof" json:"outputtype,omitempty"`
-	Sourcepropertyname *string                `protobuf:"bytes,347182811,opt,name=sourcepropertyname,proto3,oneof" json:"sourcepropertyname,omitempty"`
+	state              protoimpl.MessageState  `protogen:"open.v1"`
+	Multivaluehandling *MultiValueHandlingType `protobuf:"varint,492198599,opt,name=multivaluehandling,proto3,enum=neptunegraph.MultiValueHandlingType,oneof" json:"multivaluehandling,omitempty"`
+	Outputtype         *string                 `protobuf:"bytes,354916141,opt,name=outputtype,proto3,oneof" json:"outputtype,omitempty"`
+	Sourcepropertyname *string                 `protobuf:"bytes,347182811,opt,name=sourcepropertyname,proto3,oneof" json:"sourcepropertyname,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3043,8 +3043,8 @@ func (*ExportFilterPropertyAttributes) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExportFilterPropertyAttributes) GetMultivaluehandling() MultiValueHandlingType {
-	if x != nil {
-		return x.Multivaluehandling
+	if x != nil && x.Multivaluehandling != nil {
+		return *x.Multivaluehandling
 	}
 	return MultiValueHandlingType_MULTI_VALUE_HANDLING_TYPE_PICK_FIRST
 }
@@ -3145,7 +3145,7 @@ type ExportTaskSummary struct {
 	Format           ExportFormat           `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.ExportFormat" json:"format,omitempty"`
 	Graphid          string                 `protobuf:"bytes,154780971,opt,name=graphid,proto3" json:"graphid,omitempty"`
 	Kmskeyidentifier string                 `protobuf:"bytes,271380819,opt,name=kmskeyidentifier,proto3" json:"kmskeyidentifier,omitempty"`
-	Parquettype      ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype      *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn          string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Status           ExportTaskStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.ExportTaskStatus" json:"status,omitempty"`
 	Statusreason     *string                `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
@@ -3213,8 +3213,8 @@ func (x *ExportTaskSummary) GetKmskeyidentifier() string {
 }
 
 func (x *ExportTaskSummary) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -3299,7 +3299,7 @@ type GetExportTaskOutput struct {
 	Format            ExportFormat           `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.ExportFormat" json:"format,omitempty"`
 	Graphid           string                 `protobuf:"bytes,154780971,opt,name=graphid,proto3" json:"graphid,omitempty"`
 	Kmskeyidentifier  string                 `protobuf:"bytes,271380819,opt,name=kmskeyidentifier,proto3" json:"kmskeyidentifier,omitempty"`
-	Parquettype       ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype       *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn           string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Status            ExportTaskStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.ExportTaskStatus" json:"status,omitempty"`
 	Statusreason      *string                `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
@@ -3381,8 +3381,8 @@ func (x *GetExportTaskOutput) GetKmskeyidentifier() string {
 }
 
 func (x *GetExportTaskOutput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -3473,7 +3473,7 @@ type GetGraphOutput struct {
 	Publicconnectivity        *string                    `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount              *int32                     `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
 	Sourcesnapshotid          *string                    `protobuf:"bytes,450029490,opt,name=sourcesnapshotid,proto3,oneof" json:"sourcesnapshotid,omitempty"`
-	Status                    GraphStatus                `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus" json:"status,omitempty"`
+	Status                    *GraphStatus               `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus,oneof" json:"status,omitempty"`
 	Statusreason              *string                    `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vectorsearchconfiguration *VectorSearchConfiguration `protobuf:"bytes,194373657,opt,name=vectorsearchconfiguration,proto3" json:"vectorsearchconfiguration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -3595,8 +3595,8 @@ func (x *GetGraphOutput) GetSourcesnapshotid() string {
 }
 
 func (x *GetGraphOutput) GetStatus() GraphStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return GraphStatus_GRAPH_STATUS_STOPPING
 }
@@ -3667,7 +3667,7 @@ type GetGraphSnapshotOutput struct {
 	Name               string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Snapshotcreatetime *string                `protobuf:"bytes,472700549,opt,name=snapshotcreatetime,proto3,oneof" json:"snapshotcreatetime,omitempty"`
 	Sourcegraphid      *string                `protobuf:"bytes,384181138,opt,name=sourcegraphid,proto3,oneof" json:"sourcegraphid,omitempty"`
-	Status             SnapshotStatus         `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.SnapshotStatus" json:"status,omitempty"`
+	Status             *SnapshotStatus        `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.SnapshotStatus,oneof" json:"status,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3745,8 +3745,8 @@ func (x *GetGraphSnapshotOutput) GetSourcegraphid() string {
 }
 
 func (x *GetGraphSnapshotOutput) GetStatus() SnapshotStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SnapshotStatus_SNAPSHOT_STATUS_AVAILABLE
 }
@@ -3754,7 +3754,7 @@ func (x *GetGraphSnapshotOutput) GetStatus() SnapshotStatus {
 type GetGraphSummaryInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Graphidentifier string                 `protobuf:"bytes,49625581,opt,name=graphidentifier,proto3" json:"graphidentifier,omitempty"`
-	Mode            GraphSummaryMode       `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunegraph.GraphSummaryMode" json:"mode,omitempty"`
+	Mode            *GraphSummaryMode      `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunegraph.GraphSummaryMode,oneof" json:"mode,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -3797,8 +3797,8 @@ func (x *GetGraphSummaryInput) GetGraphidentifier() string {
 }
 
 func (x *GetGraphSummaryInput) GetMode() GraphSummaryMode {
-	if x != nil {
-		return x.Mode
+	if x != nil && x.Mode != nil {
+		return *x.Mode
 	}
 	return GraphSummaryMode_GRAPH_SUMMARY_MODE_DETAILED
 }
@@ -3910,11 +3910,11 @@ func (x *GetImportTaskInput) GetTaskidentifier() string {
 type GetImportTaskOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Attemptnumber     *string                `protobuf:"bytes,466940700,opt,name=attemptnumber,proto3,oneof" json:"attemptnumber,omitempty"`
-	Format            Format                 `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format" json:"format,omitempty"`
+	Format            *Format                `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format,oneof" json:"format,omitempty"`
 	Graphid           *string                `protobuf:"bytes,154780971,opt,name=graphid,proto3,oneof" json:"graphid,omitempty"`
 	Importoptions     *ImportOptions         `protobuf:"bytes,42536491,opt,name=importoptions,proto3" json:"importoptions,omitempty"`
 	Importtaskdetails *ImportTaskDetails     `protobuf:"bytes,345811978,opt,name=importtaskdetails,proto3" json:"importtaskdetails,omitempty"`
-	Parquettype       ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype       *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn           string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Source            string                 `protobuf:"bytes,466561497,opt,name=source,proto3" json:"source,omitempty"`
 	Status            ImportTaskStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.ImportTaskStatus" json:"status,omitempty"`
@@ -3962,8 +3962,8 @@ func (x *GetImportTaskOutput) GetAttemptnumber() string {
 }
 
 func (x *GetImportTaskOutput) GetFormat() Format {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return Format_FORMAT_NTRIPLES
 }
@@ -3990,8 +3990,8 @@ func (x *GetImportTaskOutput) GetImporttaskdetails() *ImportTaskDetails {
 }
 
 func (x *GetImportTaskOutput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -4208,7 +4208,7 @@ type GetQueryOutput struct {
 	Elapsed       *string                `protobuf:"bytes,506590108,opt,name=elapsed,proto3,oneof" json:"elapsed,omitempty"`
 	Id            *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Querystring   *string                `protobuf:"bytes,520568967,opt,name=querystring,proto3,oneof" json:"querystring,omitempty"`
-	State         QueryState             `protobuf:"varint,405877495,opt,name=state,proto3,enum=neptunegraph.QueryState" json:"state,omitempty"`
+	State         *QueryState            `protobuf:"varint,405877495,opt,name=state,proto3,enum=neptunegraph.QueryState,oneof" json:"state,omitempty"`
 	Waited        *string                `protobuf:"bytes,136179618,opt,name=waited,proto3,oneof" json:"waited,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4266,8 +4266,8 @@ func (x *GetQueryOutput) GetQuerystring() string {
 }
 
 func (x *GetQueryOutput) GetState() QueryState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return QueryState_QUERY_STATE_RUNNING
 }
@@ -4435,7 +4435,7 @@ type GraphSnapshotSummary struct {
 	Name               string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Snapshotcreatetime *string                `protobuf:"bytes,472700549,opt,name=snapshotcreatetime,proto3,oneof" json:"snapshotcreatetime,omitempty"`
 	Sourcegraphid      *string                `protobuf:"bytes,384181138,opt,name=sourcegraphid,proto3,oneof" json:"sourcegraphid,omitempty"`
-	Status             SnapshotStatus         `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.SnapshotStatus" json:"status,omitempty"`
+	Status             *SnapshotStatus        `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.SnapshotStatus,oneof" json:"status,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4513,8 +4513,8 @@ func (x *GraphSnapshotSummary) GetSourcegraphid() string {
 }
 
 func (x *GraphSnapshotSummary) GetStatus() SnapshotStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SnapshotStatus_SNAPSHOT_STATUS_AVAILABLE
 }
@@ -4530,7 +4530,7 @@ type GraphSummary struct {
 	Provisionedmemory  *int32                 `protobuf:"varint,1604091,opt,name=provisionedmemory,proto3,oneof" json:"provisionedmemory,omitempty"`
 	Publicconnectivity *string                `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount       *int32                 `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
-	Status             GraphStatus            `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus" json:"status,omitempty"`
+	Status             *GraphStatus           `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus,oneof" json:"status,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4629,8 +4629,8 @@ func (x *GraphSummary) GetReplicacount() int32 {
 }
 
 func (x *GraphSummary) GetStatus() GraphStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return GraphStatus_GRAPH_STATUS_STOPPING
 }
@@ -4781,9 +4781,9 @@ func (x *ImportTaskDetails) GetTimeelapsedseconds() string {
 
 type ImportTaskSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Format        Format                 `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format" json:"format,omitempty"`
+	Format        *Format                `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format,oneof" json:"format,omitempty"`
 	Graphid       *string                `protobuf:"bytes,154780971,opt,name=graphid,proto3,oneof" json:"graphid,omitempty"`
-	Parquettype   ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype   *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn       string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Source        string                 `protobuf:"bytes,466561497,opt,name=source,proto3" json:"source,omitempty"`
 	Status        ImportTaskStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.ImportTaskStatus" json:"status,omitempty"`
@@ -4823,8 +4823,8 @@ func (*ImportTaskSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *ImportTaskSummary) GetFormat() Format {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return Format_FORMAT_NTRIPLES
 }
@@ -4837,8 +4837,8 @@ func (x *ImportTaskSummary) GetGraphid() string {
 }
 
 func (x *ImportTaskSummary) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -5463,7 +5463,7 @@ type ListQueriesInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Graphidentifier string                 `protobuf:"bytes,49625581,opt,name=graphidentifier,proto3" json:"graphidentifier,omitempty"`
 	Maxresults      string                 `protobuf:"bytes,465170002,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
-	State           QueryStateInput        `protobuf:"varint,405877495,opt,name=state,proto3,enum=neptunegraph.QueryStateInput" json:"state,omitempty"`
+	State           *QueryStateInput       `protobuf:"varint,405877495,opt,name=state,proto3,enum=neptunegraph.QueryStateInput,oneof" json:"state,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -5513,8 +5513,8 @@ func (x *ListQueriesInput) GetMaxresults() string {
 }
 
 func (x *ListQueriesInput) GetState() QueryStateInput {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return QueryStateInput_QUERY_STATE_INPUT_RUNNING
 }
@@ -5852,7 +5852,7 @@ type QuerySummary struct {
 	Elapsed       *string                `protobuf:"bytes,506590108,opt,name=elapsed,proto3,oneof" json:"elapsed,omitempty"`
 	Id            *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Querystring   *string                `protobuf:"bytes,520568967,opt,name=querystring,proto3,oneof" json:"querystring,omitempty"`
-	State         QueryState             `protobuf:"varint,405877495,opt,name=state,proto3,enum=neptunegraph.QueryState" json:"state,omitempty"`
+	State         *QueryState            `protobuf:"varint,405877495,opt,name=state,proto3,enum=neptunegraph.QueryState,oneof" json:"state,omitempty"`
 	Waited        *string                `protobuf:"bytes,136179618,opt,name=waited,proto3,oneof" json:"waited,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5910,8 +5910,8 @@ func (x *QuerySummary) GetQuerystring() string {
 }
 
 func (x *QuerySummary) GetState() QueryState {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return QueryState_QUERY_STATE_RUNNING
 }
@@ -5989,7 +5989,7 @@ type ResetGraphOutput struct {
 	Publicconnectivity        *string                    `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount              *int32                     `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
 	Sourcesnapshotid          *string                    `protobuf:"bytes,450029490,opt,name=sourcesnapshotid,proto3,oneof" json:"sourcesnapshotid,omitempty"`
-	Status                    GraphStatus                `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus" json:"status,omitempty"`
+	Status                    *GraphStatus               `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus,oneof" json:"status,omitempty"`
 	Statusreason              *string                    `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vectorsearchconfiguration *VectorSearchConfiguration `protobuf:"bytes,194373657,opt,name=vectorsearchconfiguration,proto3" json:"vectorsearchconfiguration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -6111,8 +6111,8 @@ func (x *ResetGraphOutput) GetSourcesnapshotid() string {
 }
 
 func (x *ResetGraphOutput) GetStatus() GraphStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return GraphStatus_GRAPH_STATUS_STOPPING
 }
@@ -6281,7 +6281,7 @@ type RestoreGraphFromSnapshotOutput struct {
 	Publicconnectivity        *string                    `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount              *int32                     `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
 	Sourcesnapshotid          *string                    `protobuf:"bytes,450029490,opt,name=sourcesnapshotid,proto3,oneof" json:"sourcesnapshotid,omitempty"`
-	Status                    GraphStatus                `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus" json:"status,omitempty"`
+	Status                    *GraphStatus               `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus,oneof" json:"status,omitempty"`
 	Statusreason              *string                    `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vectorsearchconfiguration *VectorSearchConfiguration `protobuf:"bytes,194373657,opt,name=vectorsearchconfiguration,proto3" json:"vectorsearchconfiguration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -6403,8 +6403,8 @@ func (x *RestoreGraphFromSnapshotOutput) GetSourcesnapshotid() string {
 }
 
 func (x *RestoreGraphFromSnapshotOutput) GetStatus() GraphStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return GraphStatus_GRAPH_STATUS_STOPPING
 }
@@ -6506,7 +6506,7 @@ type StartExportTaskInput struct {
 	Format           ExportFormat           `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.ExportFormat" json:"format,omitempty"`
 	Graphidentifier  string                 `protobuf:"bytes,49625581,opt,name=graphidentifier,proto3" json:"graphidentifier,omitempty"`
 	Kmskeyidentifier string                 `protobuf:"bytes,271380819,opt,name=kmskeyidentifier,proto3" json:"kmskeyidentifier,omitempty"`
-	Parquettype      ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype      *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn          string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Tags             map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields    protoimpl.UnknownFields
@@ -6579,8 +6579,8 @@ func (x *StartExportTaskInput) GetKmskeyidentifier() string {
 }
 
 func (x *StartExportTaskInput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -6606,7 +6606,7 @@ type StartExportTaskOutput struct {
 	Format           ExportFormat           `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.ExportFormat" json:"format,omitempty"`
 	Graphid          string                 `protobuf:"bytes,154780971,opt,name=graphid,proto3" json:"graphid,omitempty"`
 	Kmskeyidentifier string                 `protobuf:"bytes,271380819,opt,name=kmskeyidentifier,proto3" json:"kmskeyidentifier,omitempty"`
-	Parquettype      ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype      *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn          string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Status           ExportTaskStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.ExportTaskStatus" json:"status,omitempty"`
 	Statusreason     *string                `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
@@ -6681,8 +6681,8 @@ func (x *StartExportTaskOutput) GetKmskeyidentifier() string {
 }
 
 func (x *StartExportTaskOutput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -6773,7 +6773,7 @@ type StartGraphOutput struct {
 	Publicconnectivity        *string                    `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount              *int32                     `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
 	Sourcesnapshotid          *string                    `protobuf:"bytes,450029490,opt,name=sourcesnapshotid,proto3,oneof" json:"sourcesnapshotid,omitempty"`
-	Status                    GraphStatus                `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus" json:"status,omitempty"`
+	Status                    *GraphStatus               `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus,oneof" json:"status,omitempty"`
 	Statusreason              *string                    `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vectorsearchconfiguration *VectorSearchConfiguration `protobuf:"bytes,194373657,opt,name=vectorsearchconfiguration,proto3" json:"vectorsearchconfiguration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -6895,8 +6895,8 @@ func (x *StartGraphOutput) GetSourcesnapshotid() string {
 }
 
 func (x *StartGraphOutput) GetStatus() GraphStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return GraphStatus_GRAPH_STATUS_STOPPING
 }
@@ -6917,12 +6917,12 @@ func (x *StartGraphOutput) GetVectorsearchconfiguration() *VectorSearchConfigura
 
 type StartImportTaskInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Blanknodehandling BlankNodeHandling      `protobuf:"varint,96253201,opt,name=blanknodehandling,proto3,enum=neptunegraph.BlankNodeHandling" json:"blanknodehandling,omitempty"`
+	Blanknodehandling *BlankNodeHandling     `protobuf:"varint,96253201,opt,name=blanknodehandling,proto3,enum=neptunegraph.BlankNodeHandling,oneof" json:"blanknodehandling,omitempty"`
 	Failonerror       *string                `protobuf:"bytes,437165343,opt,name=failonerror,proto3,oneof" json:"failonerror,omitempty"`
-	Format            Format                 `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format" json:"format,omitempty"`
+	Format            *Format                `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format,oneof" json:"format,omitempty"`
 	Graphidentifier   string                 `protobuf:"bytes,49625581,opt,name=graphidentifier,proto3" json:"graphidentifier,omitempty"`
 	Importoptions     *ImportOptions         `protobuf:"bytes,42536491,opt,name=importoptions,proto3" json:"importoptions,omitempty"`
-	Parquettype       ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype       *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn           string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Source            string                 `protobuf:"bytes,466561497,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -6960,8 +6960,8 @@ func (*StartImportTaskInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartImportTaskInput) GetBlanknodehandling() BlankNodeHandling {
-	if x != nil {
-		return x.Blanknodehandling
+	if x != nil && x.Blanknodehandling != nil {
+		return *x.Blanknodehandling
 	}
 	return BlankNodeHandling_BLANK_NODE_HANDLING_CONVERT_TO_IRI
 }
@@ -6974,8 +6974,8 @@ func (x *StartImportTaskInput) GetFailonerror() string {
 }
 
 func (x *StartImportTaskInput) GetFormat() Format {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return Format_FORMAT_NTRIPLES
 }
@@ -6995,8 +6995,8 @@ func (x *StartImportTaskInput) GetImportoptions() *ImportOptions {
 }
 
 func (x *StartImportTaskInput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -7017,10 +7017,10 @@ func (x *StartImportTaskInput) GetSource() string {
 
 type StartImportTaskOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Format        Format                 `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format" json:"format,omitempty"`
+	Format        *Format                `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunegraph.Format,oneof" json:"format,omitempty"`
 	Graphid       *string                `protobuf:"bytes,154780971,opt,name=graphid,proto3,oneof" json:"graphid,omitempty"`
 	Importoptions *ImportOptions         `protobuf:"bytes,42536491,opt,name=importoptions,proto3" json:"importoptions,omitempty"`
-	Parquettype   ParquetType            `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType" json:"parquettype,omitempty"`
+	Parquettype   *ParquetType           `protobuf:"varint,239821940,opt,name=parquettype,proto3,enum=neptunegraph.ParquetType,oneof" json:"parquettype,omitempty"`
 	Rolearn       string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Source        string                 `protobuf:"bytes,466561497,opt,name=source,proto3" json:"source,omitempty"`
 	Status        ImportTaskStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.ImportTaskStatus" json:"status,omitempty"`
@@ -7060,8 +7060,8 @@ func (*StartImportTaskOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartImportTaskOutput) GetFormat() Format {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return Format_FORMAT_NTRIPLES
 }
@@ -7081,8 +7081,8 @@ func (x *StartImportTaskOutput) GetImportoptions() *ImportOptions {
 }
 
 func (x *StartImportTaskOutput) GetParquettype() ParquetType {
-	if x != nil {
-		return x.Parquettype
+	if x != nil && x.Parquettype != nil {
+		return *x.Parquettype
 	}
 	return ParquetType_PARQUET_TYPE_COLUMNAR
 }
@@ -7173,7 +7173,7 @@ type StopGraphOutput struct {
 	Publicconnectivity        *string                    `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount              *int32                     `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
 	Sourcesnapshotid          *string                    `protobuf:"bytes,450029490,opt,name=sourcesnapshotid,proto3,oneof" json:"sourcesnapshotid,omitempty"`
-	Status                    GraphStatus                `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus" json:"status,omitempty"`
+	Status                    *GraphStatus               `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus,oneof" json:"status,omitempty"`
 	Statusreason              *string                    `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vectorsearchconfiguration *VectorSearchConfiguration `protobuf:"bytes,194373657,opt,name=vectorsearchconfiguration,proto3" json:"vectorsearchconfiguration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -7295,8 +7295,8 @@ func (x *StopGraphOutput) GetSourcesnapshotid() string {
 }
 
 func (x *StopGraphOutput) GetStatus() GraphStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return GraphStatus_GRAPH_STATUS_STOPPING
 }
@@ -7669,7 +7669,7 @@ type UpdateGraphOutput struct {
 	Publicconnectivity        *string                    `protobuf:"bytes,454618760,opt,name=publicconnectivity,proto3,oneof" json:"publicconnectivity,omitempty"`
 	Replicacount              *int32                     `protobuf:"varint,508743359,opt,name=replicacount,proto3,oneof" json:"replicacount,omitempty"`
 	Sourcesnapshotid          *string                    `protobuf:"bytes,450029490,opt,name=sourcesnapshotid,proto3,oneof" json:"sourcesnapshotid,omitempty"`
-	Status                    GraphStatus                `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus" json:"status,omitempty"`
+	Status                    *GraphStatus               `protobuf:"varint,441153520,opt,name=status,proto3,enum=neptunegraph.GraphStatus,oneof" json:"status,omitempty"`
 	Statusreason              *string                    `protobuf:"bytes,352592412,opt,name=statusreason,proto3,oneof" json:"statusreason,omitempty"`
 	Vectorsearchconfiguration *VectorSearchConfiguration `protobuf:"bytes,194373657,opt,name=vectorsearchconfiguration,proto3" json:"vectorsearchconfiguration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -7791,8 +7791,8 @@ func (x *UpdateGraphOutput) GetSourcesnapshotid() string {
 }
 
 func (x *UpdateGraphOutput) GetStatus() GraphStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return GraphStatus_GRAPH_STATUS_STOPPING
 }
@@ -7812,9 +7812,9 @@ func (x *UpdateGraphOutput) GetVectorsearchconfiguration() *VectorSearchConfigur
 }
 
 type ValidationException struct {
-	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Message       string                    `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Reason        ValidationExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=neptunegraph.ValidationExceptionReason" json:"reason,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Message       string                     `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Reason        *ValidationExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=neptunegraph.ValidationExceptionReason,oneof" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7857,8 +7857,8 @@ func (x *ValidationException) GetMessage() string {
 }
 
 func (x *ValidationException) GetReason() ValidationExceptionReason {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return ValidationExceptionReason_VALIDATION_EXCEPTION_REASON_ILLEGAL_ARGUMENT
 }
@@ -7959,36 +7959,40 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x15AccessDeniedException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"C\n" +
 	"\x15CancelExportTaskInput\x12*\n" +
-	"\x0etaskidentifier\x18\xe0Ɣ\xe4\x01 \x01(\tR\x0etaskidentifier\"\xb5\x03\n" +
+	"\x0etaskidentifier\x18\xe0Ɣ\xe4\x01 \x01(\tR\x0etaskidentifier\"\xca\x03\n" +
 	"\x16CancelExportTaskOutput\x12$\n" +
 	"\vdestination\x18\xc0\xc9\xf9\x96\x01 \x01(\tR\vdestination\x126\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1a.neptunegraph.ExportFormatR\x06format\x12\x1b\n" +
 	"\agraphid\x18\xab\x8a\xe7I \x01(\tR\agraphid\x12.\n" +
-	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x00R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12:\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1e.neptunegraph.ExportTaskStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x00R\fstatusreason\x88\x01\x01\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x0f\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x01R\fstatusreason\x88\x01\x01\x12\x19\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x0e\n" +
+	"\f_parquettypeB\x0f\n" +
 	"\r_statusreason\"C\n" +
 	"\x15CancelImportTaskInput\x12*\n" +
-	"\x0etaskidentifier\x18\xe0Ɣ\xe4\x01 \x01(\tR\x0etaskidentifier\"\xc8\x02\n" +
-	"\x16CancelImportTaskOutput\x120\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatR\x06format\x12 \n" +
-	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x00R\agraphid\x88\x01\x01\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\x0etaskidentifier\x18\xe0Ɣ\xe4\x01 \x01(\tR\x0etaskidentifier\"\xed\x02\n" +
+	"\x16CancelImportTaskOutput\x125\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatH\x00R\x06format\x88\x01\x01\x12 \n" +
+	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x01R\agraphid\x88\x01\x01\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x02R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12:\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1e.neptunegraph.ImportTaskStatusR\x06status\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\t\n" +
+	"\a_formatB\n" +
 	"\n" +
-	"\b_graphid\"]\n" +
+	"\b_graphidB\x0e\n" +
+	"\f_parquettype\"]\n" +
 	"\x10CancelQueryInput\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"s\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"\x83\x01\n" +
 	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12A\n" +
-	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2%.neptunegraph.ConflictExceptionReasonR\x06reason\"\xf1\x04\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12F\n" +
+	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2%.neptunegraph.ConflictExceptionReasonH\x00R\x06reason\x88\x01\x01B\t\n" +
+	"\a_reason\"\xf1\x04\n" +
 	"\x10CreateGraphInput\x127\n" +
 	"\x12deletionprotection\x18\xf1\x8c\xe4\xc2\x01 \x01(\tH\x00R\x12deletionprotection\x88\x01\x01\x12 \n" +
 	"\tgraphname\x18定\x8f\x01 \x01(\tR\tgraphname\x123\n" +
@@ -8004,7 +8008,7 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x13_deletionprotectionB\x13\n" +
 	"\x11_kmskeyidentifierB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
-	"\r_replicacount\"\x94\a\n" +
+	"\r_replicacount\"\xa4\a\n" +
 	"\x11CreateGraphOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12(\n" +
 	"\vbuildnumber\x18\xe3\xdb\xd4` \x01(\tH\x00R\vbuildnumber\x88\x01\x01\x12'\n" +
@@ -8019,9 +8023,10 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x11provisionedmemory\x18\xfb\xf3a \x01(\x05H\x05R\x11provisionedmemory\x88\x01\x01\x127\n" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x06R\x12publicconnectivity\x88\x01\x01\x12+\n" +
 	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\aR\freplicacount\x88\x01\x01\x123\n" +
-	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\tR\fstatusreason\x88\x01\x01\x12h\n" +
+	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusH\tR\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\n" +
+	"R\fstatusreason\x88\x01\x01\x12h\n" +
 	"\x19vectorsearchconfiguration\x18\x99\xd0\xd7\\ \x01(\v2'.neptunegraph.VectorSearchConfigurationR\x19vectorsearchconfigurationB\x0e\n" +
 	"\f_buildnumberB\r\n" +
 	"\v_createtimeB\x15\n" +
@@ -8031,7 +8036,8 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
 	"\r_replicacountB\x13\n" +
-	"\x11_sourcesnapshotidB\x0f\n" +
+	"\x11_sourcesnapshotidB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_statusreason\"\xf2\x01\n" +
 	"\x18CreateGraphSnapshotInput\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12&\n" +
@@ -8039,56 +8045,62 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v20.neptunegraph.CreateGraphSnapshotInput.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf1\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x81\x03\n" +
 	"\x19CreateGraphSnapshotOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12\x12\n" +
 	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x123\n" +
 	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tH\x00R\x10kmskeyidentifier\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x127\n" +
 	"\x12snapshotcreatetime\x18\x85\xad\xb3\xe1\x01 \x01(\tH\x01R\x12snapshotcreatetime\x88\x01\x01\x12-\n" +
-	"\rsourcegraphid\x18\x92ǘ\xb7\x01 \x01(\tH\x02R\rsourcegraphid\x88\x01\x01\x128\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.neptunegraph.SnapshotStatusR\x06statusB\x13\n" +
+	"\rsourcegraphid\x18\x92ǘ\xb7\x01 \x01(\tH\x02R\rsourcegraphid\x88\x01\x01\x12=\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.neptunegraph.SnapshotStatusH\x03R\x06status\x88\x01\x01B\x13\n" +
 	"\x11_kmskeyidentifierB\x15\n" +
 	"\x13_snapshotcreatetimeB\x10\n" +
-	"\x0e_sourcegraphid\"\x88\t\n" +
-	"\x1fCreateGraphUsingImportTaskInput\x12P\n" +
-	"\x11blanknodehandling\x18\x91\xea\xf2- \x01(\x0e2\x1f.neptunegraph.BlankNodeHandlingR\x11blanknodehandling\x127\n" +
-	"\x12deletionprotection\x18\xf1\x8c\xe4\xc2\x01 \x01(\tH\x00R\x12deletionprotection\x88\x01\x01\x12)\n" +
-	"\vfailonerror\x18\x9f\xba\xba\xd0\x01 \x01(\tH\x01R\vfailonerror\x88\x01\x01\x120\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatR\x06format\x12 \n" +
+	"\x0e_sourcegraphidB\t\n" +
+	"\a_status\"\xc8\t\n" +
+	"\x1fCreateGraphUsingImportTaskInput\x12U\n" +
+	"\x11blanknodehandling\x18\x91\xea\xf2- \x01(\x0e2\x1f.neptunegraph.BlankNodeHandlingH\x00R\x11blanknodehandling\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18\xf1\x8c\xe4\xc2\x01 \x01(\tH\x01R\x12deletionprotection\x88\x01\x01\x12)\n" +
+	"\vfailonerror\x18\x9f\xba\xba\xd0\x01 \x01(\tH\x02R\vfailonerror\x88\x01\x01\x125\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatH\x03R\x06format\x88\x01\x01\x12 \n" +
 	"\tgraphname\x18定\x8f\x01 \x01(\tR\tgraphname\x12D\n" +
 	"\rimportoptions\x18\xab\x9c\xa4\x14 \x01(\v2\x1b.neptunegraph.ImportOptionsR\rimportoptions\x123\n" +
-	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tH\x02R\x10kmskeyidentifier\x88\x01\x01\x12:\n" +
-	"\x14maxprovisionedmemory\x18碤e \x01(\x05H\x03R\x14maxprovisionedmemory\x88\x01\x01\x12;\n" +
-	"\x14minprovisionedmemory\x18\x81\xdf\xc3\xc3\x01 \x01(\x05H\x04R\x14minprovisionedmemory\x88\x01\x01\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x127\n" +
-	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x05R\x12publicconnectivity\x88\x01\x01\x12+\n" +
-	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\x06R\freplicacount\x88\x01\x01\x12\x1b\n" +
+	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tH\x04R\x10kmskeyidentifier\x88\x01\x01\x12:\n" +
+	"\x14maxprovisionedmemory\x18碤e \x01(\x05H\x05R\x14maxprovisionedmemory\x88\x01\x01\x12;\n" +
+	"\x14minprovisionedmemory\x18\x81\xdf\xc3\xc3\x01 \x01(\x05H\x06R\x14minprovisionedmemory\x88\x01\x01\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\aR\vparquettype\x88\x01\x01\x127\n" +
+	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\bR\x12publicconnectivity\x88\x01\x01\x12+\n" +
+	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\tR\freplicacount\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12O\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v27.neptunegraph.CreateGraphUsingImportTaskInput.TagsEntryR\x04tags\x12h\n" +
 	"\x19vectorsearchconfiguration\x18\x99\xd0\xd7\\ \x01(\v2'.neptunegraph.VectorSearchConfigurationR\x19vectorsearchconfiguration\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x15\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x14\n" +
+	"\x12_blanknodehandlingB\x15\n" +
 	"\x13_deletionprotectionB\x0e\n" +
-	"\f_failonerrorB\x13\n" +
+	"\f_failonerrorB\t\n" +
+	"\a_formatB\x13\n" +
 	"\x11_kmskeyidentifierB\x17\n" +
 	"\x15_maxprovisionedmemoryB\x17\n" +
-	"\x15_minprovisionedmemoryB\x15\n" +
+	"\x15_minprovisionedmemoryB\x0e\n" +
+	"\f_parquettypeB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
-	"\r_replicacount\"\x98\x03\n" +
-	" CreateGraphUsingImportTaskOutput\x120\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatR\x06format\x12 \n" +
-	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x00R\agraphid\x88\x01\x01\x12D\n" +
-	"\rimportoptions\x18\xab\x9c\xa4\x14 \x01(\v2\x1b.neptunegraph.ImportOptionsR\rimportoptions\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\r_replicacount\"\xbd\x03\n" +
+	" CreateGraphUsingImportTaskOutput\x125\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatH\x00R\x06format\x88\x01\x01\x12 \n" +
+	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x01R\agraphid\x88\x01\x01\x12D\n" +
+	"\rimportoptions\x18\xab\x9c\xa4\x14 \x01(\v2\x1b.neptunegraph.ImportOptionsR\rimportoptions\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x02R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12:\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1e.neptunegraph.ImportTaskStatusR\x06status\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\t\n" +
+	"\a_formatB\n" +
 	"\n" +
-	"\b_graphid\"\xcf\x01\n" +
+	"\b_graphidB\x0e\n" +
+	"\f_parquettype\"\xcf\x01\n" +
 	"\x1fCreatePrivateGraphEndpointInput\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12 \n" +
 	"\tsubnetids\x18\xb3Ǳ\xe8\x01 \x03(\tR\tsubnetids\x12\x1d\n" +
@@ -8103,7 +8115,7 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x0e_vpcendpointid\"f\n" +
 	"\x10DeleteGraphInput\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12%\n" +
-	"\fskipsnapshot\x18\x8f\x91\xc96 \x01(\tR\fskipsnapshot\"\x94\a\n" +
+	"\fskipsnapshot\x18\x8f\x91\xc96 \x01(\tR\fskipsnapshot\"\xa4\a\n" +
 	"\x11DeleteGraphOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12(\n" +
 	"\vbuildnumber\x18\xe3\xdb\xd4` \x01(\tH\x00R\vbuildnumber\x88\x01\x01\x12'\n" +
@@ -8118,9 +8130,10 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x11provisionedmemory\x18\xfb\xf3a \x01(\x05H\x05R\x11provisionedmemory\x88\x01\x01\x127\n" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x06R\x12publicconnectivity\x88\x01\x01\x12+\n" +
 	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\aR\freplicacount\x88\x01\x01\x123\n" +
-	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\tR\fstatusreason\x88\x01\x01\x12h\n" +
+	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusH\tR\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\n" +
+	"R\fstatusreason\x88\x01\x01\x12h\n" +
 	"\x19vectorsearchconfiguration\x18\x99\xd0\xd7\\ \x01(\v2'.neptunegraph.VectorSearchConfigurationR\x19vectorsearchconfigurationB\x0e\n" +
 	"\f_buildnumberB\r\n" +
 	"\v_createtimeB\x15\n" +
@@ -8130,21 +8143,23 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
 	"\r_replicacountB\x13\n" +
-	"\x11_sourcesnapshotidB\x0f\n" +
+	"\x11_sourcesnapshotidB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_statusreason\"N\n" +
 	"\x18DeleteGraphSnapshotInput\x122\n" +
-	"\x12snapshotidentifier\x18\xe7Ψ\x83\x01 \x01(\tR\x12snapshotidentifier\"\xf1\x02\n" +
+	"\x12snapshotidentifier\x18\xe7Ψ\x83\x01 \x01(\tR\x12snapshotidentifier\"\x81\x03\n" +
 	"\x19DeleteGraphSnapshotOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12\x12\n" +
 	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x123\n" +
 	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tH\x00R\x10kmskeyidentifier\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x127\n" +
 	"\x12snapshotcreatetime\x18\x85\xad\xb3\xe1\x01 \x01(\tH\x01R\x12snapshotcreatetime\x88\x01\x01\x12-\n" +
-	"\rsourcegraphid\x18\x92ǘ\xb7\x01 \x01(\tH\x02R\rsourcegraphid\x88\x01\x01\x128\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.neptunegraph.SnapshotStatusR\x06statusB\x13\n" +
+	"\rsourcegraphid\x18\x92ǘ\xb7\x01 \x01(\tH\x02R\rsourcegraphid\x88\x01\x01\x12=\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.neptunegraph.SnapshotStatusH\x03R\x06status\x88\x01\x01B\x13\n" +
 	"\x11_kmskeyidentifierB\x15\n" +
 	"\x13_snapshotcreatetimeB\x10\n" +
-	"\x0e_sourcegraphid\"h\n" +
+	"\x0e_sourcegraphidB\t\n" +
+	"\a_status\"h\n" +
 	"\x1fDeletePrivateGraphEndpointInput\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12\x18\n" +
 	"\x05vpcid\x18\x96\xf0\xe4\x91\x01 \x01(\tR\x05vpcid\"\xe5\x01\n" +
@@ -8157,20 +8172,23 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\rEdgeStructure\x12\x1d\n" +
 	"\x05count\x18\xf5\xbb\xc7\xcd\x01 \x01(\tH\x00R\x05count\x88\x01\x01\x12*\n" +
 	"\x0eedgeproperties\x18\u0096Ω\x01 \x03(\tR\x0eedgepropertiesB\b\n" +
-	"\x06_count\"\x96\x04\n" +
-	"\x11ExecuteQueryInput\x12>\n" +
-	"\vexplainmode\x18\xe0\xd2\xf6{ \x01(\x0e2\x19.neptunegraph.ExplainModeR\vexplainmode\x12+\n" +
+	"\x06_count\"\xbe\x04\n" +
+	"\x11ExecuteQueryInput\x12C\n" +
+	"\vexplainmode\x18\xe0\xd2\xf6{ \x01(\x0e2\x19.neptunegraph.ExplainModeH\x00R\vexplainmode\x88\x01\x01\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12;\n" +
 	"\blanguage\x18\xfc\xf0\xbc\xcf\x01 \x01(\x0e2\x1b.neptunegraph.QueryLanguageR\blanguage\x12R\n" +
 	"\n" +
 	"parameters\x18\xdaݔE \x03(\v2/.neptunegraph.ExecuteQueryInput.ParametersEntryR\n" +
-	"parameters\x12<\n" +
-	"\tplancache\x18\xb1ށ\x02 \x01(\x0e2\x1b.neptunegraph.PlanCacheTypeR\tplancache\x12$\n" +
+	"parameters\x12A\n" +
+	"\tplancache\x18\xb1ށ\x02 \x01(\x0e2\x1b.neptunegraph.PlanCacheTypeH\x01R\tplancache\x88\x01\x01\x12$\n" +
 	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\x12C\n" +
-	"\x18querytimeoutmilliseconds\x18\xd9\xef\xee\x9d\x01 \x01(\tH\x00R\x18querytimeoutmilliseconds\x88\x01\x01\x1a=\n" +
+	"\x18querytimeoutmilliseconds\x18\xd9\xef\xee\x9d\x01 \x01(\tH\x02R\x18querytimeoutmilliseconds\x88\x01\x01\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x1b\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_explainmodeB\f\n" +
+	"\n" +
+	"_plancacheB\x1b\n" +
 	"\x19_querytimeoutmilliseconds\"8\n" +
 	"\x12ExecuteQueryOutput\x12\"\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\fB\x04\x88\xb5\x18\x01R\apayload\"\xfa\x02\n" +
@@ -8191,13 +8209,14 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"properties\x1ak\n" +
 	"\x0fPropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12B\n" +
-	"\x05value\x18\x02 \x01(\v2,.neptunegraph.ExportFilterPropertyAttributesR\x05value:\x028\x01\"\x82\x02\n" +
-	"\x1eExportFilterPropertyAttributes\x12X\n" +
-	"\x12multivaluehandling\x18ǵ\xd9\xea\x01 \x01(\x0e2$.neptunegraph.MultiValueHandlingTypeR\x12multivaluehandling\x12'\n" +
+	"\x05value\x18\x02 \x01(\v2,.neptunegraph.ExportFilterPropertyAttributesR\x05value:\x028\x01\"\x9e\x02\n" +
+	"\x1eExportFilterPropertyAttributes\x12]\n" +
+	"\x12multivaluehandling\x18ǵ\xd9\xea\x01 \x01(\x0e2$.neptunegraph.MultiValueHandlingTypeH\x00R\x12multivaluehandling\x88\x01\x01\x12'\n" +
 	"\n" +
-	"outputtype\x18\xad\xae\x9e\xa9\x01 \x01(\tH\x00R\n" +
+	"outputtype\x18\xad\xae\x9e\xa9\x01 \x01(\tH\x01R\n" +
 	"outputtype\x88\x01\x01\x127\n" +
-	"\x12sourcepropertyname\x18ۭƥ\x01 \x01(\tH\x01R\x12sourcepropertyname\x88\x01\x01B\r\n" +
+	"\x12sourcepropertyname\x18ۭƥ\x01 \x01(\tH\x02R\x12sourcepropertyname\x88\x01\x01B\x15\n" +
+	"\x13_multivaluehandlingB\r\n" +
 	"\v_outputtypeB\x15\n" +
 	"\x13_sourcepropertyname\"\xb0\x02\n" +
 	"\x11ExportTaskDetails\x120\n" +
@@ -8207,35 +8226,37 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\tstarttime\x18\x8f\xda\xf9T \x01(\tR\tstarttime\x121\n" +
 	"\x12timeelapsedseconds\x18\x9a\x80\xc4V \x01(\tR\x12timeelapsedsecondsB\x12\n" +
 	"\x10_numedgeswrittenB\x15\n" +
-	"\x13_numverticeswritten\"\xb0\x03\n" +
+	"\x13_numverticeswritten\"\xc5\x03\n" +
 	"\x11ExportTaskSummary\x12$\n" +
 	"\vdestination\x18\xc0\xc9\xf9\x96\x01 \x01(\tR\vdestination\x126\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1a.neptunegraph.ExportFormatR\x06format\x12\x1b\n" +
 	"\agraphid\x18\xab\x8a\xe7I \x01(\tR\agraphid\x12.\n" +
-	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x00R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12:\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1e.neptunegraph.ExportTaskStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x00R\fstatusreason\x88\x01\x01\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x0f\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x01R\fstatusreason\x88\x01\x01\x12\x19\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x0e\n" +
+	"\f_parquettypeB\x0f\n" +
 	"\r_statusreason\"@\n" +
 	"\x12GetExportTaskInput\x12*\n" +
-	"\x0etaskidentifier\x18\xe0Ɣ\xe4\x01 \x01(\tR\x0etaskidentifier\"\xc9\x04\n" +
+	"\x0etaskidentifier\x18\xe0Ɣ\xe4\x01 \x01(\tR\x0etaskidentifier\"\xde\x04\n" +
 	"\x13GetExportTaskOutput\x12$\n" +
 	"\vdestination\x18\xc0\xc9\xf9\x96\x01 \x01(\tR\vdestination\x12B\n" +
 	"\fexportfilter\x18ޕ܇\x01 \x01(\v2\x1a.neptunegraph.ExportFilterR\fexportfilter\x12Q\n" +
 	"\x11exporttaskdetails\x18\x91\xf0ٌ\x01 \x01(\v2\x1f.neptunegraph.ExportTaskDetailsR\x11exporttaskdetails\x126\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1a.neptunegraph.ExportFormatR\x06format\x12\x1b\n" +
 	"\agraphid\x18\xab\x8a\xe7I \x01(\tR\agraphid\x12.\n" +
-	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x00R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12:\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1e.neptunegraph.ExportTaskStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x00R\fstatusreason\x88\x01\x01\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x0f\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x01R\fstatusreason\x88\x01\x01\x12\x19\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x0e\n" +
+	"\f_parquettypeB\x0f\n" +
 	"\r_statusreason\"<\n" +
 	"\rGetGraphInput\x12+\n" +
-	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\"\x91\a\n" +
+	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\"\xa1\a\n" +
 	"\x0eGetGraphOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12(\n" +
 	"\vbuildnumber\x18\xe3\xdb\xd4` \x01(\tH\x00R\vbuildnumber\x88\x01\x01\x12'\n" +
@@ -8250,9 +8271,10 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x11provisionedmemory\x18\xfb\xf3a \x01(\x05H\x05R\x11provisionedmemory\x88\x01\x01\x127\n" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x06R\x12publicconnectivity\x88\x01\x01\x12+\n" +
 	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\aR\freplicacount\x88\x01\x01\x123\n" +
-	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\tR\fstatusreason\x88\x01\x01\x12h\n" +
+	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusH\tR\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\n" +
+	"R\fstatusreason\x88\x01\x01\x12h\n" +
 	"\x19vectorsearchconfiguration\x18\x99\xd0\xd7\\ \x01(\v2'.neptunegraph.VectorSearchConfigurationR\x19vectorsearchconfigurationB\x0e\n" +
 	"\f_buildnumberB\r\n" +
 	"\v_createtimeB\x15\n" +
@@ -8262,24 +8284,27 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
 	"\r_replicacountB\x13\n" +
-	"\x11_sourcesnapshotidB\x0f\n" +
+	"\x11_sourcesnapshotidB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_statusreason\"K\n" +
 	"\x15GetGraphSnapshotInput\x122\n" +
-	"\x12snapshotidentifier\x18\xe7Ψ\x83\x01 \x01(\tR\x12snapshotidentifier\"\xee\x02\n" +
+	"\x12snapshotidentifier\x18\xe7Ψ\x83\x01 \x01(\tR\x12snapshotidentifier\"\xfe\x02\n" +
 	"\x16GetGraphSnapshotOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12\x12\n" +
 	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x123\n" +
 	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tH\x00R\x10kmskeyidentifier\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x127\n" +
 	"\x12snapshotcreatetime\x18\x85\xad\xb3\xe1\x01 \x01(\tH\x01R\x12snapshotcreatetime\x88\x01\x01\x12-\n" +
-	"\rsourcegraphid\x18\x92ǘ\xb7\x01 \x01(\tH\x02R\rsourcegraphid\x88\x01\x01\x128\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.neptunegraph.SnapshotStatusR\x06statusB\x13\n" +
+	"\rsourcegraphid\x18\x92ǘ\xb7\x01 \x01(\tH\x02R\rsourcegraphid\x88\x01\x01\x12=\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.neptunegraph.SnapshotStatusH\x03R\x06status\x88\x01\x01B\x13\n" +
 	"\x11_kmskeyidentifierB\x15\n" +
 	"\x13_snapshotcreatetimeB\x10\n" +
-	"\x0e_sourcegraphid\"z\n" +
+	"\x0e_sourcegraphidB\t\n" +
+	"\a_status\"\x88\x01\n" +
 	"\x14GetGraphSummaryInput\x12+\n" +
-	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x125\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1e.neptunegraph.GraphSummaryModeR\x04mode\"\xfd\x01\n" +
+	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12:\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1e.neptunegraph.GraphSummaryModeH\x00R\x04mode\x88\x01\x01B\a\n" +
+	"\x05_mode\"\xfd\x01\n" +
 	"\x15GetGraphSummaryOutput\x12F\n" +
 	"\fgraphsummary\x18\xe2ѕ\xf0\x01 \x01(\v2\x1e.neptunegraph.GraphDataSummaryR\fgraphsummary\x12L\n" +
 	"\x1dlaststatisticscomputationtime\x18\xe1\xed\xf7! \x01(\tH\x00R\x1dlaststatisticscomputationtime\x88\x01\x01\x12 \n" +
@@ -8288,22 +8313,24 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\n" +
 	"\b_version\"@\n" +
 	"\x12GetImportTaskInput\x12*\n" +
-	"\x0etaskidentifier\x18\xe0Ɣ\xe4\x01 \x01(\tR\x0etaskidentifier\"\xdd\x04\n" +
+	"\x0etaskidentifier\x18\xe0Ɣ\xe4\x01 \x01(\tR\x0etaskidentifier\"\x82\x05\n" +
 	"\x13GetImportTaskOutput\x12-\n" +
-	"\rattemptnumber\x18\x9c\xe6\xd3\xde\x01 \x01(\tH\x00R\rattemptnumber\x88\x01\x01\x120\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatR\x06format\x12 \n" +
-	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x01R\agraphid\x88\x01\x01\x12D\n" +
+	"\rattemptnumber\x18\x9c\xe6\xd3\xde\x01 \x01(\tH\x00R\rattemptnumber\x88\x01\x01\x125\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatH\x01R\x06format\x88\x01\x01\x12 \n" +
+	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x02R\agraphid\x88\x01\x01\x12D\n" +
 	"\rimportoptions\x18\xab\x9c\xa4\x14 \x01(\v2\x1b.neptunegraph.ImportOptionsR\rimportoptions\x12Q\n" +
-	"\x11importtaskdetails\x18\x8a\xd8\xf2\xa4\x01 \x01(\v2\x1f.neptunegraph.ImportTaskDetailsR\x11importtaskdetails\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\x11importtaskdetails\x18\x8a\xd8\xf2\xa4\x01 \x01(\v2\x1f.neptunegraph.ImportTaskDetailsR\x11importtaskdetails\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x03R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12:\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1e.neptunegraph.ImportTaskStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x02R\fstatusreason\x88\x01\x01\x12\x19\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x04R\fstatusreason\x88\x01\x01\x12\x19\n" +
 	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x10\n" +
-	"\x0e_attemptnumberB\n" +
+	"\x0e_attemptnumberB\t\n" +
+	"\a_formatB\n" +
 	"\n" +
-	"\b_graphidB\x0f\n" +
+	"\b_graphidB\x0e\n" +
+	"\f_parquettypeB\x0f\n" +
 	"\r_statusreason\"e\n" +
 	"\x1cGetPrivateGraphEndpointInput\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12\x18\n" +
@@ -8316,17 +8343,18 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x0e_vpcendpointid\"Z\n" +
 	"\rGetQueryInput\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"\xf9\x01\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"\x88\x02\n" +
 	"\x0eGetQueryOutput\x12!\n" +
 	"\aelapsed\x18\x9c\xe7\xc7\xf1\x01 \x01(\tH\x00R\aelapsed\x88\x01\x01\x12\x17\n" +
 	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12)\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\x02R\vquerystring\x88\x01\x01\x122\n" +
-	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2\x18.neptunegraph.QueryStateR\x05state\x12\x1e\n" +
-	"\x06waited\x18\xa2\xdf\xf7@ \x01(\tH\x03R\x06waited\x88\x01\x01B\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\x02R\vquerystring\x88\x01\x01\x127\n" +
+	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2\x18.neptunegraph.QueryStateH\x03R\x05state\x88\x01\x01\x12\x1e\n" +
+	"\x06waited\x18\xa2\xdf\xf7@ \x01(\tH\x04R\x06waited\x88\x01\x01B\n" +
 	"\n" +
 	"\b_elapsedB\x05\n" +
 	"\x03_idB\x0e\n" +
-	"\f_querystringB\t\n" +
+	"\f_querystringB\b\n" +
+	"\x06_stateB\t\n" +
 	"\a_waited\"\xc8\a\n" +
 	"\x10GraphDataSummary\x12!\n" +
 	"\n" +
@@ -8354,18 +8382,19 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12_numnodepropertiesB\v\n" +
 	"\t_numnodesB\x1a\n" +
 	"\x18_totaledgepropertyvaluesB\x1a\n" +
-	"\x18_totalnodepropertyvalues\"\xec\x02\n" +
+	"\x18_totalnodepropertyvalues\"\xfc\x02\n" +
 	"\x14GraphSnapshotSummary\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12\x12\n" +
 	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x123\n" +
 	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tH\x00R\x10kmskeyidentifier\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x127\n" +
 	"\x12snapshotcreatetime\x18\x85\xad\xb3\xe1\x01 \x01(\tH\x01R\x12snapshotcreatetime\x88\x01\x01\x12-\n" +
-	"\rsourcegraphid\x18\x92ǘ\xb7\x01 \x01(\tH\x02R\rsourcegraphid\x88\x01\x01\x128\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.neptunegraph.SnapshotStatusR\x06statusB\x13\n" +
+	"\rsourcegraphid\x18\x92ǘ\xb7\x01 \x01(\tH\x02R\rsourcegraphid\x88\x01\x01\x12=\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1c.neptunegraph.SnapshotStatusH\x03R\x06status\x88\x01\x01B\x13\n" +
 	"\x11_kmskeyidentifierB\x15\n" +
 	"\x13_snapshotcreatetimeB\x10\n" +
-	"\x0e_sourcegraphid\"\xab\x04\n" +
+	"\x0e_sourcegraphidB\t\n" +
+	"\a_status\"\xbb\x04\n" +
 	"\fGraphSummary\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x127\n" +
 	"\x12deletionprotection\x18\xf1\x8c\xe4\xc2\x01 \x01(\tH\x00R\x12deletionprotection\x88\x01\x01\x12#\n" +
@@ -8375,14 +8404,15 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x123\n" +
 	"\x11provisionedmemory\x18\xfb\xf3a \x01(\x05H\x03R\x11provisionedmemory\x88\x01\x01\x127\n" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x04R\x12publicconnectivity\x88\x01\x01\x12+\n" +
-	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\x05R\freplicacount\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusR\x06statusB\x15\n" +
+	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\x05R\freplicacount\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusH\x06R\x06status\x88\x01\x01B\x15\n" +
 	"\x13_deletionprotectionB\v\n" +
 	"\t_endpointB\x13\n" +
 	"\x11_kmskeyidentifierB\x14\n" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
-	"\r_replicacount\"P\n" +
+	"\r_replicacountB\t\n" +
+	"\a_status\"P\n" +
 	"\rImportOptions\x12?\n" +
 	"\aneptune\x18\xb3\x99\xc2[ \x01(\v2\".neptunegraph.NeptuneImportOptionsR\aneptune\"\xf9\x02\n" +
 	"\x11ImportTaskDetails\x125\n" +
@@ -8396,17 +8426,19 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x0estatementcount\x18Ʃ\xd4\f \x01(\tR\x0estatementcount\x12\x1a\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\x121\n" +
 	"\x12timeelapsedseconds\x18\x9a\x80\xc4V \x01(\tR\x12timeelapsedsecondsB\x0f\n" +
-	"\r_errordetails\"\xc3\x02\n" +
-	"\x11ImportTaskSummary\x120\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatR\x06format\x12 \n" +
-	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x00R\agraphid\x88\x01\x01\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\r_errordetails\"\xe8\x02\n" +
+	"\x11ImportTaskSummary\x125\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatH\x00R\x06format\x88\x01\x01\x12 \n" +
+	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x01R\agraphid\x88\x01\x01\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x02R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12:\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1e.neptunegraph.ImportTaskStatusR\x06status\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\t\n" +
+	"\a_formatB\n" +
 	"\n" +
-	"\b_graphid\"6\n" +
+	"\b_graphidB\x0e\n" +
+	"\f_parquettype\"6\n" +
 	"\x17InternalServerException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc8\x01\n" +
 	"\x14ListExportTasksInput\x120\n" +
@@ -8478,13 +8510,14 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12b\n" +
 	"\x15privategraphendpoints\x18簚\x1f \x03(\v2).neptunegraph.PrivateGraphEndpointSummaryR\x15privategraphendpointsB\f\n" +
 	"\n" +
-	"_nexttoken\"\x9c\x01\n" +
+	"_nexttoken\"\xab\x01\n" +
 	"\x10ListQueriesInput\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12\"\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\tR\n" +
-	"maxresults\x127\n" +
-	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2\x1d.neptunegraph.QueryStateInputR\x05state\"L\n" +
+	"maxresults\x12<\n" +
+	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2\x1d.neptunegraph.QueryStateInputH\x00R\x05state\x88\x01\x01B\b\n" +
+	"\x06_state\"L\n" +
 	"\x11ListQueriesOutput\x127\n" +
 	"\aqueries\x18Ġ\xb6\f \x03(\v2\x1a.neptunegraph.QuerySummaryR\aqueries\"?\n" +
 	"\x18ListTagsForResourceInput\x12#\n" +
@@ -8511,21 +8544,22 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\tsubnetids\x18\xb3Ǳ\xe8\x01 \x03(\tR\tsubnetids\x12-\n" +
 	"\rvpcendpointid\x18\x9d\x8fѳ\x01 \x01(\tH\x00R\rvpcendpointid\x88\x01\x01\x12\x18\n" +
 	"\x05vpcid\x18\x96\xf0\xe4\x91\x01 \x01(\tR\x05vpcidB\x10\n" +
-	"\x0e_vpcendpointid\"\xf7\x01\n" +
+	"\x0e_vpcendpointid\"\x86\x02\n" +
 	"\fQuerySummary\x12!\n" +
 	"\aelapsed\x18\x9c\xe7\xc7\xf1\x01 \x01(\tH\x00R\aelapsed\x88\x01\x01\x12\x17\n" +
 	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12)\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\x02R\vquerystring\x88\x01\x01\x122\n" +
-	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2\x18.neptunegraph.QueryStateR\x05state\x12\x1e\n" +
-	"\x06waited\x18\xa2\xdf\xf7@ \x01(\tH\x03R\x06waited\x88\x01\x01B\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\x02R\vquerystring\x88\x01\x01\x127\n" +
+	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\x0e2\x18.neptunegraph.QueryStateH\x03R\x05state\x88\x01\x01\x12\x1e\n" +
+	"\x06waited\x18\xa2\xdf\xf7@ \x01(\tH\x04R\x06waited\x88\x01\x01B\n" +
 	"\n" +
 	"\b_elapsedB\x05\n" +
 	"\x03_idB\x0e\n" +
-	"\f_querystringB\t\n" +
+	"\f_querystringB\b\n" +
+	"\x06_stateB\t\n" +
 	"\a_waited\"e\n" +
 	"\x0fResetGraphInput\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12%\n" +
-	"\fskipsnapshot\x18\x8f\x91\xc96 \x01(\tR\fskipsnapshot\"\x93\a\n" +
+	"\fskipsnapshot\x18\x8f\x91\xc96 \x01(\tR\fskipsnapshot\"\xa3\a\n" +
 	"\x10ResetGraphOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12(\n" +
 	"\vbuildnumber\x18\xe3\xdb\xd4` \x01(\tH\x00R\vbuildnumber\x88\x01\x01\x12'\n" +
@@ -8540,9 +8574,10 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x11provisionedmemory\x18\xfb\xf3a \x01(\x05H\x05R\x11provisionedmemory\x88\x01\x01\x127\n" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x06R\x12publicconnectivity\x88\x01\x01\x12+\n" +
 	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\aR\freplicacount\x88\x01\x01\x123\n" +
-	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\tR\fstatusreason\x88\x01\x01\x12h\n" +
+	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusH\tR\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\n" +
+	"R\fstatusreason\x88\x01\x01\x12h\n" +
 	"\x19vectorsearchconfiguration\x18\x99\xd0\xd7\\ \x01(\v2'.neptunegraph.VectorSearchConfigurationR\x19vectorsearchconfigurationB\x0e\n" +
 	"\f_buildnumberB\r\n" +
 	"\v_createtimeB\x15\n" +
@@ -8552,7 +8587,8 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
 	"\r_replicacountB\x13\n" +
-	"\x11_sourcesnapshotidB\x0f\n" +
+	"\x11_sourcesnapshotidB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_statusreason\"8\n" +
 	"\x19ResourceNotFoundException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa6\x04\n" +
@@ -8570,7 +8606,7 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x13_deletionprotectionB\x14\n" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
-	"\r_replicacount\"\xa1\a\n" +
+	"\r_replicacount\"\xb1\a\n" +
 	"\x1eRestoreGraphFromSnapshotOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12(\n" +
 	"\vbuildnumber\x18\xe3\xdb\xd4` \x01(\tH\x00R\vbuildnumber\x88\x01\x01\x12'\n" +
@@ -8585,9 +8621,10 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x11provisionedmemory\x18\xfb\xf3a \x01(\x05H\x05R\x11provisionedmemory\x88\x01\x01\x127\n" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x06R\x12publicconnectivity\x88\x01\x01\x12+\n" +
 	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\aR\freplicacount\x88\x01\x01\x123\n" +
-	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\tR\fstatusreason\x88\x01\x01\x12h\n" +
+	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusH\tR\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\n" +
+	"R\fstatusreason\x88\x01\x01\x12h\n" +
 	"\x19vectorsearchconfiguration\x18\x99\xd0\xd7\\ \x01(\v2'.neptunegraph.VectorSearchConfigurationR\x19vectorsearchconfigurationB\x0e\n" +
 	"\f_buildnumberB\r\n" +
 	"\v_createtimeB\x15\n" +
@@ -8597,7 +8634,8 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
 	"\r_replicacountB\x13\n" +
-	"\x11_sourcesnapshotidB\x0f\n" +
+	"\x11_sourcesnapshotidB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_statusreason\"\xa0\x02\n" +
 	"\x1dServiceQuotaExceededException\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12%\n" +
@@ -8611,33 +8649,35 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"_quotacodeB\r\n" +
 	"\v_resourceidB\x0f\n" +
 	"\r_resourcetypeB\x0e\n" +
-	"\f_servicecode\"\xf1\x03\n" +
+	"\f_servicecode\"\x86\x04\n" +
 	"\x14StartExportTaskInput\x12$\n" +
 	"\vdestination\x18\xc0\xc9\xf9\x96\x01 \x01(\tR\vdestination\x12B\n" +
 	"\fexportfilter\x18ޕ܇\x01 \x01(\v2\x1a.neptunegraph.ExportFilterR\fexportfilter\x126\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1a.neptunegraph.ExportFormatR\x06format\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12.\n" +
-	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x00R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12D\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2,.neptunegraph.StartExportTaskInput.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf8\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_parquettype\"\x8d\x04\n" +
 	"\x15StartExportTaskOutput\x12$\n" +
 	"\vdestination\x18\xc0\xc9\xf9\x96\x01 \x01(\tR\vdestination\x12B\n" +
 	"\fexportfilter\x18ޕ܇\x01 \x01(\v2\x1a.neptunegraph.ExportFilterR\fexportfilter\x126\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x1a.neptunegraph.ExportFormatR\x06format\x12\x1b\n" +
 	"\agraphid\x18\xab\x8a\xe7I \x01(\tR\agraphid\x12.\n" +
-	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\x10kmskeyidentifier\x18\xd3ⳁ\x01 \x01(\tR\x10kmskeyidentifier\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x00R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12:\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1e.neptunegraph.ExportTaskStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x00R\fstatusreason\x88\x01\x01\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x0f\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\x01R\fstatusreason\x88\x01\x01\x12\x19\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\x0e\n" +
+	"\f_parquettypeB\x0f\n" +
 	"\r_statusreason\">\n" +
 	"\x0fStartGraphInput\x12+\n" +
-	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\"\x93\a\n" +
+	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\"\xa3\a\n" +
 	"\x10StartGraphOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12(\n" +
 	"\vbuildnumber\x18\xe3\xdb\xd4` \x01(\tH\x00R\vbuildnumber\x88\x01\x01\x12'\n" +
@@ -8652,9 +8692,10 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x11provisionedmemory\x18\xfb\xf3a \x01(\x05H\x05R\x11provisionedmemory\x88\x01\x01\x127\n" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x06R\x12publicconnectivity\x88\x01\x01\x12+\n" +
 	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\aR\freplicacount\x88\x01\x01\x123\n" +
-	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\tR\fstatusreason\x88\x01\x01\x12h\n" +
+	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusH\tR\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\n" +
+	"R\fstatusreason\x88\x01\x01\x12h\n" +
 	"\x19vectorsearchconfiguration\x18\x99\xd0\xd7\\ \x01(\v2'.neptunegraph.VectorSearchConfigurationR\x19vectorsearchconfigurationB\x0e\n" +
 	"\f_buildnumberB\r\n" +
 	"\v_createtimeB\x15\n" +
@@ -8664,31 +8705,37 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
 	"\r_replicacountB\x13\n" +
-	"\x11_sourcesnapshotidB\x0f\n" +
-	"\r_statusreason\"\xc1\x03\n" +
-	"\x14StartImportTaskInput\x12P\n" +
-	"\x11blanknodehandling\x18\x91\xea\xf2- \x01(\x0e2\x1f.neptunegraph.BlankNodeHandlingR\x11blanknodehandling\x12)\n" +
-	"\vfailonerror\x18\x9f\xba\xba\xd0\x01 \x01(\tH\x00R\vfailonerror\x88\x01\x01\x120\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatR\x06format\x12+\n" +
+	"\x11_sourcesnapshotidB\t\n" +
+	"\a_statusB\x0f\n" +
+	"\r_statusreason\"\x81\x04\n" +
+	"\x14StartImportTaskInput\x12U\n" +
+	"\x11blanknodehandling\x18\x91\xea\xf2- \x01(\x0e2\x1f.neptunegraph.BlankNodeHandlingH\x00R\x11blanknodehandling\x88\x01\x01\x12)\n" +
+	"\vfailonerror\x18\x9f\xba\xba\xd0\x01 \x01(\tH\x01R\vfailonerror\x88\x01\x01\x125\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatH\x02R\x06format\x88\x01\x01\x12+\n" +
 	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\x12D\n" +
-	"\rimportoptions\x18\xab\x9c\xa4\x14 \x01(\v2\x1b.neptunegraph.ImportOptionsR\rimportoptions\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\rimportoptions\x18\xab\x9c\xa4\x14 \x01(\v2\x1b.neptunegraph.ImportOptionsR\rimportoptions\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x03R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12\x1a\n" +
-	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06sourceB\x0e\n" +
-	"\f_failonerror\"\x8d\x03\n" +
-	"\x15StartImportTaskOutput\x120\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatR\x06format\x12 \n" +
-	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x00R\agraphid\x88\x01\x01\x12D\n" +
-	"\rimportoptions\x18\xab\x9c\xa4\x14 \x01(\v2\x1b.neptunegraph.ImportOptionsR\rimportoptions\x12>\n" +
-	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeR\vparquettype\x12\x1b\n" +
+	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06sourceB\x14\n" +
+	"\x12_blanknodehandlingB\x0e\n" +
+	"\f_failonerrorB\t\n" +
+	"\a_formatB\x0e\n" +
+	"\f_parquettype\"\xb2\x03\n" +
+	"\x15StartImportTaskOutput\x125\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x14.neptunegraph.FormatH\x00R\x06format\x88\x01\x01\x12 \n" +
+	"\agraphid\x18\xab\x8a\xe7I \x01(\tH\x01R\agraphid\x88\x01\x01\x12D\n" +
+	"\rimportoptions\x18\xab\x9c\xa4\x14 \x01(\v2\x1b.neptunegraph.ImportOptionsR\rimportoptions\x12C\n" +
+	"\vparquettype\x18\xf4ȭr \x01(\x0e2\x19.neptunegraph.ParquetTypeH\x02R\vparquettype\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12\x1a\n" +
 	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12:\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x1e.neptunegraph.ImportTaskStatusR\x06status\x12\x19\n" +
-	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\n" +
+	"\x06taskid\x18\xc2ʮg \x01(\tR\x06taskidB\t\n" +
+	"\a_formatB\n" +
 	"\n" +
-	"\b_graphid\"=\n" +
+	"\b_graphidB\x0e\n" +
+	"\f_parquettype\"=\n" +
 	"\x0eStopGraphInput\x12+\n" +
-	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\"\x92\a\n" +
+	"\x0fgraphidentifier\x18\xed\xf3\xd4\x17 \x01(\tR\x0fgraphidentifier\"\xa2\a\n" +
 	"\x0fStopGraphOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12(\n" +
 	"\vbuildnumber\x18\xe3\xdb\xd4` \x01(\tH\x00R\vbuildnumber\x88\x01\x01\x12'\n" +
@@ -8703,9 +8750,10 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x11provisionedmemory\x18\xfb\xf3a \x01(\x05H\x05R\x11provisionedmemory\x88\x01\x01\x127\n" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x06R\x12publicconnectivity\x88\x01\x01\x12+\n" +
 	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\aR\freplicacount\x88\x01\x01\x123\n" +
-	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\tR\fstatusreason\x88\x01\x01\x12h\n" +
+	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusH\tR\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\n" +
+	"R\fstatusreason\x88\x01\x01\x12h\n" +
 	"\x19vectorsearchconfiguration\x18\x99\xd0\xd7\\ \x01(\v2'.neptunegraph.VectorSearchConfigurationR\x19vectorsearchconfigurationB\x0e\n" +
 	"\f_buildnumberB\r\n" +
 	"\v_createtimeB\x15\n" +
@@ -8715,7 +8763,8 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
 	"\r_replicacountB\x13\n" +
-	"\x11_sourcesnapshotidB\x0f\n" +
+	"\x11_sourcesnapshotidB\t\n" +
+	"\a_statusB\x0f\n" +
 	"\r_statusreason\"\xb2\x01\n" +
 	"\x10TagResourceInput\x12#\n" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\x12@\n" +
@@ -8740,7 +8789,7 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x02R\x12publicconnectivity\x88\x01\x01B\x15\n" +
 	"\x13_deletionprotectionB\x14\n" +
 	"\x12_provisionedmemoryB\x15\n" +
-	"\x13_publicconnectivity\"\x94\a\n" +
+	"\x13_publicconnectivity\"\xa4\a\n" +
 	"\x11UpdateGraphOutput\x12\x14\n" +
 	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12(\n" +
 	"\vbuildnumber\x18\xe3\xdb\xd4` \x01(\tH\x00R\vbuildnumber\x88\x01\x01\x12'\n" +
@@ -8755,9 +8804,10 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x11provisionedmemory\x18\xfb\xf3a \x01(\x05H\x05R\x11provisionedmemory\x88\x01\x01\x127\n" +
 	"\x12publicconnectivity\x18\x88\xdd\xe3\xd8\x01 \x01(\tH\x06R\x12publicconnectivity\x88\x01\x01\x12+\n" +
 	"\freplicacount\x18\xbf\x9d\xcb\xf2\x01 \x01(\x05H\aR\freplicacount\x88\x01\x01\x123\n" +
-	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusR\x06status\x12+\n" +
-	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\tR\fstatusreason\x88\x01\x01\x12h\n" +
+	"\x10sourcesnapshotid\x18\xb2\xcf\xcb\xd6\x01 \x01(\tH\bR\x10sourcesnapshotid\x88\x01\x01\x12:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.neptunegraph.GraphStatusH\tR\x06status\x88\x01\x01\x12+\n" +
+	"\fstatusreason\x18\x9cĐ\xa8\x01 \x01(\tH\n" +
+	"R\fstatusreason\x88\x01\x01\x12h\n" +
 	"\x19vectorsearchconfiguration\x18\x99\xd0\xd7\\ \x01(\v2'.neptunegraph.VectorSearchConfigurationR\x19vectorsearchconfigurationB\x0e\n" +
 	"\f_buildnumberB\r\n" +
 	"\v_createtimeB\x15\n" +
@@ -8767,11 +8817,13 @@ const file_neptunegraph_proto_rawDesc = "" +
 	"\x12_provisionedmemoryB\x15\n" +
 	"\x13_publicconnectivityB\x0f\n" +
 	"\r_replicacountB\x13\n" +
-	"\x11_sourcesnapshotidB\x0f\n" +
-	"\r_statusreason\"w\n" +
+	"\x11_sourcesnapshotidB\t\n" +
+	"\a_statusB\x0f\n" +
+	"\r_statusreason\"\x87\x01\n" +
 	"\x13ValidationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12C\n" +
-	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2'.neptunegraph.ValidationExceptionReasonR\x06reason\"<\n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12H\n" +
+	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2'.neptunegraph.ValidationExceptionReasonH\x00R\x06reason\x88\x01\x01B\t\n" +
+	"\a_reason\"<\n" +
 	"\x19VectorSearchConfiguration\x12\x1f\n" +
 	"\tdimension\x18\xe4խ8 \x01(\x05R\tdimension\"\x99\x01\n" +
 	"\x16LongValuedMapListEntry\x12E\n" +
@@ -9251,6 +9303,7 @@ func file_neptunegraph_proto_init() {
 	}
 	file_neptunegraph_proto_msgTypes[2].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[4].OneofWrappers = []any{}
+	file_neptunegraph_proto_msgTypes[6].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[7].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[8].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[10].OneofWrappers = []any{}
@@ -9269,6 +9322,7 @@ func file_neptunegraph_proto_init() {
 	file_neptunegraph_proto_msgTypes[30].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[32].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[34].OneofWrappers = []any{}
+	file_neptunegraph_proto_msgTypes[35].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[36].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[38].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[40].OneofWrappers = []any{}
@@ -9288,6 +9342,7 @@ func file_neptunegraph_proto_init() {
 	file_neptunegraph_proto_msgTypes[57].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[58].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[59].OneofWrappers = []any{}
+	file_neptunegraph_proto_msgTypes[60].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[64].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[65].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[66].OneofWrappers = []any{}
@@ -9296,6 +9351,7 @@ func file_neptunegraph_proto_init() {
 	file_neptunegraph_proto_msgTypes[71].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[72].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[73].OneofWrappers = []any{}
+	file_neptunegraph_proto_msgTypes[74].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[75].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[77].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[78].OneofWrappers = []any{}
@@ -9303,6 +9359,7 @@ func file_neptunegraph_proto_init() {
 	file_neptunegraph_proto_msgTypes[81].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[88].OneofWrappers = []any{}
 	file_neptunegraph_proto_msgTypes[89].OneofWrappers = []any{}
+	file_neptunegraph_proto_msgTypes[90].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

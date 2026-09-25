@@ -26,7 +26,7 @@
 | CloudWatch Metrics | Broad | No metric streams or anomaly-detection evaluation |
 | Cognito Identity | Selective | Identity pools only; no external-IdP role-mapping claims |
 | Cognito IDP | Selective | No external IdP; no Firehose log-delivery export |
-| DynamoDB | Broad | No ION import/export |
+| DynamoDB | Broad | No ION import; no auto-scaling policy execution; no multi-account global tables |
 | EventBridge | Broad | No global endpoints or partner event sources; no ECS task or SSM Run Command targets |
 | IAM | Broad | No policy-simulator family beyond `SimulatePrincipalPolicy` and `ListPoliciesGrantingServiceAccess`; no organisations integration, GetHumanReadableSummary, or delegation request APIs |
 | Kinesis | Full | No Channel API family (CreateChannel, DeleteChannel, DescribeChannel, ListChannels, UpdateChannel) |
@@ -152,6 +152,12 @@ Platform behaviour detail and restrictions, including where AWS leaves behaviour
 - **Cognito Identity — role-mapping claim source**: role mappings read claims from linked platform user-pool ID tokens — Logins keys of the issuer form `cognito-idp.<region>.amazonaws.com/<poolID>`, validated by signature, issuer and token_use; the ID token derives its `cognito:roles` and `cognito:preferred_role` claims from the IAM roles of the user's groups (highest precedence nominates the preferred role). A login under any other provider name belongs to an external identity provider, which the platform does not implement: it carries no verifiable token, contributes no claims, and the mapping's AmbiguousRoleResolution governs (fail-closed under Deny). Principal-tag attribute maps feed session tags on the issued credentials — custom mappings take their values from the mapped ID-token claims, and UseDefaults applies the aud and sub defaults (app client ID and user ID) — and do not feed role resolution.
 
 - **DynamoDB — Streams and Global Tables**: implemented with multi-active replication.
+
+- **DynamoDB — multi-account global tables**: the settings-replication members UpdateTable defines for preparing a regional table as a multi-account global table source (GlobalTableSettingsReplicationMode) and the GlobalTableWitnessUpdates member refuse with a ValidationException — the multi-account global table substrate (cross-account replication groups, witness replicas, MRSC synchronous replication) is not implemented, so the members are refused rather than accepted without effect. Single-account multi-region global tables (CreateGlobalTable / UpdateGlobalTable / UpdateTable ReplicaUpdates) are implemented, including the per-replica Update action members (KMSMasterKeyId, ProvisionedThroughputOverride, OnDemandThroughputOverride, per-index capacity overrides).
+
+- **DynamoDB — ION format asymmetry**: `ExportTableToPointInTime` with `ExportFormat: ION` produces the documented Ion text export (version marker, `$dynamodb_SS`-annotated sets, newline-delimited items), while `ImportTable` with `InputFormat: ION` is rejected — the platform carries no Ion input reader, so only the JSON and CSV input formats import.
+
+- **DynamoDB — auto scaling**: the replica auto-scaling settings round-trip — UpdateTableReplicaAutoScaling persists per-replica capacity auto-scaling settings (table and GSI level) and DescribeTableReplicaAutoScaling returns the stored record — but no scaling is executed: the Application Auto Scaling policy engine is unimplemented platform-wide, so provisioned capacity never adjusts from these settings.
 
 - **EventBridge — rule target accept/deliver matrix**: PutTargets accepts a target ARN only when the platform has a delivery path for its service and resource form: Lambda, SQS, SNS, Step Functions, CloudWatch Logs, Kinesis, AppSync GraphQL endpoints (invoking `AppSyncParameters.GraphQLOperation` with the transformed payload as variables), same/cross-account event buses, API destinations, and Firehose delivery streams. Firehose targets are accepted with delivery failing fast to the terminal (dead-letter/drop) handling until the platform Firehose service exists, when delivery activates with it. ECS task targets are rejected — the ECS service is not implemented (Basic Policy future-expansion list); SSM Run Command targets are rejected — SSM implements Parameter Store only, and Run Command requires the SendCommand operation and an instance execution plane.
 

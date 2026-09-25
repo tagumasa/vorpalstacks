@@ -91,7 +91,7 @@ func (h *AdminHandler) CreateLogGroup(ctx context.Context, req *connect.Request[
 
 	input := CreateLogGroupInput{
 		LogGroupName:              req.Msg.GetLoggroupname(),
-		LogGroupClass:             pbLogGroupClassToString(req.Msg.Loggroupclass),
+		LogGroupClass:             pbLogGroupClassToString(req.Msg.GetLoggroupclass()),
 		Tags:                      req.Msg.Tags,
 		DeletionProtectionEnabled: req.Msg.GetDeletionprotectionenabled(),
 		Region:                    region,

@@ -67,18 +67,15 @@ func isIndexMember(item *dbstore.Item, hashName, sortName string, gsi bool) bool
 	return true
 }
 
-// rcuPerItem returns the read capacity units charged per evaluated item.
-// Strongly consistent base-table and local-index reads consume 1.0 unit per
-// item, eventually consistent reads 0.5. Global secondary indexes are
-// eventually consistent only, so they always consume 0.5.
-func rcuPerItem(consistentRead bool, indexName string, table *dbstore.Table) float64 {
+// readIsStronglyConsistent resolves the effective read consistency for a
+// capacity charge: Global Secondary Indexes are eventually consistent
+// only, so a read against one always charges eventually consistent units
+// whatever the request flag said.
+func readIsStronglyConsistent(consistentRead bool, indexName string, table *dbstore.Table) bool {
 	if indexName != "" && isGSI(table, indexName) {
-		return 0.5
+		return false
 	}
-	if consistentRead {
-		return 1.0
-	}
-	return 0.5
+	return consistentRead
 }
 
 // indexProjectedAttributes returns the attribute names available from an
@@ -146,7 +143,7 @@ func applyIndexProjection(attrs map[string]*dbstore.AttributeValue, table *dbsto
 // only reference projected attribute names. Local secondary indexes are not
 // restricted because they can fetch unprojected attributes from the parent
 // table.
-func validateGSIProjectionRequest(table *dbstore.Table, indexName string, allProjected, countOnly bool, projection []string) error {
+func validateGSIProjectionRequest(table *dbstore.Table, indexName string, allProjected, countOnly bool, projection [][]docPathPart) error {
 	projected := indexProjectedAttributes(table, indexName)
 	if projected == nil {
 		return nil
@@ -155,7 +152,13 @@ func validateGSIProjectionRequest(table *dbstore.Table, indexName string, allPro
 		return NewAPIError("com.amazon.coral.validate#ValidationException",
 			"One or more parameter values were invalid: Select value ALL_ATTRIBUTES is not supported for global secondary index because not all attributes are projected into the index", http.StatusBadRequest)
 	}
-	for _, name := range projection {
+	// The attribute a projection document path addresses is its top-level
+	// segment — the only level a GSI projection decides membership on.
+	for _, path := range projection {
+		name := ""
+		if len(path) > 0 {
+			name = path[0].name
+		}
 		if !projected[name] {
 			return NewAPIError("com.amazon.coral.validate#ValidationException",
 				"One or more parameter values were invalid: attribute "+name+" is not projected into the global secondary index", http.StatusBadRequest)
@@ -225,16 +228,16 @@ func indexMarkerFromStartKey(table *dbstore.Table, indexName, encodedHashValue s
 	}
 
 	_, sortName, _ := indexKeyAttributeNames(table, indexName)
+	encodedSort := ""
 	if sortName != "" {
 		sortAttr, ok := esk[sortName]
 		if !ok || sortAttr == nil {
 			return ""
 		}
-		encodedSort := dbstore.EncodeKeyValue(sortAttr)
+		encodedSort = dbstore.EncodeKeyValue(sortAttr)
 		if encodedSort == "" {
 			return ""
 		}
-		return table.Name + dbstore.KeySep + indexName + dbstore.KeySep + encodedHashValue + dbstore.KeySep + encodedSort + dbstore.KeySep + primaryKeyStr
 	}
-	return table.Name + dbstore.KeySep + indexName + dbstore.KeySep + encodedHashValue + dbstore.KeySep + primaryKeyStr
+	return dbstore.BuildIndexScanKey(table.Name, indexName, encodedHashValue, encodedSort, primaryKeyStr)
 }

@@ -497,7 +497,7 @@ message CreateCustomKeyStoreRequest {
 
   string customkeystorename = 170278046;
 
-  CustomKeyStoreType customkeystoretype = 415647103;
+  optional CustomKeyStoreType customkeystoretype = 415647103;
 
   optional string keystorepassword = 403136353;
 
@@ -505,7 +505,7 @@ message CreateCustomKeyStoreRequest {
 
   XksProxyAuthenticationCredentialType xksproxyauthenticationcredential = 350418199;
 
-  XksProxyConnectivityType xksproxyconnectivity = 298569161;
+  optional XksProxyConnectivityType xksproxyconnectivity = 298569161;
 
   optional string xksproxyuriendpoint = 273255559;
 
@@ -569,17 +569,17 @@ message CreateKeyRequest {
 
   optional string customkeystoreid = 88348228;
 
-  CustomerMasterKeySpec customermasterkeyspec = 472470930;
+  optional CustomerMasterKeySpec customermasterkeyspec = 472470930;
 
   optional string description = 115243530;
 
-  KeySpec keyspec = 138220928;
+  optional KeySpec keyspec = 138220928;
 
-  KeyUsageType keyusage = 357216772;
+  optional KeyUsageType keyusage = 357216772;
 
   optional bool multiregion = 405769103;
 
-  OriginType origin = 529732720;
+  optional OriginType origin = 529732720;
 
   optional string policy = 471611296;
 
@@ -655,9 +655,9 @@ message CustomKeyStoresListEntry {
 
   optional string cloudhsmclusterid = 56498754;
 
-  ConnectionErrorCodeType connectionerrorcode = 324951101;
+  optional ConnectionErrorCodeType connectionerrorcode = 324951101;
 
-  ConnectionStateType connectionstate = 404323675;
+  optional ConnectionStateType connectionstate = 404323675;
 
   optional string creationdate = 288222305;
 
@@ -665,7 +665,7 @@ message CustomKeyStoresListEntry {
 
   optional string customkeystorename = 170278046;
 
-  CustomKeyStoreType customkeystoretype = 415647103;
+  optional CustomKeyStoreType customkeystoretype = 415647103;
 
   optional string trustanchorcertificate = 48354588;
 
@@ -749,7 +749,7 @@ message DecryptRequest {
 
   repeated DryRunModifierType dryrunmodifiers = 24346424;
 
-  EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
+  optional EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
 
   map<string, string> encryptioncontext = 286249536;
 
@@ -767,7 +767,7 @@ message DecryptResponse {
 
   optional bytes ciphertextforrecipient = 75299212;
 
-  EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
+  optional EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
 
   optional string keyid = 275906594;
 
@@ -853,11 +853,11 @@ message DeriveSharedSecretResponse {
 
   optional bytes ciphertextforrecipient = 75299212;
 
-  KeyAgreementAlgorithmSpec keyagreementalgorithm = 99147702;
+  optional KeyAgreementAlgorithmSpec keyagreementalgorithm = 99147702;
 
   optional string keyid = 275906594;
 
-  OriginType keyorigin = 50912311;
+  optional OriginType keyorigin = 50912311;
 
   optional bytes sharedsecret = 382876889;
 
@@ -989,7 +989,7 @@ message EncryptRequest {
 
   optional bool dryrun = 92204984;
 
-  EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
+  optional EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
 
   map<string, string> encryptioncontext = 286249536;
 
@@ -1007,7 +1007,7 @@ message EncryptResponse {
 
   optional bytes ciphertextblob = 338198183;
 
-  EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
+  optional EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
 
   optional string keyid = 275906594;
 
@@ -1075,7 +1075,7 @@ message GenerateDataKeyPairResponse {
 
   optional string keymaterialid = 147011585;
 
-  DataKeyPairSpec keypairspec = 142696380;
+  optional DataKeyPairSpec keypairspec = 142696380;
 
   optional bytes privatekeyciphertextblob = 295238401;
 
@@ -1109,7 +1109,7 @@ message GenerateDataKeyPairWithoutPlaintextResponse {
 
   optional string keymaterialid = 147011585;
 
-  DataKeyPairSpec keypairspec = 142696380;
+  optional DataKeyPairSpec keypairspec = 142696380;
 
   optional bytes privatekeyciphertextblob = 295238401;
 
@@ -1129,7 +1129,7 @@ message GenerateDataKeyRequest {
 
   string keyid = 275906594;
 
-  DataKeySpec keyspec = 138220928;
+  optional DataKeySpec keyspec = 138220928;
 
   optional int32 numberofbytes = 277086201;
 
@@ -1165,7 +1165,7 @@ message GenerateDataKeyWithoutPlaintextRequest {
 
   string keyid = 275906594;
 
-  DataKeySpec keyspec = 138220928;
+  optional DataKeySpec keyspec = 138220928;
 
   optional int32 numberofbytes = 277086201;
 
@@ -1207,7 +1207,7 @@ message GenerateMacResponse {
 
   optional bytes mac = 296223945;
 
-  MacAlgorithmSpec macalgorithm = 253519878;
+  optional MacAlgorithmSpec macalgorithm = 253519878;
 
 }
 
@@ -1339,7 +1339,7 @@ message GetPublicKeyRequest {
 
 message GetPublicKeyResponse {
 
-  CustomerMasterKeySpec customermasterkeyspec = 472470930;
+  optional CustomerMasterKeySpec customermasterkeyspec = 472470930;
 
   repeated EncryptionAlgorithmSpec encryptionalgorithms = 194511375;
 
@@ -1347,9 +1347,9 @@ message GetPublicKeyResponse {
 
   optional string keyid = 275906594;
 
-  KeySpec keyspec = 138220928;
+  optional KeySpec keyspec = 138220928;
 
-  KeyUsageType keyusage = 357216772;
+  optional KeyUsageType keyusage = 357216772;
 
   optional bytes publickey = 167335776;
 
@@ -1447,11 +1447,11 @@ message ImportKeyMaterialRequest {
 
   bytes encryptedkeymaterial = 3185968;
 
-  ExpirationModelType expirationmodel = 113933558;
+  optional ExpirationModelType expirationmodel = 113933558;
 
   bytes importtoken = 461726162;
 
-  ImportType importtype = 331980349;
+  optional ImportType importtype = 331980349;
 
   string keyid = 275906594;
 
@@ -1679,7 +1679,7 @@ message KeyLastUsageData {
 
   optional string kmsrequestid = 427787075;
 
-  KeyLastUsageTrackingOperation operation = 26084007;
+  optional KeyLastUsageTrackingOperation operation = 26084007;
 
   optional string timestamp = 162390468;
 
@@ -1769,7 +1769,7 @@ message KeyMetadata {
 
   optional string customkeystoreid = 88348228;
 
-  CustomerMasterKeySpec customermasterkeyspec = 472470930;
+  optional CustomerMasterKeySpec customermasterkeyspec = 472470930;
 
   optional string deletiondate = 347845564;
 
@@ -1779,19 +1779,19 @@ message KeyMetadata {
 
   repeated EncryptionAlgorithmSpec encryptionalgorithms = 194511375;
 
-  ExpirationModelType expirationmodel = 113933558;
+  optional ExpirationModelType expirationmodel = 113933558;
 
   repeated KeyAgreementAlgorithmSpec keyagreementalgorithms = 328746163;
 
   string keyid = 275906594;
 
-  KeyManagerType keymanager = 432733972;
+  optional KeyManagerType keymanager = 432733972;
 
-  KeySpec keyspec = 138220928;
+  optional KeySpec keyspec = 138220928;
 
-  KeyState keystate = 27894226;
+  optional KeyState keystate = 27894226;
 
-  KeyUsageType keyusage = 357216772;
+  optional KeyUsageType keyusage = 357216772;
 
   repeated MacAlgorithmSpec macalgorithms = 532181443;
 
@@ -1799,7 +1799,7 @@ message KeyMetadata {
 
   MultiRegionConfiguration multiregionconfiguration = 460103813;
 
-  OriginType origin = 529732720;
+  optional OriginType origin = 529732720;
 
   optional int32 pendingdeletionwindowindays = 480447795;
 
@@ -1989,7 +1989,7 @@ message ListKeyPoliciesResponse {
 
 message ListKeyRotationsRequest {
 
-  IncludeKeyMaterial includekeymaterial = 531559428;
+  optional IncludeKeyMaterial includekeymaterial = 531559428;
 
   string keyid = 275906594;
 
@@ -2113,7 +2113,7 @@ enum MessageType {
 
 message MultiRegionConfiguration {
 
-  MultiRegionKeyType multiregionkeytype = 483927198;
+  optional MultiRegionKeyType multiregionkeytype = 483927198;
 
   MultiRegionKey primarykey = 174019825;
 
@@ -2187,7 +2187,7 @@ message ReEncryptRequest {
 
   optional bytes ciphertextblob = 338198183;
 
-  EncryptionAlgorithmSpec destinationencryptionalgorithm = 3500944;
+  optional EncryptionAlgorithmSpec destinationencryptionalgorithm = 3500944;
 
   map<string, string> destinationencryptioncontext = 116435710;
 
@@ -2199,7 +2199,7 @@ message ReEncryptRequest {
 
   repeated string granttokens = 339740300;
 
-  EncryptionAlgorithmSpec sourceencryptionalgorithm = 283215847;
+  optional EncryptionAlgorithmSpec sourceencryptionalgorithm = 283215847;
 
   map<string, string> sourceencryptioncontext = 203785001;
 
@@ -2213,13 +2213,13 @@ message ReEncryptResponse {
 
   optional bytes ciphertextblob = 338198183;
 
-  EncryptionAlgorithmSpec destinationencryptionalgorithm = 3500944;
+  optional EncryptionAlgorithmSpec destinationencryptionalgorithm = 3500944;
 
   optional string destinationkeymaterialid = 469834039;
 
   optional string keyid = 275906594;
 
-  EncryptionAlgorithmSpec sourceencryptionalgorithm = 283215847;
+  optional EncryptionAlgorithmSpec sourceencryptionalgorithm = 283215847;
 
   optional string sourcekeyid = 137105771;
 
@@ -2235,7 +2235,7 @@ message RecipientInfo {
 
   optional bytes attestationdocument = 217786849;
 
-  KeyEncryptionMechanism keyencryptionalgorithm = 478234803;
+  optional KeyEncryptionMechanism keyencryptionalgorithm = 478234803;
 
 }
 
@@ -2327,9 +2327,9 @@ enum RotationType {
 
 message RotationsListEntry {
 
-  ExpirationModelType expirationmodel = 113933558;
+  optional ExpirationModelType expirationmodel = 113933558;
 
-  ImportState importstate = 32548970;
+  optional ImportState importstate = 32548970;
 
   optional string keyid = 275906594;
 
@@ -2337,11 +2337,11 @@ message RotationsListEntry {
 
   optional string keymaterialid = 147011585;
 
-  KeyMaterialState keymaterialstate = 431806871;
+  optional KeyMaterialState keymaterialstate = 431806871;
 
   optional string rotationdate = 529238652;
 
-  RotationType rotationtype = 122951592;
+  optional RotationType rotationtype = 122951592;
 
   optional string validto = 522718673;
 
@@ -2365,7 +2365,7 @@ message ScheduleKeyDeletionResponse {
 
   optional string keyid = 275906594;
 
-  KeyState keystate = 27894226;
+  optional KeyState keystate = 27894226;
 
   optional int32 pendingwindowindays = 532945081;
 
@@ -2383,7 +2383,7 @@ message SignRequest {
 
   bytes message = 235854213;
 
-  MessageType messagetype = 452676013;
+  optional MessageType messagetype = 452676013;
 
   SigningAlgorithmSpec signingalgorithm = 488091842;
 
@@ -2397,7 +2397,7 @@ message SignResponse {
 
   optional bytes signature = 4785422;
 
-  SigningAlgorithmSpec signingalgorithm = 488091842;
+  optional SigningAlgorithmSpec signingalgorithm = 488091842;
 
 }
 
@@ -2509,7 +2509,7 @@ message UpdateCustomKeyStoreRequest {
 
   XksProxyAuthenticationCredentialType xksproxyauthenticationcredential = 350418199;
 
-  XksProxyConnectivityType xksproxyconnectivity = 298569161;
+  optional XksProxyConnectivityType xksproxyconnectivity = 298569161;
 
   optional string xksproxyuriendpoint = 273255559;
 
@@ -2571,7 +2571,7 @@ message VerifyMacResponse {
 
   optional string keyid = 275906594;
 
-  MacAlgorithmSpec macalgorithm = 253519878;
+  optional MacAlgorithmSpec macalgorithm = 253519878;
 
   optional bool macvalid = 482746075;
 
@@ -2589,7 +2589,7 @@ message VerifyRequest {
 
   bytes message = 235854213;
 
-  MessageType messagetype = 452676013;
+  optional MessageType messagetype = 452676013;
 
   bytes signature = 4785422;
 
@@ -2605,7 +2605,7 @@ message VerifyResponse {
 
   optional bool signaturevalid = 272180330;
 
-  SigningAlgorithmSpec signingalgorithm = 488091842;
+  optional SigningAlgorithmSpec signingalgorithm = 488091842;
 
 }
 
@@ -2683,7 +2683,7 @@ message XksProxyConfigurationType {
 
   optional string accesskeyid = 453893024;
 
-  XksProxyConnectivityType connectivity = 210638147;
+  optional XksProxyConnectivityType connectivity = 210638147;
 
   optional string uriendpoint = 79142005;
 

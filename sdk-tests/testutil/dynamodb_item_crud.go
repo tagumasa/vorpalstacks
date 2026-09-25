@@ -171,7 +171,7 @@ func (r *TestRunner) dynamoDBReturnValueTests(ctx context.Context, client *dynam
 			Key: map[string]types.AttributeValue{
 				"id": &types.AttributeValueMemberS{Value: "ua1"},
 			},
-			UpdateExpression: aws.String("ADD #v :inc, SET #t = list_append(#t, :newTag)"),
+			UpdateExpression: aws.String("ADD #v :inc SET #t = list_append(#t, :newTag)"),
 			ExpressionAttributeNames: map[string]string{
 				"#v": "val",
 				"#t": "tags",

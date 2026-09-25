@@ -401,7 +401,7 @@ message AccessDeniedException {
 
 message AdditionalAuthenticationProvider {
 
-  AuthenticationType authenticationtype = 42854794;
+  optional AuthenticationType authenticationtype = 42854794;
 
   LambdaAuthorizerConfig lambdaauthorizerconfig = 101350024;
 
@@ -447,7 +447,7 @@ message ApiAssociation {
 
   optional string apiid = 113380971;
 
-  AssociationStatus associationstatus = 350428071;
+  optional AssociationStatus associationstatus = 350428071;
 
   optional string deploymentdetail = 69787328;
 
@@ -461,19 +461,19 @@ message ApiAssociation {
 
 message ApiCache {
 
-  ApiCachingBehavior apicachingbehavior = 489318031;
+  optional ApiCachingBehavior apicachingbehavior = 489318031;
 
   optional bool atrestencryptionenabled = 454702113;
 
-  CacheHealthMetricsConfig healthmetricsconfig = 48720399;
+  optional CacheHealthMetricsConfig healthmetricsconfig = 48720399;
 
-  ApiCacheStatus status = 441153520;
+  optional ApiCacheStatus status = 441153520;
 
   optional bool transitencryptionenabled = 166976639;
 
   optional int64 ttl = 489374300;
 
-  ApiCacheType type = 287830350;
+  optional ApiCacheType type = 287830350;
 
 }
 
@@ -767,7 +767,7 @@ message BadRequestException {
 
   optional string message = 82970853;
 
-  BadRequestReason reason = 413359642;
+  optional BadRequestReason reason = 413359642;
 
 }
 
@@ -941,7 +941,7 @@ message CreateApiCacheRequest {
 
   optional bool atrestencryptionenabled = 454702113;
 
-  CacheHealthMetricsConfig healthmetricsconfig = 48720399;
+  optional CacheHealthMetricsConfig healthmetricsconfig = 48720399;
 
   optional bool transitencryptionenabled = 166976639;
 
@@ -1049,7 +1049,7 @@ message CreateDataSourceRequest {
 
   LambdaDataSourceConfig lambdaconfig = 505299205;
 
-  DataSourceLevelMetricsConfig metricsconfig = 278835313;
+  optional DataSourceLevelMetricsConfig metricsconfig = 278835313;
 
   string name = 221887975;
 
@@ -1135,13 +1135,13 @@ message CreateGraphqlApiRequest {
 
   repeated AdditionalAuthenticationProvider additionalauthenticationproviders = 159806731;
 
-  GraphQLApiType apitype = 74688128;
+  optional GraphQLApiType apitype = 74688128;
 
   AuthenticationType authenticationtype = 42854794;
 
   EnhancedMetricsConfig enhancedmetricsconfig = 97907511;
 
-  GraphQLApiIntrospectionConfig introspectionconfig = 295245787;
+  optional GraphQLApiIntrospectionConfig introspectionconfig = 295245787;
 
   LambdaAuthorizerConfig lambdaauthorizerconfig = 101350024;
 
@@ -1163,7 +1163,7 @@ message CreateGraphqlApiRequest {
 
   UserPoolConfig userpoolconfig = 448520271;
 
-  GraphQLApiVisibility visibility = 523761126;
+  optional GraphQLApiVisibility visibility = 523761126;
 
   optional bool xrayenabled = 467402691;
 
@@ -1191,11 +1191,11 @@ message CreateResolverRequest {
 
   string fieldname = 487483205;
 
-  ResolverKind kind = 420733508;
+  optional ResolverKind kind = 420733508;
 
   optional int32 maxbatchsize = 45298679;
 
-  ResolverLevelMetricsConfig metricsconfig = 278835313;
+  optional ResolverLevelMetricsConfig metricsconfig = 278835313;
 
   PipelineConfig pipelineconfig = 128197026;
 
@@ -1259,7 +1259,7 @@ message DataSource {
 
   LambdaDataSourceConfig lambdaconfig = 505299205;
 
-  DataSourceLevelMetricsConfig metricsconfig = 278835313;
+  optional DataSourceLevelMetricsConfig metricsconfig = 278835313;
 
   optional string name = 221887975;
 
@@ -1269,7 +1269,7 @@ message DataSource {
 
   optional string servicerolearn = 122834020;
 
-  DataSourceType type = 287830350;
+  optional DataSourceType type = 287830350;
 
 }
 
@@ -1611,7 +1611,7 @@ message DisassociateMergedGraphqlApiRequest {
 
 message DisassociateMergedGraphqlApiResponse {
 
-  SourceApiAssociationStatus sourceapiassociationstatus = 218602082;
+  optional SourceApiAssociationStatus sourceapiassociationstatus = 218602082;
 
 }
 
@@ -1629,7 +1629,7 @@ message DisassociateSourceGraphqlApiRequest {
 
 message DisassociateSourceGraphqlApiResponse {
 
-  SourceApiAssociationStatus sourceapiassociationstatus = 218602082;
+  optional SourceApiAssociationStatus sourceapiassociationstatus = 218602082;
 
 }
 
@@ -1991,7 +1991,7 @@ message GetDataSourceIntrospectionResponse {
 
   DataSourceIntrospectionResult introspectionresult = 230048374;
 
-  DataSourceIntrospectionStatus introspectionstatus = 29503511;
+  optional DataSourceIntrospectionStatus introspectionstatus = 29503511;
 
   optional string introspectionstatusdetail = 445981432;
 
@@ -2135,7 +2135,7 @@ message GetSchemaCreationStatusResponse {
 
   optional string details = 426242982;
 
-  SchemaStatus status = 441153520;
+  optional SchemaStatus status = 441153520;
 
 }
 
@@ -2227,17 +2227,17 @@ message GraphqlApi {
 
   optional string apiid = 113380971;
 
-  GraphQLApiType apitype = 74688128;
+  optional GraphQLApiType apitype = 74688128;
 
   optional string arn = 359604989;
 
-  AuthenticationType authenticationtype = 42854794;
+  optional AuthenticationType authenticationtype = 42854794;
 
   map<string, string> dns = 443214013;
 
   EnhancedMetricsConfig enhancedmetricsconfig = 97907511;
 
-  GraphQLApiIntrospectionConfig introspectionconfig = 295245787;
+  optional GraphQLApiIntrospectionConfig introspectionconfig = 295245787;
 
   LambdaAuthorizerConfig lambdaauthorizerconfig = 101350024;
 
@@ -2263,7 +2263,7 @@ message GraphqlApi {
 
   UserPoolConfig userpoolconfig = 448520271;
 
-  GraphQLApiVisibility visibility = 523761126;
+  optional GraphQLApiVisibility visibility = 523761126;
 
   optional string wafwebaclarn = 457120111;
 
@@ -2369,7 +2369,7 @@ message LambdaAuthorizerConfig {
 
 message LambdaConfig {
 
-  InvokeType invoketype = 118470438;
+  optional InvokeType invoketype = 118470438;
 
 }
 
@@ -2535,13 +2535,13 @@ message ListFunctionsResponse {
 
 message ListGraphqlApisRequest {
 
-  GraphQLApiType apitype = 74688128;
+  optional GraphQLApiType apitype = 74688128;
 
   optional int32 maxresults = 465170002;
 
   optional string nexttoken = 115833246;
 
-  Ownership owner = 359091413;
+  optional Ownership owner = 359091413;
 
 }
 
@@ -2851,7 +2851,7 @@ message RelationalDatabaseDataSourceConfig {
 
   RdsHttpEndpointConfig rdshttpendpointconfig = 298754596;
 
-  RelationalDatabaseSourceType relationaldatabasesourcetype = 308843533;
+  optional RelationalDatabaseSourceType relationaldatabasesourcetype = 308843533;
 
 }
 
@@ -2877,11 +2877,11 @@ message Resolver {
 
   optional string fieldname = 487483205;
 
-  ResolverKind kind = 420733508;
+  optional ResolverKind kind = 420733508;
 
   optional int32 maxbatchsize = 45298679;
 
-  ResolverLevelMetricsConfig metricsconfig = 278835313;
+  optional ResolverLevelMetricsConfig metricsconfig = 278835313;
 
   PipelineConfig pipelineconfig = 128197026;
 
@@ -2987,7 +2987,7 @@ message SourceApiAssociation {
 
   SourceApiAssociationConfig sourceapiassociationconfig = 67984118;
 
-  SourceApiAssociationStatus sourceapiassociationstatus = 218602082;
+  optional SourceApiAssociationStatus sourceapiassociationstatus = 218602082;
 
   optional string sourceapiassociationstatusdetail = 285099537;
 
@@ -3001,7 +3001,7 @@ message SourceApiAssociation {
 
 message SourceApiAssociationConfig {
 
-  MergeType mergetype = 189766368;
+  optional MergeType mergetype = 189766368;
 
 }
 
@@ -3063,7 +3063,7 @@ message StartDataSourceIntrospectionResponse {
 
   optional string introspectionid = 284517058;
 
-  DataSourceIntrospectionStatus introspectionstatus = 29503511;
+  optional DataSourceIntrospectionStatus introspectionstatus = 29503511;
 
   optional string introspectionstatusdetail = 445981432;
 
@@ -3083,7 +3083,7 @@ message StartSchemaCreationRequest {
 
 message StartSchemaCreationResponse {
 
-  SchemaStatus status = 441153520;
+  optional SchemaStatus status = 441153520;
 
 }
 
@@ -3101,7 +3101,7 @@ message StartSchemaMergeRequest {
 
 message StartSchemaMergeResponse {
 
-  SourceApiAssociationStatus sourceapiassociationstatus = 218602082;
+  optional SourceApiAssociationStatus sourceapiassociationstatus = 218602082;
 
 }
 
@@ -3111,9 +3111,9 @@ message StartSchemaMergeResponse {
 
 message SyncConfig {
 
-  ConflictDetectionType conflictdetection = 39445935;
+  optional ConflictDetectionType conflictdetection = 39445935;
 
-  ConflictHandlerType conflicthandler = 461006026;
+  optional ConflictHandlerType conflicthandler = 461006026;
 
   LambdaConflictHandlerConfig lambdaconflicthandlerconfig = 129536083;
 
@@ -3147,7 +3147,7 @@ message Type {
 
   optional string description = 342834026;
 
-  TypeDefinitionFormat format = 429753683;
+  optional TypeDefinitionFormat format = 429753683;
 
   optional string name = 221887975;
 
@@ -3199,7 +3199,7 @@ message UpdateApiCacheRequest {
 
   string apiid = 113380971;
 
-  CacheHealthMetricsConfig healthmetricsconfig = 48720399;
+  optional CacheHealthMetricsConfig healthmetricsconfig = 48720399;
 
   int64 ttl = 489374300;
 
@@ -3305,7 +3305,7 @@ message UpdateDataSourceRequest {
 
   LambdaDataSourceConfig lambdaconfig = 505299205;
 
-  DataSourceLevelMetricsConfig metricsconfig = 278835313;
+  optional DataSourceLevelMetricsConfig metricsconfig = 278835313;
 
   string name = 221887975;
 
@@ -3395,7 +3395,7 @@ message UpdateGraphqlApiRequest {
 
   EnhancedMetricsConfig enhancedmetricsconfig = 97907511;
 
-  GraphQLApiIntrospectionConfig introspectionconfig = 295245787;
+  optional GraphQLApiIntrospectionConfig introspectionconfig = 295245787;
 
   LambdaAuthorizerConfig lambdaauthorizerconfig = 101350024;
 
@@ -3441,11 +3441,11 @@ message UpdateResolverRequest {
 
   string fieldname = 487483205;
 
-  ResolverKind kind = 420733508;
+  optional ResolverKind kind = 420733508;
 
   optional int32 maxbatchsize = 45298679;
 
-  ResolverLevelMetricsConfig metricsconfig = 278835313;
+  optional ResolverLevelMetricsConfig metricsconfig = 278835313;
 
   PipelineConfig pipelineconfig = 128197026;
 

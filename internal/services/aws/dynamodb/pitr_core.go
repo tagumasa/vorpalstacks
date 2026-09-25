@@ -62,25 +62,7 @@ func (s *DynamoDBService) describeContinuousBackupsCore(ctx context.Context, req
 	// Continuous backups are enabled on every table at creation, so the
 	// outer status is always ENABLED; only the point-in-time recovery
 	// status depends on the table's settings.
-	pitrStatus := "DISABLED"
-	pitrDescription := map[string]interface{}{
-		"PointInTimeRecoveryStatus": pitrStatus,
-	}
-	recoveryPeriod := pitrDefaultRecoveryPeriodDays
-	if pitr != nil && pitr.Status == dbstore.PITRStatusEnabled {
-		pitrStatus = "ENABLED"
-		pitrDescription["PointInTimeRecoveryStatus"] = pitrStatus
-		// The restorable window is the trailing recovery period ending at
-		// the present; mutations commit synchronously on this platform, so
-		// now is restorable.
-		now := time.Now()
-		pitrDescription["EarliestRestorableDateTime"] = pitrEarliestRestorable(pitr, now).Unix()
-		pitrDescription["LatestRestorableDateTime"] = now.Unix()
-		if pitr.RecoveryPeriodInDays > 0 {
-			recoveryPeriod = pitr.RecoveryPeriodInDays
-			pitrDescription["RecoveryPeriodInDays"] = recoveryPeriod
-		}
-	}
+	pitrDescription := buildPointInTimeRecoveryDescriptionResponse(pitr, time.Now())
 
 	return map[string]interface{}{
 		"ContinuousBackupsDescription": map[string]interface{}{
@@ -154,14 +136,14 @@ func (s *DynamoDBService) updateContinuousBackupsCore(ctx context.Context, reqCt
 	}
 
 	// Continuous backups are enabled on every table at creation, so the
-	// outer status is always ENABLED — matching the describe response; only
-	// the point-in-time recovery status depends on the table's settings.
+	// outer status is always ENABLED — matching the describe response; the
+	// point-in-time recovery description renders through the same renderer
+	// the describe plane uses, so the update response carries the enabled
+	// window (and the configured period) the request just persisted.
 	return map[string]interface{}{
 		"ContinuousBackupsDescription": map[string]interface{}{
-			"ContinuousBackupsStatus": "ENABLED",
-			"PointInTimeRecoveryDescription": map[string]interface{}{
-				"PointInTimeRecoveryStatus": string(pitr.Status),
-			},
+			"ContinuousBackupsStatus":        "ENABLED",
+			"PointInTimeRecoveryDescription": buildPointInTimeRecoveryDescriptionResponse(pitr, time.Now()),
 		},
 	}, nil
 }

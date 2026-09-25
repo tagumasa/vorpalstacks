@@ -184,7 +184,7 @@ message BatchLoadTask {
 
   optional string taskid = 18532514;
 
-  BatchLoadStatus taskstatus = 448718071;
+  optional BatchLoadStatus taskstatus = 448718071;
 
 }
 
@@ -218,7 +218,7 @@ message BatchLoadTaskDescription {
 
   optional string taskid = 18532514;
 
-  BatchLoadStatus taskstatus = 448718071;
+  optional BatchLoadStatus taskstatus = 448718071;
 
 }
 
@@ -340,7 +340,7 @@ message DataModel {
 
   optional string timecolumn = 519449367;
 
-  TimeUnit timeunit = 181686379;
+  optional TimeUnit timeunit = 181686379;
 
 }
 
@@ -502,7 +502,7 @@ message DescribeTableResponse {
 
 message Dimension {
 
-  DimensionValueType dimensionvaluetype = 267417961;
+  optional DimensionValueType dimensionvaluetype = 267417961;
 
   string name = 266367751;
 
@@ -570,7 +570,7 @@ message ListBatchLoadTasksRequest {
 
   optional string nexttoken = 216957566;
 
-  BatchLoadStatus taskstatus = 448718071;
+  optional BatchLoadStatus taskstatus = 448718071;
 
 }
 
@@ -720,7 +720,7 @@ message MixedMeasureMapping {
 
 message MultiMeasureAttributeMapping {
 
-  ScalarMeasureValueType measurevaluetype = 466683165;
+  optional ScalarMeasureValueType measurevaluetype = 466683165;
 
   string sourcecolumn = 219947651;
 
@@ -746,7 +746,7 @@ message MultiMeasureMappings {
 
 message PartitionKey {
 
-  PartitionKeyEnforcementLevel enforcementinrecord = 121680624;
+  optional PartitionKeyEnforcementLevel enforcementinrecord = 121680624;
 
   optional string name = 266367751;
 
@@ -786,13 +786,13 @@ message Record {
 
   optional string measurevalue = 407670165;
 
-  MeasureValueType measurevaluetype = 466683165;
+  optional MeasureValueType measurevaluetype = 466683165;
 
   repeated MeasureValue measurevalues = 126050982;
 
   optional string time = 535094277;
 
-  TimeUnit timeunit = 181686379;
+  optional TimeUnit timeunit = 181686379;
 
   optional int64 version = 500028728;
 
@@ -856,7 +856,7 @@ message ReportS3Configuration {
 
   string bucketname = 208117045;
 
-  S3EncryptionOption encryptionoption = 160833062;
+  optional S3EncryptionOption encryptionoption = 160833062;
 
   optional string kmskeyid = 46523533;
 
@@ -908,7 +908,7 @@ message S3Configuration {
 
   optional string bucketname = 208117045;
 
-  S3EncryptionOption encryptionoption = 160833062;
+  optional S3EncryptionOption encryptionoption = 160833062;
 
   optional string kmskeyid = 46523533;
 
@@ -984,7 +984,7 @@ message Table {
 
   optional string tablename = 272020061;
 
-  TableStatus tablestatus = 207908810;
+  optional TableStatus tablestatus = 207908810;
 
 }
 

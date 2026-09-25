@@ -192,20 +192,87 @@ func (r *TestRunner) dynamoDBStreamsTests(ctx context.Context, client *dynamodb.
 		if len(fresh.Records) != 1 || fresh.Records[0].EventName != "INSERT" {
 			return fmt.Errorf("expected the new INSERT record, got %d records", len(fresh.Records))
 		}
+
+		// Disabling and re-enabling the stream starts a new generation: a
+		// fresh TRIM_HORIZON iterator on the new ARN serves none of the
+		// superseded generation's records, and the generation's own write
+		// reads back under the new ARN.
+		for _, enabled := range []bool{false, true} {
+			spec := &dynamodbtypes.StreamSpecification{StreamEnabled: aws.Bool(enabled)}
+			if enabled {
+				spec.StreamViewType = dynamodbtypes.StreamViewTypeNewAndOldImages
+			}
+			if _, err := client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
+				TableName:           aws.String(tableName),
+				StreamSpecification: spec,
+			}); err != nil {
+				return fmt.Errorf("update table stream enabled=%v: %v", enabled, err)
+			}
+		}
+		reDesc, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: aws.String(tableName)})
+		if err != nil || reDesc.Table.LatestStreamArn == nil {
+			return fmt.Errorf("describe table after re-enable: %v", err)
+		}
+		newArn := *reDesc.Table.LatestStreamArn
+		if newArn == streamArn {
+			return fmt.Errorf("re-enable must mint a fresh stream ARN, got %q twice", newArn)
+		}
+		reStream, err := sc.DescribeStream(ctx, &dynamodbstreams.DescribeStreamInput{StreamArn: aws.String(newArn)})
+		if err != nil || len(reStream.StreamDescription.Shards) == 0 {
+			return fmt.Errorf("describe re-enabled stream: %v", err)
+		}
+		reIt, err := sc.GetShardIterator(ctx, &dynamodbstreams.GetShardIteratorInput{
+			StreamArn:         aws.String(newArn),
+			ShardId:           reStream.StreamDescription.Shards[0].ShardId,
+			ShardIteratorType: streamtypes.ShardIteratorTypeTrimHorizon,
+		})
+		if err != nil {
+			return err
+		}
+		reRec, err := sc.GetRecords(ctx, &dynamodbstreams.GetRecordsInput{ShardIterator: reIt.ShardIterator})
+		if err != nil {
+			return err
+		}
+		if len(reRec.Records) != 0 {
+			return fmt.Errorf("re-enabled stream must start empty, got %d records of the superseded generation", len(reRec.Records))
+		}
+		if _, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(tableName),
+			Item: map[string]dynamodbtypes.AttributeValue{
+				"pk": &dynamodbtypes.AttributeValueMemberS{Value: "item-4"},
+			},
+		}); err != nil {
+			return err
+		}
+		reFresh, err := sc.GetRecords(ctx, &dynamodbstreams.GetRecordsInput{ShardIterator: reRec.NextShardIterator})
+		if err != nil {
+			return err
+		}
+		if len(reFresh.Records) != 1 || reFresh.Records[0].EventName != "INSERT" {
+			return fmt.Errorf("expected the new generation's single INSERT record, got %+v", reFresh.Records)
+		}
 		return nil
 	}))
 
+	// The read-path test above re-enabled the table's stream, so the listed
+	// stream is the current generation: the ARN asserted is read from the
+	// table's LatestStreamArn at list time.
 	results = append(results, r.RunTest("dynamodb", "Streams_ListStreams_ContainsTableStream", func() error {
+		desc, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: aws.String(tableName)})
+		if err != nil || desc.Table.LatestStreamArn == nil {
+			return fmt.Errorf("describe table for stream ARN: %v", err)
+		}
+		currentArn := *desc.Table.LatestStreamArn
 		resp, err := sc.ListStreams(ctx, &dynamodbstreams.ListStreamsInput{})
 		if err != nil {
 			return err
 		}
 		for _, s := range resp.Streams {
-			if s.StreamArn != nil && *s.StreamArn == streamArn {
+			if s.StreamArn != nil && *s.StreamArn == currentArn {
 				return nil
 			}
 		}
-		return fmt.Errorf("stream %s not listed", streamArn)
+		return fmt.Errorf("stream %s not listed", currentArn)
 	}))
 
 	// Writes committed through ExecuteTransaction capture stream records in

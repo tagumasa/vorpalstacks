@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"math"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -16,36 +17,29 @@ func (s *DynamoDBService) DescribeStream(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	result, err := s.describeStreamCore(store, request.GetStringParam(req.Parameters, "StreamArn"))
+	in := DescribeStreamInput{
+		StreamArn:             request.GetStringParam(req.Parameters, "StreamArn"),
+		ExclusiveStartShardId: request.GetStringParam(req.Parameters, "ExclusiveStartShardId"),
+	}
+	limit, limitPresent, err := intParamWithPresence(req.Parameters, "Limit")
+	if err != nil {
+		return nil, err
+	}
+	in.Limit, in.LimitSet = limit, limitPresent
+	if filterMap, ok := req.Parameters["ShardFilter"].(map[string]interface{}); ok {
+		in.ShardFilter = &ShardFilterSpec{
+			Type:    request.GetStringParam(filterMap, "Type"),
+			ShardId: request.GetStringParam(filterMap, "ShardId"),
+		}
+	}
+
+	result, err := s.describeStreamCore(store, in)
 	if err != nil {
 		return nil, err
 	}
 
-	shards := make([]interface{}, 0, len(result.Shards))
-	for _, sh := range result.Shards {
-		seqRange := map[string]interface{}{
-			"StartingSequenceNumber": sh.StartingSequenceNumber,
-		}
-		if sh.EndingSequenceNumber != "" {
-			seqRange["EndingSequenceNumber"] = sh.EndingSequenceNumber
-		}
-		shards = append(shards, map[string]interface{}{
-			"ShardId":             sh.ShardID,
-			"SequenceNumberRange": seqRange,
-		})
-	}
-
 	return map[string]interface{}{
-		"StreamDescription": map[string]interface{}{
-			"StreamArn":               result.StreamArn,
-			"StreamLabel":             result.StreamLabel,
-			"StreamStatus":            result.StreamStatus,
-			"StreamViewType":          result.StreamViewType,
-			"TableName":               result.TableName,
-			"KeySchema":               buildKeySchemaResponse(result.KeySchema),
-			"Shards":                  shards,
-			"CreationRequestDateTime": result.CreationRequestDateTime,
-		},
+		"StreamDescription": buildStreamDescriptionResponse(result),
 	}, nil
 }
 
@@ -78,18 +72,9 @@ func (s *DynamoDBService) GetShardIterator(ctx context.Context, reqCtx *request.
 //
 // AWS API: DynamoDB Streams — GetRecords
 func (s *DynamoDBService) GetRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	limit := 0
-	limitSet := false
-	if limitVal, ok := req.Parameters["Limit"]; ok {
-		switch v := limitVal.(type) {
-		case float64:
-			limit = int(v)
-		case int:
-			limit = v
-		default:
-			return nil, ErrInvalidParameter
-		}
-		limitSet = true
+	limit, limitSet, err := intParamWithPresence(req.Parameters, "Limit")
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -118,6 +103,11 @@ func (s *DynamoDBService) GetRecords(ctx context.Context, reqCtx *request.Reques
 //
 // AWS API: DynamoDB Streams — ListStreams
 func (s *DynamoDBService) ListStreams(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	limit, limitSet, err := intParamWithPresence(req.Parameters, "Limit")
+	if err != nil {
+		return nil, err
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -126,7 +116,7 @@ func (s *DynamoDBService) ListStreams(ctx context.Context, reqCtx *request.Reque
 	result, err := s.listStreamsCore(store,
 		request.GetStringParam(req.Parameters, "TableName"),
 		request.GetStringParam(req.Parameters, "ExclusiveStartStreamArn"),
-		request.GetIntParam(req.Parameters, "Limit"))
+		limit, limitSet)
 	if err != nil {
 		return nil, err
 	}
@@ -147,4 +137,29 @@ func (s *DynamoDBService) ListStreams(ctx context.Context, reqCtx *request.Reque
 		resp["LastEvaluatedStreamArn"] = result.LastEvaluatedStreamArn
 	}
 	return resp, nil
+}
+
+// intParamWithPresence extracts an integer-valued member and reports whether
+// the member was present, so an explicit zero stays distinguishable from an
+// omitted value — the model's PositiveIntegerObject range rejects the
+// former and defaults the latter. A present member of a non-numeric type is
+// a validation error, and so is a JSON number that is not integral or that
+// falls outside the platform's integer range: a wire number is never
+// silently truncated or overflowed into an integer.
+func intParamWithPresence(params map[string]interface{}, name string) (value int, present bool, err error) {
+	raw, ok := params[name]
+	if !ok {
+		return 0, false, nil
+	}
+	switch v := raw.(type) {
+	case float64:
+		if v != math.Trunc(v) || v < math.MinInt64 || v > math.MaxInt64 {
+			return 0, true, ErrInvalidParameter
+		}
+		return int(v), true, nil
+	case int:
+		return v, true, nil
+	default:
+		return 0, true, ErrInvalidParameter
+	}
 }

@@ -126,7 +126,13 @@ func (s *ItemStore) Scan(tableName string, fn func(item *Item) error) error {
 	return err
 }
 
-// scanWalk drives one bounded item walk over a key prefix: the marker
+// scanWalk drives one bounded item walk over a key prefix through the
+// bucket-generic walk core.
+func (s *ItemStore) scanWalk(prefix string, opts ScanOptions, accept func(*Item) bool, fn func(*Item) error) (string, error) {
+	return bucketScanWalk(s.Bucket(), prefix, opts, accept, fn)
+}
+
+// bucketScanWalk drives one bounded item walk over a key prefix: the marker
 // resume, the reverse direction, the per-item decode, the limit, and the
 // errScanLimitReached epilogue are owned here. accept, when non-nil,
 // decides whether a decoded item belongs to the page (partition membership,
@@ -134,8 +140,10 @@ func (s *ItemStore) Scan(tableName string, fn func(item *Item) error) error {
 // rejected items are skipped without consuming it. The returned marker
 // names the last delivered key and is set only when the limit stopped the
 // walk; the forward walk resumes strictly after it, the reverse walk
-// strictly before it.
-func (s *ItemStore) scanWalk(prefix string, opts ScanOptions, accept func(*Item) bool, fn func(*Item) error) (string, error) {
+// strictly before it. Every item walk of this store — the ItemStore pages
+// and the transaction's full-table and partition scans — runs through this
+// one core over the storage.Bucket both planes share.
+func bucketScanWalk(bucket storage.Bucket, prefix string, opts ScanOptions, accept func(*Item) bool, fn func(*Item) error) (string, error) {
 	var lastKey string
 	count := 0
 
@@ -162,14 +170,37 @@ func (s *ItemStore) scanWalk(prefix string, opts ScanOptions, accept func(*Item)
 
 	var err error
 	if opts.Reverse {
-		err = s.BaseStore.ScanPrefixReverse(prefix, opts.Marker, visit)
-	} else {
-		err = s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-			if opts.Marker != "" && key <= opts.Marker {
-				return nil
+		var before []byte
+		if opts.Marker != "" {
+			before = []byte(opts.Marker)
+		}
+		iter := bucket.ScanPrefixReverse([]byte(prefix), before)
+		defer iter.Close()
+		for iter.Next() {
+			if e := visit(string(iter.Key()), iter.Value()); e != nil {
+				err = e
+				break
 			}
-			return visit(key, value)
-		})
+		}
+		if err == nil {
+			err = iter.Error()
+		}
+	} else {
+		iter := bucket.ScanPrefix([]byte(prefix))
+		defer iter.Close()
+		for iter.Next() {
+			key := string(iter.Key())
+			if opts.Marker != "" && key <= opts.Marker {
+				continue
+			}
+			if e := visit(key, iter.Value()); e != nil {
+				err = e
+				break
+			}
+		}
+		if err == nil {
+			err = iter.Error()
+		}
 	}
 
 	if err != nil && !errors.Is(err, errScanLimitReached) {

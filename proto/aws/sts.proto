@@ -78,6 +78,8 @@ message AssumeRoleRequest {
 
   optional string externalid = 271401992;
 
+  optional int32 minimumsessiontokensize = 88481496;
+
   optional string policy = 471611296;
 
   repeated PolicyDescriptorType policyarns = 183785508;
@@ -112,6 +114,10 @@ message AssumeRoleResponse {
 
   optional int32 packedpolicysize = 511234267;
 
+  optional int32 sessiontokensize = 292269414;
+
+  optional int32 sessiontokenutilization = 134982793;
+
   optional string sourceidentity = 466635355;
 
 }
@@ -121,6 +127,8 @@ message AssumeRoleResponse {
 message AssumeRoleWithSAMLRequest {
 
   optional int32 durationseconds = 451873635;
+
+  optional int32 minimumsessiontokensize = 88481496;
 
   optional string policy = 471611296;
 
@@ -152,6 +160,10 @@ message AssumeRoleWithSAMLResponse {
 
   optional int32 packedpolicysize = 511234267;
 
+  optional int32 sessiontokensize = 292269414;
+
+  optional int32 sessiontokenutilization = 134982793;
+
   optional string sourceidentity = 466635355;
 
   optional string subject = 7939312;
@@ -165,6 +177,8 @@ message AssumeRoleWithSAMLResponse {
 message AssumeRoleWithWebIdentityRequest {
 
   optional int32 durationseconds = 451873635;
+
+  optional int32 minimumsessiontokensize = 88481496;
 
   optional string policy = 471611296;
 
@@ -196,6 +210,10 @@ message AssumeRoleWithWebIdentityResponse {
 
   optional string provider = 363366621;
 
+  optional int32 sessiontokensize = 292269414;
+
+  optional int32 sessiontokenutilization = 134982793;
+
   optional string sourceidentity = 466635355;
 
   optional string subjectfromwebidentitytoken = 96354739;
@@ -208,6 +226,8 @@ message AssumeRootRequest {
 
   optional int32 durationseconds = 451873635;
 
+  optional int32 minimumsessiontokensize = 88481496;
+
   string targetprincipal = 215916667;
 
   PolicyDescriptorType taskpolicyarn = 332406370;
@@ -219,6 +239,10 @@ message AssumeRootRequest {
 message AssumeRootResponse {
 
   Credentials credentials = 381914482;
+
+  optional int32 sessiontokensize = 292269414;
+
+  optional int32 sessiontokenutilization = 134982793;
 
   optional string sourceidentity = 466635355;
 
@@ -364,6 +388,8 @@ message GetFederationTokenRequest {
 
   optional int32 durationseconds = 451873635;
 
+  optional int32 minimumsessiontokensize = 88481496;
+
   string name = 266367751;
 
   optional string policy = 471611296;
@@ -386,6 +412,10 @@ message GetFederationTokenResponse {
 
   optional int32 packedpolicysize = 511234267;
 
+  optional int32 sessiontokensize = 292269414;
+
+  optional int32 sessiontokenutilization = 134982793;
+
 }
 
 
@@ -393,6 +423,8 @@ message GetFederationTokenResponse {
 message GetSessionTokenRequest {
 
   optional int32 durationseconds = 451873635;
+
+  optional int32 minimumsessiontokensize = 88481496;
 
   optional string serialnumber = 418274661;
 
@@ -407,6 +439,10 @@ message GetSessionTokenRequest {
 message GetSessionTokenResponse {
 
   Credentials credentials = 381914482;
+
+  optional int32 sessiontokensize = 292269414;
+
+  optional int32 sessiontokenutilization = 134982793;
 
 }
 

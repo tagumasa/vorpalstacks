@@ -70,6 +70,35 @@ func (tc *cloudTrailTestContext) waitForDeliveryObject(bucket, prefix string, bo
 	return "", fmt.Errorf("no object delivered under %s/%s within %s", bucket, prefix, bound)
 }
 
+// waitForTrailStatus polls GetTrailStatus until watch reports the awaited
+// delivery-outcome member, or the bound elapses, returning the last
+// response. A delivery's records become observable in their destination
+// store before the trail record's Latest* members commit — the outcome
+// write is a separate store transaction at the end of the flush — so a
+// status read taken right after an observed artifact can still race that
+// commit; the poll absorbs the lag instead of failing on it.
+func (tc *cloudTrailTestContext) waitForTrailStatus(name string, watch func(*cloudtrail.GetTrailStatusOutput) bool, bound time.Duration) (*cloudtrail.GetTrailStatusOutput, error) {
+	deadline := time.Now().Add(bound)
+	var last *cloudtrail.GetTrailStatusOutput
+	var lastErr error
+	for time.Now().Before(deadline) {
+		status, err := tc.client.GetTrailStatus(tc.ctx, &cloudtrail.GetTrailStatusInput{Name: aws.String(name)})
+		if err != nil {
+			lastErr = err
+		} else {
+			last = status
+			if watch(status) {
+				return status, nil
+			}
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
+	if last == nil {
+		return nil, fmt.Errorf("get trail status: %v", lastErr)
+	}
+	return last, nil
+}
+
 func (r *TestRunner) runCloudTrailDeliveryTests(tc *cloudTrailTestContext) []TestResult {
 	var results []TestResult
 
@@ -139,7 +168,9 @@ func (r *TestRunner) runCloudTrailDeliveryTests(tc *cloudTrailTestContext) []Tes
 			return fmt.Errorf("log file carries %d records but none is this trail's own ListTrails event", len(parsed.Records))
 		}
 
-		status, err := tc.client.GetTrailStatus(tc.ctx, &cloudtrail.GetTrailStatusInput{Name: aws.String(name)})
+		status, err := tc.waitForTrailStatus(name, func(s *cloudtrail.GetTrailStatusOutput) bool {
+			return s.LatestDeliveryTime != nil
+		}, 15*time.Second)
 		if err != nil {
 			return fmt.Errorf("get trail status: %v", err)
 		}
@@ -269,7 +300,9 @@ func (r *TestRunner) runCloudTrailDeliveryTests(tc *cloudTrailTestContext) []Tes
 			return fmt.Errorf("digest signature does not verify: %v", err)
 		}
 
-		status, err := tc.client.GetTrailStatus(tc.ctx, &cloudtrail.GetTrailStatusInput{Name: aws.String(name)})
+		status, err := tc.waitForTrailStatus(name, func(s *cloudtrail.GetTrailStatusOutput) bool {
+			return s.LatestDigestDeliveryTime != nil
+		}, 15*time.Second)
 		if err != nil {
 			return fmt.Errorf("get trail status: %v", err)
 		}
@@ -355,7 +388,9 @@ func (r *TestRunner) runCloudTrailDeliveryTests(tc *cloudTrailTestContext) []Tes
 			return fmt.Errorf("no ListTrails record reached log group %s stream %s", logGroup, stream)
 		}
 
-		status, err := tc.client.GetTrailStatus(tc.ctx, &cloudtrail.GetTrailStatusInput{Name: aws.String(name)})
+		status, err := tc.waitForTrailStatus(name, func(s *cloudtrail.GetTrailStatusOutput) bool {
+			return s.LatestCloudWatchLogsDeliveryTime != nil
+		}, 15*time.Second)
 		if err != nil {
 			return fmt.Errorf("get trail status: %v", err)
 		}
@@ -461,7 +496,9 @@ func (r *TestRunner) runCloudTrailDeliveryTests(tc *cloudTrailTestContext) []Tes
 			return fmt.Errorf("no log-file delivery notification reached queue %s", queueName)
 		}
 
-		status, err := tc.client.GetTrailStatus(tc.ctx, &cloudtrail.GetTrailStatusInput{Name: aws.String(name)})
+		status, err := tc.waitForTrailStatus(name, func(s *cloudtrail.GetTrailStatusOutput) bool {
+			return s.LatestNotificationTime != nil
+		}, 15*time.Second)
 		if err != nil {
 			return fmt.Errorf("get trail status: %v", err)
 		}
@@ -529,7 +566,9 @@ func (r *TestRunner) runCloudTrailDeliveryTests(tc *cloudTrailTestContext) []Tes
 			return fmt.Errorf("delivered key %q does not carry the second region's naming", key)
 		}
 
-		status, err := tc.client.GetTrailStatus(tc.ctx, &cloudtrail.GetTrailStatusInput{Name: aws.String(name)})
+		status, err := tc.waitForTrailStatus(name, func(s *cloudtrail.GetTrailStatusOutput) bool {
+			return s.LatestDeliveryTime != nil
+		}, 15*time.Second)
 		if err != nil {
 			return fmt.Errorf("get trail status: %v", err)
 		}

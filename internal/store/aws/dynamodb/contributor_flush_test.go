@@ -15,7 +15,7 @@ func TestRecordContributorQuerySingleEvent(t *testing.T) {
 	}
 	defer st.Close()
 
-	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(CreateTableParams{
 		Name:                 "Tbl",
 		KeySchema:            []*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}, {AttributeName: "sk", KeyType: KeyTypeRange}},
@@ -66,7 +66,7 @@ func TestRecordContributorReadsAggregatesSameKey(t *testing.T) {
 	}
 	defer st.Close()
 
-	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(CreateTableParams{
 		Name:                 "Tbl",
 		KeySchema:            []*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}, {AttributeName: "sk", KeyType: KeyTypeRange}},
@@ -112,7 +112,7 @@ func TestDeleteTableCascadeDropsContributorCounters(t *testing.T) {
 	}
 	defer st.Close()
 
-	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(CreateTableParams{
 		Name:                 "DropTbl",
 		KeySchema:            []*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}},
@@ -167,7 +167,7 @@ func TestContributorWriteFlushAtomicity(t *testing.T) {
 	}
 	defer st.Close()
 
-	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(CreateTableParams{
 		Name:                 "Tbl",
 		KeySchema:            []*KeySchemaElement{{AttributeName: "id", KeyType: KeyTypeHash}},

@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"google.golang.org/protobuf/proto"
+	"vorpalstacks/internal/common/pbutil"
 	pb "vorpalstacks/internal/pb/aws/dynamodb"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
@@ -134,7 +135,7 @@ func storeTableToProtoDescription(table *dbstore.Table) *pb.TableDescription {
 	desc := &pb.TableDescription{
 		Tablename:                 proto.String(table.Name),
 		Tablearn:                  proto.String(table.ARN),
-		Tablestatus:               tableStatusToProto(table.Status),
+		Tablestatus:               pbutil.Enum(tableStatusToProto(table.Status)),
 		Creationdatetime:          proto.String(table.CreationDateTime.Format("2006-01-02T15:04:05.000Z07:00")),
 		Itemcount:                 proto.Int64(table.ItemCount),
 		Tablesizebytes:            proto.Int64(table.TableSizeBytes),
@@ -156,7 +157,7 @@ func storeTableToProtoDescription(table *dbstore.Table) *pb.TableDescription {
 	}
 
 	desc.Billingmodesummary = &pb.BillingModeSummary{
-		Billingmode: billingModeToProto(table.BillingMode),
+		Billingmode: pbutil.Enum(billingModeToProto(table.BillingMode)),
 	}
 
 	return desc

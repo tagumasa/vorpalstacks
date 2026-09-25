@@ -1,10 +1,13 @@
 package dynamodb
 
 import (
+	"context"
+	"encoding/base64"
 	"reflect"
 	"testing"
 
 	"vorpalstacks/internal/core/storage"
+	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 )
 
 // allTypesAttributeValue carries one attribute value of every wire type.
@@ -51,6 +54,38 @@ func TestAttributeValueWireCodecRoundTrip(t *testing.T) {
 	}
 }
 
+// The NULL member's pointer presence — not the flag's value — is the type
+// discriminator on every output path: the wire parser normalises any
+// {"NULL": ...} value to true and the persisted NullValue enum cannot carry
+// false, so a hand-built false flag still renders, converts and answers
+// IsNull as a null.
+func TestNullMemberConvertsOnPresence(t *testing.T) {
+	flag := false
+	av := &AttributeValue{NULL: &flag}
+
+	wire := BuildAttributeValueWire(av)
+	if got, ok := wire["NULL"].(bool); !ok || !got {
+		t.Fatalf("wire render of a NULL-typed value = %v, want NULL: true", wire)
+	}
+	parsed := ParseAttributeValueWire(wire)
+	if parsed.NULL == nil || !*parsed.NULL {
+		t.Fatalf("parse of the rendered wire form = %+v, want NULL true", parsed)
+	}
+
+	pbAV := attributeValueToProto(av)
+	if _, isNull := pbAV.Value.(*pb.AttributeValue_Null); !isNull {
+		t.Fatalf("proto conversion of a NULL-typed value = %#v, want the Null member", pbAV)
+	}
+	back := protoToAttributeValue(pbAV)
+	if back.NULL == nil || !*back.NULL {
+		t.Fatalf("proto round-trip of a NULL-typed value = %+v, want NULL true", back)
+	}
+
+	if !av.IsNull() {
+		t.Fatal("IsNull must answer true on pointer presence alone")
+	}
+}
+
 // Stream records persist as protobuf and read back with every field —
 // including the wire-shaped images and the service identity — intact.
 func TestStreamRecordProtoRoundTrip(t *testing.T) {
@@ -63,13 +98,17 @@ func TestStreamRecordProtoRoundTrip(t *testing.T) {
 
 	keys := BuildItemWire(map[string]*AttributeValue{"id": {S: ptr("k1")}})
 	newImage := BuildItemWire(map[string]*AttributeValue{"id": {S: ptr("k1")}, "n": {N: ptr("7")}})
-	original, err := store.AddRecord("Tbl", testStreamArn, "NEW_AND_OLD_IMAGES",
-		StreamEventInsert, keys, newImage, nil, TTLServiceIdentity)
-	if err != nil {
+	var original *StreamRecord
+	if err := st.Update(context.Background(), func(txn storage.Transaction) error {
+		r, err := store.AddRecordTxn(txn, "Tbl", testStreamArn, "NEW_AND_OLD_IMAGES",
+			StreamEventInsert, keys, newImage, nil, TTLServiceIdentity)
+		original = r
+		return err
+	}); err != nil {
 		t.Fatalf("add record: %v", err)
 	}
 
-	loaded, next, err := store.GetRecords("Tbl", 0, 10)
+	loaded, next, err := store.GetRecords("Tbl", testStreamArn, 0, 10)
 	if err != nil {
 		t.Fatalf("get records: %v", err)
 	}
@@ -100,10 +139,41 @@ func TestStreamRecordProtoRoundTrip(t *testing.T) {
 		t.Fatalf("user identity mismatch: %+v", rec.UserIdentity)
 	}
 
-	latest, err := store.GetLatestSequence("Tbl")
+	latest, err := store.GetLatestSequenceForStream("Tbl", "")
 	if err != nil || latest != 1 {
 		t.Fatalf("latest sequence = %d, %v", latest, err)
 	}
 }
 
 func ptr(s string) *string { return &s }
+
+// TestStringSetsDecodeFromBothWireShapes pins the set normaliser's
+// contract: SS and NS decode from the JSON-decoded []interface{} shape as
+// they do from the builder's []string shape, and BS keeps both — a
+// document decoded straight from JSON must not lose its string or number
+// sets while its binary set survives.
+func TestStringSetsDecodeFromBothWireShapes(t *testing.T) {
+	fromJSON := ParseAttributeValueWire(map[string]interface{}{
+		"SS": []interface{}{"a", "b"},
+		"NS": []interface{}{"1", "2"},
+		"BS": []interface{}{base64.StdEncoding.EncodeToString([]byte{0x01})},
+	})
+	if len(fromJSON.SS) != 2 || fromJSON.SS[0] != "a" || fromJSON.SS[1] != "b" {
+		t.Fatalf("SS from []interface{} = %v", fromJSON.SS)
+	}
+	if len(fromJSON.NS) != 2 || fromJSON.NS[0] != "1" || fromJSON.NS[1] != "2" {
+		t.Fatalf("NS from []interface{} = %v", fromJSON.NS)
+	}
+	if len(fromJSON.BS) != 1 || string(fromJSON.BS[0]) != "\x01" {
+		t.Fatalf("BS from []interface{} = %v", fromJSON.BS)
+	}
+
+	roundTrip := ParseAttributeValueWire(BuildAttributeValueWire(&AttributeValue{
+		SS: []string{"a", "b"},
+		NS: []string{"1", "2"},
+		BS: [][]byte{{0x01}},
+	}))
+	if len(roundTrip.SS) != 2 || len(roundTrip.NS) != 2 || len(roundTrip.BS) != 1 {
+		t.Fatalf("builder round-trip lost a set: %+v", roundTrip)
+	}
+}

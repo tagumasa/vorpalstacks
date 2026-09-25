@@ -1290,3 +1290,32 @@ func TestSNSBuilderSubscription(t *testing.T) {
 		t.Fatalf("SNSBuilder.Subscription = %q, want %q", got, want)
 	}
 }
+
+// TestKMSBuilderIsAlias pins the alias-detection predicate's two accepted
+// forms — the alias name (alias/...) and the full alias ARN — and the
+// structural boundaries: a kms key ARN is not an alias, an ARN of another
+// service carrying an alias/ resource is not a KMS alias, and the
+// detection never falls back to substring probing on non-ARN input that
+// merely contains the prefix.
+func TestKMSBuilderIsAlias(t *testing.T) {
+	b := NewARNBuilder("123456789012", "us-east-1").KMS()
+
+	cases := []struct {
+		name string
+		in   string
+		want bool
+	}{
+		{name: "alias name", in: "alias/my-key", want: true},
+		{name: "bare name without the prefix", in: "my-key", want: false},
+		{name: "alias ARN", in: "arn:aws:kms:us-east-1:123456789012:alias/my-key", want: true},
+		{name: "key ARN", in: "arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab", want: false},
+		{name: "non-kms ARN with an alias resource", in: "arn:aws:sqs:us-east-1:123456789012:alias/my-key", want: false},
+		{name: "malformed ARN", in: "arn:kms:alias/my-key", want: false},
+		{name: "empty", in: "", want: false},
+	}
+	for _, c := range cases {
+		if got := b.IsAlias(c.in); got != c.want {
+			t.Errorf("IsAlias(%q) = %v, want %v", c.in, got, c.want)
+		}
+	}
+}

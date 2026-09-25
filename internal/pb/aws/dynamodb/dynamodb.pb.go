@@ -2548,7 +2548,7 @@ func (x *AttributeValue) GetSs() []string {
 
 type AttributeValueUpdate struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Action        AttributeAction        `protobuf:"varint,175614240,opt,name=action,proto3,enum=dynamodb.AttributeAction" json:"action,omitempty"`
+	Action        *AttributeAction       `protobuf:"varint,175614240,opt,name=action,proto3,enum=dynamodb.AttributeAction,oneof" json:"action,omitempty"`
 	Value         *AttributeValue        `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2585,8 +2585,8 @@ func (*AttributeValueUpdate) Descriptor() ([]byte, []int) {
 }
 
 func (x *AttributeValueUpdate) GetAction() AttributeAction {
-	if x != nil {
-		return x.Action
+	if x != nil && x.Action != nil {
+		return *x.Action
 	}
 	return AttributeAction_ATTRIBUTE_ACTION_ADD
 }
@@ -3237,8 +3237,8 @@ type BackupSummary struct {
 	Backupexpirydatetime   *string                `protobuf:"bytes,471291762,opt,name=backupexpirydatetime,proto3,oneof" json:"backupexpirydatetime,omitempty"`
 	Backupname             *string                `protobuf:"bytes,467693789,opt,name=backupname,proto3,oneof" json:"backupname,omitempty"`
 	Backupsizebytes        *int64                 `protobuf:"varint,147336318,opt,name=backupsizebytes,proto3,oneof" json:"backupsizebytes,omitempty"`
-	Backupstatus           BackupStatus           `protobuf:"varint,382505546,opt,name=backupstatus,proto3,enum=dynamodb.BackupStatus" json:"backupstatus,omitempty"`
-	Backuptype             BackupType             `protobuf:"varint,134973992,opt,name=backuptype,proto3,enum=dynamodb.BackupType" json:"backuptype,omitempty"`
+	Backupstatus           *BackupStatus          `protobuf:"varint,382505546,opt,name=backupstatus,proto3,enum=dynamodb.BackupStatus,oneof" json:"backupstatus,omitempty"`
+	Backuptype             *BackupType            `protobuf:"varint,134973992,opt,name=backuptype,proto3,enum=dynamodb.BackupType,oneof" json:"backuptype,omitempty"`
 	Tablearn               *string                `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
 	Tableid                *string                `protobuf:"bytes,449893011,opt,name=tableid,proto3,oneof" json:"tableid,omitempty"`
 	Tablename              *string                `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
@@ -3312,15 +3312,15 @@ func (x *BackupSummary) GetBackupsizebytes() int64 {
 }
 
 func (x *BackupSummary) GetBackupstatus() BackupStatus {
-	if x != nil {
-		return x.Backupstatus
+	if x != nil && x.Backupstatus != nil {
+		return *x.Backupstatus
 	}
 	return BackupStatus_BACKUP_STATUS_AVAILABLE
 }
 
 func (x *BackupSummary) GetBackuptype() BackupType {
-	if x != nil {
-		return x.Backuptype
+	if x != nil && x.Backuptype != nil {
+		return *x.Backuptype
 	}
 	return BackupType_BACKUP_TYPE_SYSTEM
 }
@@ -3348,7 +3348,7 @@ func (x *BackupSummary) GetTablename() string {
 
 type BatchExecuteStatementInput struct {
 	state                  protoimpl.MessageState   `protogen:"open.v1"`
-	Returnconsumedcapacity ReturnConsumedCapacity   `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
+	Returnconsumedcapacity *ReturnConsumedCapacity  `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
 	Statements             []*BatchStatementRequest `protobuf:"bytes,488352288,rep,name=statements,proto3" json:"statements,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -3385,8 +3385,8 @@ func (*BatchExecuteStatementInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *BatchExecuteStatementInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
@@ -3453,7 +3453,7 @@ func (x *BatchExecuteStatementOutput) GetResponses() []*BatchStatementResponse {
 type BatchGetItemInput struct {
 	state                  protoimpl.MessageState        `protogen:"open.v1"`
 	Requestitems           map[string]*KeysAndAttributes `protobuf:"bytes,247720687,rep,name=requestitems,proto3" json:"requestitems,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnconsumedcapacity ReturnConsumedCapacity        `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
+	Returnconsumedcapacity *ReturnConsumedCapacity       `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3496,8 +3496,8 @@ func (x *BatchGetItemInput) GetRequestitems() map[string]*KeysAndAttributes {
 }
 
 func (x *BatchGetItemInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
@@ -3563,10 +3563,10 @@ func (x *BatchGetItemOutput) GetUnprocessedkeys() map[string]*KeysAndAttributes 
 }
 
 type BatchStatementError struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Code          BatchStatementErrorCodeEnum `protobuf:"varint,425572629,opt,name=code,proto3,enum=dynamodb.BatchStatementErrorCodeEnum" json:"code,omitempty"`
-	Item          map[string]*AttributeValue  `protobuf:"bytes,526680071,rep,name=item,proto3" json:"item,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Message       *string                     `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Code          *BatchStatementErrorCodeEnum `protobuf:"varint,425572629,opt,name=code,proto3,enum=dynamodb.BatchStatementErrorCodeEnum,oneof" json:"code,omitempty"`
+	Item          map[string]*AttributeValue   `protobuf:"bytes,526680071,rep,name=item,proto3" json:"item,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Message       *string                      `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3602,8 +3602,8 @@ func (*BatchStatementError) Descriptor() ([]byte, []int) {
 }
 
 func (x *BatchStatementError) GetCode() BatchStatementErrorCodeEnum {
-	if x != nil {
-		return x.Code
+	if x != nil && x.Code != nil {
+		return *x.Code
 	}
 	return BatchStatementErrorCodeEnum_BATCH_STATEMENT_ERROR_CODE_ENUM_REQUESTLIMITEXCEEDED
 }
@@ -3623,11 +3623,11 @@ func (x *BatchStatementError) GetMessage() string {
 }
 
 type BatchStatementRequest struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Consistentread                      *bool                               `protobuf:"varint,531556994,opt,name=consistentread,proto3,oneof" json:"consistentread,omitempty"`
-	Parameters                          []*AttributeValue                   `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Statement                           string                              `protobuf:"bytes,248790199,opt,name=statement,proto3" json:"statement,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Consistentread                      *bool                                `protobuf:"varint,531556994,opt,name=consistentread,proto3,oneof" json:"consistentread,omitempty"`
+	Parameters                          []*AttributeValue                    `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Statement                           string                               `protobuf:"bytes,248790199,opt,name=statement,proto3" json:"statement,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -3677,8 +3677,8 @@ func (x *BatchStatementRequest) GetParameters() []*AttributeValue {
 }
 
 func (x *BatchStatementRequest) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -3751,10 +3751,10 @@ func (x *BatchStatementResponse) GetTablename() string {
 }
 
 type BatchWriteItemInput struct {
-	state                       protoimpl.MessageState      `protogen:"open.v1"`
-	Requestitems                map[string]string           `protobuf:"bytes,247720687,rep,name=requestitems,proto3" json:"requestitems,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnconsumedcapacity      ReturnConsumedCapacity      `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
-	Returnitemcollectionmetrics ReturnItemCollectionMetrics `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics" json:"returnitemcollectionmetrics,omitempty"`
+	state                       protoimpl.MessageState       `protogen:"open.v1"`
+	Requestitems                map[string]string            `protobuf:"bytes,247720687,rep,name=requestitems,proto3" json:"requestitems,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Returnconsumedcapacity      *ReturnConsumedCapacity      `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
+	Returnitemcollectionmetrics *ReturnItemCollectionMetrics `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics,oneof" json:"returnitemcollectionmetrics,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -3797,15 +3797,15 @@ func (x *BatchWriteItemInput) GetRequestitems() map[string]string {
 }
 
 func (x *BatchWriteItemInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
 
 func (x *BatchWriteItemInput) GetReturnitemcollectionmetrics() ReturnItemCollectionMetrics {
-	if x != nil {
-		return x.Returnitemcollectionmetrics
+	if x != nil && x.Returnitemcollectionmetrics != nil {
+		return *x.Returnitemcollectionmetrics
 	}
 	return ReturnItemCollectionMetrics_RETURN_ITEM_COLLECTION_METRICS_NONE
 }
@@ -3872,7 +3872,7 @@ func (x *BatchWriteItemOutput) GetUnprocesseditems() map[string]string {
 
 type BillingModeSummary struct {
 	state                             protoimpl.MessageState `protogen:"open.v1"`
-	Billingmode                       BillingMode            `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode" json:"billingmode,omitempty"`
+	Billingmode                       *BillingMode           `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode,oneof" json:"billingmode,omitempty"`
 	Lastupdatetopayperrequestdatetime *string                `protobuf:"bytes,40315649,opt,name=lastupdatetopayperrequestdatetime,proto3,oneof" json:"lastupdatetopayperrequestdatetime,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
 	sizeCache                         protoimpl.SizeCache
@@ -3909,8 +3909,8 @@ func (*BillingModeSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *BillingModeSummary) GetBillingmode() BillingMode {
-	if x != nil {
-		return x.Billingmode
+	if x != nil && x.Billingmode != nil {
+		return *x.Billingmode
 	}
 	return BillingMode_BILLING_MODE_PAY_PER_REQUEST
 }
@@ -4095,13 +4095,13 @@ func (x *Condition) GetComparisonoperator() ComparisonOperator {
 }
 
 type ConditionCheck struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Conditionexpression                 string                              `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3" json:"conditionexpression,omitempty"`
-	Expressionattributenames            map[string]string                   `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributevalues           map[string]*AttributeValue          `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Key                                 map[string]*AttributeValue          `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Tablename                           string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Conditionexpression                 string                               `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3" json:"conditionexpression,omitempty"`
+	Expressionattributenames            map[string]string                    `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributevalues           map[string]*AttributeValue           `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Key                                 map[string]*AttributeValue           `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Tablename                           string                               `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -4165,8 +4165,8 @@ func (x *ConditionCheck) GetKey() map[string]*AttributeValue {
 }
 
 func (x *ConditionCheck) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -4427,11 +4427,11 @@ func (x *ContinuousBackupsUnavailableException) GetMessage() string {
 }
 
 type ContributorInsightsSummary struct {
-	state                     protoimpl.MessageState    `protogen:"open.v1"`
-	Contributorinsightsmode   ContributorInsightsMode   `protobuf:"varint,86700161,opt,name=contributorinsightsmode,proto3,enum=dynamodb.ContributorInsightsMode" json:"contributorinsightsmode,omitempty"`
-	Contributorinsightsstatus ContributorInsightsStatus `protobuf:"varint,363347282,opt,name=contributorinsightsstatus,proto3,enum=dynamodb.ContributorInsightsStatus" json:"contributorinsightsstatus,omitempty"`
-	Indexname                 *string                   `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
-	Tablename                 *string                   `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
+	state                     protoimpl.MessageState     `protogen:"open.v1"`
+	Contributorinsightsmode   *ContributorInsightsMode   `protobuf:"varint,86700161,opt,name=contributorinsightsmode,proto3,enum=dynamodb.ContributorInsightsMode,oneof" json:"contributorinsightsmode,omitempty"`
+	Contributorinsightsstatus *ContributorInsightsStatus `protobuf:"varint,363347282,opt,name=contributorinsightsstatus,proto3,enum=dynamodb.ContributorInsightsStatus,oneof" json:"contributorinsightsstatus,omitempty"`
+	Indexname                 *string                    `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
+	Tablename                 *string                    `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -4467,15 +4467,15 @@ func (*ContributorInsightsSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *ContributorInsightsSummary) GetContributorinsightsmode() ContributorInsightsMode {
-	if x != nil {
-		return x.Contributorinsightsmode
+	if x != nil && x.Contributorinsightsmode != nil {
+		return *x.Contributorinsightsmode
 	}
 	return ContributorInsightsMode_CONTRIBUTOR_INSIGHTS_MODE_THROTTLED_KEYS
 }
 
 func (x *ContributorInsightsSummary) GetContributorinsightsstatus() ContributorInsightsStatus {
-	if x != nil {
-		return x.Contributorinsightsstatus
+	if x != nil && x.Contributorinsightsstatus != nil {
+		return *x.Contributorinsightsstatus
 	}
 	return ContributorInsightsStatus_CONTRIBUTOR_INSIGHTS_STATUS_DISABLED
 }
@@ -4865,7 +4865,7 @@ type CreateReplicationGroupMemberAction struct {
 	Ondemandthroughputoverride    *OnDemandThroughputOverride    `protobuf:"bytes,317165234,opt,name=ondemandthroughputoverride,proto3" json:"ondemandthroughputoverride,omitempty"`
 	Provisionedthroughputoverride *ProvisionedThroughputOverride `protobuf:"bytes,413332116,opt,name=provisionedthroughputoverride,proto3" json:"provisionedthroughputoverride,omitempty"`
 	Regionname                    string                         `protobuf:"bytes,112086463,opt,name=regionname,proto3" json:"regionname,omitempty"`
-	Tableclassoverride            TableClass                     `protobuf:"varint,415569842,opt,name=tableclassoverride,proto3,enum=dynamodb.TableClass" json:"tableclassoverride,omitempty"`
+	Tableclassoverride            *TableClass                    `protobuf:"varint,415569842,opt,name=tableclassoverride,proto3,enum=dynamodb.TableClass,oneof" json:"tableclassoverride,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -4936,32 +4936,32 @@ func (x *CreateReplicationGroupMemberAction) GetRegionname() string {
 }
 
 func (x *CreateReplicationGroupMemberAction) GetTableclassoverride() TableClass {
-	if x != nil {
-		return x.Tableclassoverride
+	if x != nil && x.Tableclassoverride != nil {
+		return *x.Tableclassoverride
 	}
 	return TableClass_TABLE_CLASS_STANDARD_INFREQUENT_ACCESS
 }
 
 type CreateTableInput struct {
-	state                              protoimpl.MessageState             `protogen:"open.v1"`
-	Attributedefinitions               []*AttributeDefinition             `protobuf:"bytes,414687108,rep,name=attributedefinitions,proto3" json:"attributedefinitions,omitempty"`
-	Billingmode                        BillingMode                        `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode" json:"billingmode,omitempty"`
-	Deletionprotectionenabled          *bool                              `protobuf:"varint,259418450,opt,name=deletionprotectionenabled,proto3,oneof" json:"deletionprotectionenabled,omitempty"`
-	Globalsecondaryindexes             []*GlobalSecondaryIndex            `protobuf:"bytes,409156905,rep,name=globalsecondaryindexes,proto3" json:"globalsecondaryindexes,omitempty"`
-	Globaltablesettingsreplicationmode GlobalTableSettingsReplicationMode `protobuf:"varint,10446577,opt,name=globaltablesettingsreplicationmode,proto3,enum=dynamodb.GlobalTableSettingsReplicationMode" json:"globaltablesettingsreplicationmode,omitempty"`
-	Globaltablesourcearn               *string                            `protobuf:"bytes,443614787,opt,name=globaltablesourcearn,proto3,oneof" json:"globaltablesourcearn,omitempty"`
-	Keyschema                          []*KeySchemaElement                `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
-	Localsecondaryindexes              []*LocalSecondaryIndex             `protobuf:"bytes,362339959,rep,name=localsecondaryindexes,proto3" json:"localsecondaryindexes,omitempty"`
-	Ondemandthroughput                 *OnDemandThroughput                `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
-	Provisionedthroughput              *ProvisionedThroughput             `protobuf:"bytes,1757580,opt,name=provisionedthroughput,proto3" json:"provisionedthroughput,omitempty"`
-	Resourcepolicy                     *string                            `protobuf:"bytes,15747632,opt,name=resourcepolicy,proto3,oneof" json:"resourcepolicy,omitempty"`
-	Ssespecification                   *SSESpecification                  `protobuf:"bytes,31692444,opt,name=ssespecification,proto3" json:"ssespecification,omitempty"`
-	Streamspecification                *StreamSpecification               `protobuf:"bytes,403922627,opt,name=streamspecification,proto3" json:"streamspecification,omitempty"`
-	Tableclass                         TableClass                         `protobuf:"varint,342890498,opt,name=tableclass,proto3,enum=dynamodb.TableClass" json:"tableclass,omitempty"`
-	Tablename                          string                             `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
-	Tags                               []*Tag                             `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Vectorindexes                      []*VectorIndex                     `protobuf:"bytes,66291727,rep,name=vectorindexes,proto3" json:"vectorindexes,omitempty"`
-	Warmthroughput                     *WarmThroughput                    `protobuf:"bytes,290598659,opt,name=warmthroughput,proto3" json:"warmthroughput,omitempty"`
+	state                              protoimpl.MessageState              `protogen:"open.v1"`
+	Attributedefinitions               []*AttributeDefinition              `protobuf:"bytes,414687108,rep,name=attributedefinitions,proto3" json:"attributedefinitions,omitempty"`
+	Billingmode                        *BillingMode                        `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode,oneof" json:"billingmode,omitempty"`
+	Deletionprotectionenabled          *bool                               `protobuf:"varint,259418450,opt,name=deletionprotectionenabled,proto3,oneof" json:"deletionprotectionenabled,omitempty"`
+	Globalsecondaryindexes             []*GlobalSecondaryIndex             `protobuf:"bytes,409156905,rep,name=globalsecondaryindexes,proto3" json:"globalsecondaryindexes,omitempty"`
+	Globaltablesettingsreplicationmode *GlobalTableSettingsReplicationMode `protobuf:"varint,10446577,opt,name=globaltablesettingsreplicationmode,proto3,enum=dynamodb.GlobalTableSettingsReplicationMode,oneof" json:"globaltablesettingsreplicationmode,omitempty"`
+	Globaltablesourcearn               *string                             `protobuf:"bytes,443614787,opt,name=globaltablesourcearn,proto3,oneof" json:"globaltablesourcearn,omitempty"`
+	Keyschema                          []*KeySchemaElement                 `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
+	Localsecondaryindexes              []*LocalSecondaryIndex              `protobuf:"bytes,362339959,rep,name=localsecondaryindexes,proto3" json:"localsecondaryindexes,omitempty"`
+	Ondemandthroughput                 *OnDemandThroughput                 `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
+	Provisionedthroughput              *ProvisionedThroughput              `protobuf:"bytes,1757580,opt,name=provisionedthroughput,proto3" json:"provisionedthroughput,omitempty"`
+	Resourcepolicy                     *string                             `protobuf:"bytes,15747632,opt,name=resourcepolicy,proto3,oneof" json:"resourcepolicy,omitempty"`
+	Ssespecification                   *SSESpecification                   `protobuf:"bytes,31692444,opt,name=ssespecification,proto3" json:"ssespecification,omitempty"`
+	Streamspecification                *StreamSpecification                `protobuf:"bytes,403922627,opt,name=streamspecification,proto3" json:"streamspecification,omitempty"`
+	Tableclass                         *TableClass                         `protobuf:"varint,342890498,opt,name=tableclass,proto3,enum=dynamodb.TableClass,oneof" json:"tableclass,omitempty"`
+	Tablename                          string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	Tags                               []*Tag                              `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	Vectorindexes                      []*VectorIndex                      `protobuf:"bytes,66291727,rep,name=vectorindexes,proto3" json:"vectorindexes,omitempty"`
+	Warmthroughput                     *WarmThroughput                     `protobuf:"bytes,290598659,opt,name=warmthroughput,proto3" json:"warmthroughput,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
 	sizeCache                          protoimpl.SizeCache
 }
@@ -5004,8 +5004,8 @@ func (x *CreateTableInput) GetAttributedefinitions() []*AttributeDefinition {
 }
 
 func (x *CreateTableInput) GetBillingmode() BillingMode {
-	if x != nil {
-		return x.Billingmode
+	if x != nil && x.Billingmode != nil {
+		return *x.Billingmode
 	}
 	return BillingMode_BILLING_MODE_PAY_PER_REQUEST
 }
@@ -5025,8 +5025,8 @@ func (x *CreateTableInput) GetGlobalsecondaryindexes() []*GlobalSecondaryIndex {
 }
 
 func (x *CreateTableInput) GetGlobaltablesettingsreplicationmode() GlobalTableSettingsReplicationMode {
-	if x != nil {
-		return x.Globaltablesettingsreplicationmode
+	if x != nil && x.Globaltablesettingsreplicationmode != nil {
+		return *x.Globaltablesettingsreplicationmode
 	}
 	return GlobalTableSettingsReplicationMode_GLOBAL_TABLE_SETTINGS_REPLICATION_MODE_DISABLED
 }
@@ -5088,8 +5088,8 @@ func (x *CreateTableInput) GetStreamspecification() *StreamSpecification {
 }
 
 func (x *CreateTableInput) GetTableclass() TableClass {
-	if x != nil {
-		return x.Tableclass
+	if x != nil && x.Tableclass != nil {
+		return *x.Tableclass
 	}
 	return TableClass_TABLE_CLASS_STANDARD_INFREQUENT_ACCESS
 }
@@ -5303,13 +5303,13 @@ func (x *CsvOptions) GetHeaderlist() []string {
 }
 
 type Delete struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Conditionexpression                 *string                             `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
-	Expressionattributenames            map[string]string                   `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributevalues           map[string]*AttributeValue          `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Key                                 map[string]*AttributeValue          `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Tablename                           string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Conditionexpression                 *string                              `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
+	Expressionattributenames            map[string]string                    `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributevalues           map[string]*AttributeValue           `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Key                                 map[string]*AttributeValue           `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Tablename                           string                               `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -5373,8 +5373,8 @@ func (x *Delete) GetKey() map[string]*AttributeValue {
 }
 
 func (x *Delete) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -5563,18 +5563,18 @@ func (x *DeleteGlobalTableWitnessGroupMemberAction) GetRegionname() string {
 }
 
 type DeleteItemInput struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Conditionexpression                 *string                             `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
-	Conditionaloperator                 ConditionalOperator                 `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator" json:"conditionaloperator,omitempty"`
-	Expected                            map[string]*ExpectedAttributeValue  `protobuf:"bytes,106557946,rep,name=expected,proto3" json:"expected,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributenames            map[string]string                   `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributevalues           map[string]*AttributeValue          `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Key                                 map[string]*AttributeValue          `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnconsumedcapacity              ReturnConsumedCapacity              `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
-	Returnitemcollectionmetrics         ReturnItemCollectionMetrics         `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics" json:"returnitemcollectionmetrics,omitempty"`
-	Returnvalues                        ReturnValue                         `protobuf:"varint,402960198,opt,name=returnvalues,proto3,enum=dynamodb.ReturnValue" json:"returnvalues,omitempty"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Tablename                           string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Conditionexpression                 *string                              `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
+	Conditionaloperator                 *ConditionalOperator                 `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator,oneof" json:"conditionaloperator,omitempty"`
+	Expected                            map[string]*ExpectedAttributeValue   `protobuf:"bytes,106557946,rep,name=expected,proto3" json:"expected,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributenames            map[string]string                    `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributevalues           map[string]*AttributeValue           `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Key                                 map[string]*AttributeValue           `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Returnconsumedcapacity              *ReturnConsumedCapacity              `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
+	Returnitemcollectionmetrics         *ReturnItemCollectionMetrics         `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics,oneof" json:"returnitemcollectionmetrics,omitempty"`
+	Returnvalues                        *ReturnValue                         `protobuf:"varint,402960198,opt,name=returnvalues,proto3,enum=dynamodb.ReturnValue,oneof" json:"returnvalues,omitempty"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Tablename                           string                               `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -5617,8 +5617,8 @@ func (x *DeleteItemInput) GetConditionexpression() string {
 }
 
 func (x *DeleteItemInput) GetConditionaloperator() ConditionalOperator {
-	if x != nil {
-		return x.Conditionaloperator
+	if x != nil && x.Conditionaloperator != nil {
+		return *x.Conditionaloperator
 	}
 	return ConditionalOperator_CONDITIONAL_OPERATOR_AND
 }
@@ -5652,29 +5652,29 @@ func (x *DeleteItemInput) GetKey() map[string]*AttributeValue {
 }
 
 func (x *DeleteItemInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
 
 func (x *DeleteItemInput) GetReturnitemcollectionmetrics() ReturnItemCollectionMetrics {
-	if x != nil {
-		return x.Returnitemcollectionmetrics
+	if x != nil && x.Returnitemcollectionmetrics != nil {
+		return *x.Returnitemcollectionmetrics
 	}
 	return ReturnItemCollectionMetrics_RETURN_ITEM_COLLECTION_METRICS_NONE
 }
 
 func (x *DeleteItemInput) GetReturnvalues() ReturnValue {
-	if x != nil {
-		return x.Returnvalues
+	if x != nil && x.Returnvalues != nil {
+		return *x.Returnvalues
 	}
 	return ReturnValue_RETURN_VALUE_UPDATED_NEW
 }
 
 func (x *DeleteItemInput) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -6335,14 +6335,14 @@ func (x *DescribeContributorInsightsInput) GetTablename() string {
 }
 
 type DescribeContributorInsightsOutput struct {
-	state                       protoimpl.MessageState    `protogen:"open.v1"`
-	Contributorinsightsmode     ContributorInsightsMode   `protobuf:"varint,86700161,opt,name=contributorinsightsmode,proto3,enum=dynamodb.ContributorInsightsMode" json:"contributorinsightsmode,omitempty"`
-	Contributorinsightsrulelist []string                  `protobuf:"bytes,140475206,rep,name=contributorinsightsrulelist,proto3" json:"contributorinsightsrulelist,omitempty"`
-	Contributorinsightsstatus   ContributorInsightsStatus `protobuf:"varint,363347282,opt,name=contributorinsightsstatus,proto3,enum=dynamodb.ContributorInsightsStatus" json:"contributorinsightsstatus,omitempty"`
-	Failureexception            *FailureException         `protobuf:"bytes,284668899,opt,name=failureexception,proto3" json:"failureexception,omitempty"`
-	Indexname                   *string                   `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
-	Lastupdatedatetime          *string                   `protobuf:"bytes,452274318,opt,name=lastupdatedatetime,proto3,oneof" json:"lastupdatedatetime,omitempty"`
-	Tablename                   *string                   `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
+	state                       protoimpl.MessageState     `protogen:"open.v1"`
+	Contributorinsightsmode     *ContributorInsightsMode   `protobuf:"varint,86700161,opt,name=contributorinsightsmode,proto3,enum=dynamodb.ContributorInsightsMode,oneof" json:"contributorinsightsmode,omitempty"`
+	Contributorinsightsrulelist []string                   `protobuf:"bytes,140475206,rep,name=contributorinsightsrulelist,proto3" json:"contributorinsightsrulelist,omitempty"`
+	Contributorinsightsstatus   *ContributorInsightsStatus `protobuf:"varint,363347282,opt,name=contributorinsightsstatus,proto3,enum=dynamodb.ContributorInsightsStatus,oneof" json:"contributorinsightsstatus,omitempty"`
+	Failureexception            *FailureException          `protobuf:"bytes,284668899,opt,name=failureexception,proto3" json:"failureexception,omitempty"`
+	Indexname                   *string                    `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
+	Lastupdatedatetime          *string                    `protobuf:"bytes,452274318,opt,name=lastupdatedatetime,proto3,oneof" json:"lastupdatedatetime,omitempty"`
+	Tablename                   *string                    `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -6378,8 +6378,8 @@ func (*DescribeContributorInsightsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeContributorInsightsOutput) GetContributorinsightsmode() ContributorInsightsMode {
-	if x != nil {
-		return x.Contributorinsightsmode
+	if x != nil && x.Contributorinsightsmode != nil {
+		return *x.Contributorinsightsmode
 	}
 	return ContributorInsightsMode_CONTRIBUTOR_INSIGHTS_MODE_THROTTLED_KEYS
 }
@@ -6392,8 +6392,8 @@ func (x *DescribeContributorInsightsOutput) GetContributorinsightsrulelist() []s
 }
 
 func (x *DescribeContributorInsightsOutput) GetContributorinsightsstatus() ContributorInsightsStatus {
-	if x != nil {
-		return x.Contributorinsightsstatus
+	if x != nil && x.Contributorinsightsstatus != nil {
+		return *x.Contributorinsightsstatus
 	}
 	return ContributorInsightsStatus_CONTRIBUTOR_INSIGHTS_STATUS_DISABLED
 }
@@ -7375,8 +7375,8 @@ func (x *DuplicateItemException) GetMessage() string {
 }
 
 type EnableKinesisStreamingConfiguration struct {
-	state                                protoimpl.MessageState               `protogen:"open.v1"`
-	Approximatecreationdatetimeprecision ApproximateCreationDateTimePrecision `protobuf:"varint,392293352,opt,name=approximatecreationdatetimeprecision,proto3,enum=dynamodb.ApproximateCreationDateTimePrecision" json:"approximatecreationdatetimeprecision,omitempty"`
+	state                                protoimpl.MessageState                `protogen:"open.v1"`
+	Approximatecreationdatetimeprecision *ApproximateCreationDateTimePrecision `protobuf:"varint,392293352,opt,name=approximatecreationdatetimeprecision,proto3,enum=dynamodb.ApproximateCreationDateTimePrecision,oneof" json:"approximatecreationdatetimeprecision,omitempty"`
 	unknownFields                        protoimpl.UnknownFields
 	sizeCache                            protoimpl.SizeCache
 }
@@ -7412,8 +7412,8 @@ func (*EnableKinesisStreamingConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *EnableKinesisStreamingConfiguration) GetApproximatecreationdatetimeprecision() ApproximateCreationDateTimePrecision {
-	if x != nil {
-		return x.Approximatecreationdatetimeprecision
+	if x != nil && x.Approximatecreationdatetimeprecision != nil {
+		return *x.Approximatecreationdatetimeprecision
 	}
 	return ApproximateCreationDateTimePrecision_APPROXIMATE_CREATION_DATE_TIME_PRECISION_MILLISECOND
 }
@@ -7471,14 +7471,14 @@ func (x *Endpoint) GetCacheperiodinminutes() int64 {
 }
 
 type ExecuteStatementInput struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Consistentread                      *bool                               `protobuf:"varint,531556994,opt,name=consistentread,proto3,oneof" json:"consistentread,omitempty"`
-	Limit                               *int32                              `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nexttoken                           *string                             `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
-	Parameters                          []*AttributeValue                   `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
-	Returnconsumedcapacity              ReturnConsumedCapacity              `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Statement                           string                              `protobuf:"bytes,248790199,opt,name=statement,proto3" json:"statement,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Consistentread                      *bool                                `protobuf:"varint,531556994,opt,name=consistentread,proto3,oneof" json:"consistentread,omitempty"`
+	Limit                               *int32                               `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
+	Nexttoken                           *string                              `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Parameters                          []*AttributeValue                    `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
+	Returnconsumedcapacity              *ReturnConsumedCapacity              `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Statement                           string                               `protobuf:"bytes,248790199,opt,name=statement,proto3" json:"statement,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -7542,15 +7542,15 @@ func (x *ExecuteStatementInput) GetParameters() []*AttributeValue {
 }
 
 func (x *ExecuteStatementInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
 
 func (x *ExecuteStatementInput) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -7633,7 +7633,7 @@ func (x *ExecuteStatementOutput) GetNexttoken() string {
 type ExecuteTransactionInput struct {
 	state                  protoimpl.MessageState    `protogen:"open.v1"`
 	Clientrequesttoken     *string                   `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3,oneof" json:"clientrequesttoken,omitempty"`
-	Returnconsumedcapacity ReturnConsumedCapacity    `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
+	Returnconsumedcapacity *ReturnConsumedCapacity   `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
 	Transactstatements     []*ParameterizedStatement `protobuf:"bytes,446038782,rep,name=transactstatements,proto3" json:"transactstatements,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -7677,8 +7677,8 @@ func (x *ExecuteTransactionInput) GetClientrequesttoken() string {
 }
 
 func (x *ExecuteTransactionInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
@@ -7745,7 +7745,7 @@ func (x *ExecuteTransactionOutput) GetResponses() []*ItemResponse {
 type ExpectedAttributeValue struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Attributevaluelist []*AttributeValue      `protobuf:"bytes,157424013,rep,name=attributevaluelist,proto3" json:"attributevaluelist,omitempty"`
-	Comparisonoperator ComparisonOperator     `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=dynamodb.ComparisonOperator" json:"comparisonoperator,omitempty"`
+	Comparisonoperator *ComparisonOperator    `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=dynamodb.ComparisonOperator,oneof" json:"comparisonoperator,omitempty"`
 	Exists             *bool                  `protobuf:"varint,265084382,opt,name=exists,proto3,oneof" json:"exists,omitempty"`
 	Value              *AttributeValue        `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -7790,8 +7790,8 @@ func (x *ExpectedAttributeValue) GetAttributevaluelist() []*AttributeValue {
 }
 
 func (x *ExpectedAttributeValue) GetComparisonoperator() ComparisonOperator {
-	if x != nil {
-		return x.Comparisonoperator
+	if x != nil && x.Comparisonoperator != nil {
+		return *x.Comparisonoperator
 	}
 	return ComparisonOperator_COMPARISON_OPERATOR_GE
 }
@@ -7860,11 +7860,11 @@ type ExportDescription struct {
 	Clienttoken                    *string                         `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
 	Endtime                        *string                         `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
 	Exportarn                      *string                         `protobuf:"bytes,3661287,opt,name=exportarn,proto3,oneof" json:"exportarn,omitempty"`
-	Exportformat                   ExportFormat                    `protobuf:"varint,300799837,opt,name=exportformat,proto3,enum=dynamodb.ExportFormat" json:"exportformat,omitempty"`
+	Exportformat                   *ExportFormat                   `protobuf:"varint,300799837,opt,name=exportformat,proto3,enum=dynamodb.ExportFormat,oneof" json:"exportformat,omitempty"`
 	Exportmanifest                 *string                         `protobuf:"bytes,196735863,opt,name=exportmanifest,proto3,oneof" json:"exportmanifest,omitempty"`
-	Exportstatus                   ExportStatus                    `protobuf:"varint,459702918,opt,name=exportstatus,proto3,enum=dynamodb.ExportStatus" json:"exportstatus,omitempty"`
+	Exportstatus                   *ExportStatus                   `protobuf:"varint,459702918,opt,name=exportstatus,proto3,enum=dynamodb.ExportStatus,oneof" json:"exportstatus,omitempty"`
 	Exporttime                     *string                         `protobuf:"bytes,28335083,opt,name=exporttime,proto3,oneof" json:"exporttime,omitempty"`
-	Exporttype                     ExportType                      `protobuf:"varint,189377484,opt,name=exporttype,proto3,enum=dynamodb.ExportType" json:"exporttype,omitempty"`
+	Exporttype                     *ExportType                     `protobuf:"varint,189377484,opt,name=exporttype,proto3,enum=dynamodb.ExportType,oneof" json:"exporttype,omitempty"`
 	Failurecode                    *string                         `protobuf:"bytes,84707897,opt,name=failurecode,proto3,oneof" json:"failurecode,omitempty"`
 	Failuremessage                 *string                         `protobuf:"bytes,353556937,opt,name=failuremessage,proto3,oneof" json:"failuremessage,omitempty"`
 	Incrementalexportspecification *IncrementalExportSpecification `protobuf:"bytes,20792295,opt,name=incrementalexportspecification,proto3" json:"incrementalexportspecification,omitempty"`
@@ -7872,7 +7872,7 @@ type ExportDescription struct {
 	S3Bucket                       *string                         `protobuf:"bytes,114031434,opt,name=s3bucket,proto3,oneof" json:"s3bucket,omitempty"`
 	S3Bucketowner                  *string                         `protobuf:"bytes,351576129,opt,name=s3bucketowner,proto3,oneof" json:"s3bucketowner,omitempty"`
 	S3Prefix                       *string                         `protobuf:"bytes,21529336,opt,name=s3prefix,proto3,oneof" json:"s3prefix,omitempty"`
-	S3Ssealgorithm                 S3SseAlgorithm                  `protobuf:"varint,213032706,opt,name=s3ssealgorithm,proto3,enum=dynamodb.S3SseAlgorithm" json:"s3ssealgorithm,omitempty"`
+	S3Ssealgorithm                 *S3SseAlgorithm                 `protobuf:"varint,213032706,opt,name=s3ssealgorithm,proto3,enum=dynamodb.S3SseAlgorithm,oneof" json:"s3ssealgorithm,omitempty"`
 	S3Ssekmskeyid                  *string                         `protobuf:"bytes,9386110,opt,name=s3ssekmskeyid,proto3,oneof" json:"s3ssekmskeyid,omitempty"`
 	Starttime                      *string                         `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	Tablearn                       *string                         `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
@@ -7940,8 +7940,8 @@ func (x *ExportDescription) GetExportarn() string {
 }
 
 func (x *ExportDescription) GetExportformat() ExportFormat {
-	if x != nil {
-		return x.Exportformat
+	if x != nil && x.Exportformat != nil {
+		return *x.Exportformat
 	}
 	return ExportFormat_EXPORT_FORMAT_DYNAMODB_JSON
 }
@@ -7954,8 +7954,8 @@ func (x *ExportDescription) GetExportmanifest() string {
 }
 
 func (x *ExportDescription) GetExportstatus() ExportStatus {
-	if x != nil {
-		return x.Exportstatus
+	if x != nil && x.Exportstatus != nil {
+		return *x.Exportstatus
 	}
 	return ExportStatus_EXPORT_STATUS_IN_PROGRESS
 }
@@ -7968,8 +7968,8 @@ func (x *ExportDescription) GetExporttime() string {
 }
 
 func (x *ExportDescription) GetExporttype() ExportType {
-	if x != nil {
-		return x.Exporttype
+	if x != nil && x.Exporttype != nil {
+		return *x.Exporttype
 	}
 	return ExportType_EXPORT_TYPE_FULL_EXPORT
 }
@@ -8024,8 +8024,8 @@ func (x *ExportDescription) GetS3Prefix() string {
 }
 
 func (x *ExportDescription) GetS3Ssealgorithm() S3SseAlgorithm {
-	if x != nil {
-		return x.S3Ssealgorithm
+	if x != nil && x.S3Ssealgorithm != nil {
+		return *x.S3Ssealgorithm
 	}
 	return S3SseAlgorithm_S3_SSE_ALGORITHM_AES256
 }
@@ -8105,8 +8105,8 @@ func (x *ExportNotFoundException) GetMessage() string {
 type ExportSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Exportarn     *string                `protobuf:"bytes,3661287,opt,name=exportarn,proto3,oneof" json:"exportarn,omitempty"`
-	Exportstatus  ExportStatus           `protobuf:"varint,459702918,opt,name=exportstatus,proto3,enum=dynamodb.ExportStatus" json:"exportstatus,omitempty"`
-	Exporttype    ExportType             `protobuf:"varint,189377484,opt,name=exporttype,proto3,enum=dynamodb.ExportType" json:"exporttype,omitempty"`
+	Exportstatus  *ExportStatus          `protobuf:"varint,459702918,opt,name=exportstatus,proto3,enum=dynamodb.ExportStatus,oneof" json:"exportstatus,omitempty"`
+	Exporttype    *ExportType            `protobuf:"varint,189377484,opt,name=exporttype,proto3,enum=dynamodb.ExportType,oneof" json:"exporttype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8149,15 +8149,15 @@ func (x *ExportSummary) GetExportarn() string {
 }
 
 func (x *ExportSummary) GetExportstatus() ExportStatus {
-	if x != nil {
-		return x.Exportstatus
+	if x != nil && x.Exportstatus != nil {
+		return *x.Exportstatus
 	}
 	return ExportStatus_EXPORT_STATUS_IN_PROGRESS
 }
 
 func (x *ExportSummary) GetExporttype() ExportType {
-	if x != nil {
-		return x.Exporttype
+	if x != nil && x.Exporttype != nil {
+		return *x.Exporttype
 	}
 	return ExportType_EXPORT_TYPE_FULL_EXPORT
 }
@@ -8165,14 +8165,14 @@ func (x *ExportSummary) GetExporttype() ExportType {
 type ExportTableToPointInTimeInput struct {
 	state                          protoimpl.MessageState          `protogen:"open.v1"`
 	Clienttoken                    *string                         `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
-	Exportformat                   ExportFormat                    `protobuf:"varint,300799837,opt,name=exportformat,proto3,enum=dynamodb.ExportFormat" json:"exportformat,omitempty"`
+	Exportformat                   *ExportFormat                   `protobuf:"varint,300799837,opt,name=exportformat,proto3,enum=dynamodb.ExportFormat,oneof" json:"exportformat,omitempty"`
 	Exporttime                     *string                         `protobuf:"bytes,28335083,opt,name=exporttime,proto3,oneof" json:"exporttime,omitempty"`
-	Exporttype                     ExportType                      `protobuf:"varint,189377484,opt,name=exporttype,proto3,enum=dynamodb.ExportType" json:"exporttype,omitempty"`
+	Exporttype                     *ExportType                     `protobuf:"varint,189377484,opt,name=exporttype,proto3,enum=dynamodb.ExportType,oneof" json:"exporttype,omitempty"`
 	Incrementalexportspecification *IncrementalExportSpecification `protobuf:"bytes,20792295,opt,name=incrementalexportspecification,proto3" json:"incrementalexportspecification,omitempty"`
 	S3Bucket                       string                          `protobuf:"bytes,114031434,opt,name=s3bucket,proto3" json:"s3bucket,omitempty"`
 	S3Bucketowner                  *string                         `protobuf:"bytes,351576129,opt,name=s3bucketowner,proto3,oneof" json:"s3bucketowner,omitempty"`
 	S3Prefix                       *string                         `protobuf:"bytes,21529336,opt,name=s3prefix,proto3,oneof" json:"s3prefix,omitempty"`
-	S3Ssealgorithm                 S3SseAlgorithm                  `protobuf:"varint,213032706,opt,name=s3ssealgorithm,proto3,enum=dynamodb.S3SseAlgorithm" json:"s3ssealgorithm,omitempty"`
+	S3Ssealgorithm                 *S3SseAlgorithm                 `protobuf:"varint,213032706,opt,name=s3ssealgorithm,proto3,enum=dynamodb.S3SseAlgorithm,oneof" json:"s3ssealgorithm,omitempty"`
 	S3Ssekmskeyid                  *string                         `protobuf:"bytes,9386110,opt,name=s3ssekmskeyid,proto3,oneof" json:"s3ssekmskeyid,omitempty"`
 	Tablearn                       string                          `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
@@ -8217,8 +8217,8 @@ func (x *ExportTableToPointInTimeInput) GetClienttoken() string {
 }
 
 func (x *ExportTableToPointInTimeInput) GetExportformat() ExportFormat {
-	if x != nil {
-		return x.Exportformat
+	if x != nil && x.Exportformat != nil {
+		return *x.Exportformat
 	}
 	return ExportFormat_EXPORT_FORMAT_DYNAMODB_JSON
 }
@@ -8231,8 +8231,8 @@ func (x *ExportTableToPointInTimeInput) GetExporttime() string {
 }
 
 func (x *ExportTableToPointInTimeInput) GetExporttype() ExportType {
-	if x != nil {
-		return x.Exporttype
+	if x != nil && x.Exporttype != nil {
+		return *x.Exporttype
 	}
 	return ExportType_EXPORT_TYPE_FULL_EXPORT
 }
@@ -8266,8 +8266,8 @@ func (x *ExportTableToPointInTimeInput) GetS3Prefix() string {
 }
 
 func (x *ExportTableToPointInTimeInput) GetS3Ssealgorithm() S3SseAlgorithm {
-	if x != nil {
-		return x.S3Ssealgorithm
+	if x != nil && x.S3Ssealgorithm != nil {
+		return *x.S3Ssealgorithm
 	}
 	return S3SseAlgorithm_S3_SSE_ALGORITHM_AES256
 }
@@ -8457,7 +8457,7 @@ type GetItemInput struct {
 	Expressionattributenames map[string]string          `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Key                      map[string]*AttributeValue `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Projectionexpression     *string                    `protobuf:"bytes,150730243,opt,name=projectionexpression,proto3,oneof" json:"projectionexpression,omitempty"`
-	Returnconsumedcapacity   ReturnConsumedCapacity     `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
+	Returnconsumedcapacity   *ReturnConsumedCapacity    `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
 	Tablename                string                     `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -8529,8 +8529,8 @@ func (x *GetItemInput) GetProjectionexpression() string {
 }
 
 func (x *GetItemInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
@@ -8832,7 +8832,7 @@ type GlobalSecondaryIndexDescription struct {
 	Indexarn              *string                                        `protobuf:"bytes,374335615,opt,name=indexarn,proto3,oneof" json:"indexarn,omitempty"`
 	Indexname             *string                                        `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
 	Indexsizebytes        *int64                                         `protobuf:"varint,395738346,opt,name=indexsizebytes,proto3,oneof" json:"indexsizebytes,omitempty"`
-	Indexstatus           IndexStatus                                    `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus" json:"indexstatus,omitempty"`
+	Indexstatus           *IndexStatus                                   `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus,oneof" json:"indexstatus,omitempty"`
 	Itemcount             *int64                                         `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
 	Keyschema             []*KeySchemaElement                            `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
 	Ondemandthroughput    *OnDemandThroughput                            `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
@@ -8902,8 +8902,8 @@ func (x *GlobalSecondaryIndexDescription) GetIndexsizebytes() int64 {
 }
 
 func (x *GlobalSecondaryIndexDescription) GetIndexstatus() IndexStatus {
-	if x != nil {
-		return x.Indexstatus
+	if x != nil && x.Indexstatus != nil {
+		return *x.Indexstatus
 	}
 	return IndexStatus_INDEX_STATUS_UPDATING
 }
@@ -9089,7 +9089,7 @@ func (x *GlobalSecondaryIndexUpdate) GetUpdate() *UpdateGlobalSecondaryIndexActi
 type GlobalSecondaryIndexWarmThroughputDescription struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Readunitspersecond  *int64                 `protobuf:"varint,11400732,opt,name=readunitspersecond,proto3,oneof" json:"readunitspersecond,omitempty"`
-	Status              IndexStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=dynamodb.IndexStatus" json:"status,omitempty"`
+	Status              *IndexStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=dynamodb.IndexStatus,oneof" json:"status,omitempty"`
 	Writeunitspersecond *int64                 `protobuf:"varint,339770127,opt,name=writeunitspersecond,proto3,oneof" json:"writeunitspersecond,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -9133,8 +9133,8 @@ func (x *GlobalSecondaryIndexWarmThroughputDescription) GetReadunitspersecond() 
 }
 
 func (x *GlobalSecondaryIndexWarmThroughputDescription) GetStatus() IndexStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return IndexStatus_INDEX_STATUS_UPDATING
 }
@@ -9247,7 +9247,7 @@ type GlobalTableDescription struct {
 	Creationdatetime  *string                `protobuf:"bytes,48904698,opt,name=creationdatetime,proto3,oneof" json:"creationdatetime,omitempty"`
 	Globaltablearn    *string                `protobuf:"bytes,262302830,opt,name=globaltablearn,proto3,oneof" json:"globaltablearn,omitempty"`
 	Globaltablename   *string                `protobuf:"bytes,283759402,opt,name=globaltablename,proto3,oneof" json:"globaltablename,omitempty"`
-	Globaltablestatus GlobalTableStatus      `protobuf:"varint,8833293,opt,name=globaltablestatus,proto3,enum=dynamodb.GlobalTableStatus" json:"globaltablestatus,omitempty"`
+	Globaltablestatus *GlobalTableStatus     `protobuf:"varint,8833293,opt,name=globaltablestatus,proto3,enum=dynamodb.GlobalTableStatus,oneof" json:"globaltablestatus,omitempty"`
 	Replicationgroup  []*ReplicaDescription  `protobuf:"bytes,190970785,rep,name=replicationgroup,proto3" json:"replicationgroup,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -9305,8 +9305,8 @@ func (x *GlobalTableDescription) GetGlobaltablename() string {
 }
 
 func (x *GlobalTableDescription) GetGlobaltablestatus() GlobalTableStatus {
-	if x != nil {
-		return x.Globaltablestatus
+	if x != nil && x.Globaltablestatus != nil {
+		return *x.Globaltablestatus
 	}
 	return GlobalTableStatus_GLOBAL_TABLE_STATUS_UPDATING
 }
@@ -9425,7 +9425,7 @@ func (x *GlobalTableNotFoundException) GetMessage() string {
 type GlobalTableWitnessDescription struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Regionname    *string                `protobuf:"bytes,112086463,opt,name=regionname,proto3,oneof" json:"regionname,omitempty"`
-	Witnessstatus WitnessStatus          `protobuf:"varint,303352887,opt,name=witnessstatus,proto3,enum=dynamodb.WitnessStatus" json:"witnessstatus,omitempty"`
+	Witnessstatus *WitnessStatus         `protobuf:"varint,303352887,opt,name=witnessstatus,proto3,enum=dynamodb.WitnessStatus,oneof" json:"witnessstatus,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9468,8 +9468,8 @@ func (x *GlobalTableWitnessDescription) GetRegionname() string {
 }
 
 func (x *GlobalTableWitnessDescription) GetWitnessstatus() WitnessStatus {
-	if x != nil {
-		return x.Witnessstatus
+	if x != nil && x.Witnessstatus != nil {
+		return *x.Witnessstatus
 	}
 	return WitnessStatus_WITNESS_STATUS_ACTIVE
 }
@@ -9663,8 +9663,8 @@ type ImportSummary struct {
 	Cloudwatchloggrouparn *string                `protobuf:"bytes,171042008,opt,name=cloudwatchloggrouparn,proto3,oneof" json:"cloudwatchloggrouparn,omitempty"`
 	Endtime               *string                `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
 	Importarn             *string                `protobuf:"bytes,444379628,opt,name=importarn,proto3,oneof" json:"importarn,omitempty"`
-	Importstatus          ImportStatus           `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=dynamodb.ImportStatus" json:"importstatus,omitempty"`
-	Inputformat           InputFormat            `protobuf:"varint,405664101,opt,name=inputformat,proto3,enum=dynamodb.InputFormat" json:"inputformat,omitempty"`
+	Importstatus          *ImportStatus          `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=dynamodb.ImportStatus,oneof" json:"importstatus,omitempty"`
+	Inputformat           *InputFormat           `protobuf:"varint,405664101,opt,name=inputformat,proto3,enum=dynamodb.InputFormat,oneof" json:"inputformat,omitempty"`
 	S3Bucketsource        *S3BucketSource        `protobuf:"bytes,202310037,opt,name=s3bucketsource,proto3" json:"s3bucketsource,omitempty"`
 	Starttime             *string                `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	Tablearn              *string                `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
@@ -9724,15 +9724,15 @@ func (x *ImportSummary) GetImportarn() string {
 }
 
 func (x *ImportSummary) GetImportstatus() ImportStatus {
-	if x != nil {
-		return x.Importstatus
+	if x != nil && x.Importstatus != nil {
+		return *x.Importstatus
 	}
 	return ImportStatus_IMPORT_STATUS_IN_PROGRESS
 }
 
 func (x *ImportSummary) GetInputformat() InputFormat {
-	if x != nil {
-		return x.Inputformat
+	if x != nil && x.Inputformat != nil {
+		return *x.Inputformat
 	}
 	return InputFormat_INPUT_FORMAT_DYNAMODB_JSON
 }
@@ -9767,10 +9767,10 @@ type ImportTableDescription struct {
 	Failurecode             *string                  `protobuf:"bytes,84707897,opt,name=failurecode,proto3,oneof" json:"failurecode,omitempty"`
 	Failuremessage          *string                  `protobuf:"bytes,353556937,opt,name=failuremessage,proto3,oneof" json:"failuremessage,omitempty"`
 	Importarn               *string                  `protobuf:"bytes,444379628,opt,name=importarn,proto3,oneof" json:"importarn,omitempty"`
-	Importstatus            ImportStatus             `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=dynamodb.ImportStatus" json:"importstatus,omitempty"`
+	Importstatus            *ImportStatus            `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=dynamodb.ImportStatus,oneof" json:"importstatus,omitempty"`
 	Importeditemcount       *int64                   `protobuf:"varint,202622198,opt,name=importeditemcount,proto3,oneof" json:"importeditemcount,omitempty"`
-	Inputcompressiontype    InputCompressionType     `protobuf:"varint,392699396,opt,name=inputcompressiontype,proto3,enum=dynamodb.InputCompressionType" json:"inputcompressiontype,omitempty"`
-	Inputformat             InputFormat              `protobuf:"varint,405664101,opt,name=inputformat,proto3,enum=dynamodb.InputFormat" json:"inputformat,omitempty"`
+	Inputcompressiontype    *InputCompressionType    `protobuf:"varint,392699396,opt,name=inputcompressiontype,proto3,enum=dynamodb.InputCompressionType,oneof" json:"inputcompressiontype,omitempty"`
+	Inputformat             *InputFormat             `protobuf:"varint,405664101,opt,name=inputformat,proto3,enum=dynamodb.InputFormat,oneof" json:"inputformat,omitempty"`
 	Inputformatoptions      *InputFormatOptions      `protobuf:"bytes,249201403,opt,name=inputformatoptions,proto3" json:"inputformatoptions,omitempty"`
 	Processeditemcount      *int64                   `protobuf:"varint,340163668,opt,name=processeditemcount,proto3,oneof" json:"processeditemcount,omitempty"`
 	Processedsizebytes      *int64                   `protobuf:"varint,72287562,opt,name=processedsizebytes,proto3,oneof" json:"processedsizebytes,omitempty"`
@@ -9863,8 +9863,8 @@ func (x *ImportTableDescription) GetImportarn() string {
 }
 
 func (x *ImportTableDescription) GetImportstatus() ImportStatus {
-	if x != nil {
-		return x.Importstatus
+	if x != nil && x.Importstatus != nil {
+		return *x.Importstatus
 	}
 	return ImportStatus_IMPORT_STATUS_IN_PROGRESS
 }
@@ -9877,15 +9877,15 @@ func (x *ImportTableDescription) GetImporteditemcount() int64 {
 }
 
 func (x *ImportTableDescription) GetInputcompressiontype() InputCompressionType {
-	if x != nil {
-		return x.Inputcompressiontype
+	if x != nil && x.Inputcompressiontype != nil {
+		return *x.Inputcompressiontype
 	}
 	return InputCompressionType_INPUT_COMPRESSION_TYPE_NONE
 }
 
 func (x *ImportTableDescription) GetInputformat() InputFormat {
-	if x != nil {
-		return x.Inputformat
+	if x != nil && x.Inputformat != nil {
+		return *x.Inputformat
 	}
 	return InputFormat_INPUT_FORMAT_DYNAMODB_JSON
 }
@@ -9949,7 +9949,7 @@ func (x *ImportTableDescription) GetTableid() string {
 type ImportTableInput struct {
 	state                   protoimpl.MessageState   `protogen:"open.v1"`
 	Clienttoken             *string                  `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
-	Inputcompressiontype    InputCompressionType     `protobuf:"varint,392699396,opt,name=inputcompressiontype,proto3,enum=dynamodb.InputCompressionType" json:"inputcompressiontype,omitempty"`
+	Inputcompressiontype    *InputCompressionType    `protobuf:"varint,392699396,opt,name=inputcompressiontype,proto3,enum=dynamodb.InputCompressionType,oneof" json:"inputcompressiontype,omitempty"`
 	Inputformat             InputFormat              `protobuf:"varint,405664101,opt,name=inputformat,proto3,enum=dynamodb.InputFormat" json:"inputformat,omitempty"`
 	Inputformatoptions      *InputFormatOptions      `protobuf:"bytes,249201403,opt,name=inputformatoptions,proto3" json:"inputformatoptions,omitempty"`
 	S3Bucketsource          *S3BucketSource          `protobuf:"bytes,202310037,opt,name=s3bucketsource,proto3" json:"s3bucketsource,omitempty"`
@@ -9996,8 +9996,8 @@ func (x *ImportTableInput) GetClienttoken() string {
 }
 
 func (x *ImportTableInput) GetInputcompressiontype() InputCompressionType {
-	if x != nil {
-		return x.Inputcompressiontype
+	if x != nil && x.Inputcompressiontype != nil {
+		return *x.Inputcompressiontype
 	}
 	return InputCompressionType_INPUT_COMPRESSION_TYPE_NONE
 }
@@ -10078,7 +10078,7 @@ type IncrementalExportSpecification struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Exportfromtime *string                `protobuf:"bytes,466248415,opt,name=exportfromtime,proto3,oneof" json:"exportfromtime,omitempty"`
 	Exporttotime   *string                `protobuf:"bytes,242369368,opt,name=exporttotime,proto3,oneof" json:"exporttotime,omitempty"`
-	Exportviewtype ExportViewType         `protobuf:"varint,26765639,opt,name=exportviewtype,proto3,enum=dynamodb.ExportViewType" json:"exportviewtype,omitempty"`
+	Exportviewtype *ExportViewType        `protobuf:"varint,26765639,opt,name=exportviewtype,proto3,enum=dynamodb.ExportViewType,oneof" json:"exportviewtype,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -10128,8 +10128,8 @@ func (x *IncrementalExportSpecification) GetExporttotime() string {
 }
 
 func (x *IncrementalExportSpecification) GetExportviewtype() ExportViewType {
-	if x != nil {
-		return x.Exportviewtype
+	if x != nil && x.Exportviewtype != nil {
+		return *x.Exportviewtype
 	}
 	return ExportViewType_EXPORT_VIEW_TYPE_NEW_IMAGE
 }
@@ -10667,11 +10667,11 @@ func (x *KeysAndAttributes) GetProjectionexpression() string {
 }
 
 type KinesisDataStreamDestination struct {
-	state                                protoimpl.MessageState               `protogen:"open.v1"`
-	Approximatecreationdatetimeprecision ApproximateCreationDateTimePrecision `protobuf:"varint,392293352,opt,name=approximatecreationdatetimeprecision,proto3,enum=dynamodb.ApproximateCreationDateTimePrecision" json:"approximatecreationdatetimeprecision,omitempty"`
-	Destinationstatus                    DestinationStatus                    `protobuf:"varint,381248234,opt,name=destinationstatus,proto3,enum=dynamodb.DestinationStatus" json:"destinationstatus,omitempty"`
-	Destinationstatusdescription         *string                              `protobuf:"bytes,499573086,opt,name=destinationstatusdescription,proto3,oneof" json:"destinationstatusdescription,omitempty"`
-	Streamarn                            *string                              `protobuf:"bytes,513423709,opt,name=streamarn,proto3,oneof" json:"streamarn,omitempty"`
+	state                                protoimpl.MessageState                `protogen:"open.v1"`
+	Approximatecreationdatetimeprecision *ApproximateCreationDateTimePrecision `protobuf:"varint,392293352,opt,name=approximatecreationdatetimeprecision,proto3,enum=dynamodb.ApproximateCreationDateTimePrecision,oneof" json:"approximatecreationdatetimeprecision,omitempty"`
+	Destinationstatus                    *DestinationStatus                    `protobuf:"varint,381248234,opt,name=destinationstatus,proto3,enum=dynamodb.DestinationStatus,oneof" json:"destinationstatus,omitempty"`
+	Destinationstatusdescription         *string                               `protobuf:"bytes,499573086,opt,name=destinationstatusdescription,proto3,oneof" json:"destinationstatusdescription,omitempty"`
+	Streamarn                            *string                               `protobuf:"bytes,513423709,opt,name=streamarn,proto3,oneof" json:"streamarn,omitempty"`
 	unknownFields                        protoimpl.UnknownFields
 	sizeCache                            protoimpl.SizeCache
 }
@@ -10707,15 +10707,15 @@ func (*KinesisDataStreamDestination) Descriptor() ([]byte, []int) {
 }
 
 func (x *KinesisDataStreamDestination) GetApproximatecreationdatetimeprecision() ApproximateCreationDateTimePrecision {
-	if x != nil {
-		return x.Approximatecreationdatetimeprecision
+	if x != nil && x.Approximatecreationdatetimeprecision != nil {
+		return *x.Approximatecreationdatetimeprecision
 	}
 	return ApproximateCreationDateTimePrecision_APPROXIMATE_CREATION_DATE_TIME_PRECISION_MILLISECOND
 }
 
 func (x *KinesisDataStreamDestination) GetDestinationstatus() DestinationStatus {
-	if x != nil {
-		return x.Destinationstatus
+	if x != nil && x.Destinationstatus != nil {
+		return *x.Destinationstatus
 	}
 	return DestinationStatus_DESTINATION_STATUS_UPDATING
 }
@@ -10796,7 +10796,7 @@ func (x *KinesisStreamingDestinationInput) GetTablename() string {
 
 type KinesisStreamingDestinationOutput struct {
 	state                               protoimpl.MessageState               `protogen:"open.v1"`
-	Destinationstatus                   DestinationStatus                    `protobuf:"varint,381248234,opt,name=destinationstatus,proto3,enum=dynamodb.DestinationStatus" json:"destinationstatus,omitempty"`
+	Destinationstatus                   *DestinationStatus                   `protobuf:"varint,381248234,opt,name=destinationstatus,proto3,enum=dynamodb.DestinationStatus,oneof" json:"destinationstatus,omitempty"`
 	Enablekinesisstreamingconfiguration *EnableKinesisStreamingConfiguration `protobuf:"bytes,300307843,opt,name=enablekinesisstreamingconfiguration,proto3" json:"enablekinesisstreamingconfiguration,omitempty"`
 	Streamarn                           *string                              `protobuf:"bytes,513423709,opt,name=streamarn,proto3,oneof" json:"streamarn,omitempty"`
 	Tablename                           *string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
@@ -10835,8 +10835,8 @@ func (*KinesisStreamingDestinationOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *KinesisStreamingDestinationOutput) GetDestinationstatus() DestinationStatus {
-	if x != nil {
-		return x.Destinationstatus
+	if x != nil && x.Destinationstatus != nil {
+		return *x.Destinationstatus
 	}
 	return DestinationStatus_DESTINATION_STATUS_UPDATING
 }
@@ -10908,7 +10908,7 @@ func (x *LimitExceededException) GetMessage() string {
 
 type ListBackupsInput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Backuptype              BackupTypeFilter       `protobuf:"varint,134973992,opt,name=backuptype,proto3,enum=dynamodb.BackupTypeFilter" json:"backuptype,omitempty"`
+	Backuptype              *BackupTypeFilter      `protobuf:"varint,134973992,opt,name=backuptype,proto3,enum=dynamodb.BackupTypeFilter,oneof" json:"backuptype,omitempty"`
 	Exclusivestartbackuparn *string                `protobuf:"bytes,381696959,opt,name=exclusivestartbackuparn,proto3,oneof" json:"exclusivestartbackuparn,omitempty"`
 	Limit                   *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Tablename               *string                `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
@@ -10949,8 +10949,8 @@ func (*ListBackupsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListBackupsInput) GetBackuptype() BackupTypeFilter {
-	if x != nil {
-		return x.Backuptype
+	if x != nil && x.Backuptype != nil {
+		return *x.Backuptype
 	}
 	return BackupTypeFilter_BACKUP_TYPE_FILTER_SYSTEM
 }
@@ -11999,10 +11999,10 @@ func (x *OnDemandThroughputOverride) GetMaxreadrequestunits() int64 {
 }
 
 type ParameterizedStatement struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Parameters                          []*AttributeValue                   `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Statement                           string                              `protobuf:"bytes,248790199,opt,name=statement,proto3" json:"statement,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Parameters                          []*AttributeValue                    `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Statement                           string                               `protobuf:"bytes,248790199,opt,name=statement,proto3" json:"statement,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -12045,8 +12045,8 @@ func (x *ParameterizedStatement) GetParameters() []*AttributeValue {
 }
 
 func (x *ParameterizedStatement) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -12059,11 +12059,11 @@ func (x *ParameterizedStatement) GetStatement() string {
 }
 
 type PointInTimeRecoveryDescription struct {
-	state                      protoimpl.MessageState    `protogen:"open.v1"`
-	Earliestrestorabledatetime *string                   `protobuf:"bytes,440478879,opt,name=earliestrestorabledatetime,proto3,oneof" json:"earliestrestorabledatetime,omitempty"`
-	Latestrestorabledatetime   *string                   `protobuf:"bytes,131030757,opt,name=latestrestorabledatetime,proto3,oneof" json:"latestrestorabledatetime,omitempty"`
-	Pointintimerecoverystatus  PointInTimeRecoveryStatus `protobuf:"varint,510838075,opt,name=pointintimerecoverystatus,proto3,enum=dynamodb.PointInTimeRecoveryStatus" json:"pointintimerecoverystatus,omitempty"`
-	Recoveryperiodindays       *int32                    `protobuf:"varint,67453592,opt,name=recoveryperiodindays,proto3,oneof" json:"recoveryperiodindays,omitempty"`
+	state                      protoimpl.MessageState     `protogen:"open.v1"`
+	Earliestrestorabledatetime *string                    `protobuf:"bytes,440478879,opt,name=earliestrestorabledatetime,proto3,oneof" json:"earliestrestorabledatetime,omitempty"`
+	Latestrestorabledatetime   *string                    `protobuf:"bytes,131030757,opt,name=latestrestorabledatetime,proto3,oneof" json:"latestrestorabledatetime,omitempty"`
+	Pointintimerecoverystatus  *PointInTimeRecoveryStatus `protobuf:"varint,510838075,opt,name=pointintimerecoverystatus,proto3,enum=dynamodb.PointInTimeRecoveryStatus,oneof" json:"pointintimerecoverystatus,omitempty"`
+	Recoveryperiodindays       *int32                     `protobuf:"varint,67453592,opt,name=recoveryperiodindays,proto3,oneof" json:"recoveryperiodindays,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -12113,8 +12113,8 @@ func (x *PointInTimeRecoveryDescription) GetLatestrestorabledatetime() string {
 }
 
 func (x *PointInTimeRecoveryDescription) GetPointintimerecoverystatus() PointInTimeRecoveryStatus {
-	if x != nil {
-		return x.Pointintimerecoverystatus
+	if x != nil && x.Pointintimerecoverystatus != nil {
+		return *x.Pointintimerecoverystatus
 	}
 	return PointInTimeRecoveryStatus_POINT_IN_TIME_RECOVERY_STATUS_DISABLED
 }
@@ -12269,7 +12269,7 @@ func (x *PolicyNotFoundException) GetMessage() string {
 type Projection struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Nonkeyattributes []string               `protobuf:"bytes,312245447,rep,name=nonkeyattributes,proto3" json:"nonkeyattributes,omitempty"`
-	Projectiontype   ProjectionType         `protobuf:"varint,120720617,opt,name=projectiontype,proto3,enum=dynamodb.ProjectionType" json:"projectiontype,omitempty"`
+	Projectiontype   *ProjectionType        `protobuf:"varint,120720617,opt,name=projectiontype,proto3,enum=dynamodb.ProjectionType,oneof" json:"projectiontype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -12312,8 +12312,8 @@ func (x *Projection) GetNonkeyattributes() []string {
 }
 
 func (x *Projection) GetProjectiontype() ProjectionType {
-	if x != nil {
-		return x.Projectiontype
+	if x != nil && x.Projectiontype != nil {
+		return *x.Projectiontype
 	}
 	return ProjectionType_PROJECTION_TYPE_KEYS_ONLY
 }
@@ -12543,13 +12543,13 @@ func (x *ProvisionedThroughputOverride) GetReadcapacityunits() int64 {
 }
 
 type Put struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Conditionexpression                 *string                             `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
-	Expressionattributenames            map[string]string                   `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributevalues           map[string]*AttributeValue          `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Item                                map[string]*AttributeValue          `protobuf:"bytes,526680071,rep,name=item,proto3" json:"item,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Tablename                           string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Conditionexpression                 *string                              `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
+	Expressionattributenames            map[string]string                    `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributevalues           map[string]*AttributeValue           `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Item                                map[string]*AttributeValue           `protobuf:"bytes,526680071,rep,name=item,proto3" json:"item,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Tablename                           string                               `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -12613,8 +12613,8 @@ func (x *Put) GetItem() map[string]*AttributeValue {
 }
 
 func (x *Put) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -12627,18 +12627,18 @@ func (x *Put) GetTablename() string {
 }
 
 type PutItemInput struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Conditionexpression                 *string                             `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
-	Conditionaloperator                 ConditionalOperator                 `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator" json:"conditionaloperator,omitempty"`
-	Expected                            map[string]*ExpectedAttributeValue  `protobuf:"bytes,106557946,rep,name=expected,proto3" json:"expected,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributenames            map[string]string                   `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributevalues           map[string]*AttributeValue          `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Item                                map[string]*AttributeValue          `protobuf:"bytes,526680071,rep,name=item,proto3" json:"item,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnconsumedcapacity              ReturnConsumedCapacity              `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
-	Returnitemcollectionmetrics         ReturnItemCollectionMetrics         `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics" json:"returnitemcollectionmetrics,omitempty"`
-	Returnvalues                        ReturnValue                         `protobuf:"varint,402960198,opt,name=returnvalues,proto3,enum=dynamodb.ReturnValue" json:"returnvalues,omitempty"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Tablename                           string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Conditionexpression                 *string                              `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
+	Conditionaloperator                 *ConditionalOperator                 `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator,oneof" json:"conditionaloperator,omitempty"`
+	Expected                            map[string]*ExpectedAttributeValue   `protobuf:"bytes,106557946,rep,name=expected,proto3" json:"expected,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributenames            map[string]string                    `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributevalues           map[string]*AttributeValue           `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Item                                map[string]*AttributeValue           `protobuf:"bytes,526680071,rep,name=item,proto3" json:"item,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Returnconsumedcapacity              *ReturnConsumedCapacity              `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
+	Returnitemcollectionmetrics         *ReturnItemCollectionMetrics         `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics,oneof" json:"returnitemcollectionmetrics,omitempty"`
+	Returnvalues                        *ReturnValue                         `protobuf:"varint,402960198,opt,name=returnvalues,proto3,enum=dynamodb.ReturnValue,oneof" json:"returnvalues,omitempty"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Tablename                           string                               `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -12681,8 +12681,8 @@ func (x *PutItemInput) GetConditionexpression() string {
 }
 
 func (x *PutItemInput) GetConditionaloperator() ConditionalOperator {
-	if x != nil {
-		return x.Conditionaloperator
+	if x != nil && x.Conditionaloperator != nil {
+		return *x.Conditionaloperator
 	}
 	return ConditionalOperator_CONDITIONAL_OPERATOR_AND
 }
@@ -12716,29 +12716,29 @@ func (x *PutItemInput) GetItem() map[string]*AttributeValue {
 }
 
 func (x *PutItemInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
 
 func (x *PutItemInput) GetReturnitemcollectionmetrics() ReturnItemCollectionMetrics {
-	if x != nil {
-		return x.Returnitemcollectionmetrics
+	if x != nil && x.Returnitemcollectionmetrics != nil {
+		return *x.Returnitemcollectionmetrics
 	}
 	return ReturnItemCollectionMetrics_RETURN_ITEM_COLLECTION_METRICS_NONE
 }
 
 func (x *PutItemInput) GetReturnvalues() ReturnValue {
-	if x != nil {
-		return x.Returnvalues
+	if x != nil && x.Returnvalues != nil {
+		return *x.Returnvalues
 	}
 	return ReturnValue_RETURN_VALUE_UPDATED_NEW
 }
 
 func (x *PutItemInput) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -12969,7 +12969,7 @@ func (x *PutResourcePolicyOutput) GetRevisionid() string {
 type QueryInput struct {
 	state                     protoimpl.MessageState     `protogen:"open.v1"`
 	Attributestoget           []string                   `protobuf:"bytes,311382592,rep,name=attributestoget,proto3" json:"attributestoget,omitempty"`
-	Conditionaloperator       ConditionalOperator        `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator" json:"conditionaloperator,omitempty"`
+	Conditionaloperator       *ConditionalOperator       `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator,oneof" json:"conditionaloperator,omitempty"`
 	Consistentread            *bool                      `protobuf:"varint,531556994,opt,name=consistentread,proto3,oneof" json:"consistentread,omitempty"`
 	Exclusivestartkey         map[string]*AttributeValue `protobuf:"bytes,348137297,rep,name=exclusivestartkey,proto3" json:"exclusivestartkey,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Expressionattributenames  map[string]string          `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -12981,9 +12981,9 @@ type QueryInput struct {
 	Limit                     *int32                     `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Projectionexpression      *string                    `protobuf:"bytes,150730243,opt,name=projectionexpression,proto3,oneof" json:"projectionexpression,omitempty"`
 	Queryfilter               map[string]*Condition      `protobuf:"bytes,107880942,rep,name=queryfilter,proto3" json:"queryfilter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnconsumedcapacity    ReturnConsumedCapacity     `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
+	Returnconsumedcapacity    *ReturnConsumedCapacity    `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
 	Scanindexforward          *bool                      `protobuf:"varint,360066954,opt,name=scanindexforward,proto3,oneof" json:"scanindexforward,omitempty"`
-	Select                    Select                     `protobuf:"varint,512305998,opt,name=select,proto3,enum=dynamodb.Select" json:"select,omitempty"`
+	Select                    *Select                    `protobuf:"varint,512305998,opt,name=select,proto3,enum=dynamodb.Select,oneof" json:"select,omitempty"`
 	Tablename                 string                     `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -13027,8 +13027,8 @@ func (x *QueryInput) GetAttributestoget() []string {
 }
 
 func (x *QueryInput) GetConditionaloperator() ConditionalOperator {
-	if x != nil {
-		return x.Conditionaloperator
+	if x != nil && x.Conditionaloperator != nil {
+		return *x.Conditionaloperator
 	}
 	return ConditionalOperator_CONDITIONAL_OPERATOR_AND
 }
@@ -13111,8 +13111,8 @@ func (x *QueryInput) GetQueryfilter() map[string]*Condition {
 }
 
 func (x *QueryInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
@@ -13125,8 +13125,8 @@ func (x *QueryInput) GetScanindexforward() bool {
 }
 
 func (x *QueryInput) GetSelect() Select {
-	if x != nil {
-		return x.Select
+	if x != nil && x.Select != nil {
+		return *x.Select
 	}
 	return Select_SELECT_ALL_ATTRIBUTES
 }
@@ -13308,7 +13308,7 @@ type ReplicaAutoScalingDescription struct {
 	Regionname                                         *string                                              `protobuf:"bytes,112086463,opt,name=regionname,proto3,oneof" json:"regionname,omitempty"`
 	Replicaprovisionedreadcapacityautoscalingsettings  *AutoScalingSettingsDescription                      `protobuf:"bytes,125131885,opt,name=replicaprovisionedreadcapacityautoscalingsettings,proto3" json:"replicaprovisionedreadcapacityautoscalingsettings,omitempty"`
 	Replicaprovisionedwritecapacityautoscalingsettings *AutoScalingSettingsDescription                      `protobuf:"bytes,293841796,opt,name=replicaprovisionedwritecapacityautoscalingsettings,proto3" json:"replicaprovisionedwritecapacityautoscalingsettings,omitempty"`
-	Replicastatus                                      ReplicaStatus                                        `protobuf:"varint,466739730,opt,name=replicastatus,proto3,enum=dynamodb.ReplicaStatus" json:"replicastatus,omitempty"`
+	Replicastatus                                      *ReplicaStatus                                       `protobuf:"varint,466739730,opt,name=replicastatus,proto3,enum=dynamodb.ReplicaStatus,oneof" json:"replicastatus,omitempty"`
 	unknownFields                                      protoimpl.UnknownFields
 	sizeCache                                          protoimpl.SizeCache
 }
@@ -13372,8 +13372,8 @@ func (x *ReplicaAutoScalingDescription) GetReplicaprovisionedwritecapacityautosc
 }
 
 func (x *ReplicaAutoScalingDescription) GetReplicastatus() ReplicaStatus {
-	if x != nil {
-		return x.Replicastatus
+	if x != nil && x.Replicastatus != nil {
+		return *x.Replicastatus
 	}
 	return ReplicaStatus_REPLICA_STATUS_UPDATING
 }
@@ -13441,14 +13441,14 @@ func (x *ReplicaAutoScalingUpdate) GetReplicaprovisionedreadcapacityautoscalingu
 type ReplicaDescription struct {
 	state                              protoimpl.MessageState                    `protogen:"open.v1"`
 	Globalsecondaryindexes             []*ReplicaGlobalSecondaryIndexDescription `protobuf:"bytes,409156905,rep,name=globalsecondaryindexes,proto3" json:"globalsecondaryindexes,omitempty"`
-	Globaltablesettingsreplicationmode GlobalTableSettingsReplicationMode        `protobuf:"varint,10446577,opt,name=globaltablesettingsreplicationmode,proto3,enum=dynamodb.GlobalTableSettingsReplicationMode" json:"globaltablesettingsreplicationmode,omitempty"`
+	Globaltablesettingsreplicationmode *GlobalTableSettingsReplicationMode       `protobuf:"varint,10446577,opt,name=globaltablesettingsreplicationmode,proto3,enum=dynamodb.GlobalTableSettingsReplicationMode,oneof" json:"globaltablesettingsreplicationmode,omitempty"`
 	Kmsmasterkeyid                     *string                                   `protobuf:"bytes,521459443,opt,name=kmsmasterkeyid,proto3,oneof" json:"kmsmasterkeyid,omitempty"`
 	Ondemandthroughputoverride         *OnDemandThroughputOverride               `protobuf:"bytes,317165234,opt,name=ondemandthroughputoverride,proto3" json:"ondemandthroughputoverride,omitempty"`
 	Provisionedthroughputoverride      *ProvisionedThroughputOverride            `protobuf:"bytes,413332116,opt,name=provisionedthroughputoverride,proto3" json:"provisionedthroughputoverride,omitempty"`
 	Regionname                         *string                                   `protobuf:"bytes,112086463,opt,name=regionname,proto3,oneof" json:"regionname,omitempty"`
 	Replicaarn                         *string                                   `protobuf:"bytes,119254443,opt,name=replicaarn,proto3,oneof" json:"replicaarn,omitempty"`
 	Replicainaccessibledatetime        *string                                   `protobuf:"bytes,20060608,opt,name=replicainaccessibledatetime,proto3,oneof" json:"replicainaccessibledatetime,omitempty"`
-	Replicastatus                      ReplicaStatus                             `protobuf:"varint,466739730,opt,name=replicastatus,proto3,enum=dynamodb.ReplicaStatus" json:"replicastatus,omitempty"`
+	Replicastatus                      *ReplicaStatus                            `protobuf:"varint,466739730,opt,name=replicastatus,proto3,enum=dynamodb.ReplicaStatus,oneof" json:"replicastatus,omitempty"`
 	Replicastatusdescription           *string                                   `protobuf:"bytes,416683638,opt,name=replicastatusdescription,proto3,oneof" json:"replicastatusdescription,omitempty"`
 	Replicastatuspercentprogress       *string                                   `protobuf:"bytes,456382130,opt,name=replicastatuspercentprogress,proto3,oneof" json:"replicastatuspercentprogress,omitempty"`
 	Replicatableclasssummary           *TableClassSummary                        `protobuf:"bytes,519483614,opt,name=replicatableclasssummary,proto3" json:"replicatableclasssummary,omitempty"`
@@ -13495,8 +13495,8 @@ func (x *ReplicaDescription) GetGlobalsecondaryindexes() []*ReplicaGlobalSeconda
 }
 
 func (x *ReplicaDescription) GetGlobaltablesettingsreplicationmode() GlobalTableSettingsReplicationMode {
-	if x != nil {
-		return x.Globaltablesettingsreplicationmode
+	if x != nil && x.Globaltablesettingsreplicationmode != nil {
+		return *x.Globaltablesettingsreplicationmode
 	}
 	return GlobalTableSettingsReplicationMode_GLOBAL_TABLE_SETTINGS_REPLICATION_MODE_DISABLED
 }
@@ -13544,8 +13544,8 @@ func (x *ReplicaDescription) GetReplicainaccessibledatetime() string {
 }
 
 func (x *ReplicaDescription) GetReplicastatus() ReplicaStatus {
-	if x != nil {
-		return x.Replicastatus
+	if x != nil && x.Replicastatus != nil {
+		return *x.Replicastatus
 	}
 	return ReplicaStatus_REPLICA_STATUS_UPDATING
 }
@@ -13641,7 +13641,7 @@ func (x *ReplicaGlobalSecondaryIndex) GetProvisionedthroughputoverride() *Provis
 type ReplicaGlobalSecondaryIndexAutoScalingDescription struct {
 	state                                       protoimpl.MessageState          `protogen:"open.v1"`
 	Indexname                                   *string                         `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
-	Indexstatus                                 IndexStatus                     `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus" json:"indexstatus,omitempty"`
+	Indexstatus                                 *IndexStatus                    `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus,oneof" json:"indexstatus,omitempty"`
 	Provisionedreadcapacityautoscalingsettings  *AutoScalingSettingsDescription `protobuf:"bytes,85617667,opt,name=provisionedreadcapacityautoscalingsettings,proto3" json:"provisionedreadcapacityautoscalingsettings,omitempty"`
 	Provisionedwritecapacityautoscalingsettings *AutoScalingSettingsDescription `protobuf:"bytes,168409114,opt,name=provisionedwritecapacityautoscalingsettings,proto3" json:"provisionedwritecapacityautoscalingsettings,omitempty"`
 	unknownFields                               protoimpl.UnknownFields
@@ -13686,8 +13686,8 @@ func (x *ReplicaGlobalSecondaryIndexAutoScalingDescription) GetIndexname() strin
 }
 
 func (x *ReplicaGlobalSecondaryIndexAutoScalingDescription) GetIndexstatus() IndexStatus {
-	if x != nil {
-		return x.Indexstatus
+	if x != nil && x.Indexstatus != nil {
+		return *x.Indexstatus
 	}
 	return IndexStatus_INDEX_STATUS_UPDATING
 }
@@ -13829,7 +13829,7 @@ func (x *ReplicaGlobalSecondaryIndexDescription) GetWarmthroughput() *GlobalSeco
 type ReplicaGlobalSecondaryIndexSettingsDescription struct {
 	state                                       protoimpl.MessageState          `protogen:"open.v1"`
 	Indexname                                   string                          `protobuf:"bytes,102427281,opt,name=indexname,proto3" json:"indexname,omitempty"`
-	Indexstatus                                 IndexStatus                     `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus" json:"indexstatus,omitempty"`
+	Indexstatus                                 *IndexStatus                    `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus,oneof" json:"indexstatus,omitempty"`
 	Provisionedreadcapacityautoscalingsettings  *AutoScalingSettingsDescription `protobuf:"bytes,85617667,opt,name=provisionedreadcapacityautoscalingsettings,proto3" json:"provisionedreadcapacityautoscalingsettings,omitempty"`
 	Provisionedreadcapacityunits                *int64                          `protobuf:"varint,350750021,opt,name=provisionedreadcapacityunits,proto3,oneof" json:"provisionedreadcapacityunits,omitempty"`
 	Provisionedwritecapacityautoscalingsettings *AutoScalingSettingsDescription `protobuf:"bytes,168409114,opt,name=provisionedwritecapacityautoscalingsettings,proto3" json:"provisionedwritecapacityautoscalingsettings,omitempty"`
@@ -13876,8 +13876,8 @@ func (x *ReplicaGlobalSecondaryIndexSettingsDescription) GetIndexname() string {
 }
 
 func (x *ReplicaGlobalSecondaryIndexSettingsDescription) GetIndexstatus() IndexStatus {
-	if x != nil {
-		return x.Indexstatus
+	if x != nil && x.Indexstatus != nil {
+		return *x.Indexstatus
 	}
 	return IndexStatus_INDEX_STATUS_UPDATING
 }
@@ -14023,7 +14023,7 @@ type ReplicaSettingsDescription struct {
 	Replicaprovisionedreadcapacityunits                *int64                                            `protobuf:"varint,82081083,opt,name=replicaprovisionedreadcapacityunits,proto3,oneof" json:"replicaprovisionedreadcapacityunits,omitempty"`
 	Replicaprovisionedwritecapacityautoscalingsettings *AutoScalingSettingsDescription                   `protobuf:"bytes,293841796,opt,name=replicaprovisionedwritecapacityautoscalingsettings,proto3" json:"replicaprovisionedwritecapacityautoscalingsettings,omitempty"`
 	Replicaprovisionedwritecapacityunits               *int64                                            `protobuf:"varint,356738858,opt,name=replicaprovisionedwritecapacityunits,proto3,oneof" json:"replicaprovisionedwritecapacityunits,omitempty"`
-	Replicastatus                                      ReplicaStatus                                     `protobuf:"varint,466739730,opt,name=replicastatus,proto3,enum=dynamodb.ReplicaStatus" json:"replicastatus,omitempty"`
+	Replicastatus                                      *ReplicaStatus                                    `protobuf:"varint,466739730,opt,name=replicastatus,proto3,enum=dynamodb.ReplicaStatus,oneof" json:"replicastatus,omitempty"`
 	Replicatableclasssummary                           *TableClassSummary                                `protobuf:"bytes,519483614,opt,name=replicatableclasssummary,proto3" json:"replicatableclasssummary,omitempty"`
 	unknownFields                                      protoimpl.UnknownFields
 	sizeCache                                          protoimpl.SizeCache
@@ -14109,8 +14109,8 @@ func (x *ReplicaSettingsDescription) GetReplicaprovisionedwritecapacityunits() i
 }
 
 func (x *ReplicaSettingsDescription) GetReplicastatus() ReplicaStatus {
-	if x != nil {
-		return x.Replicastatus
+	if x != nil && x.Replicastatus != nil {
+		return *x.Replicastatus
 	}
 	return ReplicaStatus_REPLICA_STATUS_UPDATING
 }
@@ -14128,7 +14128,7 @@ type ReplicaSettingsUpdate struct {
 	Replicaglobalsecondaryindexsettingsupdate               []*ReplicaGlobalSecondaryIndexSettingsUpdate `protobuf:"bytes,116195935,rep,name=replicaglobalsecondaryindexsettingsupdate,proto3" json:"replicaglobalsecondaryindexsettingsupdate,omitempty"`
 	Replicaprovisionedreadcapacityautoscalingsettingsupdate *AutoScalingSettingsUpdate                   `protobuf:"bytes,245262702,opt,name=replicaprovisionedreadcapacityautoscalingsettingsupdate,proto3" json:"replicaprovisionedreadcapacityautoscalingsettingsupdate,omitempty"`
 	Replicaprovisionedreadcapacityunits                     *int64                                       `protobuf:"varint,82081083,opt,name=replicaprovisionedreadcapacityunits,proto3,oneof" json:"replicaprovisionedreadcapacityunits,omitempty"`
-	Replicatableclass                                       TableClass                                   `protobuf:"varint,248679204,opt,name=replicatableclass,proto3,enum=dynamodb.TableClass" json:"replicatableclass,omitempty"`
+	Replicatableclass                                       *TableClass                                  `protobuf:"varint,248679204,opt,name=replicatableclass,proto3,enum=dynamodb.TableClass,oneof" json:"replicatableclass,omitempty"`
 	unknownFields                                           protoimpl.UnknownFields
 	sizeCache                                               protoimpl.SizeCache
 }
@@ -14192,8 +14192,8 @@ func (x *ReplicaSettingsUpdate) GetReplicaprovisionedreadcapacityunits() int64 {
 }
 
 func (x *ReplicaSettingsUpdate) GetReplicatableclass() TableClass {
-	if x != nil {
-		return x.Replicatableclass
+	if x != nil && x.Replicatableclass != nil {
+		return *x.Replicatableclass
 	}
 	return TableClass_TABLE_CLASS_STANDARD_INFREQUENT_ACCESS
 }
@@ -14565,7 +14565,7 @@ func (x *RestoreSummary) GetSourcetablearn() string {
 type RestoreTableFromBackupInput struct {
 	state                         protoimpl.MessageState  `protogen:"open.v1"`
 	Backuparn                     string                  `protobuf:"bytes,370874339,opt,name=backuparn,proto3" json:"backuparn,omitempty"`
-	Billingmodeoverride           BillingMode             `protobuf:"varint,357784560,opt,name=billingmodeoverride,proto3,enum=dynamodb.BillingMode" json:"billingmodeoverride,omitempty"`
+	Billingmodeoverride           *BillingMode            `protobuf:"varint,357784560,opt,name=billingmodeoverride,proto3,enum=dynamodb.BillingMode,oneof" json:"billingmodeoverride,omitempty"`
 	Globalsecondaryindexoverride  []*GlobalSecondaryIndex `protobuf:"bytes,369844021,rep,name=globalsecondaryindexoverride,proto3" json:"globalsecondaryindexoverride,omitempty"`
 	Localsecondaryindexoverride   []*LocalSecondaryIndex  `protobuf:"bytes,431784607,rep,name=localsecondaryindexoverride,proto3" json:"localsecondaryindexoverride,omitempty"`
 	Ondemandthroughputoverride    *OnDemandThroughput     `protobuf:"bytes,317165234,opt,name=ondemandthroughputoverride,proto3" json:"ondemandthroughputoverride,omitempty"`
@@ -14615,8 +14615,8 @@ func (x *RestoreTableFromBackupInput) GetBackuparn() string {
 }
 
 func (x *RestoreTableFromBackupInput) GetBillingmodeoverride() BillingMode {
-	if x != nil {
-		return x.Billingmodeoverride
+	if x != nil && x.Billingmodeoverride != nil {
+		return *x.Billingmodeoverride
 	}
 	return BillingMode_BILLING_MODE_PAY_PER_REQUEST
 }
@@ -14716,7 +14716,7 @@ func (x *RestoreTableFromBackupOutput) GetTabledescription() *TableDescription {
 
 type RestoreTableToPointInTimeInput struct {
 	state                         protoimpl.MessageState  `protogen:"open.v1"`
-	Billingmodeoverride           BillingMode             `protobuf:"varint,357784560,opt,name=billingmodeoverride,proto3,enum=dynamodb.BillingMode" json:"billingmodeoverride,omitempty"`
+	Billingmodeoverride           *BillingMode            `protobuf:"varint,357784560,opt,name=billingmodeoverride,proto3,enum=dynamodb.BillingMode,oneof" json:"billingmodeoverride,omitempty"`
 	Globalsecondaryindexoverride  []*GlobalSecondaryIndex `protobuf:"bytes,369844021,rep,name=globalsecondaryindexoverride,proto3" json:"globalsecondaryindexoverride,omitempty"`
 	Localsecondaryindexoverride   []*LocalSecondaryIndex  `protobuf:"bytes,431784607,rep,name=localsecondaryindexoverride,proto3" json:"localsecondaryindexoverride,omitempty"`
 	Ondemandthroughputoverride    *OnDemandThroughput     `protobuf:"bytes,317165234,opt,name=ondemandthroughputoverride,proto3" json:"ondemandthroughputoverride,omitempty"`
@@ -14763,8 +14763,8 @@ func (*RestoreTableToPointInTimeInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *RestoreTableToPointInTimeInput) GetBillingmodeoverride() BillingMode {
-	if x != nil {
-		return x.Billingmodeoverride
+	if x != nil && x.Billingmodeoverride != nil {
+		return *x.Billingmodeoverride
 	}
 	return BillingMode_BILLING_MODE_PAY_PER_REQUEST
 }
@@ -14954,8 +14954,8 @@ type SSEDescription struct {
 	state                          protoimpl.MessageState `protogen:"open.v1"`
 	Inaccessibleencryptiondatetime *string                `protobuf:"bytes,478188797,opt,name=inaccessibleencryptiondatetime,proto3,oneof" json:"inaccessibleencryptiondatetime,omitempty"`
 	Kmsmasterkeyarn                *string                `protobuf:"bytes,281937987,opt,name=kmsmasterkeyarn,proto3,oneof" json:"kmsmasterkeyarn,omitempty"`
-	Ssetype                        SSEType                `protobuf:"varint,431846435,opt,name=ssetype,proto3,enum=dynamodb.SSEType" json:"ssetype,omitempty"`
-	Status                         SSEStatus              `protobuf:"varint,6222352,opt,name=status,proto3,enum=dynamodb.SSEStatus" json:"status,omitempty"`
+	Ssetype                        *SSEType               `protobuf:"varint,431846435,opt,name=ssetype,proto3,enum=dynamodb.SSEType,oneof" json:"ssetype,omitempty"`
+	Status                         *SSEStatus             `protobuf:"varint,6222352,opt,name=status,proto3,enum=dynamodb.SSEStatus,oneof" json:"status,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -15005,15 +15005,15 @@ func (x *SSEDescription) GetKmsmasterkeyarn() string {
 }
 
 func (x *SSEDescription) GetSsetype() SSEType {
-	if x != nil {
-		return x.Ssetype
+	if x != nil && x.Ssetype != nil {
+		return *x.Ssetype
 	}
 	return SSEType_S_S_E_TYPE_AES256
 }
 
 func (x *SSEDescription) GetStatus() SSEStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return SSEStatus_S_S_E_STATUS_UPDATING
 }
@@ -15022,7 +15022,7 @@ type SSESpecification struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Enabled        *bool                  `protobuf:"varint,478602303,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
 	Kmsmasterkeyid *string                `protobuf:"bytes,521459443,opt,name=kmsmasterkeyid,proto3,oneof" json:"kmsmasterkeyid,omitempty"`
-	Ssetype        SSEType                `protobuf:"varint,431846435,opt,name=ssetype,proto3,enum=dynamodb.SSEType" json:"ssetype,omitempty"`
+	Ssetype        *SSEType               `protobuf:"varint,431846435,opt,name=ssetype,proto3,enum=dynamodb.SSEType,oneof" json:"ssetype,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -15072,8 +15072,8 @@ func (x *SSESpecification) GetKmsmasterkeyid() string {
 }
 
 func (x *SSESpecification) GetSsetype() SSEType {
-	if x != nil {
-		return x.Ssetype
+	if x != nil && x.Ssetype != nil {
+		return *x.Ssetype
 	}
 	return SSEType_S_S_E_TYPE_AES256
 }
@@ -15081,7 +15081,7 @@ func (x *SSESpecification) GetSsetype() SSEType {
 type ScanInput struct {
 	state                     protoimpl.MessageState     `protogen:"open.v1"`
 	Attributestoget           []string                   `protobuf:"bytes,311382592,rep,name=attributestoget,proto3" json:"attributestoget,omitempty"`
-	Conditionaloperator       ConditionalOperator        `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator" json:"conditionaloperator,omitempty"`
+	Conditionaloperator       *ConditionalOperator       `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator,oneof" json:"conditionaloperator,omitempty"`
 	Consistentread            *bool                      `protobuf:"varint,531556994,opt,name=consistentread,proto3,oneof" json:"consistentread,omitempty"`
 	Exclusivestartkey         map[string]*AttributeValue `protobuf:"bytes,348137297,rep,name=exclusivestartkey,proto3" json:"exclusivestartkey,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Expressionattributenames  map[string]string          `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -15090,10 +15090,10 @@ type ScanInput struct {
 	Indexname                 *string                    `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
 	Limit                     *int32                     `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Projectionexpression      *string                    `protobuf:"bytes,150730243,opt,name=projectionexpression,proto3,oneof" json:"projectionexpression,omitempty"`
-	Returnconsumedcapacity    ReturnConsumedCapacity     `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
+	Returnconsumedcapacity    *ReturnConsumedCapacity    `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
 	Scanfilter                map[string]*Condition      `protobuf:"bytes,272885755,rep,name=scanfilter,proto3" json:"scanfilter,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Segment                   *int32                     `protobuf:"varint,279654279,opt,name=segment,proto3,oneof" json:"segment,omitempty"`
-	Select                    Select                     `protobuf:"varint,512305998,opt,name=select,proto3,enum=dynamodb.Select" json:"select,omitempty"`
+	Select                    *Select                    `protobuf:"varint,512305998,opt,name=select,proto3,enum=dynamodb.Select,oneof" json:"select,omitempty"`
 	Tablename                 string                     `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	Totalsegments             *int32                     `protobuf:"varint,149136904,opt,name=totalsegments,proto3,oneof" json:"totalsegments,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -15138,8 +15138,8 @@ func (x *ScanInput) GetAttributestoget() []string {
 }
 
 func (x *ScanInput) GetConditionaloperator() ConditionalOperator {
-	if x != nil {
-		return x.Conditionaloperator
+	if x != nil && x.Conditionaloperator != nil {
+		return *x.Conditionaloperator
 	}
 	return ConditionalOperator_CONDITIONAL_OPERATOR_AND
 }
@@ -15201,8 +15201,8 @@ func (x *ScanInput) GetProjectionexpression() string {
 }
 
 func (x *ScanInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
@@ -15222,8 +15222,8 @@ func (x *ScanInput) GetSegment() int32 {
 }
 
 func (x *ScanInput) GetSelect() Select {
-	if x != nil {
-		return x.Select
+	if x != nil && x.Select != nil {
+		return *x.Select
 	}
 	return Select_SELECT_ALL_ATTRIBUTES
 }
@@ -15428,7 +15428,7 @@ type SearchVectorsInput struct {
 	Expressionattributevalues map[string]*AttributeValue `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Indexname                 string                     `protobuf:"bytes,102427281,opt,name=indexname,proto3" json:"indexname,omitempty"`
 	Projectionexpression      *string                    `protobuf:"bytes,150730243,opt,name=projectionexpression,proto3,oneof" json:"projectionexpression,omitempty"`
-	Returnconsumedcapacity    ReturnConsumedCapacity     `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
+	Returnconsumedcapacity    *ReturnConsumedCapacity    `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
 	Searchconditionexpression *string                    `protobuf:"bytes,251540249,opt,name=searchconditionexpression,proto3,oneof" json:"searchconditionexpression,omitempty"`
 	Searchvector              []*AttributeValue          `protobuf:"bytes,114923063,rep,name=searchvector,proto3" json:"searchvector,omitempty"`
 	Tablename                 string                     `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
@@ -15496,8 +15496,8 @@ func (x *SearchVectorsInput) GetProjectionexpression() string {
 }
 
 func (x *SearchVectorsInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
@@ -15584,7 +15584,7 @@ func (x *SearchVectorsOutput) GetSearchresults() []*SearchResultItem {
 
 type SourceTableDetails struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Billingmode           BillingMode            `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode" json:"billingmode,omitempty"`
+	Billingmode           *BillingMode           `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode,oneof" json:"billingmode,omitempty"`
 	Itemcount             *int64                 `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
 	Keyschema             []*KeySchemaElement    `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
 	Ondemandthroughput    *OnDemandThroughput    `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
@@ -15629,8 +15629,8 @@ func (*SourceTableDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *SourceTableDetails) GetBillingmode() BillingMode {
-	if x != nil {
-		return x.Billingmode
+	if x != nil && x.Billingmode != nil {
+		return *x.Billingmode
 	}
 	return BillingMode_BILLING_MODE_PAY_PER_REQUEST
 }
@@ -15785,7 +15785,7 @@ func (x *SourceTableFeatureDetails) GetVectorindexes() []*VectorIndexInfo {
 type StreamSpecification struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Streamenabled  *bool                  `protobuf:"varint,266707711,opt,name=streamenabled,proto3,oneof" json:"streamenabled,omitempty"`
-	Streamviewtype StreamViewType         `protobuf:"varint,380488241,opt,name=streamviewtype,proto3,enum=dynamodb.StreamViewType" json:"streamviewtype,omitempty"`
+	Streamviewtype *StreamViewType        `protobuf:"varint,380488241,opt,name=streamviewtype,proto3,enum=dynamodb.StreamViewType,oneof" json:"streamviewtype,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -15828,8 +15828,8 @@ func (x *StreamSpecification) GetStreamenabled() bool {
 }
 
 func (x *StreamSpecification) GetStreamviewtype() StreamViewType {
-	if x != nil {
-		return x.Streamviewtype
+	if x != nil && x.Streamviewtype != nil {
+		return *x.Streamviewtype
 	}
 	return StreamViewType_STREAM_VIEW_TYPE_KEYS_ONLY
 }
@@ -15882,7 +15882,7 @@ type TableAutoScalingDescription struct {
 	state         protoimpl.MessageState           `protogen:"open.v1"`
 	Replicas      []*ReplicaAutoScalingDescription `protobuf:"bytes,306066781,rep,name=replicas,proto3" json:"replicas,omitempty"`
 	Tablename     *string                          `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
-	Tablestatus   TableStatus                      `protobuf:"varint,207908810,opt,name=tablestatus,proto3,enum=dynamodb.TableStatus" json:"tablestatus,omitempty"`
+	Tablestatus   *TableStatus                     `protobuf:"varint,207908810,opt,name=tablestatus,proto3,enum=dynamodb.TableStatus,oneof" json:"tablestatus,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15932,8 +15932,8 @@ func (x *TableAutoScalingDescription) GetTablename() string {
 }
 
 func (x *TableAutoScalingDescription) GetTablestatus() TableStatus {
-	if x != nil {
-		return x.Tablestatus
+	if x != nil && x.Tablestatus != nil {
+		return *x.Tablestatus
 	}
 	return TableStatus_TABLE_STATUS_UPDATING
 }
@@ -15941,7 +15941,7 @@ func (x *TableAutoScalingDescription) GetTablestatus() TableStatus {
 type TableClassSummary struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Lastupdatedatetime *string                `protobuf:"bytes,452274318,opt,name=lastupdatedatetime,proto3,oneof" json:"lastupdatedatetime,omitempty"`
-	Tableclass         TableClass             `protobuf:"varint,342890498,opt,name=tableclass,proto3,enum=dynamodb.TableClass" json:"tableclass,omitempty"`
+	Tableclass         *TableClass            `protobuf:"varint,342890498,opt,name=tableclass,proto3,enum=dynamodb.TableClass,oneof" json:"tableclass,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -15984,8 +15984,8 @@ func (x *TableClassSummary) GetLastupdatedatetime() string {
 }
 
 func (x *TableClassSummary) GetTableclass() TableClass {
-	if x != nil {
-		return x.Tableclass
+	if x != nil && x.Tableclass != nil {
+		return *x.Tableclass
 	}
 	return TableClass_TABLE_CLASS_STANDARD_INFREQUENT_ACCESS
 }
@@ -15993,7 +15993,7 @@ func (x *TableClassSummary) GetTableclass() TableClass {
 type TableCreationParameters struct {
 	state                  protoimpl.MessageState  `protogen:"open.v1"`
 	Attributedefinitions   []*AttributeDefinition  `protobuf:"bytes,414687108,rep,name=attributedefinitions,proto3" json:"attributedefinitions,omitempty"`
-	Billingmode            BillingMode             `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode" json:"billingmode,omitempty"`
+	Billingmode            *BillingMode            `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode,oneof" json:"billingmode,omitempty"`
 	Globalsecondaryindexes []*GlobalSecondaryIndex `protobuf:"bytes,409156905,rep,name=globalsecondaryindexes,proto3" json:"globalsecondaryindexes,omitempty"`
 	Keyschema              []*KeySchemaElement     `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
 	Ondemandthroughput     *OnDemandThroughput     `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
@@ -16043,8 +16043,8 @@ func (x *TableCreationParameters) GetAttributedefinitions() []*AttributeDefiniti
 }
 
 func (x *TableCreationParameters) GetBillingmode() BillingMode {
-	if x != nil {
-		return x.Billingmode
+	if x != nil && x.Billingmode != nil {
+		return *x.Billingmode
 	}
 	return BillingMode_BILLING_MODE_PAY_PER_REQUEST
 }
@@ -16099,36 +16099,36 @@ func (x *TableCreationParameters) GetVectorindexes() []*VectorIndex {
 }
 
 type TableDescription struct {
-	state                              protoimpl.MessageState             `protogen:"open.v1"`
-	Archivalsummary                    *ArchivalSummary                   `protobuf:"bytes,52039658,opt,name=archivalsummary,proto3" json:"archivalsummary,omitempty"`
-	Attributedefinitions               []*AttributeDefinition             `protobuf:"bytes,414687108,rep,name=attributedefinitions,proto3" json:"attributedefinitions,omitempty"`
-	Billingmodesummary                 *BillingModeSummary                `protobuf:"bytes,163529882,opt,name=billingmodesummary,proto3" json:"billingmodesummary,omitempty"`
-	Creationdatetime                   *string                            `protobuf:"bytes,48904698,opt,name=creationdatetime,proto3,oneof" json:"creationdatetime,omitempty"`
-	Deletionprotectionenabled          *bool                              `protobuf:"varint,259418450,opt,name=deletionprotectionenabled,proto3,oneof" json:"deletionprotectionenabled,omitempty"`
-	Globalsecondaryindexes             []*GlobalSecondaryIndexDescription `protobuf:"bytes,409156905,rep,name=globalsecondaryindexes,proto3" json:"globalsecondaryindexes,omitempty"`
-	Globaltablesettingsreplicationmode GlobalTableSettingsReplicationMode `protobuf:"varint,10446577,opt,name=globaltablesettingsreplicationmode,proto3,enum=dynamodb.GlobalTableSettingsReplicationMode" json:"globaltablesettingsreplicationmode,omitempty"`
-	Globaltableversion                 *string                            `protobuf:"bytes,68234287,opt,name=globaltableversion,proto3,oneof" json:"globaltableversion,omitempty"`
-	Globaltablewitnesses               []*GlobalTableWitnessDescription   `protobuf:"bytes,4521286,rep,name=globaltablewitnesses,proto3" json:"globaltablewitnesses,omitempty"`
-	Itemcount                          *int64                             `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
-	Keyschema                          []*KeySchemaElement                `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
-	Lateststreamarn                    *string                            `protobuf:"bytes,207365682,opt,name=lateststreamarn,proto3,oneof" json:"lateststreamarn,omitempty"`
-	Lateststreamlabel                  *string                            `protobuf:"bytes,328475293,opt,name=lateststreamlabel,proto3,oneof" json:"lateststreamlabel,omitempty"`
-	Localsecondaryindexes              []*LocalSecondaryIndexDescription  `protobuf:"bytes,362339959,rep,name=localsecondaryindexes,proto3" json:"localsecondaryindexes,omitempty"`
-	Multiregionconsistency             MultiRegionConsistency             `protobuf:"varint,446019131,opt,name=multiregionconsistency,proto3,enum=dynamodb.MultiRegionConsistency" json:"multiregionconsistency,omitempty"`
-	Ondemandthroughput                 *OnDemandThroughput                `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
-	Provisionedthroughput              *ProvisionedThroughputDescription  `protobuf:"bytes,1757580,opt,name=provisionedthroughput,proto3" json:"provisionedthroughput,omitempty"`
-	Replicas                           []*ReplicaDescription              `protobuf:"bytes,306066781,rep,name=replicas,proto3" json:"replicas,omitempty"`
-	Restoresummary                     *RestoreSummary                    `protobuf:"bytes,330529648,opt,name=restoresummary,proto3" json:"restoresummary,omitempty"`
-	Ssedescription                     *SSEDescription                    `protobuf:"bytes,350068773,opt,name=ssedescription,proto3" json:"ssedescription,omitempty"`
-	Streamspecification                *StreamSpecification               `protobuf:"bytes,403922627,opt,name=streamspecification,proto3" json:"streamspecification,omitempty"`
-	Tablearn                           *string                            `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
-	Tableclasssummary                  *TableClassSummary                 `protobuf:"bytes,4371552,opt,name=tableclasssummary,proto3" json:"tableclasssummary,omitempty"`
-	Tableid                            *string                            `protobuf:"bytes,449893011,opt,name=tableid,proto3,oneof" json:"tableid,omitempty"`
-	Tablename                          *string                            `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
-	Tablesizebytes                     *int64                             `protobuf:"varint,220631294,opt,name=tablesizebytes,proto3,oneof" json:"tablesizebytes,omitempty"`
-	Tablestatus                        TableStatus                        `protobuf:"varint,207908810,opt,name=tablestatus,proto3,enum=dynamodb.TableStatus" json:"tablestatus,omitempty"`
-	Vectorindexes                      []*VectorIndexDescription          `protobuf:"bytes,66291727,rep,name=vectorindexes,proto3" json:"vectorindexes,omitempty"`
-	Warmthroughput                     *TableWarmThroughputDescription    `protobuf:"bytes,290598659,opt,name=warmthroughput,proto3" json:"warmthroughput,omitempty"`
+	state                              protoimpl.MessageState              `protogen:"open.v1"`
+	Archivalsummary                    *ArchivalSummary                    `protobuf:"bytes,52039658,opt,name=archivalsummary,proto3" json:"archivalsummary,omitempty"`
+	Attributedefinitions               []*AttributeDefinition              `protobuf:"bytes,414687108,rep,name=attributedefinitions,proto3" json:"attributedefinitions,omitempty"`
+	Billingmodesummary                 *BillingModeSummary                 `protobuf:"bytes,163529882,opt,name=billingmodesummary,proto3" json:"billingmodesummary,omitempty"`
+	Creationdatetime                   *string                             `protobuf:"bytes,48904698,opt,name=creationdatetime,proto3,oneof" json:"creationdatetime,omitempty"`
+	Deletionprotectionenabled          *bool                               `protobuf:"varint,259418450,opt,name=deletionprotectionenabled,proto3,oneof" json:"deletionprotectionenabled,omitempty"`
+	Globalsecondaryindexes             []*GlobalSecondaryIndexDescription  `protobuf:"bytes,409156905,rep,name=globalsecondaryindexes,proto3" json:"globalsecondaryindexes,omitempty"`
+	Globaltablesettingsreplicationmode *GlobalTableSettingsReplicationMode `protobuf:"varint,10446577,opt,name=globaltablesettingsreplicationmode,proto3,enum=dynamodb.GlobalTableSettingsReplicationMode,oneof" json:"globaltablesettingsreplicationmode,omitempty"`
+	Globaltableversion                 *string                             `protobuf:"bytes,68234287,opt,name=globaltableversion,proto3,oneof" json:"globaltableversion,omitempty"`
+	Globaltablewitnesses               []*GlobalTableWitnessDescription    `protobuf:"bytes,4521286,rep,name=globaltablewitnesses,proto3" json:"globaltablewitnesses,omitempty"`
+	Itemcount                          *int64                              `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
+	Keyschema                          []*KeySchemaElement                 `protobuf:"bytes,293038056,rep,name=keyschema,proto3" json:"keyschema,omitempty"`
+	Lateststreamarn                    *string                             `protobuf:"bytes,207365682,opt,name=lateststreamarn,proto3,oneof" json:"lateststreamarn,omitempty"`
+	Lateststreamlabel                  *string                             `protobuf:"bytes,328475293,opt,name=lateststreamlabel,proto3,oneof" json:"lateststreamlabel,omitempty"`
+	Localsecondaryindexes              []*LocalSecondaryIndexDescription   `protobuf:"bytes,362339959,rep,name=localsecondaryindexes,proto3" json:"localsecondaryindexes,omitempty"`
+	Multiregionconsistency             *MultiRegionConsistency             `protobuf:"varint,446019131,opt,name=multiregionconsistency,proto3,enum=dynamodb.MultiRegionConsistency,oneof" json:"multiregionconsistency,omitempty"`
+	Ondemandthroughput                 *OnDemandThroughput                 `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
+	Provisionedthroughput              *ProvisionedThroughputDescription   `protobuf:"bytes,1757580,opt,name=provisionedthroughput,proto3" json:"provisionedthroughput,omitempty"`
+	Replicas                           []*ReplicaDescription               `protobuf:"bytes,306066781,rep,name=replicas,proto3" json:"replicas,omitempty"`
+	Restoresummary                     *RestoreSummary                     `protobuf:"bytes,330529648,opt,name=restoresummary,proto3" json:"restoresummary,omitempty"`
+	Ssedescription                     *SSEDescription                     `protobuf:"bytes,350068773,opt,name=ssedescription,proto3" json:"ssedescription,omitempty"`
+	Streamspecification                *StreamSpecification                `protobuf:"bytes,403922627,opt,name=streamspecification,proto3" json:"streamspecification,omitempty"`
+	Tablearn                           *string                             `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
+	Tableclasssummary                  *TableClassSummary                  `protobuf:"bytes,4371552,opt,name=tableclasssummary,proto3" json:"tableclasssummary,omitempty"`
+	Tableid                            *string                             `protobuf:"bytes,449893011,opt,name=tableid,proto3,oneof" json:"tableid,omitempty"`
+	Tablename                          *string                             `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
+	Tablesizebytes                     *int64                              `protobuf:"varint,220631294,opt,name=tablesizebytes,proto3,oneof" json:"tablesizebytes,omitempty"`
+	Tablestatus                        *TableStatus                        `protobuf:"varint,207908810,opt,name=tablestatus,proto3,enum=dynamodb.TableStatus,oneof" json:"tablestatus,omitempty"`
+	Vectorindexes                      []*VectorIndexDescription           `protobuf:"bytes,66291727,rep,name=vectorindexes,proto3" json:"vectorindexes,omitempty"`
+	Warmthroughput                     *TableWarmThroughputDescription     `protobuf:"bytes,290598659,opt,name=warmthroughput,proto3" json:"warmthroughput,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
 	sizeCache                          protoimpl.SizeCache
 }
@@ -16206,8 +16206,8 @@ func (x *TableDescription) GetGlobalsecondaryindexes() []*GlobalSecondaryIndexDe
 }
 
 func (x *TableDescription) GetGlobaltablesettingsreplicationmode() GlobalTableSettingsReplicationMode {
-	if x != nil {
-		return x.Globaltablesettingsreplicationmode
+	if x != nil && x.Globaltablesettingsreplicationmode != nil {
+		return *x.Globaltablesettingsreplicationmode
 	}
 	return GlobalTableSettingsReplicationMode_GLOBAL_TABLE_SETTINGS_REPLICATION_MODE_DISABLED
 }
@@ -16262,8 +16262,8 @@ func (x *TableDescription) GetLocalsecondaryindexes() []*LocalSecondaryIndexDesc
 }
 
 func (x *TableDescription) GetMultiregionconsistency() MultiRegionConsistency {
-	if x != nil {
-		return x.Multiregionconsistency
+	if x != nil && x.Multiregionconsistency != nil {
+		return *x.Multiregionconsistency
 	}
 	return MultiRegionConsistency_MULTI_REGION_CONSISTENCY_EVENTUAL
 }
@@ -16346,8 +16346,8 @@ func (x *TableDescription) GetTablesizebytes() int64 {
 }
 
 func (x *TableDescription) GetTablestatus() TableStatus {
-	if x != nil {
-		return x.Tablestatus
+	if x != nil && x.Tablestatus != nil {
+		return *x.Tablestatus
 	}
 	return TableStatus_TABLE_STATUS_UPDATING
 }
@@ -16457,7 +16457,7 @@ func (x *TableNotFoundException) GetMessage() string {
 type TableWarmThroughputDescription struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Readunitspersecond  *int64                 `protobuf:"varint,11400732,opt,name=readunitspersecond,proto3,oneof" json:"readunitspersecond,omitempty"`
-	Status              TableStatus            `protobuf:"varint,6222352,opt,name=status,proto3,enum=dynamodb.TableStatus" json:"status,omitempty"`
+	Status              *TableStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=dynamodb.TableStatus,oneof" json:"status,omitempty"`
 	Writeunitspersecond *int64                 `protobuf:"varint,339770127,opt,name=writeunitspersecond,proto3,oneof" json:"writeunitspersecond,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -16501,8 +16501,8 @@ func (x *TableWarmThroughputDescription) GetReadunitspersecond() int64 {
 }
 
 func (x *TableWarmThroughputDescription) GetStatus() TableStatus {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return TableStatus_TABLE_STATUS_UPDATING
 }
@@ -16725,7 +16725,7 @@ func (x *ThrottlingReason) GetResource() string {
 type TimeToLiveDescription struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Attributename    *string                `protobuf:"bytes,352717485,opt,name=attributename,proto3,oneof" json:"attributename,omitempty"`
-	Timetolivestatus TimeToLiveStatus       `protobuf:"varint,279467554,opt,name=timetolivestatus,proto3,enum=dynamodb.TimeToLiveStatus" json:"timetolivestatus,omitempty"`
+	Timetolivestatus *TimeToLiveStatus      `protobuf:"varint,279467554,opt,name=timetolivestatus,proto3,enum=dynamodb.TimeToLiveStatus,oneof" json:"timetolivestatus,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -16768,8 +16768,8 @@ func (x *TimeToLiveDescription) GetAttributename() string {
 }
 
 func (x *TimeToLiveDescription) GetTimetolivestatus() TimeToLiveStatus {
-	if x != nil {
-		return x.Timetolivestatus
+	if x != nil && x.Timetolivestatus != nil {
+		return *x.Timetolivestatus
 	}
 	return TimeToLiveStatus_TIME_TO_LIVE_STATUS_DISABLED
 }
@@ -16871,9 +16871,9 @@ func (x *TransactGetItem) GetGet() *Get {
 }
 
 type TransactGetItemsInput struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Returnconsumedcapacity ReturnConsumedCapacity `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
-	Transactitems          []*TransactGetItem     `protobuf:"bytes,506245290,rep,name=transactitems,proto3" json:"transactitems,omitempty"`
+	state                  protoimpl.MessageState  `protogen:"open.v1"`
+	Returnconsumedcapacity *ReturnConsumedCapacity `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
+	Transactitems          []*TransactGetItem      `protobuf:"bytes,506245290,rep,name=transactitems,proto3" json:"transactitems,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -16909,8 +16909,8 @@ func (*TransactGetItemsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *TransactGetItemsInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
@@ -17043,11 +17043,11 @@ func (x *TransactWriteItem) GetUpdate() *Update {
 }
 
 type TransactWriteItemsInput struct {
-	state                       protoimpl.MessageState      `protogen:"open.v1"`
-	Clientrequesttoken          *string                     `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3,oneof" json:"clientrequesttoken,omitempty"`
-	Returnconsumedcapacity      ReturnConsumedCapacity      `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
-	Returnitemcollectionmetrics ReturnItemCollectionMetrics `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics" json:"returnitemcollectionmetrics,omitempty"`
-	Transactitems               []*TransactWriteItem        `protobuf:"bytes,506245290,rep,name=transactitems,proto3" json:"transactitems,omitempty"`
+	state                       protoimpl.MessageState       `protogen:"open.v1"`
+	Clientrequesttoken          *string                      `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3,oneof" json:"clientrequesttoken,omitempty"`
+	Returnconsumedcapacity      *ReturnConsumedCapacity      `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
+	Returnitemcollectionmetrics *ReturnItemCollectionMetrics `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics,oneof" json:"returnitemcollectionmetrics,omitempty"`
+	Transactitems               []*TransactWriteItem         `protobuf:"bytes,506245290,rep,name=transactitems,proto3" json:"transactitems,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -17090,15 +17090,15 @@ func (x *TransactWriteItemsInput) GetClientrequesttoken() string {
 }
 
 func (x *TransactWriteItemsInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
 
 func (x *TransactWriteItemsInput) GetReturnitemcollectionmetrics() ReturnItemCollectionMetrics {
-	if x != nil {
-		return x.Returnitemcollectionmetrics
+	if x != nil && x.Returnitemcollectionmetrics != nil {
+		return *x.Returnitemcollectionmetrics
 	}
 	return ReturnItemCollectionMetrics_RETURN_ITEM_COLLECTION_METRICS_NONE
 }
@@ -17355,14 +17355,14 @@ func (x *UntagResourceInput) GetTagkeys() []string {
 }
 
 type Update struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Conditionexpression                 *string                             `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
-	Expressionattributenames            map[string]string                   `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributevalues           map[string]*AttributeValue          `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Key                                 map[string]*AttributeValue          `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Tablename                           string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
-	Updateexpression                    string                              `protobuf:"bytes,389263879,opt,name=updateexpression,proto3" json:"updateexpression,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Conditionexpression                 *string                              `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
+	Expressionattributenames            map[string]string                    `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributevalues           map[string]*AttributeValue           `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Key                                 map[string]*AttributeValue           `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Tablename                           string                               `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	Updateexpression                    string                               `protobuf:"bytes,389263879,opt,name=updateexpression,proto3" json:"updateexpression,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -17426,8 +17426,8 @@ func (x *Update) GetKey() map[string]*AttributeValue {
 }
 
 func (x *Update) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -17545,7 +17545,7 @@ func (x *UpdateContinuousBackupsOutput) GetContinuousbackupsdescription() *Conti
 type UpdateContributorInsightsInput struct {
 	state                     protoimpl.MessageState    `protogen:"open.v1"`
 	Contributorinsightsaction ContributorInsightsAction `protobuf:"varint,81909182,opt,name=contributorinsightsaction,proto3,enum=dynamodb.ContributorInsightsAction" json:"contributorinsightsaction,omitempty"`
-	Contributorinsightsmode   ContributorInsightsMode   `protobuf:"varint,86700161,opt,name=contributorinsightsmode,proto3,enum=dynamodb.ContributorInsightsMode" json:"contributorinsightsmode,omitempty"`
+	Contributorinsightsmode   *ContributorInsightsMode  `protobuf:"varint,86700161,opt,name=contributorinsightsmode,proto3,enum=dynamodb.ContributorInsightsMode,oneof" json:"contributorinsightsmode,omitempty"`
 	Indexname                 *string                   `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
 	Tablename                 string                    `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -17590,8 +17590,8 @@ func (x *UpdateContributorInsightsInput) GetContributorinsightsaction() Contribu
 }
 
 func (x *UpdateContributorInsightsInput) GetContributorinsightsmode() ContributorInsightsMode {
-	if x != nil {
-		return x.Contributorinsightsmode
+	if x != nil && x.Contributorinsightsmode != nil {
+		return *x.Contributorinsightsmode
 	}
 	return ContributorInsightsMode_CONTRIBUTOR_INSIGHTS_MODE_THROTTLED_KEYS
 }
@@ -17611,11 +17611,11 @@ func (x *UpdateContributorInsightsInput) GetTablename() string {
 }
 
 type UpdateContributorInsightsOutput struct {
-	state                     protoimpl.MessageState    `protogen:"open.v1"`
-	Contributorinsightsmode   ContributorInsightsMode   `protobuf:"varint,86700161,opt,name=contributorinsightsmode,proto3,enum=dynamodb.ContributorInsightsMode" json:"contributorinsightsmode,omitempty"`
-	Contributorinsightsstatus ContributorInsightsStatus `protobuf:"varint,363347282,opt,name=contributorinsightsstatus,proto3,enum=dynamodb.ContributorInsightsStatus" json:"contributorinsightsstatus,omitempty"`
-	Indexname                 *string                   `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
-	Tablename                 *string                   `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
+	state                     protoimpl.MessageState     `protogen:"open.v1"`
+	Contributorinsightsmode   *ContributorInsightsMode   `protobuf:"varint,86700161,opt,name=contributorinsightsmode,proto3,enum=dynamodb.ContributorInsightsMode,oneof" json:"contributorinsightsmode,omitempty"`
+	Contributorinsightsstatus *ContributorInsightsStatus `protobuf:"varint,363347282,opt,name=contributorinsightsstatus,proto3,enum=dynamodb.ContributorInsightsStatus,oneof" json:"contributorinsightsstatus,omitempty"`
+	Indexname                 *string                    `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
+	Tablename                 *string                    `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -17651,15 +17651,15 @@ func (*UpdateContributorInsightsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateContributorInsightsOutput) GetContributorinsightsmode() ContributorInsightsMode {
-	if x != nil {
-		return x.Contributorinsightsmode
+	if x != nil && x.Contributorinsightsmode != nil {
+		return *x.Contributorinsightsmode
 	}
 	return ContributorInsightsMode_CONTRIBUTOR_INSIGHTS_MODE_THROTTLED_KEYS
 }
 
 func (x *UpdateContributorInsightsOutput) GetContributorinsightsstatus() ContributorInsightsStatus {
-	if x != nil {
-		return x.Contributorinsightsstatus
+	if x != nil && x.Contributorinsightsstatus != nil {
+		return *x.Contributorinsightsstatus
 	}
 	return ContributorInsightsStatus_CONTRIBUTOR_INSIGHTS_STATUS_DISABLED
 }
@@ -17844,7 +17844,7 @@ func (x *UpdateGlobalTableOutput) GetGlobaltabledescription() *GlobalTableDescri
 
 type UpdateGlobalTableSettingsInput struct {
 	state                                                        protoimpl.MessageState                           `protogen:"open.v1"`
-	Globaltablebillingmode                                       BillingMode                                      `protobuf:"varint,285868859,opt,name=globaltablebillingmode,proto3,enum=dynamodb.BillingMode" json:"globaltablebillingmode,omitempty"`
+	Globaltablebillingmode                                       *BillingMode                                     `protobuf:"varint,285868859,opt,name=globaltablebillingmode,proto3,enum=dynamodb.BillingMode,oneof" json:"globaltablebillingmode,omitempty"`
 	Globaltableglobalsecondaryindexsettingsupdate                []*GlobalTableGlobalSecondaryIndexSettingsUpdate `protobuf:"bytes,368411116,rep,name=globaltableglobalsecondaryindexsettingsupdate,proto3" json:"globaltableglobalsecondaryindexsettingsupdate,omitempty"`
 	Globaltablename                                              string                                           `protobuf:"bytes,283759402,opt,name=globaltablename,proto3" json:"globaltablename,omitempty"`
 	Globaltableprovisionedwritecapacityautoscalingsettingsupdate *AutoScalingSettingsUpdate                       `protobuf:"bytes,435219182,opt,name=globaltableprovisionedwritecapacityautoscalingsettingsupdate,proto3" json:"globaltableprovisionedwritecapacityautoscalingsettingsupdate,omitempty"`
@@ -17885,8 +17885,8 @@ func (*UpdateGlobalTableSettingsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateGlobalTableSettingsInput) GetGlobaltablebillingmode() BillingMode {
-	if x != nil {
-		return x.Globaltablebillingmode
+	if x != nil && x.Globaltablebillingmode != nil {
+		return *x.Globaltablebillingmode
 	}
 	return BillingMode_BILLING_MODE_PAY_PER_REQUEST
 }
@@ -17979,20 +17979,20 @@ func (x *UpdateGlobalTableSettingsOutput) GetReplicasettings() []*ReplicaSetting
 }
 
 type UpdateItemInput struct {
-	state                               protoimpl.MessageState              `protogen:"open.v1"`
-	Attributeupdates                    map[string]*AttributeValueUpdate    `protobuf:"bytes,32403512,rep,name=attributeupdates,proto3" json:"attributeupdates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Conditionexpression                 *string                             `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
-	Conditionaloperator                 ConditionalOperator                 `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator" json:"conditionaloperator,omitempty"`
-	Expected                            map[string]*ExpectedAttributeValue  `protobuf:"bytes,106557946,rep,name=expected,proto3" json:"expected,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributenames            map[string]string                   `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Expressionattributevalues           map[string]*AttributeValue          `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Key                                 map[string]*AttributeValue          `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Returnconsumedcapacity              ReturnConsumedCapacity              `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity" json:"returnconsumedcapacity,omitempty"`
-	Returnitemcollectionmetrics         ReturnItemCollectionMetrics         `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics" json:"returnitemcollectionmetrics,omitempty"`
-	Returnvalues                        ReturnValue                         `protobuf:"varint,402960198,opt,name=returnvalues,proto3,enum=dynamodb.ReturnValue" json:"returnvalues,omitempty"`
-	Returnvaluesonconditioncheckfailure ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure" json:"returnvaluesonconditioncheckfailure,omitempty"`
-	Tablename                           string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
-	Updateexpression                    *string                             `protobuf:"bytes,389263879,opt,name=updateexpression,proto3,oneof" json:"updateexpression,omitempty"`
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Attributeupdates                    map[string]*AttributeValueUpdate     `protobuf:"bytes,32403512,rep,name=attributeupdates,proto3" json:"attributeupdates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Conditionexpression                 *string                              `protobuf:"bytes,409657405,opt,name=conditionexpression,proto3,oneof" json:"conditionexpression,omitempty"`
+	Conditionaloperator                 *ConditionalOperator                 `protobuf:"varint,172066260,opt,name=conditionaloperator,proto3,enum=dynamodb.ConditionalOperator,oneof" json:"conditionaloperator,omitempty"`
+	Expected                            map[string]*ExpectedAttributeValue   `protobuf:"bytes,106557946,rep,name=expected,proto3" json:"expected,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributenames            map[string]string                    `protobuf:"bytes,150228092,rep,name=expressionattributenames,proto3" json:"expressionattributenames,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Expressionattributevalues           map[string]*AttributeValue           `protobuf:"bytes,484970072,rep,name=expressionattributevalues,proto3" json:"expressionattributevalues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Key                                 map[string]*AttributeValue           `protobuf:"bytes,219859213,rep,name=key,proto3" json:"key,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Returnconsumedcapacity              *ReturnConsumedCapacity              `protobuf:"varint,43545598,opt,name=returnconsumedcapacity,proto3,enum=dynamodb.ReturnConsumedCapacity,oneof" json:"returnconsumedcapacity,omitempty"`
+	Returnitemcollectionmetrics         *ReturnItemCollectionMetrics         `protobuf:"varint,255507354,opt,name=returnitemcollectionmetrics,proto3,enum=dynamodb.ReturnItemCollectionMetrics,oneof" json:"returnitemcollectionmetrics,omitempty"`
+	Returnvalues                        *ReturnValue                         `protobuf:"varint,402960198,opt,name=returnvalues,proto3,enum=dynamodb.ReturnValue,oneof" json:"returnvalues,omitempty"`
+	Returnvaluesonconditioncheckfailure *ReturnValuesOnConditionCheckFailure `protobuf:"varint,4213728,opt,name=returnvaluesonconditioncheckfailure,proto3,enum=dynamodb.ReturnValuesOnConditionCheckFailure,oneof" json:"returnvaluesonconditioncheckfailure,omitempty"`
+	Tablename                           string                               `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	Updateexpression                    *string                              `protobuf:"bytes,389263879,opt,name=updateexpression,proto3,oneof" json:"updateexpression,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -18042,8 +18042,8 @@ func (x *UpdateItemInput) GetConditionexpression() string {
 }
 
 func (x *UpdateItemInput) GetConditionaloperator() ConditionalOperator {
-	if x != nil {
-		return x.Conditionaloperator
+	if x != nil && x.Conditionaloperator != nil {
+		return *x.Conditionaloperator
 	}
 	return ConditionalOperator_CONDITIONAL_OPERATOR_AND
 }
@@ -18077,29 +18077,29 @@ func (x *UpdateItemInput) GetKey() map[string]*AttributeValue {
 }
 
 func (x *UpdateItemInput) GetReturnconsumedcapacity() ReturnConsumedCapacity {
-	if x != nil {
-		return x.Returnconsumedcapacity
+	if x != nil && x.Returnconsumedcapacity != nil {
+		return *x.Returnconsumedcapacity
 	}
 	return ReturnConsumedCapacity_RETURN_CONSUMED_CAPACITY_NONE
 }
 
 func (x *UpdateItemInput) GetReturnitemcollectionmetrics() ReturnItemCollectionMetrics {
-	if x != nil {
-		return x.Returnitemcollectionmetrics
+	if x != nil && x.Returnitemcollectionmetrics != nil {
+		return *x.Returnitemcollectionmetrics
 	}
 	return ReturnItemCollectionMetrics_RETURN_ITEM_COLLECTION_METRICS_NONE
 }
 
 func (x *UpdateItemInput) GetReturnvalues() ReturnValue {
-	if x != nil {
-		return x.Returnvalues
+	if x != nil && x.Returnvalues != nil {
+		return *x.Returnvalues
 	}
 	return ReturnValue_RETURN_VALUE_UPDATED_NEW
 }
 
 func (x *UpdateItemInput) GetReturnvaluesonconditioncheckfailure() ReturnValuesOnConditionCheckFailure {
-	if x != nil {
-		return x.Returnvaluesonconditioncheckfailure
+	if x != nil && x.Returnvaluesonconditioncheckfailure != nil {
+		return *x.Returnvaluesonconditioncheckfailure
 	}
 	return ReturnValuesOnConditionCheckFailure_RETURN_VALUES_ON_CONDITION_CHECK_FAILURE_NONE
 }
@@ -18179,8 +18179,8 @@ func (x *UpdateItemOutput) GetItemcollectionmetrics() *ItemCollectionMetrics {
 }
 
 type UpdateKinesisStreamingConfiguration struct {
-	state                                protoimpl.MessageState               `protogen:"open.v1"`
-	Approximatecreationdatetimeprecision ApproximateCreationDateTimePrecision `protobuf:"varint,392293352,opt,name=approximatecreationdatetimeprecision,proto3,enum=dynamodb.ApproximateCreationDateTimePrecision" json:"approximatecreationdatetimeprecision,omitempty"`
+	state                                protoimpl.MessageState                `protogen:"open.v1"`
+	Approximatecreationdatetimeprecision *ApproximateCreationDateTimePrecision `protobuf:"varint,392293352,opt,name=approximatecreationdatetimeprecision,proto3,enum=dynamodb.ApproximateCreationDateTimePrecision,oneof" json:"approximatecreationdatetimeprecision,omitempty"`
 	unknownFields                        protoimpl.UnknownFields
 	sizeCache                            protoimpl.SizeCache
 }
@@ -18216,8 +18216,8 @@ func (*UpdateKinesisStreamingConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateKinesisStreamingConfiguration) GetApproximatecreationdatetimeprecision() ApproximateCreationDateTimePrecision {
-	if x != nil {
-		return x.Approximatecreationdatetimeprecision
+	if x != nil && x.Approximatecreationdatetimeprecision != nil {
+		return *x.Approximatecreationdatetimeprecision
 	}
 	return ApproximateCreationDateTimePrecision_APPROXIMATE_CREATION_DATE_TIME_PRECISION_MILLISECOND
 }
@@ -18284,7 +18284,7 @@ func (x *UpdateKinesisStreamingDestinationInput) GetUpdatekinesisstreamingconfig
 
 type UpdateKinesisStreamingDestinationOutput struct {
 	state                               protoimpl.MessageState               `protogen:"open.v1"`
-	Destinationstatus                   DestinationStatus                    `protobuf:"varint,381248234,opt,name=destinationstatus,proto3,enum=dynamodb.DestinationStatus" json:"destinationstatus,omitempty"`
+	Destinationstatus                   *DestinationStatus                   `protobuf:"varint,381248234,opt,name=destinationstatus,proto3,enum=dynamodb.DestinationStatus,oneof" json:"destinationstatus,omitempty"`
 	Streamarn                           *string                              `protobuf:"bytes,513423709,opt,name=streamarn,proto3,oneof" json:"streamarn,omitempty"`
 	Tablename                           *string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
 	Updatekinesisstreamingconfiguration *UpdateKinesisStreamingConfiguration `protobuf:"bytes,239134845,opt,name=updatekinesisstreamingconfiguration,proto3" json:"updatekinesisstreamingconfiguration,omitempty"`
@@ -18323,8 +18323,8 @@ func (*UpdateKinesisStreamingDestinationOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateKinesisStreamingDestinationOutput) GetDestinationstatus() DestinationStatus {
-	if x != nil {
-		return x.Destinationstatus
+	if x != nil && x.Destinationstatus != nil {
+		return *x.Destinationstatus
 	}
 	return DestinationStatus_DESTINATION_STATUS_UPDATING
 }
@@ -18357,7 +18357,7 @@ type UpdateReplicationGroupMemberAction struct {
 	Ondemandthroughputoverride    *OnDemandThroughputOverride    `protobuf:"bytes,317165234,opt,name=ondemandthroughputoverride,proto3" json:"ondemandthroughputoverride,omitempty"`
 	Provisionedthroughputoverride *ProvisionedThroughputOverride `protobuf:"bytes,413332116,opt,name=provisionedthroughputoverride,proto3" json:"provisionedthroughputoverride,omitempty"`
 	Regionname                    string                         `protobuf:"bytes,112086463,opt,name=regionname,proto3" json:"regionname,omitempty"`
-	Tableclassoverride            TableClass                     `protobuf:"varint,415569842,opt,name=tableclassoverride,proto3,enum=dynamodb.TableClass" json:"tableclassoverride,omitempty"`
+	Tableclassoverride            *TableClass                    `protobuf:"varint,415569842,opt,name=tableclassoverride,proto3,enum=dynamodb.TableClass,oneof" json:"tableclassoverride,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -18428,30 +18428,30 @@ func (x *UpdateReplicationGroupMemberAction) GetRegionname() string {
 }
 
 func (x *UpdateReplicationGroupMemberAction) GetTableclassoverride() TableClass {
-	if x != nil {
-		return x.Tableclassoverride
+	if x != nil && x.Tableclassoverride != nil {
+		return *x.Tableclassoverride
 	}
 	return TableClass_TABLE_CLASS_STANDARD_INFREQUENT_ACCESS
 }
 
 type UpdateTableInput struct {
-	state                              protoimpl.MessageState             `protogen:"open.v1"`
-	Attributedefinitions               []*AttributeDefinition             `protobuf:"bytes,414687108,rep,name=attributedefinitions,proto3" json:"attributedefinitions,omitempty"`
-	Billingmode                        BillingMode                        `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode" json:"billingmode,omitempty"`
-	Deletionprotectionenabled          *bool                              `protobuf:"varint,259418450,opt,name=deletionprotectionenabled,proto3,oneof" json:"deletionprotectionenabled,omitempty"`
-	Globalsecondaryindexupdates        []*GlobalSecondaryIndexUpdate      `protobuf:"bytes,265760923,rep,name=globalsecondaryindexupdates,proto3" json:"globalsecondaryindexupdates,omitempty"`
-	Globaltablesettingsreplicationmode GlobalTableSettingsReplicationMode `protobuf:"varint,10446577,opt,name=globaltablesettingsreplicationmode,proto3,enum=dynamodb.GlobalTableSettingsReplicationMode" json:"globaltablesettingsreplicationmode,omitempty"`
-	Globaltablewitnessupdates          []*GlobalTableWitnessGroupUpdate   `protobuf:"bytes,269201458,rep,name=globaltablewitnessupdates,proto3" json:"globaltablewitnessupdates,omitempty"`
-	Multiregionconsistency             MultiRegionConsistency             `protobuf:"varint,446019131,opt,name=multiregionconsistency,proto3,enum=dynamodb.MultiRegionConsistency" json:"multiregionconsistency,omitempty"`
-	Ondemandthroughput                 *OnDemandThroughput                `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
-	Provisionedthroughput              *ProvisionedThroughput             `protobuf:"bytes,1757580,opt,name=provisionedthroughput,proto3" json:"provisionedthroughput,omitempty"`
-	Replicaupdates                     []*ReplicationGroupUpdate          `protobuf:"bytes,260731936,rep,name=replicaupdates,proto3" json:"replicaupdates,omitempty"`
-	Ssespecification                   *SSESpecification                  `protobuf:"bytes,31692444,opt,name=ssespecification,proto3" json:"ssespecification,omitempty"`
-	Streamspecification                *StreamSpecification               `protobuf:"bytes,403922627,opt,name=streamspecification,proto3" json:"streamspecification,omitempty"`
-	Tableclass                         TableClass                         `protobuf:"varint,342890498,opt,name=tableclass,proto3,enum=dynamodb.TableClass" json:"tableclass,omitempty"`
-	Tablename                          string                             `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
-	Vectorindexupdates                 []*VectorIndexUpdate               `protobuf:"bytes,269513317,rep,name=vectorindexupdates,proto3" json:"vectorindexupdates,omitempty"`
-	Warmthroughput                     *WarmThroughput                    `protobuf:"bytes,290598659,opt,name=warmthroughput,proto3" json:"warmthroughput,omitempty"`
+	state                              protoimpl.MessageState              `protogen:"open.v1"`
+	Attributedefinitions               []*AttributeDefinition              `protobuf:"bytes,414687108,rep,name=attributedefinitions,proto3" json:"attributedefinitions,omitempty"`
+	Billingmode                        *BillingMode                        `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=dynamodb.BillingMode,oneof" json:"billingmode,omitempty"`
+	Deletionprotectionenabled          *bool                               `protobuf:"varint,259418450,opt,name=deletionprotectionenabled,proto3,oneof" json:"deletionprotectionenabled,omitempty"`
+	Globalsecondaryindexupdates        []*GlobalSecondaryIndexUpdate       `protobuf:"bytes,265760923,rep,name=globalsecondaryindexupdates,proto3" json:"globalsecondaryindexupdates,omitempty"`
+	Globaltablesettingsreplicationmode *GlobalTableSettingsReplicationMode `protobuf:"varint,10446577,opt,name=globaltablesettingsreplicationmode,proto3,enum=dynamodb.GlobalTableSettingsReplicationMode,oneof" json:"globaltablesettingsreplicationmode,omitempty"`
+	Globaltablewitnessupdates          []*GlobalTableWitnessGroupUpdate    `protobuf:"bytes,269201458,rep,name=globaltablewitnessupdates,proto3" json:"globaltablewitnessupdates,omitempty"`
+	Multiregionconsistency             *MultiRegionConsistency             `protobuf:"varint,446019131,opt,name=multiregionconsistency,proto3,enum=dynamodb.MultiRegionConsistency,oneof" json:"multiregionconsistency,omitempty"`
+	Ondemandthroughput                 *OnDemandThroughput                 `protobuf:"bytes,481734402,opt,name=ondemandthroughput,proto3" json:"ondemandthroughput,omitempty"`
+	Provisionedthroughput              *ProvisionedThroughput              `protobuf:"bytes,1757580,opt,name=provisionedthroughput,proto3" json:"provisionedthroughput,omitempty"`
+	Replicaupdates                     []*ReplicationGroupUpdate           `protobuf:"bytes,260731936,rep,name=replicaupdates,proto3" json:"replicaupdates,omitempty"`
+	Ssespecification                   *SSESpecification                   `protobuf:"bytes,31692444,opt,name=ssespecification,proto3" json:"ssespecification,omitempty"`
+	Streamspecification                *StreamSpecification                `protobuf:"bytes,403922627,opt,name=streamspecification,proto3" json:"streamspecification,omitempty"`
+	Tableclass                         *TableClass                         `protobuf:"varint,342890498,opt,name=tableclass,proto3,enum=dynamodb.TableClass,oneof" json:"tableclass,omitempty"`
+	Tablename                          string                              `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	Vectorindexupdates                 []*VectorIndexUpdate                `protobuf:"bytes,269513317,rep,name=vectorindexupdates,proto3" json:"vectorindexupdates,omitempty"`
+	Warmthroughput                     *WarmThroughput                     `protobuf:"bytes,290598659,opt,name=warmthroughput,proto3" json:"warmthroughput,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
 	sizeCache                          protoimpl.SizeCache
 }
@@ -18494,8 +18494,8 @@ func (x *UpdateTableInput) GetAttributedefinitions() []*AttributeDefinition {
 }
 
 func (x *UpdateTableInput) GetBillingmode() BillingMode {
-	if x != nil {
-		return x.Billingmode
+	if x != nil && x.Billingmode != nil {
+		return *x.Billingmode
 	}
 	return BillingMode_BILLING_MODE_PAY_PER_REQUEST
 }
@@ -18515,8 +18515,8 @@ func (x *UpdateTableInput) GetGlobalsecondaryindexupdates() []*GlobalSecondaryIn
 }
 
 func (x *UpdateTableInput) GetGlobaltablesettingsreplicationmode() GlobalTableSettingsReplicationMode {
-	if x != nil {
-		return x.Globaltablesettingsreplicationmode
+	if x != nil && x.Globaltablesettingsreplicationmode != nil {
+		return *x.Globaltablesettingsreplicationmode
 	}
 	return GlobalTableSettingsReplicationMode_GLOBAL_TABLE_SETTINGS_REPLICATION_MODE_DISABLED
 }
@@ -18529,8 +18529,8 @@ func (x *UpdateTableInput) GetGlobaltablewitnessupdates() []*GlobalTableWitnessG
 }
 
 func (x *UpdateTableInput) GetMultiregionconsistency() MultiRegionConsistency {
-	if x != nil {
-		return x.Multiregionconsistency
+	if x != nil && x.Multiregionconsistency != nil {
+		return *x.Multiregionconsistency
 	}
 	return MultiRegionConsistency_MULTI_REGION_CONSISTENCY_EVENTUAL
 }
@@ -18571,8 +18571,8 @@ func (x *UpdateTableInput) GetStreamspecification() *StreamSpecification {
 }
 
 func (x *UpdateTableInput) GetTableclass() TableClass {
-	if x != nil {
-		return x.Tableclass
+	if x != nil && x.Tableclass != nil {
+		return *x.Tableclass
 	}
 	return TableClass_TABLE_CLASS_STANDARD_INFREQUENT_ACCESS
 }
@@ -19034,11 +19034,11 @@ type VectorIndexDescription struct {
 	state            protoimpl.MessageState     `protogen:"open.v1"`
 	Backfilling      *bool                      `protobuf:"varint,251413370,opt,name=backfilling,proto3,oneof" json:"backfilling,omitempty"`
 	Dimensions       *int64                     `protobuf:"varint,462933457,opt,name=dimensions,proto3,oneof" json:"dimensions,omitempty"`
-	Distancefunction VectorDistanceFunction     `protobuf:"varint,423470871,opt,name=distancefunction,proto3,enum=dynamodb.VectorDistanceFunction" json:"distancefunction,omitempty"`
+	Distancefunction *VectorDistanceFunction    `protobuf:"varint,423470871,opt,name=distancefunction,proto3,enum=dynamodb.VectorDistanceFunction,oneof" json:"distancefunction,omitempty"`
 	Indexarn         *string                    `protobuf:"bytes,374335615,opt,name=indexarn,proto3,oneof" json:"indexarn,omitempty"`
 	Indexname        *string                    `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
 	Indexsizebytes   *int64                     `protobuf:"varint,395738346,opt,name=indexsizebytes,proto3,oneof" json:"indexsizebytes,omitempty"`
-	Indexstatus      IndexStatus                `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus" json:"indexstatus,omitempty"`
+	Indexstatus      *IndexStatus               `protobuf:"varint,364436830,opt,name=indexstatus,proto3,enum=dynamodb.IndexStatus,oneof" json:"indexstatus,omitempty"`
 	Itemcount        *int64                     `protobuf:"varint,26280022,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
 	Projection       *Projection                `protobuf:"bytes,105045921,opt,name=projection,proto3" json:"projection,omitempty"`
 	Searchschema     []*SearchSchemaElement     `protobuf:"bytes,383005739,rep,name=searchschema,proto3" json:"searchschema,omitempty"`
@@ -19092,8 +19092,8 @@ func (x *VectorIndexDescription) GetDimensions() int64 {
 }
 
 func (x *VectorIndexDescription) GetDistancefunction() VectorDistanceFunction {
-	if x != nil {
-		return x.Distancefunction
+	if x != nil && x.Distancefunction != nil {
+		return *x.Distancefunction
 	}
 	return VectorDistanceFunction_VECTOR_DISTANCE_FUNCTION_DOT_PRODUCT
 }
@@ -19120,8 +19120,8 @@ func (x *VectorIndexDescription) GetIndexsizebytes() int64 {
 }
 
 func (x *VectorIndexDescription) GetIndexstatus() IndexStatus {
-	if x != nil {
-		return x.Indexstatus
+	if x != nil && x.Indexstatus != nil {
+		return *x.Indexstatus
 	}
 	return IndexStatus_INDEX_STATUS_UPDATING
 }
@@ -19157,7 +19157,7 @@ func (x *VectorIndexDescription) GetVectorattribute() *VectorAttributeDefinition
 type VectorIndexInfo struct {
 	state            protoimpl.MessageState     `protogen:"open.v1"`
 	Dimensions       *int64                     `protobuf:"varint,462933457,opt,name=dimensions,proto3,oneof" json:"dimensions,omitempty"`
-	Distancefunction VectorDistanceFunction     `protobuf:"varint,423470871,opt,name=distancefunction,proto3,enum=dynamodb.VectorDistanceFunction" json:"distancefunction,omitempty"`
+	Distancefunction *VectorDistanceFunction    `protobuf:"varint,423470871,opt,name=distancefunction,proto3,enum=dynamodb.VectorDistanceFunction,oneof" json:"distancefunction,omitempty"`
 	Indexname        *string                    `protobuf:"bytes,102427281,opt,name=indexname,proto3,oneof" json:"indexname,omitempty"`
 	Projection       *Projection                `protobuf:"bytes,105045921,opt,name=projection,proto3" json:"projection,omitempty"`
 	Searchschema     []*SearchSchemaElement     `protobuf:"bytes,383005739,rep,name=searchschema,proto3" json:"searchschema,omitempty"`
@@ -19204,8 +19204,8 @@ func (x *VectorIndexInfo) GetDimensions() int64 {
 }
 
 func (x *VectorIndexInfo) GetDistancefunction() VectorDistanceFunction {
-	if x != nil {
-		return x.Distancefunction
+	if x != nil && x.Distancefunction != nil {
+		return *x.Distancefunction
 	}
 	return VectorDistanceFunction_VECTOR_DISTANCE_FUNCTION_DOT_PRODUCT
 }
@@ -19515,10 +19515,11 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05_boolB\x04\n" +
 	"\x02_nB\a\n" +
 	"\x05_nullB\x04\n" +
-	"\x02_s\"\x80\x01\n" +
-	"\x14AttributeValueUpdate\x124\n" +
-	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x19.dynamodb.AttributeActionR\x06action\x122\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\v2\x18.dynamodb.AttributeValueR\x05value\"\x80\x02\n" +
+	"\x02_s\"\x90\x01\n" +
+	"\x14AttributeValueUpdate\x129\n" +
+	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x19.dynamodb.AttributeActionH\x00R\x06action\x88\x01\x01\x122\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\v2\x18.dynamodb.AttributeValueR\x05valueB\t\n" +
+	"\a_action\"\x80\x02\n" +
 	"\x1cAutoScalingPolicyDescription\x12&\n" +
 	"\n" +
 	"policyname\x18\xbd\xf5\x87\x7f \x01(\tH\x00R\n" +
@@ -19593,7 +19594,7 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x17BackupNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x83\x05\n" +
+	"\b_message\"\xad\x05\n" +
 	"\rBackupSummary\x12%\n" +
 	"\tbackuparn\x18\xe3\xaf\xec\xb0\x01 \x01(\tH\x00R\tbackuparn\x88\x01\x01\x12?\n" +
 	"\x16backupcreationdatetime\x18̧\xbe\xaf\x01 \x01(\tH\x01R\x16backupcreationdatetime\x88\x01\x01\x12;\n" +
@@ -19601,39 +19602,43 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\n" +
 	"backupname\x18\xdd\xe1\x81\xdf\x01 \x01(\tH\x03R\n" +
 	"backupname\x88\x01\x01\x120\n" +
-	"\x0fbackupsizebytes\x18\xfeؠF \x01(\x03H\x04R\x0fbackupsizebytes\x88\x01\x01\x12>\n" +
-	"\fbackupstatus\x18ʤ\xb2\xb6\x01 \x01(\x0e2\x16.dynamodb.BackupStatusR\fbackupstatus\x127\n" +
+	"\x0fbackupsizebytes\x18\xfeؠF \x01(\x03H\x04R\x0fbackupsizebytes\x88\x01\x01\x12C\n" +
+	"\fbackupstatus\x18ʤ\xb2\xb6\x01 \x01(\x0e2\x16.dynamodb.BackupStatusH\x05R\fbackupstatus\x88\x01\x01\x12<\n" +
 	"\n" +
-	"backuptype\x18\xa8\x94\xae@ \x01(\x0e2\x14.dynamodb.BackupTypeR\n" +
-	"backuptype\x12#\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x05R\btablearn\x88\x01\x01\x12!\n" +
-	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tH\x06R\atableid\x88\x01\x01\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\aR\ttablename\x88\x01\x01B\f\n" +
+	"backuptype\x18\xa8\x94\xae@ \x01(\x0e2\x14.dynamodb.BackupTypeH\x06R\n" +
+	"backuptype\x88\x01\x01\x12#\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\aR\btablearn\x88\x01\x01\x12!\n" +
+	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tH\bR\atableid\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\tR\ttablename\x88\x01\x01B\f\n" +
 	"\n" +
 	"_backuparnB\x19\n" +
 	"\x17_backupcreationdatetimeB\x17\n" +
 	"\x15_backupexpirydatetimeB\r\n" +
 	"\v_backupnameB\x12\n" +
-	"\x10_backupsizebytesB\v\n" +
+	"\x10_backupsizebytesB\x0f\n" +
+	"\r_backupstatusB\r\n" +
+	"\v_backuptypeB\v\n" +
 	"\t_tablearnB\n" +
 	"\n" +
 	"\b_tableidB\f\n" +
 	"\n" +
-	"_tablename\"\xbe\x01\n" +
-	"\x1aBatchExecuteStatementInput\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12C\n" +
+	"_tablename\"\xde\x01\n" +
+	"\x1aBatchExecuteStatementInput\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x00R\x16returnconsumedcapacity\x88\x01\x01\x12C\n" +
 	"\n" +
 	"statements\x18\xa0\xd4\xee\xe8\x01 \x03(\v2\x1f.dynamodb.BatchStatementRequestR\n" +
-	"statements\"\xac\x01\n" +
+	"statementsB\x19\n" +
+	"\x17_returnconsumedcapacity\"\xac\x01\n" +
 	"\x1bBatchExecuteStatementOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x03(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12A\n" +
-	"\tresponses\x18\xf8\x87\xe26 \x03(\v2 .dynamodb.BatchStatementResponseR\tresponses\"\xa4\x02\n" +
+	"\tresponses\x18\xf8\x87\xe26 \x03(\v2 .dynamodb.BatchStatementResponseR\tresponses\"\xc4\x02\n" +
 	"\x11BatchGetItemInput\x12T\n" +
-	"\frequestitems\x18\xefՏv \x03(\v2-.dynamodb.BatchGetItemInput.RequestitemsEntryR\frequestitems\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x1a\\\n" +
+	"\frequestitems\x18\xefՏv \x03(\v2-.dynamodb.BatchGetItemInput.RequestitemsEntryR\frequestitems\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x00R\x16returnconsumedcapacity\x88\x01\x01\x1a\\\n" +
 	"\x11RequestitemsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x121\n" +
-	"\x05value\x18\x02 \x01(\v2\x1b.dynamodb.KeysAndAttributesR\x05value:\x028\x01\"\xad\x03\n" +
+	"\x05value\x18\x02 \x01(\v2\x1b.dynamodb.KeysAndAttributesR\x05value:\x028\x01B\x19\n" +
+	"\x17_returnconsumedcapacity\"\xad\x03\n" +
 	"\x12BatchGetItemOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x03(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12L\n" +
 	"\tresponses\x18\xf8\x87\xe26 \x03(\v2+.dynamodb.BatchGetItemOutput.ResponsesEntryR\tresponses\x12^\n" +
@@ -19643,24 +19648,26 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a_\n" +
 	"\x14UnprocessedkeysEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x121\n" +
-	"\x05value\x18\x02 \x01(\v2\x1b.dynamodb.KeysAndAttributesR\x05value:\x028\x01\"\x96\x02\n" +
-	"\x13BatchStatementError\x12=\n" +
-	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\x0e2%.dynamodb.BatchStatementErrorCodeEnumR\x04code\x12?\n" +
+	"\x05value\x18\x02 \x01(\v2\x1b.dynamodb.KeysAndAttributesR\x05value:\x028\x01\"\xa4\x02\n" +
+	"\x13BatchStatementError\x12B\n" +
+	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\x0e2%.dynamodb.BatchStatementErrorCodeEnumH\x00R\x04code\x88\x01\x01\x12?\n" +
 	"\x04item\x18\x87\x80\x92\xfb\x01 \x03(\v2'.dynamodb.BatchStatementError.ItemEntryR\x04item\x12 \n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x1aQ\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x01R\amessage\x88\x01\x01\x1aQ\n" +
 	"\tItemEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\a\n" +
+	"\x05_codeB\n" +
 	"\n" +
-	"\b_message\"\xbf\x02\n" +
+	"\b_message\"\xec\x02\n" +
 	"\x15BatchStatementRequest\x12/\n" +
 	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bH\x00R\x0econsistentread\x88\x01\x01\x12<\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x18.dynamodb.AttributeValueR\n" +
-	"parameters\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12\x1f\n" +
+	"parameters\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x01R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12\x1f\n" +
 	"\tstatement\x18\xb7\xf9\xd0v \x01(\tR\tstatementB\x11\n" +
-	"\x0f_consistentread\"\x9d\x02\n" +
+	"\x0f_consistentreadB&\n" +
+	"$_returnvaluesonconditioncheckfailure\"\x9d\x02\n" +
 	"\x16BatchStatementResponse\x127\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x1d.dynamodb.BatchStatementErrorR\x05error\x12B\n" +
 	"\x04item\x18\x87\x80\x92\xfb\x01 \x03(\v2*.dynamodb.BatchStatementResponse.ItemEntryR\x04item\x12%\n" +
@@ -19669,14 +19676,16 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\f\n" +
 	"\n" +
-	"_tablename\"\xf7\x02\n" +
+	"_tablename\"\xbc\x03\n" +
 	"\x13BatchWriteItemInput\x12V\n" +
-	"\frequestitems\x18\xefՏv \x03(\v2/.dynamodb.BatchWriteItemInput.RequestitemsEntryR\frequestitems\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12j\n" +
-	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsR\x1breturnitemcollectionmetrics\x1a?\n" +
+	"\frequestitems\x18\xefՏv \x03(\v2/.dynamodb.BatchWriteItemInput.RequestitemsEntryR\frequestitems\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x00R\x16returnconsumedcapacity\x88\x01\x01\x12o\n" +
+	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsH\x01R\x1breturnitemcollectionmetrics\x88\x01\x01\x1a?\n" +
 	"\x11RequestitemsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xca\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x19\n" +
+	"\x17_returnconsumedcapacityB\x1e\n" +
+	"\x1c_returnitemcollectionmetrics\"\xca\x03\n" +
 	"\x14BatchWriteItemOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x03(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12r\n" +
 	"\x15itemcollectionmetrics\x18\xcc\xf0\xaeX \x03(\v29.dynamodb.BatchWriteItemOutput.ItemcollectionmetricsEntryR\x15itemcollectionmetrics\x12c\n" +
@@ -19686,10 +19695,11 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aC\n" +
 	"\x15UnprocesseditemsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcc\x01\n" +
-	"\x12BillingModeSummary\x12:\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeR\vbillingmode\x12T\n" +
-	"!lastupdatetopayperrequestdatetime\x18\x81֜\x13 \x01(\tH\x00R!lastupdatetopayperrequestdatetime\x88\x01\x01B$\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe1\x01\n" +
+	"\x12BillingModeSummary\x12?\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeH\x00R\vbillingmode\x88\x01\x01\x12T\n" +
+	"!lastupdatetopayperrequestdatetime\x18\x81֜\x13 \x01(\tH\x01R!lastupdatetopayperrequestdatetime\x88\x01\x01B\x0e\n" +
+	"\f_billingmodeB$\n" +
 	"\"_lastupdatetopayperrequestdatetime\"\xfb\x01\n" +
 	"\x12CancellationReason\x12\x1b\n" +
 	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\tH\x00R\x04code\x88\x01\x01\x12>\n" +
@@ -19710,13 +19720,13 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x13_writecapacityunits\"\xa9\x01\n" +
 	"\tCondition\x12K\n" +
 	"\x12attributevaluelist\x18\x8d\xb3\x88K \x03(\v2\x18.dynamodb.AttributeValueR\x12attributevaluelist\x12O\n" +
-	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1c.dynamodb.ComparisonOperatorR\x12comparisonoperator\"\x9e\x06\n" +
+	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1c.dynamodb.ComparisonOperatorR\x12comparisonoperator\"\xcb\x06\n" +
 	"\x0eConditionCheck\x124\n" +
 	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tR\x13conditionexpression\x12u\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v26.dynamodb.ConditionCheck.ExpressionattributenamesEntryR\x18expressionattributenames\x12y\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v27.dynamodb.ConditionCheck.ExpressionattributevaluesEntryR\x19expressionattributevalues\x126\n" +
-	"\x03key\x18\x8d\x92\xebh \x03(\v2!.dynamodb.ConditionCheck.KeyEntryR\x03key\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12 \n" +
+	"\x03key\x18\x8d\x92\xebh \x03(\v2!.dynamodb.ConditionCheck.KeyEntryR\x03key\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x00R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x1aK\n" +
 	"\x1dExpressionattributenamesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -19726,7 +19736,8 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\x1aP\n" +
 	"\bKeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\"\xef\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B&\n" +
+	"$_returnvaluesonconditioncheckfailure\"\xef\x01\n" +
 	"\x1fConditionalCheckFailedException\x12K\n" +
 	"\x04item\x18\x87\x80\x92\xfb\x01 \x03(\v23.dynamodb.ConditionalCheckFailedException.ItemEntryR\x04item\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x1aQ\n" +
@@ -19764,12 +19775,14 @@ const file_dynamodb_proto_rawDesc = "" +
 	"%ContinuousBackupsUnavailableException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xcc\x02\n" +
-	"\x1aContributorInsightsSummary\x12^\n" +
-	"\x17contributorinsightsmode\x18\x81\xe1\xab) \x01(\x0e2!.dynamodb.ContributorInsightsModeR\x17contributorinsightsmode\x12e\n" +
-	"\x19contributorinsightsstatus\x18\xd2\xfa\xa0\xad\x01 \x01(\x0e2#.dynamodb.ContributorInsightsStatusR\x19contributorinsightsstatus\x12$\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x00R\tindexname\x88\x01\x01\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x01R\ttablename\x88\x01\x01B\f\n" +
+	"\b_message\"\x90\x03\n" +
+	"\x1aContributorInsightsSummary\x12c\n" +
+	"\x17contributorinsightsmode\x18\x81\xe1\xab) \x01(\x0e2!.dynamodb.ContributorInsightsModeH\x00R\x17contributorinsightsmode\x88\x01\x01\x12j\n" +
+	"\x19contributorinsightsstatus\x18\xd2\xfa\xa0\xad\x01 \x01(\x0e2#.dynamodb.ContributorInsightsStatusH\x01R\x19contributorinsightsstatus\x88\x01\x01\x12$\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x02R\tindexname\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x03R\ttablename\x88\x01\x01B\x1a\n" +
+	"\x18_contributorinsightsmodeB\x1c\n" +
+	"\x1a_contributorinsightsstatusB\f\n" +
 	"\n" +
 	"_indexnameB\f\n" +
 	"\n" +
@@ -19802,7 +19815,7 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x13CreateReplicaAction\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
-	"regionname\"\x95\x04\n" +
+	"regionname\"\xb1\x04\n" +
 	"\"CreateReplicationGroupMemberAction\x12a\n" +
 	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2%.dynamodb.ReplicaGlobalSecondaryIndexR\x16globalsecondaryindexes\x12/\n" +
 	"\x0ekmsmasterkeyid\x18\xf3\xad\xd3\xf8\x01 \x01(\tH\x00R\x0ekmsmasterkeyid\x88\x01\x01\x12h\n" +
@@ -19810,34 +19823,37 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2'.dynamodb.ProvisionedThroughputOverrideR\x1dprovisionedthroughputoverride\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
-	"regionname\x12H\n" +
-	"\x12tableclassoverride\x18\xb2\xaf\x94\xc6\x01 \x01(\x0e2\x14.dynamodb.TableClassR\x12tableclassoverrideB\x11\n" +
-	"\x0f_kmsmasterkeyid\"\xea\n" +
-	"\n" +
+	"regionname\x12M\n" +
+	"\x12tableclassoverride\x18\xb2\xaf\x94\xc6\x01 \x01(\x0e2\x14.dynamodb.TableClassH\x01R\x12tableclassoverride\x88\x01\x01B\x11\n" +
+	"\x0f_kmsmasterkeyidB\x15\n" +
+	"\x13_tableclassoverride\"\xc0\v\n" +
 	"\x10CreateTableInput\x12U\n" +
-	"\x14attributedefinitions\x18\x84\xbf\xde\xc5\x01 \x03(\v2\x1d.dynamodb.AttributeDefinitionR\x14attributedefinitions\x12:\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeR\vbillingmode\x12D\n" +
-	"\x19deletionprotectionenabled\x18\xd2\xd2\xd9{ \x01(\bH\x00R\x19deletionprotectionenabled\x88\x01\x01\x12Z\n" +
-	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2\x1e.dynamodb.GlobalSecondaryIndexR\x16globalsecondaryindexes\x12\x7f\n" +
-	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeR\"globaltablesettingsreplicationmode\x12;\n" +
-	"\x14globaltablesourcearn\x18Ì\xc4\xd3\x01 \x01(\tH\x01R\x14globaltablesourcearn\x88\x01\x01\x12<\n" +
+	"\x14attributedefinitions\x18\x84\xbf\xde\xc5\x01 \x03(\v2\x1d.dynamodb.AttributeDefinitionR\x14attributedefinitions\x12?\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeH\x00R\vbillingmode\x88\x01\x01\x12D\n" +
+	"\x19deletionprotectionenabled\x18\xd2\xd2\xd9{ \x01(\bH\x01R\x19deletionprotectionenabled\x88\x01\x01\x12Z\n" +
+	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2\x1e.dynamodb.GlobalSecondaryIndexR\x16globalsecondaryindexes\x12\x84\x01\n" +
+	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeH\x02R\"globaltablesettingsreplicationmode\x88\x01\x01\x12;\n" +
+	"\x14globaltablesourcearn\x18Ì\xc4\xd3\x01 \x01(\tH\x03R\x14globaltablesourcearn\x88\x01\x01\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x12W\n" +
 	"\x15localsecondaryindexes\x18\xf7\xbc\xe3\xac\x01 \x03(\v2\x1d.dynamodb.LocalSecondaryIndexR\x15localsecondaryindexes\x12P\n" +
 	"\x12ondemandthroughput\x18\x82\xde\xda\xe5\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x12ondemandthroughput\x12W\n" +
 	"\x15provisionedthroughput\x18\x8c\xa3k \x01(\v2\x1f.dynamodb.ProvisionedThroughputR\x15provisionedthroughput\x12.\n" +
-	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tH\x02R\x0eresourcepolicy\x88\x01\x01\x12I\n" +
+	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tH\x04R\x0eresourcepolicy\x88\x01\x01\x12I\n" +
 	"\x10ssespecification\x18\x9c\xad\x8e\x0f \x01(\v2\x1a.dynamodb.SSESpecificationR\x10ssespecification\x12S\n" +
-	"\x13streamspecification\x18ý\xcd\xc0\x01 \x01(\v2\x1d.dynamodb.StreamSpecificationR\x13streamspecification\x128\n" +
+	"\x13streamspecification\x18ý\xcd\xc0\x01 \x01(\v2\x1d.dynamodb.StreamSpecificationR\x13streamspecification\x12=\n" +
 	"\n" +
-	"tableclass\x18\x82\xb0\xc0\xa3\x01 \x01(\x0e2\x14.dynamodb.TableClassR\n" +
-	"tableclass\x12 \n" +
+	"tableclass\x18\x82\xb0\xc0\xa3\x01 \x01(\x0e2\x14.dynamodb.TableClassH\x05R\n" +
+	"tableclass\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12%\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\r.dynamodb.TagR\x04tags\x12>\n" +
 	"\rvectorindexes\x18\x8f\x90\xce\x1f \x03(\v2\x15.dynamodb.VectorIndexR\rvectorindexes\x12D\n" +
-	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2\x18.dynamodb.WarmThroughputR\x0ewarmthroughputB\x1c\n" +
-	"\x1a_deletionprotectionenabledB\x17\n" +
+	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2\x18.dynamodb.WarmThroughputR\x0ewarmthroughputB\x0e\n" +
+	"\f_billingmodeB\x1c\n" +
+	"\x1a_deletionprotectionenabledB%\n" +
+	"#_globaltablesettingsreplicationmodeB\x17\n" +
 	"\x15_globaltablesourcearnB\x11\n" +
-	"\x0f_resourcepolicy\"^\n" +
+	"\x0f_resourcepolicyB\r\n" +
+	"\v_tableclass\"^\n" +
 	"\x11CreateTableOutput\x12I\n" +
 	"\x10tabledescription\x18\x94\xb4\xc2\t \x01(\v2\x1a.dynamodb.TableDescriptionR\x10tabledescription\"\x83\x03\n" +
 	"\x17CreateVectorIndexAction\x12\"\n" +
@@ -19858,13 +19874,13 @@ const file_dynamodb_proto_rawDesc = "" +
 	"headerlist\x18酘\xca\x01 \x03(\tR\n" +
 	"headerlistB\f\n" +
 	"\n" +
-	"_delimiter\"\x9b\x06\n" +
+	"_delimiter\"\xc8\x06\n" +
 	"\x06Delete\x129\n" +
 	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tH\x00R\x13conditionexpression\x88\x01\x01\x12m\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v2..dynamodb.Delete.ExpressionattributenamesEntryR\x18expressionattributenames\x12q\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v2/.dynamodb.Delete.ExpressionattributevaluesEntryR\x19expressionattributevalues\x12.\n" +
-	"\x03key\x18\x8d\x92\xebh \x03(\v2\x19.dynamodb.Delete.KeyEntryR\x03key\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12 \n" +
+	"\x03key\x18\x8d\x92\xebh \x03(\v2\x19.dynamodb.Delete.KeyEntryR\x03key\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x01R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x1aK\n" +
 	"\x1dExpressionattributenamesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -19875,7 +19891,8 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\bKeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\x16\n" +
-	"\x14_conditionexpression\"5\n" +
+	"\x14_conditionexpressionB&\n" +
+	"$_returnvaluesonconditioncheckfailure\"5\n" +
 	"\x11DeleteBackupInput\x12 \n" +
 	"\tbackuparn\x18\xe3\xaf\xec\xb0\x01 \x01(\tR\tbackuparn\"c\n" +
 	"\x12DeleteBackupOutput\x12M\n" +
@@ -19885,19 +19902,18 @@ const file_dynamodb_proto_rawDesc = "" +
 	")DeleteGlobalTableWitnessGroupMemberAction\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
-	"regionname\"\xc2\n" +
-	"\n" +
+	"regionname\"\xe7\v\n" +
 	"\x0fDeleteItemInput\x129\n" +
-	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tH\x00R\x13conditionexpression\x88\x01\x01\x12R\n" +
-	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorR\x13conditionaloperator\x12F\n" +
+	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tH\x00R\x13conditionexpression\x88\x01\x01\x12W\n" +
+	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorH\x01R\x13conditionaloperator\x88\x01\x01\x12F\n" +
 	"\bexpected\x18\xfa\xe3\xe72 \x03(\v2'.dynamodb.DeleteItemInput.ExpectedEntryR\bexpected\x12v\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v27.dynamodb.DeleteItemInput.ExpressionattributenamesEntryR\x18expressionattributenames\x12z\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v28.dynamodb.DeleteItemInput.ExpressionattributevaluesEntryR\x19expressionattributevalues\x127\n" +
-	"\x03key\x18\x8d\x92\xebh \x03(\v2\".dynamodb.DeleteItemInput.KeyEntryR\x03key\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12j\n" +
-	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsR\x1breturnitemcollectionmetrics\x12=\n" +
-	"\freturnvalues\x18\xc6ޒ\xc0\x01 \x01(\x0e2\x15.dynamodb.ReturnValueR\freturnvalues\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12 \n" +
+	"\x03key\x18\x8d\x92\xebh \x03(\v2\".dynamodb.DeleteItemInput.KeyEntryR\x03key\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x02R\x16returnconsumedcapacity\x88\x01\x01\x12o\n" +
+	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsH\x03R\x1breturnitemcollectionmetrics\x88\x01\x01\x12B\n" +
+	"\freturnvalues\x18\xc6ޒ\xc0\x01 \x01(\x0e2\x15.dynamodb.ReturnValueH\x04R\freturnvalues\x88\x01\x01\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x05R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x1a]\n" +
 	"\rExpectedEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x126\n" +
@@ -19911,7 +19927,12 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\bKeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\x16\n" +
-	"\x14_conditionexpression\"\xe0\x02\n" +
+	"\x14_conditionexpressionB\x16\n" +
+	"\x14_conditionaloperatorB\x19\n" +
+	"\x17_returnconsumedcapacityB\x1e\n" +
+	"\x1c_returnitemcollectionmetricsB\x0f\n" +
+	"\r_returnvaluesB&\n" +
+	"$_returnvaluesonconditioncheckfailure\"\xe0\x02\n" +
 	"\x10DeleteItemOutput\x12M\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2*.dynamodb.DeleteItemOutput.AttributesEntryR\n" +
@@ -19961,15 +19982,17 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x00R\tindexname\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablenameB\f\n" +
 	"\n" +
-	"_indexname\"\xb4\x04\n" +
-	"!DescribeContributorInsightsOutput\x12^\n" +
-	"\x17contributorinsightsmode\x18\x81\xe1\xab) \x01(\x0e2!.dynamodb.ContributorInsightsModeR\x17contributorinsightsmode\x12C\n" +
-	"\x1bcontributorinsightsrulelist\x18\xc6\xf6\xfdB \x03(\tR\x1bcontributorinsightsrulelist\x12e\n" +
-	"\x19contributorinsightsstatus\x18\xd2\xfa\xa0\xad\x01 \x01(\x0e2#.dynamodb.ContributorInsightsStatusR\x19contributorinsightsstatus\x12J\n" +
+	"_indexname\"\xf8\x04\n" +
+	"!DescribeContributorInsightsOutput\x12c\n" +
+	"\x17contributorinsightsmode\x18\x81\xe1\xab) \x01(\x0e2!.dynamodb.ContributorInsightsModeH\x00R\x17contributorinsightsmode\x88\x01\x01\x12C\n" +
+	"\x1bcontributorinsightsrulelist\x18\xc6\xf6\xfdB \x03(\tR\x1bcontributorinsightsrulelist\x12j\n" +
+	"\x19contributorinsightsstatus\x18\xd2\xfa\xa0\xad\x01 \x01(\x0e2#.dynamodb.ContributorInsightsStatusH\x01R\x19contributorinsightsstatus\x88\x01\x01\x12J\n" +
 	"\x10failureexception\x18\xe3\xe7އ\x01 \x01(\v2\x1a.dynamodb.FailureExceptionR\x10failureexception\x12$\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x00R\tindexname\x88\x01\x01\x127\n" +
-	"\x12lastupdatedatetime\x18\x8e\xd1\xd4\xd7\x01 \x01(\tH\x01R\x12lastupdatedatetime\x88\x01\x01\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x02R\ttablename\x88\x01\x01B\f\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x02R\tindexname\x88\x01\x01\x127\n" +
+	"\x12lastupdatedatetime\x18\x8e\xd1\xd4\xd7\x01 \x01(\tH\x03R\x12lastupdatedatetime\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x04R\ttablename\x88\x01\x01B\x1a\n" +
+	"\x18_contributorinsightsmodeB\x1c\n" +
+	"\x1a_contributorinsightsstatusB\f\n" +
 	"\n" +
 	"_indexnameB\x15\n" +
 	"\x13_lastupdatedatetimeB\f\n" +
@@ -20028,26 +20051,29 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x16DuplicateItemException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xae\x01\n" +
-	"#EnableKinesisStreamingConfiguration\x12\x86\x01\n" +
-	"$approximatecreationdatetimeprecision\x18\xe8ׇ\xbb\x01 \x01(\x0e2..dynamodb.ApproximateCreationDateTimePrecisionR$approximatecreationdatetimeprecision\"_\n" +
+	"\b_message\"\xdc\x01\n" +
+	"#EnableKinesisStreamingConfiguration\x12\x8b\x01\n" +
+	"$approximatecreationdatetimeprecision\x18\xe8ׇ\xbb\x01 \x01(\x0e2..dynamodb.ApproximateCreationDateTimePrecisionH\x00R$approximatecreationdatetimeprecision\x88\x01\x01B'\n" +
+	"%_approximatecreationdatetimeprecision\"_\n" +
 	"\bEndpoint\x12\x1c\n" +
 	"\aaddress\x18\xf4\xc1\x95\x80\x01 \x01(\tR\aaddress\x125\n" +
-	"\x14cacheperiodinminutes\x18\xb1Ѝ\" \x01(\x03R\x14cacheperiodinminutes\"\xf9\x03\n" +
+	"\x14cacheperiodinminutes\x18\xb1Ѝ\" \x01(\x03R\x14cacheperiodinminutes\"\xc6\x04\n" +
 	"\x15ExecuteStatementInput\x12/\n" +
 	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bH\x00R\x0econsistentread\x88\x01\x01\x12\x1d\n" +
 	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12$\n" +
 	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12<\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x18.dynamodb.AttributeValueR\n" +
-	"parameters\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12\x1f\n" +
+	"parameters\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x03R\x16returnconsumedcapacity\x88\x01\x01\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x04R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12\x1f\n" +
 	"\tstatement\x18\xb7\xf9\xd0v \x01(\tR\tstatementB\x11\n" +
 	"\x0f_consistentreadB\b\n" +
 	"\x06_limitB\f\n" +
 	"\n" +
-	"_nexttoken\"\x90\x03\n" +
+	"_nexttokenB\x19\n" +
+	"\x17_returnconsumedcapacityB&\n" +
+	"$_returnvaluesonconditioncheckfailure\"\x90\x03\n" +
 	"\x16ExecuteStatementOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x120\n" +
 	"\x05items\x18\xb0\xf0\xd8\x01 \x03(\v2\x17.dynamodb.ItemListEntryR\x05items\x12e\n" +
@@ -20057,69 +20083,75 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\f\n" +
 	"\n" +
-	"_nexttoken\"\x9c\x02\n" +
+	"_nexttoken\"\xbc\x02\n" +
 	"\x17ExecuteTransactionInput\x127\n" +
-	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tH\x00R\x12clientrequesttoken\x88\x01\x01\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12T\n" +
+	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tH\x00R\x12clientrequesttoken\x88\x01\x01\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x01R\x16returnconsumedcapacity\x88\x01\x01\x12T\n" +
 	"\x12transactstatements\x18\xfe\x85\xd8\xd4\x01 \x03(\v2 .dynamodb.ParameterizedStatementR\x12transactstatementsB\x15\n" +
-	"\x13_clientrequesttoken\"\x9f\x01\n" +
+	"\x13_clientrequesttokenB\x19\n" +
+	"\x17_returnconsumedcapacity\"\x9f\x01\n" +
 	"\x18ExecuteTransactionOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x03(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x127\n" +
-	"\tresponses\x18\xf8\x87\xe26 \x03(\v2\x16.dynamodb.ItemResponseR\tresponses\"\x95\x02\n" +
+	"\tresponses\x18\xf8\x87\xe26 \x03(\v2\x16.dynamodb.ItemResponseR\tresponses\"\xb1\x02\n" +
 	"\x16ExpectedAttributeValue\x12K\n" +
-	"\x12attributevaluelist\x18\x8d\xb3\x88K \x03(\v2\x18.dynamodb.AttributeValueR\x12attributevaluelist\x12O\n" +
-	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1c.dynamodb.ComparisonOperatorR\x12comparisonoperator\x12\x1e\n" +
-	"\x06exists\x18\u07bb\xb3~ \x01(\bH\x00R\x06exists\x88\x01\x01\x122\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\v2\x18.dynamodb.AttributeValueR\x05valueB\t\n" +
+	"\x12attributevaluelist\x18\x8d\xb3\x88K \x03(\v2\x18.dynamodb.AttributeValueR\x12attributevaluelist\x12T\n" +
+	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1c.dynamodb.ComparisonOperatorH\x00R\x12comparisonoperator\x88\x01\x01\x12\x1e\n" +
+	"\x06exists\x18\u07bb\xb3~ \x01(\bH\x01R\x06exists\x88\x01\x01\x122\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\v2\x18.dynamodb.AttributeValueR\x05valueB\x15\n" +
+	"\x13_comparisonoperatorB\t\n" +
 	"\a_exists\"G\n" +
 	"\x17ExportConflictException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x8e\n" +
+	"\b_message\"\xe6\n" +
 	"\n" +
 	"\x11ExportDescription\x121\n" +
 	"\x0fbilledsizebytes\x18\xa8\xe9\xb1\xd3\x01 \x01(\x03H\x00R\x0fbilledsizebytes\x88\x01\x01\x12(\n" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x01R\vclienttoken\x88\x01\x01\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x02R\aendtime\x88\x01\x01\x12$\n" +
-	"\texportarn\x18\xe7\xbb\xdf\x01 \x01(\tH\x03R\texportarn\x88\x01\x01\x12>\n" +
-	"\fexportformat\x18ݮ\xb7\x8f\x01 \x01(\x0e2\x16.dynamodb.ExportFormatR\fexportformat\x12.\n" +
-	"\x0eexportmanifest\x18\xf7\xe6\xe7] \x01(\tH\x04R\x0eexportmanifest\x88\x01\x01\x12>\n" +
-	"\fexportstatus\x18\x86\x85\x9a\xdb\x01 \x01(\x0e2\x16.dynamodb.ExportStatusR\fexportstatus\x12&\n" +
+	"\texportarn\x18\xe7\xbb\xdf\x01 \x01(\tH\x03R\texportarn\x88\x01\x01\x12C\n" +
+	"\fexportformat\x18ݮ\xb7\x8f\x01 \x01(\x0e2\x16.dynamodb.ExportFormatH\x04R\fexportformat\x88\x01\x01\x12.\n" +
+	"\x0eexportmanifest\x18\xf7\xe6\xe7] \x01(\tH\x05R\x0eexportmanifest\x88\x01\x01\x12C\n" +
+	"\fexportstatus\x18\x86\x85\x9a\xdb\x01 \x01(\x0e2\x16.dynamodb.ExportStatusH\x06R\fexportstatus\x88\x01\x01\x12&\n" +
 	"\n" +
-	"exporttime\x18\xeb\xb7\xc1\r \x01(\tH\x05R\n" +
-	"exporttime\x88\x01\x01\x127\n" +
+	"exporttime\x18\xeb\xb7\xc1\r \x01(\tH\aR\n" +
+	"exporttime\x88\x01\x01\x12<\n" +
 	"\n" +
-	"exporttype\x18\xccצZ \x01(\x0e2\x14.dynamodb.ExportTypeR\n" +
-	"exporttype\x12(\n" +
-	"\vfailurecode\x18\xb9\x94\xb2( \x01(\tH\x06R\vfailurecode\x88\x01\x01\x12/\n" +
-	"\x0efailuremessage\x18ɳ˨\x01 \x01(\tH\aR\x0efailuremessage\x88\x01\x01\x12s\n" +
+	"exporttype\x18\xccצZ \x01(\x0e2\x14.dynamodb.ExportTypeH\bR\n" +
+	"exporttype\x88\x01\x01\x12(\n" +
+	"\vfailurecode\x18\xb9\x94\xb2( \x01(\tH\tR\vfailurecode\x88\x01\x01\x12/\n" +
+	"\x0efailuremessage\x18ɳ˨\x01 \x01(\tH\n" +
+	"R\x0efailuremessage\x88\x01\x01\x12s\n" +
 	"\x1eincrementalexportspecification\x18\xe7\x87\xf5\t \x01(\v2(.dynamodb.IncrementalExportSpecificationR\x1eincrementalexportspecification\x12$\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03H\bR\titemcount\x88\x01\x01\x12\"\n" +
-	"\bs3bucket\x18\xca\xf6\xaf6 \x01(\tH\tR\bs3bucket\x88\x01\x01\x12-\n" +
-	"\rs3bucketowner\x18\xc1\xc0ҧ\x01 \x01(\tH\n" +
-	"R\rs3bucketowner\x88\x01\x01\x12\"\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\vR\titemcount\x88\x01\x01\x12\"\n" +
+	"\bs3bucket\x18\xca\xf6\xaf6 \x01(\tH\fR\bs3bucket\x88\x01\x01\x12-\n" +
+	"\rs3bucketowner\x18\xc1\xc0ҧ\x01 \x01(\tH\rR\rs3bucketowner\x88\x01\x01\x12\"\n" +
 	"\bs3prefix\x18\xf8\x85\xa2\n" +
-	" \x01(\tH\vR\bs3prefix\x88\x01\x01\x12C\n" +
-	"\x0es3ssealgorithm\x18\x82\xbe\xcae \x01(\x0e2\x18.dynamodb.S3SseAlgorithmR\x0es3ssealgorithm\x12,\n" +
-	"\rs3ssekmskeyid\x18\xfe\xf0\xbc\x04 \x01(\tH\fR\rs3ssekmskeyid\x88\x01\x01\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\rR\tstarttime\x88\x01\x01\x12#\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x0eR\btablearn\x88\x01\x01\x12!\n" +
-	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tH\x0fR\atableid\x88\x01\x01B\x12\n" +
+	" \x01(\tH\x0eR\bs3prefix\x88\x01\x01\x12H\n" +
+	"\x0es3ssealgorithm\x18\x82\xbe\xcae \x01(\x0e2\x18.dynamodb.S3SseAlgorithmH\x0fR\x0es3ssealgorithm\x88\x01\x01\x12,\n" +
+	"\rs3ssekmskeyid\x18\xfe\xf0\xbc\x04 \x01(\tH\x10R\rs3ssekmskeyid\x88\x01\x01\x12%\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x11R\tstarttime\x88\x01\x01\x12#\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x12R\btablearn\x88\x01\x01\x12!\n" +
+	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tH\x13R\atableid\x88\x01\x01B\x12\n" +
 	"\x10_billedsizebytesB\x0e\n" +
 	"\f_clienttokenB\n" +
 	"\n" +
 	"\b_endtimeB\f\n" +
 	"\n" +
-	"_exportarnB\x11\n" +
-	"\x0f_exportmanifestB\r\n" +
-	"\v_exporttimeB\x0e\n" +
+	"_exportarnB\x0f\n" +
+	"\r_exportformatB\x11\n" +
+	"\x0f_exportmanifestB\x0f\n" +
+	"\r_exportstatusB\r\n" +
+	"\v_exporttimeB\r\n" +
+	"\v_exporttypeB\x0e\n" +
 	"\f_failurecodeB\x11\n" +
 	"\x0f_failuremessageB\f\n" +
 	"\n" +
 	"_itemcountB\v\n" +
 	"\t_s3bucketB\x10\n" +
 	"\x0e_s3bucketownerB\v\n" +
-	"\t_s3prefixB\x10\n" +
+	"\t_s3prefixB\x11\n" +
+	"\x0f_s3ssealgorithmB\x10\n" +
 	"\x0e_s3ssekmskeyidB\f\n" +
 	"\n" +
 	"_starttimeB\v\n" +
@@ -20129,36 +20161,41 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x17ExportNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xbc\x01\n" +
+	"\b_message\"\xe6\x01\n" +
 	"\rExportSummary\x12$\n" +
-	"\texportarn\x18\xe7\xbb\xdf\x01 \x01(\tH\x00R\texportarn\x88\x01\x01\x12>\n" +
-	"\fexportstatus\x18\x86\x85\x9a\xdb\x01 \x01(\x0e2\x16.dynamodb.ExportStatusR\fexportstatus\x127\n" +
+	"\texportarn\x18\xe7\xbb\xdf\x01 \x01(\tH\x00R\texportarn\x88\x01\x01\x12C\n" +
+	"\fexportstatus\x18\x86\x85\x9a\xdb\x01 \x01(\x0e2\x16.dynamodb.ExportStatusH\x01R\fexportstatus\x88\x01\x01\x12<\n" +
 	"\n" +
-	"exporttype\x18\xccצZ \x01(\x0e2\x14.dynamodb.ExportTypeR\n" +
-	"exporttypeB\f\n" +
+	"exporttype\x18\xccצZ \x01(\x0e2\x14.dynamodb.ExportTypeH\x02R\n" +
+	"exporttype\x88\x01\x01B\f\n" +
 	"\n" +
-	"_exportarn\"\xb4\x05\n" +
+	"_exportarnB\x0f\n" +
+	"\r_exportstatusB\r\n" +
+	"\v_exporttype\"\xf6\x05\n" +
 	"\x1dExportTableToPointInTimeInput\x12(\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12>\n" +
-	"\fexportformat\x18ݮ\xb7\x8f\x01 \x01(\x0e2\x16.dynamodb.ExportFormatR\fexportformat\x12&\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12C\n" +
+	"\fexportformat\x18ݮ\xb7\x8f\x01 \x01(\x0e2\x16.dynamodb.ExportFormatH\x01R\fexportformat\x88\x01\x01\x12&\n" +
 	"\n" +
-	"exporttime\x18\xeb\xb7\xc1\r \x01(\tH\x01R\n" +
-	"exporttime\x88\x01\x01\x127\n" +
+	"exporttime\x18\xeb\xb7\xc1\r \x01(\tH\x02R\n" +
+	"exporttime\x88\x01\x01\x12<\n" +
 	"\n" +
-	"exporttype\x18\xccצZ \x01(\x0e2\x14.dynamodb.ExportTypeR\n" +
-	"exporttype\x12s\n" +
+	"exporttype\x18\xccצZ \x01(\x0e2\x14.dynamodb.ExportTypeH\x03R\n" +
+	"exporttype\x88\x01\x01\x12s\n" +
 	"\x1eincrementalexportspecification\x18\xe7\x87\xf5\t \x01(\v2(.dynamodb.IncrementalExportSpecificationR\x1eincrementalexportspecification\x12\x1d\n" +
 	"\bs3bucket\x18\xca\xf6\xaf6 \x01(\tR\bs3bucket\x12-\n" +
-	"\rs3bucketowner\x18\xc1\xc0ҧ\x01 \x01(\tH\x02R\rs3bucketowner\x88\x01\x01\x12\"\n" +
+	"\rs3bucketowner\x18\xc1\xc0ҧ\x01 \x01(\tH\x04R\rs3bucketowner\x88\x01\x01\x12\"\n" +
 	"\bs3prefix\x18\xf8\x85\xa2\n" +
-	" \x01(\tH\x03R\bs3prefix\x88\x01\x01\x12C\n" +
-	"\x0es3ssealgorithm\x18\x82\xbe\xcae \x01(\x0e2\x18.dynamodb.S3SseAlgorithmR\x0es3ssealgorithm\x12,\n" +
-	"\rs3ssekmskeyid\x18\xfe\xf0\xbc\x04 \x01(\tH\x04R\rs3ssekmskeyid\x88\x01\x01\x12\x1e\n" +
+	" \x01(\tH\x05R\bs3prefix\x88\x01\x01\x12H\n" +
+	"\x0es3ssealgorithm\x18\x82\xbe\xcae \x01(\x0e2\x18.dynamodb.S3SseAlgorithmH\x06R\x0es3ssealgorithm\x88\x01\x01\x12,\n" +
+	"\rs3ssekmskeyid\x18\xfe\xf0\xbc\x04 \x01(\tH\aR\rs3ssekmskeyid\x88\x01\x01\x12\x1e\n" +
 	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearnB\x0e\n" +
-	"\f_clienttokenB\r\n" +
-	"\v_exporttimeB\x10\n" +
+	"\f_clienttokenB\x0f\n" +
+	"\r_exportformatB\r\n" +
+	"\v_exporttimeB\r\n" +
+	"\v_exporttypeB\x10\n" +
 	"\x0e_s3bucketownerB\v\n" +
-	"\t_s3prefixB\x10\n" +
+	"\t_s3prefixB\x11\n" +
+	"\x0f_s3ssealgorithmB\x10\n" +
 	"\x0e_s3ssekmskeyid\"n\n" +
 	"\x1eExportTableToPointInTimeOutput\x12L\n" +
 	"\x11exportdescription\x18\xc8\xf3\xee\x06 \x01(\v2\x1b.dynamodb.ExportDescriptionR\x11exportdescription\"\xa8\x01\n" +
@@ -20178,14 +20215,14 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\bKeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\x17\n" +
-	"\x15_projectionexpression\"\x9e\x05\n" +
+	"\x15_projectionexpression\"\xbe\x05\n" +
 	"\fGetItemInput\x12,\n" +
 	"\x0fattributestoget\x18\xc0\xa4\xbd\x94\x01 \x03(\tR\x0fattributestoget\x12/\n" +
 	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bH\x00R\x0econsistentread\x88\x01\x01\x12s\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v24.dynamodb.GetItemInput.ExpressionattributenamesEntryR\x18expressionattributenames\x124\n" +
 	"\x03key\x18\x8d\x92\xebh \x03(\v2\x1f.dynamodb.GetItemInput.KeyEntryR\x03key\x12:\n" +
-	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tH\x01R\x14projectionexpression\x88\x01\x01\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12 \n" +
+	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tH\x01R\x14projectionexpression\x88\x01\x01\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x02R\x16returnconsumedcapacity\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x1aK\n" +
 	"\x1dExpressionattributenamesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -20194,7 +20231,8 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\x11\n" +
 	"\x0f_consistentreadB\x17\n" +
-	"\x15_projectionexpression\"\xe9\x01\n" +
+	"\x15_projectionexpressionB\x19\n" +
+	"\x17_returnconsumedcapacity\"\xe9\x01\n" +
 	"\rGetItemOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x129\n" +
 	"\x04item\x18\x87\x80\x92\xfb\x01 \x03(\v2!.dynamodb.GetItemOutput.ItemEntryR\x04item\x1aQ\n" +
@@ -20223,14 +20261,14 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x00R\tindexname\x88\x01\x01\x12\x85\x01\n" +
 	")provisionedwritecapacityautoscalingupdate\x18\xb6\xec\xfc\x96\x01 \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR)provisionedwritecapacityautoscalingupdateB\f\n" +
 	"\n" +
-	"_indexname\"\x88\x06\n" +
+	"_indexname\"\x9d\x06\n" +
 	"\x1fGlobalSecondaryIndexDescription\x12(\n" +
 	"\vbackfilling\x18\xfa\x86\xf1w \x01(\bH\x00R\vbackfilling\x88\x01\x01\x12#\n" +
 	"\bindexarn\x18\xffп\xb2\x01 \x01(\tH\x01R\bindexarn\x88\x01\x01\x12$\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x02R\tindexname\x88\x01\x01\x12/\n" +
-	"\x0eindexsizebytes\x18\xea\xf9ټ\x01 \x01(\x03H\x03R\x0eindexsizebytes\x88\x01\x01\x12;\n" +
-	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusR\vindexstatus\x12$\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03H\x04R\titemcount\x88\x01\x01\x12<\n" +
+	"\x0eindexsizebytes\x18\xea\xf9ټ\x01 \x01(\x03H\x03R\x0eindexsizebytes\x88\x01\x01\x12@\n" +
+	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusH\x04R\vindexstatus\x88\x01\x01\x12$\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\x05R\titemcount\x88\x01\x01\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x12P\n" +
 	"\x12ondemandthroughput\x18\x82\xde\xda\xe5\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x12ondemandthroughput\x127\n" +
 	"\n" +
@@ -20242,7 +20280,8 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\t_indexarnB\f\n" +
 	"\n" +
 	"_indexnameB\x11\n" +
-	"\x0f_indexsizebytesB\f\n" +
+	"\x0f_indexsizebytesB\x0e\n" +
+	"\f_indexstatusB\f\n" +
 	"\n" +
 	"_itemcount\"\xf0\x02\n" +
 	"\x18GlobalSecondaryIndexInfo\x12$\n" +
@@ -20258,12 +20297,13 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x1aGlobalSecondaryIndexUpdate\x12F\n" +
 	"\x06create\x18\xfeȷ\xc8\x01 \x01(\v2*.dynamodb.CreateGlobalSecondaryIndexActionR\x06create\x12F\n" +
 	"\x06delete\x18\xeb\xd4\u07fc\x01 \x01(\v2*.dynamodb.DeleteGlobalSecondaryIndexActionR\x06delete\x12E\n" +
-	"\x06update\x18\x95\x9d\x8cq \x01(\v2*.dynamodb.UpdateGlobalSecondaryIndexActionR\x06update\"\x83\x02\n" +
+	"\x06update\x18\x95\x9d\x8cq \x01(\v2*.dynamodb.UpdateGlobalSecondaryIndexActionR\x06update\"\x93\x02\n" +
 	"-GlobalSecondaryIndexWarmThroughputDescription\x126\n" +
-	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03H\x00R\x12readunitspersecond\x88\x01\x01\x120\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.dynamodb.IndexStatusR\x06status\x129\n" +
-	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03H\x01R\x13writeunitspersecond\x88\x01\x01B\x15\n" +
-	"\x13_readunitspersecondB\x16\n" +
+	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03H\x00R\x12readunitspersecond\x88\x01\x01\x125\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.dynamodb.IndexStatusH\x01R\x06status\x88\x01\x01\x129\n" +
+	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03H\x02R\x13writeunitspersecond\x88\x01\x01B\x15\n" +
+	"\x13_readunitspersecondB\t\n" +
+	"\a_statusB\x16\n" +
 	"\x14_writeunitspersecond\"\x96\x01\n" +
 	"\vGlobalTable\x121\n" +
 	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tH\x00R\x0fglobaltablename\x88\x01\x01\x12@\n" +
@@ -20272,16 +20312,17 @@ const file_dynamodb_proto_rawDesc = "" +
 	"!GlobalTableAlreadyExistsException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x86\x03\n" +
+	"\b_message\"\xa1\x03\n" +
 	"\x16GlobalTableDescription\x122\n" +
 	"\x10creationdatetime\x18\xfa\xf3\xa8\x17 \x01(\tH\x00R\x10creationdatetime\x88\x01\x01\x12.\n" +
 	"\x0eglobaltablearn\x18\xee؉} \x01(\tH\x01R\x0eglobaltablearn\x88\x01\x01\x121\n" +
-	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tH\x02R\x0fglobaltablename\x88\x01\x01\x12L\n" +
-	"\x11globaltablestatus\x18\x8d\x92\x9b\x04 \x01(\x0e2\x1b.dynamodb.GlobalTableStatusR\x11globaltablestatus\x12K\n" +
+	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tH\x02R\x0fglobaltablename\x88\x01\x01\x12Q\n" +
+	"\x11globaltablestatus\x18\x8d\x92\x9b\x04 \x01(\x0e2\x1b.dynamodb.GlobalTableStatusH\x03R\x11globaltablestatus\x88\x01\x01\x12K\n" +
 	"\x10replicationgroup\x18\xa1\xf7\x87[ \x03(\v2\x1c.dynamodb.ReplicaDescriptionR\x10replicationgroupB\x13\n" +
 	"\x11_creationdatetimeB\x11\n" +
 	"\x0f_globaltablearnB\x12\n" +
-	"\x10_globaltablename\"\xd8\x02\n" +
+	"\x10_globaltablenameB\x14\n" +
+	"\x12_globaltablestatus\"\xd8\x02\n" +
 	"-GlobalTableGlobalSecondaryIndexSettingsUpdate\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12\x95\x01\n" +
 	"1provisionedwritecapacityautoscalingsettingsupdate\x18ٚ\x89\x90\x01 \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR1provisionedwritecapacityautoscalingsettingsupdate\x12L\n" +
@@ -20290,13 +20331,14 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x1cGlobalTableNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x99\x01\n" +
+	"\b_message\"\xb0\x01\n" +
 	"\x1dGlobalTableWitnessDescription\x12&\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tH\x00R\n" +
-	"regionname\x88\x01\x01\x12A\n" +
-	"\rwitnessstatus\x18\xb7\x98Ӑ\x01 \x01(\x0e2\x17.dynamodb.WitnessStatusR\rwitnessstatusB\r\n" +
-	"\v_regionname\"\xc1\x01\n" +
+	"regionname\x88\x01\x01\x12F\n" +
+	"\rwitnessstatus\x18\xb7\x98Ӑ\x01 \x01(\x0e2\x17.dynamodb.WitnessStatusH\x01R\rwitnessstatus\x88\x01\x01B\r\n" +
+	"\v_regionnameB\x10\n" +
+	"\x0e_witnessstatus\"\xc1\x01\n" +
 	"\x1dGlobalTableWitnessGroupUpdate\x12O\n" +
 	"\x06create\x18\xfeȷ\xc8\x01 \x01(\v23.dynamodb.CreateGlobalTableWitnessGroupMemberActionR\x06create\x12O\n" +
 	"\x06delete\x18\xeb\xd4\u07fc\x01 \x01(\v23.dynamodb.DeleteGlobalTableWitnessGroupMemberActionR\x06delete\"T\n" +
@@ -20311,24 +20353,26 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x17ImportNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xf2\x03\n" +
+	"\b_message\"\x9d\x04\n" +
 	"\rImportSummary\x12<\n" +
 	"\x15cloudwatchloggrouparn\x18\xd8\xc9\xc7Q \x01(\tH\x00R\x15cloudwatchloggrouparn\x88\x01\x01\x12 \n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x01R\aendtime\x88\x01\x01\x12%\n" +
-	"\timportarn\x18\xec\xe3\xf2\xd3\x01 \x01(\tH\x02R\timportarn\x88\x01\x01\x12=\n" +
-	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x16.dynamodb.ImportStatusR\fimportstatus\x12;\n" +
-	"\vinputformat\x18\xe5\xe2\xb7\xc1\x01 \x01(\x0e2\x15.dynamodb.InputFormatR\vinputformat\x12C\n" +
+	"\timportarn\x18\xec\xe3\xf2\xd3\x01 \x01(\tH\x02R\timportarn\x88\x01\x01\x12B\n" +
+	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x16.dynamodb.ImportStatusH\x03R\fimportstatus\x88\x01\x01\x12@\n" +
+	"\vinputformat\x18\xe5\xe2\xb7\xc1\x01 \x01(\x0e2\x15.dynamodb.InputFormatH\x04R\vinputformat\x88\x01\x01\x12C\n" +
 	"\x0es3bucketsource\x18\x95\x83\xbc` \x01(\v2\x18.dynamodb.S3BucketSourceR\x0es3bucketsource\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x03R\tstarttime\x88\x01\x01\x12#\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x04R\btablearn\x88\x01\x01B\x18\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01\x12#\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x06R\btablearn\x88\x01\x01B\x18\n" +
 	"\x16_cloudwatchloggrouparnB\n" +
 	"\n" +
 	"\b_endtimeB\f\n" +
 	"\n" +
-	"_importarnB\f\n" +
+	"_importarnB\x0f\n" +
+	"\r_importstatusB\x0e\n" +
+	"\f_inputformatB\f\n" +
 	"\n" +
 	"_starttimeB\v\n" +
-	"\t_tablearn\"\x8f\n" +
+	"\t_tablearn\"\xd8\n" +
 	"\n" +
 	"\x16ImportTableDescription\x12(\n" +
 	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12<\n" +
@@ -20339,20 +20383,20 @@ const file_dynamodb_proto_rawDesc = "" +
 	"errorcount\x88\x01\x01\x12(\n" +
 	"\vfailurecode\x18\xb9\x94\xb2( \x01(\tH\x04R\vfailurecode\x88\x01\x01\x12/\n" +
 	"\x0efailuremessage\x18ɳ˨\x01 \x01(\tH\x05R\x0efailuremessage\x88\x01\x01\x12%\n" +
-	"\timportarn\x18\xec\xe3\xf2\xd3\x01 \x01(\tH\x06R\timportarn\x88\x01\x01\x12=\n" +
-	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x16.dynamodb.ImportStatusR\fimportstatus\x124\n" +
-	"\x11importeditemcount\x18\xf6\x89\xcf` \x01(\x03H\aR\x11importeditemcount\x88\x01\x01\x12V\n" +
-	"\x14inputcompressiontype\x18\x84\xbc\xa0\xbb\x01 \x01(\x0e2\x1e.dynamodb.InputCompressionTypeR\x14inputcompressiontype\x12;\n" +
-	"\vinputformat\x18\xe5\xe2\xb7\xc1\x01 \x01(\x0e2\x15.dynamodb.InputFormatR\vinputformat\x12O\n" +
+	"\timportarn\x18\xec\xe3\xf2\xd3\x01 \x01(\tH\x06R\timportarn\x88\x01\x01\x12B\n" +
+	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x16.dynamodb.ImportStatusH\aR\fimportstatus\x88\x01\x01\x124\n" +
+	"\x11importeditemcount\x18\xf6\x89\xcf` \x01(\x03H\bR\x11importeditemcount\x88\x01\x01\x12[\n" +
+	"\x14inputcompressiontype\x18\x84\xbc\xa0\xbb\x01 \x01(\x0e2\x1e.dynamodb.InputCompressionTypeH\tR\x14inputcompressiontype\x88\x01\x01\x12@\n" +
+	"\vinputformat\x18\xe5\xe2\xb7\xc1\x01 \x01(\x0e2\x15.dynamodb.InputFormatH\n" +
+	"R\vinputformat\x88\x01\x01\x12O\n" +
 	"\x12inputformatoptions\x18\xfb\x85\xeav \x01(\v2\x1c.dynamodb.InputFormatOptionsR\x12inputformatoptions\x127\n" +
-	"\x12processeditemcount\x18\xd4\xf8\x99\xa2\x01 \x01(\x03H\bR\x12processeditemcount\x88\x01\x01\x126\n" +
-	"\x12processedsizebytes\x18ʊ\xbc\" \x01(\x03H\tR\x12processedsizebytes\x88\x01\x01\x12C\n" +
+	"\x12processeditemcount\x18\xd4\xf8\x99\xa2\x01 \x01(\x03H\vR\x12processeditemcount\x88\x01\x01\x126\n" +
+	"\x12processedsizebytes\x18ʊ\xbc\" \x01(\x03H\fR\x12processedsizebytes\x88\x01\x01\x12C\n" +
 	"\x0es3bucketsource\x18\x95\x83\xbc` \x01(\v2\x18.dynamodb.S3BucketSourceR\x0es3bucketsource\x12%\n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\n" +
-	"R\tstarttime\x88\x01\x01\x12#\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\vR\btablearn\x88\x01\x01\x12_\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\rR\tstarttime\x88\x01\x01\x12#\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x0eR\btablearn\x88\x01\x01\x12_\n" +
 	"\x17tablecreationparameters\x18\xbfߵ\xe8\x01 \x01(\v2!.dynamodb.TableCreationParametersR\x17tablecreationparameters\x12!\n" +
-	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tH\fR\atableid\x88\x01\x01B\x0e\n" +
+	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tH\x0fR\atableid\x88\x01\x01B\x0e\n" +
 	"\f_clienttokenB\x18\n" +
 	"\x16_cloudwatchloggrouparnB\n" +
 	"\n" +
@@ -20361,31 +20405,36 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\f_failurecodeB\x11\n" +
 	"\x0f_failuremessageB\f\n" +
 	"\n" +
-	"_importarnB\x14\n" +
-	"\x12_importeditemcountB\x15\n" +
+	"_importarnB\x0f\n" +
+	"\r_importstatusB\x14\n" +
+	"\x12_importeditemcountB\x17\n" +
+	"\x15_inputcompressiontypeB\x0e\n" +
+	"\f_inputformatB\x15\n" +
 	"\x13_processeditemcountB\x15\n" +
 	"\x13_processedsizebytesB\f\n" +
 	"\n" +
 	"_starttimeB\v\n" +
 	"\t_tablearnB\n" +
 	"\n" +
-	"\b_tableid\"\xd8\x03\n" +
+	"\b_tableid\"\xf6\x03\n" +
 	"\x10ImportTableInput\x12(\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12V\n" +
-	"\x14inputcompressiontype\x18\x84\xbc\xa0\xbb\x01 \x01(\x0e2\x1e.dynamodb.InputCompressionTypeR\x14inputcompressiontype\x12;\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12[\n" +
+	"\x14inputcompressiontype\x18\x84\xbc\xa0\xbb\x01 \x01(\x0e2\x1e.dynamodb.InputCompressionTypeH\x01R\x14inputcompressiontype\x88\x01\x01\x12;\n" +
 	"\vinputformat\x18\xe5\xe2\xb7\xc1\x01 \x01(\x0e2\x15.dynamodb.InputFormatR\vinputformat\x12O\n" +
 	"\x12inputformatoptions\x18\xfb\x85\xeav \x01(\v2\x1c.dynamodb.InputFormatOptionsR\x12inputformatoptions\x12C\n" +
 	"\x0es3bucketsource\x18\x95\x83\xbc` \x01(\v2\x18.dynamodb.S3BucketSourceR\x0es3bucketsource\x12_\n" +
 	"\x17tablecreationparameters\x18\xbfߵ\xe8\x01 \x01(\v2!.dynamodb.TableCreationParametersR\x17tablecreationparametersB\x0e\n" +
-	"\f_clienttoken\"q\n" +
+	"\f_clienttokenB\x17\n" +
+	"\x15_inputcompressiontype\"q\n" +
 	"\x11ImportTableOutput\x12\\\n" +
-	"\x16importtabledescription\x18\xa3\xef\xb6\xc2\x01 \x01(\v2 .dynamodb.ImportTableDescriptionR\x16importtabledescription\"\xe6\x01\n" +
+	"\x16importtabledescription\x18\xa3\xef\xb6\xc2\x01 \x01(\v2 .dynamodb.ImportTableDescriptionR\x16importtabledescription\"\xfe\x01\n" +
 	"\x1eIncrementalExportSpecification\x12/\n" +
 	"\x0eexportfromtime\x18\xdfũ\xde\x01 \x01(\tH\x00R\x0eexportfromtime\x88\x01\x01\x12*\n" +
-	"\fexporttotime\x18؆\xc9s \x01(\tH\x01R\fexporttotime\x88\x01\x01\x12C\n" +
-	"\x0eexportviewtype\x18\xc7\xd2\xe1\f \x01(\x0e2\x18.dynamodb.ExportViewTypeR\x0eexportviewtypeB\x11\n" +
+	"\fexporttotime\x18؆\xc9s \x01(\tH\x01R\fexporttotime\x88\x01\x01\x12H\n" +
+	"\x0eexportviewtype\x18\xc7\xd2\xe1\f \x01(\x0e2\x18.dynamodb.ExportViewTypeH\x02R\x0eexportviewtype\x88\x01\x01B\x11\n" +
 	"\x0f_exportfromtimeB\x0f\n" +
-	"\r_exporttotime\"F\n" +
+	"\r_exporttotimeB\x11\n" +
+	"\x0f_exportviewtype\"F\n" +
 	"\x16IndexNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -20436,24 +20485,27 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
 	"\x0f_consistentreadB\x17\n" +
-	"\x15_projectionexpression\"\x99\x03\n" +
-	"\x1cKinesisDataStreamDestination\x12\x86\x01\n" +
-	"$approximatecreationdatetimeprecision\x18\xe8ׇ\xbb\x01 \x01(\x0e2..dynamodb.ApproximateCreationDateTimePrecisionR$approximatecreationdatetimeprecision\x12M\n" +
-	"\x11destinationstatus\x18\xea\xc5\xe5\xb5\x01 \x01(\x0e2\x1b.dynamodb.DestinationStatusR\x11destinationstatus\x12K\n" +
-	"\x1cdestinationstatusdescription\x18\xde\u009b\xee\x01 \x01(\tH\x00R\x1cdestinationstatusdescription\x88\x01\x01\x12%\n" +
-	"\tstreamarn\x18\xdd\xf2\xe8\xf4\x01 \x01(\tH\x01R\tstreamarn\x88\x01\x01B\x1f\n" +
+	"\x15_projectionexpression\"\xe2\x03\n" +
+	"\x1cKinesisDataStreamDestination\x12\x8b\x01\n" +
+	"$approximatecreationdatetimeprecision\x18\xe8ׇ\xbb\x01 \x01(\x0e2..dynamodb.ApproximateCreationDateTimePrecisionH\x00R$approximatecreationdatetimeprecision\x88\x01\x01\x12R\n" +
+	"\x11destinationstatus\x18\xea\xc5\xe5\xb5\x01 \x01(\x0e2\x1b.dynamodb.DestinationStatusH\x01R\x11destinationstatus\x88\x01\x01\x12K\n" +
+	"\x1cdestinationstatusdescription\x18\xde\u009b\xee\x01 \x01(\tH\x02R\x1cdestinationstatusdescription\x88\x01\x01\x12%\n" +
+	"\tstreamarn\x18\xdd\xf2\xe8\xf4\x01 \x01(\tH\x03R\tstreamarn\x88\x01\x01B'\n" +
+	"%_approximatecreationdatetimeprecisionB\x14\n" +
+	"\x12_destinationstatusB\x1f\n" +
 	"\x1d_destinationstatusdescriptionB\f\n" +
 	"\n" +
 	"_streamarn\"\xec\x01\n" +
 	" KinesisStreamingDestinationInput\x12\x83\x01\n" +
 	"#enablekinesisstreamingconfiguration\x18\x83\xab\x99\x8f\x01 \x01(\v2-.dynamodb.EnableKinesisStreamingConfigurationR#enablekinesisstreamingconfiguration\x12 \n" +
 	"\tstreamarn\x18\xdd\xf2\xe8\xf4\x01 \x01(\tR\tstreamarn\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"\xe2\x02\n" +
-	"!KinesisStreamingDestinationOutput\x12M\n" +
-	"\x11destinationstatus\x18\xea\xc5\xe5\xb5\x01 \x01(\x0e2\x1b.dynamodb.DestinationStatusR\x11destinationstatus\x12\x83\x01\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"\xfd\x02\n" +
+	"!KinesisStreamingDestinationOutput\x12R\n" +
+	"\x11destinationstatus\x18\xea\xc5\xe5\xb5\x01 \x01(\x0e2\x1b.dynamodb.DestinationStatusH\x00R\x11destinationstatus\x88\x01\x01\x12\x83\x01\n" +
 	"#enablekinesisstreamingconfiguration\x18\x83\xab\x99\x8f\x01 \x01(\v2-.dynamodb.EnableKinesisStreamingConfigurationR#enablekinesisstreamingconfiguration\x12%\n" +
-	"\tstreamarn\x18\xdd\xf2\xe8\xf4\x01 \x01(\tH\x00R\tstreamarn\x88\x01\x01\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x01R\ttablename\x88\x01\x01B\f\n" +
+	"\tstreamarn\x18\xdd\xf2\xe8\xf4\x01 \x01(\tH\x01R\tstreamarn\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x02R\ttablename\x88\x01\x01B\x14\n" +
+	"\x12_destinationstatusB\f\n" +
 	"\n" +
 	"_streamarnB\f\n" +
 	"\n" +
@@ -20461,16 +20513,17 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x16LimitExceededException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xb4\x03\n" +
-	"\x10ListBackupsInput\x12=\n" +
+	"\b_message\"\xc8\x03\n" +
+	"\x10ListBackupsInput\x12B\n" +
 	"\n" +
-	"backuptype\x18\xa8\x94\xae@ \x01(\x0e2\x1a.dynamodb.BackupTypeFilterR\n" +
-	"backuptype\x12A\n" +
-	"\x17exclusivestartbackuparn\x18\xbf\xf7\x80\xb6\x01 \x01(\tH\x00R\x17exclusivestartbackuparn\x88\x01\x01\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x02R\ttablename\x88\x01\x01\x129\n" +
-	"\x13timerangelowerbound\x18\xff\x9c\xb2\xf1\x01 \x01(\tH\x03R\x13timerangelowerbound\x88\x01\x01\x129\n" +
-	"\x13timerangeupperbound\x18چ\xd9\xc8\x01 \x01(\tH\x04R\x13timerangeupperbound\x88\x01\x01B\x1a\n" +
+	"backuptype\x18\xa8\x94\xae@ \x01(\x0e2\x1a.dynamodb.BackupTypeFilterH\x00R\n" +
+	"backuptype\x88\x01\x01\x12A\n" +
+	"\x17exclusivestartbackuparn\x18\xbf\xf7\x80\xb6\x01 \x01(\tH\x01R\x17exclusivestartbackuparn\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x02R\x05limit\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x03R\ttablename\x88\x01\x01\x129\n" +
+	"\x13timerangelowerbound\x18\xff\x9c\xb2\xf1\x01 \x01(\tH\x04R\x13timerangelowerbound\x88\x01\x01\x129\n" +
+	"\x13timerangeupperbound\x18چ\xd9\xc8\x01 \x01(\tH\x05R\x13timerangeupperbound\x88\x01\x01B\r\n" +
+	"\v_backuptypeB\x1a\n" +
 	"\x18_exclusivestartbackuparnB\b\n" +
 	"\x06_limitB\f\n" +
 	"\n" +
@@ -20595,20 +20648,22 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x15_maxwriterequestunits\"o\n" +
 	"\x1aOnDemandThroughputOverride\x129\n" +
 	"\x13maxreadrequestunits\x18\xa2\xc0ά\x01 \x01(\x03H\x00R\x13maxreadrequestunits\x88\x01\x01B\x16\n" +
-	"\x14_maxreadrequestunits\"\xfc\x01\n" +
+	"\x14_maxreadrequestunits\"\xa9\x02\n" +
 	"\x16ParameterizedStatement\x12<\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x18.dynamodb.AttributeValueR\n" +
-	"parameters\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12\x1f\n" +
-	"\tstatement\x18\xb7\xf9\xd0v \x01(\tR\tstatement\"\xa5\x03\n" +
+	"parameters\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x00R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12\x1f\n" +
+	"\tstatement\x18\xb7\xf9\xd0v \x01(\tR\tstatementB&\n" +
+	"$_returnvaluesonconditioncheckfailure\"\xc8\x03\n" +
 	"\x1ePointInTimeRecoveryDescription\x12G\n" +
 	"\x1aearliestrestorabledatetime\x18\x9fل\xd2\x01 \x01(\tH\x00R\x1aearliestrestorabledatetime\x88\x01\x01\x12B\n" +
-	"\x18latestrestorabledatetime\x18彽> \x01(\tH\x01R\x18latestrestorabledatetime\x88\x01\x01\x12e\n" +
-	"\x19pointintimerecoverystatus\x18\xbb\x8a\xcb\xf3\x01 \x01(\x0e2#.dynamodb.PointInTimeRecoveryStatusR\x19pointintimerecoverystatus\x12:\n" +
-	"\x14recoveryperiodindays\x18\x98\x85\x95  \x01(\x05H\x02R\x14recoveryperiodindays\x88\x01\x01B\x1d\n" +
+	"\x18latestrestorabledatetime\x18彽> \x01(\tH\x01R\x18latestrestorabledatetime\x88\x01\x01\x12j\n" +
+	"\x19pointintimerecoverystatus\x18\xbb\x8a\xcb\xf3\x01 \x01(\x0e2#.dynamodb.PointInTimeRecoveryStatusH\x02R\x19pointintimerecoverystatus\x88\x01\x01\x12:\n" +
+	"\x14recoveryperiodindays\x18\x98\x85\x95  \x01(\x05H\x03R\x14recoveryperiodindays\x88\x01\x01B\x1d\n" +
 	"\x1b_earliestrestorabledatetimeB\x1b\n" +
-	"\x19_latestrestorabledatetimeB\x17\n" +
+	"\x19_latestrestorabledatetimeB\x1c\n" +
+	"\x1a_pointintimerecoverystatusB\x17\n" +
 	"\x15_recoveryperiodindays\"\xdf\x01\n" +
 	" PointInTimeRecoverySpecification\x12G\n" +
 	"\x1apointintimerecoveryenabled\x18\xaa\x8b\xa3\x8c\x01 \x01(\bH\x00R\x1apointintimerecoveryenabled\x88\x01\x01\x12:\n" +
@@ -20622,11 +20677,12 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x17PolicyNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x81\x01\n" +
+	"\b_message\"\x99\x01\n" +
 	"\n" +
 	"Projection\x12.\n" +
-	"\x10nonkeyattributes\x18\xc7\xf9\xf1\x94\x01 \x03(\tR\x10nonkeyattributes\x12C\n" +
-	"\x0eprojectiontype\x18\xe9\x99\xc89 \x01(\x0e2\x18.dynamodb.ProjectionTypeR\x0eprojectiontype\"{\n" +
+	"\x10nonkeyattributes\x18\xc7\xf9\xf1\x94\x01 \x03(\tR\x10nonkeyattributes\x12H\n" +
+	"\x0eprojectiontype\x18\xe9\x99\xc89 \x01(\x0e2\x18.dynamodb.ProjectionTypeH\x00R\x0eprojectiontype\x88\x01\x01B\x11\n" +
+	"\x0f_projectiontype\"{\n" +
 	"\x15ProvisionedThroughput\x12/\n" +
 	"\x11readcapacityunits\x18\x91\x9c\xfa\x14 \x01(\x03R\x11readcapacityunits\x121\n" +
 	"\x12writecapacityunits\x18\xb0\x95\xec\f \x01(\x03R\x12writecapacityunits\"\xc4\x03\n" +
@@ -20648,13 +20704,13 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\b_message\"k\n" +
 	"\x1dProvisionedThroughputOverride\x124\n" +
 	"\x11readcapacityunits\x18\x91\x9c\xfa\x14 \x01(\x03H\x00R\x11readcapacityunits\x88\x01\x01B\x14\n" +
-	"\x12_readcapacityunits\"\x94\x06\n" +
+	"\x12_readcapacityunits\"\xc1\x06\n" +
 	"\x03Put\x129\n" +
 	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tH\x00R\x13conditionexpression\x88\x01\x01\x12j\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v2+.dynamodb.Put.ExpressionattributenamesEntryR\x18expressionattributenames\x12n\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v2,.dynamodb.Put.ExpressionattributevaluesEntryR\x19expressionattributevalues\x12/\n" +
-	"\x04item\x18\x87\x80\x92\xfb\x01 \x03(\v2\x17.dynamodb.Put.ItemEntryR\x04item\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12 \n" +
+	"\x04item\x18\x87\x80\x92\xfb\x01 \x03(\v2\x17.dynamodb.Put.ItemEntryR\x04item\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x01R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x1aK\n" +
 	"\x1dExpressionattributenamesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -20665,19 +20721,19 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\tItemEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\x16\n" +
-	"\x14_conditionexpression\"\xb8\n" +
-	"\n" +
+	"\x14_conditionexpressionB&\n" +
+	"$_returnvaluesonconditioncheckfailure\"\xdd\v\n" +
 	"\fPutItemInput\x129\n" +
-	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tH\x00R\x13conditionexpression\x88\x01\x01\x12R\n" +
-	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorR\x13conditionaloperator\x12C\n" +
+	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tH\x00R\x13conditionexpression\x88\x01\x01\x12W\n" +
+	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorH\x01R\x13conditionaloperator\x88\x01\x01\x12C\n" +
 	"\bexpected\x18\xfa\xe3\xe72 \x03(\v2$.dynamodb.PutItemInput.ExpectedEntryR\bexpected\x12s\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v24.dynamodb.PutItemInput.ExpressionattributenamesEntryR\x18expressionattributenames\x12w\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v25.dynamodb.PutItemInput.ExpressionattributevaluesEntryR\x19expressionattributevalues\x128\n" +
-	"\x04item\x18\x87\x80\x92\xfb\x01 \x03(\v2 .dynamodb.PutItemInput.ItemEntryR\x04item\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12j\n" +
-	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsR\x1breturnitemcollectionmetrics\x12=\n" +
-	"\freturnvalues\x18\xc6ޒ\xc0\x01 \x01(\x0e2\x15.dynamodb.ReturnValueR\freturnvalues\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12 \n" +
+	"\x04item\x18\x87\x80\x92\xfb\x01 \x03(\v2 .dynamodb.PutItemInput.ItemEntryR\x04item\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x02R\x16returnconsumedcapacity\x88\x01\x01\x12o\n" +
+	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsH\x03R\x1breturnitemcollectionmetrics\x88\x01\x01\x12B\n" +
+	"\freturnvalues\x18\xc6ޒ\xc0\x01 \x01(\x0e2\x15.dynamodb.ReturnValueH\x04R\freturnvalues\x88\x01\x01\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x05R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x1a]\n" +
 	"\rExpectedEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x126\n" +
@@ -20691,7 +20747,12 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\tItemEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\x16\n" +
-	"\x14_conditionexpression\"\xda\x02\n" +
+	"\x14_conditionexpressionB\x16\n" +
+	"\x14_conditionaloperatorB\x19\n" +
+	"\x17_returnconsumedcapacityB\x1e\n" +
+	"\x1c_returnitemcollectionmetricsB\x0f\n" +
+	"\r_returnvaluesB&\n" +
+	"$_returnvaluesonconditioncheckfailure\"\xda\x02\n" +
 	"\rPutItemOutput\x12J\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2'.dynamodb.PutItemOutput.AttributesEntryR\n" +
@@ -20718,25 +20779,25 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\n" +
 	"revisionid\x18\x86\xa3\x9e\xee\x01 \x01(\tH\x00R\n" +
 	"revisionid\x88\x01\x01B\r\n" +
-	"\v_revisionid\"\xc8\r\n" +
+	"\v_revisionid\"\x95\x0e\n" +
 	"\n" +
 	"QueryInput\x12,\n" +
-	"\x0fattributestoget\x18\xc0\xa4\xbd\x94\x01 \x03(\tR\x0fattributestoget\x12R\n" +
-	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorR\x13conditionaloperator\x12/\n" +
-	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bH\x00R\x0econsistentread\x88\x01\x01\x12]\n" +
+	"\x0fattributestoget\x18\xc0\xa4\xbd\x94\x01 \x03(\tR\x0fattributestoget\x12W\n" +
+	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorH\x00R\x13conditionaloperator\x88\x01\x01\x12/\n" +
+	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bH\x01R\x0econsistentread\x88\x01\x01\x12]\n" +
 	"\x11exclusivestartkey\x18\xd1\u0380\xa6\x01 \x03(\v2+.dynamodb.QueryInput.ExclusivestartkeyEntryR\x11exclusivestartkey\x12q\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v22.dynamodb.QueryInput.ExpressionattributenamesEntryR\x18expressionattributenames\x12u\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v23.dynamodb.QueryInput.ExpressionattributevaluesEntryR\x19expressionattributevalues\x122\n" +
-	"\x10filterexpression\x18\x9a˷  \x01(\tH\x01R\x10filterexpression\x88\x01\x01\x12$\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x02R\tindexname\x88\x01\x01\x12>\n" +
-	"\x16keyconditionexpression\x18Ђ\x9dh \x01(\tH\x03R\x16keyconditionexpression\x88\x01\x01\x12Q\n" +
+	"\x10filterexpression\x18\x9a˷  \x01(\tH\x02R\x10filterexpression\x88\x01\x01\x12$\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x03R\tindexname\x88\x01\x01\x12>\n" +
+	"\x16keyconditionexpression\x18Ђ\x9dh \x01(\tH\x04R\x16keyconditionexpression\x88\x01\x01\x12Q\n" +
 	"\rkeyconditions\x18\xff\xf5\xb3\x92\x01 \x03(\v2'.dynamodb.QueryInput.KeyconditionsEntryR\rkeyconditions\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x04R\x05limit\x88\x01\x01\x12:\n" +
-	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tH\x05R\x14projectionexpression\x88\x01\x01\x12J\n" +
-	"\vqueryfilter\x18\xeeø3 \x03(\v2%.dynamodb.QueryInput.QueryfilterEntryR\vqueryfilter\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x123\n" +
-	"\x10scanindexforward\x18\x8a\xdfث\x01 \x01(\bH\x06R\x10scanindexforward\x88\x01\x01\x12,\n" +
-	"\x06select\x18\xce֤\xf4\x01 \x01(\x0e2\x10.dynamodb.SelectR\x06select\x12 \n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x05R\x05limit\x88\x01\x01\x12:\n" +
+	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tH\x06R\x14projectionexpression\x88\x01\x01\x12J\n" +
+	"\vqueryfilter\x18\xeeø3 \x03(\v2%.dynamodb.QueryInput.QueryfilterEntryR\vqueryfilter\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\aR\x16returnconsumedcapacity\x88\x01\x01\x123\n" +
+	"\x10scanindexforward\x18\x8a\xdfث\x01 \x01(\bH\bR\x10scanindexforward\x88\x01\x01\x121\n" +
+	"\x06select\x18\xce֤\xf4\x01 \x01(\x0e2\x10.dynamodb.SelectH\tR\x06select\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x1a^\n" +
 	"\x16ExclusivestartkeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
@@ -20752,15 +20813,18 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01\x1aS\n" +
 	"\x10QueryfilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12)\n" +
-	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01B\x11\n" +
+	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01B\x16\n" +
+	"\x14_conditionaloperatorB\x11\n" +
 	"\x0f_consistentreadB\x13\n" +
 	"\x11_filterexpressionB\f\n" +
 	"\n" +
 	"_indexnameB\x19\n" +
 	"\x17_keyconditionexpressionB\b\n" +
 	"\x06_limitB\x17\n" +
-	"\x15_projectionexpressionB\x13\n" +
-	"\x11_scanindexforward\"\xac\x03\n" +
+	"\x15_projectionexpressionB\x19\n" +
+	"\x17_returnconsumedcapacityB\x13\n" +
+	"\x11_scanindexforwardB\t\n" +
+	"\a_select\"\xac\x03\n" +
 	"\vQueryOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12\x1c\n" +
 	"\x05count\x18\x95\xf1\x9e\x0f \x01(\x05H\x00R\x05count\x88\x01\x01\x120\n" +
@@ -20780,57 +20844,62 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x1dReplicaAlreadyExistsException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xcd\x04\n" +
+	"\b_message\"\xe4\x04\n" +
 	"\x1dReplicaAutoScalingDescription\x12w\n" +
 	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2;.dynamodb.ReplicaGlobalSecondaryIndexAutoScalingDescriptionR\x16globalsecondaryindexes\x12&\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tH\x00R\n" +
 	"regionname\x88\x01\x01\x12\x99\x01\n" +
 	"1replicaprovisionedreadcapacityautoscalingsettings\x18\xed\xb8\xd5; \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR1replicaprovisionedreadcapacityautoscalingsettings\x12\x9c\x01\n" +
-	"2replicaprovisionedwritecapacityautoscalingsettings\x18\x84\u05ce\x8c\x01 \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR2replicaprovisionedwritecapacityautoscalingsettings\x12A\n" +
-	"\rreplicastatus\x18\x92\xc4\xc7\xde\x01 \x01(\x0e2\x17.dynamodb.ReplicaStatusR\rreplicastatusB\r\n" +
-	"\v_regionname\"\xdc\x02\n" +
+	"2replicaprovisionedwritecapacityautoscalingsettings\x18\x84\u05ce\x8c\x01 \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR2replicaprovisionedwritecapacityautoscalingsettings\x12F\n" +
+	"\rreplicastatus\x18\x92\xc4\xc7\xde\x01 \x01(\x0e2\x17.dynamodb.ReplicaStatusH\x01R\rreplicastatus\x88\x01\x01B\r\n" +
+	"\v_regionnameB\x10\n" +
+	"\x0e_replicastatus\"\xdc\x02\n" +
 	"\x18ReplicaAutoScalingUpdate\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
 	"regionname\x12\x89\x01\n" +
 	"\"replicaglobalsecondaryindexupdates\x18\xf1\xbe\xeb\a \x03(\v26.dynamodb.ReplicaGlobalSecondaryIndexAutoScalingUpdateR\"replicaglobalsecondaryindexupdates\x12\x90\x01\n" +
-	"/replicaprovisionedreadcapacityautoscalingupdate\x18\xa1\x9f\x88} \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR/replicaprovisionedreadcapacityautoscalingupdate\"\xc2\t\n" +
+	"/replicaprovisionedreadcapacityautoscalingupdate\x18\xa1\x9f\x88} \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR/replicaprovisionedreadcapacityautoscalingupdate\"\x86\n" +
+	"\n" +
 	"\x12ReplicaDescription\x12l\n" +
-	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v20.dynamodb.ReplicaGlobalSecondaryIndexDescriptionR\x16globalsecondaryindexes\x12\x7f\n" +
-	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeR\"globaltablesettingsreplicationmode\x12/\n" +
-	"\x0ekmsmasterkeyid\x18\xf3\xad\xd3\xf8\x01 \x01(\tH\x00R\x0ekmsmasterkeyid\x88\x01\x01\x12h\n" +
+	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v20.dynamodb.ReplicaGlobalSecondaryIndexDescriptionR\x16globalsecondaryindexes\x12\x84\x01\n" +
+	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeH\x00R\"globaltablesettingsreplicationmode\x88\x01\x01\x12/\n" +
+	"\x0ekmsmasterkeyid\x18\xf3\xad\xd3\xf8\x01 \x01(\tH\x01R\x0ekmsmasterkeyid\x88\x01\x01\x12h\n" +
 	"\x1aondemandthroughputoverride\x18\xb2\x9d\x9e\x97\x01 \x01(\v2$.dynamodb.OnDemandThroughputOverrideR\x1aondemandthroughputoverride\x12q\n" +
 	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2'.dynamodb.ProvisionedThroughputOverrideR\x1dprovisionedthroughputoverride\x12&\n" +
 	"\n" +
-	"regionname\x18\xbf\x9b\xb95 \x01(\tH\x01R\n" +
+	"regionname\x18\xbf\x9b\xb95 \x01(\tH\x02R\n" +
 	"regionname\x88\x01\x01\x12&\n" +
 	"\n" +
-	"replicaarn\x18\xab\xdb\xee8 \x01(\tH\x02R\n" +
+	"replicaarn\x18\xab\xdb\xee8 \x01(\tH\x03R\n" +
 	"replicaarn\x88\x01\x01\x12H\n" +
-	"\x1breplicainaccessibledatetime\x18\xc0\xb3\xc8\t \x01(\tH\x03R\x1breplicainaccessibledatetime\x88\x01\x01\x12A\n" +
-	"\rreplicastatus\x18\x92\xc4\xc7\xde\x01 \x01(\x0e2\x17.dynamodb.ReplicaStatusR\rreplicastatus\x12C\n" +
-	"\x18replicastatusdescription\x18\xf6\xac\xd8\xc6\x01 \x01(\tH\x04R\x18replicastatusdescription\x88\x01\x01\x12K\n" +
-	"\x1creplicastatuspercentprogress\x18\xb2\xad\xcf\xd9\x01 \x01(\tH\x05R\x1creplicastatuspercentprogress\x88\x01\x01\x12[\n" +
+	"\x1breplicainaccessibledatetime\x18\xc0\xb3\xc8\t \x01(\tH\x04R\x1breplicainaccessibledatetime\x88\x01\x01\x12F\n" +
+	"\rreplicastatus\x18\x92\xc4\xc7\xde\x01 \x01(\x0e2\x17.dynamodb.ReplicaStatusH\x05R\rreplicastatus\x88\x01\x01\x12C\n" +
+	"\x18replicastatusdescription\x18\xf6\xac\xd8\xc6\x01 \x01(\tH\x06R\x18replicastatusdescription\x88\x01\x01\x12K\n" +
+	"\x1creplicastatuspercentprogress\x18\xb2\xad\xcf\xd9\x01 \x01(\tH\aR\x1creplicastatuspercentprogress\x88\x01\x01\x12[\n" +
 	"\x18replicatableclasssummary\x18\xde\xe1\xda\xf7\x01 \x01(\v2\x1b.dynamodb.TableClassSummaryR\x18replicatableclasssummary\x12T\n" +
-	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2(.dynamodb.TableWarmThroughputDescriptionR\x0ewarmthroughputB\x11\n" +
+	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2(.dynamodb.TableWarmThroughputDescriptionR\x0ewarmthroughputB%\n" +
+	"#_globaltablesettingsreplicationmodeB\x11\n" +
 	"\x0f_kmsmasterkeyidB\r\n" +
 	"\v_regionnameB\r\n" +
 	"\v_replicaarnB\x1e\n" +
-	"\x1c_replicainaccessibledatetimeB\x1b\n" +
+	"\x1c_replicainaccessibledatetimeB\x10\n" +
+	"\x0e_replicastatusB\x1b\n" +
 	"\x19_replicastatusdescriptionB\x1f\n" +
 	"\x1d_replicastatuspercentprogress\"\x9b\x02\n" +
 	"\x1bReplicaGlobalSecondaryIndex\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12h\n" +
 	"\x1aondemandthroughputoverride\x18\xb2\x9d\x9e\x97\x01 \x01(\v2$.dynamodb.OnDemandThroughputOverrideR\x1aondemandthroughputoverride\x12q\n" +
-	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2'.dynamodb.ProvisionedThroughputOverrideR\x1dprovisionedthroughputoverride\"\xc2\x03\n" +
+	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2'.dynamodb.ProvisionedThroughputOverrideR\x1dprovisionedthroughputoverride\"\xd7\x03\n" +
 	"1ReplicaGlobalSecondaryIndexAutoScalingDescription\x12$\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x00R\tindexname\x88\x01\x01\x12;\n" +
-	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusR\vindexstatus\x12\x8b\x01\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x00R\tindexname\x88\x01\x01\x12@\n" +
+	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusH\x01R\vindexstatus\x88\x01\x01\x12\x8b\x01\n" +
 	"*provisionedreadcapacityautoscalingsettings\x18\x83\xd8\xe9( \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR*provisionedreadcapacityautoscalingsettings\x12\x8d\x01\n" +
 	"+provisionedwritecapacityautoscalingsettings\x18\x9a\xf0\xa6P \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR+provisionedwritecapacityautoscalingsettingsB\f\n" +
 	"\n" +
-	"_indexname\"\xe7\x01\n" +
+	"_indexnameB\x0e\n" +
+	"\f_indexstatus\"\xe7\x01\n" +
 	",ReplicaGlobalSecondaryIndexAutoScalingUpdate\x12$\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x00R\tindexname\x88\x01\x01\x12\x82\x01\n" +
 	"(provisionedreadcapacityautoscalingupdate\x18\xbf\xa9\xd0\n" +
@@ -20843,14 +20912,15 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2'.dynamodb.ProvisionedThroughputOverrideR\x1dprovisionedthroughputoverride\x12c\n" +
 	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v27.dynamodb.GlobalSecondaryIndexWarmThroughputDescriptionR\x0ewarmthroughputB\f\n" +
 	"\n" +
-	"_indexname\"\x8a\x05\n" +
+	"_indexname\"\x9f\x05\n" +
 	".ReplicaGlobalSecondaryIndexSettingsDescription\x12\x1f\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12;\n" +
-	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusR\vindexstatus\x12\x8b\x01\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12@\n" +
+	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusH\x00R\vindexstatus\x88\x01\x01\x12\x8b\x01\n" +
 	"*provisionedreadcapacityautoscalingsettings\x18\x83\xd8\xe9( \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR*provisionedreadcapacityautoscalingsettings\x12K\n" +
-	"\x1cprovisionedreadcapacityunits\x18Ŋ\xa0\xa7\x01 \x01(\x03H\x00R\x1cprovisionedreadcapacityunits\x88\x01\x01\x12\x8d\x01\n" +
+	"\x1cprovisionedreadcapacityunits\x18Ŋ\xa0\xa7\x01 \x01(\x03H\x01R\x1cprovisionedreadcapacityunits\x88\x01\x01\x12\x8d\x01\n" +
 	"+provisionedwritecapacityautoscalingsettings\x18\x9a\xf0\xa6P \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR+provisionedwritecapacityautoscalingsettings\x12L\n" +
-	"\x1dprovisionedwritecapacityunits\x18\xd4\xdc\xdak \x01(\x03H\x01R\x1dprovisionedwritecapacityunits\x88\x01\x01B\x1f\n" +
+	"\x1dprovisionedwritecapacityunits\x18\xd4\xdc\xdak \x01(\x03H\x02R\x1dprovisionedwritecapacityunits\x88\x01\x01B\x0e\n" +
+	"\f_indexstatusB\x1f\n" +
 	"\x1d_provisionedreadcapacityunitsB \n" +
 	"\x1e_provisionedwritecapacityunits\"\xcf\x02\n" +
 	")ReplicaGlobalSecondaryIndexSettingsUpdate\x12\x1f\n" +
@@ -20861,7 +20931,7 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x18ReplicaNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\x93\b\n" +
+	"\b_message\"\xaa\b\n" +
 	"\x1aReplicaSettingsDescription\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
@@ -20871,20 +20941,22 @@ const file_dynamodb_proto_rawDesc = "" +
 	"1replicaprovisionedreadcapacityautoscalingsettings\x18\xed\xb8\xd5; \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR1replicaprovisionedreadcapacityautoscalingsettings\x12X\n" +
 	"#replicaprovisionedreadcapacityunits\x18\xbb\xea\x91' \x01(\x03H\x00R#replicaprovisionedreadcapacityunits\x88\x01\x01\x12\x9c\x01\n" +
 	"2replicaprovisionedwritecapacityautoscalingsettings\x18\x84\u05ce\x8c\x01 \x01(\v2(.dynamodb.AutoScalingSettingsDescriptionR2replicaprovisionedwritecapacityautoscalingsettings\x12[\n" +
-	"$replicaprovisionedwritecapacityunits\x18\xaa\u038d\xaa\x01 \x01(\x03H\x01R$replicaprovisionedwritecapacityunits\x88\x01\x01\x12A\n" +
-	"\rreplicastatus\x18\x92\xc4\xc7\xde\x01 \x01(\x0e2\x17.dynamodb.ReplicaStatusR\rreplicastatus\x12[\n" +
+	"$replicaprovisionedwritecapacityunits\x18\xaa\u038d\xaa\x01 \x01(\x03H\x01R$replicaprovisionedwritecapacityunits\x88\x01\x01\x12F\n" +
+	"\rreplicastatus\x18\x92\xc4\xc7\xde\x01 \x01(\x0e2\x17.dynamodb.ReplicaStatusH\x02R\rreplicastatus\x88\x01\x01\x12[\n" +
 	"\x18replicatableclasssummary\x18\xde\xe1\xda\xf7\x01 \x01(\v2\x1b.dynamodb.TableClassSummaryR\x18replicatableclasssummaryB&\n" +
 	"$_replicaprovisionedreadcapacityunitsB'\n" +
-	"%_replicaprovisionedwritecapacityunits\"\xbd\x04\n" +
+	"%_replicaprovisionedwritecapacityunitsB\x10\n" +
+	"\x0e_replicastatus\"\xd8\x04\n" +
 	"\x15ReplicaSettingsUpdate\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
 	"regionname\x12\x94\x01\n" +
 	")replicaglobalsecondaryindexsettingsupdate\x18߄\xb47 \x03(\v23.dynamodb.ReplicaGlobalSecondaryIndexSettingsUpdateR)replicaglobalsecondaryindexsettingsupdate\x12\xa0\x01\n" +
 	"7replicaprovisionedreadcapacityautoscalingsettingsupdate\x18\xee\xd2\xf9t \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR7replicaprovisionedreadcapacityautoscalingsettingsupdate\x12X\n" +
-	"#replicaprovisionedreadcapacityunits\x18\xbb\xea\x91' \x01(\x03H\x00R#replicaprovisionedreadcapacityunits\x88\x01\x01\x12E\n" +
-	"\x11replicatableclass\x18\xa4\x96\xcav \x01(\x0e2\x14.dynamodb.TableClassR\x11replicatableclassB&\n" +
-	"$_replicaprovisionedreadcapacityunits\"\x85\x01\n" +
+	"#replicaprovisionedreadcapacityunits\x18\xbb\xea\x91' \x01(\x03H\x00R#replicaprovisionedreadcapacityunits\x88\x01\x01\x12J\n" +
+	"\x11replicatableclass\x18\xa4\x96\xcav \x01(\x0e2\x14.dynamodb.TableClassH\x01R\x11replicatableclass\x88\x01\x01B&\n" +
+	"$_replicaprovisionedreadcapacityunitsB\x14\n" +
+	"\x12_replicatableclass\"\x85\x01\n" +
 	"\rReplicaUpdate\x129\n" +
 	"\x06create\x18\xfeȷ\xc8\x01 \x01(\v2\x1d.dynamodb.CreateReplicaActionR\x06create\x129\n" +
 	"\x06delete\x18\xeb\xd4\u07fc\x01 \x01(\v2\x1d.dynamodb.DeleteReplicaActionR\x06delete\"P\n" +
@@ -20916,32 +20988,34 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0esourcetablearn\x18\xf4Ý; \x01(\tH\x02R\x0esourcetablearn\x88\x01\x01B\x14\n" +
 	"\x12_restoreinprogressB\x12\n" +
 	"\x10_sourcebackuparnB\x11\n" +
-	"\x0f_sourcetablearn\"\xfd\x05\n" +
+	"\x0f_sourcetablearn\"\x9a\x06\n" +
 	"\x1bRestoreTableFromBackupInput\x12 \n" +
-	"\tbackuparn\x18\xe3\xaf\xec\xb0\x01 \x01(\tR\tbackuparn\x12K\n" +
-	"\x13billingmodeoverride\x18\xf0\xb7ͪ\x01 \x01(\x0e2\x15.dynamodb.BillingModeR\x13billingmodeoverride\x12f\n" +
+	"\tbackuparn\x18\xe3\xaf\xec\xb0\x01 \x01(\tR\tbackuparn\x12P\n" +
+	"\x13billingmodeoverride\x18\xf0\xb7ͪ\x01 \x01(\x0e2\x15.dynamodb.BillingModeH\x00R\x13billingmodeoverride\x88\x01\x01\x12f\n" +
 	"\x1cglobalsecondaryindexoverride\x18\xb5\xbe\xad\xb0\x01 \x03(\v2\x1e.dynamodb.GlobalSecondaryIndexR\x1cglobalsecondaryindexoverride\x12c\n" +
 	"\x1blocalsecondaryindexoverride\x18\x9f\x85\xf2\xcd\x01 \x03(\v2\x1d.dynamodb.LocalSecondaryIndexR\x1blocalsecondaryindexoverride\x12`\n" +
 	"\x1aondemandthroughputoverride\x18\xb2\x9d\x9e\x97\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x1aondemandthroughputoverride\x12i\n" +
 	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2\x1f.dynamodb.ProvisionedThroughputR\x1dprovisionedthroughputoverride\x12Z\n" +
 	"\x18ssespecificationoverride\x18\xc4҂\xc9\x01 \x01(\v2\x1a.dynamodb.SSESpecificationR\x18ssespecificationoverride\x12,\n" +
 	"\x0ftargettablename\x18誻\x8e\x01 \x01(\tR\x0ftargettablename\x12K\n" +
-	"\x13vectorindexoverride\x18\xf7\xbd\x8d\xf3\x01 \x03(\v2\x15.dynamodb.VectorIndexR\x13vectorindexoverride\"i\n" +
+	"\x13vectorindexoverride\x18\xf7\xbd\x8d\xf3\x01 \x03(\v2\x15.dynamodb.VectorIndexR\x13vectorindexoverrideB\x16\n" +
+	"\x14_billingmodeoverride\"i\n" +
 	"\x1cRestoreTableFromBackupOutput\x12I\n" +
-	"\x10tabledescription\x18\x94\xb4\xc2\t \x01(\v2\x1a.dynamodb.TableDescriptionR\x10tabledescription\"\x8c\b\n" +
-	"\x1eRestoreTableToPointInTimeInput\x12K\n" +
-	"\x13billingmodeoverride\x18\xf0\xb7ͪ\x01 \x01(\x0e2\x15.dynamodb.BillingModeR\x13billingmodeoverride\x12f\n" +
+	"\x10tabledescription\x18\x94\xb4\xc2\t \x01(\v2\x1a.dynamodb.TableDescriptionR\x10tabledescription\"\xa9\b\n" +
+	"\x1eRestoreTableToPointInTimeInput\x12P\n" +
+	"\x13billingmodeoverride\x18\xf0\xb7ͪ\x01 \x01(\x0e2\x15.dynamodb.BillingModeH\x00R\x13billingmodeoverride\x88\x01\x01\x12f\n" +
 	"\x1cglobalsecondaryindexoverride\x18\xb5\xbe\xad\xb0\x01 \x03(\v2\x1e.dynamodb.GlobalSecondaryIndexR\x1cglobalsecondaryindexoverride\x12c\n" +
 	"\x1blocalsecondaryindexoverride\x18\x9f\x85\xf2\xcd\x01 \x03(\v2\x1d.dynamodb.LocalSecondaryIndexR\x1blocalsecondaryindexoverride\x12`\n" +
 	"\x1aondemandthroughputoverride\x18\xb2\x9d\x9e\x97\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x1aondemandthroughputoverride\x12i\n" +
 	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2\x1f.dynamodb.ProvisionedThroughputR\x1dprovisionedthroughputoverride\x120\n" +
-	"\x0frestoredatetime\x18ͩ\xa5T \x01(\tH\x00R\x0frestoredatetime\x88\x01\x01\x12Z\n" +
+	"\x0frestoredatetime\x18ͩ\xa5T \x01(\tH\x01R\x0frestoredatetime\x88\x01\x01\x12Z\n" +
 	"\x18ssespecificationoverride\x18\xc4҂\xc9\x01 \x01(\v2\x1a.dynamodb.SSESpecificationR\x18ssespecificationoverride\x12.\n" +
-	"\x0esourcetablearn\x18\xf4Ý; \x01(\tH\x01R\x0esourcetablearn\x88\x01\x01\x120\n" +
-	"\x0fsourcetablename\x18\xf8\xa8\xedN \x01(\tH\x02R\x0fsourcetablename\x88\x01\x01\x12,\n" +
+	"\x0esourcetablearn\x18\xf4Ý; \x01(\tH\x02R\x0esourcetablearn\x88\x01\x01\x120\n" +
+	"\x0fsourcetablename\x18\xf8\xa8\xedN \x01(\tH\x03R\x0fsourcetablename\x88\x01\x01\x12,\n" +
 	"\x0ftargettablename\x18誻\x8e\x01 \x01(\tR\x0ftargettablename\x12A\n" +
-	"\x17uselatestrestorabletime\x18\xeaŘ\xcf\x01 \x01(\bH\x03R\x17uselatestrestorabletime\x88\x01\x01\x12K\n" +
-	"\x13vectorindexoverride\x18\xf7\xbd\x8d\xf3\x01 \x03(\v2\x15.dynamodb.VectorIndexR\x13vectorindexoverrideB\x12\n" +
+	"\x17uselatestrestorabletime\x18\xeaŘ\xcf\x01 \x01(\bH\x04R\x17uselatestrestorabletime\x88\x01\x01\x12K\n" +
+	"\x13vectorindexoverride\x18\xf7\xbd\x8d\xf3\x01 \x03(\v2\x15.dynamodb.VectorIndexR\x13vectorindexoverrideB\x16\n" +
+	"\x14_billingmodeoverrideB\x12\n" +
 	"\x10_restoredatetimeB\x11\n" +
 	"\x0f_sourcetablearnB\x12\n" +
 	"\x10_sourcetablenameB\x1a\n" +
@@ -20953,40 +21027,45 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\rs3bucketowner\x18\xc1\xc0ҧ\x01 \x01(\tH\x00R\rs3bucketowner\x88\x01\x01\x12(\n" +
 	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tH\x01R\vs3keyprefix\x88\x01\x01B\x10\n" +
 	"\x0e_s3bucketownerB\x0e\n" +
-	"\f_s3keyprefix\"\xac\x02\n" +
+	"\f_s3keyprefix\"\xcd\x02\n" +
 	"\x0eSSEDescription\x12O\n" +
 	"\x1einaccessibleencryptiondatetime\x18\xfd\xa9\x82\xe4\x01 \x01(\tH\x00R\x1einaccessibleencryptiondatetime\x88\x01\x01\x121\n" +
-	"\x0fkmsmasterkeyarn\x18Ð\xb8\x86\x01 \x01(\tH\x01R\x0fkmsmasterkeyarn\x88\x01\x01\x12/\n" +
-	"\assetype\x18\xa3\xe8\xf5\xcd\x01 \x01(\x0e2\x11.dynamodb.SSETypeR\assetype\x12.\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.dynamodb.SSEStatusR\x06statusB!\n" +
+	"\x0fkmsmasterkeyarn\x18Ð\xb8\x86\x01 \x01(\tH\x01R\x0fkmsmasterkeyarn\x88\x01\x01\x124\n" +
+	"\assetype\x18\xa3\xe8\xf5\xcd\x01 \x01(\x0e2\x11.dynamodb.SSETypeH\x02R\assetype\x88\x01\x01\x123\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x13.dynamodb.SSEStatusH\x03R\x06status\x88\x01\x01B!\n" +
 	"\x1f_inaccessibleencryptiondatetimeB\x12\n" +
-	"\x10_kmsmasterkeyarn\"\xb6\x01\n" +
+	"\x10_kmsmasterkeyarnB\n" +
+	"\n" +
+	"\b_ssetypeB\t\n" +
+	"\a_status\"\xc7\x01\n" +
 	"\x10SSESpecification\x12!\n" +
 	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01\x12/\n" +
-	"\x0ekmsmasterkeyid\x18\xf3\xad\xd3\xf8\x01 \x01(\tH\x01R\x0ekmsmasterkeyid\x88\x01\x01\x12/\n" +
-	"\assetype\x18\xa3\xe8\xf5\xcd\x01 \x01(\x0e2\x11.dynamodb.SSETypeR\assetypeB\n" +
+	"\x0ekmsmasterkeyid\x18\xf3\xad\xd3\xf8\x01 \x01(\tH\x01R\x0ekmsmasterkeyid\x88\x01\x01\x124\n" +
+	"\assetype\x18\xa3\xe8\xf5\xcd\x01 \x01(\x0e2\x11.dynamodb.SSETypeH\x02R\assetype\x88\x01\x01B\n" +
 	"\n" +
 	"\b_enabledB\x11\n" +
-	"\x0f_kmsmasterkeyid\"\xe0\v\n" +
+	"\x0f_kmsmasterkeyidB\n" +
+	"\n" +
+	"\b_ssetype\"\xad\f\n" +
 	"\tScanInput\x12,\n" +
-	"\x0fattributestoget\x18\xc0\xa4\xbd\x94\x01 \x03(\tR\x0fattributestoget\x12R\n" +
-	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorR\x13conditionaloperator\x12/\n" +
-	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bH\x00R\x0econsistentread\x88\x01\x01\x12\\\n" +
+	"\x0fattributestoget\x18\xc0\xa4\xbd\x94\x01 \x03(\tR\x0fattributestoget\x12W\n" +
+	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorH\x00R\x13conditionaloperator\x88\x01\x01\x12/\n" +
+	"\x0econsistentread\x18\x82ջ\xfd\x01 \x01(\bH\x01R\x0econsistentread\x88\x01\x01\x12\\\n" +
 	"\x11exclusivestartkey\x18\xd1\u0380\xa6\x01 \x03(\v2*.dynamodb.ScanInput.ExclusivestartkeyEntryR\x11exclusivestartkey\x12p\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v21.dynamodb.ScanInput.ExpressionattributenamesEntryR\x18expressionattributenames\x12t\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v22.dynamodb.ScanInput.ExpressionattributevaluesEntryR\x19expressionattributevalues\x122\n" +
-	"\x10filterexpression\x18\x9a˷  \x01(\tH\x01R\x10filterexpression\x88\x01\x01\x12$\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x02R\tindexname\x88\x01\x01\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x03R\x05limit\x88\x01\x01\x12:\n" +
-	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tH\x04R\x14projectionexpression\x88\x01\x01\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12G\n" +
+	"\x10filterexpression\x18\x9a˷  \x01(\tH\x02R\x10filterexpression\x88\x01\x01\x12$\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x03R\tindexname\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x04R\x05limit\x88\x01\x01\x12:\n" +
+	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tH\x05R\x14projectionexpression\x88\x01\x01\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x06R\x16returnconsumedcapacity\x88\x01\x01\x12G\n" +
 	"\n" +
 	"scanfilter\x18\xfbϏ\x82\x01 \x03(\v2#.dynamodb.ScanInput.ScanfilterEntryR\n" +
 	"scanfilter\x12!\n" +
-	"\asegment\x18\x87߬\x85\x01 \x01(\x05H\x05R\asegment\x88\x01\x01\x12,\n" +
-	"\x06select\x18\xce֤\xf4\x01 \x01(\x0e2\x10.dynamodb.SelectR\x06select\x12 \n" +
+	"\asegment\x18\x87߬\x85\x01 \x01(\x05H\aR\asegment\x88\x01\x01\x121\n" +
+	"\x06select\x18\xce֤\xf4\x01 \x01(\x0e2\x10.dynamodb.SelectH\bR\x06select\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12,\n" +
-	"\rtotalsegments\x18\x88̎G \x01(\x05H\x06R\rtotalsegments\x88\x01\x01\x1a^\n" +
+	"\rtotalsegments\x18\x88̎G \x01(\x05H\tR\rtotalsegments\x88\x01\x01\x1a^\n" +
 	"\x16ExclusivestartkeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\x1aK\n" +
@@ -20998,15 +21077,18 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\x1aR\n" +
 	"\x0fScanfilterEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12)\n" +
-	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01B\x11\n" +
+	"\x05value\x18\x02 \x01(\v2\x13.dynamodb.ConditionR\x05value:\x028\x01B\x16\n" +
+	"\x14_conditionaloperatorB\x11\n" +
 	"\x0f_consistentreadB\x13\n" +
 	"\x11_filterexpressionB\f\n" +
 	"\n" +
 	"_indexnameB\b\n" +
 	"\x06_limitB\x17\n" +
-	"\x15_projectionexpressionB\n" +
+	"\x15_projectionexpressionB\x19\n" +
+	"\x17_returnconsumedcapacityB\n" +
 	"\n" +
-	"\b_segmentB\x10\n" +
+	"\b_segmentB\t\n" +
+	"\a_selectB\x10\n" +
 	"\x0e_totalsegments\"\xaa\x03\n" +
 	"\n" +
 	"ScanOutput\x12J\n" +
@@ -21029,14 +21111,14 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x06_score\"\x9f\x01\n" +
 	"\x13SearchSchemaElement\x12(\n" +
 	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tR\rattributename\x12^\n" +
-	"\x17searchschemaelementtype\x18\xf3\xf6\xa1R \x01(\x0e2!.dynamodb.SearchSchemaElementTypeR\x17searchschemaelementtype\"\xf5\x06\n" +
+	"\x17searchschemaelementtype\x18\xf3\xf6\xa1R \x01(\x0e2!.dynamodb.SearchSchemaElementTypeR\x17searchschemaelementtype\"\x95\a\n" +
 	"\x12SearchVectorsInput\x12y\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v2:.dynamodb.SearchVectorsInput.ExpressionattributenamesEntryR\x18expressionattributenames\x12}\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v2;.dynamodb.SearchVectorsInput.ExpressionattributevaluesEntryR\x19expressionattributevalues\x12\x1f\n" +
 	"\tindexname\x18\x91\xd5\xeb0 \x01(\tR\tindexname\x12:\n" +
-	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tH\x00R\x14projectionexpression\x88\x01\x01\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12D\n" +
-	"\x19searchconditionexpression\x18\x99\xe6\xf8w \x01(\tH\x01R\x19searchconditionexpression\x88\x01\x01\x12?\n" +
+	"\x14projectionexpression\x18\x83\xec\xefG \x01(\tH\x00R\x14projectionexpression\x88\x01\x01\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x01R\x16returnconsumedcapacity\x88\x01\x01\x12D\n" +
+	"\x19searchconditionexpression\x18\x99\xe6\xf8w \x01(\tH\x02R\x19searchconditionexpression\x88\x01\x01\x12?\n" +
 	"\fsearchvector\x18\xb7\xac\xe66 \x03(\v2\x18.dynamodb.AttributeValueR\fsearchvector\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12\x16\n" +
 	"\x04topk\x18\xb6\xed۵\x01 \x01(\x05R\x04topk\x1aK\n" +
@@ -21046,22 +21128,24 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x1eExpressionattributevaluesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\x17\n" +
-	"\x15_projectionexpressionB\x1c\n" +
+	"\x15_projectionexpressionB\x19\n" +
+	"\x17_returnconsumedcapacityB\x1c\n" +
 	"\x1a_searchconditionexpression\"\xa4\x01\n" +
 	"\x13SearchVectorsOutput\x12H\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x01(\v2\x18.dynamodb.VectorCapacityR\x10consumedcapacity\x12C\n" +
-	"\rsearchresults\x18\x82\x99\xf0\r \x03(\v2\x1a.dynamodb.SearchResultItemR\rsearchresults\"\xdb\x04\n" +
-	"\x12SourceTableDetails\x12:\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeR\vbillingmode\x12$\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03H\x00R\titemcount\x88\x01\x01\x12<\n" +
+	"\rsearchresults\x18\x82\x99\xf0\r \x03(\v2\x1a.dynamodb.SearchResultItemR\rsearchresults\"\xf0\x04\n" +
+	"\x12SourceTableDetails\x12?\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeH\x00R\vbillingmode\x88\x01\x01\x12$\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\x01R\titemcount\x88\x01\x01\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x12P\n" +
 	"\x12ondemandthroughput\x18\x82\xde\xda\xe5\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x12ondemandthroughput\x12W\n" +
 	"\x15provisionedthroughput\x18\x8c\xa3k \x01(\v2\x1f.dynamodb.ProvisionedThroughputR\x15provisionedthroughput\x12#\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x01R\btablearn\x88\x01\x01\x127\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x02R\btablearn\x88\x01\x01\x127\n" +
 	"\x15tablecreationdatetime\x18̺\xe8H \x01(\tR\x15tablecreationdatetime\x12\x1c\n" +
 	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tR\atableid\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12.\n" +
-	"\x0etablesizebytes\x18\xfe\xa1\x9ai \x01(\x03H\x02R\x0etablesizebytes\x88\x01\x01B\f\n" +
+	"\x0etablesizebytes\x18\xfe\xa1\x9ai \x01(\x03H\x03R\x0etablesizebytes\x88\x01\x01B\x0e\n" +
+	"\f_billingmodeB\f\n" +
 	"\n" +
 	"_itemcountB\v\n" +
 	"\t_tablearnB\x11\n" +
@@ -21072,80 +21156,88 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0essedescription\x18\xa5\xc0\xf6\xa6\x01 \x01(\v2\x18.dynamodb.SSEDescriptionR\x0essedescription\x12O\n" +
 	"\x11streamdescription\x18\xca߸\xad\x01 \x01(\v2\x1d.dynamodb.StreamSpecificationR\x11streamdescription\x12Y\n" +
 	"\x15timetolivedescription\x18\xdc\xfb\xa3\xaf\x01 \x01(\v2\x1f.dynamodb.TimeToLiveDescriptionR\x15timetolivedescription\x12B\n" +
-	"\rvectorindexes\x18\x8f\x90\xce\x1f \x03(\v2\x19.dynamodb.VectorIndexInfoR\rvectorindexes\"\x9b\x01\n" +
+	"\rvectorindexes\x18\x8f\x90\xce\x1f \x03(\v2\x19.dynamodb.VectorIndexInfoR\rvectorindexes\"\xb3\x01\n" +
 	"\x13StreamSpecification\x12,\n" +
-	"\rstreamenabled\x18\xffŖ\x7f \x01(\bH\x00R\rstreamenabled\x88\x01\x01\x12D\n" +
-	"\x0estreamviewtype\x18\xb1\x94\xb7\xb5\x01 \x01(\x0e2\x18.dynamodb.StreamViewTypeR\x0estreamviewtypeB\x10\n" +
-	"\x0e_streamenabled\"K\n" +
+	"\rstreamenabled\x18\xffŖ\x7f \x01(\bH\x00R\rstreamenabled\x88\x01\x01\x12I\n" +
+	"\x0estreamviewtype\x18\xb1\x94\xb7\xb5\x01 \x01(\x0e2\x18.dynamodb.StreamViewTypeH\x01R\x0estreamviewtype\x88\x01\x01B\x10\n" +
+	"\x0e_streamenabledB\x11\n" +
+	"\x0f_streamviewtype\"K\n" +
 	"\x1bTableAlreadyExistsException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xd7\x01\n" +
+	"\b_message\"\xec\x01\n" +
 	"\x1bTableAutoScalingDescription\x12G\n" +
 	"\breplicas\x18\xdd\xea\xf8\x91\x01 \x03(\v2'.dynamodb.ReplicaAutoScalingDescriptionR\breplicas\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x00R\ttablename\x88\x01\x01\x12:\n" +
-	"\vtablestatus\x18\xcaߑc \x01(\x0e2\x15.dynamodb.TableStatusR\vtablestatusB\f\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x00R\ttablename\x88\x01\x01\x12?\n" +
+	"\vtablestatus\x18\xcaߑc \x01(\x0e2\x15.dynamodb.TableStatusH\x01R\vtablestatus\x88\x01\x01B\f\n" +
 	"\n" +
-	"_tablename\"\x9d\x01\n" +
+	"_tablenameB\x0e\n" +
+	"\f_tablestatus\"\xb1\x01\n" +
 	"\x11TableClassSummary\x127\n" +
-	"\x12lastupdatedatetime\x18\x8e\xd1\xd4\xd7\x01 \x01(\tH\x00R\x12lastupdatedatetime\x88\x01\x01\x128\n" +
+	"\x12lastupdatedatetime\x18\x8e\xd1\xd4\xd7\x01 \x01(\tH\x00R\x12lastupdatedatetime\x88\x01\x01\x12=\n" +
 	"\n" +
-	"tableclass\x18\x82\xb0\xc0\xa3\x01 \x01(\x0e2\x14.dynamodb.TableClassR\n" +
-	"tableclassB\x15\n" +
-	"\x13_lastupdatedatetime\"\x9e\x05\n" +
+	"tableclass\x18\x82\xb0\xc0\xa3\x01 \x01(\x0e2\x14.dynamodb.TableClassH\x01R\n" +
+	"tableclass\x88\x01\x01B\x15\n" +
+	"\x13_lastupdatedatetimeB\r\n" +
+	"\v_tableclass\"\xb3\x05\n" +
 	"\x17TableCreationParameters\x12U\n" +
-	"\x14attributedefinitions\x18\x84\xbf\xde\xc5\x01 \x03(\v2\x1d.dynamodb.AttributeDefinitionR\x14attributedefinitions\x12:\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeR\vbillingmode\x12Z\n" +
+	"\x14attributedefinitions\x18\x84\xbf\xde\xc5\x01 \x03(\v2\x1d.dynamodb.AttributeDefinitionR\x14attributedefinitions\x12?\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeH\x00R\vbillingmode\x88\x01\x01\x12Z\n" +
 	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2\x1e.dynamodb.GlobalSecondaryIndexR\x16globalsecondaryindexes\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x12P\n" +
 	"\x12ondemandthroughput\x18\x82\xde\xda\xe5\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x12ondemandthroughput\x12W\n" +
 	"\x15provisionedthroughput\x18\x8c\xa3k \x01(\v2\x1f.dynamodb.ProvisionedThroughputR\x15provisionedthroughput\x12I\n" +
 	"\x10ssespecification\x18\x9c\xad\x8e\x0f \x01(\v2\x1a.dynamodb.SSESpecificationR\x10ssespecification\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12>\n" +
-	"\rvectorindexes\x18\x8f\x90\xce\x1f \x03(\v2\x15.dynamodb.VectorIndexR\rvectorindexes\"\xe6\x11\n" +
+	"\rvectorindexes\x18\x8f\x90\xce\x1f \x03(\v2\x15.dynamodb.VectorIndexR\rvectorindexesB\x0e\n" +
+	"\f_billingmode\"\xc8\x12\n" +
 	"\x10TableDescription\x12F\n" +
 	"\x0farchivalsummary\x18\xea\x9f\xe8\x18 \x01(\v2\x19.dynamodb.ArchivalSummaryR\x0farchivalsummary\x12U\n" +
 	"\x14attributedefinitions\x18\x84\xbf\xde\xc5\x01 \x03(\v2\x1d.dynamodb.AttributeDefinitionR\x14attributedefinitions\x12O\n" +
 	"\x12billingmodesummary\x18\x9a\x89\xfdM \x01(\v2\x1c.dynamodb.BillingModeSummaryR\x12billingmodesummary\x122\n" +
 	"\x10creationdatetime\x18\xfa\xf3\xa8\x17 \x01(\tH\x00R\x10creationdatetime\x88\x01\x01\x12D\n" +
 	"\x19deletionprotectionenabled\x18\xd2\xd2\xd9{ \x01(\bH\x01R\x19deletionprotectionenabled\x88\x01\x01\x12e\n" +
-	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2).dynamodb.GlobalSecondaryIndexDescriptionR\x16globalsecondaryindexes\x12\x7f\n" +
-	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeR\"globaltablesettingsreplicationmode\x126\n" +
-	"\x12globaltableversion\x18\xaf\xd8\xc4  \x01(\tH\x02R\x12globaltableversion\x88\x01\x01\x12^\n" +
+	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2).dynamodb.GlobalSecondaryIndexDescriptionR\x16globalsecondaryindexes\x12\x84\x01\n" +
+	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeH\x02R\"globaltablesettingsreplicationmode\x88\x01\x01\x126\n" +
+	"\x12globaltableversion\x18\xaf\xd8\xc4  \x01(\tH\x03R\x12globaltableversion\x88\x01\x01\x12^\n" +
 	"\x14globaltablewitnesses\x18\xc6\xfa\x93\x02 \x03(\v2'.dynamodb.GlobalTableWitnessDescriptionR\x14globaltablewitnesses\x12$\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03H\x03R\titemcount\x88\x01\x01\x12<\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\x04R\titemcount\x88\x01\x01\x12<\n" +
 	"\tkeyschema\x18\xe8\xcf\u074b\x01 \x03(\v2\x1a.dynamodb.KeySchemaElementR\tkeyschema\x120\n" +
-	"\x0flateststreamarn\x18\xb2\xcc\xf0b \x01(\tH\x04R\x0flateststreamarn\x88\x01\x01\x125\n" +
-	"\x11lateststreamlabel\x18\x9d\xc5М\x01 \x01(\tH\x05R\x11lateststreamlabel\x88\x01\x01\x12b\n" +
-	"\x15localsecondaryindexes\x18\xf7\xbc\xe3\xac\x01 \x03(\v2(.dynamodb.LocalSecondaryIndexDescriptionR\x15localsecondaryindexes\x12\\\n" +
-	"\x16multiregionconsistency\x18\xbb\xec\xd6\xd4\x01 \x01(\x0e2 .dynamodb.MultiRegionConsistencyR\x16multiregionconsistency\x12P\n" +
+	"\x0flateststreamarn\x18\xb2\xcc\xf0b \x01(\tH\x05R\x0flateststreamarn\x88\x01\x01\x125\n" +
+	"\x11lateststreamlabel\x18\x9d\xc5М\x01 \x01(\tH\x06R\x11lateststreamlabel\x88\x01\x01\x12b\n" +
+	"\x15localsecondaryindexes\x18\xf7\xbc\xe3\xac\x01 \x03(\v2(.dynamodb.LocalSecondaryIndexDescriptionR\x15localsecondaryindexes\x12a\n" +
+	"\x16multiregionconsistency\x18\xbb\xec\xd6\xd4\x01 \x01(\x0e2 .dynamodb.MultiRegionConsistencyH\aR\x16multiregionconsistency\x88\x01\x01\x12P\n" +
 	"\x12ondemandthroughput\x18\x82\xde\xda\xe5\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x12ondemandthroughput\x12b\n" +
 	"\x15provisionedthroughput\x18\x8c\xa3k \x01(\v2*.dynamodb.ProvisionedThroughputDescriptionR\x15provisionedthroughput\x12<\n" +
 	"\breplicas\x18\xdd\xea\xf8\x91\x01 \x03(\v2\x1c.dynamodb.ReplicaDescriptionR\breplicas\x12D\n" +
 	"\x0erestoresummary\x18\xf0\xf6͝\x01 \x01(\v2\x18.dynamodb.RestoreSummaryR\x0erestoresummary\x12D\n" +
 	"\x0essedescription\x18\xa5\xc0\xf6\xa6\x01 \x01(\v2\x18.dynamodb.SSEDescriptionR\x0essedescription\x12S\n" +
 	"\x13streamspecification\x18ý\xcd\xc0\x01 \x01(\v2\x1d.dynamodb.StreamSpecificationR\x13streamspecification\x12#\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x06R\btablearn\x88\x01\x01\x12L\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\bR\btablearn\x88\x01\x01\x12L\n" +
 	"\x11tableclasssummary\x18\xe0\xe8\x8a\x02 \x01(\v2\x1b.dynamodb.TableClassSummaryR\x11tableclasssummary\x12!\n" +
-	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tH\aR\atableid\x88\x01\x01\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\bR\ttablename\x88\x01\x01\x12.\n" +
-	"\x0etablesizebytes\x18\xfe\xa1\x9ai \x01(\x03H\tR\x0etablesizebytes\x88\x01\x01\x12:\n" +
-	"\vtablestatus\x18\xcaߑc \x01(\x0e2\x15.dynamodb.TableStatusR\vtablestatus\x12I\n" +
+	"\atableid\x18\x93\xa5\xc3\xd6\x01 \x01(\tH\tR\atableid\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\n" +
+	"R\ttablename\x88\x01\x01\x12.\n" +
+	"\x0etablesizebytes\x18\xfe\xa1\x9ai \x01(\x03H\vR\x0etablesizebytes\x88\x01\x01\x12?\n" +
+	"\vtablestatus\x18\xcaߑc \x01(\x0e2\x15.dynamodb.TableStatusH\fR\vtablestatus\x88\x01\x01\x12I\n" +
 	"\rvectorindexes\x18\x8f\x90\xce\x1f \x03(\v2 .dynamodb.VectorIndexDescriptionR\rvectorindexes\x12T\n" +
 	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2(.dynamodb.TableWarmThroughputDescriptionR\x0ewarmthroughputB\x13\n" +
 	"\x11_creationdatetimeB\x1c\n" +
-	"\x1a_deletionprotectionenabledB\x15\n" +
+	"\x1a_deletionprotectionenabledB%\n" +
+	"#_globaltablesettingsreplicationmodeB\x15\n" +
 	"\x13_globaltableversionB\f\n" +
 	"\n" +
 	"_itemcountB\x12\n" +
 	"\x10_lateststreamarnB\x14\n" +
-	"\x12_lateststreamlabelB\v\n" +
+	"\x12_lateststreamlabelB\x19\n" +
+	"\x17_multiregionconsistencyB\v\n" +
 	"\t_tablearnB\n" +
 	"\n" +
 	"\b_tableidB\f\n" +
 	"\n" +
 	"_tablenameB\x11\n" +
-	"\x0f_tablesizebytes\"C\n" +
+	"\x0f_tablesizebytesB\x0e\n" +
+	"\f_tablestatus\"C\n" +
 	"\x13TableInUseException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
@@ -21153,12 +21245,13 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x16TableNotFoundException\x12 \n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_message\"\xf4\x01\n" +
+	"\b_message\"\x84\x02\n" +
 	"\x1eTableWarmThroughputDescription\x126\n" +
-	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03H\x00R\x12readunitspersecond\x88\x01\x01\x120\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.dynamodb.TableStatusR\x06status\x129\n" +
-	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03H\x01R\x13writeunitspersecond\x88\x01\x01B\x15\n" +
-	"\x13_readunitspersecondB\x16\n" +
+	"\x12readunitspersecond\x18\x9c\xec\xb7\x05 \x01(\x03H\x00R\x12readunitspersecond\x88\x01\x01\x125\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.dynamodb.TableStatusH\x01R\x06status\x88\x01\x01\x129\n" +
+	"\x13writeunitspersecond\x18\x8f\xf6\x81\xa2\x01 \x01(\x03H\x02R\x13writeunitspersecond\x88\x01\x01B\x15\n" +
+	"\x13_readunitspersecondB\t\n" +
+	"\a_statusB\x16\n" +
 	"\x14_writeunitspersecond\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
@@ -21175,21 +21268,23 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\tH\x00R\x06reason\x88\x01\x01\x12\"\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tH\x01R\bresource\x88\x01\x01B\t\n" +
 	"\a_reasonB\v\n" +
-	"\t_resource\"\xa4\x01\n" +
+	"\t_resource\"\xbe\x01\n" +
 	"\x15TimeToLiveDescription\x12-\n" +
-	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tH\x00R\rattributename\x88\x01\x01\x12J\n" +
-	"\x10timetolivestatus\x18\xa2\xac\xa1\x85\x01 \x01(\x0e2\x1a.dynamodb.TimeToLiveStatusR\x10timetolivestatusB\x10\n" +
-	"\x0e_attributename\"r\n" +
+	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tH\x00R\rattributename\x88\x01\x01\x12O\n" +
+	"\x10timetolivestatus\x18\xa2\xac\xa1\x85\x01 \x01(\x0e2\x1a.dynamodb.TimeToLiveStatusH\x01R\x10timetolivestatus\x88\x01\x01B\x10\n" +
+	"\x0e_attributenameB\x13\n" +
+	"\x11_timetolivestatus\"r\n" +
 	"\x17TimeToLiveSpecification\x12(\n" +
 	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tR\rattributename\x12!\n" +
 	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01B\n" +
 	"\n" +
 	"\b_enabled\"6\n" +
 	"\x0fTransactGetItem\x12#\n" +
-	"\x03get\x18\xf8\xfdܴ\x01 \x01(\v2\r.dynamodb.GetR\x03get\"\xb9\x01\n" +
-	"\x15TransactGetItemsInput\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12C\n" +
-	"\rtransactitems\x18\xaa\xe1\xb2\xf1\x01 \x03(\v2\x19.dynamodb.TransactGetItemR\rtransactitems\"\x9d\x01\n" +
+	"\x03get\x18\xf8\xfdܴ\x01 \x01(\v2\r.dynamodb.GetR\x03get\"\xd9\x01\n" +
+	"\x15TransactGetItemsInput\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x00R\x16returnconsumedcapacity\x88\x01\x01\x12C\n" +
+	"\rtransactitems\x18\xaa\xe1\xb2\xf1\x01 \x03(\v2\x19.dynamodb.TransactGetItemR\rtransactitemsB\x19\n" +
+	"\x17_returnconsumedcapacity\"\x9d\x01\n" +
 	"\x16TransactGetItemsOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x03(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x127\n" +
 	"\tresponses\x18\xf8\x87\xe26 \x03(\v2\x16.dynamodb.ItemResponseR\tresponses\"\xd7\x01\n" +
@@ -21197,13 +21292,15 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0econditioncheck\x18\x8f\xa7\xf7O \x01(\v2\x18.dynamodb.ConditionCheckR\x0econditioncheck\x12,\n" +
 	"\x06delete\x18\xeb\xd4\u07fc\x01 \x01(\v2\x10.dynamodb.DeleteR\x06delete\x12\"\n" +
 	"\x03put\x18\x8f\xdb\xe4s \x01(\v2\r.dynamodb.PutR\x03put\x12+\n" +
-	"\x06update\x18\x95\x9d\x8cq \x01(\v2\x10.dynamodb.UpdateR\x06update\"\xf9\x02\n" +
+	"\x06update\x18\x95\x9d\x8cq \x01(\v2\x10.dynamodb.UpdateR\x06update\"\xbe\x03\n" +
 	"\x17TransactWriteItemsInput\x127\n" +
-	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tH\x00R\x12clientrequesttoken\x88\x01\x01\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12j\n" +
-	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsR\x1breturnitemcollectionmetrics\x12E\n" +
+	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tH\x00R\x12clientrequesttoken\x88\x01\x01\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x01R\x16returnconsumedcapacity\x88\x01\x01\x12o\n" +
+	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsH\x02R\x1breturnitemcollectionmetrics\x88\x01\x01\x12E\n" +
 	"\rtransactitems\x18\xaa\xe1\xb2\xf1\x01 \x03(\v2\x1b.dynamodb.TransactWriteItemR\rtransactitemsB\x15\n" +
-	"\x13_clientrequesttoken\"\xa8\x02\n" +
+	"\x13_clientrequesttokenB\x19\n" +
+	"\x17_returnconsumedcapacityB\x1e\n" +
+	"\x1c_returnitemcollectionmetrics\"\xa8\x02\n" +
 	"\x18TransactWriteItemsOutput\x12J\n" +
 	"\x10consumedcapacity\x18\xac\xaa\xa1\xd6\x01 \x03(\v2\x1a.dynamodb.ConsumedCapacityR\x10consumedcapacity\x12v\n" +
 	"\x15itemcollectionmetrics\x18\xcc\xf0\xaeX \x03(\v2=.dynamodb.TransactWriteItemsOutput.ItemcollectionmetricsEntryR\x15itemcollectionmetrics\x1aH\n" +
@@ -21225,13 +21322,13 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\b_message\"X\n" +
 	"\x12UntagResourceInput\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
-	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\xcb\x06\n" +
+	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\xf8\x06\n" +
 	"\x06Update\x129\n" +
 	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tH\x00R\x13conditionexpression\x88\x01\x01\x12m\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v2..dynamodb.Update.ExpressionattributenamesEntryR\x18expressionattributenames\x12q\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v2/.dynamodb.Update.ExpressionattributevaluesEntryR\x19expressionattributevalues\x12.\n" +
-	"\x03key\x18\x8d\x92\xebh \x03(\v2\x19.dynamodb.Update.KeyEntryR\x03key\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12 \n" +
+	"\x03key\x18\x8d\x92\xebh \x03(\v2\x19.dynamodb.Update.KeyEntryR\x03key\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x01R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12.\n" +
 	"\x10updateexpression\x18\x87\xe4ι\x01 \x01(\tR\x10updateexpression\x1aK\n" +
 	"\x1dExpressionattributenamesEntry\x12\x10\n" +
@@ -21243,24 +21340,28 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\bKeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\x16\n" +
-	"\x14_conditionexpression\"\xbc\x01\n" +
+	"\x14_conditionexpressionB&\n" +
+	"$_returnvaluesonconditioncheckfailure\"\xbc\x01\n" +
 	"\x1cUpdateContinuousBackupsInput\x12z\n" +
 	" pointintimerecoveryspecification\x18\xee\xebͼ\x01 \x01(\v2*.dynamodb.PointInTimeRecoverySpecificationR pointintimerecoveryspecification\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"\x8f\x01\n" +
 	"\x1dUpdateContinuousBackupsOutput\x12n\n" +
-	"\x1ccontinuousbackupsdescription\x18\xba\xc6\xd7\xd4\x01 \x01(\v2&.dynamodb.ContinuousBackupsDescriptionR\x1ccontinuousbackupsdescription\"\xbc\x02\n" +
+	"\x1ccontinuousbackupsdescription\x18\xba\xc6\xd7\xd4\x01 \x01(\v2&.dynamodb.ContinuousBackupsDescriptionR\x1ccontinuousbackupsdescription\"\xdd\x02\n" +
 	"\x1eUpdateContributorInsightsInput\x12d\n" +
-	"\x19contributorinsightsaction\x18\xbe\xab\x87' \x01(\x0e2#.dynamodb.ContributorInsightsActionR\x19contributorinsightsaction\x12^\n" +
-	"\x17contributorinsightsmode\x18\x81\xe1\xab) \x01(\x0e2!.dynamodb.ContributorInsightsModeR\x17contributorinsightsmode\x12$\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x00R\tindexname\x88\x01\x01\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablenameB\f\n" +
+	"\x19contributorinsightsaction\x18\xbe\xab\x87' \x01(\x0e2#.dynamodb.ContributorInsightsActionR\x19contributorinsightsaction\x12c\n" +
+	"\x17contributorinsightsmode\x18\x81\xe1\xab) \x01(\x0e2!.dynamodb.ContributorInsightsModeH\x00R\x17contributorinsightsmode\x88\x01\x01\x12$\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x01R\tindexname\x88\x01\x01\x12 \n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablenameB\x1a\n" +
+	"\x18_contributorinsightsmodeB\f\n" +
 	"\n" +
-	"_indexname\"\xd1\x02\n" +
-	"\x1fUpdateContributorInsightsOutput\x12^\n" +
-	"\x17contributorinsightsmode\x18\x81\xe1\xab) \x01(\x0e2!.dynamodb.ContributorInsightsModeR\x17contributorinsightsmode\x12e\n" +
-	"\x19contributorinsightsstatus\x18\xd2\xfa\xa0\xad\x01 \x01(\x0e2#.dynamodb.ContributorInsightsStatusR\x19contributorinsightsstatus\x12$\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x00R\tindexname\x88\x01\x01\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x01R\ttablename\x88\x01\x01B\f\n" +
+	"_indexname\"\x95\x03\n" +
+	"\x1fUpdateContributorInsightsOutput\x12c\n" +
+	"\x17contributorinsightsmode\x18\x81\xe1\xab) \x01(\x0e2!.dynamodb.ContributorInsightsModeH\x00R\x17contributorinsightsmode\x88\x01\x01\x12j\n" +
+	"\x19contributorinsightsstatus\x18\xd2\xfa\xa0\xad\x01 \x01(\x0e2#.dynamodb.ContributorInsightsStatusH\x01R\x19contributorinsightsstatus\x88\x01\x01\x12$\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x02R\tindexname\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x03R\ttablename\x88\x01\x01B\x1a\n" +
+	"\x18_contributorinsightsmodeB\x1c\n" +
+	"\x1a_contributorinsightsstatusB\f\n" +
 	"\n" +
 	"_indexnameB\f\n" +
 	"\n" +
@@ -21274,33 +21375,34 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tR\x0fglobaltablename\x12B\n" +
 	"\x0ereplicaupdates\x18\xa0\xe8\xa9| \x03(\v2\x17.dynamodb.ReplicaUpdateR\x0ereplicaupdates\"w\n" +
 	"\x17UpdateGlobalTableOutput\x12\\\n" +
-	"\x16globaltabledescription\x18\xb5\x90\x91\xa3\x01 \x01(\v2 .dynamodb.GlobalTableDescriptionR\x16globaltabledescription\"\xdf\x05\n" +
-	"\x1eUpdateGlobalTableSettingsInput\x12Q\n" +
-	"\x16globaltablebillingmode\x18\xbb\x86\xa8\x88\x01 \x01(\x0e2\x15.dynamodb.BillingModeR\x16globaltablebillingmode\x12\xa1\x01\n" +
+	"\x16globaltabledescription\x18\xb5\x90\x91\xa3\x01 \x01(\v2 .dynamodb.GlobalTableDescriptionR\x16globaltabledescription\"\xff\x05\n" +
+	"\x1eUpdateGlobalTableSettingsInput\x12V\n" +
+	"\x16globaltablebillingmode\x18\xbb\x86\xa8\x88\x01 \x01(\x0e2\x15.dynamodb.BillingModeH\x00R\x16globaltablebillingmode\x88\x01\x01\x12\xa1\x01\n" +
 	"-globaltableglobalsecondaryindexsettingsupdate\x18\xec\x83֯\x01 \x03(\v27.dynamodb.GlobalTableGlobalSecondaryIndexSettingsUpdateR-globaltableglobalsecondaryindexsettingsupdate\x12,\n" +
 	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tR\x0fglobaltablename\x12\xab\x01\n" +
 	"<globaltableprovisionedwritecapacityautoscalingsettingsupdate\x18\xee\xd5\xc3\xcf\x01 \x01(\v2#.dynamodb.AutoScalingSettingsUpdateR<globaltableprovisionedwritecapacityautoscalingsettingsupdate\x12b\n" +
-	"(globaltableprovisionedwritecapacityunits\x18\xbb\xfd\xd1< \x01(\x03H\x00R(globaltableprovisionedwritecapacityunits\x88\x01\x01\x12Y\n" +
-	"\x15replicasettingsupdate\x18\xf4ځ\xdd\x01 \x03(\v2\x1f.dynamodb.ReplicaSettingsUpdateR\x15replicasettingsupdateB+\n" +
+	"(globaltableprovisionedwritecapacityunits\x18\xbb\xfd\xd1< \x01(\x03H\x01R(globaltableprovisionedwritecapacityunits\x88\x01\x01\x12Y\n" +
+	"\x15replicasettingsupdate\x18\xf4ځ\xdd\x01 \x03(\v2\x1f.dynamodb.ReplicaSettingsUpdateR\x15replicasettingsupdateB\x19\n" +
+	"\x17_globaltablebillingmodeB+\n" +
 	")_globaltableprovisionedwritecapacityunits\"\xbc\x01\n" +
 	"\x1fUpdateGlobalTableSettingsOutput\x121\n" +
 	"\x0fglobaltablename\x18\xaa\xa6\xa7\x87\x01 \x01(\tH\x00R\x0fglobaltablename\x88\x01\x01\x12R\n" +
 	"\x0freplicasettings\x18\xbb\xfb߉\x01 \x03(\v2$.dynamodb.ReplicaSettingsDescriptionR\x0freplicasettingsB\x12\n" +
-	"\x10_globaltablename\"\xd1\f\n" +
+	"\x10_globaltablename\"\xf6\r\n" +
 	"\x0fUpdateItemInput\x12^\n" +
 	"\x10attributeupdates\x18\xb8\xe0\xb9\x0f \x03(\v2/.dynamodb.UpdateItemInput.AttributeupdatesEntryR\x10attributeupdates\x129\n" +
-	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tH\x00R\x13conditionexpression\x88\x01\x01\x12R\n" +
-	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorR\x13conditionaloperator\x12F\n" +
+	"\x13conditionexpression\x18\xbd\xc0\xab\xc3\x01 \x01(\tH\x00R\x13conditionexpression\x88\x01\x01\x12W\n" +
+	"\x13conditionaloperator\x18ԋ\x86R \x01(\x0e2\x1d.dynamodb.ConditionalOperatorH\x01R\x13conditionaloperator\x88\x01\x01\x12F\n" +
 	"\bexpected\x18\xfa\xe3\xe72 \x03(\v2'.dynamodb.UpdateItemInput.ExpectedEntryR\bexpected\x12v\n" +
 	"\x18expressionattributenames\x18\xfc\x98\xd1G \x03(\v27.dynamodb.UpdateItemInput.ExpressionattributenamesEntryR\x18expressionattributenames\x12z\n" +
 	"\x19expressionattributevalues\x18\u061c\xa0\xe7\x01 \x03(\v28.dynamodb.UpdateItemInput.ExpressionattributevaluesEntryR\x19expressionattributevalues\x127\n" +
-	"\x03key\x18\x8d\x92\xebh \x03(\v2\".dynamodb.UpdateItemInput.KeyEntryR\x03key\x12[\n" +
-	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityR\x16returnconsumedcapacity\x12j\n" +
-	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsR\x1breturnitemcollectionmetrics\x12=\n" +
-	"\freturnvalues\x18\xc6ޒ\xc0\x01 \x01(\x0e2\x15.dynamodb.ReturnValueR\freturnvalues\x12\x82\x01\n" +
-	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureR#returnvaluesonconditioncheckfailure\x12 \n" +
+	"\x03key\x18\x8d\x92\xebh \x03(\v2\".dynamodb.UpdateItemInput.KeyEntryR\x03key\x12`\n" +
+	"\x16returnconsumedcapacity\x18\xfe\xe7\xe1\x14 \x01(\x0e2 .dynamodb.ReturnConsumedCapacityH\x02R\x16returnconsumedcapacity\x88\x01\x01\x12o\n" +
+	"\x1breturnitemcollectionmetrics\x18\x9a\xf7\xeay \x01(\x0e2%.dynamodb.ReturnItemCollectionMetricsH\x03R\x1breturnitemcollectionmetrics\x88\x01\x01\x12B\n" +
+	"\freturnvalues\x18\xc6ޒ\xc0\x01 \x01(\x0e2\x15.dynamodb.ReturnValueH\x04R\freturnvalues\x88\x01\x01\x12\x87\x01\n" +
+	"#returnvaluesonconditioncheckfailure\x18\xe0\x97\x81\x02 \x01(\x0e2-.dynamodb.ReturnValuesOnConditionCheckFailureH\x05R#returnvaluesonconditioncheckfailure\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x123\n" +
-	"\x10updateexpression\x18\x87\xe4ι\x01 \x01(\tH\x01R\x10updateexpression\x88\x01\x01\x1ac\n" +
+	"\x10updateexpression\x18\x87\xe4ι\x01 \x01(\tH\x06R\x10updateexpression\x88\x01\x01\x1ac\n" +
 	"\x15AttributeupdatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x124\n" +
 	"\x05value\x18\x02 \x01(\v2\x1e.dynamodb.AttributeValueUpdateR\x05value:\x028\x01\x1a]\n" +
@@ -21316,7 +21418,12 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\bKeyEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
 	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01B\x16\n" +
-	"\x14_conditionexpressionB\x13\n" +
+	"\x14_conditionexpressionB\x16\n" +
+	"\x14_conditionaloperatorB\x19\n" +
+	"\x17_returnconsumedcapacityB\x1e\n" +
+	"\x1c_returnitemcollectionmetricsB\x0f\n" +
+	"\r_returnvaluesB&\n" +
+	"$_returnvaluesonconditioncheckfailureB\x13\n" +
 	"\x11_updateexpression\"\xe0\x02\n" +
 	"\x10UpdateItemOutput\x12M\n" +
 	"\n" +
@@ -21326,22 +21433,24 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x15itemcollectionmetrics\x18\xcc\xf0\xaeX \x01(\v2\x1f.dynamodb.ItemCollectionMetricsR\x15itemcollectionmetrics\x1aW\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\"\xae\x01\n" +
-	"#UpdateKinesisStreamingConfiguration\x12\x86\x01\n" +
-	"$approximatecreationdatetimeprecision\x18\xe8ׇ\xbb\x01 \x01(\x0e2..dynamodb.ApproximateCreationDateTimePrecisionR$approximatecreationdatetimeprecision\"\xf1\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.dynamodb.AttributeValueR\x05value:\x028\x01\"\xdc\x01\n" +
+	"#UpdateKinesisStreamingConfiguration\x12\x8b\x01\n" +
+	"$approximatecreationdatetimeprecision\x18\xe8ׇ\xbb\x01 \x01(\x0e2..dynamodb.ApproximateCreationDateTimePrecisionH\x00R$approximatecreationdatetimeprecision\x88\x01\x01B'\n" +
+	"%_approximatecreationdatetimeprecision\"\xf1\x01\n" +
 	"&UpdateKinesisStreamingDestinationInput\x12 \n" +
 	"\tstreamarn\x18\xdd\xf2\xe8\xf4\x01 \x01(\tR\tstreamarn\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12\x82\x01\n" +
-	"#updatekinesisstreamingconfiguration\x18\xfdЃr \x01(\v2-.dynamodb.UpdateKinesisStreamingConfigurationR#updatekinesisstreamingconfiguration\"\xe7\x02\n" +
-	"'UpdateKinesisStreamingDestinationOutput\x12M\n" +
-	"\x11destinationstatus\x18\xea\xc5\xe5\xb5\x01 \x01(\x0e2\x1b.dynamodb.DestinationStatusR\x11destinationstatus\x12%\n" +
-	"\tstreamarn\x18\xdd\xf2\xe8\xf4\x01 \x01(\tH\x00R\tstreamarn\x88\x01\x01\x12%\n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x01R\ttablename\x88\x01\x01\x12\x82\x01\n" +
-	"#updatekinesisstreamingconfiguration\x18\xfdЃr \x01(\v2-.dynamodb.UpdateKinesisStreamingConfigurationR#updatekinesisstreamingconfigurationB\f\n" +
+	"#updatekinesisstreamingconfiguration\x18\xfdЃr \x01(\v2-.dynamodb.UpdateKinesisStreamingConfigurationR#updatekinesisstreamingconfiguration\"\x82\x03\n" +
+	"'UpdateKinesisStreamingDestinationOutput\x12R\n" +
+	"\x11destinationstatus\x18\xea\xc5\xe5\xb5\x01 \x01(\x0e2\x1b.dynamodb.DestinationStatusH\x00R\x11destinationstatus\x88\x01\x01\x12%\n" +
+	"\tstreamarn\x18\xdd\xf2\xe8\xf4\x01 \x01(\tH\x01R\tstreamarn\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x02R\ttablename\x88\x01\x01\x12\x82\x01\n" +
+	"#updatekinesisstreamingconfiguration\x18\xfdЃr \x01(\v2-.dynamodb.UpdateKinesisStreamingConfigurationR#updatekinesisstreamingconfigurationB\x14\n" +
+	"\x12_destinationstatusB\f\n" +
 	"\n" +
 	"_streamarnB\f\n" +
 	"\n" +
-	"_tablename\"\x95\x04\n" +
+	"_tablename\"\xb1\x04\n" +
 	"\"UpdateReplicationGroupMemberAction\x12a\n" +
 	"\x16globalsecondaryindexes\x18\xa9\xfa\x8c\xc3\x01 \x03(\v2%.dynamodb.ReplicaGlobalSecondaryIndexR\x16globalsecondaryindexes\x12/\n" +
 	"\x0ekmsmasterkeyid\x18\xf3\xad\xd3\xf8\x01 \x01(\tH\x00R\x0ekmsmasterkeyid\x88\x01\x01\x12h\n" +
@@ -21349,30 +21458,34 @@ const file_dynamodb_proto_rawDesc = "" +
 	"\x1dprovisionedthroughputoverride\x18\x94\xe5\x8b\xc5\x01 \x01(\v2'.dynamodb.ProvisionedThroughputOverrideR\x1dprovisionedthroughputoverride\x12!\n" +
 	"\n" +
 	"regionname\x18\xbf\x9b\xb95 \x01(\tR\n" +
-	"regionname\x12H\n" +
-	"\x12tableclassoverride\x18\xb2\xaf\x94\xc6\x01 \x01(\x0e2\x14.dynamodb.TableClassR\x12tableclassoverrideB\x11\n" +
-	"\x0f_kmsmasterkeyid\"\xc9\n" +
-	"\n" +
+	"regionname\x12M\n" +
+	"\x12tableclassoverride\x18\xb2\xaf\x94\xc6\x01 \x01(\x0e2\x14.dynamodb.TableClassH\x01R\x12tableclassoverride\x88\x01\x01B\x11\n" +
+	"\x0f_kmsmasterkeyidB\x15\n" +
+	"\x13_tableclassoverride\"\xbf\v\n" +
 	"\x10UpdateTableInput\x12U\n" +
-	"\x14attributedefinitions\x18\x84\xbf\xde\xc5\x01 \x03(\v2\x1d.dynamodb.AttributeDefinitionR\x14attributedefinitions\x12:\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeR\vbillingmode\x12D\n" +
-	"\x19deletionprotectionenabled\x18\xd2\xd2\xd9{ \x01(\bH\x00R\x19deletionprotectionenabled\x88\x01\x01\x12i\n" +
-	"\x1bglobalsecondaryindexupdates\x18\x9b\xe1\xdc~ \x03(\v2$.dynamodb.GlobalSecondaryIndexUpdateR\x1bglobalsecondaryindexupdates\x12\x7f\n" +
-	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeR\"globaltablesettingsreplicationmode\x12i\n" +
-	"\x19globaltablewitnessupdates\x18\xb2\u0b80\x01 \x03(\v2'.dynamodb.GlobalTableWitnessGroupUpdateR\x19globaltablewitnessupdates\x12\\\n" +
-	"\x16multiregionconsistency\x18\xbb\xec\xd6\xd4\x01 \x01(\x0e2 .dynamodb.MultiRegionConsistencyR\x16multiregionconsistency\x12P\n" +
+	"\x14attributedefinitions\x18\x84\xbf\xde\xc5\x01 \x03(\v2\x1d.dynamodb.AttributeDefinitionR\x14attributedefinitions\x12?\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x15.dynamodb.BillingModeH\x00R\vbillingmode\x88\x01\x01\x12D\n" +
+	"\x19deletionprotectionenabled\x18\xd2\xd2\xd9{ \x01(\bH\x01R\x19deletionprotectionenabled\x88\x01\x01\x12i\n" +
+	"\x1bglobalsecondaryindexupdates\x18\x9b\xe1\xdc~ \x03(\v2$.dynamodb.GlobalSecondaryIndexUpdateR\x1bglobalsecondaryindexupdates\x12\x84\x01\n" +
+	"\"globaltablesettingsreplicationmode\x18\xf1\xcd\xfd\x04 \x01(\x0e2,.dynamodb.GlobalTableSettingsReplicationModeH\x02R\"globaltablesettingsreplicationmode\x88\x01\x01\x12i\n" +
+	"\x19globaltablewitnessupdates\x18\xb2\u0b80\x01 \x03(\v2'.dynamodb.GlobalTableWitnessGroupUpdateR\x19globaltablewitnessupdates\x12a\n" +
+	"\x16multiregionconsistency\x18\xbb\xec\xd6\xd4\x01 \x01(\x0e2 .dynamodb.MultiRegionConsistencyH\x03R\x16multiregionconsistency\x88\x01\x01\x12P\n" +
 	"\x12ondemandthroughput\x18\x82\xde\xda\xe5\x01 \x01(\v2\x1c.dynamodb.OnDemandThroughputR\x12ondemandthroughput\x12W\n" +
 	"\x15provisionedthroughput\x18\x8c\xa3k \x01(\v2\x1f.dynamodb.ProvisionedThroughputR\x15provisionedthroughput\x12K\n" +
 	"\x0ereplicaupdates\x18\xa0\xe8\xa9| \x03(\v2 .dynamodb.ReplicationGroupUpdateR\x0ereplicaupdates\x12I\n" +
 	"\x10ssespecification\x18\x9c\xad\x8e\x0f \x01(\v2\x1a.dynamodb.SSESpecificationR\x10ssespecification\x12S\n" +
-	"\x13streamspecification\x18ý\xcd\xc0\x01 \x01(\v2\x1d.dynamodb.StreamSpecificationR\x13streamspecification\x128\n" +
+	"\x13streamspecification\x18ý\xcd\xc0\x01 \x01(\v2\x1d.dynamodb.StreamSpecificationR\x13streamspecification\x12=\n" +
 	"\n" +
-	"tableclass\x18\x82\xb0\xc0\xa3\x01 \x01(\x0e2\x14.dynamodb.TableClassR\n" +
-	"tableclass\x12 \n" +
+	"tableclass\x18\x82\xb0\xc0\xa3\x01 \x01(\x0e2\x14.dynamodb.TableClassH\x04R\n" +
+	"tableclass\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12O\n" +
 	"\x12vectorindexupdates\x18\xe5\xe4\xc1\x80\x01 \x03(\v2\x1b.dynamodb.VectorIndexUpdateR\x12vectorindexupdates\x12D\n" +
-	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2\x18.dynamodb.WarmThroughputR\x0ewarmthroughputB\x1c\n" +
-	"\x1a_deletionprotectionenabled\"^\n" +
+	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2\x18.dynamodb.WarmThroughputR\x0ewarmthroughputB\x0e\n" +
+	"\f_billingmodeB\x1c\n" +
+	"\x1a_deletionprotectionenabledB%\n" +
+	"#_globaltablesettingsreplicationmodeB\x19\n" +
+	"\x17_multiregionconsistencyB\r\n" +
+	"\v_tableclass\"^\n" +
 	"\x11UpdateTableOutput\x12I\n" +
 	"\x10tabledescription\x18\x94\xb4\xc2\t \x01(\v2\x1a.dynamodb.TableDescriptionR\x10tabledescription\"\x93\x03\n" +
 	"\"UpdateTableReplicaAutoScalingInput\x12t\n" +
@@ -21404,43 +21517,46 @@ const file_dynamodb_proto_rawDesc = "" +
 	"projection\x18\xa1\xbf\x8b2 \x01(\v2\x14.dynamodb.ProjectionR\n" +
 	"projection\x12E\n" +
 	"\fsearchschema\x18\xab\xe8ж\x01 \x03(\v2\x1d.dynamodb.SearchSchemaElementR\fsearchschema\x12Q\n" +
-	"\x0fvectorattribute\x18\xcf\xfc\xb6\xb7\x01 \x01(\v2#.dynamodb.VectorAttributeDefinitionR\x0fvectorattribute\"\xca\x05\n" +
+	"\x0fvectorattribute\x18\xcf\xfc\xb6\xb7\x01 \x01(\v2#.dynamodb.VectorAttributeDefinitionR\x0fvectorattribute\"\xf9\x05\n" +
 	"\x16VectorIndexDescription\x12(\n" +
 	"\vbackfilling\x18\xfa\x86\xf1w \x01(\bH\x00R\vbackfilling\x88\x01\x01\x12'\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x01(\x03H\x01R\n" +
-	"dimensions\x88\x01\x01\x12P\n" +
-	"\x10distancefunction\x18\x97\xce\xf6\xc9\x01 \x01(\x0e2 .dynamodb.VectorDistanceFunctionR\x10distancefunction\x12#\n" +
-	"\bindexarn\x18\xffп\xb2\x01 \x01(\tH\x02R\bindexarn\x88\x01\x01\x12$\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x03R\tindexname\x88\x01\x01\x12/\n" +
-	"\x0eindexsizebytes\x18\xea\xf9ټ\x01 \x01(\x03H\x04R\x0eindexsizebytes\x88\x01\x01\x12;\n" +
-	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusR\vindexstatus\x12$\n" +
-	"\titemcount\x18ր\xc4\f \x01(\x03H\x05R\titemcount\x88\x01\x01\x127\n" +
+	"dimensions\x88\x01\x01\x12U\n" +
+	"\x10distancefunction\x18\x97\xce\xf6\xc9\x01 \x01(\x0e2 .dynamodb.VectorDistanceFunctionH\x02R\x10distancefunction\x88\x01\x01\x12#\n" +
+	"\bindexarn\x18\xffп\xb2\x01 \x01(\tH\x03R\bindexarn\x88\x01\x01\x12$\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x04R\tindexname\x88\x01\x01\x12/\n" +
+	"\x0eindexsizebytes\x18\xea\xf9ټ\x01 \x01(\x03H\x05R\x0eindexsizebytes\x88\x01\x01\x12@\n" +
+	"\vindexstatus\x18\u07ba\xe3\xad\x01 \x01(\x0e2\x15.dynamodb.IndexStatusH\x06R\vindexstatus\x88\x01\x01\x12$\n" +
+	"\titemcount\x18ր\xc4\f \x01(\x03H\aR\titemcount\x88\x01\x01\x127\n" +
 	"\n" +
 	"projection\x18\xa1\xbf\x8b2 \x01(\v2\x14.dynamodb.ProjectionR\n" +
 	"projection\x12E\n" +
 	"\fsearchschema\x18\xab\xe8ж\x01 \x03(\v2\x1d.dynamodb.SearchSchemaElementR\fsearchschema\x12Q\n" +
 	"\x0fvectorattribute\x18\xcf\xfc\xb6\xb7\x01 \x01(\v2#.dynamodb.VectorAttributeDefinitionR\x0fvectorattributeB\x0e\n" +
 	"\f_backfillingB\r\n" +
-	"\v_dimensionsB\v\n" +
+	"\v_dimensionsB\x13\n" +
+	"\x11_distancefunctionB\v\n" +
 	"\t_indexarnB\f\n" +
 	"\n" +
 	"_indexnameB\x11\n" +
-	"\x0f_indexsizebytesB\f\n" +
+	"\x0f_indexsizebytesB\x0e\n" +
+	"\f_indexstatusB\f\n" +
 	"\n" +
-	"_itemcount\"\xa2\x03\n" +
+	"_itemcount\"\xbc\x03\n" +
 	"\x0fVectorIndexInfo\x12'\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x01(\x03H\x00R\n" +
-	"dimensions\x88\x01\x01\x12P\n" +
-	"\x10distancefunction\x18\x97\xce\xf6\xc9\x01 \x01(\x0e2 .dynamodb.VectorDistanceFunctionR\x10distancefunction\x12$\n" +
-	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x01R\tindexname\x88\x01\x01\x127\n" +
+	"dimensions\x88\x01\x01\x12U\n" +
+	"\x10distancefunction\x18\x97\xce\xf6\xc9\x01 \x01(\x0e2 .dynamodb.VectorDistanceFunctionH\x01R\x10distancefunction\x88\x01\x01\x12$\n" +
+	"\tindexname\x18\x91\xd5\xeb0 \x01(\tH\x02R\tindexname\x88\x01\x01\x127\n" +
 	"\n" +
 	"projection\x18\xa1\xbf\x8b2 \x01(\v2\x14.dynamodb.ProjectionR\n" +
 	"projection\x12E\n" +
 	"\fsearchschema\x18\xab\xe8ж\x01 \x03(\v2\x1d.dynamodb.SearchSchemaElementR\fsearchschema\x12Q\n" +
 	"\x0fvectorattribute\x18\xcf\xfc\xb6\xb7\x01 \x01(\v2#.dynamodb.VectorAttributeDefinitionR\x0fvectorattributeB\r\n" +
-	"\v_dimensionsB\f\n" +
+	"\v_dimensionsB\x13\n" +
+	"\x11_distancefunctionB\f\n" +
 	"\n" +
 	"_indexname\"\x91\x01\n" +
 	"\x11VectorIndexUpdate\x12=\n" +
@@ -22803,6 +22919,7 @@ func file_dynamodb_proto_init() {
 	}
 	file_dynamodb_proto_msgTypes[0].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[2].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[3].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[4].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[5].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[6].OneofWrappers = []any{}
@@ -22813,12 +22930,16 @@ func file_dynamodb_proto_init() {
 	file_dynamodb_proto_msgTypes[12].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[13].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[14].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[15].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[17].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[19].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[20].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[21].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[22].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[24].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[25].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[26].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[28].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[29].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[30].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[32].OneofWrappers = []any{}
@@ -22836,6 +22957,7 @@ func file_dynamodb_proto_init() {
 	file_dynamodb_proto_msgTypes[78].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[80].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[87].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[88].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[90].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[91].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[92].OneofWrappers = []any{}
@@ -22894,10 +23016,12 @@ func file_dynamodb_proto_init() {
 	file_dynamodb_proto_msgTypes[159].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[160].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[161].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[162].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[163].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[164].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[165].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[166].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[167].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[169].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[170].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[171].OneofWrappers = []any{}
@@ -22924,6 +23048,7 @@ func file_dynamodb_proto_init() {
 	file_dynamodb_proto_msgTypes[198].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[199].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[200].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[201].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[203].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[205].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[206].OneofWrappers = []any{}
@@ -22937,6 +23062,7 @@ func file_dynamodb_proto_init() {
 	file_dynamodb_proto_msgTypes[217].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[218].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[219].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[220].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[221].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[222].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[223].OneofWrappers = []any{}
@@ -22945,6 +23071,7 @@ func file_dynamodb_proto_init() {
 	file_dynamodb_proto_msgTypes[228].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[229].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[230].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[232].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[235].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[237].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[238].OneofWrappers = []any{}
@@ -22955,6 +23082,7 @@ func file_dynamodb_proto_init() {
 	file_dynamodb_proto_msgTypes[249].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[250].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[251].OneofWrappers = []any{}
+	file_dynamodb_proto_msgTypes[253].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[255].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[256].OneofWrappers = []any{}
 	file_dynamodb_proto_msgTypes[257].OneofWrappers = []any{}

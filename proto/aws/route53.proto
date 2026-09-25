@@ -1968,7 +1968,7 @@ message HealthCheckConfig {
 
   optional string ipaddress = 169333741;
 
-  InsufficientDataHealthStatus insufficientdatahealthstatus = 493115723;
+  optional InsufficientDataHealthStatus insufficientdatahealthstatus = 493115723;
 
   optional bool inverted = 55175513;
 
@@ -2008,7 +2008,7 @@ message HealthCheckObservation {
 
   optional string ipaddress = 169333741;
 
-  HealthCheckRegion region = 154040478;
+  optional HealthCheckRegion region = 154040478;
 
   StatusReport statusreport = 27958834;
 
@@ -2130,7 +2130,7 @@ message HostedZoneFailureReasons {
 
 message HostedZoneFeatures {
 
-  AcceleratedRecoveryStatus acceleratedrecoverystatus = 507534246;
+  optional AcceleratedRecoveryStatus acceleratedrecoverystatus = 507534246;
 
   HostedZoneFailureReasons failurereasons = 445146219;
 
@@ -2692,7 +2692,7 @@ message ListHostedZonesRequest {
 
   optional string delegationsetid = 307328801;
 
-  HostedZoneType hostedzonetype = 409319401;
+  optional HostedZoneType hostedzonetype = 409319401;
 
   optional string marker = 89353912;
 
@@ -2752,7 +2752,7 @@ message ListResourceRecordSetsRequest {
 
   optional string startrecordname = 145299062;
 
-  RRType startrecordtype = 408714791;
+  optional RRType startrecordtype = 408714791;
 
 }
 
@@ -2770,7 +2770,7 @@ message ListResourceRecordSetsResponse {
 
   optional string nextrecordname = 131258783;
 
-  RRType nextrecordtype = 97817846;
+  optional RRType nextrecordtype = 97817846;
 
   repeated ResourceRecordSet resourcerecordsets = 77807302;
 
@@ -2890,7 +2890,7 @@ message ListTrafficPolicyInstancesByHostedZoneRequest {
 
   optional string trafficpolicyinstancenamemarker = 136215379;
 
-  RRType trafficpolicyinstancetypemarker = 30935978;
+  optional RRType trafficpolicyinstancetypemarker = 30935978;
 
 }
 
@@ -2906,7 +2906,7 @@ message ListTrafficPolicyInstancesByHostedZoneResponse {
 
   optional string trafficpolicyinstancenamemarker = 136215379;
 
-  RRType trafficpolicyinstancetypemarker = 30935978;
+  optional RRType trafficpolicyinstancetypemarker = 30935978;
 
   repeated TrafficPolicyInstance trafficpolicyinstances = 199455009;
 
@@ -2926,7 +2926,7 @@ message ListTrafficPolicyInstancesByPolicyRequest {
 
   optional string trafficpolicyinstancenamemarker = 136215379;
 
-  RRType trafficpolicyinstancetypemarker = 30935978;
+  optional RRType trafficpolicyinstancetypemarker = 30935978;
 
   int32 trafficpolicyversion = 479078485;
 
@@ -2946,7 +2946,7 @@ message ListTrafficPolicyInstancesByPolicyResponse {
 
   optional string trafficpolicyinstancenamemarker = 136215379;
 
-  RRType trafficpolicyinstancetypemarker = 30935978;
+  optional RRType trafficpolicyinstancetypemarker = 30935978;
 
   repeated TrafficPolicyInstance trafficpolicyinstances = 199455009;
 
@@ -2964,7 +2964,7 @@ message ListTrafficPolicyInstancesRequest {
 
   optional string trafficpolicyinstancenamemarker = 136215379;
 
-  RRType trafficpolicyinstancetypemarker = 30935978;
+  optional RRType trafficpolicyinstancetypemarker = 30935978;
 
 }
 
@@ -2982,7 +2982,7 @@ message ListTrafficPolicyInstancesResponse {
 
   optional string trafficpolicyinstancenamemarker = 136215379;
 
-  RRType trafficpolicyinstancetypemarker = 30935978;
+  optional RRType trafficpolicyinstancetypemarker = 30935978;
 
   repeated TrafficPolicyInstance trafficpolicyinstances = 199455009;
 
@@ -3304,7 +3304,7 @@ message ResourceRecordSet {
 
   CidrRoutingConfig cidrroutingconfig = 357245246;
 
-  ResourceRecordSetFailover failover = 26793064;
+  optional ResourceRecordSetFailover failover = 26793064;
 
   GeoLocation geolocation = 267973346;
 
@@ -3316,7 +3316,7 @@ message ResourceRecordSet {
 
   string name = 266367751;
 
-  ResourceRecordSetRegion region = 154040478;
+  optional ResourceRecordSetRegion region = 154040478;
 
   repeated ResourceRecord resourcerecords = 519418974;
 
@@ -3434,7 +3434,7 @@ message ResourceTagSet {
 
   optional string resourceid = 526146833;
 
-  TagResourceType resourcetype = 301342558;
+  optional TagResourceType resourcetype = 301342558;
 
   repeated Tag tags = 381526209;
 
@@ -3750,7 +3750,7 @@ message UpdateHealthCheckRequest {
 
   optional string ipaddress = 169333741;
 
-  InsufficientDataHealthStatus insufficientdatahealthstatus = 493115723;
+  optional InsufficientDataHealthStatus insufficientdatahealthstatus = 493115723;
 
   optional bool inverted = 55175513;
 
@@ -3872,7 +3872,7 @@ message VPC {
 
   optional string vpcid = 325135798;
 
-  VPCRegion vpcregion = 474180765;
+  optional VPCRegion vpcregion = 474180765;
 
 }
 

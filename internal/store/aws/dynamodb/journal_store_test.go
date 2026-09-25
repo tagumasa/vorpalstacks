@@ -1,10 +1,12 @@
 package dynamodb
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	commonstore "vorpalstacks/internal/store/aws/common"
 )
 
 func strAttr(v string) *AttributeValue {
@@ -23,7 +25,7 @@ func TestJournalStoreReverseReplayOrder(t *testing.T) {
 	base := time.Date(2026, 8, 19, 12, 0, 0, 0, time.UTC)
 	key := map[string]*AttributeValue{"id": strAttr("a")}
 
-	appendRecord := func(at time.Time, operation string, before map[string]*AttributeValue) {
+	appendRecord := func(at time.Time, operation JournalOperation, before map[string]*AttributeValue) {
 		t.Helper()
 		if err := st.Update(t.Context(), func(txn storage.Transaction) error {
 			return appendJournalTxnAt(txn, region, "JournalTbl", operation, key, before, at)
@@ -123,7 +125,7 @@ func TestDynamoDBTxnJournalsPITRWrites(t *testing.T) {
 	}
 	defer st.Close()
 
-	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
 	if _, err := store.Tables().Create(CreateTableParams{
 		Name:                 "PitrTbl",
 		KeySchema:            []*KeySchemaElement{{AttributeName: "id", KeyType: KeyTypeHash}},
@@ -223,4 +225,142 @@ func TestDynamoDBTxnJournalsPITRWrites(t *testing.T) {
 	if item.Attributes["v"].S == nil || *item.Attributes["v"].S != "0" {
 		t.Fatalf("item must hold the pre-recovery value v=0 after undo, got %v", item.Attributes["v"])
 	}
+}
+
+// TestJournalRecordsOnlyExistingKeyDeletes pins the journal's missing-key
+// path directly: a delete of a key the table does not hold changes nothing,
+// so it journals nothing (the record exists to undo a change, and there is
+// none), while the delete of a live key journals exactly one record — and
+// DeleteAllForTable empties the table's whole journal space, the same
+// reset a PITR disable owes.
+func TestJournalRecordsOnlyExistingKeyDeletes(t *testing.T) {
+	st, err := storage.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("open storage: %v", err)
+	}
+	defer st.Close()
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
+
+	if _, err := store.Tables().Create(CreateTableParams{
+		Name:                 "JrnlTbl",
+		KeySchema:            []*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}},
+		AttributeDefinitions: []*AttributeDefinition{{AttributeName: "pk", AttributeType: ScalarAttributeTypeS}},
+		BillingMode:          BillingModePayPerRequest,
+	}); err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+	if err := store.Tables().SetPointInTimeRecovery("JrnlTbl", &PointInTimeRecoveryDescription{Status: PITRStatusEnabled}); err != nil {
+		t.Fatalf("enable pitr: %v", err)
+	}
+
+	countJournal := func() int {
+		t.Helper()
+		n := 0
+		if err := store.Journal().ScanPrefix("JrnlTbl"+KeySep, func(_ string, _ []byte) error {
+			n++
+			return nil
+		}); err != nil {
+			t.Fatalf("scan journal: %v", err)
+		}
+		return n
+	}
+	liveKey := map[string]*AttributeValue{"pk": StringValue("live")}
+	str := "v"
+	if err := store.Update(context.Background(), func(txn *DynamoDBTxn) error {
+		return txn.StoreItemWrite("JrnlTbl", liveKey, map[string]*AttributeValue{"pk": {S: &str}}, nil, false, 0)
+	}); err != nil {
+		t.Fatalf("seed live item: %v", err)
+	}
+	if got := countJournal(); got != 1 {
+		t.Fatalf("journal after the seed write = %d records, want 1 (the put)", got)
+	}
+
+	// The vacant-key delete writes no journal record.
+	if err := store.Update(context.Background(), func(txn *DynamoDBTxn) error {
+		return txn.DeleteItemWrite("JrnlTbl", map[string]*AttributeValue{"pk": StringValue("vacant")}, nil, false, 0)
+	}); err != nil {
+		t.Fatalf("vacant delete: %v", err)
+	}
+	if got := countJournal(); got != 1 {
+		t.Fatalf("journal after the vacant delete = %d records, want still 1", got)
+	}
+
+	// The live-key delete journals its undo record.
+	var existing *Item
+	if err := store.Update(context.Background(), func(txn *DynamoDBTxn) error {
+		var err error
+		existing, err = txn.GetItem("JrnlTbl", liveKey)
+		return err
+	}); err != nil {
+		t.Fatalf("read live item: %v", err)
+	}
+	if err := store.Update(context.Background(), func(txn *DynamoDBTxn) error {
+		return txn.DeleteItemWrite("JrnlTbl", liveKey, existing, true, CalculateItemSize(existing.Attributes))
+	}); err != nil {
+		t.Fatalf("live delete: %v", err)
+	}
+	if got := countJournal(); got != 2 {
+		t.Fatalf("journal after the live delete = %d records, want 2 (put + delete)", got)
+	}
+
+	// DeleteAllForTable empties the space.
+	if err := store.Journal().DeleteAllForTable("JrnlTbl"); err != nil {
+		t.Fatalf("delete all: %v", err)
+	}
+	if got := countJournal(); got != 0 {
+		t.Fatalf("journal after DeleteAllForTable = %d records, want 0", got)
+	}
+}
+
+// TestGlobalTableStoreDeleteDirect pins the global-table record delete
+// directly: an existing record goes away, and deleting an absent name is
+// the idempotent no-op the underlying key delete defines (the empty-group
+// cleanup calls Delete unconditionally and must not fail on the absent).
+func TestGlobalTableStoreDeleteDirect(t *testing.T) {
+	st, err := storage.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("open storage: %v", err)
+	}
+	defer st.Close()
+	store := NewDynamoDBStore(st, st, "123456789012", "us-east-1")
+
+	replica := "us-east-1"
+	if _, err := store.GlobalTables().Create("GoneTable", []*Replica{{RegionName: replica}}); err != nil {
+		t.Fatalf("create global table: %v", err)
+	}
+	if err := store.GlobalTables().Delete("GoneTable"); err != nil {
+		t.Fatalf("delete global table: %v", err)
+	}
+	if _, err := store.GlobalTables().Get("GoneTable"); !commonstore.IsNotFound(err) {
+		t.Fatalf("get after delete: err = %v, want the not-found class", err)
+	}
+	if err := store.GlobalTables().Delete("GoneTable"); err != nil {
+		t.Fatalf("delete of an absent record: err = %v, want the idempotent no-op", err)
+	}
+}
+
+// TestJournalKeyStaysWithinItsFixedWidth pins the sequence component's
+// width bound: at any counter value — including past the modulus — the
+// rendered key's sequence component is exactly journalSeqWidth digits, so
+// lexicographic order never inverts at the boundary.
+func TestJournalKeyStaysWithinItsFixedWidth(t *testing.T) {
+	at := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+
+	journalSequence.Store(journalSeqModulus - 2)
+	nearBoundary := journalRecordKey("Tbl", at)
+	pastBoundary := journalRecordKey("Tbl", at)
+
+	seqOf := func(key string) string {
+		return key[len("Tbl"+KeySep)+journalTimeWidth:]
+	}
+	if len(seqOf(nearBoundary)) != journalSeqWidth || len(seqOf(pastBoundary)) != journalSeqWidth {
+		t.Fatalf("sequence components must stay %d digits, got %q and %q",
+			journalSeqWidth, seqOf(nearBoundary), seqOf(pastBoundary))
+	}
+	if seqOf(nearBoundary) != "9999999999" || seqOf(pastBoundary) != "0000000000" {
+		t.Fatalf("boundary wrap rendered %q then %q, want 9999999999 then 0000000000",
+			seqOf(nearBoundary), seqOf(pastBoundary))
+	}
+
+	journalSequence.Store(0)
 }

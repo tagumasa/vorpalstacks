@@ -50,6 +50,29 @@ func TestPartiQLSelect(t *testing.T) {
 	}
 }
 
+// The double angle brackets are the PartiQL set literal, distinct tokens
+// in the dialect so they never collide with the shift operators the MySQL
+// dialect carries; the shift operators themselves are not PartiQL grammar.
+func TestPartiQLSetLiteral(t *testing.T) {
+	opts := ParserOptions{Dialect: DialectPartiQL}
+	for _, sql := range []string{
+		`UPDATE "t" SET s = <<'a', 'b'>> WHERE pk = 'k1'`,
+		`UPDATE "t" SET n = <<1, 2.5>> WHERE pk = 'k1'`,
+		`UPDATE "t" SET s = set_add(s, <<'x'>>) WHERE pk = 'k1'`,
+		`INSERT INTO "t" VALUE {'id': 'a', 'tags': <<'x', 'y'>>}`,
+	} {
+		if _, err := ParseWithOptions(sql, opts); err != nil {
+			t.Errorf("Parse error: %v\nSQL: %s", err, sql)
+		}
+	}
+
+	// The MySQL dialect keeps the shift operators the tokens encode there.
+	mysql := ParserOptions{Dialect: DialectMySQL}
+	if _, err := ParseWithOptions(`SELECT a << 2 FROM t`, mysql); err != nil {
+		t.Errorf("MySQL shift-left must keep parsing: %v", err)
+	}
+}
+
 func TestPartiQLUpdate(t *testing.T) {
 	opts := ParserOptions{Dialect: DialectPartiQL}
 

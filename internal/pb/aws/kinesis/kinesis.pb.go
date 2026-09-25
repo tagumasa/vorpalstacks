@@ -5558,7 +5558,7 @@ func (x *PutRecordInput) GetStreamname() string {
 
 type PutRecordOutput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Encryptiontype EncryptionType         `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType" json:"encryptiontype,omitempty"`
+	Encryptiontype *EncryptionType        `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType,oneof" json:"encryptiontype,omitempty"`
 	Sequencenumber string                 `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3" json:"sequencenumber,omitempty"`
 	Shardid        string                 `protobuf:"bytes,66410951,opt,name=shardid,proto3" json:"shardid,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -5596,8 +5596,8 @@ func (*PutRecordOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutRecordOutput) GetEncryptiontype() EncryptionType {
-	if x != nil {
-		return x.Encryptiontype
+	if x != nil && x.Encryptiontype != nil {
+		return *x.Encryptiontype
 	}
 	return EncryptionType_ENCRYPTION_TYPE_NONE
 }
@@ -5694,7 +5694,7 @@ func (x *PutRecordsInput) GetStreamname() string {
 
 type PutRecordsOutput struct {
 	state             protoimpl.MessageState   `protogen:"open.v1"`
-	Encryptiontype    EncryptionType           `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType" json:"encryptiontype,omitempty"`
+	Encryptiontype    *EncryptionType          `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType,oneof" json:"encryptiontype,omitempty"`
 	Failedrecordcount *int32                   `protobuf:"varint,89270457,opt,name=failedrecordcount,proto3,oneof" json:"failedrecordcount,omitempty"`
 	Records           []*PutRecordsResultEntry `protobuf:"bytes,423557454,rep,name=records,proto3" json:"records,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -5732,8 +5732,8 @@ func (*PutRecordsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutRecordsOutput) GetEncryptiontype() EncryptionType {
-	if x != nil {
-		return x.Encryptiontype
+	if x != nil && x.Encryptiontype != nil {
+		return *x.Encryptiontype
 	}
 	return EncryptionType_ENCRYPTION_TYPE_NONE
 }
@@ -5944,7 +5944,7 @@ type Record struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Approximatearrivaltimestamp *string                `protobuf:"bytes,95039887,opt,name=approximatearrivaltimestamp,proto3,oneof" json:"approximatearrivaltimestamp,omitempty"`
 	Data                        []byte                 `protobuf:"bytes,525498822,opt,name=data,proto3" json:"data,omitempty"`
-	Encryptiontype              EncryptionType         `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType" json:"encryptiontype,omitempty"`
+	Encryptiontype              *EncryptionType        `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType,oneof" json:"encryptiontype,omitempty"`
 	Partitionkey                string                 `protobuf:"bytes,379379617,opt,name=partitionkey,proto3" json:"partitionkey,omitempty"`
 	Sequencenumber              string                 `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3" json:"sequencenumber,omitempty"`
 	unknownFields               protoimpl.UnknownFields
@@ -5996,8 +5996,8 @@ func (x *Record) GetData() []byte {
 }
 
 func (x *Record) GetEncryptiontype() EncryptionType {
-	if x != nil {
-		return x.Encryptiontype
+	if x != nil && x.Encryptiontype != nil {
+		return *x.Encryptiontype
 	}
 	return EncryptionType_ENCRYPTION_TYPE_NONE
 }
@@ -6506,7 +6506,7 @@ type S3StorageConfiguration struct {
 	Compressiontype     S3CompressionType      `protobuf:"varint,335198942,opt,name=compressiontype,proto3,enum=kinesis.S3CompressionType" json:"compressiontype,omitempty"`
 	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
 	Outputkeytemplate   *string                `protobuf:"bytes,216170386,opt,name=outputkeytemplate,proto3,oneof" json:"outputkeytemplate,omitempty"`
-	Storageclass        S3StorageClass         `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=kinesis.S3StorageClass" json:"storageclass,omitempty"`
+	Storageclass        *S3StorageClass        `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=kinesis.S3StorageClass,oneof" json:"storageclass,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -6570,8 +6570,8 @@ func (x *S3StorageConfiguration) GetOutputkeytemplate() string {
 }
 
 func (x *S3StorageConfiguration) GetStorageclass() S3StorageClass {
-	if x != nil {
-		return x.Storageclass
+	if x != nil && x.Storageclass != nil {
+		return *x.Storageclass
 	}
 	return S3StorageClass_S3_STORAGE_CLASS_STANDARD
 }
@@ -7294,7 +7294,7 @@ func (x *StopStreamEncryptionInput) GetStreamname() string {
 
 type StreamDescription struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Encryptiontype          EncryptionType         `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType" json:"encryptiontype,omitempty"`
+	Encryptiontype          *EncryptionType        `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType,oneof" json:"encryptiontype,omitempty"`
 	Enhancedmonitoring      []*EnhancedMetrics     `protobuf:"bytes,452259826,rep,name=enhancedmonitoring,proto3" json:"enhancedmonitoring,omitempty"`
 	Hasmoreshards           *bool                  `protobuf:"varint,10836604,opt,name=hasmoreshards,proto3,oneof" json:"hasmoreshards,omitempty"`
 	Keyid                   *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
@@ -7340,8 +7340,8 @@ func (*StreamDescription) Descriptor() ([]byte, []int) {
 }
 
 func (x *StreamDescription) GetEncryptiontype() EncryptionType {
-	if x != nil {
-		return x.Encryptiontype
+	if x != nil && x.Encryptiontype != nil {
+		return *x.Encryptiontype
 	}
 	return EncryptionType_ENCRYPTION_TYPE_NONE
 }
@@ -7420,7 +7420,7 @@ type StreamDescriptionSummary struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Channelcount            *int32                 `protobuf:"varint,369813244,opt,name=channelcount,proto3,oneof" json:"channelcount,omitempty"`
 	Consumercount           *int32                 `protobuf:"varint,448084721,opt,name=consumercount,proto3,oneof" json:"consumercount,omitempty"`
-	Encryptiontype          EncryptionType         `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType" json:"encryptiontype,omitempty"`
+	Encryptiontype          *EncryptionType        `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=kinesis.EncryptionType,oneof" json:"encryptiontype,omitempty"`
 	Enhancedmonitoring      []*EnhancedMetrics     `protobuf:"bytes,452259826,rep,name=enhancedmonitoring,proto3" json:"enhancedmonitoring,omitempty"`
 	Keyid                   *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	Maxrecordsizeinkib      *int32                 `protobuf:"varint,197267253,opt,name=maxrecordsizeinkib,proto3,oneof" json:"maxrecordsizeinkib,omitempty"`
@@ -7482,8 +7482,8 @@ func (x *StreamDescriptionSummary) GetConsumercount() int32 {
 }
 
 func (x *StreamDescriptionSummary) GetEncryptiontype() EncryptionType {
-	if x != nil {
-		return x.Encryptiontype
+	if x != nil && x.Encryptiontype != nil {
+		return *x.Encryptiontype
 	}
 	return EncryptionType_ENCRYPTION_TYPE_NONE
 }
@@ -9447,11 +9447,12 @@ const file_kinesis_proto_rawDesc = "" +
 	"\n" +
 	"_streamarnB\v\n" +
 	"\t_streamidB\r\n" +
-	"\v_streamname\"\x9d\x01\n" +
-	"\x0fPutRecordOutput\x12B\n" +
-	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeR\x0eencryptiontype\x12)\n" +
+	"\v_streamname\"\xb5\x01\n" +
+	"\x0fPutRecordOutput\x12G\n" +
+	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeH\x00R\x0eencryptiontype\x88\x01\x01\x12)\n" +
 	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tR\x0esequencenumber\x12\x1b\n" +
-	"\ashardid\x18ǳ\xd5\x1f \x01(\tR\ashardid\"\x9a\x02\n" +
+	"\ashardid\x18ǳ\xd5\x1f \x01(\tR\ashardidB\x11\n" +
+	"\x0f_encryptiontype\"\x9a\x02\n" +
 	"\x0fPutRecordsInput\x12\x1e\n" +
 	"\x06dryrun\x18\xb8\xdf\xfb+ \x01(\bH\x00R\x06dryrun\x88\x01\x01\x12=\n" +
 	"\arecords\x18\xce\xf2\xfb\xc9\x01 \x03(\v2\x1f.kinesis.PutRecordsRequestEntryR\arecords\x12%\n" +
@@ -9464,11 +9465,12 @@ const file_kinesis_proto_rawDesc = "" +
 	"\n" +
 	"_streamarnB\v\n" +
 	"\t_streamidB\r\n" +
-	"\v_streamname\"\xe0\x01\n" +
-	"\x10PutRecordsOutput\x12B\n" +
-	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeR\x0eencryptiontype\x124\n" +
-	"\x11failedrecordcount\x18\xb9\xd1\xc8* \x01(\x05H\x00R\x11failedrecordcount\x88\x01\x01\x12<\n" +
-	"\arecords\x18\xce\xf2\xfb\xc9\x01 \x03(\v2\x1e.kinesis.PutRecordsResultEntryR\arecordsB\x14\n" +
+	"\v_streamname\"\xf8\x01\n" +
+	"\x10PutRecordsOutput\x12G\n" +
+	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeH\x00R\x0eencryptiontype\x88\x01\x01\x124\n" +
+	"\x11failedrecordcount\x18\xb9\xd1\xc8* \x01(\x05H\x01R\x11failedrecordcount\x88\x01\x01\x12<\n" +
+	"\arecords\x18\xce\xf2\xfb\xc9\x01 \x03(\v2\x1e.kinesis.PutRecordsResultEntryR\arecordsB\x11\n" +
+	"\x0f_encryptiontypeB\x14\n" +
 	"\x12_failedrecordcount\"\x9f\x01\n" +
 	"\x16PutRecordsRequestEntry\x12\x16\n" +
 	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x01(\fR\x04data\x121\n" +
@@ -9490,14 +9492,15 @@ const file_kinesis_proto_rawDesc = "" +
 	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12#\n" +
 	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tH\x00R\bstreamid\x88\x01\x01B\v\n" +
-	"\t_streamid\"\xa1\x02\n" +
+	"\t_streamid\"\xb9\x02\n" +
 	"\x06Record\x12H\n" +
 	"\x1bapproximatearrivaltimestamp\x18\x8f\xe3\xa8- \x01(\tH\x00R\x1bapproximatearrivaltimestamp\x88\x01\x01\x12\x16\n" +
-	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x01(\fR\x04data\x12B\n" +
-	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeR\x0eencryptiontype\x12&\n" +
+	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x01(\fR\x04data\x12G\n" +
+	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeH\x01R\x0eencryptiontype\x88\x01\x01\x12&\n" +
 	"\fpartitionkey\x18\xa1\xbf\xf3\xb4\x01 \x01(\tR\fpartitionkey\x12)\n" +
 	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tR\x0esequencenumberB\x1e\n" +
-	"\x1c_approximatearrivaltimestamp\"\x9d\x01\n" +
+	"\x1c_approximatearrivaltimestampB\x11\n" +
+	"\x0f_encryptiontype\"\x9d\x01\n" +
 	"\x13RecordConfiguration\x12*\n" +
 	"\fgsrschemaarn\x18\xf0\x87\xf8y \x01(\tH\x00R\fgsrschemaarn\x88\x01\x01\x12I\n" +
 	"\x10recordformattype\x18\xe8\xed\xf5\xc5\x01 \x01(\x0e2\x19.kinesis.RecordFormatTypeR\x10recordformattypeB\x0f\n" +
@@ -9542,14 +9545,15 @@ const file_kinesis_proto_rawDesc = "" +
 	"\x1edeadletterqueues3configuration\x18\xb3\xf1\x87\x9e\x01 \x01(\v2'.kinesis.DeadLetterQueueS3ConfigurationR\x1edeadletterqueues3configuration\x12W\n" +
 	"\x14storageconfiguration\x18\x8d\x89ښ\x01 \x01(\v2\x1f.kinesis.S3StorageConfigurationR\x14storageconfiguration\"V\n" +
 	"\x18S3DestinationUpdateInput\x12:\n" +
-	"\x16datafreshnessinseconds\x18홦\xfd\x01 \x01(\x05R\x16datafreshnessinseconds\"\xc5\x02\n" +
+	"\x16datafreshnessinseconds\x18홦\xfd\x01 \x01(\x05R\x16datafreshnessinseconds\"\xdb\x02\n" +
 	"\x16S3StorageConfiguration\x12\x1f\n" +
 	"\tbucketarn\x18\xbbٳ| \x01(\tR\tbucketarn\x12H\n" +
 	"\x0fcompressiontype\x18\xde\xf5\xea\x9f\x01 \x01(\x0e2\x1a.kinesis.S3CompressionTypeR\x0fcompressiontype\x123\n" +
 	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x124\n" +
-	"\x11outputkeytemplate\x18\x92\xff\x89g \x01(\tH\x00R\x11outputkeytemplate\x88\x01\x01\x12?\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x17.kinesis.S3StorageClassR\fstorageclassB\x14\n" +
-	"\x12_outputkeytemplate\"\x98\x02\n" +
+	"\x11outputkeytemplate\x18\x92\xff\x89g \x01(\tH\x00R\x11outputkeytemplate\x88\x01\x01\x12D\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x17.kinesis.S3StorageClassH\x01R\fstorageclass\x88\x01\x01B\x14\n" +
+	"\x12_outputkeytemplateB\x0f\n" +
+	"\r_storageclass\"\x98\x02\n" +
 	"\x15S3TablesConfiguration\x12N\n" +
 	"\x0fcompressiontype\x18\xde\xf5\xea\x9f\x01 \x01(\x0e2 .kinesis.S3TablesCompressionTypeR\x0fcompressiontype\x12 \n" +
 	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12?\n" +
@@ -9629,12 +9633,12 @@ const file_kinesis_proto_rawDesc = "" +
 	"\n" +
 	"_streamarnB\v\n" +
 	"\t_streamidB\r\n" +
-	"\v_streamname\"\x80\x05\n" +
-	"\x11StreamDescription\x12B\n" +
-	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeR\x0eencryptiontype\x12L\n" +
+	"\v_streamname\"\x98\x05\n" +
+	"\x11StreamDescription\x12G\n" +
+	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeH\x00R\x0eencryptiontype\x88\x01\x01\x12L\n" +
 	"\x12enhancedmonitoring\x18\xf2\xdf\xd3\xd7\x01 \x03(\v2\x18.kinesis.EnhancedMetricsR\x12enhancedmonitoring\x12,\n" +
-	"\rhasmoreshards\x18\xfc\xb4\x95\x05 \x01(\bH\x00R\rhasmoreshards\x88\x01\x01\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x01R\x05keyid\x88\x01\x01\x126\n" +
+	"\rhasmoreshards\x18\xfc\xb4\x95\x05 \x01(\bH\x01R\rhasmoreshards\x88\x01\x01\x12\x1d\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x02R\x05keyid\x88\x01\x01\x126\n" +
 	"\x14retentionperiodhours\x18\xf8\x9d\x81\xbd\x01 \x01(\x05R\x14retentionperiodhours\x12*\n" +
 	"\x06shards\x18\xc9ŷ\xd0\x01 \x03(\v2\x0e.kinesis.ShardR\x06shards\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12;\n" +
@@ -9643,21 +9647,22 @@ const file_kinesis_proto_rawDesc = "" +
 	"\n" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
 	"streamname\x12<\n" +
-	"\fstreamstatus\x18Ё\x9au \x01(\x0e2\x15.kinesis.StreamStatusR\fstreamstatusB\x10\n" +
+	"\fstreamstatus\x18Ё\x9au \x01(\x0e2\x15.kinesis.StreamStatusR\fstreamstatusB\x11\n" +
+	"\x0f_encryptiontypeB\x10\n" +
 	"\x0e_hasmoreshardsB\b\n" +
-	"\x06_keyid\"\x92\a\n" +
+	"\x06_keyid\"\xaa\a\n" +
 	"\x18StreamDescriptionSummary\x12+\n" +
 	"\fchannelcount\x18\xfcͫ\xb0\x01 \x01(\x05H\x00R\fchannelcount\x88\x01\x01\x12-\n" +
-	"\rconsumercount\x18\xf1\xf5\xd4\xd5\x01 \x01(\x05H\x01R\rconsumercount\x88\x01\x01\x12B\n" +
-	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeR\x0eencryptiontype\x12L\n" +
+	"\rconsumercount\x18\xf1\xf5\xd4\xd5\x01 \x01(\x05H\x01R\rconsumercount\x88\x01\x01\x12G\n" +
+	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x17.kinesis.EncryptionTypeH\x02R\x0eencryptiontype\x88\x01\x01\x12L\n" +
 	"\x12enhancedmonitoring\x18\xf2\xdf\xd3\xd7\x01 \x03(\v2\x18.kinesis.EnhancedMetricsR\x12enhancedmonitoring\x12\x1d\n" +
-	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x02R\x05keyid\x88\x01\x01\x126\n" +
-	"\x12maxrecordsizeinkib\x18\xb5\x9e\x88^ \x01(\x05H\x03R\x12maxrecordsizeinkib\x88\x01\x01\x12*\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x03R\x05keyid\x88\x01\x01\x126\n" +
+	"\x12maxrecordsizeinkib\x18\xb5\x9e\x88^ \x01(\x05H\x04R\x12maxrecordsizeinkib\x88\x01\x01\x12*\n" +
 	"\x0eopenshardcount\x18\xc7ە\xe3\x01 \x01(\x05R\x0eopenshardcount\x126\n" +
 	"\x14retentionperiodhours\x18\xf8\x9d\x81\xbd\x01 \x01(\x05R\x14retentionperiodhours\x12 \n" +
 	"\tstreamarn\x18\xdd\xf3\xaa\xf2\x01 \x01(\tR\tstreamarn\x12;\n" +
 	"\x17streamcreationtimestamp\x18\xe5\xf5\xa1k \x01(\tR\x17streamcreationtimestamp\x12#\n" +
-	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tH\x04R\bstreamid\x88\x01\x01\x12K\n" +
+	"\bstreamid\x18\xc1\xed\x81\xc6\x01 \x01(\tH\x05R\bstreamid\x88\x01\x01\x12K\n" +
 	"\x11streammodedetails\x18\x91\xf9\xe4\x05 \x01(\v2\x1a.kinesis.StreamModeDetailsR\x11streammodedetails\x12\"\n" +
 	"\n" +
 	"streamname\x18Ƿ\xb9\xe0\x01 \x01(\tR\n" +
@@ -9665,7 +9670,8 @@ const file_kinesis_proto_rawDesc = "" +
 	"\fstreamstatus\x18Ё\x9au \x01(\x0e2\x15.kinesis.StreamStatusR\fstreamstatus\x12I\n" +
 	"\x0ewarmthroughput\x18\x83\xdeȊ\x01 \x01(\v2\x1d.kinesis.WarmThroughputObjectR\x0ewarmthroughputB\x0f\n" +
 	"\r_channelcountB\x10\n" +
-	"\x0e_consumercountB\b\n" +
+	"\x0e_consumercountB\x11\n" +
+	"\x0f_encryptiontypeB\b\n" +
 	"\x06_keyidB\x15\n" +
 	"\x13_maxrecordsizeinkibB\v\n" +
 	"\t_streamid\"\x8e\x01\n" +
@@ -10376,6 +10382,7 @@ func file_kinesis_proto_init() {
 	file_kinesis_proto_msgTypes[74].OneofWrappers = []any{}
 	file_kinesis_proto_msgTypes[77].OneofWrappers = []any{}
 	file_kinesis_proto_msgTypes[78].OneofWrappers = []any{}
+	file_kinesis_proto_msgTypes[79].OneofWrappers = []any{}
 	file_kinesis_proto_msgTypes[80].OneofWrappers = []any{}
 	file_kinesis_proto_msgTypes[81].OneofWrappers = []any{}
 	file_kinesis_proto_msgTypes[82].OneofWrappers = []any{}

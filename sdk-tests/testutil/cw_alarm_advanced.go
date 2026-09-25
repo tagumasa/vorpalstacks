@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
@@ -16,10 +17,41 @@ func (tc *cloudwatchTestCtx) alarmAdvancedTests() []TestResult {
 	results = append(results, tc.runner.RunTest("cloudwatch", "SetAlarmState_Verify", func() error {
 		alarmName := tc.uniquePrefix("StateAlarm")
 		testNS := tc.uniquePrefix("StateNS")
+		// A manually set alarm state holds only until the next background
+		// evaluation, and under TEST_MODE the evaluator re-evaluates every
+		// alarm once per second. On a dataless metric that evaluation is
+		// INSUFFICIENT_DATA, so a tick landing between the manual set and
+		// the read-back below overwrote the manual ALARM. Seed breaching
+		// data (100 over the threshold of 50) so every evaluation agrees
+		// with the manual state: createAlarm pins Period=300 and the
+		// evaluator window is the last completed 300 s bucket, so one
+		// point inside that bucket and one in the current open bucket keep
+		// every evaluation for the rest of this block and all of the next
+		// one breaching.
+		now := time.Now().UTC()
+		lastCompletedBucket := now.Truncate(300 * time.Second).Add(-1 * time.Second)
+		if _, err := tc.client.PutMetricData(tc.ctx, &cloudwatch.PutMetricDataInput{
+			Namespace: aws.String(testNS),
+			MetricData: []types.MetricDatum{
+				{MetricName: aws.String("TestMetric"), Value: aws.Float64(100), Timestamp: aws.Time(lastCompletedBucket)},
+				{MetricName: aws.String("TestMetric"), Value: aws.Float64(100), Timestamp: aws.Time(now)},
+			},
+		}); err != nil {
+			return fmt.Errorf("seed metric data: %v", err)
+		}
 		if err := tc.createAlarm(alarmName, testNS, "TestMetric", 50.0); err != nil {
 			return fmt.Errorf("put alarm: %v", err)
 		}
 		defer tc.deleteAlarms(alarmName)
+
+		// Let the evaluator settle the alarm in ALARM before the manual
+		// override: an evaluation transition that lands after the manual
+		// set would replace the manual state reason even though the state
+		// value agrees. Once the alarm is in ALARM every later evaluation
+		// is ALARM to ALARM, which the evaluator does not write.
+		if err := tc.waitForAlarmState(alarmName, types.StateValueAlarm, 10*time.Second); err != nil {
+			return err
+		}
 
 		_, err := tc.client.SetAlarmState(tc.ctx, &cloudwatch.SetAlarmStateInput{
 			AlarmName:   aws.String(alarmName),
@@ -178,4 +210,31 @@ func (tc *cloudwatchTestCtx) alarmAdvancedTests() []TestResult {
 	}))
 
 	return results
+}
+
+// waitForAlarmState polls DescribeAlarms until the named alarm reports
+// the wanted state value. Alarm state is written asynchronously by the
+// background evaluator, so a test that depends on an evaluated state
+// must wait for the evaluator's write instead of racing it.
+func (tc *cloudwatchTestCtx) waitForAlarmState(alarmName string, want types.StateValue, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		resp, err := tc.client.DescribeAlarms(tc.ctx, &cloudwatch.DescribeAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
+		if err != nil {
+			return fmt.Errorf("describe while waiting for %s: %v", want, err)
+		}
+		if len(resp.MetricAlarms) == 1 && resp.MetricAlarms[0].StateValue == want {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			got := "no such alarm"
+			if len(resp.MetricAlarms) == 1 {
+				got = string(resp.MetricAlarms[0].StateValue)
+			}
+			return fmt.Errorf("alarm %s never reached %s within %s (last seen: %s)", alarmName, want, timeout, got)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }

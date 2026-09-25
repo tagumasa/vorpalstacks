@@ -39,34 +39,22 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 	tagList := tagutil.ParseTags(req.Parameters, "Tags")
-	deletionProtectionEnabled := request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
 
-	var warmThroughput *dbstore.WarmThroughput
-	if wtMap, ok := req.Parameters["WarmThroughput"].(map[string]interface{}); ok {
-		warmThroughput = &dbstore.WarmThroughput{
-			ReadUnitsPerSecond:  request.GetInt64Param(wtMap, "ReadUnitsPerSecond"),
-			WriteUnitsPerSecond: request.GetInt64Param(wtMap, "WriteUnitsPerSecond"),
-		}
-	}
-
-	var onDemandThroughput *dbstore.OnDemandThroughput
-	if odtMap, ok := req.Parameters["OnDemandThroughput"].(map[string]interface{}); ok {
-		onDemandThroughput = &dbstore.OnDemandThroughput{
-			MaxReadRequestUnits:  request.GetInt64Param(odtMap, "MaxReadRequestUnits"),
-			MaxWriteRequestUnits: request.GetInt64Param(odtMap, "MaxWriteRequestUnits"),
-		}
+	warmThroughput := parseWarmThroughput(req.Parameters)
+	onDemandThroughput, odtErr := parseOnDemandThroughput(req.Parameters)
+	if odtErr != nil {
+		return nil, odtErr
 	}
 
 	globalTableSourceArn := request.GetStringParam(req.Parameters, "GlobalTableSourceArn")
 
 	var sseDesc *dbstore.SSEDescription
-	if sseSpec, ok := req.Parameters["SSESpecification"].(map[string]interface{}); ok {
-		var err error
-		sseDesc, err = parseSSESpecification(sseSpec)
-		if err != nil {
-			return nil, err
-		}
+	var sseDisable bool
+	desc, disable, err := parseSSESpecification(req.Parameters["SSESpecification"])
+	if err != nil {
+		return nil, err
 	}
+	sseDesc, sseDisable = desc, disable
 
 	tableClass := request.GetStringParam(req.Parameters, "TableClass")
 
@@ -75,23 +63,29 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	table, err := s.createTableCore(store, CreateTableInput{
-		TableName:                 tableName,
-		KeySchema:                 keySchema,
-		AttributeDefinitions:      attrDefs,
-		BillingMode:               billingMode,
-		ProvisionedThroughput:     provThroughput,
-		GlobalSecondaryIndexes:    gsi,
-		LocalSecondaryIndexes:     lsi,
-		VectorIndexes:             vectorIdx,
-		StreamSpecification:       streamSpec,
-		Tags:                      tagList,
-		DeletionProtectionEnabled: deletionProtectionEnabled,
-		WarmThroughput:            warmThroughput,
-		OnDemandThroughput:        onDemandThroughput,
-		GlobalTableSourceArn:      globalTableSourceArn,
-		SSEDescription:            sseDesc,
-		TableClass:                tableClass,
+	resourcePolicy := request.GetStringParam(req.Parameters, "ResourcePolicy")
+	_, resourcePolicySet := req.Parameters["ResourcePolicy"]
+
+	table, err := s.createTableCore(ctx, reqCtx, store, CreateTableInput{
+		TableName:              tableName,
+		KeySchema:              keySchema,
+		AttributeDefinitions:   attrDefs,
+		BillingMode:            billingMode,
+		ProvisionedThroughput:  provThroughput,
+		GlobalSecondaryIndexes: gsi,
+		LocalSecondaryIndexes:  lsi,
+		VectorIndexes:          vectorIdx,
+		StreamSpecification:    streamSpec,
+		Tags:                   tagList,
+		DeletionProtectionRaw:  req.Parameters["DeletionProtectionEnabled"],
+		WarmThroughput:         warmThroughput,
+		OnDemandThroughput:     onDemandThroughput,
+		GlobalTableSourceArn:   globalTableSourceArn,
+		SSEDescription:         sseDesc,
+		SSEDisable:             sseDisable,
+		TableClass:             tableClass,
+		ResourcePolicySet:      resourcePolicySet,
+		ResourcePolicy:         resourcePolicy,
 	})
 	if err != nil {
 		return nil, err
@@ -111,7 +105,7 @@ func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	deletedTable, err := s.deleteTableCore(ctx, store, tableName)
+	deletedTable, err := s.deleteTableCore(ctx, store, reqCtx.GetRegion(), tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -182,12 +176,18 @@ func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
+	onDemandThroughput, odtErr := parseOnDemandThroughput(req.Parameters)
+	if odtErr != nil {
+		return nil, odtErr
+	}
 	in := UpdateTableInput{
 		TableName:             request.GetStringParam(req.Parameters, "TableName"),
 		BillingMode:           request.GetStringParam(req.Parameters, "BillingMode"),
 		ProvisionedThroughput: parseProvisionedThroughput(req.Parameters),
 		AttributeDefinitions:  parseAttributeDefinitions(req.Parameters),
 		TableClass:            request.GetStringParam(req.Parameters, "TableClass"),
+		OnDemandThroughput:    onDemandThroughput,
+		WarmThroughput:        parseWarmThroughput(req.Parameters),
 	}
 	if gsiUpdates, ok := req.Parameters["GlobalSecondaryIndexUpdates"].([]interface{}); ok {
 		in.GSIUpdates = gsiUpdates
@@ -195,24 +195,32 @@ func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.Reque
 	if viUpdates, ok := req.Parameters["VectorIndexUpdates"].([]interface{}); ok {
 		in.VectorIndexUpdates = viUpdates
 	}
+	if replicaUpdates, ok := req.Parameters["ReplicaUpdates"].([]interface{}); ok {
+		in.ReplicaUpdates = replicaUpdates
+	}
+	in.RequestRegion = reqCtx.GetRegion()
+	in.MultiRegionConsistency = request.GetStringParam(req.Parameters, "MultiRegionConsistency")
+	if witnessUpdates, ok := req.Parameters["GlobalTableWitnessUpdates"].([]interface{}); ok {
+		in.GlobalTableWitnessUpdates = witnessUpdates
+	}
+	in.GlobalTableSettingsReplicationMode = request.GetStringParam(req.Parameters, "GlobalTableSettingsReplicationMode")
 	streamSpec, streamErr := parseStreamSpecification(req.Parameters)
 	if streamErr != nil {
 		return nil, streamErr
 	}
 	in.StreamSpecification = streamSpec
-	if sseSpec, ok := req.Parameters["SSESpecification"].(map[string]interface{}); ok {
-		sseDesc, sseErr := parseSSESpecification(sseSpec)
-		if sseErr != nil {
-			return nil, sseErr
-		}
-		in.SSESpecification = sseDesc
+	sseDesc, disable, sseErr := parseSSESpecification(req.Parameters["SSESpecification"])
+	if sseErr != nil {
+		return nil, sseErr
 	}
-	if _, ok := req.Parameters["DeletionProtectionEnabled"]; ok {
+	in.SSESpecification = sseDesc
+	in.SSEDisable = disable
+	if raw, ok := req.Parameters["DeletionProtectionEnabled"]; ok {
 		in.DeletionProtectionSet = true
-		in.DeletionProtection = request.GetBoolParam(req.Parameters, "DeletionProtectionEnabled")
+		in.DeletionProtectionRaw = raw
 	}
 
-	table, err := s.updateTableCore(ctx, store, in)
+	table, err := s.updateTableCore(ctx, reqCtx, store, in)
 	if err != nil {
 		return nil, err
 	}

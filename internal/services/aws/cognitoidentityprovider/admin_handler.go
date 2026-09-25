@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/pbutil"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
@@ -318,7 +319,7 @@ func (h *AdminHandler) AdminGetUser(ctx context.Context, req *connect.Request[pb
 
 	resp := &pb.AdminGetUserResponse{
 		Username:             user.Username,
-		Userstatus:           userStatusToProto(user.UserStatus),
+		Userstatus:           pbutil.Enum(userStatusToProto(user.UserStatus)),
 		Enabled:              proto.Bool(user.Enabled),
 		Usercreatedate:       proto.String(user.CreatedDate.Format(timeutils.ISO8601UTCFormat)),
 		Userlastmodifieddate: proto.String(user.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)),

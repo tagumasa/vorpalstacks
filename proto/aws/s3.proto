@@ -581,7 +581,7 @@ service S3Service {
 
 message AbacStatus {
 
-  BucketAbacStatus status = 6222352;
+  optional BucketAbacStatus status = 6222352;
 
 }
 
@@ -599,7 +599,7 @@ message AbortIncompleteMultipartUpload {
 
 message AbortMultipartUploadOutput {
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -615,7 +615,7 @@ message AbortMultipartUploadRequest {
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   string uploadid = 449040722;
 
@@ -627,7 +627,7 @@ message AbortMultipartUploadRequest {
 
 message AccelerateConfiguration {
 
-  BucketAccelerateStatus status = 6222352;
+  optional BucketAccelerateStatus status = 6222352;
 
 }
 
@@ -769,7 +769,7 @@ message AnnotationEntry {
 
   string lastmodified = 434048551;
 
-  ReplicationStatus replicationstatus = 529093900;
+  optional ReplicationStatus replicationstatus = 529093900;
 
   int64 size = 105352829;
 
@@ -931,9 +931,9 @@ enum BucketCannedACL {
 
 message BucketInfo {
 
-  DataRedundancy dataredundancy = 526607767;
+  optional DataRedundancy dataredundancy = 526607767;
 
-  BucketType type = 290836590;
+  optional BucketType type = 290836590;
 
 }
 
@@ -1121,7 +1121,7 @@ message CSVInput {
 
   optional string fielddelimiter = 88917725;
 
-  FileHeaderInfo fileheaderinfo = 43578219;
+  optional FileHeaderInfo fileheaderinfo = 43578219;
 
   optional string quotecharacter = 24331231;
 
@@ -1143,7 +1143,7 @@ message CSVOutput {
 
   optional string quoteescapecharacter = 378770328;
 
-  QuoteFields quotefields = 136837903;
+  optional QuoteFields quotefields = 136837903;
 
   optional string recorddelimiter = 299337270;
 
@@ -1169,7 +1169,7 @@ message Checksum {
 
   optional string checksumsha512 = 161451001;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string checksumxxhash128 = 494296584;
 
@@ -1255,7 +1255,7 @@ message CompleteMultipartUploadOutput {
 
   optional string checksumsha512 = 161451001;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string checksumxxhash128 = 494296584;
 
@@ -1271,11 +1271,11 @@ message CompleteMultipartUploadOutput {
 
   optional string location = 465604039;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
   optional string versionid = 338063515;
 
@@ -1301,7 +1301,7 @@ message CompleteMultipartUploadRequest {
 
   optional string checksumsha512 = 161451001;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string checksumxxhash128 = 494296584;
 
@@ -1321,7 +1321,7 @@ message CompleteMultipartUploadRequest {
 
   CompletedMultipartUpload multipartupload = 362466695 [(aws.http_payload) = true];
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -1419,7 +1419,7 @@ message CopyObjectOutput {
 
   optional string expiration = 245879945;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -1429,7 +1429,7 @@ message CopyObjectOutput {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
   optional string versionid = 338063515;
 
@@ -1439,9 +1439,9 @@ message CopyObjectOutput {
 
 message CopyObjectRequest {
 
-  ObjectCannedACL acl = 394696836;
+  optional ObjectCannedACL acl = 394696836;
 
-  AnnotationDirective annotationdirective = 273366230;
+  optional AnnotationDirective annotationdirective = 273366230;
 
   string bucket = 55457112;
 
@@ -1449,7 +1449,7 @@ message CopyObjectRequest {
 
   optional string cachecontrol = 288966655;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentdisposition = 120040130;
 
@@ -1497,15 +1497,21 @@ message CopyObjectRequest {
 
   map<string, string> metadata = 470020449;
 
-  MetadataDirective metadatadirective = 282181534;
+  optional MetadataDirective metadatadirective = 282181534;
 
-  ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+  optional ObjectLockEventHold objectlockeventhold = 442410199;
 
-  ObjectLockMode objectlockmode = 189255203;
+  optional int32 objectlockeventholddurationdays = 38039970;
+
+  optional int32 objectlockeventholddurationyears = 89552797;
+
+  optional ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+
+  optional ObjectLockMode objectlockmode = 189255203;
 
   optional string objectlockretainuntildate = 264584249;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -1517,13 +1523,13 @@ message CopyObjectRequest {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   optional string tagging = 33436541;
 
-  TaggingDirective taggingdirective = 498516426;
+  optional TaggingDirective taggingdirective = 498516426;
 
   optional string websiteredirectlocation = 71844662;
 
@@ -1549,7 +1555,7 @@ message CopyObjectResult {
 
   optional string checksumsha512 = 161451001;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string checksumxxhash128 = 494296584;
 
@@ -1605,7 +1611,7 @@ message CreateBucketConfiguration {
 
   LocationInfo location = 465604039;
 
-  BucketLocationConstraint locationconstraint = 245375838;
+  optional BucketLocationConstraint locationconstraint = 245375838;
 
   repeated Tag tags = 381526209;
 
@@ -1617,7 +1623,7 @@ message CreateBucketMetadataConfigurationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -1633,7 +1639,7 @@ message CreateBucketMetadataTableConfigurationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -1657,11 +1663,11 @@ message CreateBucketOutput {
 
 message CreateBucketRequest {
 
-  BucketCannedACL acl = 394696836;
+  optional BucketCannedACL acl = 394696836;
 
   string bucket = 55457112;
 
-  BucketNamespace bucketnamespace = 412736747;
+  optional BucketNamespace bucketnamespace = 412736747;
 
   CreateBucketConfiguration createbucketconfiguration = 27550528 [(aws.http_payload) = true];
 
@@ -1677,7 +1683,7 @@ message CreateBucketRequest {
 
   optional bool objectlockenabledforbucket = 248510328;
 
-  ObjectOwnership objectownership = 448301184;
+  optional ObjectOwnership objectownership = 448301184;
 
 }
 
@@ -1693,13 +1699,13 @@ message CreateMultipartUploadOutput {
 
   optional bool bucketkeyenabled = 434311532;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string key = 219859213;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -1709,7 +1715,7 @@ message CreateMultipartUploadOutput {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
   optional string uploadid = 449040722;
 
@@ -1719,7 +1725,7 @@ message CreateMultipartUploadOutput {
 
 message CreateMultipartUploadRequest {
 
-  ObjectCannedACL acl = 394696836;
+  optional ObjectCannedACL acl = 394696836;
 
   string bucket = 55457112;
 
@@ -1727,9 +1733,9 @@ message CreateMultipartUploadRequest {
 
   optional string cachecontrol = 288966655;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string contentdisposition = 120040130;
 
@@ -1755,13 +1761,19 @@ message CreateMultipartUploadRequest {
 
   map<string, string> metadata = 470020449;
 
-  ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+  optional ObjectLockEventHold objectlockeventhold = 442410199;
 
-  ObjectLockMode objectlockmode = 189255203;
+  optional int32 objectlockeventholddurationdays = 38039970;
+
+  optional int32 objectlockeventholddurationyears = 89552797;
+
+  optional ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+
+  optional ObjectLockMode objectlockmode = 189255203;
 
   optional string objectlockretainuntildate = 264584249;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -1773,9 +1785,9 @@ message CreateMultipartUploadRequest {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   optional string tagging = 33436541;
 
@@ -1795,7 +1807,7 @@ message CreateSessionOutput {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
 }
 
@@ -1811,9 +1823,9 @@ message CreateSessionRequest {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
-  SessionMode sessionmode = 43104977;
+  optional SessionMode sessionmode = 43104977;
 
 }
 
@@ -1835,7 +1847,9 @@ message DefaultRetention {
 
   optional int32 days = 494075051;
 
-  ObjectLockRetentionMode mode = 323909427;
+  EventHoldDuration defaulteventhold = 72026804;
+
+  optional ObjectLockRetentionMode mode = 323909427;
 
   optional int32 years = 325150814;
 
@@ -2035,7 +2049,7 @@ message DeleteMarkerEntry {
 
 message DeleteMarkerReplication {
 
-  DeleteMarkerReplicationStatus status = 6222352;
+  optional DeleteMarkerReplicationStatus status = 6222352;
 
 }
 
@@ -2055,7 +2069,7 @@ message DeleteObjectAnnotationOutput {
 
   optional string objectversionid = 406054044;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -2073,7 +2087,7 @@ message DeleteObjectAnnotationRequest {
 
   optional string objectifmatch = 408877983;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -2085,7 +2099,7 @@ message DeleteObjectOutput {
 
   optional bool deletemarker = 5472257;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string versionid = 338063515;
 
@@ -2111,7 +2125,7 @@ message DeleteObjectRequest {
 
   optional string mfa = 325407842;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -2147,7 +2161,7 @@ message DeleteObjectsOutput {
 
   repeated Error errors = 166551719;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -2159,7 +2173,7 @@ message DeleteObjectsRequest {
 
   optional bool bypassgovernanceretention = 129938942;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   Delete delete = 395831915 [(aws.http_payload) = true];
 
@@ -2167,7 +2181,7 @@ message DeleteObjectsRequest {
 
   optional string mfa = 325407842;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
 }
 
@@ -2215,7 +2229,7 @@ message Destination {
 
   ReplicationTime replicationtime = 98550465;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
 }
 
@@ -2227,7 +2241,7 @@ message DestinationResult {
 
   optional string tablebucketarn = 457996261;
 
-  S3TablesBucketType tablebuckettype = 37403814;
+  optional S3TablesBucketType tablebuckettype = 37403814;
 
   optional string tablenamespace = 272949507;
 
@@ -2343,55 +2357,57 @@ enum Event {
 
   EVENT_S3_OBJECTCREATED_POST = 4;
 
-  EVENT_S3_REDUCEDREDUNDANCYLOSTOBJECT = 5;
+  EVENT_S3_OBJECTRETENTION_PUT = 5;
 
-  EVENT_S3_OBJECTCREATED_PUT = 6;
+  EVENT_S3_REDUCEDREDUNDANCYLOSTOBJECT = 6;
 
-  EVENT_S3_OBJECTANNOTATION_DELETE = 7;
+  EVENT_S3_OBJECTCREATED_PUT = 7;
 
-  EVENT_S3_OBJECTRESTORE_COMPLETED = 8;
+  EVENT_S3_OBJECTANNOTATION_DELETE = 8;
 
-  EVENT_S3_LIFECYCLEEXPIRATION_DELETE = 9;
+  EVENT_S3_OBJECTRESTORE_COMPLETED = 9;
 
-  EVENT_S3_OBJECTANNOTATION_PUT = 10;
+  EVENT_S3_LIFECYCLEEXPIRATION_DELETE = 10;
 
-  EVENT_S3_OBJECTTAGGING_PUT = 11;
+  EVENT_S3_OBJECTANNOTATION_PUT = 11;
 
-  EVENT_S3_OBJECTREMOVED_DELETEMARKERCREATED = 12;
+  EVENT_S3_OBJECTTAGGING_PUT = 12;
 
-  EVENT_S3_OBJECTTAGGING_DELETE = 13;
+  EVENT_S3_OBJECTREMOVED_DELETEMARKERCREATED = 13;
 
-  EVENT_S3_REPLICATION_OPERATIONMISSEDTHRESHOLD = 14;
+  EVENT_S3_OBJECTTAGGING_DELETE = 14;
 
-  EVENT_S3_LIFECYCLETRANSITION = 15;
+  EVENT_S3_REPLICATION_OPERATIONMISSEDTHRESHOLD = 15;
 
-  EVENT_S3_OBJECTCREATED_COMPLETEMULTIPARTUPLOAD = 16;
+  EVENT_S3_LIFECYCLETRANSITION = 16;
 
-  EVENT_S3_INTELLIGENTTIERING = 17;
+  EVENT_S3_OBJECTCREATED_COMPLETEMULTIPARTUPLOAD = 17;
 
-  EVENT_S3_OBJECTCREATED_ = 18;
+  EVENT_S3_INTELLIGENTTIERING = 18;
 
-  EVENT_S3_REPLICATION_OPERATIONREPLICATEDAFTERTHRESHOLD = 19;
+  EVENT_S3_OBJECTCREATED_ = 19;
 
-  EVENT_S3_OBJECTRESTORE_DELETE = 20;
+  EVENT_S3_REPLICATION_OPERATIONREPLICATEDAFTERTHRESHOLD = 20;
 
-  EVENT_S3_LIFECYCLEEXPIRATION_ = 21;
+  EVENT_S3_OBJECTRESTORE_DELETE = 21;
 
-  EVENT_S3_REPLICATION_OPERATIONNOTTRACKED = 22;
+  EVENT_S3_LIFECYCLEEXPIRATION_ = 22;
 
-  EVENT_S3_LIFECYCLEEXPIRATION_DELETEMARKERCREATED = 23;
+  EVENT_S3_REPLICATION_OPERATIONNOTTRACKED = 23;
 
-  EVENT_S3_REPLICATION_ = 24;
+  EVENT_S3_LIFECYCLEEXPIRATION_DELETEMARKERCREATED = 24;
 
-  EVENT_S3_OBJECTREMOVED_ = 25;
+  EVENT_S3_REPLICATION_ = 25;
 
-  EVENT_S3_OBJECTRESTORE_POST = 26;
+  EVENT_S3_OBJECTREMOVED_ = 26;
 
-  EVENT_S3_OBJECTACL_PUT = 27;
+  EVENT_S3_OBJECTRESTORE_POST = 27;
 
-  EVENT_S3_OBJECTREMOVED_DELETE = 28;
+  EVENT_S3_OBJECTACL_PUT = 28;
 
-  EVENT_S3_OBJECTANNOTATION_ = 29;
+  EVENT_S3_OBJECTREMOVED_DELETE = 29;
+
+  EVENT_S3_OBJECTANNOTATION_ = 30;
 
 }
 
@@ -2400,6 +2416,18 @@ enum Event {
 // A container for specifying the configuration for Amazon EventBridge.
 
 message EventBridgeConfiguration {
+
+}
+
+
+
+// Contains the event hold duration configuration, specified in either days or years.
+
+message EventHoldDuration {
+
+  optional int32 days = 494075051;
+
+  optional int32 years = 325150814;
 
 }
 
@@ -2469,7 +2497,7 @@ enum FileHeaderInfo {
 
 message FilterRule {
 
-  FilterRuleName name = 266367751;
+  optional FilterRuleName name = 266367751;
 
   optional string value = 289929579;
 
@@ -2507,9 +2535,9 @@ message GetBucketAbacRequest {
 
 message GetBucketAccelerateConfigurationOutput {
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
-  BucketAccelerateStatus status = 6222352;
+  optional BucketAccelerateStatus status = 6222352;
 
 }
 
@@ -2521,7 +2549,7 @@ message GetBucketAccelerateConfigurationRequest {
 
   optional string expectedbucketowner = 132066983;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
 }
 
@@ -2647,7 +2675,7 @@ message GetBucketLifecycleConfigurationOutput {
 
   repeated LifecycleRule rules = 42675585;
 
-  TransitionDefaultMinimumObjectSize transitiondefaultminimumobjectsize = 81614768;
+  optional TransitionDefaultMinimumObjectSize transitiondefaultminimumobjectsize = 81614768;
 
 }
 
@@ -2665,7 +2693,7 @@ message GetBucketLifecycleConfigurationRequest {
 
 message GetBucketLocationOutput {
 
-  BucketLocationConstraint locationconstraint = 245375838;
+  optional BucketLocationConstraint locationconstraint = 245375838;
 
 }
 
@@ -2863,7 +2891,7 @@ message GetBucketReplicationRequest {
 
 message GetBucketRequestPaymentOutput {
 
-  Payer payer = 174621923;
+  optional Payer payer = 174621923;
 
 }
 
@@ -2899,9 +2927,9 @@ message GetBucketTaggingRequest {
 
 message GetBucketVersioningOutput {
 
-  MFADeleteStatus mfadelete = 354119319;
+  optional MFADeleteStatus mfadelete = 354119319;
 
-  BucketVersioningStatus status = 6222352;
+  optional BucketVersioningStatus status = 6222352;
 
 }
 
@@ -2947,7 +2975,7 @@ message GetObjectAclOutput {
 
   Owner owner = 455261813;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -2961,7 +2989,7 @@ message GetObjectAclRequest {
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -2987,7 +3015,7 @@ message GetObjectAnnotationOutput {
 
   optional string checksumsha512 = 161451001;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string checksumxxhash128 = 494296584;
 
@@ -3003,11 +3031,11 @@ message GetObjectAnnotationOutput {
 
   optional string objectversionid = 406054044;
 
-  ReplicationStatus replicationstatus = 529093900;
+  optional ReplicationStatus replicationstatus = 529093900;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
 }
 
@@ -3019,13 +3047,13 @@ message GetObjectAnnotationRequest {
 
   string bucket = 55457112;
 
-  ChecksumMode checksummode = 350288954;
+  optional ChecksumMode checksummode = 350288954;
 
   optional string expectedbucketowner = 132066983;
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -3047,9 +3075,9 @@ message GetObjectAttributesOutput {
 
   optional int64 objectsize = 130133988;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   optional string versionid = 338063515;
 
@@ -3091,7 +3119,7 @@ message GetObjectAttributesRequest {
 
   optional string partnumbermarker = 376535672;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -3121,7 +3149,7 @@ message GetObjectLegalHoldRequest {
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -3171,7 +3199,7 @@ message GetObjectOutput {
 
   optional string checksumsha512 = 161451001;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string checksumxxhash128 = 494296584;
 
@@ -3205,17 +3233,23 @@ message GetObjectOutput {
 
   optional int32 missingmeta = 79140523;
 
-  ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+  optional ObjectLockEventHold objectlockeventhold = 442410199;
 
-  ObjectLockMode objectlockmode = 189255203;
+  optional int32 objectlockeventholddurationdays = 38039970;
+
+  optional int32 objectlockeventholddurationyears = 89552797;
+
+  optional ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+
+  optional ObjectLockMode objectlockmode = 189255203;
 
   optional string objectlockretainuntildate = 264584249;
 
   optional int32 partscount = 154996373;
 
-  ReplicationStatus replicationstatus = 529093900;
+  optional ReplicationStatus replicationstatus = 529093900;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string restore = 267943794;
 
@@ -3225,9 +3259,9 @@ message GetObjectOutput {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   optional int32 tagcount = 339592595;
 
@@ -3243,7 +3277,7 @@ message GetObjectRequest {
 
   string bucket = 55457112;
 
-  ChecksumMode checksummode = 350288954;
+  optional ChecksumMode checksummode = 350288954;
 
   optional string expectedbucketowner = 132066983;
 
@@ -3261,7 +3295,7 @@ message GetObjectRequest {
 
   optional string range = 51505011;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string responsecachecontrol = 150103426;
 
@@ -3303,7 +3337,7 @@ message GetObjectRetentionRequest {
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -3329,7 +3363,7 @@ message GetObjectTaggingRequest {
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -3341,7 +3375,7 @@ message GetObjectTorrentOutput {
 
   optional bytes body = 42602646 [(aws.http_payload) = true];
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -3355,7 +3389,7 @@ message GetObjectTorrentRequest {
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
 }
 
@@ -3395,7 +3429,7 @@ message Grant {
 
   Grantee grantee = 89454056;
 
-  Permission permission = 465848867;
+  optional Permission permission = 465848867;
 
 }
 
@@ -3427,7 +3461,7 @@ message HeadBucketOutput {
 
   optional string bucketlocationname = 126439780;
 
-  LocationType bucketlocationtype = 306578505;
+  optional LocationType bucketlocationtype = 306578505;
 
   optional string bucketregion = 309298816;
 
@@ -3449,7 +3483,7 @@ message HeadObjectOutput {
 
   optional string acceptranges = 464620960;
 
-  ArchiveStatus archivestatus = 533231984;
+  optional ArchiveStatus archivestatus = 533231984;
 
   optional bool bucketkeyenabled = 434311532;
 
@@ -3469,7 +3503,7 @@ message HeadObjectOutput {
 
   optional string checksumsha512 = 161451001;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string checksumxxhash128 = 494296584;
 
@@ -3503,17 +3537,23 @@ message HeadObjectOutput {
 
   optional int32 missingmeta = 79140523;
 
-  ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+  optional ObjectLockEventHold objectlockeventhold = 442410199;
 
-  ObjectLockMode objectlockmode = 189255203;
+  optional int32 objectlockeventholddurationdays = 38039970;
+
+  optional int32 objectlockeventholddurationyears = 89552797;
+
+  optional ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+
+  optional ObjectLockMode objectlockmode = 189255203;
 
   optional string objectlockretainuntildate = 264584249;
 
   optional int32 partscount = 154996373;
 
-  ReplicationStatus replicationstatus = 529093900;
+  optional ReplicationStatus replicationstatus = 529093900;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string restore = 267943794;
 
@@ -3523,9 +3563,9 @@ message HeadObjectOutput {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   optional int32 tagcount = 339592595;
 
@@ -3541,7 +3581,7 @@ message HeadObjectRequest {
 
   string bucket = 55457112;
 
-  ChecksumMode checksummode = 350288954;
+  optional ChecksumMode checksummode = 350288954;
 
   optional string expectedbucketowner = 132066983;
 
@@ -3559,7 +3599,7 @@ message HeadObjectRequest {
 
   optional string range = 51505011;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string responsecachecontrol = 150103426;
 
@@ -3621,7 +3661,7 @@ message InputSerialization {
 
   CSVInput csv = 455189056;
 
-  CompressionType compressiontype = 335198942;
+  optional CompressionType compressiontype = 335198942;
 
   JSONInput json = 532512708;
 
@@ -3705,9 +3745,9 @@ message InvalidAnnotationName {
 
 message InvalidObjectState {
 
-  IntelligentTieringAccessTier accesstier = 263116188;
+  optional IntelligentTieringAccessTier accesstier = 263116188;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
 }
 
@@ -3849,23 +3889,27 @@ enum InventoryOptionalField {
 
   INVENTORY_OPTIONAL_FIELD_OBJECTLOCKLEGALHOLDSTATUS = 6;
 
-  INVENTORY_OPTIONAL_FIELD_OBJECTOWNER = 7;
+  INVENTORY_OPTIONAL_FIELD_OBJECTLOCKEVENTHOLDSTATUS = 7;
 
-  INVENTORY_OPTIONAL_FIELD_OBJECTACCESSCONTROLLIST = 8;
+  INVENTORY_OPTIONAL_FIELD_OBJECTOWNER = 8;
 
-  INVENTORY_OPTIONAL_FIELD_ENCRYPTIONSTATUS = 9;
+  INVENTORY_OPTIONAL_FIELD_OBJECTACCESSCONTROLLIST = 9;
 
-  INVENTORY_OPTIONAL_FIELD_OBJECTLOCKMODE = 10;
+  INVENTORY_OPTIONAL_FIELD_ENCRYPTIONSTATUS = 10;
 
-  INVENTORY_OPTIONAL_FIELD_ETAG = 11;
+  INVENTORY_OPTIONAL_FIELD_OBJECTLOCKEVENTHOLDDURATION = 11;
 
-  INVENTORY_OPTIONAL_FIELD_ISMULTIPARTUPLOADED = 12;
+  INVENTORY_OPTIONAL_FIELD_OBJECTLOCKMODE = 12;
 
-  INVENTORY_OPTIONAL_FIELD_INTELLIGENTTIERINGACCESSTIER = 13;
+  INVENTORY_OPTIONAL_FIELD_ETAG = 13;
 
-  INVENTORY_OPTIONAL_FIELD_OBJECTLOCKRETAINUNTILDATE = 14;
+  INVENTORY_OPTIONAL_FIELD_ISMULTIPARTUPLOADED = 14;
 
-  INVENTORY_OPTIONAL_FIELD_LASTMODIFIEDDATE = 15;
+  INVENTORY_OPTIONAL_FIELD_INTELLIGENTTIERINGACCESSTIER = 15;
+
+  INVENTORY_OPTIONAL_FIELD_OBJECTLOCKRETAINUNTILDATE = 16;
+
+  INVENTORY_OPTIONAL_FIELD_LASTMODIFIEDDATE = 17;
 
 }
 
@@ -3945,7 +3989,7 @@ message InventoryTableConfigurationUpdates {
 
 message JSONInput {
 
-  JSONType type = 290836590;
+  optional JSONType type = 290836590;
 
 }
 
@@ -4261,7 +4305,7 @@ message ListMultipartUploadsOutput {
 
   optional string delimiter = 302132379;
 
-  EncodingType encodingtype = 532628025;
+  optional EncodingType encodingtype = 532628025;
 
   optional bool istruncated = 242094042;
 
@@ -4275,7 +4319,7 @@ message ListMultipartUploadsOutput {
 
   optional string prefix = 273996266;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string uploadidmarker = 31676084;
 
@@ -4291,7 +4335,7 @@ message ListMultipartUploadsRequest {
 
   optional string delimiter = 302132379;
 
-  EncodingType encodingtype = 532628025;
+  optional EncodingType encodingtype = 532628025;
 
   optional string expectedbucketowner = 132066983;
 
@@ -4301,7 +4345,7 @@ message ListMultipartUploadsRequest {
 
   optional string prefix = 273996266;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string uploadidmarker = 31676084;
 
@@ -4329,7 +4373,7 @@ message ListObjectAnnotationsOutput {
 
   optional string objectversionid = 406054044;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -4349,7 +4393,7 @@ message ListObjectAnnotationsRequest {
 
   optional int32 maxannotationresults = 526250427;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -4365,7 +4409,7 @@ message ListObjectVersionsOutput {
 
   optional string delimiter = 302132379;
 
-  EncodingType encodingtype = 532628025;
+  optional EncodingType encodingtype = 532628025;
 
   optional bool istruncated = 242094042;
 
@@ -4381,7 +4425,7 @@ message ListObjectVersionsOutput {
 
   optional string prefix = 273996266;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string versionidmarker = 335417777;
 
@@ -4397,7 +4441,7 @@ message ListObjectVersionsRequest {
 
   optional string delimiter = 302132379;
 
-  EncodingType encodingtype = 532628025;
+  optional EncodingType encodingtype = 532628025;
 
   optional string expectedbucketowner = 132066983;
 
@@ -4409,7 +4453,7 @@ message ListObjectVersionsRequest {
 
   optional string prefix = 273996266;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionidmarker = 335417777;
 
@@ -4425,7 +4469,7 @@ message ListObjectsOutput {
 
   optional string delimiter = 302132379;
 
-  EncodingType encodingtype = 532628025;
+  optional EncodingType encodingtype = 532628025;
 
   optional bool istruncated = 242094042;
 
@@ -4439,7 +4483,7 @@ message ListObjectsOutput {
 
   optional string prefix = 273996266;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -4451,7 +4495,7 @@ message ListObjectsRequest {
 
   optional string delimiter = 302132379;
 
-  EncodingType encodingtype = 532628025;
+  optional EncodingType encodingtype = 532628025;
 
   optional string expectedbucketowner = 132066983;
 
@@ -4463,7 +4507,7 @@ message ListObjectsRequest {
 
   optional string prefix = 273996266;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
 }
 
@@ -4479,7 +4523,7 @@ message ListObjectsV2Output {
 
   optional string delimiter = 302132379;
 
-  EncodingType encodingtype = 532628025;
+  optional EncodingType encodingtype = 532628025;
 
   optional bool istruncated = 242094042;
 
@@ -4493,7 +4537,7 @@ message ListObjectsV2Output {
 
   optional string prefix = 273996266;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string startafter = 339670328;
 
@@ -4509,7 +4553,7 @@ message ListObjectsV2Request {
 
   optional string delimiter = 302132379;
 
-  EncodingType encodingtype = 532628025;
+  optional EncodingType encodingtype = 532628025;
 
   optional string expectedbucketowner = 132066983;
 
@@ -4521,7 +4565,7 @@ message ListObjectsV2Request {
 
   optional string prefix = 273996266;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string startafter = 339670328;
 
@@ -4537,9 +4581,9 @@ message ListPartsOutput {
 
   optional string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   Initiator initiator = 414951451;
 
@@ -4557,9 +4601,9 @@ message ListPartsOutput {
 
   repeated Part parts = 213028806;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   optional string uploadid = 449040722;
 
@@ -4579,7 +4623,7 @@ message ListPartsRequest {
 
   optional string partnumbermarker = 376535672;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -4599,7 +4643,7 @@ message LocationInfo {
 
   optional string name = 266367751;
 
-  LocationType type = 290836590;
+  optional LocationType type = 290836590;
 
 }
 
@@ -4803,9 +4847,9 @@ enum MetricsStatus {
 
 message MultipartUpload {
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string initiated = 114631595;
 
@@ -4815,7 +4859,7 @@ message MultipartUpload {
 
   Owner owner = 455261813;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   optional string uploadid = 449040722;
 
@@ -4875,7 +4919,7 @@ message NoncurrentVersionTransition {
 
   optional int32 noncurrentdays = 409704199;
 
-  TransitionStorageClass storageclass = 393282631;
+  optional TransitionStorageClass storageclass = 393282631;
 
 }
 
@@ -4921,7 +4965,7 @@ message Object {
 
   repeated ChecksumAlgorithm checksumalgorithm = 257294512;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string etag = 313323393;
 
@@ -4935,7 +4979,7 @@ message Object {
 
   optional int64 size = 105352829;
 
-  ObjectStorageClass storageclass = 393282631;
+  optional ObjectStorageClass storageclass = 393282631;
 
 }
 
@@ -5017,7 +5061,7 @@ message ObjectIdentifier {
 
 message ObjectLockConfiguration {
 
-  ObjectLockEnabled objectlockenabled = 495741839;
+  optional ObjectLockEnabled objectlockenabled = 495741839;
 
   ObjectLockRule rule = 475696372;
 
@@ -5033,11 +5077,21 @@ enum ObjectLockEnabled {
 
 
 
+enum ObjectLockEventHold {
+
+  OBJECT_LOCK_EVENT_HOLD_OFF = 0;
+
+  OBJECT_LOCK_EVENT_HOLD_ON = 1;
+
+}
+
+
+
 // A legal hold configuration for an object.
 
 message ObjectLockLegalHold {
 
-  ObjectLockLegalHoldStatus status = 6222352;
+  optional ObjectLockLegalHoldStatus status = 6222352;
 
 }
 
@@ -5067,7 +5121,11 @@ enum ObjectLockMode {
 
 message ObjectLockRetention {
 
-  ObjectLockRetentionMode mode = 323909427;
+  optional ObjectLockEventHold eventhold = 371028423;
+
+  EventHoldDuration eventholdduration = 473730507;
+
+  optional ObjectLockRetentionMode mode = 323909427;
 
   optional string retainuntildate = 252881225;
 
@@ -5189,7 +5247,7 @@ message ObjectVersion {
 
   repeated ChecksumAlgorithm checksumalgorithm = 257294512;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string etag = 313323393;
 
@@ -5205,7 +5263,7 @@ message ObjectVersion {
 
   optional int64 size = 105352829;
 
-  ObjectVersionStorageClass storageclass = 393282631;
+  optional ObjectVersionStorageClass storageclass = 393282631;
 
   optional string versionid = 338063515;
 
@@ -5349,7 +5407,7 @@ enum PartitionDateSource {
 
 message PartitionedPrefix {
 
-  PartitionDateSource partitiondatesource = 127339161;
+  optional PartitionDateSource partitiondatesource = 127339161;
 
 }
 
@@ -5447,7 +5505,7 @@ message PutBucketAbacRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5463,7 +5521,7 @@ message PutBucketAccelerateConfigurationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string expectedbucketowner = 132066983;
 
@@ -5473,13 +5531,13 @@ message PutBucketAccelerateConfigurationRequest {
 
 message PutBucketAclRequest {
 
-  BucketCannedACL acl = 394696836;
+  optional BucketCannedACL acl = 394696836;
 
   AccessControlPolicy accesscontrolpolicy = 302514423 [(aws.http_payload) = true];
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5519,7 +5577,7 @@ message PutBucketCorsRequest {
 
   CORSConfiguration corsconfiguration = 359712351 [(aws.http_payload) = true];
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5533,7 +5591,7 @@ message PutBucketEncryptionRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5575,7 +5633,7 @@ message PutBucketInventoryConfigurationRequest {
 
 message PutBucketLifecycleConfigurationOutput {
 
-  TransitionDefaultMinimumObjectSize transitiondefaultminimumobjectsize = 81614768;
+  optional TransitionDefaultMinimumObjectSize transitiondefaultminimumobjectsize = 81614768;
 
 }
 
@@ -5585,13 +5643,13 @@ message PutBucketLifecycleConfigurationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string expectedbucketowner = 132066983;
 
   BucketLifecycleConfiguration lifecycleconfiguration = 8468208 [(aws.http_payload) = true];
 
-  TransitionDefaultMinimumObjectSize transitiondefaultminimumobjectsize = 81614768;
+  optional TransitionDefaultMinimumObjectSize transitiondefaultminimumobjectsize = 81614768;
 
 }
 
@@ -5603,7 +5661,7 @@ message PutBucketLoggingRequest {
 
   BucketLoggingStatus bucketloggingstatus = 289553275 [(aws.http_payload) = true];
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5645,7 +5703,7 @@ message PutBucketOwnershipControlsRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5661,7 +5719,7 @@ message PutBucketPolicyRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional bool confirmremoveselfbucketaccess = 227046446;
 
@@ -5679,7 +5737,7 @@ message PutBucketReplicationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5697,7 +5755,7 @@ message PutBucketRequestPaymentRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5713,7 +5771,7 @@ message PutBucketTaggingRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5729,7 +5787,7 @@ message PutBucketVersioningRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5747,7 +5805,7 @@ message PutBucketWebsiteRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5761,7 +5819,7 @@ message PutBucketWebsiteRequest {
 
 message PutObjectAclOutput {
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -5769,13 +5827,13 @@ message PutObjectAclOutput {
 
 message PutObjectAclRequest {
 
-  ObjectCannedACL acl = 394696836;
+  optional ObjectCannedACL acl = 394696836;
 
   AccessControlPolicy accesscontrolpolicy = 302514423 [(aws.http_payload) = true];
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5793,7 +5851,7 @@ message PutObjectAclRequest {
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -5819,7 +5877,7 @@ message PutObjectAnnotationOutput {
 
   optional string checksumsha512 = 161451001;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string checksumxxhash128 = 494296584;
 
@@ -5833,9 +5891,9 @@ message PutObjectAnnotationOutput {
 
   optional string objectversionid = 406054044;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
 }
 
@@ -5849,7 +5907,7 @@ message PutObjectAnnotationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string checksumcrc32 = 108220866;
 
@@ -5879,7 +5937,7 @@ message PutObjectAnnotationRequest {
 
   optional string objectifmatch = 408877983;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -5889,7 +5947,7 @@ message PutObjectAnnotationRequest {
 
 message PutObjectLegalHoldOutput {
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -5899,7 +5957,7 @@ message PutObjectLegalHoldRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5909,7 +5967,7 @@ message PutObjectLegalHoldRequest {
 
   ObjectLockLegalHold legalhold = 141145940 [(aws.http_payload) = true];
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -5919,7 +5977,7 @@ message PutObjectLegalHoldRequest {
 
 message PutObjectLockConfigurationOutput {
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -5929,7 +5987,7 @@ message PutObjectLockConfigurationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -5937,7 +5995,7 @@ message PutObjectLockConfigurationRequest {
 
   ObjectLockConfiguration objectlockconfiguration = 108348298 [(aws.http_payload) = true];
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string token = 439704531;
 
@@ -5963,7 +6021,7 @@ message PutObjectOutput {
 
   optional string checksumsha512 = 161451001;
 
-  ChecksumType checksumtype = 97935171;
+  optional ChecksumType checksumtype = 97935171;
 
   optional string checksumxxhash128 = 494296584;
 
@@ -5975,7 +6033,7 @@ message PutObjectOutput {
 
   optional string expiration = 245879945;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -5985,7 +6043,7 @@ message PutObjectOutput {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
   optional int64 size = 105352829;
 
@@ -5997,7 +6055,7 @@ message PutObjectOutput {
 
 message PutObjectRequest {
 
-  ObjectCannedACL acl = 394696836;
+  optional ObjectCannedACL acl = 394696836;
 
   optional bytes body = 42602646 [(aws.http_payload) = true];
 
@@ -6007,7 +6065,7 @@ message PutObjectRequest {
 
   optional string cachecontrol = 288966655;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string checksumcrc32 = 108220866;
 
@@ -6061,13 +6119,19 @@ message PutObjectRequest {
 
   map<string, string> metadata = 470020449;
 
-  ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+  optional ObjectLockEventHold objectlockeventhold = 442410199;
 
-  ObjectLockMode objectlockmode = 189255203;
+  optional int32 objectlockeventholddurationdays = 38039970;
+
+  optional int32 objectlockeventholddurationyears = 89552797;
+
+  optional ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+
+  optional ObjectLockMode objectlockmode = 189255203;
 
   optional string objectlockretainuntildate = 264584249;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -6079,9 +6143,9 @@ message PutObjectRequest {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   optional string tagging = 33436541;
 
@@ -6095,7 +6159,7 @@ message PutObjectRequest {
 
 message PutObjectRetentionOutput {
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -6107,7 +6171,7 @@ message PutObjectRetentionRequest {
 
   optional bool bypassgovernanceretention = 129938942;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -6115,7 +6179,7 @@ message PutObjectRetentionRequest {
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   ObjectLockRetention retention = 299600946 [(aws.http_payload) = true];
 
@@ -6137,7 +6201,7 @@ message PutObjectTaggingRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -6145,7 +6209,7 @@ message PutObjectTaggingRequest {
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   Tagging tagging = 33436541 [(aws.http_payload) = true];
 
@@ -6159,7 +6223,7 @@ message PutPublicAccessBlockRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -6227,7 +6291,7 @@ message Redirect {
 
   optional string httpredirectcode = 348964153;
 
-  Protocol protocol = 173534166;
+  optional Protocol protocol = 173534166;
 
   optional string replacekeyprefixwith = 532110043;
 
@@ -6243,7 +6307,7 @@ message RedirectAllRequestsTo {
 
   string hostname = 119731117;
 
-  Protocol protocol = 173534166;
+  optional Protocol protocol = 173534166;
 
 }
 
@@ -6465,7 +6529,7 @@ message RequestProgress {
 
 message RestoreObjectOutput {
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string restoreoutputpath = 4884176;
 
@@ -6477,13 +6541,13 @@ message RestoreObjectRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string expectedbucketowner = 132066983;
 
   string key = 219859213;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   RestoreRequest restorerequest = 66503431 [(aws.http_payload) = true];
 
@@ -6507,9 +6571,9 @@ message RestoreRequest {
 
   SelectParameters selectparameters = 337564850;
 
-  Tier tier = 519596586;
+  optional Tier tier = 519596586;
 
-  RestoreRequestType type = 290836590;
+  optional RestoreRequestType type = 290836590;
 
 }
 
@@ -6565,13 +6629,13 @@ message S3Location {
 
   string bucketname = 208117045;
 
-  ObjectCannedACL cannedacl = 103981981;
+  optional ObjectCannedACL cannedacl = 103981981;
 
   Encryption encryption = 137702205;
 
   string prefix = 273996266;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   Tagging tagging = 33436541;
 
@@ -6991,7 +7055,7 @@ message TargetGrant {
 
   Grantee grantee = 89454056;
 
-  BucketLogsPermission permission = 465848867;
+  optional BucketLogsPermission permission = 465848867;
 
 }
 
@@ -7065,7 +7129,7 @@ message Transition {
 
   optional int32 days = 494075051;
 
-  TransitionStorageClass storageclass = 393282631;
+  optional TransitionStorageClass storageclass = 393282631;
 
 }
 
@@ -7125,7 +7189,7 @@ message UpdateBucketMetadataAnnotationTableConfigurationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -7139,7 +7203,7 @@ message UpdateBucketMetadataInventoryTableConfigurationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -7155,7 +7219,7 @@ message UpdateBucketMetadataJournalTableConfigurationRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -7171,7 +7235,7 @@ message UpdateObjectEncryptionRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string contentmd5 = 507163915;
 
@@ -7181,7 +7245,7 @@ message UpdateObjectEncryptionRequest {
 
   ObjectEncryption objectencryption = 64620504 [(aws.http_payload) = true];
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string versionid = 338063515;
 
@@ -7191,7 +7255,7 @@ message UpdateObjectEncryptionRequest {
 
 message UpdateObjectEncryptionResponse {
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
 }
 
@@ -7205,7 +7269,7 @@ message UploadPartCopyOutput {
 
   optional string copysourceversionid = 257134375;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -7213,7 +7277,7 @@ message UploadPartCopyOutput {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
 }
 
@@ -7249,7 +7313,7 @@ message UploadPartCopyRequest {
 
   int32 partnumber = 372082310;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -7289,7 +7353,7 @@ message UploadPartOutput {
 
   optional string etag = 313323393;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -7297,7 +7361,7 @@ message UploadPartOutput {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
 }
 
@@ -7309,7 +7373,7 @@ message UploadPartRequest {
 
   string bucket = 55457112;
 
-  ChecksumAlgorithm checksumalgorithm = 257294512;
+  optional ChecksumAlgorithm checksumalgorithm = 257294512;
 
   optional string checksumcrc32 = 108220866;
 
@@ -7341,7 +7405,7 @@ message UploadPartRequest {
 
   int32 partnumber = 372082310;
 
-  RequestPayer requestpayer = 515404580;
+  optional RequestPayer requestpayer = 515404580;
 
   optional string ssecustomeralgorithm = 90203344;
 
@@ -7359,9 +7423,9 @@ message UploadPartRequest {
 
 message VersioningConfiguration {
 
-  MFADelete mfadelete = 354119319;
+  optional MFADelete mfadelete = 354119319;
 
-  BucketVersioningStatus status = 6222352;
+  optional BucketVersioningStatus status = 6222352;
 
 }
 
@@ -7443,17 +7507,17 @@ message WriteGetObjectResponseRequest {
 
   optional int32 missingmeta = 79140523;
 
-  ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
+  optional ObjectLockLegalHoldStatus objectlocklegalholdstatus = 536561974;
 
-  ObjectLockMode objectlockmode = 189255203;
+  optional ObjectLockMode objectlockmode = 189255203;
 
   optional string objectlockretainuntildate = 264584249;
 
   optional int32 partscount = 154996373;
 
-  ReplicationStatus replicationstatus = 529093900;
+  optional ReplicationStatus replicationstatus = 529093900;
 
-  RequestCharged requestcharged = 388687891;
+  optional RequestCharged requestcharged = 388687891;
 
   string requestroute = 41111156;
 
@@ -7467,11 +7531,11 @@ message WriteGetObjectResponseRequest {
 
   optional string ssekmskeyid = 445973592;
 
-  ServerSideEncryption serversideencryption = 8898353;
+  optional ServerSideEncryption serversideencryption = 8898353;
 
   optional int32 statuscode = 303830783;
 
-  StorageClass storageclass = 393282631;
+  optional StorageClass storageclass = 393282631;
 
   optional int32 tagcount = 339592595;
 

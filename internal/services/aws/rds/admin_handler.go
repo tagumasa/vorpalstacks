@@ -464,7 +464,7 @@ func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeEventsCore(stores, DescribeEventsInput{
-		SourceType:       req.Msg.Sourcetype,
+		SourceType:       req.Msg.GetSourcetype(),
 		SourceIdentifier: req.Msg.GetSourceidentifier(),
 		StartTime:        req.Msg.GetStarttime(),
 		EndTime:          req.Msg.GetEndtime(),
