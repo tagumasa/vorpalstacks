@@ -14,7 +14,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/klauspost/compress v1.18.4
+	github.com/klauspost/compress v1.18.7
 	github.com/miekg/dns v1.1.72
 	github.com/moby/moby/api v1.55.0
 	github.com/moby/moby/client v0.5.0
